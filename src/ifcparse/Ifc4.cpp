@@ -5833,7 +5833,7 @@ bool IfcAbsorbedDoseMeasure::is(Type::Enum v) const { return v == IfcAbsorbedDos
 Type::Enum IfcAbsorbedDoseMeasure::type() const { return Type::IfcAbsorbedDoseMeasure; }
 Type::Enum IfcAbsorbedDoseMeasure::Class() { return Type::IfcAbsorbedDoseMeasure; }
 IfcAbsorbedDoseMeasure::IfcAbsorbedDoseMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcAbsorbedDoseMeasure::IfcAbsorbedDoseMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcAbsorbedDoseMeasure::IfcAbsorbedDoseMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcAbsorbedDoseMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAccelerationMeasure
@@ -5843,7 +5843,7 @@ bool IfcAccelerationMeasure::is(Type::Enum v) const { return v == IfcAcceleratio
 Type::Enum IfcAccelerationMeasure::type() const { return Type::IfcAccelerationMeasure; }
 Type::Enum IfcAccelerationMeasure::Class() { return Type::IfcAccelerationMeasure; }
 IfcAccelerationMeasure::IfcAccelerationMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcAccelerationMeasure::IfcAccelerationMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcAccelerationMeasure::IfcAccelerationMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcAccelerationMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAmountOfSubstanceMeasure
@@ -5853,7 +5853,7 @@ bool IfcAmountOfSubstanceMeasure::is(Type::Enum v) const { return v == IfcAmount
 Type::Enum IfcAmountOfSubstanceMeasure::type() const { return Type::IfcAmountOfSubstanceMeasure; }
 Type::Enum IfcAmountOfSubstanceMeasure::Class() { return Type::IfcAmountOfSubstanceMeasure; }
 IfcAmountOfSubstanceMeasure::IfcAmountOfSubstanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcAmountOfSubstanceMeasure::IfcAmountOfSubstanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcAmountOfSubstanceMeasure::IfcAmountOfSubstanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcAmountOfSubstanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAngularVelocityMeasure
@@ -5863,7 +5863,7 @@ bool IfcAngularVelocityMeasure::is(Type::Enum v) const { return v == IfcAngularV
 Type::Enum IfcAngularVelocityMeasure::type() const { return Type::IfcAngularVelocityMeasure; }
 Type::Enum IfcAngularVelocityMeasure::Class() { return Type::IfcAngularVelocityMeasure; }
 IfcAngularVelocityMeasure::IfcAngularVelocityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcAngularVelocityMeasure::IfcAngularVelocityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcAngularVelocityMeasure::IfcAngularVelocityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcAngularVelocityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcArcIndex
@@ -5873,7 +5873,7 @@ bool IfcArcIndex::is(Type::Enum v) const { return v == IfcArcIndex::Class(); }
 Type::Enum IfcArcIndex::type() const { return Type::IfcArcIndex; }
 Type::Enum IfcArcIndex::Class() { return Type::IfcArcIndex; }
 IfcArcIndex::IfcArcIndex(IfcEntityInstanceData* e) { entity = e; }
-IfcArcIndex::IfcArcIndex(std::vector< int > /*[3:3]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcArcIndex::IfcArcIndex(std::vector< int > /*[3:3]*/ v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcArcIndex::operator std::vector< int > /*[3:3]*/() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAreaDensityMeasure
@@ -5883,7 +5883,7 @@ bool IfcAreaDensityMeasure::is(Type::Enum v) const { return v == IfcAreaDensityM
 Type::Enum IfcAreaDensityMeasure::type() const { return Type::IfcAreaDensityMeasure; }
 Type::Enum IfcAreaDensityMeasure::Class() { return Type::IfcAreaDensityMeasure; }
 IfcAreaDensityMeasure::IfcAreaDensityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcAreaDensityMeasure::IfcAreaDensityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcAreaDensityMeasure::IfcAreaDensityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcAreaDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcAreaMeasure
@@ -5893,7 +5893,7 @@ bool IfcAreaMeasure::is(Type::Enum v) const { return v == IfcAreaMeasure::Class(
 Type::Enum IfcAreaMeasure::type() const { return Type::IfcAreaMeasure; }
 Type::Enum IfcAreaMeasure::Class() { return Type::IfcAreaMeasure; }
 IfcAreaMeasure::IfcAreaMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcAreaMeasure::IfcAreaMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcAreaMeasure::IfcAreaMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcAreaMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcBinary
@@ -5903,7 +5903,7 @@ bool IfcBinary::is(Type::Enum v) const { return v == IfcBinary::Class(); }
 Type::Enum IfcBinary::type() const { return Type::IfcBinary; }
 Type::Enum IfcBinary::Class() { return Type::IfcBinary; }
 IfcBinary::IfcBinary(IfcEntityInstanceData* e) { entity = e; }
-IfcBinary::IfcBinary(boost::dynamic_bitset<> v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcBinary::IfcBinary(boost::dynamic_bitset<> v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcBinary::operator boost::dynamic_bitset<>() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcBoolean
@@ -5913,7 +5913,7 @@ bool IfcBoolean::is(Type::Enum v) const { return v == IfcBoolean::Class(); }
 Type::Enum IfcBoolean::type() const { return Type::IfcBoolean; }
 Type::Enum IfcBoolean::Class() { return Type::IfcBoolean; }
 IfcBoolean::IfcBoolean(IfcEntityInstanceData* e) { entity = e; }
-IfcBoolean::IfcBoolean(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcBoolean::IfcBoolean(bool v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcBoolean::operator bool() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcBoxAlignment
@@ -5923,7 +5923,7 @@ bool IfcBoxAlignment::is(Type::Enum v) const { return v == Type::IfcBoxAlignment
 Type::Enum IfcBoxAlignment::type() const { return Type::IfcBoxAlignment; }
 Type::Enum IfcBoxAlignment::Class() { return Type::IfcBoxAlignment; }
 IfcBoxAlignment::IfcBoxAlignment(IfcEntityInstanceData* e) : IfcLabel((IfcEntityInstanceData*)0) { entity = e; }
-IfcBoxAlignment::IfcBoxAlignment(std::string v) : IfcLabel((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcBoxAlignment::IfcBoxAlignment(std::string v) : IfcLabel((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcBoxAlignment::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCardinalPointReference
@@ -5933,7 +5933,7 @@ bool IfcCardinalPointReference::is(Type::Enum v) const { return v == IfcCardinal
 Type::Enum IfcCardinalPointReference::type() const { return Type::IfcCardinalPointReference; }
 Type::Enum IfcCardinalPointReference::Class() { return Type::IfcCardinalPointReference; }
 IfcCardinalPointReference::IfcCardinalPointReference(IfcEntityInstanceData* e) { entity = e; }
-IfcCardinalPointReference::IfcCardinalPointReference(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcCardinalPointReference::IfcCardinalPointReference(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcCardinalPointReference::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcComplexNumber
@@ -5943,7 +5943,7 @@ bool IfcComplexNumber::is(Type::Enum v) const { return v == IfcComplexNumber::Cl
 Type::Enum IfcComplexNumber::type() const { return Type::IfcComplexNumber; }
 Type::Enum IfcComplexNumber::Class() { return Type::IfcComplexNumber; }
 IfcComplexNumber::IfcComplexNumber(IfcEntityInstanceData* e) { entity = e; }
-IfcComplexNumber::IfcComplexNumber(std::vector< double > /*[1:2]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcComplexNumber::IfcComplexNumber(std::vector< double > /*[1:2]*/ v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcComplexNumber::operator std::vector< double > /*[1:2]*/() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCompoundPlaneAngleMeasure
@@ -5953,7 +5953,7 @@ bool IfcCompoundPlaneAngleMeasure::is(Type::Enum v) const { return v == IfcCompo
 Type::Enum IfcCompoundPlaneAngleMeasure::type() const { return Type::IfcCompoundPlaneAngleMeasure; }
 Type::Enum IfcCompoundPlaneAngleMeasure::Class() { return Type::IfcCompoundPlaneAngleMeasure; }
 IfcCompoundPlaneAngleMeasure::IfcCompoundPlaneAngleMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcCompoundPlaneAngleMeasure::IfcCompoundPlaneAngleMeasure(std::vector< int > /*[3:4]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcCompoundPlaneAngleMeasure::IfcCompoundPlaneAngleMeasure(std::vector< int > /*[3:4]*/ v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcCompoundPlaneAngleMeasure::operator std::vector< int > /*[3:4]*/() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcContextDependentMeasure
@@ -5963,7 +5963,7 @@ bool IfcContextDependentMeasure::is(Type::Enum v) const { return v == IfcContext
 Type::Enum IfcContextDependentMeasure::type() const { return Type::IfcContextDependentMeasure; }
 Type::Enum IfcContextDependentMeasure::Class() { return Type::IfcContextDependentMeasure; }
 IfcContextDependentMeasure::IfcContextDependentMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcContextDependentMeasure::IfcContextDependentMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcContextDependentMeasure::IfcContextDependentMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcContextDependentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCountMeasure
@@ -5973,7 +5973,7 @@ bool IfcCountMeasure::is(Type::Enum v) const { return v == IfcCountMeasure::Clas
 Type::Enum IfcCountMeasure::type() const { return Type::IfcCountMeasure; }
 Type::Enum IfcCountMeasure::Class() { return Type::IfcCountMeasure; }
 IfcCountMeasure::IfcCountMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcCountMeasure::IfcCountMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcCountMeasure::IfcCountMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcCountMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcCurvatureMeasure
@@ -5983,7 +5983,7 @@ bool IfcCurvatureMeasure::is(Type::Enum v) const { return v == IfcCurvatureMeasu
 Type::Enum IfcCurvatureMeasure::type() const { return Type::IfcCurvatureMeasure; }
 Type::Enum IfcCurvatureMeasure::Class() { return Type::IfcCurvatureMeasure; }
 IfcCurvatureMeasure::IfcCurvatureMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcCurvatureMeasure::IfcCurvatureMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcCurvatureMeasure::IfcCurvatureMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcCurvatureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDate
@@ -5993,7 +5993,7 @@ bool IfcDate::is(Type::Enum v) const { return v == IfcDate::Class(); }
 Type::Enum IfcDate::type() const { return Type::IfcDate; }
 Type::Enum IfcDate::Class() { return Type::IfcDate; }
 IfcDate::IfcDate(IfcEntityInstanceData* e) { entity = e; }
-IfcDate::IfcDate(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDate::IfcDate(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDate::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDateTime
@@ -6003,7 +6003,7 @@ bool IfcDateTime::is(Type::Enum v) const { return v == IfcDateTime::Class(); }
 Type::Enum IfcDateTime::type() const { return Type::IfcDateTime; }
 Type::Enum IfcDateTime::Class() { return Type::IfcDateTime; }
 IfcDateTime::IfcDateTime(IfcEntityInstanceData* e) { entity = e; }
-IfcDateTime::IfcDateTime(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDateTime::IfcDateTime(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDateTime::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDayInMonthNumber
@@ -6013,7 +6013,7 @@ bool IfcDayInMonthNumber::is(Type::Enum v) const { return v == IfcDayInMonthNumb
 Type::Enum IfcDayInMonthNumber::type() const { return Type::IfcDayInMonthNumber; }
 Type::Enum IfcDayInMonthNumber::Class() { return Type::IfcDayInMonthNumber; }
 IfcDayInMonthNumber::IfcDayInMonthNumber(IfcEntityInstanceData* e) { entity = e; }
-IfcDayInMonthNumber::IfcDayInMonthNumber(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDayInMonthNumber::IfcDayInMonthNumber(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDayInMonthNumber::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDayInWeekNumber
@@ -6023,7 +6023,7 @@ bool IfcDayInWeekNumber::is(Type::Enum v) const { return v == IfcDayInWeekNumber
 Type::Enum IfcDayInWeekNumber::type() const { return Type::IfcDayInWeekNumber; }
 Type::Enum IfcDayInWeekNumber::Class() { return Type::IfcDayInWeekNumber; }
 IfcDayInWeekNumber::IfcDayInWeekNumber(IfcEntityInstanceData* e) { entity = e; }
-IfcDayInWeekNumber::IfcDayInWeekNumber(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDayInWeekNumber::IfcDayInWeekNumber(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDayInWeekNumber::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDescriptiveMeasure
@@ -6033,7 +6033,7 @@ bool IfcDescriptiveMeasure::is(Type::Enum v) const { return v == IfcDescriptiveM
 Type::Enum IfcDescriptiveMeasure::type() const { return Type::IfcDescriptiveMeasure; }
 Type::Enum IfcDescriptiveMeasure::Class() { return Type::IfcDescriptiveMeasure; }
 IfcDescriptiveMeasure::IfcDescriptiveMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcDescriptiveMeasure::IfcDescriptiveMeasure(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDescriptiveMeasure::IfcDescriptiveMeasure(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDescriptiveMeasure::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDimensionCount
@@ -6043,7 +6043,7 @@ bool IfcDimensionCount::is(Type::Enum v) const { return v == IfcDimensionCount::
 Type::Enum IfcDimensionCount::type() const { return Type::IfcDimensionCount; }
 Type::Enum IfcDimensionCount::Class() { return Type::IfcDimensionCount; }
 IfcDimensionCount::IfcDimensionCount(IfcEntityInstanceData* e) { entity = e; }
-IfcDimensionCount::IfcDimensionCount(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDimensionCount::IfcDimensionCount(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDimensionCount::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDoseEquivalentMeasure
@@ -6053,7 +6053,7 @@ bool IfcDoseEquivalentMeasure::is(Type::Enum v) const { return v == IfcDoseEquiv
 Type::Enum IfcDoseEquivalentMeasure::type() const { return Type::IfcDoseEquivalentMeasure; }
 Type::Enum IfcDoseEquivalentMeasure::Class() { return Type::IfcDoseEquivalentMeasure; }
 IfcDoseEquivalentMeasure::IfcDoseEquivalentMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcDoseEquivalentMeasure::IfcDoseEquivalentMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDoseEquivalentMeasure::IfcDoseEquivalentMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDoseEquivalentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDuration
@@ -6063,7 +6063,7 @@ bool IfcDuration::is(Type::Enum v) const { return v == IfcDuration::Class(); }
 Type::Enum IfcDuration::type() const { return Type::IfcDuration; }
 Type::Enum IfcDuration::Class() { return Type::IfcDuration; }
 IfcDuration::IfcDuration(IfcEntityInstanceData* e) { entity = e; }
-IfcDuration::IfcDuration(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDuration::IfcDuration(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDuration::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcDynamicViscosityMeasure
@@ -6073,7 +6073,7 @@ bool IfcDynamicViscosityMeasure::is(Type::Enum v) const { return v == IfcDynamic
 Type::Enum IfcDynamicViscosityMeasure::type() const { return Type::IfcDynamicViscosityMeasure; }
 Type::Enum IfcDynamicViscosityMeasure::Class() { return Type::IfcDynamicViscosityMeasure; }
 IfcDynamicViscosityMeasure::IfcDynamicViscosityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcDynamicViscosityMeasure::IfcDynamicViscosityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcDynamicViscosityMeasure::IfcDynamicViscosityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcDynamicViscosityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricCapacitanceMeasure
@@ -6083,7 +6083,7 @@ bool IfcElectricCapacitanceMeasure::is(Type::Enum v) const { return v == IfcElec
 Type::Enum IfcElectricCapacitanceMeasure::type() const { return Type::IfcElectricCapacitanceMeasure; }
 Type::Enum IfcElectricCapacitanceMeasure::Class() { return Type::IfcElectricCapacitanceMeasure; }
 IfcElectricCapacitanceMeasure::IfcElectricCapacitanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcElectricCapacitanceMeasure::IfcElectricCapacitanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcElectricCapacitanceMeasure::IfcElectricCapacitanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcElectricCapacitanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricChargeMeasure
@@ -6093,7 +6093,7 @@ bool IfcElectricChargeMeasure::is(Type::Enum v) const { return v == IfcElectricC
 Type::Enum IfcElectricChargeMeasure::type() const { return Type::IfcElectricChargeMeasure; }
 Type::Enum IfcElectricChargeMeasure::Class() { return Type::IfcElectricChargeMeasure; }
 IfcElectricChargeMeasure::IfcElectricChargeMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcElectricChargeMeasure::IfcElectricChargeMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcElectricChargeMeasure::IfcElectricChargeMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcElectricChargeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricConductanceMeasure
@@ -6103,7 +6103,7 @@ bool IfcElectricConductanceMeasure::is(Type::Enum v) const { return v == IfcElec
 Type::Enum IfcElectricConductanceMeasure::type() const { return Type::IfcElectricConductanceMeasure; }
 Type::Enum IfcElectricConductanceMeasure::Class() { return Type::IfcElectricConductanceMeasure; }
 IfcElectricConductanceMeasure::IfcElectricConductanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcElectricConductanceMeasure::IfcElectricConductanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcElectricConductanceMeasure::IfcElectricConductanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcElectricConductanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricCurrentMeasure
@@ -6113,7 +6113,7 @@ bool IfcElectricCurrentMeasure::is(Type::Enum v) const { return v == IfcElectric
 Type::Enum IfcElectricCurrentMeasure::type() const { return Type::IfcElectricCurrentMeasure; }
 Type::Enum IfcElectricCurrentMeasure::Class() { return Type::IfcElectricCurrentMeasure; }
 IfcElectricCurrentMeasure::IfcElectricCurrentMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcElectricCurrentMeasure::IfcElectricCurrentMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcElectricCurrentMeasure::IfcElectricCurrentMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcElectricCurrentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricResistanceMeasure
@@ -6123,7 +6123,7 @@ bool IfcElectricResistanceMeasure::is(Type::Enum v) const { return v == IfcElect
 Type::Enum IfcElectricResistanceMeasure::type() const { return Type::IfcElectricResistanceMeasure; }
 Type::Enum IfcElectricResistanceMeasure::Class() { return Type::IfcElectricResistanceMeasure; }
 IfcElectricResistanceMeasure::IfcElectricResistanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcElectricResistanceMeasure::IfcElectricResistanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcElectricResistanceMeasure::IfcElectricResistanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcElectricResistanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcElectricVoltageMeasure
@@ -6133,7 +6133,7 @@ bool IfcElectricVoltageMeasure::is(Type::Enum v) const { return v == IfcElectric
 Type::Enum IfcElectricVoltageMeasure::type() const { return Type::IfcElectricVoltageMeasure; }
 Type::Enum IfcElectricVoltageMeasure::Class() { return Type::IfcElectricVoltageMeasure; }
 IfcElectricVoltageMeasure::IfcElectricVoltageMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcElectricVoltageMeasure::IfcElectricVoltageMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcElectricVoltageMeasure::IfcElectricVoltageMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcElectricVoltageMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcEnergyMeasure
@@ -6143,7 +6143,7 @@ bool IfcEnergyMeasure::is(Type::Enum v) const { return v == IfcEnergyMeasure::Cl
 Type::Enum IfcEnergyMeasure::type() const { return Type::IfcEnergyMeasure; }
 Type::Enum IfcEnergyMeasure::Class() { return Type::IfcEnergyMeasure; }
 IfcEnergyMeasure::IfcEnergyMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcEnergyMeasure::IfcEnergyMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcEnergyMeasure::IfcEnergyMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcEnergyMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFontStyle
@@ -6153,7 +6153,7 @@ bool IfcFontStyle::is(Type::Enum v) const { return v == IfcFontStyle::Class(); }
 Type::Enum IfcFontStyle::type() const { return Type::IfcFontStyle; }
 Type::Enum IfcFontStyle::Class() { return Type::IfcFontStyle; }
 IfcFontStyle::IfcFontStyle(IfcEntityInstanceData* e) { entity = e; }
-IfcFontStyle::IfcFontStyle(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcFontStyle::IfcFontStyle(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcFontStyle::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFontVariant
@@ -6163,7 +6163,7 @@ bool IfcFontVariant::is(Type::Enum v) const { return v == IfcFontVariant::Class(
 Type::Enum IfcFontVariant::type() const { return Type::IfcFontVariant; }
 Type::Enum IfcFontVariant::Class() { return Type::IfcFontVariant; }
 IfcFontVariant::IfcFontVariant(IfcEntityInstanceData* e) { entity = e; }
-IfcFontVariant::IfcFontVariant(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcFontVariant::IfcFontVariant(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcFontVariant::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFontWeight
@@ -6173,7 +6173,7 @@ bool IfcFontWeight::is(Type::Enum v) const { return v == IfcFontWeight::Class();
 Type::Enum IfcFontWeight::type() const { return Type::IfcFontWeight; }
 Type::Enum IfcFontWeight::Class() { return Type::IfcFontWeight; }
 IfcFontWeight::IfcFontWeight(IfcEntityInstanceData* e) { entity = e; }
-IfcFontWeight::IfcFontWeight(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcFontWeight::IfcFontWeight(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcFontWeight::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcForceMeasure
@@ -6183,7 +6183,7 @@ bool IfcForceMeasure::is(Type::Enum v) const { return v == IfcForceMeasure::Clas
 Type::Enum IfcForceMeasure::type() const { return Type::IfcForceMeasure; }
 Type::Enum IfcForceMeasure::Class() { return Type::IfcForceMeasure; }
 IfcForceMeasure::IfcForceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcForceMeasure::IfcForceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcForceMeasure::IfcForceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcForceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcFrequencyMeasure
@@ -6193,7 +6193,7 @@ bool IfcFrequencyMeasure::is(Type::Enum v) const { return v == IfcFrequencyMeasu
 Type::Enum IfcFrequencyMeasure::type() const { return Type::IfcFrequencyMeasure; }
 Type::Enum IfcFrequencyMeasure::Class() { return Type::IfcFrequencyMeasure; }
 IfcFrequencyMeasure::IfcFrequencyMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcFrequencyMeasure::IfcFrequencyMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcFrequencyMeasure::IfcFrequencyMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcFrequencyMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcGloballyUniqueId
@@ -6203,7 +6203,7 @@ bool IfcGloballyUniqueId::is(Type::Enum v) const { return v == IfcGloballyUnique
 Type::Enum IfcGloballyUniqueId::type() const { return Type::IfcGloballyUniqueId; }
 Type::Enum IfcGloballyUniqueId::Class() { return Type::IfcGloballyUniqueId; }
 IfcGloballyUniqueId::IfcGloballyUniqueId(IfcEntityInstanceData* e) { entity = e; }
-IfcGloballyUniqueId::IfcGloballyUniqueId(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcGloballyUniqueId::IfcGloballyUniqueId(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcGloballyUniqueId::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcHeatFluxDensityMeasure
@@ -6213,7 +6213,7 @@ bool IfcHeatFluxDensityMeasure::is(Type::Enum v) const { return v == IfcHeatFlux
 Type::Enum IfcHeatFluxDensityMeasure::type() const { return Type::IfcHeatFluxDensityMeasure; }
 Type::Enum IfcHeatFluxDensityMeasure::Class() { return Type::IfcHeatFluxDensityMeasure; }
 IfcHeatFluxDensityMeasure::IfcHeatFluxDensityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcHeatFluxDensityMeasure::IfcHeatFluxDensityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcHeatFluxDensityMeasure::IfcHeatFluxDensityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcHeatFluxDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcHeatingValueMeasure
@@ -6223,7 +6223,7 @@ bool IfcHeatingValueMeasure::is(Type::Enum v) const { return v == IfcHeatingValu
 Type::Enum IfcHeatingValueMeasure::type() const { return Type::IfcHeatingValueMeasure; }
 Type::Enum IfcHeatingValueMeasure::Class() { return Type::IfcHeatingValueMeasure; }
 IfcHeatingValueMeasure::IfcHeatingValueMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcHeatingValueMeasure::IfcHeatingValueMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcHeatingValueMeasure::IfcHeatingValueMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcHeatingValueMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIdentifier
@@ -6233,7 +6233,7 @@ bool IfcIdentifier::is(Type::Enum v) const { return v == IfcIdentifier::Class();
 Type::Enum IfcIdentifier::type() const { return Type::IfcIdentifier; }
 Type::Enum IfcIdentifier::Class() { return Type::IfcIdentifier; }
 IfcIdentifier::IfcIdentifier(IfcEntityInstanceData* e) { entity = e; }
-IfcIdentifier::IfcIdentifier(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcIdentifier::IfcIdentifier(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcIdentifier::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIlluminanceMeasure
@@ -6243,7 +6243,7 @@ bool IfcIlluminanceMeasure::is(Type::Enum v) const { return v == IfcIlluminanceM
 Type::Enum IfcIlluminanceMeasure::type() const { return Type::IfcIlluminanceMeasure; }
 Type::Enum IfcIlluminanceMeasure::Class() { return Type::IfcIlluminanceMeasure; }
 IfcIlluminanceMeasure::IfcIlluminanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcIlluminanceMeasure::IfcIlluminanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcIlluminanceMeasure::IfcIlluminanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcIlluminanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcInductanceMeasure
@@ -6253,7 +6253,7 @@ bool IfcInductanceMeasure::is(Type::Enum v) const { return v == IfcInductanceMea
 Type::Enum IfcInductanceMeasure::type() const { return Type::IfcInductanceMeasure; }
 Type::Enum IfcInductanceMeasure::Class() { return Type::IfcInductanceMeasure; }
 IfcInductanceMeasure::IfcInductanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcInductanceMeasure::IfcInductanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcInductanceMeasure::IfcInductanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcInductanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcInteger
@@ -6263,7 +6263,7 @@ bool IfcInteger::is(Type::Enum v) const { return v == IfcInteger::Class(); }
 Type::Enum IfcInteger::type() const { return Type::IfcInteger; }
 Type::Enum IfcInteger::Class() { return Type::IfcInteger; }
 IfcInteger::IfcInteger(IfcEntityInstanceData* e) { entity = e; }
-IfcInteger::IfcInteger(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcInteger::IfcInteger(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcInteger::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIntegerCountRateMeasure
@@ -6273,7 +6273,7 @@ bool IfcIntegerCountRateMeasure::is(Type::Enum v) const { return v == IfcInteger
 Type::Enum IfcIntegerCountRateMeasure::type() const { return Type::IfcIntegerCountRateMeasure; }
 Type::Enum IfcIntegerCountRateMeasure::Class() { return Type::IfcIntegerCountRateMeasure; }
 IfcIntegerCountRateMeasure::IfcIntegerCountRateMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcIntegerCountRateMeasure::IfcIntegerCountRateMeasure(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcIntegerCountRateMeasure::IfcIntegerCountRateMeasure(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcIntegerCountRateMeasure::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIonConcentrationMeasure
@@ -6283,7 +6283,7 @@ bool IfcIonConcentrationMeasure::is(Type::Enum v) const { return v == IfcIonConc
 Type::Enum IfcIonConcentrationMeasure::type() const { return Type::IfcIonConcentrationMeasure; }
 Type::Enum IfcIonConcentrationMeasure::Class() { return Type::IfcIonConcentrationMeasure; }
 IfcIonConcentrationMeasure::IfcIonConcentrationMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcIonConcentrationMeasure::IfcIonConcentrationMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcIonConcentrationMeasure::IfcIonConcentrationMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcIonConcentrationMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcIsothermalMoistureCapacityMeasure
@@ -6293,7 +6293,7 @@ bool IfcIsothermalMoistureCapacityMeasure::is(Type::Enum v) const { return v == 
 Type::Enum IfcIsothermalMoistureCapacityMeasure::type() const { return Type::IfcIsothermalMoistureCapacityMeasure; }
 Type::Enum IfcIsothermalMoistureCapacityMeasure::Class() { return Type::IfcIsothermalMoistureCapacityMeasure; }
 IfcIsothermalMoistureCapacityMeasure::IfcIsothermalMoistureCapacityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcIsothermalMoistureCapacityMeasure::IfcIsothermalMoistureCapacityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcIsothermalMoistureCapacityMeasure::IfcIsothermalMoistureCapacityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcIsothermalMoistureCapacityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcKinematicViscosityMeasure
@@ -6303,7 +6303,7 @@ bool IfcKinematicViscosityMeasure::is(Type::Enum v) const { return v == IfcKinem
 Type::Enum IfcKinematicViscosityMeasure::type() const { return Type::IfcKinematicViscosityMeasure; }
 Type::Enum IfcKinematicViscosityMeasure::Class() { return Type::IfcKinematicViscosityMeasure; }
 IfcKinematicViscosityMeasure::IfcKinematicViscosityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcKinematicViscosityMeasure::IfcKinematicViscosityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcKinematicViscosityMeasure::IfcKinematicViscosityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcKinematicViscosityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLabel
@@ -6313,7 +6313,7 @@ bool IfcLabel::is(Type::Enum v) const { return v == IfcLabel::Class(); }
 Type::Enum IfcLabel::type() const { return Type::IfcLabel; }
 Type::Enum IfcLabel::Class() { return Type::IfcLabel; }
 IfcLabel::IfcLabel(IfcEntityInstanceData* e) { entity = e; }
-IfcLabel::IfcLabel(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLabel::IfcLabel(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLabel::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLanguageId
@@ -6323,7 +6323,7 @@ bool IfcLanguageId::is(Type::Enum v) const { return v == Type::IfcLanguageId || 
 Type::Enum IfcLanguageId::type() const { return Type::IfcLanguageId; }
 Type::Enum IfcLanguageId::Class() { return Type::IfcLanguageId; }
 IfcLanguageId::IfcLanguageId(IfcEntityInstanceData* e) : IfcIdentifier((IfcEntityInstanceData*)0) { entity = e; }
-IfcLanguageId::IfcLanguageId(std::string v) : IfcIdentifier((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLanguageId::IfcLanguageId(std::string v) : IfcIdentifier((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLanguageId::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLengthMeasure
@@ -6333,7 +6333,7 @@ bool IfcLengthMeasure::is(Type::Enum v) const { return v == IfcLengthMeasure::Cl
 Type::Enum IfcLengthMeasure::type() const { return Type::IfcLengthMeasure; }
 Type::Enum IfcLengthMeasure::Class() { return Type::IfcLengthMeasure; }
 IfcLengthMeasure::IfcLengthMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLengthMeasure::IfcLengthMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLengthMeasure::IfcLengthMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLineIndex
@@ -6343,7 +6343,7 @@ bool IfcLineIndex::is(Type::Enum v) const { return v == IfcLineIndex::Class(); }
 Type::Enum IfcLineIndex::type() const { return Type::IfcLineIndex; }
 Type::Enum IfcLineIndex::Class() { return Type::IfcLineIndex; }
 IfcLineIndex::IfcLineIndex(IfcEntityInstanceData* e) { entity = e; }
-IfcLineIndex::IfcLineIndex(std::vector< int > /*[2:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLineIndex::IfcLineIndex(std::vector< int > /*[2:?]*/ v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLineIndex::operator std::vector< int > /*[2:?]*/() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearForceMeasure
@@ -6353,7 +6353,7 @@ bool IfcLinearForceMeasure::is(Type::Enum v) const { return v == IfcLinearForceM
 Type::Enum IfcLinearForceMeasure::type() const { return Type::IfcLinearForceMeasure; }
 Type::Enum IfcLinearForceMeasure::Class() { return Type::IfcLinearForceMeasure; }
 IfcLinearForceMeasure::IfcLinearForceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLinearForceMeasure::IfcLinearForceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLinearForceMeasure::IfcLinearForceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLinearForceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearMomentMeasure
@@ -6363,7 +6363,7 @@ bool IfcLinearMomentMeasure::is(Type::Enum v) const { return v == IfcLinearMomen
 Type::Enum IfcLinearMomentMeasure::type() const { return Type::IfcLinearMomentMeasure; }
 Type::Enum IfcLinearMomentMeasure::Class() { return Type::IfcLinearMomentMeasure; }
 IfcLinearMomentMeasure::IfcLinearMomentMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLinearMomentMeasure::IfcLinearMomentMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLinearMomentMeasure::IfcLinearMomentMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLinearMomentMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearStiffnessMeasure
@@ -6373,7 +6373,7 @@ bool IfcLinearStiffnessMeasure::is(Type::Enum v) const { return v == IfcLinearSt
 Type::Enum IfcLinearStiffnessMeasure::type() const { return Type::IfcLinearStiffnessMeasure; }
 Type::Enum IfcLinearStiffnessMeasure::Class() { return Type::IfcLinearStiffnessMeasure; }
 IfcLinearStiffnessMeasure::IfcLinearStiffnessMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLinearStiffnessMeasure::IfcLinearStiffnessMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLinearStiffnessMeasure::IfcLinearStiffnessMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLinearStiffnessMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLinearVelocityMeasure
@@ -6383,7 +6383,7 @@ bool IfcLinearVelocityMeasure::is(Type::Enum v) const { return v == IfcLinearVel
 Type::Enum IfcLinearVelocityMeasure::type() const { return Type::IfcLinearVelocityMeasure; }
 Type::Enum IfcLinearVelocityMeasure::Class() { return Type::IfcLinearVelocityMeasure; }
 IfcLinearVelocityMeasure::IfcLinearVelocityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLinearVelocityMeasure::IfcLinearVelocityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLinearVelocityMeasure::IfcLinearVelocityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLinearVelocityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLogical
@@ -6393,7 +6393,7 @@ bool IfcLogical::is(Type::Enum v) const { return v == IfcLogical::Class(); }
 Type::Enum IfcLogical::type() const { return Type::IfcLogical; }
 Type::Enum IfcLogical::Class() { return Type::IfcLogical; }
 IfcLogical::IfcLogical(IfcEntityInstanceData* e) { entity = e; }
-IfcLogical::IfcLogical(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLogical::IfcLogical(bool v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLogical::operator bool() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLuminousFluxMeasure
@@ -6403,7 +6403,7 @@ bool IfcLuminousFluxMeasure::is(Type::Enum v) const { return v == IfcLuminousFlu
 Type::Enum IfcLuminousFluxMeasure::type() const { return Type::IfcLuminousFluxMeasure; }
 Type::Enum IfcLuminousFluxMeasure::Class() { return Type::IfcLuminousFluxMeasure; }
 IfcLuminousFluxMeasure::IfcLuminousFluxMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLuminousFluxMeasure::IfcLuminousFluxMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLuminousFluxMeasure::IfcLuminousFluxMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLuminousFluxMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLuminousIntensityDistributionMeasure
@@ -6413,7 +6413,7 @@ bool IfcLuminousIntensityDistributionMeasure::is(Type::Enum v) const { return v 
 Type::Enum IfcLuminousIntensityDistributionMeasure::type() const { return Type::IfcLuminousIntensityDistributionMeasure; }
 Type::Enum IfcLuminousIntensityDistributionMeasure::Class() { return Type::IfcLuminousIntensityDistributionMeasure; }
 IfcLuminousIntensityDistributionMeasure::IfcLuminousIntensityDistributionMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLuminousIntensityDistributionMeasure::IfcLuminousIntensityDistributionMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLuminousIntensityDistributionMeasure::IfcLuminousIntensityDistributionMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLuminousIntensityDistributionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcLuminousIntensityMeasure
@@ -6423,7 +6423,7 @@ bool IfcLuminousIntensityMeasure::is(Type::Enum v) const { return v == IfcLumino
 Type::Enum IfcLuminousIntensityMeasure::type() const { return Type::IfcLuminousIntensityMeasure; }
 Type::Enum IfcLuminousIntensityMeasure::Class() { return Type::IfcLuminousIntensityMeasure; }
 IfcLuminousIntensityMeasure::IfcLuminousIntensityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcLuminousIntensityMeasure::IfcLuminousIntensityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcLuminousIntensityMeasure::IfcLuminousIntensityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcLuminousIntensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMagneticFluxDensityMeasure
@@ -6433,7 +6433,7 @@ bool IfcMagneticFluxDensityMeasure::is(Type::Enum v) const { return v == IfcMagn
 Type::Enum IfcMagneticFluxDensityMeasure::type() const { return Type::IfcMagneticFluxDensityMeasure; }
 Type::Enum IfcMagneticFluxDensityMeasure::Class() { return Type::IfcMagneticFluxDensityMeasure; }
 IfcMagneticFluxDensityMeasure::IfcMagneticFluxDensityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMagneticFluxDensityMeasure::IfcMagneticFluxDensityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMagneticFluxDensityMeasure::IfcMagneticFluxDensityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMagneticFluxDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMagneticFluxMeasure
@@ -6443,7 +6443,7 @@ bool IfcMagneticFluxMeasure::is(Type::Enum v) const { return v == IfcMagneticFlu
 Type::Enum IfcMagneticFluxMeasure::type() const { return Type::IfcMagneticFluxMeasure; }
 Type::Enum IfcMagneticFluxMeasure::Class() { return Type::IfcMagneticFluxMeasure; }
 IfcMagneticFluxMeasure::IfcMagneticFluxMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMagneticFluxMeasure::IfcMagneticFluxMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMagneticFluxMeasure::IfcMagneticFluxMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMagneticFluxMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassDensityMeasure
@@ -6453,7 +6453,7 @@ bool IfcMassDensityMeasure::is(Type::Enum v) const { return v == IfcMassDensityM
 Type::Enum IfcMassDensityMeasure::type() const { return Type::IfcMassDensityMeasure; }
 Type::Enum IfcMassDensityMeasure::Class() { return Type::IfcMassDensityMeasure; }
 IfcMassDensityMeasure::IfcMassDensityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMassDensityMeasure::IfcMassDensityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMassDensityMeasure::IfcMassDensityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMassDensityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassFlowRateMeasure
@@ -6463,7 +6463,7 @@ bool IfcMassFlowRateMeasure::is(Type::Enum v) const { return v == IfcMassFlowRat
 Type::Enum IfcMassFlowRateMeasure::type() const { return Type::IfcMassFlowRateMeasure; }
 Type::Enum IfcMassFlowRateMeasure::Class() { return Type::IfcMassFlowRateMeasure; }
 IfcMassFlowRateMeasure::IfcMassFlowRateMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMassFlowRateMeasure::IfcMassFlowRateMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMassFlowRateMeasure::IfcMassFlowRateMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMassFlowRateMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassMeasure
@@ -6473,7 +6473,7 @@ bool IfcMassMeasure::is(Type::Enum v) const { return v == IfcMassMeasure::Class(
 Type::Enum IfcMassMeasure::type() const { return Type::IfcMassMeasure; }
 Type::Enum IfcMassMeasure::Class() { return Type::IfcMassMeasure; }
 IfcMassMeasure::IfcMassMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMassMeasure::IfcMassMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMassMeasure::IfcMassMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMassMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMassPerLengthMeasure
@@ -6483,7 +6483,7 @@ bool IfcMassPerLengthMeasure::is(Type::Enum v) const { return v == IfcMassPerLen
 Type::Enum IfcMassPerLengthMeasure::type() const { return Type::IfcMassPerLengthMeasure; }
 Type::Enum IfcMassPerLengthMeasure::Class() { return Type::IfcMassPerLengthMeasure; }
 IfcMassPerLengthMeasure::IfcMassPerLengthMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMassPerLengthMeasure::IfcMassPerLengthMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMassPerLengthMeasure::IfcMassPerLengthMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMassPerLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfElasticityMeasure
@@ -6493,7 +6493,7 @@ bool IfcModulusOfElasticityMeasure::is(Type::Enum v) const { return v == IfcModu
 Type::Enum IfcModulusOfElasticityMeasure::type() const { return Type::IfcModulusOfElasticityMeasure; }
 Type::Enum IfcModulusOfElasticityMeasure::Class() { return Type::IfcModulusOfElasticityMeasure; }
 IfcModulusOfElasticityMeasure::IfcModulusOfElasticityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcModulusOfElasticityMeasure::IfcModulusOfElasticityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcModulusOfElasticityMeasure::IfcModulusOfElasticityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcModulusOfElasticityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfLinearSubgradeReactionMeasure
@@ -6503,7 +6503,7 @@ bool IfcModulusOfLinearSubgradeReactionMeasure::is(Type::Enum v) const { return 
 Type::Enum IfcModulusOfLinearSubgradeReactionMeasure::type() const { return Type::IfcModulusOfLinearSubgradeReactionMeasure; }
 Type::Enum IfcModulusOfLinearSubgradeReactionMeasure::Class() { return Type::IfcModulusOfLinearSubgradeReactionMeasure; }
 IfcModulusOfLinearSubgradeReactionMeasure::IfcModulusOfLinearSubgradeReactionMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcModulusOfLinearSubgradeReactionMeasure::IfcModulusOfLinearSubgradeReactionMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcModulusOfLinearSubgradeReactionMeasure::IfcModulusOfLinearSubgradeReactionMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcModulusOfLinearSubgradeReactionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfRotationalSubgradeReactionMeasure
@@ -6513,7 +6513,7 @@ bool IfcModulusOfRotationalSubgradeReactionMeasure::is(Type::Enum v) const { ret
 Type::Enum IfcModulusOfRotationalSubgradeReactionMeasure::type() const { return Type::IfcModulusOfRotationalSubgradeReactionMeasure; }
 Type::Enum IfcModulusOfRotationalSubgradeReactionMeasure::Class() { return Type::IfcModulusOfRotationalSubgradeReactionMeasure; }
 IfcModulusOfRotationalSubgradeReactionMeasure::IfcModulusOfRotationalSubgradeReactionMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcModulusOfRotationalSubgradeReactionMeasure::IfcModulusOfRotationalSubgradeReactionMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcModulusOfRotationalSubgradeReactionMeasure::IfcModulusOfRotationalSubgradeReactionMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcModulusOfRotationalSubgradeReactionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcModulusOfSubgradeReactionMeasure
@@ -6523,7 +6523,7 @@ bool IfcModulusOfSubgradeReactionMeasure::is(Type::Enum v) const { return v == I
 Type::Enum IfcModulusOfSubgradeReactionMeasure::type() const { return Type::IfcModulusOfSubgradeReactionMeasure; }
 Type::Enum IfcModulusOfSubgradeReactionMeasure::Class() { return Type::IfcModulusOfSubgradeReactionMeasure; }
 IfcModulusOfSubgradeReactionMeasure::IfcModulusOfSubgradeReactionMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcModulusOfSubgradeReactionMeasure::IfcModulusOfSubgradeReactionMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcModulusOfSubgradeReactionMeasure::IfcModulusOfSubgradeReactionMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcModulusOfSubgradeReactionMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMoistureDiffusivityMeasure
@@ -6533,7 +6533,7 @@ bool IfcMoistureDiffusivityMeasure::is(Type::Enum v) const { return v == IfcMois
 Type::Enum IfcMoistureDiffusivityMeasure::type() const { return Type::IfcMoistureDiffusivityMeasure; }
 Type::Enum IfcMoistureDiffusivityMeasure::Class() { return Type::IfcMoistureDiffusivityMeasure; }
 IfcMoistureDiffusivityMeasure::IfcMoistureDiffusivityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMoistureDiffusivityMeasure::IfcMoistureDiffusivityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMoistureDiffusivityMeasure::IfcMoistureDiffusivityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMoistureDiffusivityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMolecularWeightMeasure
@@ -6543,7 +6543,7 @@ bool IfcMolecularWeightMeasure::is(Type::Enum v) const { return v == IfcMolecula
 Type::Enum IfcMolecularWeightMeasure::type() const { return Type::IfcMolecularWeightMeasure; }
 Type::Enum IfcMolecularWeightMeasure::Class() { return Type::IfcMolecularWeightMeasure; }
 IfcMolecularWeightMeasure::IfcMolecularWeightMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMolecularWeightMeasure::IfcMolecularWeightMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMolecularWeightMeasure::IfcMolecularWeightMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMolecularWeightMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMomentOfInertiaMeasure
@@ -6553,7 +6553,7 @@ bool IfcMomentOfInertiaMeasure::is(Type::Enum v) const { return v == IfcMomentOf
 Type::Enum IfcMomentOfInertiaMeasure::type() const { return Type::IfcMomentOfInertiaMeasure; }
 Type::Enum IfcMomentOfInertiaMeasure::Class() { return Type::IfcMomentOfInertiaMeasure; }
 IfcMomentOfInertiaMeasure::IfcMomentOfInertiaMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMomentOfInertiaMeasure::IfcMomentOfInertiaMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMomentOfInertiaMeasure::IfcMomentOfInertiaMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMomentOfInertiaMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMonetaryMeasure
@@ -6563,7 +6563,7 @@ bool IfcMonetaryMeasure::is(Type::Enum v) const { return v == IfcMonetaryMeasure
 Type::Enum IfcMonetaryMeasure::type() const { return Type::IfcMonetaryMeasure; }
 Type::Enum IfcMonetaryMeasure::Class() { return Type::IfcMonetaryMeasure; }
 IfcMonetaryMeasure::IfcMonetaryMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcMonetaryMeasure::IfcMonetaryMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMonetaryMeasure::IfcMonetaryMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMonetaryMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcMonthInYearNumber
@@ -6573,7 +6573,7 @@ bool IfcMonthInYearNumber::is(Type::Enum v) const { return v == IfcMonthInYearNu
 Type::Enum IfcMonthInYearNumber::type() const { return Type::IfcMonthInYearNumber; }
 Type::Enum IfcMonthInYearNumber::Class() { return Type::IfcMonthInYearNumber; }
 IfcMonthInYearNumber::IfcMonthInYearNumber(IfcEntityInstanceData* e) { entity = e; }
-IfcMonthInYearNumber::IfcMonthInYearNumber(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcMonthInYearNumber::IfcMonthInYearNumber(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcMonthInYearNumber::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcNonNegativeLengthMeasure
@@ -6583,7 +6583,7 @@ bool IfcNonNegativeLengthMeasure::is(Type::Enum v) const { return v == Type::Ifc
 Type::Enum IfcNonNegativeLengthMeasure::type() const { return Type::IfcNonNegativeLengthMeasure; }
 Type::Enum IfcNonNegativeLengthMeasure::Class() { return Type::IfcNonNegativeLengthMeasure; }
 IfcNonNegativeLengthMeasure::IfcNonNegativeLengthMeasure(IfcEntityInstanceData* e) : IfcLengthMeasure((IfcEntityInstanceData*)0) { entity = e; }
-IfcNonNegativeLengthMeasure::IfcNonNegativeLengthMeasure(double v) : IfcLengthMeasure((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcNonNegativeLengthMeasure::IfcNonNegativeLengthMeasure(double v) : IfcLengthMeasure((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcNonNegativeLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcNormalisedRatioMeasure
@@ -6593,7 +6593,7 @@ bool IfcNormalisedRatioMeasure::is(Type::Enum v) const { return v == Type::IfcNo
 Type::Enum IfcNormalisedRatioMeasure::type() const { return Type::IfcNormalisedRatioMeasure; }
 Type::Enum IfcNormalisedRatioMeasure::Class() { return Type::IfcNormalisedRatioMeasure; }
 IfcNormalisedRatioMeasure::IfcNormalisedRatioMeasure(IfcEntityInstanceData* e) : IfcRatioMeasure((IfcEntityInstanceData*)0) { entity = e; }
-IfcNormalisedRatioMeasure::IfcNormalisedRatioMeasure(double v) : IfcRatioMeasure((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcNormalisedRatioMeasure::IfcNormalisedRatioMeasure(double v) : IfcRatioMeasure((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcNormalisedRatioMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcNumericMeasure
@@ -6603,7 +6603,7 @@ bool IfcNumericMeasure::is(Type::Enum v) const { return v == IfcNumericMeasure::
 Type::Enum IfcNumericMeasure::type() const { return Type::IfcNumericMeasure; }
 Type::Enum IfcNumericMeasure::Class() { return Type::IfcNumericMeasure; }
 IfcNumericMeasure::IfcNumericMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcNumericMeasure::IfcNumericMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcNumericMeasure::IfcNumericMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcNumericMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPHMeasure
@@ -6613,7 +6613,7 @@ bool IfcPHMeasure::is(Type::Enum v) const { return v == IfcPHMeasure::Class(); }
 Type::Enum IfcPHMeasure::type() const { return Type::IfcPHMeasure; }
 Type::Enum IfcPHMeasure::Class() { return Type::IfcPHMeasure; }
 IfcPHMeasure::IfcPHMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcPHMeasure::IfcPHMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPHMeasure::IfcPHMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPHMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcParameterValue
@@ -6623,7 +6623,7 @@ bool IfcParameterValue::is(Type::Enum v) const { return v == IfcParameterValue::
 Type::Enum IfcParameterValue::type() const { return Type::IfcParameterValue; }
 Type::Enum IfcParameterValue::Class() { return Type::IfcParameterValue; }
 IfcParameterValue::IfcParameterValue(IfcEntityInstanceData* e) { entity = e; }
-IfcParameterValue::IfcParameterValue(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcParameterValue::IfcParameterValue(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcParameterValue::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPlanarForceMeasure
@@ -6633,7 +6633,7 @@ bool IfcPlanarForceMeasure::is(Type::Enum v) const { return v == IfcPlanarForceM
 Type::Enum IfcPlanarForceMeasure::type() const { return Type::IfcPlanarForceMeasure; }
 Type::Enum IfcPlanarForceMeasure::Class() { return Type::IfcPlanarForceMeasure; }
 IfcPlanarForceMeasure::IfcPlanarForceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcPlanarForceMeasure::IfcPlanarForceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPlanarForceMeasure::IfcPlanarForceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPlanarForceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPlaneAngleMeasure
@@ -6643,7 +6643,7 @@ bool IfcPlaneAngleMeasure::is(Type::Enum v) const { return v == IfcPlaneAngleMea
 Type::Enum IfcPlaneAngleMeasure::type() const { return Type::IfcPlaneAngleMeasure; }
 Type::Enum IfcPlaneAngleMeasure::Class() { return Type::IfcPlaneAngleMeasure; }
 IfcPlaneAngleMeasure::IfcPlaneAngleMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcPlaneAngleMeasure::IfcPlaneAngleMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPlaneAngleMeasure::IfcPlaneAngleMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPlaneAngleMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositiveInteger
@@ -6653,7 +6653,7 @@ bool IfcPositiveInteger::is(Type::Enum v) const { return v == Type::IfcPositiveI
 Type::Enum IfcPositiveInteger::type() const { return Type::IfcPositiveInteger; }
 Type::Enum IfcPositiveInteger::Class() { return Type::IfcPositiveInteger; }
 IfcPositiveInteger::IfcPositiveInteger(IfcEntityInstanceData* e) : IfcInteger((IfcEntityInstanceData*)0) { entity = e; }
-IfcPositiveInteger::IfcPositiveInteger(int v) : IfcInteger((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPositiveInteger::IfcPositiveInteger(int v) : IfcInteger((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPositiveInteger::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositiveLengthMeasure
@@ -6663,7 +6663,7 @@ bool IfcPositiveLengthMeasure::is(Type::Enum v) const { return v == Type::IfcPos
 Type::Enum IfcPositiveLengthMeasure::type() const { return Type::IfcPositiveLengthMeasure; }
 Type::Enum IfcPositiveLengthMeasure::Class() { return Type::IfcPositiveLengthMeasure; }
 IfcPositiveLengthMeasure::IfcPositiveLengthMeasure(IfcEntityInstanceData* e) : IfcLengthMeasure((IfcEntityInstanceData*)0) { entity = e; }
-IfcPositiveLengthMeasure::IfcPositiveLengthMeasure(double v) : IfcLengthMeasure((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPositiveLengthMeasure::IfcPositiveLengthMeasure(double v) : IfcLengthMeasure((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPositiveLengthMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositivePlaneAngleMeasure
@@ -6673,7 +6673,7 @@ bool IfcPositivePlaneAngleMeasure::is(Type::Enum v) const { return v == Type::If
 Type::Enum IfcPositivePlaneAngleMeasure::type() const { return Type::IfcPositivePlaneAngleMeasure; }
 Type::Enum IfcPositivePlaneAngleMeasure::Class() { return Type::IfcPositivePlaneAngleMeasure; }
 IfcPositivePlaneAngleMeasure::IfcPositivePlaneAngleMeasure(IfcEntityInstanceData* e) : IfcPlaneAngleMeasure((IfcEntityInstanceData*)0) { entity = e; }
-IfcPositivePlaneAngleMeasure::IfcPositivePlaneAngleMeasure(double v) : IfcPlaneAngleMeasure((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPositivePlaneAngleMeasure::IfcPositivePlaneAngleMeasure(double v) : IfcPlaneAngleMeasure((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPositivePlaneAngleMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPositiveRatioMeasure
@@ -6683,7 +6683,7 @@ bool IfcPositiveRatioMeasure::is(Type::Enum v) const { return v == Type::IfcPosi
 Type::Enum IfcPositiveRatioMeasure::type() const { return Type::IfcPositiveRatioMeasure; }
 Type::Enum IfcPositiveRatioMeasure::Class() { return Type::IfcPositiveRatioMeasure; }
 IfcPositiveRatioMeasure::IfcPositiveRatioMeasure(IfcEntityInstanceData* e) : IfcRatioMeasure((IfcEntityInstanceData*)0) { entity = e; }
-IfcPositiveRatioMeasure::IfcPositiveRatioMeasure(double v) : IfcRatioMeasure((IfcEntityInstanceData*)0) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPositiveRatioMeasure::IfcPositiveRatioMeasure(double v) : IfcRatioMeasure((IfcEntityInstanceData*)0) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPositiveRatioMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPowerMeasure
@@ -6693,7 +6693,7 @@ bool IfcPowerMeasure::is(Type::Enum v) const { return v == IfcPowerMeasure::Clas
 Type::Enum IfcPowerMeasure::type() const { return Type::IfcPowerMeasure; }
 Type::Enum IfcPowerMeasure::Class() { return Type::IfcPowerMeasure; }
 IfcPowerMeasure::IfcPowerMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcPowerMeasure::IfcPowerMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPowerMeasure::IfcPowerMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPowerMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPresentableText
@@ -6703,7 +6703,7 @@ bool IfcPresentableText::is(Type::Enum v) const { return v == IfcPresentableText
 Type::Enum IfcPresentableText::type() const { return Type::IfcPresentableText; }
 Type::Enum IfcPresentableText::Class() { return Type::IfcPresentableText; }
 IfcPresentableText::IfcPresentableText(IfcEntityInstanceData* e) { entity = e; }
-IfcPresentableText::IfcPresentableText(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPresentableText::IfcPresentableText(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPresentableText::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPressureMeasure
@@ -6713,7 +6713,7 @@ bool IfcPressureMeasure::is(Type::Enum v) const { return v == IfcPressureMeasure
 Type::Enum IfcPressureMeasure::type() const { return Type::IfcPressureMeasure; }
 Type::Enum IfcPressureMeasure::Class() { return Type::IfcPressureMeasure; }
 IfcPressureMeasure::IfcPressureMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcPressureMeasure::IfcPressureMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcPressureMeasure::IfcPressureMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcPressureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcPropertySetDefinitionSet
@@ -6723,7 +6723,7 @@ bool IfcPropertySetDefinitionSet::is(Type::Enum v) const { return v == IfcProper
 Type::Enum IfcPropertySetDefinitionSet::type() const { return Type::IfcPropertySetDefinitionSet; }
 Type::Enum IfcPropertySetDefinitionSet::Class() { return Type::IfcPropertySetDefinitionSet; }
 IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcEntityInstanceData* e) { entity = e; }
-IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); entity->setArgument(0, attr);} }
+IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); entity->setArgument(0, attr);} }
 IfcPropertySetDefinitionSet::operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const { IfcEntityList::ptr es = *entity->getArgument(0); return es->as<IfcPropertySetDefinition>(); }
 
 // Function implementations for IfcRadioActivityMeasure
@@ -6733,7 +6733,7 @@ bool IfcRadioActivityMeasure::is(Type::Enum v) const { return v == IfcRadioActiv
 Type::Enum IfcRadioActivityMeasure::type() const { return Type::IfcRadioActivityMeasure; }
 Type::Enum IfcRadioActivityMeasure::Class() { return Type::IfcRadioActivityMeasure; }
 IfcRadioActivityMeasure::IfcRadioActivityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcRadioActivityMeasure::IfcRadioActivityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcRadioActivityMeasure::IfcRadioActivityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcRadioActivityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRatioMeasure
@@ -6743,7 +6743,7 @@ bool IfcRatioMeasure::is(Type::Enum v) const { return v == IfcRatioMeasure::Clas
 Type::Enum IfcRatioMeasure::type() const { return Type::IfcRatioMeasure; }
 Type::Enum IfcRatioMeasure::Class() { return Type::IfcRatioMeasure; }
 IfcRatioMeasure::IfcRatioMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcRatioMeasure::IfcRatioMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcRatioMeasure::IfcRatioMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcRatioMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcReal
@@ -6753,7 +6753,7 @@ bool IfcReal::is(Type::Enum v) const { return v == IfcReal::Class(); }
 Type::Enum IfcReal::type() const { return Type::IfcReal; }
 Type::Enum IfcReal::Class() { return Type::IfcReal; }
 IfcReal::IfcReal(IfcEntityInstanceData* e) { entity = e; }
-IfcReal::IfcReal(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcReal::IfcReal(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcReal::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRotationalFrequencyMeasure
@@ -6763,7 +6763,7 @@ bool IfcRotationalFrequencyMeasure::is(Type::Enum v) const { return v == IfcRota
 Type::Enum IfcRotationalFrequencyMeasure::type() const { return Type::IfcRotationalFrequencyMeasure; }
 Type::Enum IfcRotationalFrequencyMeasure::Class() { return Type::IfcRotationalFrequencyMeasure; }
 IfcRotationalFrequencyMeasure::IfcRotationalFrequencyMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcRotationalFrequencyMeasure::IfcRotationalFrequencyMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcRotationalFrequencyMeasure::IfcRotationalFrequencyMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcRotationalFrequencyMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRotationalMassMeasure
@@ -6773,7 +6773,7 @@ bool IfcRotationalMassMeasure::is(Type::Enum v) const { return v == IfcRotationa
 Type::Enum IfcRotationalMassMeasure::type() const { return Type::IfcRotationalMassMeasure; }
 Type::Enum IfcRotationalMassMeasure::Class() { return Type::IfcRotationalMassMeasure; }
 IfcRotationalMassMeasure::IfcRotationalMassMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcRotationalMassMeasure::IfcRotationalMassMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcRotationalMassMeasure::IfcRotationalMassMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcRotationalMassMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcRotationalStiffnessMeasure
@@ -6783,7 +6783,7 @@ bool IfcRotationalStiffnessMeasure::is(Type::Enum v) const { return v == IfcRota
 Type::Enum IfcRotationalStiffnessMeasure::type() const { return Type::IfcRotationalStiffnessMeasure; }
 Type::Enum IfcRotationalStiffnessMeasure::Class() { return Type::IfcRotationalStiffnessMeasure; }
 IfcRotationalStiffnessMeasure::IfcRotationalStiffnessMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcRotationalStiffnessMeasure::IfcRotationalStiffnessMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcRotationalStiffnessMeasure::IfcRotationalStiffnessMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcRotationalStiffnessMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSectionModulusMeasure
@@ -6793,7 +6793,7 @@ bool IfcSectionModulusMeasure::is(Type::Enum v) const { return v == IfcSectionMo
 Type::Enum IfcSectionModulusMeasure::type() const { return Type::IfcSectionModulusMeasure; }
 Type::Enum IfcSectionModulusMeasure::Class() { return Type::IfcSectionModulusMeasure; }
 IfcSectionModulusMeasure::IfcSectionModulusMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSectionModulusMeasure::IfcSectionModulusMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSectionModulusMeasure::IfcSectionModulusMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSectionModulusMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSectionalAreaIntegralMeasure
@@ -6803,7 +6803,7 @@ bool IfcSectionalAreaIntegralMeasure::is(Type::Enum v) const { return v == IfcSe
 Type::Enum IfcSectionalAreaIntegralMeasure::type() const { return Type::IfcSectionalAreaIntegralMeasure; }
 Type::Enum IfcSectionalAreaIntegralMeasure::Class() { return Type::IfcSectionalAreaIntegralMeasure; }
 IfcSectionalAreaIntegralMeasure::IfcSectionalAreaIntegralMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSectionalAreaIntegralMeasure::IfcSectionalAreaIntegralMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSectionalAreaIntegralMeasure::IfcSectionalAreaIntegralMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSectionalAreaIntegralMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcShearModulusMeasure
@@ -6813,7 +6813,7 @@ bool IfcShearModulusMeasure::is(Type::Enum v) const { return v == IfcShearModulu
 Type::Enum IfcShearModulusMeasure::type() const { return Type::IfcShearModulusMeasure; }
 Type::Enum IfcShearModulusMeasure::Class() { return Type::IfcShearModulusMeasure; }
 IfcShearModulusMeasure::IfcShearModulusMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcShearModulusMeasure::IfcShearModulusMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcShearModulusMeasure::IfcShearModulusMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcShearModulusMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSolidAngleMeasure
@@ -6823,7 +6823,7 @@ bool IfcSolidAngleMeasure::is(Type::Enum v) const { return v == IfcSolidAngleMea
 Type::Enum IfcSolidAngleMeasure::type() const { return Type::IfcSolidAngleMeasure; }
 Type::Enum IfcSolidAngleMeasure::Class() { return Type::IfcSolidAngleMeasure; }
 IfcSolidAngleMeasure::IfcSolidAngleMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSolidAngleMeasure::IfcSolidAngleMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSolidAngleMeasure::IfcSolidAngleMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSolidAngleMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPowerLevelMeasure
@@ -6833,7 +6833,7 @@ bool IfcSoundPowerLevelMeasure::is(Type::Enum v) const { return v == IfcSoundPow
 Type::Enum IfcSoundPowerLevelMeasure::type() const { return Type::IfcSoundPowerLevelMeasure; }
 Type::Enum IfcSoundPowerLevelMeasure::Class() { return Type::IfcSoundPowerLevelMeasure; }
 IfcSoundPowerLevelMeasure::IfcSoundPowerLevelMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSoundPowerLevelMeasure::IfcSoundPowerLevelMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSoundPowerLevelMeasure::IfcSoundPowerLevelMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSoundPowerLevelMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPowerMeasure
@@ -6843,7 +6843,7 @@ bool IfcSoundPowerMeasure::is(Type::Enum v) const { return v == IfcSoundPowerMea
 Type::Enum IfcSoundPowerMeasure::type() const { return Type::IfcSoundPowerMeasure; }
 Type::Enum IfcSoundPowerMeasure::Class() { return Type::IfcSoundPowerMeasure; }
 IfcSoundPowerMeasure::IfcSoundPowerMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSoundPowerMeasure::IfcSoundPowerMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSoundPowerMeasure::IfcSoundPowerMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSoundPowerMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPressureLevelMeasure
@@ -6853,7 +6853,7 @@ bool IfcSoundPressureLevelMeasure::is(Type::Enum v) const { return v == IfcSound
 Type::Enum IfcSoundPressureLevelMeasure::type() const { return Type::IfcSoundPressureLevelMeasure; }
 Type::Enum IfcSoundPressureLevelMeasure::Class() { return Type::IfcSoundPressureLevelMeasure; }
 IfcSoundPressureLevelMeasure::IfcSoundPressureLevelMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSoundPressureLevelMeasure::IfcSoundPressureLevelMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSoundPressureLevelMeasure::IfcSoundPressureLevelMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSoundPressureLevelMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSoundPressureMeasure
@@ -6863,7 +6863,7 @@ bool IfcSoundPressureMeasure::is(Type::Enum v) const { return v == IfcSoundPress
 Type::Enum IfcSoundPressureMeasure::type() const { return Type::IfcSoundPressureMeasure; }
 Type::Enum IfcSoundPressureMeasure::Class() { return Type::IfcSoundPressureMeasure; }
 IfcSoundPressureMeasure::IfcSoundPressureMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSoundPressureMeasure::IfcSoundPressureMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSoundPressureMeasure::IfcSoundPressureMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSoundPressureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSpecificHeatCapacityMeasure
@@ -6873,7 +6873,7 @@ bool IfcSpecificHeatCapacityMeasure::is(Type::Enum v) const { return v == IfcSpe
 Type::Enum IfcSpecificHeatCapacityMeasure::type() const { return Type::IfcSpecificHeatCapacityMeasure; }
 Type::Enum IfcSpecificHeatCapacityMeasure::Class() { return Type::IfcSpecificHeatCapacityMeasure; }
 IfcSpecificHeatCapacityMeasure::IfcSpecificHeatCapacityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcSpecificHeatCapacityMeasure::IfcSpecificHeatCapacityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSpecificHeatCapacityMeasure::IfcSpecificHeatCapacityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSpecificHeatCapacityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSpecularExponent
@@ -6883,7 +6883,7 @@ bool IfcSpecularExponent::is(Type::Enum v) const { return v == IfcSpecularExpone
 Type::Enum IfcSpecularExponent::type() const { return Type::IfcSpecularExponent; }
 Type::Enum IfcSpecularExponent::Class() { return Type::IfcSpecularExponent; }
 IfcSpecularExponent::IfcSpecularExponent(IfcEntityInstanceData* e) { entity = e; }
-IfcSpecularExponent::IfcSpecularExponent(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSpecularExponent::IfcSpecularExponent(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSpecularExponent::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcSpecularRoughness
@@ -6893,7 +6893,7 @@ bool IfcSpecularRoughness::is(Type::Enum v) const { return v == IfcSpecularRough
 Type::Enum IfcSpecularRoughness::type() const { return Type::IfcSpecularRoughness; }
 Type::Enum IfcSpecularRoughness::Class() { return Type::IfcSpecularRoughness; }
 IfcSpecularRoughness::IfcSpecularRoughness(IfcEntityInstanceData* e) { entity = e; }
-IfcSpecularRoughness::IfcSpecularRoughness(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcSpecularRoughness::IfcSpecularRoughness(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcSpecularRoughness::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcStrippedOptional
@@ -6903,7 +6903,7 @@ bool IfcStrippedOptional::is(Type::Enum v) const { return v == IfcStrippedOption
 Type::Enum IfcStrippedOptional::type() const { return Type::IfcStrippedOptional; }
 Type::Enum IfcStrippedOptional::Class() { return Type::IfcStrippedOptional; }
 IfcStrippedOptional::IfcStrippedOptional(IfcEntityInstanceData* e) { entity = e; }
-IfcStrippedOptional::IfcStrippedOptional(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcStrippedOptional::IfcStrippedOptional(bool v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcStrippedOptional::operator bool() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTemperatureGradientMeasure
@@ -6913,7 +6913,7 @@ bool IfcTemperatureGradientMeasure::is(Type::Enum v) const { return v == IfcTemp
 Type::Enum IfcTemperatureGradientMeasure::type() const { return Type::IfcTemperatureGradientMeasure; }
 Type::Enum IfcTemperatureGradientMeasure::Class() { return Type::IfcTemperatureGradientMeasure; }
 IfcTemperatureGradientMeasure::IfcTemperatureGradientMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcTemperatureGradientMeasure::IfcTemperatureGradientMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTemperatureGradientMeasure::IfcTemperatureGradientMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTemperatureGradientMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTemperatureRateOfChangeMeasure
@@ -6923,7 +6923,7 @@ bool IfcTemperatureRateOfChangeMeasure::is(Type::Enum v) const { return v == Ifc
 Type::Enum IfcTemperatureRateOfChangeMeasure::type() const { return Type::IfcTemperatureRateOfChangeMeasure; }
 Type::Enum IfcTemperatureRateOfChangeMeasure::Class() { return Type::IfcTemperatureRateOfChangeMeasure; }
 IfcTemperatureRateOfChangeMeasure::IfcTemperatureRateOfChangeMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcTemperatureRateOfChangeMeasure::IfcTemperatureRateOfChangeMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTemperatureRateOfChangeMeasure::IfcTemperatureRateOfChangeMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTemperatureRateOfChangeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcText
@@ -6933,7 +6933,7 @@ bool IfcText::is(Type::Enum v) const { return v == IfcText::Class(); }
 Type::Enum IfcText::type() const { return Type::IfcText; }
 Type::Enum IfcText::Class() { return Type::IfcText; }
 IfcText::IfcText(IfcEntityInstanceData* e) { entity = e; }
-IfcText::IfcText(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcText::IfcText(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcText::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextAlignment
@@ -6943,7 +6943,7 @@ bool IfcTextAlignment::is(Type::Enum v) const { return v == IfcTextAlignment::Cl
 Type::Enum IfcTextAlignment::type() const { return Type::IfcTextAlignment; }
 Type::Enum IfcTextAlignment::Class() { return Type::IfcTextAlignment; }
 IfcTextAlignment::IfcTextAlignment(IfcEntityInstanceData* e) { entity = e; }
-IfcTextAlignment::IfcTextAlignment(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTextAlignment::IfcTextAlignment(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTextAlignment::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextDecoration
@@ -6953,7 +6953,7 @@ bool IfcTextDecoration::is(Type::Enum v) const { return v == IfcTextDecoration::
 Type::Enum IfcTextDecoration::type() const { return Type::IfcTextDecoration; }
 Type::Enum IfcTextDecoration::Class() { return Type::IfcTextDecoration; }
 IfcTextDecoration::IfcTextDecoration(IfcEntityInstanceData* e) { entity = e; }
-IfcTextDecoration::IfcTextDecoration(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTextDecoration::IfcTextDecoration(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTextDecoration::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextFontName
@@ -6963,7 +6963,7 @@ bool IfcTextFontName::is(Type::Enum v) const { return v == IfcTextFontName::Clas
 Type::Enum IfcTextFontName::type() const { return Type::IfcTextFontName; }
 Type::Enum IfcTextFontName::Class() { return Type::IfcTextFontName; }
 IfcTextFontName::IfcTextFontName(IfcEntityInstanceData* e) { entity = e; }
-IfcTextFontName::IfcTextFontName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTextFontName::IfcTextFontName(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTextFontName::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTextTransformation
@@ -6973,7 +6973,7 @@ bool IfcTextTransformation::is(Type::Enum v) const { return v == IfcTextTransfor
 Type::Enum IfcTextTransformation::type() const { return Type::IfcTextTransformation; }
 Type::Enum IfcTextTransformation::Class() { return Type::IfcTextTransformation; }
 IfcTextTransformation::IfcTextTransformation(IfcEntityInstanceData* e) { entity = e; }
-IfcTextTransformation::IfcTextTransformation(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTextTransformation::IfcTextTransformation(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTextTransformation::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalAdmittanceMeasure
@@ -6983,7 +6983,7 @@ bool IfcThermalAdmittanceMeasure::is(Type::Enum v) const { return v == IfcTherma
 Type::Enum IfcThermalAdmittanceMeasure::type() const { return Type::IfcThermalAdmittanceMeasure; }
 Type::Enum IfcThermalAdmittanceMeasure::Class() { return Type::IfcThermalAdmittanceMeasure; }
 IfcThermalAdmittanceMeasure::IfcThermalAdmittanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcThermalAdmittanceMeasure::IfcThermalAdmittanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcThermalAdmittanceMeasure::IfcThermalAdmittanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcThermalAdmittanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalConductivityMeasure
@@ -6993,7 +6993,7 @@ bool IfcThermalConductivityMeasure::is(Type::Enum v) const { return v == IfcTher
 Type::Enum IfcThermalConductivityMeasure::type() const { return Type::IfcThermalConductivityMeasure; }
 Type::Enum IfcThermalConductivityMeasure::Class() { return Type::IfcThermalConductivityMeasure; }
 IfcThermalConductivityMeasure::IfcThermalConductivityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcThermalConductivityMeasure::IfcThermalConductivityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcThermalConductivityMeasure::IfcThermalConductivityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcThermalConductivityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalExpansionCoefficientMeasure
@@ -7003,7 +7003,7 @@ bool IfcThermalExpansionCoefficientMeasure::is(Type::Enum v) const { return v ==
 Type::Enum IfcThermalExpansionCoefficientMeasure::type() const { return Type::IfcThermalExpansionCoefficientMeasure; }
 Type::Enum IfcThermalExpansionCoefficientMeasure::Class() { return Type::IfcThermalExpansionCoefficientMeasure; }
 IfcThermalExpansionCoefficientMeasure::IfcThermalExpansionCoefficientMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcThermalExpansionCoefficientMeasure::IfcThermalExpansionCoefficientMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcThermalExpansionCoefficientMeasure::IfcThermalExpansionCoefficientMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcThermalExpansionCoefficientMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalResistanceMeasure
@@ -7013,7 +7013,7 @@ bool IfcThermalResistanceMeasure::is(Type::Enum v) const { return v == IfcTherma
 Type::Enum IfcThermalResistanceMeasure::type() const { return Type::IfcThermalResistanceMeasure; }
 Type::Enum IfcThermalResistanceMeasure::Class() { return Type::IfcThermalResistanceMeasure; }
 IfcThermalResistanceMeasure::IfcThermalResistanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcThermalResistanceMeasure::IfcThermalResistanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcThermalResistanceMeasure::IfcThermalResistanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcThermalResistanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermalTransmittanceMeasure
@@ -7023,7 +7023,7 @@ bool IfcThermalTransmittanceMeasure::is(Type::Enum v) const { return v == IfcThe
 Type::Enum IfcThermalTransmittanceMeasure::type() const { return Type::IfcThermalTransmittanceMeasure; }
 Type::Enum IfcThermalTransmittanceMeasure::Class() { return Type::IfcThermalTransmittanceMeasure; }
 IfcThermalTransmittanceMeasure::IfcThermalTransmittanceMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcThermalTransmittanceMeasure::IfcThermalTransmittanceMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcThermalTransmittanceMeasure::IfcThermalTransmittanceMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcThermalTransmittanceMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcThermodynamicTemperatureMeasure
@@ -7033,7 +7033,7 @@ bool IfcThermodynamicTemperatureMeasure::is(Type::Enum v) const { return v == If
 Type::Enum IfcThermodynamicTemperatureMeasure::type() const { return Type::IfcThermodynamicTemperatureMeasure; }
 Type::Enum IfcThermodynamicTemperatureMeasure::Class() { return Type::IfcThermodynamicTemperatureMeasure; }
 IfcThermodynamicTemperatureMeasure::IfcThermodynamicTemperatureMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcThermodynamicTemperatureMeasure::IfcThermodynamicTemperatureMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcThermodynamicTemperatureMeasure::IfcThermodynamicTemperatureMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcThermodynamicTemperatureMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTime
@@ -7043,7 +7043,7 @@ bool IfcTime::is(Type::Enum v) const { return v == IfcTime::Class(); }
 Type::Enum IfcTime::type() const { return Type::IfcTime; }
 Type::Enum IfcTime::Class() { return Type::IfcTime; }
 IfcTime::IfcTime(IfcEntityInstanceData* e) { entity = e; }
-IfcTime::IfcTime(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTime::IfcTime(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTime::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTimeMeasure
@@ -7053,7 +7053,7 @@ bool IfcTimeMeasure::is(Type::Enum v) const { return v == IfcTimeMeasure::Class(
 Type::Enum IfcTimeMeasure::type() const { return Type::IfcTimeMeasure; }
 Type::Enum IfcTimeMeasure::Class() { return Type::IfcTimeMeasure; }
 IfcTimeMeasure::IfcTimeMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcTimeMeasure::IfcTimeMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTimeMeasure::IfcTimeMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTimeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTimeStamp
@@ -7063,7 +7063,7 @@ bool IfcTimeStamp::is(Type::Enum v) const { return v == IfcTimeStamp::Class(); }
 Type::Enum IfcTimeStamp::type() const { return Type::IfcTimeStamp; }
 Type::Enum IfcTimeStamp::Class() { return Type::IfcTimeStamp; }
 IfcTimeStamp::IfcTimeStamp(IfcEntityInstanceData* e) { entity = e; }
-IfcTimeStamp::IfcTimeStamp(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTimeStamp::IfcTimeStamp(int v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTimeStamp::operator int() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcTorqueMeasure
@@ -7073,7 +7073,7 @@ bool IfcTorqueMeasure::is(Type::Enum v) const { return v == IfcTorqueMeasure::Cl
 Type::Enum IfcTorqueMeasure::type() const { return Type::IfcTorqueMeasure; }
 Type::Enum IfcTorqueMeasure::Class() { return Type::IfcTorqueMeasure; }
 IfcTorqueMeasure::IfcTorqueMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcTorqueMeasure::IfcTorqueMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcTorqueMeasure::IfcTorqueMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcTorqueMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcURIReference
@@ -7083,7 +7083,7 @@ bool IfcURIReference::is(Type::Enum v) const { return v == IfcURIReference::Clas
 Type::Enum IfcURIReference::type() const { return Type::IfcURIReference; }
 Type::Enum IfcURIReference::Class() { return Type::IfcURIReference; }
 IfcURIReference::IfcURIReference(IfcEntityInstanceData* e) { entity = e; }
-IfcURIReference::IfcURIReference(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcURIReference::IfcURIReference(std::string v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcURIReference::operator std::string() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcVaporPermeabilityMeasure
@@ -7093,7 +7093,7 @@ bool IfcVaporPermeabilityMeasure::is(Type::Enum v) const { return v == IfcVaporP
 Type::Enum IfcVaporPermeabilityMeasure::type() const { return Type::IfcVaporPermeabilityMeasure; }
 Type::Enum IfcVaporPermeabilityMeasure::Class() { return Type::IfcVaporPermeabilityMeasure; }
 IfcVaporPermeabilityMeasure::IfcVaporPermeabilityMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcVaporPermeabilityMeasure::IfcVaporPermeabilityMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcVaporPermeabilityMeasure::IfcVaporPermeabilityMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcVaporPermeabilityMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcVolumeMeasure
@@ -7103,7 +7103,7 @@ bool IfcVolumeMeasure::is(Type::Enum v) const { return v == IfcVolumeMeasure::Cl
 Type::Enum IfcVolumeMeasure::type() const { return Type::IfcVolumeMeasure; }
 Type::Enum IfcVolumeMeasure::Class() { return Type::IfcVolumeMeasure; }
 IfcVolumeMeasure::IfcVolumeMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcVolumeMeasure::IfcVolumeMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcVolumeMeasure::IfcVolumeMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcVolumeMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcVolumetricFlowRateMeasure
@@ -7113,7 +7113,7 @@ bool IfcVolumetricFlowRateMeasure::is(Type::Enum v) const { return v == IfcVolum
 Type::Enum IfcVolumetricFlowRateMeasure::type() const { return Type::IfcVolumetricFlowRateMeasure; }
 Type::Enum IfcVolumetricFlowRateMeasure::Class() { return Type::IfcVolumetricFlowRateMeasure; }
 IfcVolumetricFlowRateMeasure::IfcVolumetricFlowRateMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcVolumetricFlowRateMeasure::IfcVolumetricFlowRateMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcVolumetricFlowRateMeasure::IfcVolumetricFlowRateMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcVolumetricFlowRateMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcWarpingConstantMeasure
@@ -7123,7 +7123,7 @@ bool IfcWarpingConstantMeasure::is(Type::Enum v) const { return v == IfcWarpingC
 Type::Enum IfcWarpingConstantMeasure::type() const { return Type::IfcWarpingConstantMeasure; }
 Type::Enum IfcWarpingConstantMeasure::Class() { return Type::IfcWarpingConstantMeasure; }
 IfcWarpingConstantMeasure::IfcWarpingConstantMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcWarpingConstantMeasure::IfcWarpingConstantMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcWarpingConstantMeasure::IfcWarpingConstantMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcWarpingConstantMeasure::operator double() const { return *entity->getArgument(0); }
 
 // Function implementations for IfcWarpingMomentMeasure
@@ -7133,7 +7133,7 @@ bool IfcWarpingMomentMeasure::is(Type::Enum v) const { return v == IfcWarpingMom
 Type::Enum IfcWarpingMomentMeasure::type() const { return Type::IfcWarpingMomentMeasure; }
 Type::Enum IfcWarpingMomentMeasure::Class() { return Type::IfcWarpingMomentMeasure; }
 IfcWarpingMomentMeasure::IfcWarpingMomentMeasure(IfcEntityInstanceData* e) { entity = e; }
-IfcWarpingMomentMeasure::IfcWarpingMomentMeasure(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
+IfcWarpingMomentMeasure::IfcWarpingMomentMeasure(double v) { entity = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); entity->setArgument(0, attr);} }
 IfcWarpingMomentMeasure::operator double() const { return *entity->getArgument(0); }
 
 

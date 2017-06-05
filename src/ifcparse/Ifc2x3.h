@@ -102,20 +102,20 @@ typedef IfcUtil::IfcBaseClass IfcAxis2Placement;
 typedef IfcUtil::IfcBaseClass IfcBooleanOperand;
 /// The character style select allows for a selection of character styles for text. Currently only text color and background color is selectable.
 /// 
-/// NOTE Corresponding ISO 10303 name: character_style_select. Please refer to ISO/IS
+/// NOTE  Corresponding ISO 10303 name: character_style_select. Please refer to ISO/IS
 /// 10303-46:1994, p. 89 for the final definition of the formal standard.
 /// 
-/// HISTORY New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The SELECT item IfcTextStyleForDefinedFont replaces the old IfcColour.
+/// IFC2x3 CHANGE  The SELECT item IfcTextStyleForDefinedFont replaces the old IfcColour.
 typedef IfcUtil::IfcBaseClass IfcCharacterStyleSelect;
 
 typedef IfcUtil::IfcBaseClass IfcClassificationNotationSelect;
 /// Definition from ISO/CD 10303-46:1992: The colour entity defines a basic appearance of elements which shall be visualized in a picture.
 /// 
-/// NOTE Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+/// NOTE  Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 typedef IfcUtil::IfcBaseClass IfcColour;
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
@@ -143,7 +143,7 @@ typedef IfcUtil::IfcBaseClass IfcCurveFontOrScaledCurveFontSelect;
 /// IfcCurve
 ///   IfcEdgeCurve
 /// 
-/// HISTORY New select type in IFC2x Edition 3.
+/// HISTORY  New select type in IFC2x Edition 3.
 typedef IfcUtil::IfcBaseClass IfcCurveOrEdgeCurve;
 /// Definition from ISO/CD 10303-46:1992: The curve style font select is a selection of a curve style font or a predefined curve style font. 
 /// 
@@ -268,7 +268,7 @@ typedef IfcUtil::IfcBaseClass IfcFillStyleSelect;
 typedef IfcUtil::IfcBaseClass IfcGeometricSetSelect;
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
-/// HISTORY New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 typedef IfcUtil::IfcBaseClass IfcHatchLineDistanceSelect;
 /// Definition from ISO/CD 10303-46:1992: The layered things type selects those things, which can be grouped in layers. 
 /// 
@@ -364,17 +364,17 @@ typedef IfcUtil::IfcBaseClass IfcMeasureValue;
 typedef IfcUtil::IfcBaseClass IfcMetricValueSelect;
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
-/// HISTORY New select type in IFC Release 2.0.
+/// HISTORY  New select type in IFC Release 2.0.
 typedef IfcUtil::IfcBaseClass IfcObjectReferenceSelect;
 
 typedef IfcUtil::IfcBaseClass IfcOrientationSelect;
-/// IfcPointOrVertexPointprovides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
+/// IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
 /// SELECT 
 /// 
 /// IfcPoint, 
 ///   IfcVertexPoint
 /// 
-/// HISTORY New select type in IFC2x Edition 3.
+/// HISTORY  New select type in IFC2x Edition 3.
 typedef IfcUtil::IfcBaseClass IfcPointOrVertexPoint;
 /// Definition from ISO/CD 10303-46:1992: The presentation style select is a selection of one of many kinds of styles, a different one for each kind of geometric representation item to be styled.
 /// 
@@ -385,7 +385,7 @@ typedef IfcUtil::IfcBaseClass IfcPointOrVertexPoint;
 /// 
 /// IFC2x4 CHANGE The select type has been deprecated.
 typedef IfcUtil::IfcBaseClass IfcPresentationStyleSelect;
-/// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0  X < .  
+/// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
 /// A shell of dimensionality 0 is represented by a graph consisting of a single vertex. The vertex shall not have any associated edges. 
 /// A shell of dimensionality 1 is represented by a connected graph of dimensionality 1. 
@@ -393,9 +393,9 @@ typedef IfcUtil::IfcBaseClass IfcPresentationStyleSelect;
 /// 
 /// Shells of dimensionality 0 and 1 are not part of the current IFC release. 
 /// 
-/// NOTE Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
+/// NOTE  Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
 /// 
-/// HISTORY New type in IFC2x.
+/// HISTORY  New type in IFC2x.
 typedef IfcUtil::IfcBaseClass IfcShell;
 /// IfcSimpleValue is a select type for selecting between simple value types.
 /// 
@@ -421,14 +421,14 @@ typedef IfcUtil::IfcBaseClass IfcSimpleValue;
 /// 
 /// Definition from ISO: The size (or width) measure value is given in the global drawing length units.
 /// 
-/// NOTE global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
+/// NOTE  global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
 /// 
-/// NOTE Corresponding ISO 10303 name: size_select. Please refer to ISO/IS 10303-46:1994 for the final
+/// NOTE  Corresponding ISO 10303 name: size_select. Please refer to ISO/IS 10303-46:1994 for the final
 /// definition of the formal standard.
 /// 
-/// HISTORY New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
+/// IFC2x3 CHANGE  The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
 typedef IfcUtil::IfcBaseClass IfcSizeSelect;
 /// The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness. 
 /// 
@@ -459,7 +459,7 @@ typedef IfcUtil::IfcBaseClass IfcStructuralActivityAssignmentSelect;
 ///   IfcFaceSurface
 ///   IfcFaceBasedSurfaceModel (a connected face set, representing a faceted surface as an approximation of a non planar, non rectangular bounded surface)
 /// 
-/// HISTORY New select type in IFC2x3.
+/// HISTORY  New select type in IFC2x3.
 typedef IfcUtil::IfcBaseClass IfcSurfaceOrFaceSurface;
 /// Definition from ISO/CD 10303-46:1992: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface. 
 /// 
@@ -481,11 +481,11 @@ typedef IfcUtil::IfcBaseClass IfcSurfaceStyleElementSelect;
 typedef IfcUtil::IfcBaseClass IfcSymbolStyleSelect;
 /// IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
 /// 
-/// NOTE IfcTextFontSelect is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. Corresponding ISO 10303 name: font_select. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  IfcTextFontSelect is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. Corresponding ISO 10303 name: font_select. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORY New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The select type has been renamed from IfcFontSelect.
+/// IFC2x3 CHANGE  The select type has been renamed from IfcFontSelect.
 typedef IfcUtil::IfcBaseClass IfcTextFontSelect;
 /// The text style select allows for the selection of styles to be assigned to an annotated text. The text style determines the text model that affect the visual presentation of characters, spaces, words, and paragraphs. There are two choices:
 /// 
@@ -493,9 +493,9 @@ typedef IfcUtil::IfcBaseClass IfcTextFontSelect;
 ///   IfcTextStyleTextModel for definitions from Cascading
 /// Style Sheets, level 1, W3C Recommendation 17 Dec 1996, revised 11 Jan 1999, CSS1, for all true type text. The use of the CSS1 definitions is the preferred way to represent text styles.
 /// 
-/// HISTORY New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The items within the IfcTextStyleSelect have changed to IfcTextStyleWithBoxCharacteristics and IfcTextStyleTextModel.
+/// IFC2x3 CHANGE  The items within the IfcTextStyleSelect have changed to IfcTextStyleWithBoxCharacteristics and IfcTextStyleTextModel.
 typedef IfcUtil::IfcBaseClass IfcTextStyleSelect;
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve. 
 /// 
@@ -745,9 +745,9 @@ namespace IfcBSplineCurveForm {
 /// hyperbolic arc: An arc of finite length of one branch of a hyperbola represented by a B-spline curve.
 /// unspecified: A B-spline curve for which no particular form is specified.
 /// 
-/// NOTE Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
 /// 
-/// HISTORY New type in Release IFC2x2.
+/// HISTORY  New type in Release IFC2x2.
 typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} IfcBSplineCurveForm;
 IFC_PARSE_API const char* ToString(IfcBSplineCurveForm v);
 IFC_PARSE_API IfcBSplineCurveForm FromString(const std::string& s);
@@ -768,7 +768,7 @@ namespace IfcBeamTypeEnum {
 /// exterior of the building. Can be used to support joists or slab
 /// elements on its interior side.
 /// 
-/// NOTE They are also referred to as "spandrel
+/// NOTE  They are also referred to as "spandrel
 /// panels", which are parts of a facade and sometimes have
 /// supporting consoles for floor slabs
 /// integrated.
@@ -778,7 +778,7 @@ namespace IfcBeamTypeEnum {
 /// often of T-shape (therefore the English name), but may have other
 /// shapes as well, e.g. an L-Shape or an Inverted-T-Shape.
 /// 
-/// NOTE In order to distinguish beams by shape,
+/// NOTE  In order to distinguish beams by shape,
 /// the assigned IfcProfileDef subtypes provide the shape type
 /// and, if using a subtype of
 /// IfcParameterizedProfileDef, also the shape
@@ -787,9 +787,9 @@ namespace IfcBeamTypeEnum {
 /// USERDEFINED: User-defined linear beam element.
 /// NOTDEFINED: Undefined linear beam element
 /// 
-/// HISTORY New Enumeration
+/// HISTORY  New Enumeration
 /// in Release IFC2x Edition 2.
-/// IFC2x4 CHANGE The enumerators
+/// IFC2x4 CHANGE  The enumerators
 /// HOLLOWCORE and SPANDREL have been
 /// added.
 typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_LINTEL, IfcBeamType_T_BEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} IfcBeamTypeEnum;
@@ -873,8 +873,8 @@ namespace IfcBuildingElementProxyTypeEnum {
 /// Definition from IAI: This enumeration defines the
 ///   available generic types for IfcBuildingElementProxyType.
 /// 
-/// HISTORY New enumeration
-///   inRelease IFC2x Edition 3.
+/// HISTORY  New enumeration
+///   in Release IFC2x Edition 3.
 /// 
 /// Enumeration
 /// 
@@ -936,9 +936,13 @@ namespace IfcChangeActionEnum {
 /// IfcChangeActionEnum identifies the type of change that might have occurred to the object during the last session (for example, added, modified, deleted). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are:
 /// 
 /// NOCHANGE: Object has not been modified.
+/// 
 /// MODIFIED: A modification to the object has been made by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.
+/// 
 /// ADDED: The object has been created by the user and application defined by the OwningUser and OwningApplication respectively.
+/// 
 /// DELETED: The object has been deleted by the user and application defined by the LastModifyingUser and LastModifyingApplication respectively.
+/// 
 /// NOTDEFINED: The change action is not known or has not been defined.
 /// 
 /// Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the IfcChangeActionEnum to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets IfcChangeActionEnum to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the IfcPersonAndOrganization making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of IfcChangeActionEnum when it does something to the object, with the further intent that a model server is responsible for clearing the IfcChangeActionEnum back to NOCHANGE when it is ready to be republished.
@@ -1074,7 +1078,7 @@ namespace IfcConnectionTypeEnum {
 /// RelatingConnectionType: AtPath 
 ///   RelatedConnectionType: AtStart 
 /// 
-/// Figure 65 &#8212; Connection types</td
+/// Figure 65 — Connection types</td
 typedef enum {IfcConnectionType_ATPATH, IfcConnectionType_ATSTART, IfcConnectionType_ATEND, IfcConnectionType_NOTDEFINED} IfcConnectionTypeEnum;
 IFC_PARSE_API const char* ToString(IfcConnectionTypeEnum v);
 IFC_PARSE_API IfcConnectionTypeEnum FromString(const std::string& s);
@@ -1150,8 +1154,10 @@ namespace IfcCoolingTowerTypeEnum {
 /// 
 /// NATURALDRAFT: Air flow is produced naturally.
 ///   MECHANICALINDUCEDDRAFT: Air flow is produced by a mechanical device, typically one or more fans, located on 
+/// 
 /// the air outlet side of the cooling tower.
 ///   MECHANICALFORCEDDRAFT: Air flow is produced by a mechanical device, typically one or more fans, located on 
+/// 
 /// the inlet air side of the cooling tower.
 ///   USERDEFINED:  User-defined cooling tower type.
 ///   NOTDEFINED:  Undefined cooling tower type.
@@ -1237,9 +1243,9 @@ namespace IfcCurtainWallTypeEnum {
 /// Definition from IAI: Enumeration defining
 /// the valid types of curtain wall that can be predefined using the
 /// enumeration values. 
-/// HISTORY
-/// New Enumeration in ReleaseIFC2x Edition 3
-/// NOTE Currently there
+/// HISTORY 
+/// New Enumeration in Release IFC2x Edition 3
+/// NOTE  Currently there
 /// are no specific enumerators defined, the IfcCurtainWallTypeEnum
 /// has
 /// been added for future extensions.
@@ -1431,18 +1437,18 @@ namespace IfcDoorPanelOperationEnum {
 /// NOTE Enumerator added in IFC2x4.
 /// 
 /// UserDefined
-/// 
+///  
 /// 
 /// NotDefined
+///  
 /// 
-/// 
-/// Figure 164 &#8212; Door operations
+/// Figure 164 — Door operations
 /// 
 /// The opening direction of the door panels is given by the local
 /// placement of the IfcDoor. The positive y-axis determines
 /// the direction as shown in Figure 165.
 /// 
-/// Figure 165 &#8212; Door panel operations
+/// Figure 165 — Door panel operations
 /// 
 /// NOTE  Figures (symbolic representation) depend on the national building code.  These figures are only shown as illustrations
 typedef enum {IfcDoorPanelOperation_SWINGING, IfcDoorPanelOperation_DOUBLE_ACTING, IfcDoorPanelOperation_SLIDING, IfcDoorPanelOperation_FOLDING, IfcDoorPanelOperation_REVOLVING, IfcDoorPanelOperation_ROLLINGUP, IfcDoorPanelOperation_USERDEFINED, IfcDoorPanelOperation_NOTDEFINED} IfcDoorPanelOperationEnum;
@@ -1456,7 +1462,7 @@ namespace IfcDoorPanelPositionEnum {
 /// 
 /// Figure 166 shows the designation of a door panel with PanelPosition = LEFT and a door panel with PanelPosition = RIGHT within a door style with OperationType = DOUBLE_DOOR_SINGLE_SWING. The position is given as shown in the XZ plane of the local placement, looking into the direction of the positive Y axis. 
 /// 
-/// Figure 166 &#8212; Door panel positions
+/// Figure 166 — Door panel positions
 typedef enum {IfcDoorPanelPosition_LEFT, IfcDoorPanelPosition_MIDDLE, IfcDoorPanelPosition_RIGHT, IfcDoorPanelPosition_NOTDEFINED} IfcDoorPanelPositionEnum;
 IFC_PARSE_API const char* ToString(IfcDoorPanelPositionEnum v);
 IFC_PARSE_API IfcDoorPanelPositionEnum FromString(const std::string& s);
@@ -1475,7 +1481,7 @@ IFC_PARSE_API IfcDoorStyleConstructionEnum FromString(const std::string& s);
 }
 namespace IfcDoorStyleOperationEnum {
 /// This enumeration defines the basic ways to describe how doors operate as shown in Figure 167.
-/// HISTORY New Enumeration in Release IFC2x.
+/// HISTORY  New Enumeration in Release IFC2x.
 /// 
 /// Enumerator
 ///   Description
@@ -1509,7 +1515,7 @@ namespace IfcDoorStyleOperationEnum {
 /// left the other opens (swings) to the right.
 ///   Note: Direction of swing (whether
 /// in or out)
-/// is determined at the IfcDoor.
+/// is determined at the IfcDoor. 
 /// 
 /// DOUBLE_SWING_LEFT
 /// 
@@ -1519,7 +1525,7 @@ namespace IfcDoorStyleOperationEnum {
 /// double acting door.
 ///   Note: Direction of main swing
 /// (whether in or
-/// out) is determined at the IfcDoor.
+/// out) is determined at the IfcDoor. 
 /// 
 /// DOUBLE_SWING_RIGHT
 /// 
@@ -1616,16 +1622,16 @@ namespace IfcDoorStyleOperationEnum {
 /// USERDEFINED
 ///   User defined
 /// operation type
-///   
+///    
 /// 
 /// NOTDEFINED
 ///   A door with a
 /// not defined operation type is
 /// considered as a door with a lining, but no panels. It is thereby always
 /// open.
-///   
+///    
 /// 
-/// Figure 167 &#8212; Door style operations
+/// Figure 167 — Door style operations
 /// 
 /// NOTE
 /// 
@@ -1640,7 +1646,7 @@ namespace IfcDoorStyleOperationEnum {
 /// positive y-axis, determined by the ObjectPlacement
 /// at IfcDoor
 ///   The location of the panel relative to the wall thickness is
-/// defined by theObjectPlacement at IfcDoor,
+/// defined by the ObjectPlacement at IfcDoor,
 /// and the IfcDoorLiningProperties.LiningOffset
 /// parameter.
 typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} IfcDoorStyleOperationEnum;
@@ -2037,7 +2043,7 @@ namespace IfcFootingTypeEnum {
 /// Definition from IAI: Enumeration defining the generic footing type.
 /// 
 /// HISTORY New type in IFC Release 2x2
-/// IFC 2x4 change: Item CAISSON_FOUNDATION added
+/// IFC 2x4 change:  Item CAISSON_FOUNDATION added
 /// 
 /// ENUMERATION 
 /// 
@@ -2107,7 +2113,7 @@ IFC_PARSE_API IfcGeometricProjectionEnum FromString(const std::string& s);
 namespace IfcGlobalOrLocalEnum {
 /// This enumeration type defines if the local object coordinate system or the global world coordinate system for the project is used to describe the measure values of entities which have a reference to this type.
 /// 
-/// NOTE The world coordinate system is given by the IfcGeometricRepresentationContext.WorldCoordinateSystem
+/// NOTE  The world coordinate system is given by the IfcGeometricRepresentationContext.WorldCoordinateSystem
 /// and is unique within the project. The local (or object) coordinate system is given by IfcProduct.ObjectPlacement and is used by all IfcRepresentation's within the IfcProduct.Representation.
 /// 
 /// HISTORY: New type in IFC2x2.
@@ -2279,18 +2285,18 @@ IFC_PARSE_API IfcLayerSetDirectionEnum FromString(const std::string& s);
 namespace IfcLightDistributionCurveEnum {
 /// There are three kinds of light distribution curves, according to Standard CEN TC 169, prEN 13032-1, CIE 121: 
 /// 
-/// TYPE_A: Type A is basically not used. For completeness the Type A Photometry equals the Type B rotated 90 around the Z-Axis counter clockwise. 
-/// TYPE_B: Type B is sometimes used for floodlights. The B-Plane System has a horizontal axis. B-Angles are valid from -180 to +180 with B 0 at the bottom and B180/B-180 at the top, &#946;-Angles are valid from -90 to +90. (See Figure 302.)
-/// TYPE_C: Type C is the recommended standard system. The C-Plane system equals a globe with a vertical axis. C-Angles are valid from 0 to 360, &#947;-Angles are valid from 0 (south pole) to 180 (north pole). (See Figure 302.) 
+/// TYPE_A: Type A is basically not used. For completeness the Type A Photometry equals the Type B rotated 90° around the Z-Axis counter clockwise. 
+/// TYPE_B: Type B is sometimes used for floodlights. The B-Plane System has a horizontal axis. B-Angles are valid from -180° to +180° with B 0° at the bottom and B180°/B-180° at the top, &#946;-Angles are valid from -90° to +90°. (See Figure 302.)
+/// TYPE_C: Type C is the recommended standard system. The C-Plane system equals a globe with a vertical axis. C-Angles are valid from 0° to 360°, &#947;-Angles are valid from 0° (south pole) to 180° (north pole). (See Figure 302.) 
 /// 
 /// <table
 /// 
 /// B-Type System 
 ///   C-Type System 
 /// 
-/// Figure 302 &#8212; Light distribution curves
+/// Figure 302 — Light distribution curves
 /// 
-/// HISTORY This is a new enumeration in IFC2x2.
+/// HISTORY  This is a new enumeration in IFC2x2.
 typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} IfcLightDistributionCurveEnum;
 IFC_PARSE_API const char* ToString(IfcLightDistributionCurveEnum v);
 IFC_PARSE_API IfcLightDistributionCurveEnum FromString(const std::string& s);
@@ -2354,7 +2360,7 @@ namespace IfcLoadGroupTypeEnum {
 /// 
 /// HISTORY: New type in IFC 2x2.
 /// 
-/// IFC 2x4 change:  Obsolete item LOAD_COMBINATION_GROUP removed.  Load cases are directly assigned to load combinations with different factors for each load case&#8212;load combination pair by means of IfcRelAssignsToGroupByFactor.
+/// IFC 2x4 change:  Obsolete item LOAD_COMBINATION_GROUP removed.  Load cases are directly assigned to load combinations with different factors for each load case—load combination pair by means of IfcRelAssignsToGroupByFactor.
 typedef enum {IfcLoadGroupType_LOAD_GROUP, IfcLoadGroupType_LOAD_CASE, IfcLoadGroupType_LOAD_COMBINATION_GROUP, IfcLoadGroupType_LOAD_COMBINATION, IfcLoadGroupType_USERDEFINED, IfcLoadGroupType_NOTDEFINED} IfcLoadGroupTypeEnum;
 IFC_PARSE_API const char* ToString(IfcLoadGroupTypeEnum v);
 IFC_PARSE_API IfcLoadGroupTypeEnum FromString(const std::string& s);
@@ -2362,7 +2368,7 @@ IFC_PARSE_API IfcLoadGroupTypeEnum FromString(const std::string& s);
 namespace IfcLogicalOperatorEnum {
 /// Definition: IfcLogicalOperatorEnum is an enumeration that defines the logical operators that may be applied for the satisfaction of one or more operands (IfcConstraint) at a time. 
 /// 
-/// HISTORY New type in IFC Release 2.0.  Renamed from IfcConstraintAggregatorEnum in IFC 2x2
+/// HISTORY  New type in IFC Release 2.0.  Renamed from IfcConstraintAggregatorEnum in IFC 2x2
 /// 
 /// IFC2x4 CHANGE: Extended to include LOGICALXOR, LOGICALNOTAND and LOGICALNOTOR.
 /// 
@@ -2373,10 +2379,12 @@ namespace IfcLogicalOperatorEnum {
 /// 
 /// LOGICALAND 
 ///   Defines a relationship between operands whereby the result is true if all operands are true, i.e. false if at least 
+/// 
 /// one operand is false. 
 /// 
 /// LOGICALOR 
 ///   Defines a relationship between operands whereby the result is true if at least one operand is true, i.e false if 
+/// 
 /// all operands are false. 
 /// 
 /// LOGICALXOR 
@@ -2384,15 +2392,18 @@ namespace IfcLogicalOperatorEnum {
 /// 
 /// LOGICALNOTAND 
 ///   Defines a relationship between operands whereby the result is true if at least one operand is false, i.e false if 
+/// 
 /// all operands are true. 
 /// 
 /// LOGICALNOTOR 
 ///   Defines a relationship between operands whereby the result is true if all operands are false, i.e false if at least 
+/// 
 /// one operand is true. 
 /// 
 /// Use Definition 
 /// 
 /// The IfcLogicalOperatorEnum, when applied in a case of three operands, A, B and C, evaluates for each operator as 
+/// 
 /// follows:
 /// 
 /// TRUTH TABLE: LOGICALAND(A,B,C)
@@ -2623,10 +2634,10 @@ namespace IfcMemberTypeEnum {
 /// no further meaning.
 /// MULLION: A linear element within a curtain wall system
 /// to connect two (or more) panels.
-/// PLATE: Alinear continuous horizontal element in wall
+/// PLATE: A linear continuous horizontal element in wall
 /// framing, e.g. a head piece or a sole plate.
 /// 
-/// NOTE This head piece or sole plate shall not
+/// NOTE  This head piece or sole plate shall not
 /// be mixed up with planar elements, such as sheets and panels, that
 /// are handled as IfcPlate (and
 /// IfcPlateType).
@@ -2648,9 +2659,9 @@ namespace IfcMemberTypeEnum {
 /// HISTORY: New
 /// Enumeration in Release IFC2x Edition 2.
 /// IFC2x Edition 2
-/// Addendum 1 CHANGE The additional identifiers CHORD, PLATE, STUD
+/// Addendum 1 CHANGE  The additional identifiers CHORD, PLATE, STUD
 /// are added.
-/// IFC2x Edition 3 CHANGE The additional identifier MULLION has
+/// IFC2x Edition 3 CHANGE  The additional identifier MULLION has
 /// been added.
 typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} IfcMemberTypeEnum;
 IFC_PARSE_API const char* ToString(IfcMemberTypeEnum v);
@@ -2673,12 +2684,12 @@ IFC_PARSE_API IfcMotorConnectionTypeEnum FromString(const std::string& s);
 namespace IfcNullStyle {
 /// Definition from ISO/CD 10303-46:1992: The null style type specifies, that a representation item is not styled.
 /// 
-/// NOTE Corresponding ISO 10303 name: null_style. Please refer to ISO/IS 10303-46:1994 for the final
+/// NOTE  Corresponding ISO 10303 name: null_style. Please refer to ISO/IS 10303-46:1994 for the final
 /// definition of the formal standard.
 /// 
-/// HISTORY New enumeration in IFC2x2.
+/// HISTORY  New enumeration in IFC2x2.
 /// 
-/// IFC2x4 CHANGE The enumeration is deprecated.
+/// IFC2x4 CHANGE  The enumeration is deprecated.
 typedef enum {IfcNullStyle_NULL} IfcNullStyle;
 IFC_PARSE_API const char* ToString(IfcNullStyle v);
 IFC_PARSE_API IfcNullStyle FromString(const std::string& s);
@@ -2766,21 +2777,21 @@ namespace IfcPermeableCoveringOperationEnum {
 /// 
 /// Enumeration:
 /// 
-/// GRILL
+/// GRILL 
 ///   protective screen of metal bars or wires
 /// 
-/// LOUVER
+/// LOUVER 
 ///   set of fixed or movable strips of wood, metal, etc. arranged to let
 ///   air in while keeping light or rain out
 /// 
-/// SCREEN
+/// SCREEN 
 ///   upright, fixed or movable, sometimes folding framework used for
 ///   protection against heat, light, access or similar
 /// 
-/// USERDEFINED
+/// USERDEFINED 
 ///   user defined permeable covering type
 /// 
-/// NOTDEFINED
+/// NOTDEFINED 
 ///   no information available
 /// 
 /// HISTORY: New Enumeration in IFC Release 2.0
@@ -2847,7 +2858,7 @@ namespace IfcPileTypeEnum {
 /// Definition from IAI: Enumeration defining the pile type. 
 /// 
 /// HISTORY New type in IFC Release 2x2
-/// IFC 2x4 change: Items BORED, DRIVEN, JETGROUTING added
+/// IFC 2x4 change:  Items BORED, DRIVEN, JETGROUTING added
 /// 
 /// BORED A bore pile.
 ///   DRIVEN A rammed, vibrated, or otherwise driven pile.
@@ -2923,17 +2934,17 @@ namespace IfcPlateTypeEnum {
 /// object can fulfill:
 /// 
 /// CURTAIN_PANEL: A planar element within a
-/// curtain wall,often consisting of a frame with fixed glazing.
+/// curtain wall, often consisting of a frame with fixed glazing.
 ///   SHEET: A planar, flat and thin element,
 /// comes usually as metal sheet, and is often used as an additonal part
 /// within an assembly.
 ///   USERDEFINED: User-defined linear element.
 ///   NOTDEFINED: Undefined linear element
 /// 
-/// HISTORY New Enumeration in Release IFC2x Edition 2. 
+/// HISTORY  New Enumeration in Release IFC2x Edition 2. 
 /// IFC2x
 /// Edition 3
-/// CHANGE The additional identifiers CURTAIN_PANEL, SHEET have
+/// CHANGE  The additional identifiers CURTAIN_PANEL, SHEET have
 /// been
 /// added.
 typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} IfcPlateTypeEnum;
@@ -2998,9 +3009,9 @@ namespace IfcProjectedOrTrueLengthEnum {
 /// This enumeration type is needed for load definition and is only considered if the load values are given as global actions and if they define linear or planar loads (that is, one- or two-dimensionally distributed loads).
 /// Figure 234 illustrates the interpretation of a load definition depending on the enumeration types IfcGlobalOrLocalEnum and IfcProjectedOrTrueLengthEnum.
 /// 
-/// HISTORY New type in IFC2x2. 
+/// HISTORY  New type in IFC2x2. 
 /// 
-/// Figure 234 &#8212; Projected or true length
+/// Figure 234 — Projected or true length
 typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} IfcProjectedOrTrueLengthEnum;
 IFC_PARSE_API const char* ToString(IfcProjectedOrTrueLengthEnum v);
 IFC_PARSE_API IfcProjectedOrTrueLengthEnum FromString(const std::string& s);
@@ -3126,17 +3137,17 @@ namespace IfcRampTypeEnum {
 ///   two straight flights without turns but with one landing. 
 /// 
 /// QuarterTurnRamp 
-///   A ramp making a 90 turn,
+///   A ramp making a 90° turn,
 ///   consisting of two straight flights connected by a quarterspace landing. The
 ///   direction of the turn is determined by the walking line. 
 /// 
 /// TwoQuarterTurnRamp 
-///   A ramp making a 180
+///   A ramp making a 180°
 ///   turn, consisting of three straight flights connected by two quarterspace
 ///   landings. The direction of the turn is determined by the walking line. 
 /// 
 /// HalfTurnRamp 
-///   A ramp making a 180
+///   A ramp making a 180°
 ///   turn, consisting of two straight flights connected by a halfspace landing. The
 ///   orientation of the turn is determined by the walking line. 
 /// 
@@ -3147,13 +3158,13 @@ namespace IfcRampTypeEnum {
 /// UserDefined 
 ///   Free form ramp (user defined
 ///   operation type) 
-///    
+///     
 /// 
 /// NotDefined 
-///    
-///    
+///     
+///     
 /// 
-/// Figure 67 &#8212; Ramp types
+/// Figure 67 — Ramp types
 typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} IfcRampTypeEnum;
 IFC_PARSE_API const char* ToString(IfcRampTypeEnum v);
 IFC_PARSE_API IfcRampTypeEnum FromString(const std::string& s);
@@ -3334,13 +3345,13 @@ namespace IfcRoofTypeEnum {
 /// 
 /// FREEFORM 
 ///   Free form roof  
-///    
+///     
 /// 
 /// NOTDEFINED 
 ///   No specification given 
-///    
+///     
 /// 
-/// Figure 68 &#8212; Roof types
+/// Figure 68 — Roof types
 typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_NOTDEFINED} IfcRoofTypeEnum;
 IFC_PARSE_API const char* ToString(IfcRoofTypeEnum v);
 IFC_PARSE_API IfcRoofTypeEnum FromString(const std::string& s);
@@ -3498,7 +3509,7 @@ namespace IfcSequenceEnum {
 ///   enumeration that defines the different ways in which a
 ///   time lag is applied to a sequence between two processes.
 /// 
-/// HISTORY New entity in IFC 1.0
+/// HISTORY  New entity in IFC 1.0
 typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_NOTDEFINED} IfcSequenceEnum;
 IFC_PARSE_API const char* ToString(IfcSequenceEnum v);
 IFC_PARSE_API IfcSequenceEnum FromString(const std::string& s);
@@ -3523,7 +3534,7 @@ namespace IfcSlabTypeEnum {
 ///   special property set definition may be provided for each
 ///   predefined type.
 /// 
-/// HISTORY New type in IFC
+/// HISTORY  New type in IFC
 ///   Release 2.0
 /// 
 /// Floor
@@ -3547,7 +3558,7 @@ namespace IfcSlabTypeEnum {
 ///   foundation). Another name is mat foundation.
 /// 
 /// IFC2x3 CHANGE
-///   new enumerator added.
+///    new enumerator added.
 typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} IfcSlabTypeEnum;
 IFC_PARSE_API const char* ToString(IfcSlabTypeEnum v);
 IFC_PARSE_API IfcSlabTypeEnum FromString(const std::string& s);
@@ -3560,6 +3571,7 @@ IFC_PARSE_API IfcSoundScaleEnum FromString(const std::string& s);
 }
 namespace IfcSpaceHeaterTypeEnum {
 /// Enumeration defining the functional type of space heater.
+/// 
 /// The IfcSpaceHeaterTypeEnum contains the following:
 /// 
 /// CONVECTOR: A heat-distributing unit that operates with gravity-circulated air.
@@ -3670,44 +3682,44 @@ namespace IfcStairTypeEnum {
 /// 
 /// QuarterWindingStair 
 ///   A stair consisting of one
-///   flight with a quarter winder, which is making a 90 turn. The direction of
+///   flight with a quarter winder, which is making a 90° turn. The direction of
 ///   the turn is determined by the walking line. 
 /// 
 /// QuarterTurnStair 
-///   A stair making a 90
+///   A stair making a 90°
 ///   turn, consisting of two straight flights connected by a quarterspace landing.
 ///   The direction of the turn is determined by the walking line. 
 /// 
 /// HalfWindingStair 
 ///   A stair consisting of one
-///   flight with one half winder, which makes a 180 turn. The orientation of
+///   flight with one half winder, which makes a 180° turn. The orientation of
 ///   the turn is determined by the walking line. 
 /// 
 /// HalfTurnStair 
-///   A stair making a 180
+///   A stair making a 180°
 ///   turn, consisting of two straight flights connected by a halfspace landing. The
 ///   orientation of the turn is determined by the walking line. 
 /// 
 /// TwoQuarterWindingStair 
 ///   A stair consisting of one
-///   flight with two quarter winders, which make a 90 turn. The stair makes a
-///   180 turn. The direction of the turns is determined by the walking
+///   flight with two quarter winders, which make a 90° turn. The stair makes a
+///   180° turn. The direction of the turns is determined by the walking
 ///   line. 
 /// 
 /// TwoQuarterTurnStair 
-///   A stair making a 180
+///   A stair making a 180°
 ///   turn, consisting of three straight flights connected by two quarterspace
 ///   landings. The direction of the turns is determined by the walking line. 
 /// 
 /// ThreeQuarterWindingStair
 /// 
 /// A stair consisting of one
-///   flight with three quarter winders, which make a 90 turn. The stair makes a
-///   270 turn. The direction of the turns is determined by the walking
+///   flight with three quarter winders, which make a 90° turn. The stair makes a
+///   270° turn. The direction of the turns is determined by the walking
 ///   line. 
 /// 
 /// ThreeQuarterTurnStair 
-///   A stair making a 270
+///   A stair making a 270°
 ///   turn, consisting of four straight flights connected by three quarterspace
 ///   landings. The direction of the turns is determined by the walking line. 
 /// 
@@ -3720,7 +3732,7 @@ namespace IfcStairTypeEnum {
 /// DoubleReturnStair 
 ///   A stair having one
 ///   straight flight to a wide quarterspace landing, and two side flights from that
-///   landing into opposite directions. The stair is making a 90 turn. The
+///   landing into opposite directions. The stair is making a 90° turn. The
 ///   direction of traffic is determined by the walking line. 
 /// 
 /// CurvedRunStair 
@@ -3735,13 +3747,13 @@ namespace IfcStairTypeEnum {
 /// OtherOperation 
 ///   Free form stair (user defined
 ///   operation type) 
-///    
+///     
 /// 
 /// NotDefined 
-///    
-///    
+///     
+///     
 /// 
-/// Figure 69 &#8212; Stair types
+/// Figure 69 — Stair types
 typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} IfcStairTypeEnum;
 IFC_PARSE_API const char* ToString(IfcStairTypeEnum v);
 IFC_PARSE_API IfcStairTypeEnum FromString(const std::string& s);
@@ -3757,9 +3769,9 @@ namespace IfcStateEnum {
 /// READWRITELOCKED: Object is in a Read-Write-Locked state. It may not be accessed by an application.
 /// READONLYLOCKED: Object is in a Read-Only-Locked state. It may not be accessed by an application.
 /// 
-/// HISTORY New enumeration in IFC R2.0.
+/// HISTORY  New enumeration in IFC R2.0.
 /// 
-/// IFC2x3 CHANGE This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
+/// IFC2x3 CHANGE  This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
 typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} IfcStateEnum;
 IFC_PARSE_API const char* ToString(IfcStateEnum v);
 IFC_PARSE_API IfcStateEnum FromString(const std::string& s);
@@ -3918,13 +3930,13 @@ IFC_PARSE_API IfcTransformerTypeEnum FromString(const std::string& s);
 namespace IfcTransitionCode {
 /// Definition from ISO/CD 10303-42:1992: This type conveys the continuity properties of a composite curve or surface. The continuity referred to is geometric, not parametric continuity. For example, in ContSameGradient the tangent vectors of successive segments will have the same direction, but may have different magnitude.  
 /// 
-/// NOTE Corresponding ISO 10303 type: transition_code, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 type: transition_code, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
 /// 
-/// HISTORY New Type in IFC Release 1.0
+/// HISTORY  New Type in IFC Release 1.0
 /// 
 /// Figure 273 (quoted from ISO/CD 10303-42:1992, p.55) illustrates transition types.
 /// 
-/// Figure 273 &#8212; Transition code
+/// Figure 273 — Transition code
 /// 
 /// ENUMERATION 
 /// 
@@ -3956,9 +3968,9 @@ namespace IfcTransportElementTypeEnum {
 /// heavy goods. It may be manually operated or electrically or
 /// pneumatically driven.
 /// 
-/// HISTORY New enumeration
+/// HISTORY  New enumeration
 /// in IFC Release 2x.
-/// IFC2x4 CHANGE New enumerators
+/// IFC2x4 CHANGE  New enumerators
 /// CRANEWAY and LIFTINGGEAR added in
 /// IFC2x4.
 typedef enum {IfcTransportElementType_ELEVATOR, IfcTransportElementType_ESCALATOR, IfcTransportElementType_MOVINGWALKWAY, IfcTransportElementType_USERDEFINED, IfcTransportElementType_NOTDEFINED} IfcTransportElementTypeEnum;
@@ -4142,15 +4154,15 @@ namespace IfcWallTypeEnum {
 /// USERDEFINED: User-defined wall element.
 /// NOTDEFINED: Undefined wall element
 /// 
-/// HISTORY New
+/// HISTORY  New
 /// Enumeration in Release IFC2x Edition 2.
-/// IFC2x2 ADDENDUM CHANGE
+/// IFC2x2 ADDENDUM CHANGE 
 /// The enumerator POLYGON has been changed to
 /// POLYGONAL.
-/// IFC2x3 CHANGE The enumerators
+/// IFC2x3 CHANGE  The enumerators
 /// ELEMENTEDWALL and PLUMBINGWALL have been
 /// added.
-/// IFC2x4 CHANGE New enumerator
+/// IFC2x4 CHANGE  New enumerator
 /// MOVABLE has been added.
 typedef enum {IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_SHEAR, IfcWallType_ELEMENTEDWALL, IfcWallType_PLUMBINGWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} IfcWallTypeEnum;
 IFC_PARSE_API const char* ToString(IfcWallTypeEnum v);
@@ -4187,68 +4199,68 @@ namespace IfcWindowPanelOperationEnum {
 /// SideHungRightHand 
 ///   panel that opens to the right
 ///   when viewed from the outside 
-///    
+///     
 /// 
 /// SideHungLeftHand 
 ///   panel that opens to the left
 ///   when viewed from the outside 
-///    
+///     
 /// 
 /// TiltAndTurnRightHand 
 ///   panel that opens to the right
 ///   and is bottom hung 
-///    
+///     
 /// 
 /// TiltAndTurnLeftHand 
 ///   panel that opens to the left
 ///   and is bottom hung 
-///    
+///     
 /// 
 /// TopHung 
 ///   panel is top hung 
-///    
+///     
 /// 
 /// BottomHung 
 ///   panel is bottom hung 
-///    
+///     
 /// 
 /// PivotHorizontal 
 ///   panel is swinging
 ///   horizontally (hinges are in the middle) 
-///    
+///     
 /// 
 /// PivotVertical 
 ///   panel is swinging vertically
 ///   (hinges are in the middle) 
-///    
+///     
 /// 
 /// SlidingHorizontal 
 ///   panel is sliding horizontally
 /// 
-///  
+///   
 /// 
 /// SlidingVertical 
 ///   panel is sliding
 ///   vertically 
-///    
+///     
 /// 
 /// RemovableCasement 
 ///   panel is removable 
-///    
+///     
 /// 
 /// FixedCasement 
 ///   panel is fixed 
-///    
+///     
 /// 
 /// OtherOperation 
 ///   user defined operation type 
-///    
+///     
 /// 
 /// NotDefined 
-///    
-///    
+///     
+///     
 /// 
-/// Figure 168 &#8212; Window panel operations
+/// Figure 168 — Window panel operations
 /// 
 /// The opening direction of the window panels is given by the local placement of the IfcWindow. The positive y-axis determines the direction as shown in Figure 169.
 ///   NOTE 
@@ -4259,7 +4271,7 @@ namespace IfcWindowPanelOperationEnum {
 ///   code 
 ///   These figures are only shown as illustrations 
 /// 
-/// Figure 169 &#8212; Window panel directions
+/// Figure 169 — Window panel directions
 typedef enum {IfcWindowPanelOperation_SIDEHUNGRIGHTHAND, IfcWindowPanelOperation_SIDEHUNGLEFTHAND, IfcWindowPanelOperation_TILTANDTURNRIGHTHAND, IfcWindowPanelOperation_TILTANDTURNLEFTHAND, IfcWindowPanelOperation_TOPHUNG, IfcWindowPanelOperation_BOTTOMHUNG, IfcWindowPanelOperation_PIVOTHORIZONTAL, IfcWindowPanelOperation_PIVOTVERTICAL, IfcWindowPanelOperation_SLIDINGHORIZONTAL, IfcWindowPanelOperation_SLIDINGVERTICAL, IfcWindowPanelOperation_REMOVABLECASEMENT, IfcWindowPanelOperation_FIXEDCASEMENT, IfcWindowPanelOperation_OTHEROPERATION, IfcWindowPanelOperation_NOTDEFINED} IfcWindowPanelOperationEnum;
 IFC_PARSE_API const char* ToString(IfcWindowPanelOperationEnum v);
 IFC_PARSE_API IfcWindowPanelOperationEnum FromString(const std::string& s);
@@ -4321,7 +4333,7 @@ namespace IfcWindowPanelPositionEnum {
 ///   IfcWindowPanelProperties with PanelPosition = BOTTOMthird
 ///   IfcWindowPanelProperties with PanelPosition = RIGHT 
 /// 
-/// Figure 170 &#8212; Window panel positions
+/// Figure 170 — Window panel positions
 /// 
 /// NOTE 
 /// 
@@ -4401,13 +4413,13 @@ namespace IfcWindowStyleOperationEnum {
 /// UserDefined 
 ///   user defined operation
 ///   type 
-///    
+///     
 /// 
 /// NotDefined 
-///    
-///    
+///     
+///     
 /// 
-/// Figure 171 &#8212; Window style operations
+/// Figure 171 — Window style operations
 /// 
 /// NOTE 
 /// 
@@ -4575,32 +4587,32 @@ public:
 /// All measure components have the same sign (positive or negative).  It is therefore trivial to convert between floating point representation (decimal degrees) and compound representation regardless whether the angle is greater or smaller than zero.  Example:
 /// 
 /// LOCAL
-/// a : IfcPlaneAngleMeasure := -50.975864; (* decimal degrees, -50 58' 33" 110400 *)
-/// b : IfcPlaneAngleMeasure;
-/// c : IfcCompoundPlaneAngleMeasure;
-/// s : IfcText;
+///   a : IfcPlaneAngleMeasure := -50.975864;  (* decimal degrees, -50° 58' 33" 110400 *)
+///   b : IfcPlaneAngleMeasure;
+///   c : IfcCompoundPlaneAngleMeasure;
+///   s : IfcText;
 /// END_LOCAL;
 /// 
 /// (* convert from float to compound *)
-/// c[1] := a; -- -50
-/// c[2] := (a - c[1]) * 60; -- -58
-/// c[3] := ((a - c[1]) * 60 - c[2]) * 60; -- -33
-/// c[4] := (((a - c[1]) * 60 - c[2]) * 60 - c[3]) * 1.e6; -- -110400
+///   c[1] :=    a;                                           -- -50
+///   c[2] :=   (a - c[1]) * 60;                              -- -58
+///   c[3] :=  ((a - c[1]) * 60 - c[2]) * 60;                 -- -33
+///   c[4] := (((a - c[1]) * 60 - c[2]) * 60 - c[3]) * 1.e6;  -- -110400
 /// 
 /// (* convert from compound to float *)
-/// b := c[1] + c[2]/60. + c[3]/3600. + c[4]/3600.e6; -- -50.975864
+///   b := c[1] + c[2]/60. + c[3]/3600. + c[4]/3600.e6;       -- -50.975864
 /// 
 /// Use in string representations
 /// 
 /// When a compound plane angle measure is formatted for display or printout, the signs of the fractional components will usually be discarded because, to a human reader, the sign of the first component alone already indicates the sense of the angle:
 /// 
 /// (* convert from compound to human-readable string *)
-/// s := FORMAT(c[1], '+##') + "000000B0"
-/// + FORMAT(ABS(c[2]), '##') + ''''
-/// + FORMAT(ABS(c[3]), '##') + '"'
-/// + FORMAT(ABS(c[4]), '##'); -- -50 58' 33" 110400
+///   s := FORMAT(c[1], '+##')     + "000000B0"
+///      + FORMAT(ABS(c[2]), '##') + ''''
+///      + FORMAT(ABS(c[3]), '##') + '"'
+///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
-/// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 5058'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
+/// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
 class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -4892,9 +4904,9 @@ public:
 /// 
 /// Fonts with Oblique, Slanted or Incline in their names will typically be labeled 'oblique' in the user agents font database. Fonts with Italic, Cursive or Kursiv in their names will typically be labeled 'italic'.
 /// 
-/// NOTE Corresponding CSS1 definitions is font-style.
+/// NOTE  Corresponding CSS1 definitions is font-style.
 /// 
-/// HISTORY New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 class IFC_PARSE_API IfcFontStyle : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -4915,9 +4927,9 @@ public:
 /// 
 /// A value of 'normal' selects a font that is not a small-caps font, 'small-caps' selects a small-caps font. It is acceptable (but not required) in CSS1 if the small-caps font is a created by taking a normal font and replacing the lower case letters by scaled uppercase characters. As a last resort, uppercase letters will be used as replacement for a small-caps font.
 /// 
-/// NOTE Corresponding CSS1 definitions is font-variant.
+/// NOTE  Corresponding CSS1 definitions is font-variant.
 /// 
-/// HISTORY New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 class IFC_PARSE_API IfcFontVariant : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -4949,9 +4961,9 @@ public:
 /// Available faces       | Assignments   | Filling the holes----------------------+---------------+-------------------"Example1 Regular"    | 400           | 100, 200, 300"Example1 Medium"     | 500           |"Example1 Bold"       | 700           | 600"Example1 Heavy"      | 800           | 900
 /// Available faces       | Assignments   | Filling the holes----------------------+---------------+-------------------"Example2 Book"       | 400           | 100, 200, 300"Example2 Medium"     | 500           |"Example2 Bold"       | 700           | 600 "Example2 Heavy"      | 800           |"Example2 Black"      | 900           |"Example2 ExtraBlack" | (none)        |
 /// 
-/// NOTE Corresponding CSS1 definitions is font-weight.
+/// NOTE  Corresponding CSS1 definitions is font-weight.
 /// 
-/// HISTORY New type in IFC2x2 Addendum 2.
+/// HISTORY  New type in IFC2x2 Addendum 2.
 class IFC_PARSE_API IfcFontWeight : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -4995,17 +5007,21 @@ public:
     IfcFrequencyMeasure (double v);
     operator double() const;
 };
-/// An IfcGloballyUniqueId holds an encoded string identifier that is used to uniquely identify an IFC object. An IfcGloballyUniqueId is a Globally Unique Identifier (GUID) which is an auto-generated 128-bit number. Since this identifier is required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below:
+/// An IfcGloballyUniqueId holds an encoded string identifier that is used to uniquely identify an IFC object. An IfcGloballyUniqueId is a Globally
+///   Unique Identifier (GUID) which is an auto-generated 128-bit number. Since this identifier is
+///   required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below:
 /// 
-/// 123456
-///   0123456789012345678901234567890123456789012345678901234567890123
-///   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
+///            1         2         3         4         5         6
+/// 
+///  0123456789012345678901234567890123456789012345678901234567890123
+/// 
+/// "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$";
 /// 
 /// The resulting string is a fixed 22 character length string to be exchanged within the IFC exchange file structure.
 /// 
 /// Refer to the BuildingSMART website (www.buildingsmart-tech.org) for more information and sample encoding algorithms.
 /// 
-/// HISTORY New type in IFC R1.5.1.
+/// HISTORY  New type in IFC R1.5.1.
 class IFC_PARSE_API IfcGloballyUniqueId : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -5541,7 +5557,7 @@ public:
 /// 
 /// Figure 290 illustrates elastic support of a planar member.
 /// 
-/// Figure 290 &#8212; Modulus of subgrade reaction measure
+/// Figure 290 — Modulus of subgrade reaction measure
 class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -5822,13 +5838,13 @@ public:
 };
 /// IfcPresentableText is a text string used to capture the content of a text literal for the purpose of presentation. The IfcPresentableText can include multiple lines of text, for which the line feed character LF, 0x0A, should be used to separate lines.
 /// 
-/// NOTE The non printable characters are converted within the standard exchange format ISO 10303-21 (STEP physical file format), commonly the \X\09 represents the TAB, and \X\0A the LF character.
+/// NOTE  The non printable characters are converted within the standard exchange format ISO 10303-21 (STEP physical file format), commonly the \X\09 represents the TAB, and \X\0A the LF character.
 /// 
-/// NOTE The IfcPresentableText is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
+/// NOTE  The IfcPresentableText is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
 /// 
-/// NOTE Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORY New type in IFC2x2.
+/// HISTORY  New type in IFC2x2.
 class IFC_PARSE_API IfcPresentableText : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -6162,16 +6178,16 @@ public:
     IfcText (std::string v);
     operator std::string() const;
 };
-/// Definition from CSS1 (W3C Recommendation):This property describes how text is aligned within the element. The actual justification algorithm used is user agent and human language dependent. If 'justify' is not supported, the user agent will supply a replacement. Typically, this will be 'left' for western languages. Values are:
+/// Definition from CSS1 (W3C Recommendation): This property describes how text is aligned within the element. The actual justification algorithm used is user agent and human language dependent. If 'justify' is not supported, the user agent will supply a replacement. Typically, this will be 'left' for western languages. Values are:
 /// 
 /// left
 ///   right
 ///   center
 ///   justify
 /// 
-/// NOTE Corresponding CSS1 definition is text-align.
+/// NOTE  Corresponding CSS1 definition is text-align.
 /// 
-/// HISTORY New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 class IFC_PARSE_API IfcTextAlignment : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -6193,9 +6209,9 @@ public:
 /// 
 /// User agents must recognize the keyword 'blink', but are not required to support the blink effect.
 /// 
-/// NOTE Corresponding CSS1 definition is text-decoration.
+/// NOTE  Corresponding CSS1 definition is text-decoration.
 /// 
-/// HISTORY New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 class IFC_PARSE_API IfcTextDecoration : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -6221,9 +6237,9 @@ public:
 /// 
 /// It is encouraged to offer a generic font family as a last alternative.
 /// 
-/// NOTE Corresponding CSS1 definitions are font-family.
+/// NOTE  Corresponding CSS1 definitions are font-family.
 /// 
-/// HISTORY New type in IFC2x2 Addendum 2.
+/// HISTORY  New type in IFC2x2 Addendum 2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE: The IfcFontFamily has been added.
 class IFC_PARSE_API IfcTextFontName : public IfcUtil::IfcBaseType {
@@ -6244,9 +6260,9 @@ public:
 ///   lowercase: lowercases all letters of the element
 ///   none
 /// 
-/// NOTE Corresponding CSS1 definition is text-transform.
+/// NOTE  Corresponding CSS1 definition is text-transform.
 /// 
-/// HISTORY New type in IFC2x3.
+/// HISTORY  New type in IFC2x3.
 class IFC_PARSE_API IfcTextTransformation : public IfcUtil::IfcBaseType {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -6509,19 +6525,19 @@ public:
 ///   bottom-middle
 ///   bottom-right
 /// 
-/// NOTE The top-left is the default value.
+/// NOTE  The top-left is the default value.
 /// 
 /// Figure 298 illustrates alignment values.
 /// 
-/// Figure 298 &#8212; Box alignment values
+/// Figure 298 — Box alignment values
 /// 
 /// Figure 299 illustrates use of alignment values together with the placement and planar extent.
 /// 
-/// Figure 299 &#8212; Box alignment examples
+/// Figure 299 — Box alignment examples
 /// 
-/// HISTORY New type in IFC2x2 Addendum2.
+/// HISTORY  New type in IFC2x2 Addendum2.
 /// 
-/// IFC2x3 CHANGE The IfcBoxAlignment has been added.
+/// IFC2x3 CHANGE  The IfcBoxAlignment has been added.
 class IFC_PARSE_API IfcBoxAlignment : public IfcLabel {
 public:
     virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const;
@@ -6650,7 +6666,7 @@ public:
 };
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
 /// 
-/// HISTORY New entity in IFC R1.5.
+/// HISTORY  New entity in IFC R1.5.
 class IFC_PARSE_API IfcApplication : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the application developer, being requested to be member of the IAI.
@@ -6748,9 +6764,9 @@ public:
 };
 /// An IfcAppliedValueRelationship is a relationship class that enables cost values to be aggregated together as components of another cost value.
 /// 
-/// HISTORY New Entity in Release IFC2.0.
+/// HISTORY  New Entity in Release IFC2.0.
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcResourceLevelRelationship, attribute order changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, attribute order changed.
 /// 
 /// Use definitions
 /// Dependency relationships can exist between applied values on the basis that one particular value may be determined by operations on one or more other values. This is captured through the IfcAppliedValueRelationship entity. In this relationship, one instance of IfcAppliedValue acts as the principal (IfcAppliedValueRelationship.ComponentOf) whose value may be
@@ -6765,11 +6781,11 @@ public:
 /// 
 /// Figure 239 illustrates one level aggregation of applied values. A relationship exists between applied value A and applied values B, C and D such that the value of A is determined by the addition of B, C and D such that: A = B + C + D
 /// 
-/// Figure 239 &#8212; Applied value relationship single level
+/// Figure 239 — Applied value relationship single level
 /// 
 /// Figure 240 illustrates two level aggregation of applied values. It is possible to develop more complex applied value specifications by creating hierarchies of applied value relationships. In the diagram, the development of a applied value is shown whereby, because B = E * F and D = G * H * J, then: A = ((E * F) + C + (G * H * J)).
 /// 
-/// Figure 240 &#8212; Applied value relationship multiple level
+/// Figure 240 — Applied value relationship multiple level
 class IFC_PARSE_API IfcAppliedValueRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// The applied value (total or subtotal) of which the value being considered is a component.
@@ -6805,7 +6821,7 @@ public:
 /// 
 /// HISTORY New Entity in IFC Release 2.0
 /// 
-/// IFC2x Edition 4 CHANGE Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
+/// IFC2x Edition 4 CHANGE  Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
 class IFC_PARSE_API IfcApproval : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Description is defined for this IfcApproval
@@ -6894,7 +6910,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x2.
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcResourceLevelRelationship, order of attributes changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, order of attributes changed.
 class IFC_PARSE_API IfcApprovalRelationship : public IfcUtil::IfcBaseEntity {
 public:
     IfcApproval* RelatedApproval() const;
@@ -7277,17 +7293,17 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: The colour specification entity contains a direct colour definition. Colour component values refer directly to a specific colour space.
 /// 
-/// NOTE Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcColourSpecification : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcColourSpecification
     bool hasName() const;
     /// Optional name given to a particular colour specification in addition to the colour components (like the RGB values).
     /// 
-    /// NOTE Examples are the names of a industry colour classification, such as RAL.
-    /// IFC2x Edition 3 CHANGE Attribute added.
+    /// NOTE  Examples are the names of a industry colour classification, such as RAL.
+    /// IFC2x Edition 3 CHANGE  Attribute added.
     std::string Name() const;
     void setName(std::string v);
     virtual unsigned int getArgumentCount() const { return 1; }
@@ -7304,7 +7320,7 @@ public:
 };
 /// IfcConnectionGeometry is used to describe the geometric and topological constraints that facilitate the physical connection of two objects. It is envisioned as a control that applies to the element connection relationships.
 /// 
-/// NOTE The element connection relationship normally provides for a logical connection information, by referencing the relating and related elements. If in addition an IfcConnectionGeometry is provided, physical connection information is given by specifying exactly where at the relating and related element the element connection occurs. 
+/// NOTE  The element connection relationship normally provides for a logical connection information, by referencing the relating and related elements. If in addition an IfcConnectionGeometry is provided, physical connection information is given by specifying exactly where at the relating and related element the element connection occurs. 
 /// Using the eccentricity subtypes, the connection can also be described when there is a physical distance (or eccentricity) between the connection elements.
 /// 
 /// The IfcConnectionGeometry allows for the provision of connection constraints between geometric and topological elements, the following connection geometry/topology types are in scope:
@@ -7313,9 +7329,9 @@ public:
 ///   curve | edge curve,
 ///   surface | face surface,
 /// 
-/// HISTORY New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
-/// IFC2x Edition 3 CHANGE The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face surface).
+/// IFC2x Edition 3 CHANGE  The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face  surface).
 class IFC_PARSE_API IfcConnectionGeometry : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
@@ -7335,13 +7351,13 @@ public:
 /// physical connection of two objects at a point (here IfcCartesianPoint) or at an vertex with point
 /// coordinates associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
-/// EXAMPLE The connection relationship between two path based elements (like a column and a beam) has a geometric constraint which describes the connection points by a PointOnRelatingElement for the column and a PointOnRelatedElement for the beam. The exact usage of the IfcConnectionPointGeometry is further defined in the geometry use sections of the elements that use it.
+/// EXAMPLE  The connection relationship between two path based elements (like a column and a beam) has a geometric constraint which describes the connection points by a PointOnRelatingElement for the column and a PointOnRelatedElement for the beam. The exact usage of the IfcConnectionPointGeometry is further defined in the geometry use sections of the elements that use it.
 /// 
-/// NOTE If the point connection has an offset (if the two points or vertex points at the relating and related element do not physically match), the subtype IfcConnectionPointEccentricity shall be used.
+/// NOTE  If the point connection has an offset (if the two points or vertex points at the relating and related element do not physically match), the subtype IfcConnectionPointEccentricity shall be used.
 /// 
-/// HISTORY New entity in IFC Release 1.5, has been renamed from IfcPointConnectionGeometry in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, has been renamed from IfcPointConnectionGeometry in IFC Release 2x.
 /// 
-/// IFC2x Edition 3 CHANGE The provision of topology with associated geometry, IfcVertexPoint, is
+/// IFC2x Edition 3 CHANGE  The provision of topology with associated geometry, IfcVertexPoint, is
 /// enabled by using the IfcPointOrVertexPoint.
 /// 
 /// Geometry use definitions
@@ -7393,12 +7409,12 @@ public:
 };
 /// IfcConnectionSurfaceGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a surface or at a face with surface geometry associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
-/// HISTORY New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 /// 
-/// IFC2x Edition 3 CHANGE The provision of topology with associated geometry, IfcFaceSurface, is enabled by using the IfcSurfaceOrFaceSurface.
+/// IFC2x Edition 3 CHANGE  The provision of topology with associated geometry, IfcFaceSurface, is enabled by using the IfcSurfaceOrFaceSurface.
 /// 
 /// Geometry use definitions 
-/// The IfcSurface (or the IfcFaceSurface with an associated IfcSurface) at the SurfaceOnRelatingElement attribute defines the surface where the basic geometry items of the connected elements connects. The surface geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionSurfaceGeometry. Optionally, the samesurface geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the SurfaceOnRelatedElement attribute.
+/// The IfcSurface (or the IfcFaceSurface with an associated IfcSurface) at the SurfaceOnRelatingElement attribute defines the surface where the basic geometry items of the connected elements connects. The surface geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionSurfaceGeometry. Optionally, the same surface geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the SurfaceOnRelatedElement attribute.
 class IFC_PARSE_API IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
 public:
     /// Surface at which related object is aligned at the relating element, given in the LCS of the relating element.
@@ -7489,15 +7505,15 @@ public:
 };
 /// An IfcConstraintAggregationRelationship is an objectified relationship that enables instances of IfcConstraint subtypes to be aggregated together logically. 
 /// 
-/// HISTORY New Entity in IFC Release 2.0. Modified in IFC2x2.
+/// HISTORY  New Entity in IFC Release 2.0. Modified in IFC2x2.
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcConstraintRelationship
+/// IFC2x4 CHANGE  Subtyped from IfcConstraintRelationship
 /// 
 /// Use definition 
 /// IfcConstraintAggregationRelationship allows the aggregation link between subtypes of constraint to be logically defined (AND, OR, XOR, NOTAND, NOTOR). In this way, whereby an object or property can have multiple constraints assigned, and the logical linkage between them can be specified. Thus linked constraints might show as for example (> X AND < Y) which is useful for an allowed range, or bounded value, for example, (A OR B OR C) which is valuable for an enumerated property where a selection is constrained to be (at least) one of A, B or C. 
 /// Figure 237 illustrates constraint aggregation.
 /// 
-/// Figure 237 &#8212; Constraint aggregation
+/// Figure 237 — Constraint aggregation
 class IFC_PARSE_API IfcConstraintAggregationRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcConstraintAggregationRelationship
@@ -7552,9 +7568,9 @@ public:
 /// EXAMPLE: Certain constraints related to an IfcWall may be derived from a constraint related to an
 /// IfcSpace.
 /// 
-/// HISTORY New entity in Release IFC2x2 (Addendum 1).
+/// HISTORY  New entity in Release IFC2x2 (Addendum 1).
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcResourceLevelRelationship.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship.
 class IFC_PARSE_API IfcConstraintRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcConstraintRelationship
@@ -7678,9 +7694,9 @@ public:
 /// that applies between two designated currencies at a particular time
 /// and as published by a particular source.
 /// 
-/// HISTORY New Entity in IFC2x2.
+/// HISTORY  New Entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcResourceLevelRelationship, attribute order changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, attribute order changed.
 /// 
 /// Use definitions
 /// An IfcCurrencyRelationship is used where there may be a need to reference an IfcCostValue in one currency to an IfcCostValue in another currency. It takes account of fact that currency exchange rates may vary by requiring the recording the date and time of the currency exchange rate used and the source that publishes the rate. There may be many sources and there are different strategies for currency conversion (spot rate, forward buying of currency at a fixed rate).
@@ -7749,13 +7765,13 @@ public:
 /// 
 /// The IfcCurveStyleFontAndScaling allows for the reuse of the same curve style definition in several sizes. The definition of the CurveFontScale is the scaling of a base curve style pattern to be used as a new or derived curve style pattern.
 /// 
-/// NOTE The CurveFontScale should not be mixed up with the target plot scale.
+/// NOTE  The CurveFontScale should not be mixed up with the target plot scale.
 /// 
-/// An example for IfcCurveStyleFontAndScaling is the sizing of a basic curve style dash pattern 'dash' (visible 0.01m, invisible 0.005m) into 'dash large' withCurveFontScale = 2 (resulting invisible 0.02m, invisible 0.01m), and into 'dash small'withCurveFontScale = 0.5 (resulting invisible 0.005m, invisible 0.0025m).
+/// An example for IfcCurveStyleFontAndScaling is the sizing of a basic curve style dash pattern 'dash' (visible 0.01m, invisible 0.005m) into 'dash large' with CurveFontScale = 2 (resulting in visible 0.02m, invisible 0.01m), and into 'dash small' with CurveFontScale = 0.5 (resulting in visible 0.005m, invisible 0.0025m).
 /// 
-/// NOTE Corresponding ISO 10303 name: curve_style_font_and_scaling. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: curve_style_font_and_scaling. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcCurveStyleFontAndScaling : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcCurveStyleFontAndScaling
@@ -7790,9 +7806,9 @@ class IFC_PARSE_API IfcCurveStyleFontPattern : public IfcUtil::IfcBaseEntity {
 public:
     /// The length of the visible segment in the pattern definition.
     /// 
-    /// NOTE For a visible segment representing a point, the value 0. should be assigned.
+    /// NOTE  For a visible segment representing a point, the value 0. should be assigned.
     /// 
-    /// IFC2x Edition 3 CHANGE The datatype has been changed to IfcLengthMeasure with upward compatibility for file-based exchange.
+    /// IFC2x Edition 3 CHANGE  The datatype has been changed to IfcLengthMeasure with upward compatibility for file-based exchange.
     double VisibleSegmentLength() const;
     void setVisibleSegmentLength(double v);
     /// The length of the invisible segment in the pattern definition.
@@ -8086,9 +8102,9 @@ public:
 };
 /// An IfcDocumentInformationRelationship is a relationship class that enables a document to have the ability to reference other documents.
 /// 
-/// HISTORY New entity in Release IFC2x.
+/// HISTORY  New entity in Release IFC2x.
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcResourceLevelRelationship, order of attributes changed.
+/// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, order of attributes changed.
 /// 
 /// Use definitions
 /// This class can be used to describe relationships in which one document may reference one or more other sub documents or where a document is used as a replacement for another document (but where both the original and the replacing document need to be retained).
@@ -8182,7 +8198,7 @@ public:
     bool hasLocation() const;
     /// Location, where the external source (classification, document or library) can be accessed by electronic means. The electronic location is provided as an URI, and would normally be given as an URL location string.
     /// 
-    /// IFC2x4 CHANGE The data type has been changed from IfcLabel to IfcURIReference.
+    /// IFC2x4 CHANGE  The data type has been changed from IfcLabel to IfcURIReference.
     std::string Location() const;
     void setLocation(std::string v);
     /// Whether the optional attribute ItemReference is defined for this IfcExternalReference
@@ -8230,11 +8246,11 @@ public:
 };
 /// IfcExternallyDefinedSurfaceStyle is a definition of a surface style through referencing an external source, such as a material library for rendering information.
 /// 
-/// NOTE In order to achieve expected results, the externally defined surface style should normally only be given in addition to an explicitly defined surface styles.
+/// NOTE  In order to achieve expected results, the externally defined surface style should normally only be given in addition to an explicitly defined surface styles.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The spelling has been corrected from IfcExternallyDefinedSufaceStyle with no upward compatibility.
+/// IFC2x3 CHANGE  The spelling has been corrected from IfcExternallyDefinedSufaceStyle with no upward compatibility.
 class IFC_PARSE_API IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
@@ -8274,11 +8290,11 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined text font is an external reference to a text font 
 /// 
-/// NOTE Restrictions of the font source and font names to be used may be exposed by implementation guidelines.
+/// NOTE  Restrictions of the font source and font names to be used may be exposed by implementation guidelines.
 /// 
-/// NOTE Corresponding ISO 10303 name: externally_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 137 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: externally_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 137 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
@@ -8295,7 +8311,7 @@ public:
 };
 /// An individual axis, IfcGridAxis, is defined in the context of a design grid.  The axis definition is based on a curve of dimensionality 2. The grid axis is positioned within the XY plane of the position coordinate system defined by the IfcDesignGrid.
 /// 
-/// HISTORY New entity in IFC Release 1.0
+/// HISTORY  New entity in IFC Release 1.0
 /// 
 /// Geometry use definitions
 /// The standard geometric representation of IfcGridAxis is
@@ -8315,7 +8331,7 @@ public:
 /// offset to the base axis. The use of IfcOffsetCurve2D as
 /// underlying AxisCurve supports this concept.
 /// 
-/// Figure 242 &#8212; Grid axis
+/// Figure 242 — Grid axis
 class IFC_PARSE_API IfcGridAxis : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute AxisTag is defined for this IfcGridAxis
@@ -8370,12 +8386,12 @@ public:
 };
 /// An IfcLibraryInformation describes a library where a library is a structured store of information, normally organized in a manner which allows information lookup through an index or reference value. IfcLibraryInformation provides the library Name and optional Version, VersionDate and Publisher attributes. A Location may be added for electronic access to the library.
 /// 
-/// NOTE The complete definition of the information in an external library is out of scope in this IFC release.
+/// NOTE  The complete definition of the information in an external library is out of scope in this IFC release.
 /// 
-/// HISTORY New
+/// HISTORY  New
 /// Entity in IFC2x.
 /// 
-/// IFC2x4 CHANGE Location attribute added, HasLibraryReferences inverse attribute added (previous LibraryReference changed to inverse).
+/// IFC2x4 CHANGE  Location attribute added, HasLibraryReferences inverse attribute added (previous LibraryReference changed to inverse).
 class IFC_PARSE_API IfcLibraryInformation : public IfcUtil::IfcBaseEntity {
 public:
     /// The name which is used to identify the library.
@@ -8395,7 +8411,7 @@ public:
     bool hasVersionDate() const;
     /// Date of the referenced version of the library.
     /// 
-    /// IFC2x4 CHANGE The data type has been changed to IfcDate, the date string according to ISO8601.
+    /// IFC2x4 CHANGE  The data type has been changed to IfcDate, the date string according to ISO8601.
     IfcCalendarDate* VersionDate() const;
     void setVersionDate(IfcCalendarDate* v);
     /// Whether the optional attribute LibraryReference is defined for this IfcLibraryInformation
@@ -8418,9 +8434,9 @@ public:
 /// 
 /// The ifcLibraryReference additionally provides the capability to handle multilingual library entries. The Language attribute then holds the language tag for the language used by the strings kept in the Name and the Description attribute.
 /// 
-/// HISTORY New Entity in IFC2.0.
+/// HISTORY  New Entity in IFC2.0.
 /// 
-/// IFC2x4 CHANGE Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
+/// IFC2x4 CHANGE  Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
 class IFC_PARSE_API IfcLibraryReference : public IfcExternalReference {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
@@ -8556,9 +8572,9 @@ public:
 /// styles, hatching definitions or surface coloring/rendering
 /// information to a material.
 /// 
-/// HISTORYNew entity in IFC2x4
+/// HISTORYÿNew entity in IFC2x4
 /// 
-/// IFC2x4 CHANGE The attributes Description and Category have been added.
+/// IFC2x4 CHANGEÿ The attributes Description and Category have been added.
 class IFC_PARSE_API IfcMaterial : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the material. 
@@ -8584,9 +8600,9 @@ public:
 };
 /// IfcMaterialClassificationRelationship is a relationship assigning classifications to materials.
 /// 
-/// HISTORY New entity in IFC2x.
+/// HISTORYÿ New entity in IFC2x.
 /// 
-/// IFC2x4 CHANGE The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
+/// IFC2x4 CHANGEÿ The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
 class IFC_PARSE_API IfcMaterialClassificationRelationship : public IfcUtil::IfcBaseEntity {
 public:
     /// The material classifications identifying the type of material.
@@ -8609,7 +8625,7 @@ public:
 };
 /// IfcMaterialLayer is a single and identifiable part of an element which is constructed of a number of layers (one or more). Each IfcMaterialLayer has a constant thickness and is located relative to the referencing IfcMaterialLayerSet along the MlsBase.
 /// 
-/// EXAMPLE A cavity wall with brick masonry used with
+/// EXAMPLE  A cavity wall with brick masonry used with
 /// an air gap in between would be modeled using three
 /// IfcMaterialLayer's: [1] Brick, [2] Air gap, [3] Brick. The
 /// inner layer "Brick" would have a Name = "Brick", an
@@ -8622,14 +8638,14 @@ public:
 /// that might be different to the IfcMaterial name
 /// referenced.
 /// 
-/// EXAMPLE The IfcMaterialLayer name of an
+/// EXAMPLE  The IfcMaterialLayer name of an
 /// insulation layer can be "Insulation", whereas the
 /// IfcMaterial name is "polystyrene insulating
 /// boards".
 /// 
-/// HISTORY New entity in IFC 1.5
+/// HISTORY  New entity in IFC 1.5
 /// 
-/// IFC2x4 CHANGE The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
+/// IFC2x4 CHANGE  The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
 class IFC_PARSE_API IfcMaterialLayer : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Material is defined for this IfcMaterialLayer
@@ -8639,9 +8655,9 @@ public:
     void setMaterial(IfcMaterial* v);
     /// The thickness of the material layer. The dimension is measured along the positive MlsDirection as specified in IfcMaterialLayerSet (that is mapped to AXIS-2, as specified in IfcMaterialLayerSetUsage for element occurrences supporting IfcMaterialLayerSetUsage.
     /// 
-    /// NOTE The attribute value can be 0. for material thicknesses very close to zero, such as for a membrane. Material layers with thickess 0. shall not be rendered in the geometric representation.
+    /// NOTE  The attribute value can be 0. for material thicknesses very close to zero, such as for a membrane. Material layers with thickess 0. shall not be rendered in the geometric representation.
     /// 
-    /// IFC2x4 CHANGE The attribute datatype has been changed to IfcNonNegativeLengthMeasure allowing for 0. as thickness.
+    /// IFC2x4 CHANGE  The attribute datatype has been changed to IfcNonNegativeLengthMeasure allowing for 0. as thickness.
     double LayerThickness() const;
     void setLayerThickness(double v);
     /// Whether the optional attribute IsVentilated is defined for this IfcMaterialLayer
@@ -8685,9 +8701,9 @@ public:
 /// gap is identified, using the IsVentilated flag at
 /// IfcMaterialLayer.
 /// 
-/// HISTORY New entity in IFC 1.0
+/// HISTORY  New entity in IFC 1.0
 /// 
-/// IFC2x4 CHANGE Subtyped from IfcMaterialDefinition, the attribute Description
+/// IFC2x4 CHANGE  Subtyped from IfcMaterialDefinition, the attribute Description
 /// has been added at the end of attribute list.
 /// 
 /// Attribute use definition
@@ -8698,7 +8714,7 @@ public:
 /// first layer starting from the MlsBase and following layers being
 /// placed on top of the previous (no gaps or overlaps).
 /// 
-/// Figure 285 &#8212; Material layer set
+/// Figure 285 — Material layer set
 class IFC_PARSE_API IfcMaterialLayerSet : public IfcUtil::IfcBaseEntity {
 public:
     /// Identification of the layers from which the material layer set is composed.
@@ -8729,7 +8745,7 @@ public:
 /// the element geometry). The rules to ensure the compatibility
 /// depend on the type of the building element.
 /// 
-/// EXAMPLE For a cavity brick wall with shape
+/// EXAMPLE ÿFor a cavity brick wall with shape
 /// representation SweptSolid, the
 /// IfcMaterialLayerSet.TotalThickness shall be equal to the
 /// wall thickness. Also the OffsetFromReferenceLine shall
@@ -8739,7 +8755,7 @@ public:
 /// RepresentationIdentifier="Axis" and
 /// RepresentationIdentifier="Body".
 /// 
-/// NOTE Refer to the implementation guide and agreements for
+/// NOTE ÿRefer to the implementation guide and agreements for
 /// more information on matching between building element geometry
 /// and material layer set usage.
 /// 
@@ -8750,7 +8766,7 @@ public:
 /// objects. If the element type is available (i.e. the relevant
 /// subtype of IfcElementType, then the
 /// IfcMaterialLayerSet can be assigned to the type object.
-/// The assignment between asubtype of IfcElement and the
+/// The assignment between aÿsubtype of IfcElement and the
 /// IfcMaterialLayerSetUsage is handled by
 /// IfcRelAssociatesMaterial.
 /// 
@@ -8763,55 +8779,55 @@ public:
 /// material layer thicknesses are constant.
 /// Generally, an element may be layered in any of its primary
 /// directions, denoted by its x, y or z axis. The geometry use
-/// definitions at eachspecific types of building element will
-/// determine the applicableLayerSetDirection.
+/// definitions at eachÿspecific types of building element will
+/// determine the applicableÿLayerSetDirection.
 /// 
 /// The following examples illustrate how the IfcMaterialLayerSetUsage attributes (LayerSetDirection, DirectionSense, OffsetFromReferenceLine) can
 /// be used in different cases. The normative material use definitions are documented at each element (how these shall be used).
 /// 
 /// Figure 286 shows an example of the use of IfcMaterialLayerSetUsage aligned to the axis of a wall.
 /// 
-/// EXAMPLE For a standard wall with extruded
+/// EXAMPLE  For a standard wall with extruded
 /// geometric representation (vertical extrusion), the layer set
 /// direction will be perpendicular to extrusion direction,
-/// andcan be derived from the direction of the wall
+/// andÿcan be derived from the direction of the wall
 /// axis. With the DirectionSense(positive in
 /// this example) the individual IfcMaterialLayers are
 /// assigned consecutively right-to-left or left-to-right. For a
 /// curved wall, "direction denoting the wall thickness" can be
 /// derived from the direction of the wall axis, and it will remain
 /// perpendicular to the wall path. The
-/// DirectionSenseapplies as well.
+/// DirectionSenseÿapplies as well.
 /// 
-/// NOTE According to the IfcWallStandardCase material use
+/// NOTE  According to the IfcWallStandardCase material use
 /// definition the LayerSetDirection for
 /// IfcWallStandardCase is always AXIS2 (i.e. along the
 /// y-axis), as shown in this example.
 /// 
-/// Figure 286 &#8212; Material layer set usage for wall
+/// Figure 286 — Material layer set usage for wall
 /// 
 /// Figure 287 shows an example of the use of IfcMaterialLayerSetUsage aligned to a slab.
 /// 
-/// EXAMPLEFor a slab with perpendicular
+/// EXAMPLE ÿFor a slab with perpendicular
 /// extruded geometric representation, the LayerSetDirection
 /// will coincide with the extrusion direction (in positive or
 /// negative sense). In this example, the material layer set base is
 /// the extruded profile and consistent with the
-/// IfcExtrudedAreaSolid.Position,with the
+/// IfcExtrudedAreaSolid.Position,ÿwith the
 /// DirectionSensebeing positive, the
 /// individual IfcMaterialLayers are built up from the base
 /// towards positive z direction in this case.
 /// 
-/// NOTE According to the IfcSlabStandardCase
+/// NOTE ÿAccording to the IfcSlabStandardCase
 /// material use definition the LayerSetDirection for
 /// IfcSlabStandardCase is always AXIS3 (i.e. along the
 /// z-axis).
 /// 
-/// Figure 287 &#8212; Material layer set usage for slab
+/// Figure 287 — Material layer set usage for slab
 /// 
 /// Figure 288 shows an example of the use of IfcMaterialLayerSetUsage aligned to a roof slab with non-perpendicular extrusion.
 /// 
-/// EXAMPLEFor a slab with non-perpendicular
+/// EXAMPLE ÿFor a slab with non-perpendicular
 /// extruded geometric representation, the guidelines above apply as
 /// well. The material layer thickness and the
 /// OffsetFromReferenceLine is always measured
@@ -8820,7 +8836,7 @@ public:
 /// not equal to the extrusion depth of the
 /// geometry.
 /// 
-/// Figure 288 &#8212; Material layer set usage for roof slab
+/// Figure 288 — Material layer set usage for roof slab
 class IFC_PARSE_API IfcMaterialLayerSetUsage : public IfcUtil::IfcBaseEntity {
 public:
     /// The IfcMaterialLayerSet set to which the usage is applied.
@@ -8828,16 +8844,16 @@ public:
     void setForLayerSet(IfcMaterialLayerSet* v);
     /// Orientation of the material layer set relative to element reference geometry. The meaning of the value of this attribute shall be specified in the geometry use section for each element. For extruded shape representation, direction can be given along the extrusion path (e.g. for slabs) or perpendicular to it (e.g. for walls).
     /// 
-    /// NOTE the LayerSetDirection for IfcWallStandardCase shall be AXIS2 (i.e. the y-axis) and for IfcSlabStandardCase and IfcPlateStandardCase it shall be AXIS3 (i.e. the z-axis).
+    /// NOTE  the LayerSetDirection for IfcWallStandardCase shall be AXIS2 (i.e. the y-axis) and for IfcSlabStandardCase and IfcPlateStandardCase it shall be AXIS3 (i.e. the z-axis).
     /// 
     /// Whether the material layers of the set being used shall 'grow' into the positive or negative direction of the given axis, shall be deifned by DirectionSense attribute.
     IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum LayerSetDirection() const;
     void setLayerSetDirection(IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum v);
     /// Denotion whether the material layer set is oriented in positive or negative sense along the specified axis (defined by LayerSetDirection). "Positive" means that the consecutive layers (the IfcMaterialLayer instances in the list of  IfcMaterialLayerSet.MaterialLayers) are placed face-by-face in the direction of the positive axis as established by LayerSetDirection: for AXIS2 it would be in +y, for AXIS3 it would be +z. "Negative" means that the layers are placed face-by-face in the direction of the negative LayerSetDirection. In both cases,  starting at the material layer set base line.
-    /// NOTE the material layer set base line (MlsBase) is located by OffsetFromReferenceLine, and may be on the positive or negative side of the element reference line (or plane); positive or negative for MlsBase placement does not depend on the DirectionSense attribute, but on the relevant element axis.
+    /// NOTE  the material layer set base line (MlsBase) is located by OffsetFromReferenceLine, and may be on the positive or negative side of the element reference line (or plane); positive or negative for MlsBase placement does not depend on the DirectionSense attribute, but on the relevant element axis.
     IfcDirectionSenseEnum::IfcDirectionSenseEnum DirectionSense() const;
     void setDirectionSense(IfcDirectionSenseEnum::IfcDirectionSenseEnum v);
-    /// Offset of the material layer set base line (MlsBase) from reference geometry (line or plane) of element. The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. A positive value means, that the MlsBase is placed on the positive side of the reference line or plane, on the axis established by LayerSetDirection (in case of AXIS2 into the direction of +y, or in case of AXIS2 into the direction of +z). A negative value means that the MlsBase is placed on the negative side, as established by LayerSetDirection (in case of AXIS2 into the direction of -y). NOTE the positive or negative sign in the offset only affects the MlsBase placement, it does not have any effect on the application of DirectionSense for orientation of the material layers; also DirectionSense does not change the MlsBase placement.
+    /// Offset of the material layer set base line (MlsBase) from reference geometry (line or plane) of element. The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. A positive value means, that the MlsBase is placed on the positive side of the reference line or plane, on the axis established by LayerSetDirection (in case of AXIS2 into the direction of +y, or in case of AXIS2 into the direction of +z). A negative value means that the MlsBase is placed on the negative side, as established by LayerSetDirection (in case of AXIS2 into the direction of -y). NOTE  the positive or negative sign in the offset only affects the MlsBase placement, it does not have any effect on the application of DirectionSense for orientation of the material layers; also DirectionSense does not change the MlsBase placement.
     double OffsetFromReferenceLine() const;
     void setOffsetFromReferenceLine(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -8867,7 +8883,7 @@ public:
 /// of a single identifiable material (for example, to represent anisotropic
 /// material).
 /// 
-/// IFC2x4 CHANGE The entity IfcMaterialList is deprecated and shall no longer
+/// IFC2x4 CHANGEÿ The entity IfcMaterialList is deprecated and shall no longer
 /// be used. Use IfcMaterialConstituentSet instead.
 class IFC_PARSE_API IfcMaterialList : public IfcUtil::IfcBaseEntity {
 public:
@@ -8892,7 +8908,7 @@ public:
 /// individual material definiton may be identified by a Name
 /// and a Description.
 /// 
-/// NOTE The set of material properties can be assigned
+/// NOTE  The set of material properties can be assigned
 /// to an individual IfcMaterial, a set or composite of
 /// materials (IfcMaterialConstituent,
 /// IfcMaterialConstituentSet), or set or individual material
@@ -8905,9 +8921,9 @@ public:
 /// material properties defined in this IFC specification and those
 /// defined as user-defined extended material properties.
 /// 
-/// HISTORY New Entity in IFC 2x.
+/// HISTORY  New Entity in IFC 2x.
 /// 
-/// IFC2x4 CHANGE The subtypes that represented a fixed list of statically defined material properties, IfcMechanicalMaterialProperties, IfcThermalMaterialProperties, IfcHygroscopicMaterialProperties, IfcGeneralMaterialProperties, IfcOpticalMaterialProperties, IfcWaterProperties, IfcFuelProperties, IfcProductsOfCombustionProperties have been deleted, use the generic IfcExtendedMaterialProperties instead.
+/// IFC2x4 CHANGE  The subtypes that represented a fixed list of statically defined material properties, IfcMechanicalMaterialProperties, IfcThermalMaterialProperties, IfcHygroscopicMaterialProperties, IfcGeneralMaterialProperties, IfcOpticalMaterialProperties, IfcWaterProperties, IfcFuelProperties, IfcProductsOfCombustionProperties have been deleted, use the generic IfcExtendedMaterialProperties instead.
 class IFC_PARSE_API IfcMaterialProperties : public IfcUtil::IfcBaseEntity {
 public:
     /// Reference to the material definition to which the set of properties is assigned.
@@ -9364,7 +9380,7 @@ public:
 /// 
 /// IfcOwnerHistory is used to identify the creating and owning application and user for the associated object, as well as capture the last modifying application and user.
 /// 
-/// HISTORY New entity in IFC R1.0. Modified in IFC R2x4.
+/// HISTORY  New entity in IFC R1.0. Modified in IFC R2x4.
 /// 
 /// Informal propositions
 /// 
@@ -9519,7 +9535,7 @@ public:
 /// 
 /// The Name attribute defines the actual usage or kind of measure. The interpretation of the name label has to be established within the actual exchange context. In addition an informative text may be associated to each quantity by the Description attribute. 
 /// 
-/// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IFC_PARSE_API IfcPhysicalQuantity : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the element quantity or measure. The name attribute has to be made recognizable by further agreements.
@@ -9545,13 +9561,13 @@ public:
 };
 /// The physical quantity, IfcPhysicalSimpleQuantity, is an entity that holds a single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity) together with a semantic definition of the usage for the measure value. 
 /// 
-/// EXAMPLE An element, like a wall, may have several area measures, like footprint area, left wall face area, right wall face area. These areas would be given by three instances of the area quantity subtype, with different Name string values.
+/// EXAMPLE  An element, like a wall, may have several area measures, like footprint area, left wall face area, right wall face area. These areas would be given by three instances of the area quantity subtype, with different Name string values.
 /// 
 /// A section "Quantity Use Definition" at individual entities as subtypes of IfcBuildingElement gives guidance to the usage of the Name attribute to characterize the individual quantities. If the Unit attribute is given, the value attribute (introduced at the level of subtypes of IfcPhysicalSimpleQuantity) are given as quantities of this unit, otherwise the global unit definitions (given by IfcUnitAssignment) are used.
 /// 
 /// HISTORY New entity in IFC2x2 Addendum 1.
 /// 
-/// IFC2x2 ADDENDUM 1 CHANGE The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x2 ADDENDUM 1 CHANGE  The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
     /// Whether the optional attribute Unit is defined for this IfcPhysicalSimpleQuantity
@@ -9631,11 +9647,11 @@ public:
 };
 /// A pre defined item is a qualified name given to a style or font which is determined within the data exchange specification by convention on using the Name attribute value (in contrary to externally defined items, which are agreed by an external source).
 /// 
-/// NOTE The convention on using the Name value is defined at the subtypes of IfcPreDefinedItem and is part of the specification.
+/// NOTE  The convention on using the Name value is defined at the subtypes of IfcPreDefinedItem and is part of the specification.
 /// 
-/// NOTE Corresponding ISO 10303 name: pre_defined_item. Please refer to ISO/IS 10303-41:1994, page 137 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_item. Please refer to ISO/IS 10303-41:1994, page 137 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcPreDefinedItem : public IfcUtil::IfcBaseEntity {
 public:
     /// The string by which the pre defined item is identified. Allowable values for the string are declared at the level of subtypes.
@@ -9695,11 +9711,11 @@ public:
 /// 
 /// IfcTextStyleFontModel for definitions from Cascading Style Sheets, level 1, W3C Recommendation 17 Dec 1996, revised 11 Jan 1999, CSS1, for all true type text. The use of the CSS1 definitions is the preferred way to represent text fonts.
 /// 
-/// NOTE Corresponding ISO 10303 name: pre_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The IfcTextStyleFontModel has been added as new subtype.
+/// IFC2x3 CHANGE  The IfcTextStyleFontModel has been added as new subtype.
 class IFC_PARSE_API IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
@@ -9716,19 +9732,19 @@ public:
 };
 /// The presentation layer assignment provides the layer name (and optionally a description and an identifier) for a collection of geometric representation items. The IfcPresentationLayerAssignment corresponds to the term "CAD Layer" and is used mainly for grouping and visibility control.
 /// 
-/// NOTE The use of presentation layer shall be restricted to simple grouping and displaying purposes.
+/// NOTE  The use of presentation layer shall be restricted to simple grouping and displaying purposes.
 /// 
 /// Visibility and access control and layer style assignment (colour, line style, line width) is handled by the subtype IfcPresentationLayerAssignmentWithStyle.
 /// 
-/// NOTE Corresponding ISO 10303 name: presentation layer assignment. Please refer to ISO/IS 10303-46:1994, p. 36 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: presentation layer assignment. Please refer to ISO/IS 10303-46:1994, p. 36 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Attribute use definition
 /// 
 /// Figure 305 illustrates assignment of items by shape representation or representation item. The set of AssignedItems can either include a whole shape representation, or individual geometric representation items. If both, the IfcShapeRepresentation has a layer assignment, and an individual geometric representation item in the set of IfcShapeRepresentation.Items, then the layer assignment of the IfcGeometricRepresentationItem overides the layer assignment of the IfcShapeRepresentation.
 /// 
-/// Figure 305 &#8212; Presentation layer assignment
+/// Figure 305 — Presentation layer assignment
 class IFC_PARSE_API IfcPresentationLayerAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of the layer.
@@ -9763,15 +9779,15 @@ public:
 /// 
 /// The visibility control allows to define a layer to be either 'on' or 'off', and/or 'frozen' or 'not frozen'. The access control allows to block graphical entities from manipulations by setting a layer to be either 'blocked' or 'not blocked'. Common style information can be given to the layer.
 /// 
-/// NOTE Style information assigned to layers is often restricted to 'layer colour', 'curve font', and/or 'curve width'. These styles are assigned by using the IfcCurveStyle within the LayerStyles.
+/// NOTE  Style information assigned to layers is often restricted to 'layer colour', 'curve font', and/or 'curve width'. These styles are assigned by using the IfcCurveStyle within the LayerStyles.
 /// 
 /// NOTE: If a styled item is assigned to a layer using the IfcPresentationLayerAssignmentWithStyle, it inherits the style information from the layer. In this case, it should omit its own style information. If the styled item has style information assigned (such as by IfcCurveStyle, IfcFillAreaStyle, IfcTextStyle, IfcSurfaceStyle, IfcSymbolStyle), then it overrides the style provided by the IfcPresentationLayerAssignmentWithStyle.
 /// 
-/// NOTE The IfcPresentationLayerAssignmentWithStyle extends the presentation_layer_assignment entity as defined in ISO/IS 10303-46:1994, p. 36.
+/// NOTE  The IfcPresentationLayerAssignmentWithStyle extends the presentation_layer_assignment entity as defined in ISO/IS 10303-46:1994, p. 36.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The attributes have been modified without upward compatibility.
+/// IFC2x3 CHANGE  The attributes have been modified without upward compatibility.
 class IFC_PARSE_API IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
@@ -9785,9 +9801,9 @@ public:
     void setLayerBlocked(bool v);
     /// Assignment of presentation styles to the layer to provide a default style for representation items.
     /// 
-    /// NOTE In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
+    /// NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
     /// 
-    /// IFC2x4 CHANGE The data type has been changed from IfcPresentationStyleSelect (now deprecated) to IfcPresentationStyle.
+    /// IFC2x4 CHANGE  The data type has been changed from IfcPresentationStyleSelect (now deprecated) to IfcPresentationStyle.
     IfcEntityList::ptr LayerStyles() const;
     void setLayerStyles(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 8; }
@@ -9804,9 +9820,9 @@ public:
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
 /// 
-/// Each subtype of IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
+/// Each subtype of  IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcPresentationStyle : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcPresentationStyle
@@ -9856,15 +9872,15 @@ public:
 /// 
 /// NOTE: The definition
 /// of this entity relates to the ISO 10303 entity property_definition.
-/// The use of the term &#8216;property&#8217; was avoided since it
+/// The use of the term ‘property’ was avoided since it
 /// conflicts with the property, property type, and property set
 /// definitions elsewhere in the IFC model.
 /// 
 /// HISTORY New entity in IFC Release 2.0
 /// 
-/// IFC2x3 NOTEUsers should not instantiate the entity from IFC2x Edition 3 onwards.
+/// IFC2x3 NOTE ÿUsers should not instantiate the entity from IFC2x Edition 3 onwards.
 /// 
-/// IFC2x4 CHANGE Entity made abstract.
+/// IFC2x4 CHANGE  Entity made abstract.
 class IFC_PARSE_API IfcProductRepresentation : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute Name is defined for this IfcProductRepresentation
@@ -9940,11 +9956,11 @@ public:
 ///   profiles can be defined, which include two or more profile definitions
 ///   to define the resulting profile.
 /// 
-/// HISTORY New class in IFC Release 1.5, the capabilities have been extended in IFC Release 2x.
+/// HISTORY  New class in IFC Release 1.5, the capabilities have been extended in IFC Release 2x.
 /// Profiles can now support swept surfaces and swept area solids with
 /// inner boundaries. It had been renamed from IfcAttDrivenProfileDef.
 /// 
-/// IFC2x4 CHANGE Changed from ABSTRACT to non-abstract for uses which do not
+/// IFC2x4 CHANGE  Changed from ABSTRACT to non-abstract for uses which do not
 /// require an explicitly defined geometry.  Added inverse attributes HasProperties and HasExternalReference.
 /// 
 /// Use in material association
@@ -9985,7 +10001,7 @@ public:
 /// on transformations of the start profile and thus maintaining the
 /// identity of vertices and edges.
 /// 
-/// NOTE Subtypes of the IfcProfileDef
+/// NOTE  Subtypes of the IfcProfileDef
 /// contain parameterized profiles (as subtypes of IfcParameterizedProfileDef)
 /// which establish their own 2D position coordinate system, profiles given
 /// by explicit curve geometry (either open or closed profiles) and two
@@ -10019,7 +10035,7 @@ public:
 /// Sweeping
 /// 
 /// In the later use of the IfcProfileDef
-/// within the swept surface or swept area solid, e.g. the IfcExtrudedAreaSolid
+/// within the swept surface or swept area solid,  e.g. the IfcExtrudedAreaSolid
 /// (here used as an example), the profile boundaries (here based on the 2D
 /// position coordinate system of IfcParameterizedProfileDef)
 /// are placed within the xy plane of the 3D position coordinate system of
@@ -10041,7 +10057,7 @@ public:
 /// when using IfcCompositeProfileDef the insertion depends on
 ///   the subtype of the included sub-profiles.
 /// 
-/// Figure 320 &#8212; Profile sweeping
+/// Figure 320 — Profile sweeping
 /// 
 /// Profile types
 /// 
@@ -10051,7 +10067,7 @@ public:
 /// 
 /// ProfileType = CURVE
 /// 
-/// Figure 321 &#8212; Profile types
+/// Figure 321 — Profile types
 /// 
 /// Profile specification by external reference
 /// 
@@ -10123,9 +10139,9 @@ public:
 /// properties for precast concrete double-T sections
 /// properties for precast concrete hollow core sections
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGE Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
+/// IFC2x4 CHANGE  Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
 class IFC_PARSE_API IfcProfileProperties : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute ProfileName is defined for this IfcProfileProperties
@@ -10151,7 +10167,7 @@ public:
 };
 /// IfcProperty is an abstract generalization for all types of properties that can be associated with IFC objects through the property set mechanism. 
 /// 
-/// HISTORY New entity in IFC Release 1.0.
+/// HISTORY  New entity in IFC Release 1.0.
 class IFC_PARSE_API IfcProperty : public IfcUtil::IfcBaseEntity {
 public:
     /// Name for this property. This label is the significant name string that defines the semantic meaning for the property.
@@ -10206,9 +10222,9 @@ public:
 };
 /// An IfcPropertyDependencyRelationship describes an identified dependency between the value of one property and that of another.
 /// 
-/// HISTORY New entity in IFC2x2
+/// HISTORY  New entity in IFC2x2
 /// 
-/// IFC2x4 CHANGE Made subtype of IfcResourceLevelRelationship (attribute order changed).
+/// IFC2x4 CHANGE  Made subtype of IfcResourceLevelRelationship (attribute order changed).
 /// 
 /// Use Definition
 /// Whilst the IfcPropertyDependencyRelationship may be used to describe the dependency, and it may do so in terms of the expression of how the dependency operates, it is not possible through the current IFC model for the value of the related property to be actually derived from the value of the relating property. The determination of value according to the dependency is required to be performed by an application that can then use the Expression attribute to flag the form of the dependency.
@@ -10275,22 +10291,22 @@ public:
 ///   IfcString
 ///   -
 /// 
-/// 
+///  
 ///   Opposed
 ///   IfcString
-///   
+///    
 /// 
-/// 
+///  
 ///   Other
 ///   IfcString
-///   
+///    
 /// 
-/// 
+///  
 ///   Unset
 ///   IfcString
-///   
+///    
 /// 
-/// HISTORY New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x. Entity has been renamed from IfcEnumeration in IFC Release 2x.
+/// HISTORY  New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x. Entity has been renamed from IfcEnumeration in IFC Release 2x.
 class IFC_PARSE_API IfcPropertyEnumeration : public IfcUtil::IfcBaseEntity {
 public:
     /// Name of this enumeration.
@@ -10318,9 +10334,9 @@ public:
 };
 /// IfcQuantityArea is a physical quantity that defines a derived area measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
-/// EXAMPLE An opening may have an opening area used to deduct it from the wall surface area. The actual size of the area depends on the method of measurement used.
+/// EXAMPLE  An opening may have an opening area used to deduct it from the wall surface area. The actual size of the area depends on the method of measurement used.
 /// 
-/// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IFC_PARSE_API IfcQuantityArea : public IfcPhysicalSimpleQuantity {
 public:
     /// Area measure value of this quantity.
@@ -10340,9 +10356,9 @@ public:
 };
 /// IfcQuantityCount is a physical quantity that defines a derived count measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
-/// EXAMPLE An radiator may be measured according to its number of coils. The actual counting method depends on the method of measurement used.
+/// EXAMPLE  An radiator may be measured according to its number of coils. The actual counting method depends on the method of measurement used.
 /// 
-/// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IFC_PARSE_API IfcQuantityCount : public IfcPhysicalSimpleQuantity {
 public:
     /// Count measure value of this quantity.
@@ -10362,9 +10378,9 @@ public:
 };
 /// IfcQuantityLength is a physical quantity that defines a derived length measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
 /// 
-/// EXAMPLE A rafter within a roof construction may be measured according to its length (taking a common cross section into account). The actual size of the length depends on the method of measurement used.
+/// EXAMPLE  A rafter within a roof construction may be measured according to its length (taking a common cross section into account). The actual size of the length depends on the method of measurement used.
 /// 
-/// HISTORY New entity in IFC Release 2.x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC Release 2.x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IFC_PARSE_API IfcQuantityLength : public IfcPhysicalSimpleQuantity {
 public:
     /// Length measure value of this quantity.
@@ -10384,9 +10400,9 @@ public:
 };
 /// IfcQuantityTime is an element quantity that defines a time measure to provide an property of time related to an element. It is normally given by the recipe information of the element under the specific measure rules given by a method of measurement.
 /// 
-/// EXAMPLE The amount of time needed to pour concrete for a wall is given as a time quantity for the labor part of the recipe information.
+/// EXAMPLE  The amount of time needed to pour concrete for a wall is given as a time quantity for the labor part of the recipe information.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcQuantityTime : public IfcPhysicalSimpleQuantity {
 public:
     /// Time measure value of this quantity.
@@ -10406,7 +10422,7 @@ public:
 };
 /// IfcQuantityVolume is a physical quantity that defines a derived volume measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
-/// EXAMPLE A thick brick wall may be measured according to its volume. The actual size of the volume depends on the method of measurement used.
+/// EXAMPLE  A thick brick wall may be measured according to its volume. The actual size of the volume depends on the method of measurement used.
 /// 
 /// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IFC_PARSE_API IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
@@ -10428,9 +10444,9 @@ public:
 };
 /// IfcQuantityWeight is a physical element quantity that defines a derived weight measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
 /// 
-/// EXAMPLE The amount of reinforcement used within a building element may be measured according to its weight. The actual size of the weight depends on the method of measurement used.
+/// EXAMPLE  The amount of reinforcement used within a building element may be measured according to its weight. The actual size of the weight depends on the method of measurement used.
 /// 
-/// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
+/// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
 class IFC_PARSE_API IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
 public:
     /// Mass measure value of this quantity.
@@ -10477,7 +10493,7 @@ public:
 };
 /// IfcReinforcementProperties defines the set of properties for a specific combination of reinforcement bar steel grade, bar type and effective depth. 
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// The total cross section area for the specific steel grade is always provided. Additionally also general reinforcing bar configurations as a count of bars may be provided as defined in attribute BarCount. In this case the nominal bar diameter should be identical for all given bars as defined in attribute NominalBarDiameter.
 class IFC_PARSE_API IfcReinforcementBarProperties : public IfcUtil::IfcBaseEntity {
@@ -10570,19 +10586,19 @@ public:
 ///   IfcElement, or in view definitions / implementer
 ///   agreements.
 /// 
-/// NOTEThe definition of this
+/// NOTE ÿThe definition of this
 ///   entity relates to the ISO 10303 entity representation. Please
 ///   refer to ISO/IS 10303-43:1994 for the final definition of
 ///   the formal standard.
 /// 
-/// HISTORY New entity in IFC Release 2.0
+/// HISTORY  New entity in IFC Release 2.0
 /// 
-/// IFC2x3 CHANGE The
+/// IFC2x3 CHANGE  The
 ///   inverse attributes LayerAssignments
 ///   andRepresentationMap have been added with upward
 ///   compatibility.
 /// 
-/// IFC2x4 CHANGE Entity
+/// IFC2x4 CHANGE  Entity
 ///   IfcRepresentation has been changed into an ABSTRACT
 ///   supertype.
 class IFC_PARSE_API IfcRepresentation : public IfcUtil::IfcBaseEntity {
@@ -10623,9 +10639,9 @@ public:
 /// 
 /// The IfcRepresentationContext defines the context to which the IfcRepresentation of a product is related.
 /// 
-/// NOTE The definition of this class relates to the ISO 10303 entity representation_context. Please refer to ISO/IS 10303-43:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this class relates to the ISO 10303 entity representation_context. Please refer to ISO/IS 10303-43:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x4 CHANGE Entity made abstract, had been deprecated from instantiation since
 /// IFC2x2.
@@ -10662,30 +10678,30 @@ public:
 /// representation item when it is referenced by that representation
 /// item.
 /// 
-/// NOTE Corresponding entity in ISO 10303-43:1994: representation_item. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The attribute 'name' and the WR1 have not been incorporated.
+/// NOTE  Corresponding entity in ISO 10303-43:1994: representation_item. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The attribute 'name' and the WR1 have not been incorporated.
 /// 
 /// The IfcRepresentationItem is used within an IfcRepresentation (directly or indirectly through other IfcRepresentationItem's) to represent an IfcProductRepresentation. Most commonly these IfcRepresentationItem's are geometric or topological representation items, that can (but not need to) have presentation style infomation assigned.
 /// 
-/// NOTE The assignment of a style is only applicable
+/// NOTE  The assignment of a style is only applicable
 /// to the subtypes IfcGeometricRepresentationItem, IfcMappedItem and some selected subtypes of IfcTopologicalRepresentationItem (IfcVertexPoint, IfcEdgeCurve, IfcFaceSurface).
 /// 
 /// In case that presentation style information is applied, it can be either applied by an IfcStyledItem, or by an assignment to an IfcPresentationLayerWithStyle. If both are present, and both style assignments include the same subtype of IfcPresentationStyle, then the style assigned by IfcStyledItem takes priority.
 /// 
 /// Figure 281 shows an instance diagram explaining the use of IfcStyledItem and IfcPresentationLayerWithStyle to apply presentation styles.
 /// 
-/// EXAMPLE The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles are different, IfcCurveStyle and IfcSurfaceStyle, both are applied to the geometric representation item.
+/// EXAMPLE  The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles are different, IfcCurveStyle and IfcSurfaceStyle, both are applied to the geometric representation item.
 /// 
-/// Figure 281 &#8212; Representation item style
+/// Figure 281 — Representation item style
 /// 
 /// Figure 282 shows in instance diagram explaining the override of IfcPresentationLayerWithStyle by IfcStyledItem to apply presentation styles.
 /// 
-/// EXAMPLE The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles for curve style are aprovided by both, the IfcCurveStyle provided by the IfcStyledItem overrides the IfcCurveStyle provided by the IfcPresentationLayerWithStyle
+/// EXAMPLE  The assignment of style information by a styled item and a presentation layer with style. Since the presentation styles for curve style are aprovided by both, the IfcCurveStyle provided by the IfcStyledItem overrides the IfcCurveStyle provided by the IfcPresentationLayerWithStyle
 /// 
-/// Figure 282 &#8212; Representation item style override
+/// Figure 282 — Representation item style override
 /// 
-/// HISTORY New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 /// 
-/// IFC2x3 CHANGE The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE  The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcRepresentationItem : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
@@ -10704,15 +10720,15 @@ public:
 };
 /// Definition from ISO/CD 10303-43:1992: A representation map is the identification of a representation and a representation item in that representation for the purpose of mapping. The representation item defines the origin of the mapping. The representation map is used as the source of a mapping by a mapped item.
 /// 
-/// NOTE Corresponding ISO 10303 entity: representation_map. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The mapping_origin (MappingOrigin) is constrained to be of type axis2_placement (IfcAxis2Placement).
+/// NOTE  Corresponding ISO 10303 entity: representation_map. Please refer to ISO/IS 10303-43:1994, for the final definition of the formal standard. The following changes have been made: The mapping_origin (MappingOrigin) is constrained to be of type axis2_placement (IfcAxis2Placement).
 /// 
 /// An IfcRepresentationMap defines the base definition (also referred to as block, cell or macro) called MappedRepresentation within the MappingOrigin. The MappingOrigin defines the coordinate system in which the MappedRepresentation is defined.
 /// 
 /// The RepresentationMap is used through an IfcMappeditem in one or several IfcShapeRepresentation's. An Cartesian transformation operator can be applied to transform the MappedRepresentation into the placement coordinate system of the shape representation. The transformation of the representation map is restricted to be a Cartesian transformation mapping (translation, rotation, mirroring and scaling).
 /// 
-/// NOTE The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
+/// NOTE  The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
 /// 
-/// HISTORY New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 class IFC_PARSE_API IfcRepresentationMap : public IfcUtil::IfcBaseEntity {
 public:
     /// An axis2 placement that defines the position about which the mapped
@@ -10786,7 +10802,7 @@ public:
     /// 
     /// NOTE only the last modification in stored - either as addition, deletion or modification.
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to be OPTIONAL.
+    /// IFC2x4 CHANGE  The attribute has been changed to be OPTIONAL.
     IfcOwnerHistory* OwnerHistory() const;
     void setOwnerHistory(IfcOwnerHistory* v);
     /// Whether the optional attribute Name is defined for this IfcRoot
@@ -10827,7 +10843,7 @@ public:
     void setPrefix(IfcSIPrefix::IfcSIPrefix v);
     /// The word, or group of words, by which the SI unit is referred to.
     /// 
-    /// NOTE Even though the SI system's base unit for mass is kilogram, the IfcSIUnit for mass is gram if no Prefix is asserted.
+    /// NOTE  Even though the SI system's base unit for mass is kilogram, the IfcSIUnit for mass is gram if no Prefix is asserted.
     IfcSIUnitName::IfcSIUnitName Name() const;
     void setName(IfcSIUnitName::IfcSIUnitName v);
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -10844,7 +10860,7 @@ public:
 };
 /// IfcSectionProperties defines the cross section properties for a single longitudinal piece of a cross section.  It is a special-purpose helper class for IfcSectionReinforcementProperties.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// The section piece may be either uniform or tapered. In the latter case an end profile should also be provided. The start and end profiles are assumed to be of the same profile type. Generally only rectangular or circular cross section profiles are assumed to be used.
 class IFC_PARSE_API IfcSectionProperties : public IfcUtil::IfcBaseEntity {
@@ -10874,7 +10890,7 @@ public:
 };
 /// IfcSectionReinforcementProperties defines the cross section properties of reinforcement for a single longitudinal piece of a cross section with a specific reinforcement usage type.  
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Several sets of cross section reinforcement properties represented by instances of IfcReinforcementProperties may be attached to the section reinforcement properties
 /// (IfcReinforcementDefinitionProperties of IfcStructuralElementsDomain schema),
@@ -10924,14 +10940,14 @@ public:
 ///   product shape represent a distinctive part to a product
 ///   that can be explicitly addressed.
 /// 
-/// NOTEThe definition of
+/// NOTE ÿThe definition of
 ///   this class relates to the ISO 10303 entity shape_aspect. Please
 ///   refer to ISO/IS 10303-41:1994 for the final definition of
 ///   the formal standard.
 /// 
-/// HISTORY New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
-/// IFC 2x4 CHANGE Attribute
+/// IFC 2x4 CHANGE  Attribute
 ///   PartOfProductDefinitionShape declared OPTIONAL with 
 ///   upward compatibility for file based exchange.
 /// 
@@ -10943,9 +10959,9 @@ public:
 ///   PartOfProductDefinitionShape must refer to this
 ///   instance of IfcProductDefinitionShape.
 /// 
-/// NOTE PartOfProductDefinitionShape is
+/// NOTEÿ PartOfProductDefinitionShape is
 ///   only to be omitted if the shape representations are
-///   attached to an IfcRepresentationMap. This
+///   attached to an IfcRepresentationMap. ÿThis
 ///   enables the use of IfcShapeAspect with
 ///   IfcRepresentationMap's that are used by an
 ///   IfcTypeProduct through the
@@ -10953,7 +10969,7 @@ public:
 class IFC_PARSE_API IfcShapeAspect : public IfcUtil::IfcBaseEntity {
 public:
     /// List of shape representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition.
-    /// IFC2x Edition 3 CHANGE The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
+    /// IFC2x Edition 3 CHANGE  The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
     IfcTemplatedEntityList< IfcShapeModel >::ptr ShapeRepresentations() const;
     void setShapeRepresentations(IfcTemplatedEntityList< IfcShapeModel >::ptr v);
     /// Whether the optional attribute Name is defined for this IfcShapeAspect
@@ -11001,10 +11017,10 @@ public:
 /// The IfcShapeModel can be a shape representation
 /// (geometric and/or topologogical) of a product (via
 /// IfcProductDefinitionShape), or a shape representation
-/// (geometric and/or topologogical) of a component of a product
+/// (geometric and/or topologogical)  of a component of a product
 /// shape (via IfcShapeAspect).
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcShapeModel : public IfcRepresentation {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -11150,11 +11166,11 @@ public:
 /// Table 1: string values for the inherited attribute
 /// 'RepresentationType'.
 /// 
-/// NOTE The definition of this entity relates to the ISO 10303 entity shape_representation. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this entity relates to the ISO 10303 entity shape_representation. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
-/// IFC2x4 CHANGE The RepresentationType's 'Curve3D', 'Surface2D', 'Surface3D', 'AdvancedBrep', 'LightSource', and the RepresentationIdentifier 'Lighting' have been added.
+/// IFC2x4 CHANGE  The RepresentationType's 'Curve3D', 'Surface2D', 'Surface3D', 'AdvancedBrep', 'LightSource', and the RepresentationIdentifier 'Lighting' have been added.
 class IFC_PARSE_API IfcShapeRepresentation : public IfcShapeModel {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -11171,7 +11187,7 @@ public:
 };
 /// IfcSimpleProperty is a generalization of a single property object. The various subtypes of IfcSimpleProperty establish different ways in which a property value can be set. 
 /// 
-/// HISTORY New Entity in IFC Release 1.0, definition changed in IFC Release 2x.
+/// HISTORY  New Entity in IFC Release 1.0, definition changed in IFC Release 2x.
 class IFC_PARSE_API IfcSimpleProperty : public IfcProperty {
 public:
     virtual unsigned int getArgumentCount() const { return 2; }
@@ -11249,9 +11265,9 @@ public:
 };
 /// An instance of the entity IfcStructuralLoadTemperature shall be used to define actions which are caused by a temperature change. As shown in Figure 332, the change of temperature is given with a constant value which is applied to the complete section and values for temperature differences between outer fibres of the section.
 /// 
-/// HISTORY New entity in IFC2x2. 
+/// HISTORY  New entity in IFC2x2. 
 /// 
-/// Figure 332 &#8212; Structural load temperature
+/// Figure 332 — Structural load temperature
 class IFC_PARSE_API IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
 public:
     /// Whether the optional attribute DeltaT_Constant is defined for this IfcStructuralLoadTemperature
@@ -11282,7 +11298,7 @@ public:
 /// 
 /// IfcStyleModel can be a style representation (presentation style) of a material (via IfcMaterialDefinitionRepresentation), potentially differentiated for different representation contexts (for example, different material hatching depending on the scale of the target representation context).
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcStyleModel : public IfcRepresentation {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -11299,16 +11315,16 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: The styled item is an assignment of style for presentation to a geometric representation item as it is used in a representation.
 /// 
-/// NOTE Corresponding ISO 10303 name: styled_item. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: styled_item. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// The IfcStyledItem holds presentation style information for products, either explicitly for an IfcGeometricRepresentationItem being part of an IfcShapeRepresentation assigned to a product, or by assigning presentation information to IfcMaterial being assigned as other representation for a product.
 /// 
 /// If the IfcStyledItem is used within a reference from an IfcProductDefinitionShape then one Item shall be provided.
 /// If the IfcStyledItem is used within a reference from an IfcMaterialDefinitionRepresentation then no Item shall be provided.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x2 Addendum 1 CHANGE The entity IfcStyledItem has been made non abstract and the attribute Name added.
+/// IFC2x2 Addendum 1 CHANGE  The entity IfcStyledItem has been made non abstract and the attribute Name added.
 /// 
 /// IFC2x3 CHANGE The attribute Item has been made optional, upward compatibility for file
 /// based exchange is guaranteed.
@@ -11322,9 +11338,9 @@ public:
 /// As a presentation for a geometric representation item
 /// As a presentation for a material definition
 /// 
-/// NOTE The new IfcStyleAssignmentSelect allows the direct assignment styles, such as IfcCurveStyle, IfcSurfaceStyle without using the intermediate IfcPresentationStyleAssignment
+/// NOTE  The new IfcStyleAssignmentSelect allows the direct assignment styles, such as IfcCurveStyle, IfcSurfaceStyle without using the intermediate IfcPresentationStyleAssignment
 /// 
-/// Figure 293 &#8212; Styled item
+/// Figure 293 — Styled item
 class IFC_PARSE_API IfcStyledItem : public IfcRepresentationItem {
 public:
     /// Whether the optional attribute Item is defined for this IfcStyledItem
@@ -11361,11 +11377,11 @@ public:
 };
 /// The IfcStyledRepresentation represents the concept of a styled presentation being a representation of a product or a product component, like material. within a representation context. This representation context does not need to be (but may be) a geometric representation context.
 /// 
-/// NOTE Current usage of IfcStyledRepresentation is restricted to the assignment of presentation information to an material. The IfcStyledRepresentation includes only presentation styles (IfcCurveStyle, FillAreaStyle, IfcSurfaceStyle) that define how a material should be presented within a particular (eventually view and scale dependent) representation context. All instances of IfcStyledRepresentation are referenced by IfcMaterialDefinitionRepresentation, and assigned to IfcMaterial by IfcMaterialDefinitionRepresentation.RepresentedMaterial.
+/// NOTE  Current usage of IfcStyledRepresentation is restricted to the assignment of presentation information to an material. The IfcStyledRepresentation includes only presentation styles (IfcCurveStyle, FillAreaStyle, IfcSurfaceStyle) that define how a material should be presented within a particular (eventually view and scale dependent) representation context. All instances of IfcStyledRepresentation are referenced by IfcMaterialDefinitionRepresentation, and assigned to IfcMaterial by IfcMaterialDefinitionRepresentation.RepresentedMaterial.
 /// 
 /// A styled representation has to include one or several styled items with the associated style information (curve, symbol, text, fill area, or surface styles). It shall not contain the geometric representation items that are styled.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcStyledRepresentation : public IfcStyleModel {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -11411,13 +11427,13 @@ public:
 /// 
 /// Figure 294 shows the reflection and transmission components from an incident ray. The sum of the components for reflection and transmission is a value of 1.0 denoting that the incident ray is completely decomposed into reflection and transmission components. Each value of reflection and transmission is therefore within the range 0.0 to 1.0. 
 /// 
-/// Figure 294 &#8212; Surface style lighting
+/// Figure 294 — Surface style lighting
 /// 
 /// All these factors can be measured physically and are ratios for the red, green and blue part of the light. These properties are defined in the model as Type IfcColorRGB with a factor for each colour. 
 /// 
-/// EXAMPLE A green glass transmits only green light, so its transmission factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue. A green surface reflects only green light, so the reflectance factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue.
+/// EXAMPLE  A green glass transmits only green light, so its transmission factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue. A green surface reflects only green light, so the reflectance factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue.
 /// 
-/// HISTORY New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 class IFC_PARSE_API IfcSurfaceStyleLighting : public IfcUtil::IfcBaseEntity {
 public:
     /// The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light.
@@ -11514,11 +11530,11 @@ public:
 /// 
 /// Only one instance of IfcSurfaceStyleWithTextures shall be referenced by an IfcStyledItem and be assigned to an IfcGeometricRepresentationItem
 /// 
-/// NOTE The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE inverse attribute HasTextureCoordinates deleted.
+/// IFC2x3 CHANGE  inverse attribute HasTextureCoordinates deleted.
 class IFC_PARSE_API IfcSurfaceStyleWithTextures : public IfcUtil::IfcBaseEntity {
 public:
     /// The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTexture defines a multi texture.
@@ -11565,15 +11581,15 @@ public:
 /// Full RGB textures (three-component)
 /// Full RGB plus alpha opacity textures (four-component)
 /// 
-/// NOTE Image formats specify an alpha opacity, not transparency (where alpha = 1 - transparency).
+/// NOTE  Image formats specify an alpha opacity, not transparency (where alpha = 1 - transparency).
 /// 
 /// Figure 295 illustrates the texture coordinate system.
 /// 
-/// Figure 295 &#8212; Surface texture coordinates
+/// Figure 295 — Surface texture coordinates
 /// 
 /// The following definitions from ISO/IEC 19775-1 X3D Architecture and base components (X3D Specification) on texture coordinates apply:
 /// 
-/// Texture maps are defined in a 2D coordinate system (s,t) that ranges from [0.0, 1.0] in both directions. The bottom edge of the image corresponds to the S-axis of the texture map, and left edge of the image corresponds to the T-axis of the texture map. The lower-left pixel of the image corresponds to s=0, t=0, and the top-right pixel of the image corresponds to s=1, t=1. Texture maps may be viewed as two dimensional colour functions that, given an (s,t) coordinate, return a colour value colour(s,t).
+/// Texture maps are defined in a 2D coordinate system (s, t) that ranges from [0.0, 1.0] in both directions. The bottom edge of the image corresponds to the S-axis of the texture map, and left edge of the image corresponds to the T-axis of the texture map. The lower-left pixel of the image corresponds to s=0, t=0, and the top-right pixel of the image corresponds to s=1, t=1. Texture maps may be viewed as two dimensional colour functions that, given an (s, t) coordinate, return a colour value colour(s, t).
 /// 
 /// If multiple surface textures are included in the
 /// IfcSurfaceStyleWithTextures applying them to a geometric
@@ -11598,15 +11614,15 @@ public:
 /// are twice as large and thus cause the texture to repeat). A
 /// translation of (0.5 0.0) translates the texture coordinates +.5
 /// units along the S-axis and has the net effect of translating the
-/// texture &#8722;0.5 along the S-axis on the geometry's surface. A
-/// rotation of &#960;/2 of the texture coordinates results in a
-/// &#8722;&#960;/2 rotation of the texture on the geometry.
+/// texture −0.5 along the S-axis on the geometry's surface. A
+/// rotation of π/2 of the texture coordinates results in a
+/// −π/2 rotation of the texture on the geometry.
 /// The center
 /// field specifies a translation offset in texture coordinate space
 /// about which the rotation and scale fields are
 /// applied. The scale field specifies a scaling factor in S and
 /// T of the texture coordinates about the center point.
-/// scale values shall be in the range (&#8722;&#8734;,&#8734;).
+/// scale values shall be in the range (−∞,∞).
 /// The rotation field specifies a rotation in radians of the
 /// texture coordinates about the center point after the scale
 /// has been applied. A positive rotation value makes the texture
@@ -11623,11 +11639,11 @@ public:
 /// scale S = TextureTransform.Scale
 /// scale T = TextureTransform.Scale2
 /// 
-/// NOTE The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORY New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 /// 
-/// IFC2x4 CHANGE Attribute TextureType replaces by Mode, attributes Parameter and MapsTo aded, new inverse attribute UsedInStyle.
+/// IFC2x4 CHANGE  Attribute TextureType replaces by Mode, attributes Parameter and MapsTo aded, new inverse attribute UsedInStyle.
 class IFC_PARSE_API IfcSurfaceTexture : public IfcUtil::IfcBaseEntity {
 public:
     /// The RepeatS field specifies how the texture wraps in the S direction. If RepeatS is TRUE (the default), the texture map is repeated outside the [0.0, 1.0] texture coordinate range in the S direction so that it fills the shape. If RepeatS is FALSE, the texture coordinates are clamped in the S direction to lie within the [0.0, 1.0] range.
@@ -11685,15 +11701,15 @@ public:
 /// 
 /// Figure 335 illustrates table use.
 /// 
-/// Figure 335 &#8212; Table use
+/// Figure 335 — Table use
 /// 
 /// Figure 336 depicts how tables were structured prior to IFC2x4.
 /// 
-/// Figure 336 &#8212; Table use alternative
+/// Figure 336 — Table use alternative
 /// 
-/// HISTORY New entity in IFC R1.5.
+/// HISTORY  New entity in IFC R1.5.
 /// 
-/// IFC2x4 CHANGE Columns attribute added.
+/// IFC2x4 CHANGE  Columns attribute added.
 class IFC_PARSE_API IfcTable : public IfcUtil::IfcBaseEntity {
 public:
     /// A unique name which is intended to describe the usage of the Table.
@@ -11720,13 +11736,13 @@ public:
 /// 
 /// Figure 337 illustrates table row use.
 /// 
-/// Figure 337 &#8212; Table row use
+/// Figure 337 — Table row use
 /// 
 /// Figure 338 depicts how table rows were structured prior to IFC2x4 with the use of the IsHeading flag. Note that the use of the IfcTableColumn constructs should be used instead of the IsHeading flag (which remains for backward compatibility only): 
 /// 
-/// Figure 338 &#8212; Table row use alternative
+/// Figure 338 — Table row use alternative
 /// 
-/// HISTORY New entity in IFC R1.5.
+/// HISTORY  New entity in IFC R1.5.
 class IFC_PARSE_API IfcTableRow : public IfcUtil::IfcBaseEntity {
 public:
     /// The data value of the table cell..
@@ -11817,13 +11833,13 @@ public:
 /// 
 /// An IfcTextStyle can be assigned to IfcTextLiteral via the IfcPresentationStyleAssignment through an intermediate IfcAnnotationTextOccurrence.
 /// 
-/// NOTE Corresponding ISO 10303 name: text_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. In order to avoid ANDOR subtype relationships, the IfcTextBlockStyleSelect has been introduced that allows the combination of a text style as having box characteristic, and/or having spacing, or having none of those additional properties.
+/// NOTE  Corresponding ISO 10303 name: text_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. In order to avoid ANDOR subtype relationships, the IfcTextBlockStyleSelect has been introduced that allows the combination of a text style as having box characteristic, and/or having spacing, or having none of those additional properties.
 /// 
-/// NOTE Corresponding CSS1 definitions are: Font properties (font-family, font-style, font-variant, font-weight, font-size), Color and background properties (color, background-color) and Text properties (word-spacing, letter-spacing, text-decoration, text-transform, text-align, text-indent, line-height).
+/// NOTE  Corresponding CSS1 definitions are: Font properties (font-family, font-style, font-variant, font-weight, font-size), Color and background properties (color, background-color) and Text properties (word-spacing, letter-spacing, text-decoration, text-transform, text-align, text-indent, line-height).
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
+/// IFC2x3 CHANGE  The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
 class IFC_PARSE_API IfcTextStyle : public IfcPresentationStyle {
 public:
     /// Whether the optional attribute TextCharacterAppearance is defined for this IfcTextStyle
@@ -11836,7 +11852,7 @@ public:
     /// The style applied to the text block for its visual appearance.
     /// It defines the text block characteristics, either for vector based or monospace text fonts (see select item IfcTextStyleWithBoxCharacteristics), or for true type text fonts (see select item IfcTextStyleTextModel.
     /// 
-    /// IFC2x Edition 3 CHANGE The attribute TextBlockStyle has been changed from SET[1:?] to a non-aggregated optional, it has been renamed from TextStyles.
+    /// IFC2x Edition 3 CHANGE  The attribute TextBlockStyle has been changed from SET[1:?] to a non-aggregated optional, it has been renamed from TextStyles.
     IfcTextStyleSelect* TextStyle() const;
     void setTextStyle(IfcTextStyleSelect* v);
     /// The style applied to the text font for its visual appearance.
@@ -11885,7 +11901,7 @@ public:
 /// face, but it doesn't contain a glyph
 /// for the current character, and if there is a next alternative
 /// 'font-family' in the font sets, then repeat step 2 with the next
-/// alternative 'font-family'. 
+/// alternative 'font-family'.  
 ///   If there is no font within
 /// the family selected in 2, then use a
 /// UA-dependent default 'font-family' and repeat step 2, using the best
@@ -11919,9 +11935,9 @@ public:
 /// 
 /// The inherited Name attribute is used to define the font name, particularly in cases, where no (list of) font families are provided. 
 /// 
-/// NOTE Corresponding CSS1 definitions are Font properties ('font-family', 'font-style', 'font-variant', 'font-weight').
+/// NOTE  Corresponding CSS1 definitions are Font properties ('font-family', 'font-style', 'font-variant',  'font-weight').
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcTextStyleFontModel : public IfcPreDefinedTextFont {
 public:
     /// Whether the optional attribute FontFamily is defined for this IfcTextStyleFontModel
@@ -11937,17 +11953,17 @@ public:
     /// Whether the optional attribute FontVariant is defined for this IfcTextStyleFontModel
     bool hasFontVariant() const;
     /// The font variant property selects between normal and small-caps.
-    ///   NOTE It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     std::string FontVariant() const;
     void setFontVariant(std::string v);
     /// Whether the optional attribute FontWeight is defined for this IfcTextStyleFontModel
     bool hasFontWeight() const;
     /// The font weight property selects the weight of the font.
-    ///   NOTE Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support.
+    ///   NOTE  Values other then 'normal' and 'bold' have been introduced for later compliance to full CSS1 support.
     std::string FontWeight() const;
     void setFontWeight(std::string v);
     /// The font size provides the size or height of the text font.
-    ///   NOTE The following values are allowed, <IfcLengthMeasure, with positive values, the length unit is globally defined at IfcUnitAssignment.
+    ///   NOTE  The following values are allowed, <IfcLengthMeasure, with positive values, the length unit is globally defined at IfcUnitAssignment.
     IfcSizeSelect* FontSize() const;
     void setFontSize(IfcSizeSelect* v);
     virtual unsigned int getArgumentCount() const { return 6; }
@@ -11966,19 +11982,19 @@ public:
 /// 
 /// Definition from CSS1 (W3C Recommendation): These properties describe the color (often called foreground color) and background of an element (i.e. the surface onto which the content is rendered). One can set a background color.
 /// 
-/// NOTE The CSS1 definition allows also for a background image. This has not been incorporated into IFC.
+/// NOTE  The CSS1 definition allows also for a background image. This has not been incorporated into IFC.
 /// 
 /// The IfcTextStyleForDefinedFont combines the text font color with an optional background color, that fills the text box, defined by the planar extent given to the text literal.
 /// 
-/// NOTE Corresponding ISO 10303 name: text_style_for_defined_font. Please refer to ISO/IS
+/// NOTE  Corresponding ISO 10303 name: text_style_for_defined_font. Please refer to ISO/IS
 /// 10303-46:1994, p.122 for the final definition of the formal standard. The attribute BackgroundColour
 /// has been added.
 /// 
-/// NOTE Corresponding CSS1 definitions are Color and background properties (color, background-color).
+/// NOTE  Corresponding CSS1 definitions are Color and background properties (color, background-color).
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
-/// IFC2x3 CHANGE The IfcTextStyleForDefinedFont has been added and replaces IfcColour at the IfcCharacterStyleSelect.
+/// IFC2x3 CHANGE  The IfcTextStyleForDefinedFont has been added and replaces IfcColour at the IfcCharacterStyleSelect.
 class IFC_PARSE_API IfcTextStyleForDefinedFont : public IfcUtil::IfcBaseEntity {
 public:
     /// This property describes the text color of an element (often referred to as the foreground color).
@@ -12005,15 +12021,15 @@ public:
 /// 
 /// The IfcTextStyleTextModel combines all text style properties, that affect the presentation of a text literal within a given extent. It includes the spacing between characters and words, the horizontal and vertical alignment of the text within the planar box of the extent, decorations (like underline), transformations of the literal (like uppercase), and the height of each text line within a multi-line text block.
 /// 
-/// NOTE Corresponding CSS1 definitions are Text properties (word-spacing, letter-spacing, text-decoration, vertical-align, text-transform, text-align, text-indent, line-height).
+/// NOTE  Corresponding CSS1 definitions are Text properties (word-spacing, letter-spacing, text-decoration, vertical-align, text-transform, text-align, text-indent, line-height).
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 class IFC_PARSE_API IfcTextStyleTextModel : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute TextIndent is defined for this IfcTextStyleTextModel
     bool hasTextIndent() const;
     /// The property specifies the indentation that appears before the first formatted line.
-    ///   NOTE It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     IfcSizeSelect* TextIndent() const;
     void setTextIndent(IfcSizeSelect* v);
     /// Whether the optional attribute TextAlign is defined for this IfcTextStyleTextModel
@@ -12029,26 +12045,26 @@ public:
     /// Whether the optional attribute LetterSpacing is defined for this IfcTextStyleTextModel
     bool hasLetterSpacing() const;
     /// The length unit indicates an addition to the default space between characters. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The letter spacing may also be influenced by justification (which is a value of the 'align' property).
-    ///   NOTE The following values are allowed, IfcDescriptiveMeasure with value='normal', or IfcLengthMeasure, the length unit is globally defined at IfcUnitAssignment.
+    ///   NOTE  The following values are allowed, IfcDescriptiveMeasure with value='normal', or IfcLengthMeasure, the length unit is globally defined at IfcUnitAssignment.
     IfcSizeSelect* LetterSpacing() const;
     void setLetterSpacing(IfcSizeSelect* v);
     /// Whether the optional attribute WordSpacing is defined for this IfcTextStyleTextModel
     bool hasWordSpacing() const;
     /// The length unit indicates an addition to the default space between words. Values can be negative, but there may be implementation-specific limits. The user agent is free to select the exact spacing algorithm. The word spacing may also be influenced by justification (which is a value of the 'text-align' property).
-    ///   NOTE It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     IfcSizeSelect* WordSpacing() const;
     void setWordSpacing(IfcSizeSelect* v);
     /// Whether the optional attribute TextTransform is defined for this IfcTextStyleTextModel
     bool hasTextTransform() const;
     /// This property describes how text characters may transform to upper case, lower case, or capitalized case, independent of the character case used in the text literal.
-    ///   NOTE It has been introduced for later compliance to full CSS1 support.
+    ///   NOTE  It has been introduced for later compliance to full CSS1 support.
     std::string TextTransform() const;
     void setTextTransform(std::string v);
     /// Whether the optional attribute LineHeight is defined for this IfcTextStyleTextModel
     bool hasLineHeight() const;
     /// The property sets the distance between two adjacent lines' baselines.
     /// When a ratio value is specified, the line height is given by the font size of the current element multiplied with the numerical value. A value of 'normal' sets the line height to a reasonable value for the element's font. It is suggested that user agents set the 'normal' value to be a ratio number in the range of 1.0 to 1.2.
-    ///   NOTE The following values are allowed: IfcDescriptiveMeasure with value='normal', or 
+    ///   NOTE  The following values are allowed: IfcDescriptiveMeasure with value='normal', or 
     /// IfcLengthMeasure, with non-negative values, the length unit is globally defined at IfcUnitAssignment, or IfcRatioMeasure.
     IfcSizeSelect* LineHeight() const;
     void setLineHeight(IfcSizeSelect* v);
@@ -12066,21 +12082,21 @@ public:
 };
 /// The text style with box characteristics allows the presentation of annotated text by specifying the characteristics of the character boxes of the text and the spacing between the character boxes.
 /// 
-/// NOTE The IfcTextStyleWithBoxCharacteristics is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
+/// NOTE  The IfcTextStyleWithBoxCharacteristics is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation.
 /// 
 /// The IfcTextStyleWithBoxCharacteristics is mainly used to provide some compatibility with ISO10303. Its usage is restricted to monospace text fonts (having uniform character boxes) and simple vector based text fonts. For true text fonts however the use of IfcTextStyleTextModel is required.
 /// 
 /// Figure 296 (from ISO 10303-46, page 91) illustrates angles.  Figure 297 illustrates attribute use.
 /// 
-/// Figure 296 &#8212; Text style box angles
-///   Figure 297 &#8212; Text style box attributes
+/// Figure 296 — Text style box angles
+///   Figure 297 — Text style box attributes
 /// 
-/// NOTE Corresponding ISO 10303 name: text_style_with_box_characteristics. Please refer to ISO/IS 10303-46:1994, p. 123 for the final definition of the formal standard. The four optional attributes BoxHeight, BoxWidth, BoxSlantAngle, BoxRotateAngle are included directly at the entity, and are not handled through the box_characteristic_select selecting box_height, box_width, box_slant_angle, box_rotate_angle, each being defined types.
+/// NOTE  Corresponding ISO 10303 name: text_style_with_box_characteristics. Please refer to ISO/IS 10303-46:1994, p. 123 for the final definition of the formal standard. The four optional attributes BoxHeight, BoxWidth, BoxSlantAngle, BoxRotateAngle are included directly at the entity, and are not handled through the box_characteristic_select selecting box_height, box_width, box_slant_angle, box_rotate_angle, each being defined types. 
 /// The CharacterSpacing attribute has been added from ISO/IS 10303-46:1994 entity text_style_with_spacing.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The attribute item CharacterSpacing has been added.
+/// IFC2x3 CHANGE  The attribute item CharacterSpacing has been added.
 class IFC_PARSE_API IfcTextStyleWithBoxCharacteristics : public IfcUtil::IfcBaseEntity {
 public:
     /// Whether the optional attribute BoxHeight is defined for this IfcTextStyleWithBoxCharacteristics
@@ -12124,13 +12140,13 @@ public:
 /// 
 /// See relevant subtypes of IfcGeometricRepresentationItem for default texture mapping description.
 /// 
-/// NOTE The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The attribute Texture is deleted.
+/// IFC2x3 CHANGE  The attribute Texture is deleted.
 /// 
-/// IFC2x4 CHANGE The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
+/// IFC2x4 CHANGE  The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
 class IFC_PARSE_API IfcTextureCoordinate : public IfcUtil::IfcBaseEntity {
 public:
     virtual unsigned int getArgumentCount() const { return 0; }
@@ -12167,21 +12183,21 @@ public:
 /// SPHERE-REFLECT,
 /// SPHERE-REFLECT-LOCAL
 /// 
-/// NOTE The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
 /// HISTORY New entity in IFC2x2.
 /// 
-/// IFC2x2 Addendum 2 CHANGE The attribute Texturehas been deleted.
+/// IFC2x2 Addendum 2 CHANGE  The attribute Texturehas been deleted.
 class IFC_PARSE_API IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
 public:
     /// The Mode attribute describes the algorithm used to compute texture coordinates.
     /// 
-    /// NOTE The applicable values for the Mode attribute are determined by view definitions or implementer agreements. It is recommended to use the modes described in ISO/IES 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1. See 18.4.8 TextureCoordinateGenerator for recommended values.
+    /// NOTE  The applicable values for the Mode attribute are determined by view definitions or implementer agreements. It is recommended to use the modes described in ISO/IES 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1. See 18.4.8 TextureCoordinateGenerator for recommended values.
     std::string Mode() const;
     void setMode(std::string v);
     /// The parameters used as arguments by the function as specified by Mode.
     /// 
-    /// IFC2x4 CHANGE Made optional data type restricted to REAL.
+    /// IFC2x4 CHANGE  Made optional data type restricted to REAL.
     IfcEntityList::ptr Parameter() const;
     void setParameter(IfcEntityList::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
@@ -12228,7 +12244,7 @@ public:
 /// specifies a set of 2D texture coordinates used by vertex-based
 /// geometry nodes to map textures to vertices.
 /// 
-/// NOTE In contrary to the
+/// NOTE  In contrary to the
 /// X3D vertext based geometry, for example IndexedFaceSet and
 /// ElevationGrid, the vertext based geometry in IFC may include inner
 /// loops. The areas of inner loops have to be cut-out from the texture
@@ -12236,13 +12252,13 @@ public:
 /// 
 /// Figure 301 illustrates applying a texture map to a vertex based geometry.
 /// 
-/// Figure 301 &#8212; Texture map
+/// Figure 301 — Texture map
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The attribute Texture is deleted, and the attribute TextureMaps is added.
+/// IFC2x3 CHANGE  The attribute Texture is deleted, and the attribute TextureMaps is added.
 /// 
-/// IFC2x4 CHANGE The attribute TextureMap is replaced by Vertices, and the attribute AppliedTo is added.
+/// IFC2x4 CHANGE  The attribute TextureMap is replaced by Vertices, and the attribute AppliedTo is added.
 /// 
 /// Informal propositions:
 /// 
@@ -12271,7 +12287,7 @@ public:
 /// coordinates that map textures to vertices. Texture map values (
 /// ImageTexture, PixelTexture) range from [0.0, 1.0] along the S-axis and
 /// T-axis. However, texture coordinate values may be in the range
-/// (-&#8734;,&#8734;). Texture coordinates identify a location
+/// (-∞,∞). Texture coordinates identify a location
 /// (and thus a
 /// colour value) in the texture map. The horizontal coordinate S is
 /// specified first, followed by the vertical coordinate T. If the texture
@@ -12279,13 +12295,13 @@ public:
 /// coordinate C (s or t) is mapped into a texture map that has N pixels in
 /// the given direction as follows: 
 /// 
-/// Texture map location = (C - floor(C))  N			 
+/// Texture map location = (C - floor(C)) × N			 
 /// 
 /// If the texture map is not
 /// repeated, the texture coordinates are
 /// clamped to the 0.0 to 1.0 range as follows: 
 /// 
-/// Texture map location = N,     if C > 1.0,                     = 0.0,   if C < 0.0,                     = C  N, if 0.0 &#8804; C &#8804; 1.0.
+/// Texture map location = N,     if C > 1.0,                     = 0.0,   if C < 0.0,                     = C × N, if 0.0 ≤ C ≤ 1.0.
 /// 
 /// Texture coordinates may be transformed (scaled, rotated, translated) by supplying a TextureTransform as a component of the texture's definition. 
 /// 
@@ -12413,9 +12429,9 @@ public:
 /// Any rollover is handled by the application providing the data.  Rollover occurs, for example, when the measurement device resets itself while measuring and the recording data do not include the data measured before the reset.
 /// The normalized data refer to the preceding time unit.  The time series example shown in Figure 241 below contains four time points: Time "a" indicates the beginning of the time series and the associated datum has no relevance.  Data at time points "b," "c" and "d" are associated with values 1, 2 and 3, respectively.
 /// 
-/// Figure 241 &#8212; Time series value 
+/// Figure 241 — Time series value 
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcTimeSeriesValue : public IfcUtil::IfcBaseEntity {
 public:
     /// A list of time-series values. At least one value is required.
@@ -12435,7 +12451,7 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: The topological representation item is the supertype for all the topological representation items in the geometry resource. 
 /// 
-/// NOTE Corresponding ISO 10303 entity: topological_representation_item. Please refer to ISO/IS 10303-42:1994, p.129 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: topological_representation_item. Please refer to ISO/IS 10303-42:1994, p.129 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
 class IFC_PARSE_API IfcTopologicalRepresentationItem : public IfcRepresentationItem {
@@ -12502,9 +12518,9 @@ public:
 };
 /// IfcUnitAssignment indicates a set of units which may be assigned. Within an IfcUnitAssigment each unit definition shall be unique; that is, there shall be no redundant unit definitions for the same unit type such as length unit or area unit. For currencies, there shall be only a single IfcMonetaryUnit within an IfcUnitAssignment.
 /// 
-/// NOTE A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
+/// NOTE  A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
 /// 
-/// HISTORY New entity in IFC Release 1.5.1.
+/// HISTORY  New entity in IFC Release 1.5.1.
 class IFC_PARSE_API IfcUnitAssignment : public IfcUtil::IfcBaseEntity {
 public:
     /// Units to be included within a unit assignment.
@@ -12524,9 +12540,9 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex is the topological construct corresponding to a point. It has dimensionality 0 and extent 0. The domain of a vertex, if present, is a point in m dimensional real space RM; this is represented by the vertex point subtype. 
 /// 
-/// NOTE Corresponding ISO 10303 entity: vertex. Please refer to ISO/IS 10303-42:1994, p. 129 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: vertex. Please refer to ISO/IS 10303-42:1994, p. 129 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
 /// Informal proposition:
 /// 
@@ -12567,9 +12583,9 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex point is a vertex which has its geometry defined as a point.  
 /// 
-/// NOTE Corresponding ISO 10303 entity: vertex_point. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard. Due to the general IFC model specification rule not to use multiple inheritance, the subtype relationship to geometric_representation_item is not included.
+/// NOTE  Corresponding ISO 10303 entity: vertex_point. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard. Due to the general IFC model specification rule not to use multiple inheritance, the subtype relationship to geometric_representation_item is not included.
 /// 
-/// HISTORY New Entity in IFC2x.
+/// HISTORY  New Entity in IFC2x.
 /// 
 /// Informal proposition: 
 /// 
@@ -12606,7 +12622,7 @@ public:
 /// of IntersectingAxes[1] and the orthogonal complement of the IntersectingAxes[1] (which is the positive or negative
 /// direction of the z axis of the design grid position).
 /// 
-/// HISTORY New entity in IFC Release 1.5. The entity name was changed from IfcConstraintRelIntersection in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5. The entity name was changed from IfcConstraintRelIntersection in IFC Release 2x.
 /// 
 /// Informal Propositions:
 /// 
@@ -12623,12 +12639,12 @@ public:
 /// 
 /// Figure 246 illustrates two offset distances given where the virtual intersection is defined in the xy plane of the grid axis placement.
 /// 
-/// Figure 246 &#8212; Virtual grid intersection with two offsets
+/// Figure 246 — Virtual grid intersection with two offsets
 /// 
 /// Figure 247 illustrates three offset distances given where the virtual intersection is defined by an offset (in direction of the
 /// z-axis of the design grid placement) to the virtual intersection in the xy plane of the grid axis placement.
 /// 
-/// Figure 247 &#8212; Virtual grid intersection with three offsets
+/// Figure 247 — Virtual grid intersection with three offsets
 /// 
 /// The distance of the offset curve (OffsetDistances[n])
 /// is measured from the basis curve. The distance may be positive,
@@ -12649,7 +12665,7 @@ public:
 /// IntersectingAxes[1].SameSense = TRUE.
 /// OffsetDistances[1] is a negative length measure
 /// 
-/// Figure 248 &#8212; Virtual grid intersection negative offset
+/// Figure 248 — Virtual grid intersection negative offset
 class IFC_PARSE_API IfcVirtualGridIntersection : public IfcUtil::IfcBaseEntity {
 public:
     /// Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
@@ -12790,7 +12806,7 @@ public:
 /// or in case of sectioned spines the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions. The OuterCurve
 /// attribute defines a two dimensional closed bounded curve.
 /// 
-/// Figure 307 &#8212; Arbitrary closed profile
+/// Figure 307 — Arbitrary closed profile
 class IFC_PARSE_API IfcArbitraryClosedProfileDef : public IfcProfileDef {
 public:
     /// Bounded curve, defining the outer boundaries of the arbitrary profile.
@@ -12810,7 +12826,7 @@ public:
 };
 /// The open profile IfcArbitraryOpenProfileDef defines an arbitrary two-dimensional open profile for the use within the swept surface geometry. It is given by an open boundary from with the surface can be constructed. 
 /// 
-/// HISTORY New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
 /// Informal proposition:
 /// 
@@ -12822,7 +12838,7 @@ public:
 /// 
 /// The Curve attribute defines a two dimensional open bounded curve.
 /// 
-/// Figure 308 &#8212; Arbitrary open profile
+/// Figure 308 — Arbitrary open profile
 class IFC_PARSE_API IfcArbitraryOpenProfileDef : public IfcProfileDef {
 public:
     /// Open bounded curve defining the profile.
@@ -12842,7 +12858,7 @@ public:
 };
 /// The IfcArbitraryProfileDefWithVoids defines an arbitrary closed two-dimensional profile with holes defined for the use for the swept area solid or a sectioned spine. It is given by an outer boundary and inner boundaries from with the solid the can be constructed.
 /// 
-/// HISTORY New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
 /// Informal propositions:
 /// 
@@ -12858,7 +12874,7 @@ public:
 /// 
 /// or in case of sectioned spines the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions.  The OuterCurve attribute defines a two dimensional closed bounded curve, the InnerCurves define a set of two dimensional closed bounded curves.
 /// 
-/// Figure 309 &#8212; Arbitrary profile with voids
+/// Figure 309 — Arbitrary profile with voids
 class IFC_PARSE_API IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     /// Set of bounded curves, defining the inner boundaries of the arbitrary profile.
@@ -12878,13 +12894,13 @@ public:
 };
 /// An IfcBlobTexture provides a 2-dimensional distribution of the lighting parameters of a surface onto which it is mapped. The texture itself is given as a single binary blob, representing the content of a pixel format file. The file format of the pixel file is given by the RasterFormat attribute and allowable formats are guided by where rule SupportedRasterFormat.
 /// 
-/// NOTE Toolbox specific implementations of the binary datatype may restrict the maximum length of the binary blob to capture the raster file content.
+/// NOTE  Toolbox specific implementations of the binary datatype may restrict the maximum length of the binary blob to capture the raster file content.
 /// 
 /// For interpretation of the texture nodes see IfcImageTexture definition.
 /// 
-/// HISTORY New class in IFC2x3.
+/// HISTORY  New class in IFC2x3.
 /// 
-/// IFC2x4 CHANGE Data type of RasterCode has been corrected to BINARY.
+/// IFC2x4 CHANGE  Data type of RasterCode has been corrected to BINARY.
 class IFC_PARSE_API IfcBlobTexture : public IfcSurfaceTexture {
 public:
     /// The format of the RasterCode often using a compression.
@@ -12920,7 +12936,7 @@ public:
 /// 
 /// or a combination of them.  See IfcProfileDef for guidance on external references for profiles.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Informal proposition: 
 /// 
@@ -12933,7 +12949,7 @@ public:
 /// 
 /// The Curve attribute defines a two dimensional open bounded curve. The Thickness attribute defines a constant thickness along the curve.
 /// 
-/// Figure 311 &#8212; Centerline profile
+/// Figure 311 — Centerline profile
 class IFC_PARSE_API IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
 public:
     /// Constant thickness applied along the center line.
@@ -12993,27 +13009,27 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: A colour rgb as a subtype of colour specifications is defined by three colour component values for red, green, and blue in the RGB colour model.
 /// 
-/// NOTE In contrary to the usual value range of colour components being integer from 0...255, the definition from ISO10303-46 defines the colour components as real from 0.0 ... 1.0. Applications need to execute this conversion before populating the colour RGB values.
+/// NOTE  In contrary to the usual value range of colour components being integer from 0...255, the definition from ISO10303-46 defines the colour components as real from 0.0 ... 1.0. Applications need to execute this conversion before populating the colour RGB values.
 /// 
-/// NOTE Corresponding STEP name: colour_rgb. The name attribute has been omitted, the data type for the reg, green and blue parts is IfcNormalizedRatioMeasure, that already includes the range restrictions for the values. Please
+/// NOTE  Corresponding STEP name: colour_rgb. The name attribute has been omitted, the data type for the reg, green and blue parts is IfcNormalizedRatioMeasure, that already includes the range restrictions for the values. Please
 /// refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcColourRgb : public IfcColourSpecification {
 public:
     /// The intensity of the red colour component.
     /// 
-    /// NOTE The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
+    /// NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
     double Red() const;
     void setRed(double v);
     /// The intensity of the green colour component.
     /// 
-    /// NOTE The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
+    /// NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
     double Green() const;
     void setGreen(double v);
     /// The intensity of the blue colour component.
     /// 
-    /// NOTE The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
+    /// NOTE  The colour component value is given within the range of 0..1, and not within the range of 0..255 as otherwise usual.
     double Blue() const;
     void setBlue(double v);
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -13030,7 +13046,7 @@ public:
 };
 /// IfcComplexProperty is used to define complex properties to be handled completely within a property set. The included set of properties may be a mixed or consistent collection of IfcProperty subtypes. This enables the definition of a set of properties to be included as a single 'property' entry in an IfcPropertySet. The definition of such an IfcComplexProperty can be reused in many different IfcPropertySet's.
 /// 
-/// NOTE Since an IfcComplexProperty may contain other complex properties, sets of properties can be nested. This nesting may be restricted by view definitions and implementer agreements.
+/// NOTE  Since an IfcComplexProperty may contain other complex properties, sets of properties can be nested. This nesting may be restricted by view definitions and implementer agreements.
 /// 
 /// HISTORY New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x.
 class IFC_PARSE_API IfcComplexProperty : public IfcProperty {
@@ -13060,7 +13076,7 @@ public:
 /// profile definition (except for another composite profile) can be used
 /// to construct the composite. 
 /// 
-/// HISTORY New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
 /// Figure 314 illustrates the composite profile definition. The IfcCompositeProfileDef does not define an own position coordinate system, it is directly defined in the underlying coordinate system. The underlying coordinate system is defined by the swept surface or swept area solid that uses the profile definition. It is the xy plane of either:
 /// 
@@ -13072,7 +13088,7 @@ public:
 /// In case of parameterized profile definitions, the Position attribute of those standard profiles is used to place the profiles relatively to each other.
 ///   In case of arbitrary profile definitions, each Cartesian coordinate is given directly within the underlying coordinate system.
 /// 
-/// NOTE The black coordinate axes show the underlying coordinate system of the swept surface or swept area solid.
+/// NOTE  The black coordinate axes show the underlying coordinate system of the swept surface or swept area solid.
 /// 
 /// Figure 314
 /// 
@@ -13082,14 +13098,14 @@ public:
 /// only be specified once. It is then included into the composite profile directly
 /// and additionally indirectly via IfcMirroredProfileDef. For example, a
 /// double angle made of two L100x10 with 10mm air gap between them, i.e. a
-/// _||_ shape, can be modeled as
+/// _| |_ shape, can be modeled as
 /// 
 /// single_L : IfcLShapeProfileDef := IfcLShapeProfileDef(AREA, 'L100X100X10',
-/// IfcAxis2Placement2D(IfcCartesianPoint(((.100+.010)/2., .0)), ?),
-/// .100, .100, .010, .012, ?, 0., ?, ?);
-/// 
+///     IfcAxis2Placement2D(IfcCartesianPoint(((.100+.010)/2., .0)), ?),
+///     .100, .100, .010, .012, ?, 0., ?, ?);
+///  
 /// double_L : IfcCompositeProfileDef := IfcCompositeProfileDef(AREA, 'double angle',
-/// (single_L, IfcMirroredProfileDef(AREA, ?, single_L, ?)), 'twin profile');
+///     (single_L, IfcMirroredProfileDef(AREA, ?, single_L, ?)), 'twin profile');
 class IFC_PARSE_API IfcCompositeProfileDef : public IfcProfileDef {
 public:
     /// The profiles which are used to define the composite profile.
@@ -13114,9 +13130,9 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: A connected_face_set is a set of faces such that the domain of faces together with their bounding edges and vertices is connected.  
 /// 
-/// NOTE Corresponding ISO 10303 entity: connected_face_set, the subtype closed_shell is included as IfcClosedShell and the subtype open_shell is included as IfcOpenShell. Please refer to ISO/IS 10303-42:1994, p. 144 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: connected_face_set, the subtype closed_shell is included as IfcClosedShell and the subtype open_shell is included as IfcOpenShell. Please refer to ISO/IS 10303-42:1994, p. 144 for the final definition of the formal standard.
 /// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Informal proposition: 
 /// 
@@ -13140,14 +13156,14 @@ public:
 };
 /// IfcConnectionCurveGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a curve or at an edge with curve geometry associated. It is envisioned as a control that applies to the element connection relationships. 
 /// 
-/// EXAMPLE The connection relationship between two walls has a geometric constraint which describes the end caps (or cut-off of the wall ends) by a CurveOnRelatingElement for the first wall and a CurveOnRelatedElement for the second wall. The exact usage of the IfcConnectionCurveGeometry is further defined in the geometry use sections of the elements that use it.
+/// EXAMPLE  The connection relationship between two walls has a geometric constraint which describes the end caps (or cut-off of the wall ends) by a CurveOnRelatingElement for the first wall and a CurveOnRelatedElement for the second wall. The exact usage of the IfcConnectionCurveGeometry is further defined in the geometry use sections of the elements that use it.
 /// 
 /// The available geometry for the connection constraint may be further restricted to only allow straight segments by applying IfcPolyline
-/// only. Such an usage constraint is provided at the object definition of the IfcElement subtype, utilizing the element connection by referring to the subtype of IfcRelConnects with the associatedIfcConnectionCurveGeometry.
+/// only. Such an usage constraint is provided at the object definition of the IfcElement subtype, utilizing the element connection by referring to the subtype of IfcRelConnects with the associated IfcConnectionCurveGeometry.
 /// 
-/// HISTORY New entity in IFC Release 1.5, has been renamed from IfcLineConnectionGeometry in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, has been renamed from IfcLineConnectionGeometry in IFC Release 2x.
 /// 
-/// IFC2x Edition 3 CHANGE The provision of topology with associated geometry, IfcEdgeCurve, is enabled by using the IfcCurveOrEdgeCurve.
+/// IFC2x Edition 3 CHANGE  The provision of topology with associated geometry, IfcEdgeCurve, is enabled by using the IfcCurveOrEdgeCurve.
 /// 
 /// Geometry use definitions
 /// The IfcCurve (or the IfcEdgeCurve with an associated IfcCurve) at the CurveOnRelatingElement attribute defines the curve where the basic geometry items of the connected elements connects. The curve geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects Subtype that utilizes the IfcConnectionCurveGeometry. Optionally, the same curve geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the CurveOnRelatedElement attribute.
@@ -13175,12 +13191,12 @@ public:
 };
 /// IfcConnectionPointEccentricity is used to describe the geometric constraints that facilitate the physical connection of two objects at a point or vertex point with associated point coordinates. There is a physical distance, or eccentricity, etween the connection points of both object. The eccentricity can be either given by:
 /// 
-/// providing the PointOnRelatingElement and the PointOnRelatedElement, where bothpoint coordinates are not identical within a common parent coordinate system (latestly within the world coordinate system),
+/// providing the PointOnRelatingElement and the PointOnRelatedElement, where bothÿpoint coordinates are not identical within a common parent coordinate system (latestly within the world coordinate system),
 /// providing the PointOnRelatingElement and the three distance measures, EccentricityInX, EccentricityInY, and EccentricityInZ (or only EccentricityInX, and EccentricityInY if the
 /// underlying coordinate system is two-dimensional), or
 /// providing both.
 /// 
-/// NOTE If both, PointOnRelatedElement, and EccentricityInX, EccentricityInY, (EccentricityInZ) are provided, the values should be consistent. In case of any non-consistency, the calculated distance between PointOnRelatingElement and PointOnRelatedElement takes precedence.
+/// NOTEÿ If both, PointOnRelatedElement, and EccentricityInX, EccentricityInY, (EccentricityInZ) are provided, the values should be consistent. In case of any non-consistency, the calculated distance between PointOnRelatingElement and PointOnRelatedElement takes precedence.
 /// 
 /// The explicit values for EccentricityInX, EccentricityInY, and EccentricityInZ are always
 /// measured in the following direction and coordinate system (defining when the value is positive or negative):
@@ -13188,7 +13204,7 @@ public:
 /// from the PointOnRelatedElement to PointOnRelatingElement within the coordinate system of the RelatingElement.
 /// in addition: when used to specify connections in structural analysis models, the IfcStructuralMember is to be used as the RelatingElement of the relationship object utilizing IfcConnectionPointEccentricity, and the IfcStructuralConnection is the RelatedElement.
 /// 
-/// HISTORY New entity in IFC 2x Edition 3.
+/// HISTORYÿ New entity in IFC 2x Edition 3.
 /// 
 /// Geometry use definitions
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connects. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects subtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute, otherwise the distance to the point at the RelatedElement has to be given by the three eccentricity values.
@@ -13279,7 +13295,7 @@ public:
 ///   'pint US'		Volume measure equal to 0.000473 cubic meters
 ///   'gallon UK'	Volume measure equal to 0.004546 cubic meters
 ///   'gallon US'	Volume measure equal to 0.003785 cubic meters
-///   'degree'		Angle measure equal to &#960;/180 rad
+///   'degree'		Angle measure equal to π/180 rad
 ///   'ounce'		Mass measure equal to 28.35 g
 ///   'pound'		Mass measure equal to 0.454 kg
 ///   'ton UK'		Mass measure equal to 1016.0469088 kg, also known as long ton, gross ton, shipper's ton
@@ -13318,17 +13334,17 @@ public:
 /// 
 /// Styles are intended to be shared by multiple IfcStyledItem's, assigning the style to occurrences of (subtypes of) IfcGeometricRepresentationItem's. Measures given to a font pattern or a curve width are given in global drawing length units.
 /// 
-/// NOTE global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
+/// NOTE  global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
 /// 
 /// The measure values for font pattern and curve width apply to the model space with a target plot scale provided for the correct appearance in the default plot scale.. For different scale and projection dependent curve styles a different instance of IfcCurveStyle needs to be used by IfcPresentationStyleAssignment for different IfcGeometricRepresentationSubContext dependent representations.
 /// 
-/// NOTE the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
+/// NOTE  the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
 /// 
 /// An IfcCurveStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or IfcAnnotationCurveOccurrence.
 /// 
-/// NOTE Corresponding ISO 10303 name: curve_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: curve_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcCurveStyle : public IfcPresentationStyle {
 public:
     /// Whether the optional attribute CurveFont is defined for this IfcCurveStyle
@@ -13403,7 +13419,7 @@ public:
 /// Axis1 = NIL (defaults to 1.,0.)
 ///   Axis2 = NIL (defaults to 0.,1.)
 ///   LocalOrigin = IfcCartesianPoint(0.,<1/2 YDim)
-///   Scale = 1.
+///   Scale  = 1.
 ///   Scale2 = 2.
 /// 
 /// Note: The ParentProfile has a Position
@@ -13441,7 +13457,7 @@ public:
 /// brown coordinate axes
 ///   show the position coordinate system of the derived profile
 /// 
-/// Figure 316 &#8212; Derived profile
+/// Figure 316 — Derived profile
 class IFC_PARSE_API IfcDerivedProfileDef : public IfcProfileDef {
 public:
     /// The parent profile provides the origin of the transformation.
@@ -13530,9 +13546,9 @@ public:
 /// 
 /// The ISO 3098-1 font A is the text font as denoted as Letterng A in clause 3 of ISO 3098-1, the ISO 3098-1 font B is the text font as denoted as Letterng B in clause 3 of ISO 3098-1.
 /// 
-/// NOTE The IfcDraughtingPreDefinedTextFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 202: Application protocol: Associative draughting. Corresponding ISO 10303 name: draughting_pre_defined_text_font. Please refer to ISO/IS 10303-202:1994 page 196 for the final definition of the formal standard.
+/// NOTE  The IfcDraughtingPreDefinedTextFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 202: Application protocol: Associative draughting. Corresponding ISO 10303 name: draughting_pre_defined_text_font. Please refer to ISO/IS 10303-202:1994 page 196 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
@@ -13557,7 +13573,7 @@ public:
 /// be distinct. The edge is oriented by choosing its traversal
 /// direction to run from the first to the second vertex. If the two
 /// vertices are the same, the edge is a self loop. The domain of the
-/// edge does not include its bounds, and 0 &#8804; &#926; &#8804; &#8734;.
+/// edge does not include its bounds, and 0 ≤ Ξ ≤ ∞.
 /// Associated with an edge may be a geometric curve to locate the
 /// edge in a coordinate space; this is represented by the edge curve
 /// (IfcEdgeCurve) subtype. The curve shall be finite and
@@ -13586,11 +13602,11 @@ public:
 /// 
 /// Figure 333 illustrates an example where the bounds of the IfcEdge are given by the EdgeStart and EdgeEnd; this also determines the direction of the edge. The location within a coordinate space is determined by the IfcVertexPoint type for EdgeStart and EdgeEnd. Since no edge geometry is assigned, it defaults to a straight line agreeing to the direction sense.
 /// 
-/// Figure 333 &#8212; Edge representation
+/// Figure 333 — Edge representation
 /// 
-/// NOTE Corresponding ISO 10303 entity: edge. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: edge. Please refer to ISO/IS 10303-42:1994, p. 130 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
 /// Informal propositions:
 /// 
@@ -13630,13 +13646,13 @@ public:
 /// 
 /// Figure 334 illustrates an example where the edge geometry is given by an unbounded curve, here IfcCircle. The bounds are provided by the EdgeStart and EdgeEnd, the topological direction of the IfcEdgeCurve opposes the direction of the IfcCircle by SameSense = FALSE.
 /// 
-/// Figure 334 &#8212; Edge curve
+/// Figure 334 — Edge curve
 /// 
-/// NOTE Corresponding ISO 10303 entity: edge_curve. Please refer to ISO/IS 10303-42:1994, p. 132
+/// NOTE  Corresponding ISO 10303 entity: edge_curve. Please refer to ISO/IS 10303-42:1994, p. 132
 /// for the final definition of the formal standard. Due to the general IFC model specification rule not to use multiple inheritance, the subtype relationship to geometric_representation_item is not included.
 /// 
 /// <blockquote class="history"
-/// HISTORY New Entity in IFC2x.
+/// HISTORY  New Entity in IFC2x.
 /// 
 /// Informal propositions:
 /// 
@@ -13681,9 +13697,9 @@ public:
 /// The IfcProperty (instantiable subtypes) is used to
 /// express the individual material properties.
 /// 
-/// HISTORY New entity in Release IFC2x.
+/// HISTORY  New entity in Release IFC2x.
 /// 
-/// IFC2x4 CHANGE The attributes Name and Description are promoted to supertype,
+/// IFC2x4 CHANGE  The attributes Name and Description are promoted to supertype,
 /// attribute ExtendedProperties has been renamed to Properties.
 /// 
 /// Extended property use definitions
@@ -13732,7 +13748,7 @@ public:
 ///   finite 2-manifold in Rm. A face domain shall not have handles
 ///   but it may have holes, each hole bounded by a loop. The domain of the
 ///   underlying geometry of the face, if present, does not contain its bounds, and 0
-///   < &#926; < &#8734;. 
+///   < Ξ < ∞. 
 ///   A face is represented by its bounding loops, which are defined as face
 ///   bounds. A face has a topological normal n and the tangent to a loop is t. For a
 ///   loop bounding a face with defined geometry, the cross product n x t points
@@ -13754,13 +13770,13 @@ public:
 /// where Gli is the graph genus of the
 ///   i th loop. 
 /// 
-/// NOTE Corresponding ISO 10303 entity: face. No subtypes of face have been incorporated
+/// NOTE  Corresponding ISO 10303 entity: face. No subtypes of face have been incorporated
 ///   into this IFC Release. Please refer to ISO/IS 10303-42:1994, p. 140 for the
 ///   final definition of the formal standard. The WR1 has not been incorporated,
 ///   since it is always satisfied, due to the fact that only poly loops exist for
 ///   face bounds.
 /// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Informal propositions: 
 /// 
@@ -13789,9 +13805,9 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: A face bound is a loop which is intended to be used for bounding a face.  
 /// 
-/// NOTE Corresponding ISO 10303 entity: face_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: face_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
 /// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 class IFC_PARSE_API IfcFaceBound : public IfcTopologicalRepresentationItem {
 public:
     /// The loop which will be used as a face boundary.
@@ -13845,13 +13861,13 @@ public:
 ///   all the vertex points and edge curves are contained in the face geometry
 ///   surface. A surface may be referenced by more than one face surface. 
 /// 
-/// NOTE Corresponding ISO 10303 entity:
+/// NOTE  Corresponding ISO 10303 entity:
 ///   face_surface. Please refer to ISO/IS 10303-42:1994, p. 204 for the final
 ///   definition of the formal standard. Due to the general IFC model specification
 ///   rule not to use multiple inheritance, the subtype relationship to
 ///   geometric_representation_item is not included.
 /// 
-/// HISTORY New class in IFC2x
+/// HISTORY  New class in IFC2x
 /// 
 /// Informal propositions: 
 /// 
@@ -13944,34 +13960,34 @@ public:
 /// 
 /// Solid fill for areas and surfaces by only assigning IfcColour to the set of FillStyles. It then provides the background colour for the filled area or surface.
 /// 
-/// NOTE Color information of surfaces for rendering is assigned by using IfcSurfaceStyle, not by using IfcFillAreaStyle.
+/// NOTE  Color information of surfaces for rendering is assigned by using IfcSurfaceStyle, not by using IfcFillAreaStyle.
 /// 
 /// Vector based hatching for areas and surfaces based on a single row of hatch lines by assigning a single instance of IfcFillAreaStyleHatching to the set of FillStyles.  If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the hatching.  Vector based hatching for areas and surfaces based on two (potentially crossing) rows of hatch lines by assigning two instances of IfcFillAreaStyleHatching to the set of FillStyles. 
 /// 
 /// If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the hatching. 
 /// 
-/// NOTE Assigning more then two instances of IfcFillAreaStyleHatching to define three or more rows of hatch lines is not encouraged.
+/// NOTE  Assigning more then two instances of IfcFillAreaStyleHatching to define three or more rows of hatch lines is not encouraged.
 /// 
 /// Tiling for areas and surfaces by assigning a single instance of IfcFillAreaStyleTiles to the set of FillStyles.  If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the tiling. 
 /// 
-/// IFC2x3 NOTE The use of IfcFillAreaStyleTiles is discouraged., as its definition might change is future releases.
+/// IFC2x3 NOTE  The use of IfcFillAreaStyleTiles is discouraged., as its definition might change is future releases.
 /// 
 /// Externally defined hatch style by assigning a single instance of IfcExternallyDefinedHatchStyle to the set of FillStyles. 
 ///   If an instance of IfcColour is assigned in addition to the set of FillStyles, it provides the background colour for the hatching.
 /// 
 /// Measures given to a hatch or tile pattern are given in global drawing length units.
 /// 
-/// NOTE Global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
+/// NOTE  Global units are defined at the single IfcProject instance, given by UnitsInContext:IfcUnitAssignment, the same units are used for the geometric representation items and for the style definitions.
 /// 
 /// The measure values for hatch or tile pattern apply to the model space with a target plot scale provided for the correct appearance in the default plot scale. For different scale and projection dependent fill area styles a different instance of IfcFillAreaStyle needs to be used by IfcPresentationStyleAssignment for different IfcGeometricRepresentationSubContext dependent representations.
 /// 
-/// NOTE the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
+/// NOTE  the target plot scale is given by IfcGeometricRepresentationSubContext.TargetScale.
 /// 
 /// An IfcFillAreaStyle can be assigned to IfcFillArea via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or subtype IfcAnnotationFillAreaOccurrence.
 /// 
-/// NOTE Corresponding ISO 10303 name: fill_area_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: fill_area_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     /// The set of fill area styles to use in presenting visible curve segments, annotation fill areas or surfaces.
@@ -14101,9 +14117,9 @@ public:
 /// system as established by the attribute WorldCoordinateSystem. It is given by a 2 dimensional direction within the xy-plane of the project coordinate system. If not resent, it defaults to [0.,1.] - i.e. the positive Y axis of the project coordinate system equals the geographic northing direction. The direction is provided within project coordinate system and identifies the true north direction (see
 /// figure).
 /// 
-/// Figure 329 &#8212; Geometric representation context true north
+/// Figure 329 — Geometric representation context true north
 /// 
-/// NOTEThe inherited attribute
+/// NOTE ÿThe inherited attribute
 /// ContextType shall have one of the following recognized
 /// values: 'Sketch', 'Outline', 'Design', 'Detail',
 /// 'Model', 'Plan',
@@ -14122,13 +14138,13 @@ public:
 /// Figure 330 illustrates use of representation contexts defined at IfcProject for 3D model and 2D plan context, including sub
 /// context definitions for different target scales.
 /// 
-/// Figure 330 &#8212; Geometric representation context use
+/// Figure 330 — Geometric representation context use
 /// 
-/// NOTE The definition of this class relates to the ISO 10303 entity geometric_representation_context. Please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this class relates to the ISO 10303 entity geometric_representation_context. Please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard.
 /// 
-/// HISTORYNew Entity in IFC Release 2.0
+/// HISTORY ÿNew Entity in IFC Release 2.0
 /// 
-/// IFC2x3 CHANGEApplicable values for ContextType are only 'Model', 'Plan', and'NotDefined'. All other sub contexts are now handled by the new subtype in IFC2x Edition 2 IfcGeometricRepresentationSubContext. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE ÿApplicable values for ContextType are only 'Model',ÿ 'Plan', andÿ'NotDefined'. All other sub contexts are now handled by the new subtype in IFC2x Edition 2 IfcGeometricRepresentationSubContext. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcGeometricRepresentationContext : public IfcRepresentationContext {
 public:
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
@@ -14141,7 +14157,7 @@ public:
     void setPrecision(double v);
     /// Establishment of the engineering coordinate system (often referred to as the world coordinate system in CAD) for all representation contexts used by the project. 
     /// 
-    /// Note it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.).
+    /// Note  it can be used to provide better numeric stability if the placement of the building(s) is far away from the origin. In most cases however it would be set to origin: (0.,0.,0.) and directions x(1.,0.,0.), y(0.,1.,0.), z(0.,0.,1.).
     IfcAxis2Placement* WorldCoordinateSystem() const;
     void setWorldCoordinateSystem(IfcAxis2Placement* v);
     /// Whether the optional attribute TrueNorth is defined for this IfcGeometricRepresentationContext
@@ -14199,15 +14215,15 @@ public:
 /// 
 /// The IfcGeometricRepresentationSubContext is used to define semantically distinguished representation types for different information content, dependent on the representation view and the target scale. It can be used to control the level of detail of the shape representation that is most applicable to this geometric representation context. addition the sub context is used to control the later appearance of the IfcShapeRepresentation within a plot view.
 /// 
-/// NOTE If the IfcShapeRepresentation using this sub context has IfcStyledItem's assigned to the Items, the presentation style information (e.g. IfcCurveStyle, IfcTextStyle) associated with the IfcStyledItem is given in target plot dimensions. For example, a line thickness (IfcCurveStyle.CurveWidth) is given by a thickness measure relating to the thickness for a plot within the (range of) target scale.
+/// NOTE  If the IfcShapeRepresentation using this sub context has IfcStyledItem's assigned to the Items, the presentation style information (e.g. IfcCurveStyle, IfcTextStyle) associated with the IfcStyledItem is given in target plot dimensions. For example, a line thickness (IfcCurveStyle.CurveWidth) is given by a thickness measure relating to the thickness for a plot within the (range of) target scale.
 /// 
 /// Each IfcProduct can then have several instances of subtypes of IfcRepresentation, each being assigned to a different geometric representation context (IfcGeometricRepresentationContext or IfcGeometricRepresentationSubContext). The application can then choose the most appropriate representation for showing the geometric shape of the product, depending on the target view and scale.
 /// 
-/// NOTE The provision of a model view (IfcGeometricRepresentationContext.ContextType = 'Model') is mandatory. Instances of IfcGeometricRepresentationSubContext relate to it as its ParentContext.
+/// NOTE  The provision of a model view (IfcGeometricRepresentationContext.ContextType = 'Model') is mandatory. Instances of IfcGeometricRepresentationSubContext relate to it as its ParentContext.
 /// 
-/// EXAMPLE Instances of IfcGeometricRepresentationSubContext can be used to handle the multi-view blocks or macros, which are used in CAD programs to store several scale and/or view dependent geometric representations of the same object.
+/// EXAMPLE  Instances of IfcGeometricRepresentationSubContext can be used to handle the multi-view blocks or macros, which are used in CAD programs to store several scale and/or view dependent geometric representations of the same object.
 /// 
-/// HISTORY New entity in Release IFC 2x2.
+/// HISTORY  New entity in Release IFC 2x2.
 class IFC_PARSE_API IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
 public:
     /// Parent context from which the sub context derives its world coordinate system, precision, space coordinate dimension and true north.
@@ -14283,14 +14299,14 @@ public:
 /// PlacementRefDirection = IfcDirection: by the explicitly provided direction information;
 /// PlacementRefDirection = IfcVirtualGridIntersection: by the tangent between the virtual grid intersection of PlacementLocation and the virtual grid intersection of PlacementRefDirection. Offsets as potentially provided in the IfcVirtualGridIntersection's of PlacementLocation and PlacementRefDirection have to be taken into account.
 /// 
-/// The direction of the y-axis of the IfcGridPlacement is the orthogonal complement to the x-axis. The plane defined by the x and y axis shall be co-planar to the xy plane of the local placement of the IfcGrid. 
+/// The direction of the y-axis of the IfcGridPlacement is the orthogonal complement to the x-axis. The plane defined by the x and y axis shall be co-planar to the xy plane of the local placement of the IfcGrid.ÿ 
 /// The direction of the z-axis is the orientation of the cross product of the x-axis and the y-axis, i.e. the z-axis of the IfcGridPlacement shall be co-linear to the z-axis of the local placement of the IfcGrid.
 /// 
 /// NOTE The IfcGrid local placement, that can be provided relative to the local placement of another spatial structure element, has to be taken into account for calculating the absolute placement of the virtual grid intersection.
 /// 
 /// NOTE The PlacementLocation.OffsetDistances[3] and the PlacementRefDirection.OffsetDistances[3] shall either not be assigned or should have the same z offset value.
 /// 
-/// HISTORY New entity in IFC Release 1.5. The entity name was changed from IfcConstrainedPlacement in IFC Release 2x.
+/// HISTORY ÿNew entity in IFC Release 1.5. The entity name was changed from IfcConstrainedPlacement in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Attribute data type of PlacementRefDirection has been changed to IfcGridPlacementDirectionSelect.
 /// 
@@ -14302,21 +14318,21 @@ public:
 /// its location: given by the virtual grid intersection of PlacementLocation
 /// its x-axis direction: given by the tangent of the first intersecting axis in the offset location of the virtual grid intersection
 /// 
-/// Figure 243 &#8212; Grid placement
+/// Figure 243 — Grid placement
 /// 
 /// Figure 244 illustrates the case where PlacementRefDirection is given as an IfcDirection- the object coordinate system is defined by:
 /// 
 /// its location: given by the virtual grid intersection of PlacementLocation
 /// its x-axis direction: given by the DirectionRatios of the IfcDirection, only the ratios for x and y are taken into account,
 /// 
-/// Figure 244 &#8212; Grid placement with direction
+/// Figure 244 — Grid placement with direction
 /// 
 /// Figure 245 illustrates the case where PlacementRefDirection is given as an IfcVirtualGridIntersection- the object coordinate system is defined by:
 /// 
 /// its location: given by the virtual grid intersection of PlacementLocation
 /// its x-axis direction: given by the tangent of the line between the virtual grid intersection of the PlacementLocation and the virtual grid intersection of the PlacementRefDirection.
 /// 
-/// Figure 245 &#8212; Grid placement with intersection
+/// Figure 245 — Grid placement with intersection
 class IFC_PARSE_API IfcGridPlacement : public IfcObjectPlacement {
 public:
     /// Placement of the object coordinate system defined by the intersection of two grid axes.
@@ -14355,7 +14371,7 @@ public:
 /// 
 /// Figure 258 illustrates the definition of the IfcHalfSpaceSolid within a given coordinate system. The base surface is given by an unbounded plane, the red boundary is shown for visualization purposes only. 
 /// 
-/// Figure 258 &#8212; Half space solid geometry
+/// Figure 258 — Half space solid geometry
 class IFC_PARSE_API IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
 public:
     /// Surface defining side of half space.
@@ -14441,11 +14457,11 @@ public:
 /// 
 /// The Uniform Resource Locator (URL) is a form of an URI and specified in RFC1738 by IETF. It supports resources located on a particular server being accessed by a particular protocol (usually http), and resources located at a local machine.
 /// 
-/// NOTE Exchange files following the ifcZIP convention may include a sub directory structure for image resources to be stored together with the product data set.
+/// NOTE  Exchange files following the ifcZIP convention may include a sub directory structure for image resources to be stored together with the product data set.
 /// 
-/// NOTE The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
+/// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
-/// HISTORY New entity in Release IFC2x2.
+/// HISTORY  New entity in Release IFC2x2.
 class IFC_PARSE_API IfcImageTexture : public IfcSurfaceTexture {
 public:
     /// Location, provided as an URI, at which the image texture is electronically published.
@@ -14577,7 +14593,7 @@ public:
 /// 
 /// Figure 303 shows an example of a light emitter having two light sources (of type IfcLightSourceGoniometric). 
 /// 
-/// Figure 303 &#8212; Light source goniometric
+/// Figure 303 — Light source goniometric
 /// 
 /// HISTORY: New entity in IFC2x2.
 class IFC_PARSE_API IfcLightSourceGoniometric : public IfcLightSource {
@@ -14620,7 +14636,7 @@ public:
 /// 
 /// Point light node's illumination falls off with distance as specified by three attenuation coefficients. The attenuation factor is  
 /// 
-/// 1/max(attenuation[0] + attenuation[1]  r + attenuation[2]  r 2 , 1), 
+/// 1/max(attenuation[0] + attenuation[1] × r + attenuation[2] × r 2 , 1), 
 /// 
 /// where r is the distance from the light to the surface being illuminated. The default is no attenuation. An attenuation value of (0, 0, 0) is identical to (1, 0, 0). Attenuation values shall be greater than or equal to zero.  
 /// 
@@ -14662,19 +14678,19 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: The light source spot entity is a subtype of light source. Spot light source entities have a light source colour, position, direction, attenuation coefficients, concentration exponent, and spread angle. If a point lies outside the cone of influence of a light source of this type as determined by the light source position, direction and spread angle its colour is not affected by that light source. 
 /// 
-/// NOTE The IfcLightSourceSpot adds the BeamWidthAngle which defines the inner cone in which the light source emits light at uniform full intensity. The light source's emission intensity drops off from the inner solid angle (BeamWidthAngle) to the outer solid angle (SpreadAngle).
+/// NOTE  The IfcLightSourceSpot adds the BeamWidthAngle which defines the inner cone in which the light source emits light at uniform full intensity. The light source's emission intensity drops off from the inner solid angle (BeamWidthAngle) to the outer solid angle (SpreadAngle).
 /// 
 /// Definition from ISO/IEC 14772-1:1997: The Spot light node defines a light source that emits light from a specific point along a specific direction vector and constrained within a solid angle. Spot lights may illuminate geometry nodes that respond to light sources and intersect the solid angle defined by the Spot light. Spot light nodes are specified in the local coordinate system and are affected by ancestors' transformations. 
 /// 
 /// Figure 304 (from VRML97) shows the definition of spot light. 
 /// 
-/// Figure 304 &#8212; Light source spot
+/// Figure 304 — Light source spot
 /// 
-/// NOTE Corresponding ISO 10303 entity: light_source_spot. Please refer to ISO/IS 10303-46:1994, p. 33 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: light_source_spot. Please refer to ISO/IS 10303-46:1994, p. 33 for the final definition of the formal standard.
 /// 
-/// NOTE In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius, BeamWidth, and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
+/// NOTE  In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius, BeamWidth, and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
 /// 
-/// HISTORY This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
+/// HISTORY  This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
 class IFC_PARSE_API IfcLightSourceSpot : public IfcLightSourcePositional {
 public:
     /// Definition from ISO/CD 10303-46:1992: This is the direction of the axis of the cone of the light source specified in the coordinate space of the representation being projected..
@@ -14787,8 +14803,8 @@ public:
 ///   dimensionality of 0 or 1. The domain of a 0-dimensional loop is a single point.
 ///   The domain of a 1-dimensional loop is a connected, oriented curve, but need not
 ///   to be manifold. As the loop is a circle, the location of its beginning/ending
-///   point is arbitrary. The domain of the loop includes its bounds, an 0 &#8804; &#926;
-///   < &#8734;.  
+///   point is arbitrary. The domain of the loop includes its bounds, an 0 ≤ Ξ
+///   < ∞.  
 ///   A loop is represented by a single vertex, or by an ordered collection of
 ///   oriented edges, or by an ordered collection of points. A loop is a graph, so
 ///   M and the graph genus Gl may be determined by the
@@ -14798,9 +14814,9 @@ public:
 /// where V and El are the number of unique
 ///   vertices and oriented edges in the loop and Gl is the genus
 ///   of the loop.  
-///   NOTE Corresponding ISO 10303 entity: loop, the following subtypes have been incorporated into IFC: poly_loop as IfcPolyLoop, vertex_loop as IfcVertexLoop, edge_loop as IfcEdgeLoop. Please refer to ISO/IS 10303-42:1994, p. 136 for the final definition of the formal standard. 
+///   NOTE  Corresponding ISO 10303 entity: loop, the following subtypes have been incorporated into IFC: poly_loop as IfcPolyLoop, vertex_loop as IfcVertexLoop, edge_loop as IfcEdgeLoop. Please refer to ISO/IS 10303-42:1994, p. 136 for the final definition of the formal standard. 
 /// 
-/// HISTORY New Entity in IFC2x. 
+/// HISTORY  New Entity in IFC2x. 
 ///   Informal propositions: 
 /// 
 /// A loop has a finite extent. 
@@ -14827,13 +14843,13 @@ public:
 /// The IfcMappedItem is the inserted instance of a source definition (to be compared with a
 /// block / shared cell / macro definition). The instance is inserted by applying a Cartesian transformation operator as the MappingTarget.
 /// 
-/// EXAMPLE An IfcMappedItem can reuse other mapped items (ako nested blocks), doing so the IfcRepresentationMap is based on an IfcShapeRepresentation including one or more IfcMappedItem's.
+/// EXAMPLE  An IfcMappedItem can reuse other mapped items (ako nested blocks), doing so the IfcRepresentationMap is based on an IfcShapeRepresentation including one or more IfcMappedItem's.
 /// 
-/// NOTE  Corresponding ISO 10303 entity: mapped_item. Please refer to ISO/IS
+/// NOTE   Corresponding ISO 10303 entity: mapped_item. Please refer to ISO/IS
 /// 10303-43:1994, for the final definition of the formal standard. The definition of mapping_target (MappingTarget) has been restricted to be of the type cartesian_transformation_operator
 /// (IfcCartesianTransformationOperator).
 /// 
-/// HISTORY New entity in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 2x.
 /// 
 /// Informal Propositions
 /// 
@@ -14861,7 +14877,7 @@ public:
 };
 /// IfcMaterialDefinitionRepresentation defines presentation information relating to IfcMaterial. It allows for multiple presentations of the same material for different geometric representation contexts.
 /// 
-/// NOTE The IfcMaterialDefinitionRepresentation is currently only used
+/// NOTE  The IfcMaterialDefinitionRepresentation is currently only used
 /// to define presentation information to material used at element
 /// occurrences, defined as subtypes of IfcElement, or at
 /// element types, defined as subtypes of IfcElementType. The
@@ -14878,17 +14894,17 @@ public:
 /// different presentation styles for different representation contexts, for example, a different style for sketch view, model view or plan view, or for different target scales,
 /// for each representation context is can apply curve style, fill area style (hatching), symbol, text and surface style.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
-/// IFC2x3 CHANGE The entity IfcMaterialDefinitionRepresentation has been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE  The entity IfcMaterialDefinitionRepresentation has been added. Upward compatibility for file based exchange is guaranteed.
 /// 
-/// IFC2x4 CHANGE The assignment of curve, surface and other styles to an IfcStyledItem has been simplified by IfcStyleAssignmentSelect. The use of intermediate IfcPresentationStyleAssignment is deprecated.
+/// IFC2x4 CHANGE  The assignment of curve, surface and other styles to an IfcStyledItem has been simplified by IfcStyleAssignmentSelect. The use of intermediate IfcPresentationStyleAssignment is deprecated.
 /// 
 /// Use definition
 /// 
 /// As shown in Figure 331, the presentation assignment can be specific to a representation context by adding one and more IfcStyledRepresentation's. Each of them includes a single IfcStyledItem with exactly zero or one style for either curve, fill area, surface, text or symbol style that is applicable.
 /// 
-/// Figure 331 &#8212; Material definition representation
+/// Figure 331 — Material definition representation
 class IFC_PARSE_API IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
 public:
     /// Reference to the material to which the representation applies.
@@ -14985,7 +15001,7 @@ public:
 /// It applies the units, representation context and other context
 /// information to this object definition and all dependent ones.
 /// 
-/// EXCEPTION The link
+/// EXCEPTION  The link
 /// between the uppermost object in the spatial structure tree, that is
 /// IfcSite or ifcBuilding, and the context provided
 /// by IfcProject is created using the
@@ -15015,7 +15031,7 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: A one time repeat factor is a vector used in the fill area style hatching and fill area style tiles entities for determining the origin of the repeated hatch line relative to the origin of the previous hatch line, Given the initial position of any hatch line, the one direction repeat factor determines two new positions according to the equation: 
 /// 
-/// I + k * R k X{-1,1}
+/// I + k * R    k X{-1,1}
 /// 
 /// NOTE: Corresponding ISO 10303 name: one_direction_repeat_factor. Please refer to ISO/IS 10303-46:1994, p. 112 for the final definition of the formal standard.
 /// 
@@ -15042,7 +15058,7 @@ public:
 ///   2-manifold with boundary, but is not a closed surface. It can be thought of as
 ///   a closed shell with one or more holes punched in it. The domain of an open
 ///   shell satisfies 0
-///   < &#926; < 1. An open shell is
+///   < Ξ < 1. An open shell is
 ///   functionally more general than a face because its domain can have handles. 
 ///   The shell is defined by a collection of faces, which may be oriented
 ///   faces. The sense of each face, after taking account of the orientation, shall
@@ -15063,7 +15079,7 @@ public:
 ///   vertices. The domain of an open shell, if present, contains all edges and
 ///   vertices of its faces. 
 /// 
-/// NOTE Note that this is slightly different from the
+/// NOTE  Note that this is slightly different from the
 ///   definition of a face domain, which includes none of its bounds. For example, a
 ///   face domain may exclude an isolated point or line segment. An open shell domain
 ///   may not. (See the algorithm for computing below.) 
@@ -15073,11 +15089,11 @@ public:
 ///   further specification, including the Euler formulas to be satisfied, please
 ///   refer to ISO 10303-42:1994. 
 /// 
-/// NOTE Corresponding ISO 10303 entity:
+/// NOTE  Corresponding ISO 10303 entity:
 ///   open_shell, please refer to ISO/IS 10303-42:1994, p.148 for the final
 ///   definition of the formal standard.
 /// 
-/// HISTORY New class in IFC2x.
+/// HISTORY  New class in IFC2x.
 /// 
 /// Informal propositions: 
 /// 
@@ -15112,11 +15128,11 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: An oriented edge is an edge constructed from another edge and contains a BOOLEAN direction flag to indicate whether or not the orientation of the constructed edge agrees with the orientation of the original edge. Except for perhaps orientation, the oriented edge is equivalent to the original edge.  
 /// 
-/// NOTE A common practice is solid modelling systems is to have an entity that represents the "use" or "traversal" of an edge. This "use" entity explicitly represents the requirement in a manifold solid that each edge must be traversed exactly twice, once in each direction. The "use" functionality is provided by the edge subtype oriented edge.
+/// NOTE  A common practice is solid modelling systems is to have an entity that represents the "use" or "traversal" of an edge. This "use" entity explicitly represents the requirement in a manifold solid that each edge must be traversed exactly twice, once in each direction. The "use" functionality is provided by the edge subtype oriented edge.
 /// 
-/// NOTE Corresponding ISO 10303 entity: oriented_edge. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: oriented_edge. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC Release 2.0.
+/// HISTORY  New Entity in IFC Release 2.0.
 class IFC_PARSE_API IfcOrientedEdge : public IfcEdge {
 public:
     /// Edge entity used to construct this oriented edge.
@@ -15164,19 +15180,19 @@ public:
 /// is given; see guidance at IfcProfileDef), or estimate them, or
 /// simply assume zero values.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x Platform CHANGE The IfcParameterizedProfileDef
+/// IFC2x Platform CHANGE  The IfcParameterizedProfileDef
 /// is introduced as an intermediate new abstract entity that unifies the
 /// definition and usage of the position coordinate system for all
 /// parameterized profiles. The Position attribute has been removed at all
 /// subtypes (like IfcRectangleProfileDef, IfcCircleProfileDef,
 /// etc.).
 /// 
-/// IFC2x3 CHANGE All profile origins are now in the center
+/// IFC2x3 CHANGE  All profile origins are now in the center
 /// of the bounding box.
 /// 
-/// IFC2x4 CHANGE Position attribute made optional (default: identity transformation).
+/// IFC2x4 CHANGE  Position attribute made optional (default: identity transformation).
 /// Several radius parameters in subtypes have been changed from optional IfcPositiveLengthMeasure (assumed default: 0.) to optional IfcNonNegativeLengthMeasure (default: unspecified).  This change allows to explicitly specify zero radius.  Sending systems shall export 0. values if parameters are known to be 0.
 /// Subtypes IfcCraneRailAShapeProfileDef and IfcCraneRailFShapeProfileDef deleted.  Rail profiles shall be modeled as IfcArbitraryClosedProfileDef or as IfcAsymmetricIShapeProfileDef together with appropriate external reference.
 class IFC_PARSE_API IfcParameterizedProfileDef : public IfcProfileDef {
@@ -15200,9 +15216,9 @@ public:
 /// 
 /// An individual edge can only be referenced once by an individual path. An edge can be referenced by multiple paths. An edge can exist independently of a path.  
 /// 
-/// NOTE Corresponding ISO 10303 entity: path. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: path. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC Release 2.0
+/// HISTORY  New Entity in IFC Release 2.0
 /// 
 /// Informal proposition:
 /// 
@@ -15233,9 +15249,9 @@ public:
 /// 
 /// A section "Quantity Use Definition" at individual entities as subtypes of IfcBuildingElement gives guidance to the usage of the Name and Discrimination attribute to characterize the complex quantities.
 /// 
-/// HISTORY New entity in IFC2x2 Addendum 1.
+/// HISTORY  New entity in IFC2x2 Addendum 1.
 /// 
-/// IFC2x2 ADDENDUM 1 CHANGE The entity IfcPhysicalComplexQuantity has been added. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x2 ADDENDUM 1 CHANGE  The entity IfcPhysicalComplexQuantity has been added. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
 public:
     /// Set of physical quantities that are grouped by this complex physical quantity according to a given discrimination.
@@ -15273,7 +15289,7 @@ public:
 /// 
 /// The PixelTexture node defines a 2D image-based texture map as an explicit array of pixel values (image field) and parameters controlling tiling repetition of the texture onto geometry.
 /// Texture maps are defined in a 2D coordinate system (s, t) that ranges from 0.0 to 1.0 in both directions. The bottom edge of the pixel image corresponds to the S-axis of the texture map, and left edge of the pixel image corresponds to the T-axis of the texture map. The lower-left pixel of the pixel image corresponds to s=0.0, t=0.0, and the top-right pixel of the image corresponds to s = 1.0, t = 1.0.
-/// The Image field specifies a single uncompressed 2-dimensional pixel image. Image fields contain three integers representing the width, height and number of components in the image, followed by widthheight hexadecimal values representing the pixels in the image. Pixel values are limited to 256 levels of intensity (that is, 0x00-0xFF hexadecimal).
+/// The Image field specifies a single uncompressed 2-dimensional pixel image. Image fields contain three integers representing the width, height and number of components in the image, followed by width×height hexadecimal values representing the pixels in the image. Pixel values are limited to 256 levels of intensity (that is, 0x00-0xFF hexadecimal).
 /// 
 /// A one-component image specifies one-byte hexadecimal value representing the intensity of the image. For example, 0xFF is full intensity in hexadecimal (255 in decimal), 0x00 is no intensity (0 in decimal).
 /// A two-component image specifies the intensity in the first
@@ -15297,7 +15313,7 @@ public:
     void setColourComponents(int v);
     /// Flat list of hexadecimal values, each describing one pixel by 1, 2, 3, or 4 components.
     /// 
-    /// IFC2x Edition 3 CHANGE The data type has been changed from STRING to BINARY.
+    /// IFC2x Edition 3 CHANGE  The data type has been changed from STRING to BINARY.
     std::vector< boost::dynamic_bitset<> > /*[1:?]*/ Pixel() const;
     void setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v);
     virtual unsigned int getArgumentCount() const { return 8; }
@@ -15340,9 +15356,9 @@ public:
 };
 /// The planar extent defines the extent along the two axes of the two-dimensional coordinate system, independently of its position.
 /// 
-/// NOTE Corresponding ISO 10303 name: planar_extent. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: planar_extent. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcPlanarExtent : public IfcGeometricRepresentationItem {
 public:
     /// The extent in the direction of the x-axis.
@@ -15449,11 +15465,11 @@ public:
 /// by an ordered coplanar collection of points forming the vertices of the
 /// loop. The loop is composed of straight line segments joining a point in
 /// the collection to the succeeding point in the collection. The closing
-/// segment is from the last to the first point in the collection.
+/// segment is from the last to the first point in the collection. 
 /// The direction of the loop is in the direction of the line
 /// segments. 
 /// 
-/// NOTE This entity exists primarily to facilitate the efficient communication of faceted B-rep models.
+/// NOTE  This entity exists primarily to facilitate the efficient communication of faceted B-rep models.
 /// 
 /// A poly loop shall conform to the following topological
 /// constraints:
@@ -15466,17 +15482,17 @@ public:
 /// in the list of Polygon's to the first IfcCartesianPoint.
 /// Therefore the first point shall not be repeated at the end of the list,
 /// neither by referencing the same instance, nor by using an additional
-/// instance ofIfcCartesianPoint having the
+/// instance of IfcCartesianPoint having the
 /// coordinates as the first point.
 /// 
-/// NOTE Corresponding ISO 10303 entity: poly_loop. Please refer to ISO/IS
+/// NOTE  Corresponding ISO 10303 entity: poly_loop. Please refer to ISO/IS
 /// 10303-42:1994, p. 138 for the final definition of the formal standard.
 /// Due to the general IFC model specification rule not to use multiple
 /// inheritance, the subtype relationship to geometric_representation_item
 /// is not included. The derived attribute Dim has been
 /// added at this level.
 /// 
-/// HISTORY  New class in IFC Release 1.0
+/// HISTORY   New class in IFC Release 1.0
 /// 
 /// Informal propositions: 
 /// 
@@ -15505,7 +15521,7 @@ public:
 /// polygonal boundary. The base
 /// surface of the half space is positioned by its normal relativeto the
 /// object coordinate system
-/// (as defined at the supertype IfcHalfSpaceSolid),and
+/// (as defined at the supertype IfcHalfSpaceSolid), and
 /// its polygonal (with or without arc segments) boundary is defined in the
 /// XY plane of the position
 /// coordinate system established by the Position
@@ -15521,9 +15537,9 @@ public:
 /// one the normal points away from. If the agreement flag is FALSE, then
 /// the subset is the one the normal points into. 
 /// 
-/// NOTE A polygonal bounded half space is not a subtype of IfcSolidModel, half space solids are only useful as operands in Boolean expressions.
+/// NOTE  A polygonal bounded half space is not a subtype of IfcSolidModel, half space solids are only useful as operands in Boolean expressions.
 /// 
-/// HISTORY New class in IFC Release 2x.
+/// HISTORY  New class in IFC Release 2x.
 /// 
 /// Informal propositions:
 /// 
@@ -15532,7 +15548,7 @@ public:
 /// shall be closed.
 ///   If the PolygonalBoundary
 /// is given by an IfcCompositeCurve, it shall only
-/// haveIfcCompositeCurveSegment's of type IfcPolyline,
+/// have IfcCompositeCurveSegment's of type IfcPolyline,
 /// or IfcTrimmedCurve (having a BasisCurve
 /// of type IfcLine, or IfcCircle)
 /// 
@@ -15542,7 +15558,7 @@ public:
 /// Green coordinates indicate the position coordinate system; the PolygonalBoundary is given within this coordinate system. It is provided by IfcPolygonalBoundedHalfSpace.Position. This coordinate system is relative to the object coordinate system. The extrusion direction of the subtraction body is the positive Z axis.
 /// Red coordinates indicate the normal of the plane. It is provided by the BaseSurface (IfcSurface.Position). This normal is also relative to the object coordinate system.
 /// 
-/// Figure 259 &#8212; Polygonal half space geometry
+/// Figure 259 — Polygonal half space geometry
 /// 
 /// Purpose
 /// The polygonal bounded half space is used to limit the volume of the
@@ -15562,7 +15578,7 @@ public:
     void setPosition(IfcAxis2Placement3D* v);
     /// Two-dimensional polyline bounded curve, defined in the xy plane of the position coordinate system.
     /// 
-    /// IFC2x Edition 3 CHANGE The attribute type has been changed from IfcPolyline to its supertype IfcBoundedCurve with upward compatibility for file based exchange.
+    /// IFC2x Edition 3 CHANGE  The attribute type has been changed from IfcPolyline to its supertype IfcBoundedCurve with upward compatibility for file based exchange.
     IfcBoundedCurve* PolygonalBoundary() const;
     void setPolygonalBoundary(IfcBoundedCurve* v);
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -15579,9 +15595,9 @@ public:
 };
 /// The pre defined colour determines those qualified names which can be used to identify a colour that is in scope of the current data exchange specification (in contrary to colour specification which defines the colour directly by its colour components).
 /// 
-/// NOTE Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
@@ -15656,9 +15672,9 @@ public:
 /// 
 /// or the topological representation items for connectivity systems (vertex, edge, face representations) that may include geometric representation items (vertex points, edge curves, face surfaces)
 /// 
-/// NOTE The definition of this entity relates to the ISO 10303 entity product_definition_shape. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
+/// NOTE  The definition of this entity relates to the ISO 10303 entity product_definition_shape. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC Release 1.5
+/// HISTORY  New Entity in IFC Release 1.5
 class IFC_PARSE_API IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
     virtual unsigned int getArgumentCount() const { return 3; }
@@ -15682,7 +15698,7 @@ public:
 ///   and the second value specifying the lower bound. It defines
 ///   a property - value bound (min-max) combination for which
 ///   the property Name, an optional
-///   Description,the optional UpperBoundValue
+///   Description,ÿthe optional UpperBoundValue
 ///   with measure type, the optional LowerBoundValue with
 ///   measure type, and the optional Unit is given.
 /// 
@@ -15711,7 +15727,7 @@ public:
 ///   LowerBoundValue or the UpperBoundValue is
 ///   included in the interval.
 /// 
-/// NOTE An IfcPropertyBoundedValue may be
+/// NOTE  An IfcPropertyBoundedValue may be
 ///   exchanged with no values assigned yet. In this case the
 ///   LowerBoundValue and the UpperBoundValue are
 ///   set to NIL.
@@ -15768,11 +15784,11 @@ public:
 /// 
 /// kg
 /// 
-/// HISTORYNew entity in IFC Release 2x.
+/// HISTORY ÿNew entity in IFC Release 2x.
 /// 
-/// IFC2x2 CHANGE The attribute type of the attribute UpperBoundValue and LowerBoundValue has been changed from mandatory to optional with upward compatibility for file based exchange.
+/// IFC2x2 CHANGE  The attribute type of the attribute UpperBoundValue and LowerBoundValue has been changed from mandatory to optional with upward compatibility for file based exchange.
 /// 
-/// IFC2x4 CHANGE The attribute SetPointValue has been added.
+/// IFC2x4 CHANGE  The attribute SetPointValue has been added.
 /// 
 /// Informal proposition:
 /// 
@@ -15830,12 +15846,12 @@ public:
 /// values, measure types and units, and are associated to an object
 /// occurrence or object type.
 /// 
-/// NOTE 1 The subtype hierarchy of IfcPropertyDefinition also includes statically defined property sets as IfcPreDefinedPropertySet. Those are rarely used collections of fixed attributes combined in an entity definition. The IfcPreDefinedPropertySet can not be determined by an IfcPropertySetTemplate.
+/// NOTE 1  The subtype hierarchy of IfcPropertyDefinition also includes statically defined property sets as IfcPreDefinedPropertySet. Those are rarely used collections of fixed attributes combined in an entity definition. The IfcPreDefinedPropertySet can not be determined by an IfcPropertySetTemplate.
 /// 
-/// NOTE 2 Individual properties, (subtypes of IfcProperty), are currently not included in the subtype hierarchy of IfcPropertyDefinition. This anomaly is due to upward compatibility reasons with earlier releases of this
+/// NOTE 2  Individual properties, (subtypes of IfcProperty), are currently not included in the subtype hierarchy of IfcPropertyDefinition. This anomaly is due to upward compatibility reasons with earlier releases of this
 /// standard.
 /// 
-/// HISTORY New Entity in IFC2.0
+/// HISTORY  New Entity in IFC2.0
 /// 
 /// Relationship use definition
 /// Property definitions define information that is shared among
@@ -15877,11 +15893,11 @@ public:
 /// value, IfcPropertyEnumeratedValue, defines a property
 /// object which has a value assigned that is chosen from an
 /// enumeration. It defines a property - value combination for which
-/// theproperty Name, an optional Description,the
+/// theÿproperty Name, an optional Description,ÿthe
 /// optional EnumerationValues
 /// with measure type and optionally an Unit is given.
 /// 
-/// NOTE Multiple choices from the property enumeration are supported.
+/// NOTE  Multiple choices from the property enumeration are supported.
 /// 
 /// The unit is handled by the Unit attribute of the
 /// IfcPropertyEnumeration:
@@ -15901,18 +15917,18 @@ public:
 /// (see IfcPropertyEnumeration). This enables applications to
 /// use an enumeration value as a property within a property set
 /// (IfcPropertySet) including the allowed list of
-/// values.
+/// values.ÿ
 /// 
-/// NOTE An IfcPropertyEnumeratedValue may be exchanged with no values assigned yet. In this case the EnumerationValues are set to NIL.
+/// NOTE  An IfcPropertyEnumeratedValue may be exchanged with no values assigned yet. In this case the EnumerationValues are set to NIL.
 /// 
 /// Examples of a property with enumerated value are:
 /// 
-/// Name
+/// Nameÿ
 /// Value (EnumerationValue)
 /// Type (through
 /// IfcValue)
 /// ref.IfcPropertyEnumeration
-/// (Name)
+/// (Name)ÿ
 /// 
 /// BladeAction
 /// Opposed
@@ -15945,7 +15961,7 @@ public:
 /// referenced by multiple instances of
 /// IfcPropertyEnumeratedValue.
 /// 
-/// HISTORYNew Entity in IFC Release 2.0, capabilities enhanced in IFC2x. The entity has
+/// HISTORY ÿNew Entity in IFC Release 2.0, capabilities enhanced in IFC2x. The entity has
 /// been renamed from IfcEnumeratedProperty in IFC2x.
 /// 
 /// IFC2x4 CHANGE Attribute EnumerationValues has been made OPTIONAL with upward
@@ -15954,7 +15970,7 @@ class IFC_PARSE_API IfcPropertyEnumeratedValue : public IfcSimpleProperty {
 public:
     /// Enumeration values, which shall be listed in the referenced IfcPropertyEnumeration, if such a reference is provided.
     /// 
-    /// IFC2x4 CHANGE The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcEntityList::ptr EnumerationValues() const;
     void setEnumerationValues(IfcEntityList::ptr v);
     /// Whether the optional attribute EnumerationReference is defined for this IfcPropertyEnumeratedValue
@@ -15977,9 +15993,9 @@ public:
 /// An IfcPropertyListValue
 ///   defines a property that has several (numeric or
 ///   descriptive) values assigned, these values are given by an
-///   ordered list.It defines a property - list value
+///   ordered list.ÿIt defines a property - list value
 ///   combination for which the property Name, an optional
-///   Description,the optional ListValues with measure
+///   Description,ÿthe optional ListValues with measure
 ///   type and optionally an Unit is given.
 /// 
 /// An IfcPropertyListValue is a list of values. The
@@ -16036,14 +16052,14 @@ public:
 /// 
 /// -
 /// 
-/// HISTORY New Entity in Release IFC 2x Edition 2.
+/// HISTORY  New Entity in Release IFC 2x Edition 2.
 /// 
-/// IFC2x4 CHANGE Attribute ListValues has been made OPTIONAL with upward compatibility for file based exchange.
+/// IFC2x4 CHANGE  Attribute ListValues has been made OPTIONAL with upward compatibility for file based exchange.
 class IFC_PARSE_API IfcPropertyListValue : public IfcSimpleProperty {
 public:
     /// List of property values.
     /// 
-    /// IFC2x4 CHANGE The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
     /// Whether the optional attribute Unit is defined for this IfcPropertyListValue
@@ -16071,11 +16087,11 @@ public:
 ///   entities to be used as value references are given by the
 ///   IfcObjectReferenceSelect.
 /// 
-/// HISTORY New entity in IFC
+/// HISTORY  New entity in IFC
 ///   Release 1.5. Entity has been renamed from
 ///   IfcObjectReference in IFC Release 2x.
 /// 
-/// IFC2x4 CHANGE Attribute
+/// IFC2x4 CHANGE  Attribute
 ///   PropertyReference has been made OPTIONAL with upward
 ///   compatibility for file based exchange.
 class IFC_PARSE_API IfcPropertyReferenceValue : public IfcSimpleProperty {
@@ -16087,7 +16103,7 @@ public:
     void setUsageName(std::string v);
     /// Reference to another property entity through one of the select types in the IfcObjectReferenceSelect.
     /// 
-    /// IFC2x4 CHANGE The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcObjectReferenceSelect* PropertyReference() const;
     void setPropertyReference(IfcObjectReferenceSelect* v);
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -16123,9 +16139,9 @@ public:
 /// the meaning of the properties is defined by the name and data type
 /// of the explicit attribute representing it.
 /// 
-/// HISTORY New Entity in IFC Release 2x
+/// HISTORY  New Entity in IFC Release 2x
 /// 
-/// IFC2x4 CHANGE The subtype IfcPreDefinedPropertySet has been added.
+/// IFC2x4 CHANGE  The subtype IfcPreDefinedPropertySet has been added.
 /// 
 /// Relationship use definition
 /// Property set definitions define information that is shared among
@@ -16143,7 +16159,7 @@ public:
 /// IfcRelDefinesByProperties that applies the property set,
 /// with all included properties, to the object occurrence.
 /// 
-/// NOTE Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
+/// NOTE  Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
 class IFC_PARSE_API IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
     virtual unsigned int getArgumentCount() const { return 4; }
@@ -16164,7 +16180,7 @@ public:
 /// IfcPropertySingleValue defines a property object which has
 /// a single (numeric or descriptive) value assigned. It defines a
 /// property - single value combination for which the property
-/// Name, an optional Description,and an optional
+/// Name, an optional Description,ÿand an optional
 /// NominalValue with measure type is provided. In addition,
 /// the default unit as specified within the project unit context can
 /// be overriden by assigning an Unit.
@@ -16201,18 +16217,18 @@ public:
 /// IfcThermalTransmittanceMeasure
 /// W/(m2K)
 /// 
-/// HISTORYNew entity in IFC Release 1.0. The entity has been renamed from IfcSimpleProperty in IFC Release 2x.
+/// HISTORY ÿNew entity in IFC Release 1.0. The entity has been renamed from IfcSimpleProperty in IFC Release 2x.
 /// 
-/// IFC2x3 CHANGEAttribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
+/// IFC2x3 CHANGE ÿAttribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
 class IFC_PARSE_API IfcPropertySingleValue : public IfcSimpleProperty {
 public:
     /// Whether the optional attribute NominalValue is defined for this IfcPropertySingleValue
     bool hasNominalValue() const;
     /// Value and measure type of this property. 
     /// 
-    /// NOTE By virtue of the defined data type, that is selected from the SELECT IfcValue, the appropriate unit can be found within the IfcUnitAssignment, defined for the project if no value for the unit attribute is given.
+    /// NOTE  By virtue of the defined data type, that is selected from the SELECT IfcValue, the appropriate unit can be found within the IfcUnitAssignment, defined for the project if no value for the unit attribute is given.
     /// 
-    /// IFC2x3 CHANGE The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x3 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcValue* NominalValue() const;
     void setNominalValue(IfcValue* v);
     /// Whether the optional attribute Unit is defined for this IfcPropertySingleValue
@@ -16300,7 +16316,7 @@ public:
 /// 
 /// dB
 /// 
-/// 
+/// ÿ
 /// 
 /// 200
 /// 
@@ -16310,11 +16326,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
+/// ÿ
 /// 
+/// ÿ
 /// 
-/// 
-/// 
-/// 
+/// ÿ
 /// 
 /// 400
 /// 
@@ -16324,11 +16340,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
+/// ÿ
 /// 
+/// ÿ
 /// 
-/// 
-/// 
-/// 
+/// ÿ
 /// 
 /// 800
 /// 
@@ -16338,11 +16354,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
+/// ÿ
 /// 
+/// ÿ
 /// 
-/// 
-/// 
-/// 
+/// ÿ
 /// 
 /// 1600
 /// 
@@ -16352,11 +16368,11 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
+/// ÿ
 /// 
+/// ÿ
 /// 
-/// 
-/// 
-/// 
+/// ÿ
 /// 
 /// 3200
 /// 
@@ -16366,13 +16382,13 @@ public:
 /// 
 /// IfcNumericMeasure
 /// 
+/// ÿ
 /// 
-/// 
-/// 
+/// ÿ
 /// 
 /// HISTORY: New entity in IFC2x.
 /// 
-/// IFC2x4 CHANGE Attributes DefiningValues and DefinedValues have been made OPTIONAL with upward compatibility for file based exchange. The attribute CurveInterpolation has been added..
+/// IFC2x4 CHANGE  Attributes DefiningValues and DefinedValues have been made OPTIONAL with upward compatibility for file based exchange. The attribute CurveInterpolation has been added..
 /// 
 /// Informal propositions:
 /// 
@@ -16382,12 +16398,12 @@ class IFC_PARSE_API IfcPropertyTableValue : public IfcSimpleProperty {
 public:
     /// List of defining values, which determine the defined values. This list shall have unique values only.
     /// 
-    /// IFC2x4 CHANGE The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcEntityList::ptr DefiningValues() const;
     void setDefiningValues(IfcEntityList::ptr v);
     /// Defined values which are applicable for the scope as defined by the defining values.
     /// 
-    /// IFC2x4 CHANGE The attribute has been made optional with upward compatibility for file based exchange.
+    /// IFC2x4 CHANGE  The attribute has been made optional with upward compatibility for file based exchange.
     IfcEntityList::ptr DefinedValues() const;
     void setDefinedValues(IfcEntityList::ptr v);
     /// Whether the optional attribute Expression is defined for this IfcPropertyTableValue
@@ -16450,7 +16466,7 @@ public:
 /// defines the length measure for the width of the
 /// rectangle (half along the positive y-axis).
 /// 
-/// Figure 323 &#8212; Rectangle profile
+/// Figure 323 — Rectangle profile
 class IFC_PARSE_API IfcRectangleProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The extent of the rectangle in the direction of the x-axis.
@@ -16568,9 +16584,9 @@ public:
 };
 /// IfcRoundedRectangleProfileDef defines a rectangle with equally rounded corners as the profile definition used by the swept surface geometry or the swept area solid. It is given by the X extent, the Y extent, and the radius for the rounded corners, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box.
 /// 
-/// HISTORY New class in IFC2x.
+/// HISTORY  New class in IFC2x.
 /// 
-/// IFC2x PLATFORM CHANGE The IfcRoundedRectangleProfileDef is now subtyped from IfcRectangleProfileDef. The XDim and YDim attributes have been removed (now inherited from supertype).
+/// IFC2x PLATFORM CHANGE  The IfcRoundedRectangleProfileDef is now subtyped from IfcRectangleProfileDef. The XDim and YDim attributes have been removed (now inherited from supertype).
 /// 
 /// Figure 324 illustrates parameters of the rounded rectangle profile definition.
 /// 
@@ -16602,7 +16618,7 @@ public:
 /// defines the radius
 /// of curvature in all four corners of the rectangle.
 /// 
-/// Figure 324 &#8212; Rounded rectangle profile
+/// Figure 324 — Rounded rectangle profile
 class IFC_PARSE_API IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
 public:
     /// Radius of the circular arcs by which all four corners of the rectangle are equally rounded.
@@ -16661,12 +16677,12 @@ public:
 /// Each CrossSections are inserted by the CrossSectionPositions. The first two cross sections are of
 /// type IfcRectangleProfileDef, the third is of type IfcDerivedProfileDef.
 /// 
-/// Figure 268 &#8212; Sectioned spine geometry
+/// Figure 268 — Sectioned spine geometry
 /// 
 /// Figure 269 illustrates the final result of the IfcSectionedSpine. The body (shown transparently) is not fully defined by the
 /// exchange definition.
 /// 
-/// Figure 269 &#8212; Sectioned spine result
+/// Figure 269 — Sectioned spine result
 /// 
 /// Informal propositions
 /// 
@@ -17251,9 +17267,9 @@ public:
 /// The domain of the subedge is formally defined to be the domain of the parent edge, as trimmed by the subedge start vertex and subedge end vertex. 
 /// The start vertex and end vertex shall be within the union of the domains of the vertices of the parent edge and the domain of the parent edge. 
 /// 
-/// NOTE Corresponding ISO 10303 entity: subedge. Please refer to ISO/DIS 10303-42:1999(E), p. 194 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: subedge. Please refer to ISO/DIS 10303-42:1999(E), p. 194 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcSubedge : public IfcEdge {
 public:
     /// The Edge, or Subedge, which contains the Subedge.
@@ -17409,7 +17425,7 @@ public:
 ///   The position is space of the swept solid will be dependent
 ///   upon the position of the swept area. The swept area will be
 ///   a face of the resulting swept area solid, except for the
-///   case of a revolved area solid with angle equal to 2&#960;
+///   case of a revolved area solid with angle equal to 2π
 ///   (or 360 degrees).
 /// 
 /// The swept area is defined by a
@@ -17471,15 +17487,15 @@ public:
 /// and end default to start and end of the bounded curve of the
 /// Directrix
 /// 
-/// NOTE Although the example shows a Directrix as a composite curve on a planar reference surface, the definition of IfcSweptDiskSolid is not restricted to be based on planer curves. However view definitions or implementer agreements may provide restrictions.
+/// NOTE  Although the example shows a Directrix as a composite curve on a planar reference surface, the definition of IfcSweptDiskSolid is not restricted to be based on planer curves. However view definitions or implementer agreements may provide restrictions.
 /// 
-/// Figure 272 &#8212; Swept disk solid geometry
+/// Figure 272 — Swept disk solid geometry
 /// 
-/// NOTE Corresponding ISO 10303-42 entity: swept_disk_solid. Please refer to ISO/FDIS 10303-42:2002, p. 282 for the definition of the formal standard.
+/// NOTE  Corresponding ISO 10303-42 entity: swept_disk_solid. Please refer to ISO/FDIS 10303-42:2002, p. 282 for the definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC Release 2x2.
+/// HISTORY  New entity in IFC Release 2x2.
 /// 
-/// IFC2x4 CHANGE The attribute StartParam and EndParam have been made optional.
+/// IFC2x4 CHANGE  The attribute StartParam and EndParam have been made optional.
 /// 
 /// Informal proposition
 /// 
@@ -17509,12 +17525,12 @@ public:
     void setInnerRadius(double v);
     /// The parameter value on the Directrix at which the sweeping operation commences. If no value is provided the start of the sweeping operation is at the start of the Directrix..
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     double StartParam() const;
     void setStartParam(double v);
     /// The parameter value on the Directrix at which the sweeping operation ends. If no value is provided the end of the sweeping operation is at the end of the Directrix..
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     double EndParam() const;
     void setEndParam(double v);
     virtual unsigned int getArgumentCount() const { return 5; }
@@ -17561,11 +17577,11 @@ public:
 /// the following illustration. The centre of the position coordinate
 /// system is in the profile's centre of the bounding box.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGE Type of FilletRadius, FlangeEdgeRadius, and WebEdgeRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
+/// IFC2x4 CHANGE  Type of FilletRadius, FlangeEdgeRadius, and WebEdgeRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 326 illustrates parameters of the T-shape profile definition.
 /// 
@@ -17581,7 +17597,7 @@ public:
 /// can be positioned centric (using x,y offsets = 0.), or at any position
 /// relative to the profile.
 /// 
-/// Figure 326 &#8212; T-shape profile
+/// Figure 326 — T-shape profile
 class IFC_PARSE_API IfcTShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Web lengths, see illustration above (= h).
@@ -17656,14 +17672,14 @@ public:
 };
 /// The text literal is a geometric representation item which describes a text string using a string literal and additional position and path information.
 /// 
-/// NOTE The IfcTextLiteral is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange.
+/// NOTE  The IfcTextLiteral is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange.
 /// 
-/// NOTE Corresponding ISO 10303 name: text_literal. Please refer to ISO/IS 10303-46:1994 for the
+/// NOTE  Corresponding ISO 10303 name: text_literal. Please refer to ISO/IS 10303-46:1994 for the
 /// final definition of the formal standard. The attributes font and alignment have been removed as those should be handled by the text style.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The IfcTextLiteral has been changed by removing Font and Alignment.
+/// IFC2x3 CHANGE  The IfcTextLiteral has been changed by removing Font and Alignment.
 class IFC_PARSE_API IfcTextLiteral : public IfcGeometricRepresentationItem {
 public:
     /// The text literal to be presented.
@@ -17690,13 +17706,13 @@ public:
 };
 /// The text literal with extent is a text literal with the additional explicit information of the planar extent (or surrounding text box). An alignment attribute defines, how the text box is aligned to the placement and how it may expand.
 /// 
-/// NOTE The IfcTextLiteralWithExtent is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. 
+/// NOTE  The IfcTextLiteralWithExtent is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 46: Integrated generic resources: Visual presentation. 
 /// 
-/// NOTE Corresponding ISO 10303 name: text_literal_with_extent. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: text_literal_with_extent. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The IfcTextLiteralWithExtent has been changed by adding BoxAlignment.
+/// IFC2x3 CHANGE  The IfcTextLiteralWithExtent has been changed by adding BoxAlignment.
 class IFC_PARSE_API IfcTextLiteralWithExtent : public IfcTextLiteral {
 public:
     /// The extent in the x and y direction of the text literal.
@@ -17719,7 +17735,7 @@ public:
 };
 /// IfcTrapeziumProfileDef defines a trapezium as the profile definition used by the swept surface geometry or the swept area solid. It is given by its Top X and Bottom X extent and its Y extent as well as by the offset of the Top X extend, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box. 
 /// 
-/// HISTORY New class in IFC 1.5. The use definition has changed in IFC2x.
+/// HISTORY  New class in IFC 1.5. The use definition has changed in IFC2x.
 /// 
 /// Figure 325 illustrates parameters of the trapezium profile definition.
 /// 
@@ -17754,7 +17770,7 @@ public:
 /// along
 /// the positive x-axis.
 /// 
-/// Figure 325 &#8212; Trapezium profile
+/// Figure 325 — Trapezium profile
 class IFC_PARSE_API IfcTrapeziumProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The extent of the bottom line measured along the implicit x-axis.
@@ -17784,7 +17800,7 @@ public:
 /// Definition from ISO/CD 10303-46:1992: A two direction repeat factor combines two vectors which are used in the fill area style tiles entity for determining the shape and relative location of tiles. Given the initial position of any tile, the two direction repeat factor determines eight new positions according to the equation:
 /// 
 /// k1* R1 + k2* R2
-///   k X{-1,1}
+///        k X{-1,1} 
 /// 
 /// NOTE Corresponding ISO 10303 name: two_direction_repeat_factor. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
@@ -17854,7 +17870,7 @@ public:
     bool hasHasPropertySets() const;
     /// Set list of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type.
     /// 
-    /// IFC2x3 CHANGE The attribute aggregate type has been changed from LIST to SET.
+    /// IFC2x3 CHANGE  The attribute aggregate type has been changed from LIST to SET.
     IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr HasPropertySets() const;
     void setHasPropertySets(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
@@ -17874,29 +17890,29 @@ public:
 /// definition of a product without being already inserted into a
 /// project structure (without having a placement), and not being
 /// included into the geometric representation context of the
-/// project.It is used to define a product specification, that is, the
+/// project.ÿIt is used to define a product specification, that is, the
 /// specific product information that is common to all occurrences
 /// of that product type.
 /// 
 /// An IfcTypeProduct may have a list of property set
 /// attached and an optional set of product representations. Values
 /// of these properties and the representation maps are common to all
-/// occurrencesof that product type.The type occurrence
+/// occurrencesÿof that product type.ÿThe type occurrence
 /// relationship is realized using the objectified relationship
 /// IfcRelDefinesByType.
 /// 
-/// NOTE 1 The product representations are
+/// NOTE 1ÿ The product representations are
 /// defined as representation maps, which gets assigned by a product
 /// instance through the representation item(s) being an
 /// IfcShapeRepresentation and having Items of
-/// typeIfcMappedItem.
-/// NOTE 2 The representations at the occurrence
+/// typeÿIfcMappedItem.
+/// NOTE 2 ÿThe representations at the occurrence
 /// level (represented by subtypes of IfcProduct) can override
-/// the specific representations at the type level, 
+/// the specific representations at the type level, ÿ
 /// 
 /// for geometric representations: a Cartesian
 /// transformation operator can be applied at the occurrence level,
-/// and
+/// andÿ
 /// for property sets: A property within an occurrence
 /// property set, assigned at the product occurrence, overrides the
 /// same property assigned to the product type.
@@ -17926,7 +17942,7 @@ public:
 /// Cartesian transformation operator only uses translation, but no
 /// rotation, mirroring, or scaling.
 /// 
-/// Figure 10 &#8212; Product type geometry with single placement
+/// Figure 10 — Product type geometry with single placement
 /// 
 /// Figure 11 illustrates an example of referencing a representation
 /// multiple times map by the shape representation of a product
@@ -17935,7 +17951,7 @@ public:
 /// different translation values determine the pattern of the
 /// multiple placement.
 /// 
-/// Figure 11 &#8212; Product type geometry with multiple placement
+/// Figure 11 — Product type geometry with multiple placement
 class IFC_PARSE_API IfcTypeProduct : public IfcTypeObject {
 public:
     /// Whether the optional attribute RepresentationMaps is defined for this IfcTypeProduct
@@ -17967,11 +17983,11 @@ public:
 /// according to the following illustration. The centre of the position
 /// coordinate system is in the profile's centre of the bounding box.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGE Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
+/// IFC2x4 CHANGE  Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
 /// Trailing attribute CentreOfGravityInX deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 327 illustrates parameters of the U-shape profile definition.
@@ -17987,7 +18003,7 @@ public:
 /// can be positioned centric (using x,y offsets = 0.), or at any position
 /// relative to the profile.
 /// 
-/// Figure 327 &#8212; U-shape profile
+/// Figure 327 — U-shape profile
 class IFC_PARSE_API IfcUShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Web lengths, see illustration above (= h).
@@ -18069,9 +18085,9 @@ public:
 /// A vertex loop has zero extent and dimensionality. 
 ///   The vertex loop has genus 0. 
 /// 
-/// NOTE Corresponding ISO 10303 entity: vertex_loop. Please refer to ISO/IS 10303-42:1994, p. 121 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: vertex_loop. Please refer to ISO/IS 10303-42:1994, p. 121 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC2x2.
+/// HISTORY  New Entity in IFC2x2.
 class IFC_PARSE_API IfcVertexLoop : public IfcLoop {
 public:
     /// The vertex which defines the entire loop.
@@ -18095,7 +18111,7 @@ public:
 /// casements. The parameter of the IfcWindowLiningProperties
 /// define the geometrically relevant parameter of the lining.
 /// 
-/// NOTE The IfcWindowLiningProperties
+/// NOTEÿ The IfcWindowLiningProperties
 /// shall only be applied to construct the 3D shape of a window, if
 /// the attribute IfcWindowStyle.ParameterTakesPrecedence is
 /// set TRUE.
@@ -18109,7 +18125,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcWindowLining in
 /// IFC Release 2x.
 /// 
-/// IFC2x4 CHANGE The following attributes have been added LiningOffset,
+/// IFC2x4 CHANGEÿ The following attributes have been added LiningOffset,
 /// LiningToPanelOffsetX, LiningToPanelOffsetY. The
 /// attribute ShapeAspectStyle is deprecated and shall no
 /// longer be used. Supertype changed to new
@@ -18182,7 +18198,7 @@ public:
 /// 
 /// SecondTransomOffset
 /// 
-/// Figure 175 &#8212; Window lining properties
+/// Figure 175 — Window lining properties
 /// 
 /// NOTE
 /// 
@@ -18292,7 +18308,7 @@ public:
 /// 
 /// As shown in Figure 176, the panel is applied to the position within the lining as defined by the panel position attribute. The following parameter apply to that panel: FrameDepth, FrameThickness.
 /// 
-/// Figure 176 &#8212; Window panel properties
+/// Figure 176 — Window panel properties
 class IFC_PARSE_API IfcWindowPanelProperties : public IfcPropertySetDefinition {
 public:
     /// Types of window panel operations. Also used to assign standard symbolic presentations according to national building standards.
@@ -18381,9 +18397,9 @@ public:
 /// the following illustration. The centre of the position coordinate
 /// system is in the profile's centre of the bounding box.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x Edition 4 CHANGE Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
+/// IFC2x Edition 4 CHANGE  Type of FilletRadius and EdgeRadius relaxed to allow for zero radius.
 /// 
 /// Figure 328 illustrates parameters of the Z-shape profile definition.
 /// 
@@ -18398,7 +18414,7 @@ public:
 /// can be positioned centric (using x,y offsets = 0.), or at any position
 /// relative to the profile.
 /// 
-/// Figure 328 &#8212; Z-shape profile
+/// Figure 328 — Z-shape profile
 class IFC_PARSE_API IfcZShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Web length, see illustration above (= h).
@@ -18456,9 +18472,9 @@ public:
 /// 
 /// Figure 300 (from ISO 10303-46) illustrates annotation fill area.
 /// 
-/// Figure 300 &#8212; Annotation fill area
+/// Figure 300 — Annotation fill area
 /// 
-/// NOTE Corresponding ISO 10303 name: annotation_fill_area. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: annotation_fill_area. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// The IfcAnnotationFillArea defines an area by a definite OuterBoundary, that might include InnerBoundaries. The areas defined by the InnerBoundaries are excluded from applying the fill area style.
 /// 
@@ -18467,21 +18483,21 @@ public:
 /// Any curve that describes an inner boundary shall not intersect with, nor include, another curve defining an inner boundary.
 ///   The curve defining the outer boundary shall not intersect with any curve defining an inner boundary, nor shall it be surrounded by a curve defining an inner boundary.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The two attributes OuterBoundary and InnerBoundaries are added and replace the previous single boundary.
+/// IFC2x3 CHANGE  The two attributes OuterBoundary and InnerBoundaries are added and replace the previous single boundary.
 class IFC_PARSE_API IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
 public:
     /// A closed curve that defines the outer boundary of the fill area. The areas defined by the outer boundary (minus potentially defined inner boundaries) is filled by the fill area style.
     /// 
-    /// IFC2x Edition 3 CHANGE The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
+    /// IFC2x Edition 3 CHANGE  The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
     IfcCurve* OuterBoundary() const;
     void setOuterBoundary(IfcCurve* v);
     /// Whether the optional attribute InnerBoundaries is defined for this IfcAnnotationFillArea
     bool hasInnerBoundaries() const;
     /// A set of inner curves that define the inner boundaries of the fill area. The areas defined by the inner boundaries are excluded from applying the fill area style.
     /// 
-    /// IFC2x Edition 3 CHANGE The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
+    /// IFC2x Edition 3 CHANGE  The two new attributes OuterBoundary and InnerBoundaries replace the old single attribute Boundaries.
     IfcTemplatedEntityList< IfcCurve >::ptr InnerBoundaries() const;
     void setInnerBoundaries(IfcTemplatedEntityList< IfcCurve >::ptr v);
     virtual unsigned int getArgumentCount() const { return 2; }
@@ -18542,13 +18558,13 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: The direction and location in three dimensional space of a single axis. An axis1_placement is defined in terms of a locating point (inherited from placement supertype) and an axis direction: this is either the direction of axis or defaults to (0.0,0.0,1.0). The actual direction for the axis placement is given by the derived attribute z (Z).  
 /// 
-/// NOTE Corresponding ISO 10303 name: axis1_placement, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: axis1_placement, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC Release 1.5
+/// HISTORY  New entity in IFC Release 1.5
 /// 
 /// Figure 274 illustrates the definition of the IfcAxis1Placement within the three-dimensional coordinate system.
 /// 
-/// Figure 274 &#8212; Axis1 placement
+/// Figure 274 — Axis1 placement
 class IFC_PARSE_API IfcAxis1Placement : public IfcPlacement {
 public:
     /// Whether the optional attribute Axis is defined for this IfcAxis1Placement
@@ -18572,13 +18588,13 @@ public:
 /// 
 /// If the RefDirection attribute is not given, the placement defaults to P[1] (x-axis) as [1.,0.] and P[2] (y-axis) as [0.,1.].  
 /// 
-/// NOTE Corresponding ISO 10303 name: axis2_placement_2d, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: axis2_placement_2d, please refer to ISO/IS 10303-42:1994, p. 28 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// Figure 275 illustrates the definition of the IfcAxis2Placement2D within the two-dimensional coordinate system. 
 /// 
-/// Figure 275 &#8212; Axis2 placement 2D
+/// Figure 275 — Axis2 placement 2D
 class IFC_PARSE_API IfcAxis2Placement2D : public IfcPlacement {
 public:
     /// Whether the optional attribute RefDirection is defined for this IfcAxis2Placement2D
@@ -18604,13 +18620,13 @@ public:
 /// are not given, the placement defaults to P[1] (x-axis) as [1.,0.,0.],
 /// P[2] (y-axis) as [0.,1.,0.] and P[3] (z-axis) as [0.,0.,1.].
 /// 
-/// NOTE Corresponding ISO 10303 name: axis2_placement_3d, please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard. The WR5 is added to ensure that either both attributes Axis and RefDirection are given, or both are omitted.
+/// NOTE  Corresponding ISO 10303 name: axis2_placement_3d, please refer to ISO/IS 10303-42:1994 for the final definition of the formal standard. The WR5 is added to ensure that either both attributes Axis and RefDirection are given, or both are omitted.
 /// 
-/// HISTORY New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// Figure 276 illustrates the definition of the IfcAxis2Placement3D within the three-dimensional coordinate system.
 /// 
-/// Figure 276 &#8212; Axis2 placement 3D
+/// Figure 276 — Axis2 placement 3D
 class IFC_PARSE_API IfcAxis2Placement3D : public IfcPlacement {
 public:
     /// Whether the optional attribute Axis is defined for this IfcAxis2Placement3D
@@ -18731,7 +18747,7 @@ public:
 /// 
 /// As shown in Figure 252, the IfcBoundingBox is defined with its own location which can be used to place the IfcBoundingBox relative to the geometric coordinate system. The IfcBoundingBox is defined by the lower left corner (Corner) and the upper right corner (XDim, YDim, ZDim measured within the parent co-ordinate system).
 /// 
-/// Figure 252 &#8212; Bounding box
+/// Figure 252 — Bounding box
 class IFC_PARSE_API IfcBoundingBox : public IfcGeometricRepresentationItem {
 public:
     /// Location of the bottom left corner (having the minimum values).
@@ -18760,7 +18776,7 @@ public:
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is a subtype of the half space solid which is trimmed by a surrounding rectangular box. The box has its edges parallel to the coordinate axes of the geometric coordinate system.
 /// 
-/// NOTE The purpose of the box is to facilitate CSG computations by producing a solid of finite size.
+/// NOTE  The purpose of the box is to facilitate CSG computations by producing a solid of finite size.
 /// 
 /// The IfcBoxedHalfSpace is
 /// used (as its supertype IfcHalfSpaceSolid) only within
@@ -18775,19 +18791,19 @@ public:
 /// would be the same, as if executed by the supertype
 /// IfcHalfSpaceSolid. See Figure 253 below.
 /// 
-/// Figure 253 &#8212; Boxed half space operands
+/// Figure 253 — Boxed half space operands
 /// 
 /// NOTE Corresponding ISO 10303-42 entity: boxed_half_space, please refer to ISO/IS 10303-42:1994, p. 185 for the final definition of the formal standard. The IFC class IfcBoundingBox is used for the definition of the enclosure, providing the same definition as box_domain.
 /// 
-/// HISTORY New entity in IFC Release 1.5.1, improved documentation available in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5.1, improved documentation available in IFC Release 2x.
 /// 
-/// IFC2x4 CHANGE Usage correct, position coordinate system for Enclosure is the object coordinate system.
+/// IFC2x4 CHANGE  Usage correct, position coordinate system for Enclosure is the object coordinate system.
 /// 
 /// The IfcBoundingBox (relating to ISO 10303-42:1994 box_domain) that provides the enclosure is given for the convenience of the receiving application to enable the use of size box comparison for efficiency (for example, to check first whether size boxes intersect, if not no calculations has to be done to check whether the solids of the entities intersect).
 /// 
 /// The Enclosure therefore helps to prevent dealing with infinite-size related issues. The enclosure box is positioned within the object coordinate system, established by the ObjectPlacement of the element represented (for example, by IfcLocalPlacement).  Figure 254 shows the Enclosure box being sufficiently large to fully enclose the Boolean result.
 /// 
-/// Figure 254 &#8212; Boxed half space geometry
+/// Figure 254 — Boxed half space geometry
 class IFC_PARSE_API IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
 public:
     /// The box which bounds the resulting solid of the Boolean operation involving the half space solid for computational purposes only.
@@ -18813,11 +18829,11 @@ public:
 /// illustration. The centre of the position coordinate system is in the
 /// profile's centre of the bounding box.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGE Type of InternalFilletRadius relaxed to allow for zero radius.
+/// IFC2x4 CHANGE  Type of InternalFilletRadius relaxed to allow for zero radius.
 /// Trailing attribute CentreOfGravityInX deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 315 illustrates parameters of the C-shape profile definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept area solid that uses the profile definition. It is the xy plane of:
@@ -18826,7 +18842,7 @@ public:
 /// 
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. The parameterized profile is defined by a set of parameter attributes. In the illustrated example, the 'CentreOfGravityInX' property in IfcExtendedProfileProperties, if provided, is negative.
 /// 
-/// Figure 315 &#8212; C-shape profile
+/// Figure 315 — C-shape profile
 class IFC_PARSE_API IfcCShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Profile depth, see illustration above (= h).
@@ -19057,7 +19073,7 @@ public:
 };
 /// IfcCircleProfileDef defines a circle as the profile definition used by the swept surface geometry or by the swept area solid. It is given by its Radius attribute and placed within the 2D position coordinate system, established by the Position attribute. 
 /// 
-/// HISTORY New class in IFC 1.5.
+/// HISTORY  New class in IFC 1.5.
 /// 
 /// Figure 313 illustrates parameters for the circle profile definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept surface or swept area solid that uses the profile definition. It is the xy plane of either: 
 /// 
@@ -19066,7 +19082,7 @@ public:
 /// 
 /// Or in case of sectioned spines, it is the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions. By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (e.g. upper-left bound). The Position attribute defines the 2D position coordinate system of the circle. The Radius attribute defines the radius of the circle.
 /// 
-/// Figure 313 &#8212; Circle profile
+/// Figure 313 — Circle profile
 class IFC_PARSE_API IfcCircleProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The radius of the circle.
@@ -19103,14 +19119,14 @@ public:
 ///   with a closed shell is a closed, orientable manifold. The domain of a closed
 ///   shell, if present, is a connected, closed, oriented 2-manifold. It is always
 ///   topologically equivalent to an H-fold torus for some H
-///    0. The number H is referred to as the
+///   ³ 0. The number H is referred to as the
 ///   surface genus of the shell. If a shell of genus H has a domain within
 ///   coordinate space R3, then the finite region of space inside
 ///   it is topologically equivalent to a solid ball with H tunnels drilled
 ///   through it. 
 ///   The Euler equation (7) applies with B=0, because in this case
 ///   there are no holes. As in the case of open shells, the surface genus H
-///   may not be known a priori, but shall be an integer  0. Thus a necessary, but not sufficient, condition
+///   may not be known a priori, but shall be an integer ³ 0. Thus a necessary, but not sufficient, condition
 ///   for a well-formed closed shell is the following: 
 /// 
 /// In the current IFC Release only poly loops
@@ -19119,7 +19135,7 @@ public:
 /// 
 /// NOTE: Corresponding ISO 10303 entity: closed_shell, please refer to ISO/IS 10303-42:1994, p.149 for the final definition of the formal standard.
 /// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Informal propositions: 
 /// 
@@ -19161,7 +19177,7 @@ public:
     void setTransition(IfcTransitionCode::IfcTransitionCode v);
     /// An indicator of whether or not the sense of the segment agrees with, or opposes, that of the parent curve. If SameSense is false, the point with highest parameter value is taken as the first point of the segment.
     /// 
-    /// NOTE If the datatype of ParentCurve is IfcTrimmedCurve, the value of SameSense overrides the value of IfcTrimmedCurve.SenseAgreement
+    /// NOTE  If the datatype of ParentCurve is IfcTrimmedCurve, the value of SameSense overrides the value of IfcTrimmedCurve.SenseAgreement
     bool SameSense() const;
     void setSameSense(bool v);
     /// The bounded curve which defines the geometry of the segment.
@@ -19262,9 +19278,9 @@ public:
 };
 /// IfcCsgPrimitive3D is an abstract supertype of all three dimensional primitives used as either tree root item, or as Boolean results within a CSG solid model. All 3D CSG primitives are defined within a three-dimensional placement coordinate system.
 /// 
-/// NOTE No directly corresponding ISO 10303-42 entity, the select type primitive_3d covers the same individual 3D CSG primitives, the position attribute has been added to apply equally to all subtypes. Please refer to ISO/IS 10303-42:1994, p. 234 for the final definition of the formal standard.
+/// NOTEÿ No directly corresponding ISO 10303-42 entity, the select type primitive_3d covers the same individual 3D CSG primitives, the position attribute has been added to apply equally to all subtypes. Please refer to ISO/IS 10303-42:1994, p. 234 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORYÿ New entity in IFC2x3.
 class IFC_PARSE_API IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
 public:
     /// The placement coordinate system to which the parameters of each individual CSG primitive apply.
@@ -19374,7 +19390,7 @@ public:
 /// 
 /// NOTE Corresponding ISO 10303 entity curve_bounded_surface has been changed to meet the specific requirements of an easy representation of curve bounded planes.
 /// 
-/// HISTORY New entity in IFC Release 1.5
+/// HISTORY  New entity in IFC Release 1.5
 /// 
 /// IFC2x PLATFORM CHANGE: The data type of the attribute OuterBoundary and InnerBoundaries has been changed from Ifc2DCompositeCurve to its supertype IfcCurve with upward compatibility for file based exchange.
 class IFC_PARSE_API IfcCurveBoundedPlane : public IfcBoundedSurface {
@@ -19490,7 +19506,7 @@ public:
 /// (IfcDoorLiningProperties) define the geometrically
 /// relevant parameter of the lining.
 /// 
-/// NOTE The IfcDoorLiningProperties
+/// NOTEÿ The IfcDoorLiningProperties
 /// shall only be applied to construct the 3D shape of a door, if the
 /// attribute IfcDoorStyle.ParameterTakesPrecedence is set
 /// TRUE.
@@ -19503,7 +19519,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 2.0. Has been renamed from IfcDoorLining in IFC Release 2x.
 /// 
-/// IFC2x4 CHANGE The following attributes have been added LiningToPanelOffsetX, LiningToPanelOffsetY. The attribute ShapeAspectStyle is deprecated and shall no longer be used. Supertype changed to new IfcPreDefinedPropertySet.
+/// IFC2x4 CHANGEÿ The following attributes have been added LiningToPanelOffsetX, LiningToPanelOffsetY. The attribute ShapeAspectStyle is deprecated and shall no longer be used. Supertype changed to new IfcPreDefinedPropertySet.
 /// 
 /// Geometry use definitions
 /// The IfcDoorLiningProperties does not hold its own
@@ -19537,7 +19553,7 @@ public:
 /// LiningOffset : given if lining edge has an offset to
 /// the x axis of the local placement.
 /// 
-/// NOTE In addition to theLiningOffset,
+/// NOTE ÿIn addition to theÿLiningOffset,
 /// the local placement of the IfcDoor can already have an
 /// offset to the wall edge and thereby shift the lining along the y
 /// axis. The actual position of the lining is calculated from the
@@ -19576,7 +19592,7 @@ public:
 /// The depth of the transom is identical to the depth of the
 /// lining and not given as separate parameter.
 /// 
-/// Figure 172 &#8212; Door lining properties
+/// Figure 172 — Door lining properties
 /// 
 /// NOTE LiningDepth describes the length of the lining along the reveal of the door opening. It can be given by an absolute value if the door lining has a specific depth depending on the door style. However often it is equal to the wall thickness. If the same door style is used (like the same type of single swing door), but inserted into different walls with different thicknesses, it would be necessary to create a special door style for each wall thickness. Therefore several CAD systems allow to set the value to "automatically aligned" to wall thickness. This should be exchanged by leaving the optional attribute LiningDepth unassigned. The same agreement applies to ThresholdDepth.
 class IFC_PARSE_API IfcDoorLiningProperties : public IfcPropertySetDefinition {
@@ -19671,7 +19687,7 @@ public:
 /// included in the same list of the IfcDoorStyle using the
 /// IfcPropertySet for dynamic extensions.
 /// 
-/// HISTORY New Entity in IFC Release 2.0.
+/// HISTORYÿ New Entity in IFC Release 2.0.
 /// 
 /// IFC2x4 CHANGE Supertype changed to new IfcPreDefinedPropertySet.
 /// 
@@ -19694,7 +19710,7 @@ public:
 /// 
 /// PanelWidth
 /// 
-/// Figure 173 &#8212; Door panel properties
+/// Figure 173 — Door panel properties
 class IFC_PARSE_API IfcDoorPanelProperties : public IfcPropertySetDefinition {
 public:
     /// Whether the optional attribute PanelDepth is defined for this IfcDoorPanelProperties
@@ -19739,7 +19755,7 @@ public:
 /// is related by the inverse relationship IsDefinedBy pointing to IfcRelDefinedByType. The IfcDoorStyle
 /// also defines the particular attributes for the lining, IfcDoorLiningProperties, and panels, IfcDoorPanelProperties.
 /// 
-/// HISTORYNew entity in IFC Release 2x.
+/// HISTORYÿNew entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The entity is deprecated and shall not be used. The new entity
 /// IfcDoorType shall be used instead.
@@ -19755,7 +19771,7 @@ public:
 /// The IfcDoorStyleOperationTypeEnum defines the general layout of the door style. Depending on the enumerator, the
 /// appropriate instances of IfcDoorLiningProperties and IfcDoorPanelProperties are attached in the list of
 /// HasPropertySets. The IfcDoorStyleOperationTypeEnum mainly determines the hinge side (left hung, or right hung), the
-/// operation (swinging, sliding, folding, etc.)and the number of panels.
+/// operation (swinging, sliding, folding, etc.)ÿand the number of panels.
 /// 
 /// See geometry use definitions at IfcDoorStyleOperationTypeEnum for the correct usage of opening symbols for different operation types.
 class IFC_PARSE_API IfcDoorStyle : public IfcTypeProduct {
@@ -19815,7 +19831,7 @@ public:
 /// 'white',
 /// 'by layer'
 /// 
-/// NOTEThe IfcDraughtingPreDefinedColour is an entity that had been adopted from ISO 10303-202, Industrial automation systems and integration&#8212;Product data representation and exchange, Part 202: Application protocol: Associative draughting.
+/// NOTE ÿThe IfcDraughtingPreDefinedColour is an entity that had been adopted from ISO 10303-202, Industrial automation systems and integration—Product data representation and exchange, Part 202: Application protocol: Associative draughting.
 /// 
 /// The following table states the RGB values associated with the names given by the IfcDraughtingPreDefinedColour.
 /// 
@@ -19868,9 +19884,9 @@ public:
 /// colour values obtained from
 /// IfcPresentationLayerWithStyle.
 /// 
-/// NOTECorresponding ISO 10303 name: draughting_pre_defined_colour. Please refer to ISO/IS 10303-202:1994 page 194 for the final definition of the formal standard.
+/// NOTE ÿCorresponding ISO 10303 name: draughting_pre_defined_colour. Please refer to ISO/IS 10303-202:1994 page 194 for the final definition of the formal standard.
 /// 
-/// HISTORYNew entity in IFC2x2.
+/// HISTORY ÿNew entity in IFC2x2.
 /// 
 /// Informal proposition
 /// 
@@ -19891,17 +19907,17 @@ public:
 };
 /// The draughting predefined curve font type defines a selection of widely used curve fonts for draughting purposes by name. 
 /// 
-/// NOTE The IfcDraughtingPreDefinedCurveFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46 Technical Corrigendum 2: Integrated generic resources: Visual presentation.
+/// NOTE  The IfcDraughtingPreDefinedCurveFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration&#151;Product data representation and exchange, Part 46 Technical Corrigendum 2: Integrated generic resources: Visual presentation.
 /// 
 /// Figure 291 (from ISO 10303-46 TC2) illustrates predefined curve fonts.
 /// 
-/// Figure 291 &#8212; Draughting predefined curve font
+/// Figure 291 — Draughting predefined curve font
 /// 
-/// NOTE If the IfcDraughtingPreDefinedCurveFont is used within an IfcCurveStyleFontAndScaling then the segment and space lengths that are given in the table are as such for the scale factor 1.0
+/// NOTE  If the IfcDraughtingPreDefinedCurveFont is used within an IfcCurveStyleFontAndScaling then the segment and space lengths that are given in the table are as such for the scale factor 1.0
 /// 
-/// NOTE Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994 TC2, page 12 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994 TC2, page 12 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
@@ -19924,9 +19940,9 @@ public:
 /// The Euler formula shall be satisfied:(number of vertices) + genus - (number of edges) = 1; 
 /// No edge may be referenced more than once by the same IfcEdgeLoop with the same sense. For this purpose, an edge which is not an oriented edge is considered to be referenced with the sense TRUE. 
 /// 
-/// NOTE Corresponding ISO 10303 entity: edge_loop. Please refer to ISO/IS 10303-42:1994, p. 122 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: edge_loop. Please refer to ISO/IS 10303-42:1994, p. 122 for the final definition of the formal standard.
 /// 
-/// HISTORY New Entity in IFC2x2.
+/// HISTORY  New Entity in IFC2x2.
 class IFC_PARSE_API IfcEdgeLoop : public IfcLoop {
 public:
     /// A list of oriented edge entities which are concatenated together to form this path.
@@ -19974,13 +19990,13 @@ public:
 /// 
 /// EXAMPLE1 To exchange the net floor area of spaces in
 /// the German region (as IfcSpace), the name might be
-/// 'Netto-Grundflche' (net floor area), and the method of
+/// 'Netto-Grundfläche' (net floor area), and the method of
 /// measurement might be accordingly 'DIN277-2' (German industry norm
 /// no. 277 edition 2)
 /// 
 /// EXAMPLE2 The same instance of IfcSpace may have
 /// a different area measure assigned in the German region according
-/// to a housing regulation, the name would be 'Wohnflche' and
+/// to a housing regulation, the name would be 'Wohnfläche' and
 /// the method of measurement would be '2.BV'. It would be attached
 /// to the IfcSpace by a separate
 /// IfcRelDefinesByProperties relationship.
@@ -20111,7 +20127,7 @@ public:
 /// IfcEllipseProfileDef defines an ellipse as the profile definition used by the swept surface geometry
 /// or the swept area solid. It is given by its semi axis attributes and placed within the 2D position coordinate system, established by the Position attribute. 
 /// 
-/// HISTORY New entity in IFC2x
+/// HISTORY  New entity in IFC2x
 /// 
 /// Figure 317 illustrates parameters for the ellipse profile definition. The parameterized profile defines its own position coordinate system.
 /// The underlying coordinate system is defined by the swept surface or swept area solid that uses the profile definition. It is the xy plane of either: 
@@ -20121,9 +20137,9 @@ public:
 /// 
 /// Or in case of sectioned spines it is the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions. By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (for example, upper-left bound). The location of the position coordinate system defines the center of the ellipse. The SemiAxis1 attribute defines the first radius of the ellipse in the direction of the X axis, the SemiAxis2 attribute defines the second radius of the ellipse in the direction of the Y axis.
 /// 
-/// NOTE The semi axes of the ellipse are rectangular to each other by definition.
+/// NOTE  The semi axes of the ellipse are rectangular to each other by definition.
 /// 
-/// Figure 317 &#8212; Ellipse profile
+/// Figure 317 — Ellipse profile
 class IFC_PARSE_API IfcEllipseProfileDef : public IfcParameterizedProfileDef {
 public:
     /// The first radius of the ellipse. It is measured along the direction of Position.P[1].
@@ -20197,11 +20213,11 @@ public:
 /// as a 2D bounded curve with holes within the xy plane of the position coordinate system,
 /// or as a 2D primitive, defined within a 2D position coordinate system, that is placed relative to the xy plane of the position coordinate system
 /// 
-/// Figure 255 &#8212; Extruded area solid geometry
+/// Figure 255 — Extruded area solid geometry
 /// 
-/// NOTE Corresponding ISO 10303-42 entity: extruded_area_solid. Please refer to ISO/IS 10303-42:1994, p. 183 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The Position attribute has been added to position the cross section used for the linear extrusion.
+/// NOTE  Corresponding ISO 10303-42 entity: extruded_area_solid. Please refer to ISO/IS 10303-42:1994, p. 183 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The Position attribute has been added to position the cross section used for the linear extrusion.
 /// 
-/// HISTORY New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
 /// 
 /// Texture use definition
 /// For side faces, textures are aligned facing upright continuously
@@ -20234,7 +20250,7 @@ public:
 /// texture coordinates start at (-0.5*IfcIShapeProfileDef.OverallWidth,
 /// -0.5*IfcIShapeProfileDef.OverallDepth).
 /// 
-/// Figure 256 &#8212; Extruded area solid textures
+/// Figure 256 — Extruded area solid textures
 class IFC_PARSE_API IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
 public:
     /// The direction in which the surface, provided by SweptArea is to be swept.
@@ -20289,13 +20305,13 @@ public:
 /// 
 /// The IfcFillAreaStyleHatching is used to define simple, vector-based hatching patterns, based on styled straight lines. The curve font, color and thickness is given by the HatchLineAppearance, the angle by the HatchLineAngle and the distance to the next hatch line by StartOfNextHatchLine, being either an offset distance or a vector.
 /// 
-/// NOTE If the hatch pattern involves two (potentially crossing) rows of hatch lines, then two instances of IfcFillAreaStyleHatching should be assigned to the IfcFillAreaStyle. Both share the same (virtual) point of origin of the hatching that is used by the reference hatch line (or the PointOfReferenceHatchLine if there is an offset).
+/// NOTE  If the hatch pattern involves two (potentially crossing) rows of hatch lines, then two instances of IfcFillAreaStyleHatching should be assigned to the IfcFillAreaStyle. Both share the same (virtual) point of origin of the hatching that is used by the reference hatch line (or the PointOfReferenceHatchLine if there is an offset).
 /// 
-/// For better control of the hatching appearance, when using hatch lines with other fonts then continuous, the PatternStart allows to offset the start of the curve font pattern along the reference hatch line (if not given, the PatternStart is at zero distance from the virtual point of origin). If the reference hatch line does not go through the origin (of the virtual hatching coordinate system), it can be offset by using thePatternStartPointOfReferenceHatchLine.
+/// For better control of the hatching appearance, when using hatch lines with other fonts then continuous, the PatternStart allows to offset the start of the curve font pattern along the reference hatch line (if not given, the PatternStart is at zero distance from the virtual point of origin). If the reference hatch line does not go through the origin (of the virtual hatching coordinate system), it can be offset by using the PatternStart PointOfReferenceHatchLine.
 /// 
-/// NOTE The coordinates of the PatternStart and the PointOfReferenceHatchLine are given relative to the assumed 0., 0. virtual point of origin at which the hatch pattern is later positioned by the FillStyleTarget point at IfcAnnotationFillAreaOccurrence. The measure values are given in global drawing length units and apply to the target plot scale for the scale depended representation subcontext.
+/// NOTE  The coordinates of the PatternStart and the PointOfReferenceHatchLine are given relative to the assumed 0., 0. virtual point of origin at which the hatch pattern is later positioned by the FillStyleTarget point at IfcAnnotationFillAreaOccurrence. The measure values are given in global drawing length units and apply to the target plot scale for the scale depended representation subcontext.
 /// 
-/// NOTE The use of PointOfReferenceHatchLine is deprecated.
+/// NOTE  The use of PointOfReferenceHatchLine is deprecated.
 /// 
 /// Figure 292 illustrates hatch attributes.
 /// 
@@ -20325,13 +20341,13 @@ public:
 ///   Example 6
 /// This example shows use of IfcFillAreaStyleHatching attributes for two IfcFillAreaStyleHatching's within one IfcFillAreaStyle. Note that the PatternStart now displaces both the reference hatch line from the point of origin and the start of the curve pattern. This can be used in cases when more than one IfcFillAreaStyleHatching is used in an IfcFillAreaStyle in order to place rows of hatch lines with an offset from each other.
 /// 
-/// Figure 292 &#8212; Fill area style hatching
+/// Figure 292 — Fill area style hatching
 /// 
-/// NOTE Corresponding ISO 10303 name: fill_area_style_hatching. Please refer to ISO/IS 10303-46:1994, p. 108 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 name: fill_area_style_hatching. Please refer to ISO/IS 10303-46:1994, p. 108 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE The IfcFillAreaStyleHatching has been changed by making the attributes PatternStart and PointOfReferenceHatchLine OPTIONAL. The attribute StartOfNextHatchLine has changed to a SELECT with the additional choice of IfcPositiveLengthMeasure. Upward compatibility for file based exchange is guaranteed.
+/// IFC2x3 CHANGE  The IfcFillAreaStyleHatching has been changed by making the attributes PatternStart and PointOfReferenceHatchLine OPTIONAL. The attribute StartOfNextHatchLine has changed to a SELECT with the additional choice of IfcPositiveLengthMeasure. Upward compatibility for file based exchange is guaranteed.
 class IFC_PARSE_API IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
 public:
     /// The curve style of the hatching lines. Any curve style pattern shall start at the origin of each hatch line.
@@ -20339,7 +20355,7 @@ public:
     void setHatchLineAppearance(IfcCurveStyle* v);
     /// A repetition factor that determines the distance between adjacent hatch lines.
     /// 
-    /// IFC2x Edition 3 CHANGE The attribute type of StartOfNextHatchLine has changed to a SELECT of IfcPositiveLengthMeasure (new) and IfcOneDirectionRepeatFactor.
+    /// IFC2x Edition 3 CHANGE  The attribute type of StartOfNextHatchLine has changed to a SELECT of IfcPositiveLengthMeasure (new) and IfcOneDirectionRepeatFactor.
     IfcHatchLineDistanceSelect* StartOfNextHatchLine() const;
     void setStartOfNextHatchLine(IfcHatchLineDistanceSelect* v);
     /// Whether the optional attribute PointOfReferenceHatchLine is defined for this IfcFillAreaStyleHatching
@@ -20347,7 +20363,7 @@ public:
     /// A Cartesian point which defines the offset of the reference hatch line from the origin of the (virtual) hatching coordinate system. The origin is used for mapping the fill area style hatching onto an annotation fill area or surface. The reference hatch line would then appear with this offset from the fill style target point.
     /// If not given the reference hatch lines goes through the origin of the (virtual) hatching coordinate system.
     /// 
-    /// IFC2x Edition 3 CHANGE The usage of the attribute PointOfReferenceHatchLine has changed to not provide the Cartesian point which is the origin for mapping, but to provide an offset to the origin for the mapping. The attribute has been made OPTIONAL.
+    /// IFC2x Edition 3 CHANGE  The usage of the attribute PointOfReferenceHatchLine has changed to not provide the Cartesian point which is the origin for mapping, but to provide an offset to the origin for the mapping. The attribute has been made OPTIONAL.
     IfcCartesianPoint* PointOfReferenceHatchLine() const;
     void setPointOfReferenceHatchLine(IfcCartesianPoint* v);
     /// Whether the optional attribute PatternStart is defined for this IfcFillAreaStyleHatching
@@ -20506,7 +20522,7 @@ public:
 /// product representations. It is used to define an element
 /// specification (i.e. the specific product information, that is
 /// common to all occurrences of that product type).
-/// NOTE The product representations are defined
+/// NOTEÿ The product representations are defined
 /// as representation maps (at the level of the supertype
 /// IfcTypeProduct, which gets assigned by an element
 /// occurrence instance through the
@@ -20521,7 +20537,7 @@ public:
 /// The occurrences of the IfcFurnishingElementType are
 /// represented by instances of IfcFurnishingElement (or its
 /// subtypes).
-/// HISTORYNew entity in
+/// HISTORYÿNew entity in
 /// Release IFC2x Edition 2.
 /// IFC2x3 CHANGE The entity has been
 /// made non-abstract
@@ -20632,9 +20648,9 @@ public:
 /// external document or library.  See IfcProfileDef for guidance on
 /// external references for profile definitions.
 /// 
-/// HISTORY New entity in IFC2x.
+/// HISTORY  New entity in IFC2x.
 /// 
-/// IFC2x4 CHANGE Type of FilletRadius relaxed to allow for zero radius.
+/// IFC2x4 CHANGE  Type of FilletRadius relaxed to allow for zero radius.
 /// 
 /// Figure 318 illustrates parameters of the I-shape profile definition.
 /// 
@@ -20679,7 +20695,7 @@ public:
 /// is given, it is equally applied to all four corners created by the web
 /// and flanges.
 /// 
-/// Figure 318 &#8212; I-shape profile
+/// Figure 318 — I-shape profile
 class IFC_PARSE_API IfcIShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Total extent of the width, defined parallel to the x axis of the position coordinate system.
@@ -20722,11 +20738,11 @@ public:
 /// position coordinate system is in the profiles centre
 /// of the bounding box.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x3 CHANGE All profile origins are now in the center of the bounding box.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box.
 /// 
-/// IFC2x4 CHANGE Width changed from OPTIONAL to mandatory.  The previously informal rule that the longer leg is the Depth has been formalized.  Types of FilletRadius and EdgeRadius were relaxed to allow for zero values.  Trailing attributes CentreOfGravityInX and CentreOfGravityInY deleted, use respective properties in IfcExtendedProfileProperties instead.  WHERE rule which required Width <= Depth removed.
+/// IFC2x4 CHANGE  Width changed from OPTIONAL to mandatory.  The previously informal rule that the longer leg is the Depth has been formalized.  Types of FilletRadius and EdgeRadius were relaxed to allow for zero values.  Trailing attributes CentreOfGravityInX and CentreOfGravityInY deleted, use respective properties in IfcExtendedProfileProperties instead.  WHERE rule which required Width <= Depth removed.
 /// 
 /// Figure 319 illustrates parameters of equal-sided and non-equal sided L-shaped section definitions.
 /// 
@@ -20755,13 +20771,13 @@ public:
 /// are:
 /// 
 /// Location = IfcCartesianPoint(
-/// +|CentreOfGravityInX|,
-/// +|CentreOfGravityInY|)
+///               +|CentreOfGravityInX|,
+///               +|CentreOfGravityInY|)
 /// RefDirection = NIL (defaults to 1.,0.)
 /// 
 /// In the illustrated example, the x and y value of Position.Location, i.e. the measures |CentreOfGravityInX| and |CentreOfGravityInY| are both positive.  On the other hand, the properties named 'CentreOfGravityInX' and 'CentreOfGravityInY' in IfcExtendedProfileProperties, if provided, must both be set to 0 now because the centre of gravity of the resulting profile definition is located in the coordinate origin.
 /// 
-/// Figure 319 &#8212; L-shape profile
+/// Figure 319 — L-shape profile
 class IFC_PARSE_API IfcLShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     /// Leg length, see illustration above (= h). Same as the overall depth.
@@ -20814,11 +20830,11 @@ public:
 /// 
 /// P = Pnt
 ///   V = Dir
-///   &#955;(u) = P + uV
+///   λ(u) = P + uV
 /// 
 /// and the parametric range is:
 /// 
-/// &#8734; < u < &#8734;
+/// ∞ < u < ∞
 /// 
 /// NOTE Corresponding ISO 10303 entity: line. Please refer to ISO/IS 10303-42:1994, p.37 for the final definition of the formal standard. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item.
 /// 
@@ -21130,7 +21146,7 @@ public:
 /// 
 /// As shown in Figure 174, the panel is applied to the position within the lining, as defined by the panel position attribute. The following parameters apply to that panel: FrameDepth, FrameThickness.
 /// 
-/// Figure 174 &#8212; Permeable covering properties
+/// Figure 174 — Permeable covering properties
 class IFC_PARSE_API IfcPermeableCoveringProperties : public IfcPropertySetDefinition {
 public:
     /// Types of permeable covering operations. Also used to assign standard symbolic presentations according to national building standards.
@@ -21168,14 +21184,14 @@ public:
 };
 /// Definition from ISO/CD 10303-46:1992: A planar box specifies an arbitrary rectangular box and its location in a two dimensional Cartesian coordinate system.
 /// 
-/// NOTE Corresponding ISO 10303 name: planar_box. Please refer to
+/// NOTE  Corresponding ISO 10303 name: planar_box. Please refer to
 /// ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 class IFC_PARSE_API IfcPlanarBox : public IfcPlanarExtent {
 public:
     /// The IfcAxis2Placement positions a local coordinate system for the definition of the rectangle. The origin of this local coordinate system serves as the lower left corner of the rectangular box.
-    ///   NOTE In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system.
+    ///   NOTE  In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system.
     IfcAxis2Placement* Placement() const;
     void setPlacement(IfcAxis2Placement* v);
     virtual unsigned int getArgumentCount() const { return 3; }
@@ -21199,8 +21215,8 @@ public:
 /// 
 /// and the surface is parameterized as:
 /// 
-/// where the parametric range is -&#8734; < u,v <
-/// &#8734;. In the above parameterization the length unit for the
+/// where the parametric range is -∞ < u,v <
+/// ∞. In the above parameterization the length unit for the
 /// unit vectors x and y is derived from the context of
 /// the plane.
 /// 
@@ -21258,7 +21274,7 @@ public:
 /// acquiring, constructing, or maintaining products or other and
 /// similar tasks or procedures.
 /// 
-/// Figure 2 &#8212; Process relationships and the ICON process diagram.
+/// Figure 2 — Process relationships and the ICON process diagram.
 /// 
 /// HISTORY New entity in IFC Release 1.0.
 /// 
@@ -21425,9 +21441,9 @@ public:
 /// the precision used within the geometric representations, and
 /// optionally the indication of the true north relative to the world coordinate system
 /// 
-/// HISTORY New Entity in IFC Release 1.0
+/// HISTORY  New Entity in IFC Release 1.0
 /// 
-/// IFC2x4 CHANGE The attributes RepresentationContexts and UnitsInContext are made optional and are promoted to supertype IfcContext.
+/// IFC2x4 CHANGE  The attributes RepresentationContexts and UnitsInContext are made optional and are promoted to supertype IfcContext.
 /// 
 /// Relationship use definition
 /// The IfcProject is used to reference the root of the spatial structure of a building (that serves as the primary project breakdown and is required to be hierarchical). The spatial structure elements are linked together, and to the IfcProject, by using the objectified relationship IfcRelAggregates. The IfcProject references them by its inverse relationship:
@@ -21443,16 +21459,16 @@ public:
 /// The IfcProject is also the context for other information about the construction project such as a work plan. Non-product structures are assigned by their first level object to IfcProject using the IfcRelDeclares relationship.
 /// 
 /// The IfcProject provides the context for spatial elements and the associated products, and for work plans (or other non-product based) descriptions of the construction project. It is handled by two distinct relationship objects as shown in Figure 3.
-/// NOTE  The spatial structure and the schedule structure can be decomposed. For example the IfcBuilding can be decomposed into IfcBuildingStorey's, and the IfcWorkPlan can be decomposed into IfcWorkSchedule's.
-/// NOTE  The products and tasks can be decomposed further. For example the IfcCurtainWall can be decomposed into IfcMember and IfcPlate, the IfcTask can be decomposed into other IfcTask's.
-/// NOTE  The products and tasks can have direct linking relationships. For example the IfcCurtainWall can be assigned to a IfcTask as an input or output for a construction schedule.
-/// NOTE  The anomaly to use the composition structure through IfcRelAggregates for assigning the uppermost spatial container to IfcProject is due to upward compatibility reasons with earlier releases of this standard.
+/// NOTE   The spatial structure and the schedule structure can be decomposed. For example the IfcBuilding can be decomposed into IfcBuildingStorey's, and the IfcWorkPlan can be decomposed into IfcWorkSchedule's.
+/// NOTE   The products and tasks can be decomposed further. For example the IfcCurtainWall can be decomposed into IfcMember and IfcPlate, the IfcTask can be decomposed into other IfcTask's.
+/// NOTE   The products and tasks can have direct linking relationships. For example the IfcCurtainWall can be assigned to a IfcTask as an input or output for a construction schedule.
+/// NOTE   The anomaly to use the composition structure through IfcRelAggregates for assigning the uppermost spatial container to IfcProject is due to upward compatibility reasons with earlier releases of this standard.
 /// 
-/// Figure 3 &#8212; Project spatial and work plan structure
+/// Figure 3 — Project spatial and work plan structure
 /// 
 /// As shown in Figure 4, the IfcProject provides the context for project libraries that in return provide a context to the library items assigned to it. Product types are an example for items that can be included in a project library.
 /// 
-/// Figure 4 &#8212; Project spatial structure, products and product type library
+/// Figure 4 — Project spatial structure, products and product type library
 /// 
 /// Informal propositions:
 /// 
@@ -21512,11 +21528,11 @@ public:
 /// and the individual properties that maybe included can be assigned
 /// using the property set template.
 /// 
-/// NOTE See IfcRelDefinesByType for how to override property sets assigned to an object type within the object occurrence.
+/// NOTE  See IfcRelDefinesByType for how to override property sets assigned to an object type within the object occurrence.
 /// 
-/// HISTORY New Entity in IFC Release 1.0
+/// HISTORY  New Entity in IFC Release 1.0
 /// 
-/// IFC2x4 CHANGE All statically defined property set entities are no longer subtypes of
+/// IFC2x4 CHANGE  All statically defined property set entities are no longer subtypes of
 /// IfcPropertySet.
 /// 
 /// Relationship use definition
@@ -21539,7 +21555,7 @@ public:
 /// Instances of IfcPropertySet are used to assign named
 /// sets of individual properties (complex or single properties). Each
 /// individual property has a significant name string. Some property
-/// sets are included in the IFC specification and havea
+/// sets are included in the IFC specification and have a
 /// predefined set of properties indicated by assigning a significant
 /// name. These property sets are listed under "property sets" main
 /// menu item within this specification and from the object
@@ -21572,18 +21588,18 @@ public:
 /// 
 /// The ProxyType may give an indication to which high level semantic breakdown of object the semantic definition of the proxy relates to. the Tag attribute may be used to assign a human or system interpretable identifier (such as a serial number or bar code).
 /// 
-/// NOTE 1 Given that only a
+/// NOTE 1  Given that only a
 /// limited number of semantic constructs can be formally defined within
 /// IFC (and it will never be possible to define all), there has to be a
 /// mechanism for capturing those constructs that are not (yet) defined by
 /// IFC. 
 /// 
-/// NOTE 2 Product proxies are a
+/// NOTE 2  Product proxies are a
 /// mechanism that allows to exchange data that is part of the project but
 /// not necessarily part of the IFC model. Those proxies may have geometric
 /// representations assigned.
 /// 
-/// HISTORY New entity in IFC Release 1.5.
+/// HISTORY  New entity in IFC Release 1.5.
 class IFC_PARSE_API IfcProxy : public IfcProduct {
 public:
     /// High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process.
@@ -21608,9 +21624,9 @@ public:
 };
 /// IfcRectangleHollowProfileDef defines a section profile that provides the defining parameters of a rectangular (or square) hollow section to be used by the swept surface geometry or the swept area solid. Its parameters and orientation relative to the position coordinate system are according to the following illustration. A square hollow section can be defined by equal values for h and b. The centre of the position coordinate system is in the profiles centre of the bounding box (for symmetric profiles identical with the centre of gravity). Normally, the longer sides are parallel to the y-axis, the shorter sides parallel to the x-axis.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGE Types of InnerFilletRadius and OuterFilletRadius relaxed to allow for zero values.
+/// IFC2x4 CHANGE  Types of InnerFilletRadius and OuterFilletRadius relaxed to allow for zero values.
 /// 
 /// Figure 322 illustrates parameters of a rectangular or square hollow profile definition.
 /// 
@@ -21625,7 +21641,7 @@ public:
 /// can be positioned centric (using x,y offsets = 0.), or at any position
 /// relative to the profile.
 /// 
-/// Figure 322 &#8212; Rectangle hollow profile
+/// Figure 322 — Rectangle hollow profile
 class IFC_PARSE_API IfcRectangleHollowProfileDef : public IfcRectangleProfileDef {
 public:
     /// Thickness of the material.
@@ -21662,7 +21678,7 @@ public:
 /// location and orientation of the pyramid:
 /// 
 /// SELF\IfcCsgPrimitive3D.Position: The location and
-/// orientation of the axis system for the primitive.
+/// orientation of the axis system for the primitive. 
 /// SELF\IfcCsgPrimitive3D.Position.Location: The center
 /// of the circular area being the bottom face of the cone.
 /// SELF\IfcCsgPrimitive3D.Position.Position[3]: The
@@ -21674,11 +21690,11 @@ public:
 /// 
 /// As shown in Figure 260, the pyramid is positioned within its own placement coordinate system. The origin is the center of the bottom rectangle, that lies in the XY plane. The apex lies on the positive z axis at [0, 0, Height].
 /// 
-/// Figure 260 &#8212; Rectangular pyramid geometry
+/// Figure 260 — Rectangular pyramid geometry
 /// 
-/// NOTE Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x3
+/// HISTORY  New entity in IFC2x3
 /// 
 /// Texture use definition
 /// 
@@ -21740,7 +21756,7 @@ public:
 /// -X
 /// +Y
 /// 
-/// Figure 261 &#8212; Right circular cone textures
+/// Figure 261 — Right circular cone textures
 class IFC_PARSE_API IfcRectangularPyramid : public IfcCsgPrimitive3D {
 public:
     /// The length of the base measured along the placement X axis. It is provided by the inherited axis placement through SELF\IfcCsgPrimitive3D.Position.P[1].
@@ -21833,7 +21849,7 @@ public:
     /// Whether the optional attribute RelatedObjectsType is defined for this IfcRelAssigns
     bool hasRelatedObjectsType() const;
     /// Particular type of the assignment relationship. It can constrain the applicable object types, used within the role of RelatedObjects.
-    /// IFC2x4 CHANGE The attribute is deprecated and shall no longer be used. A NIL value should always be assigned.
+    /// IFC2x4 CHANGE  The attribute is deprecated and shall no longer be used. A NIL value should always be assigned.
     IfcObjectTypeEnum::IfcObjectTypeEnum RelatedObjectsType() const;
     void setRelatedObjectsType(IfcObjectTypeEnum::IfcObjectTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 6; }
@@ -21881,9 +21897,9 @@ public:
 };
 /// The objectified relationship IfcRelAssignsToControl handles the assignment of a control (represented by subtypes of IfcControl) to other objects (represented by subtypes of IfcObject, with the exception of controls).
 /// 
-/// EXAMPLE The assignment of a performance history (as subtype of IfcControl) for a building service element (as subtype of IfcObject) is an application of this generic relationship.
+/// EXAMPLEÿ The assignment of a performance history (as subtype of IfcControl) for a building service element (as subtype of IfcObject) is an application of this generic relationship.
 /// 
-/// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcRelControls in IFC Release 2x.
+/// HISTORYÿ New Entity in IFC Release 2.0. Has been renamed from IfcRelControls in IFC Release 2x.
 class IFC_PARSE_API IfcRelAssignsToControl : public IfcRelAssigns {
 public:
     /// Reference to the IfcControl that applies a control upon objects.
@@ -21977,14 +21993,14 @@ public:
     IfcRelAssignsToProcess (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcProcess* v7_RelatingProcess, IfcMeasureWithUnit* v8_QuantityInProcess);
     typedef IfcTemplatedEntityList< IfcRelAssignsToProcess > list;
 };
-/// The objectified relationshipIfcRelAssignsToProduct handles the assignment of objects (subtypes of IfcObject) to a product (subtypes of IfcProduct). The Name attribute should be used to classify the usage of the IfcRelAssignsToProduct objectified relationship. The following Name values are proposed:
+/// The objectified relationshipÿIfcRelAssignsToProduct handles the assignment of objects (subtypes of IfcObject) to a product (subtypes of IfcProduct). The Name attribute should be used to classify the usage of the IfcRelAssignsToProduct objectified relationship. The following Name values are proposed:
 /// 
-/// 'Context' : Assignment of a context specific representation, such as of structural members to a different context representation (with potentially different decomposition breakdown) such as of building elementsfor a specificcontext specific representation.
+/// 'Context' : Assignment of a context specific representation, such as of structural members to a different context representation (with potentially different decomposition breakdown) such as of building elementsÿfor a specificÿcontext specific representation.ÿ
 /// 'View' : Assignment of a product (via RelatingProduct) that is decomposed according to a discipline view, to another product (via RelatedObjects) that is decomposed according to a different discipline view. An example is the assignment of the architectural slab to a different decomposition of the pre manufactured sections of a slab (under a precast concrete discipline view).
 /// 
 /// HISTORY New Entity in IFC Release 2x
 /// 
-/// IFC2x3 CHANGE The reference of a product within a spatial structure is now handled by a new relationship object IfcRelReferencedInSpatialStructure. The IfcRelAssignsToProduct shall not be used to represent this relation from IFC2x3 onwards.
+/// IFC2x3 CHANGE ÿThe reference of a product within a spatial structure is now handled by a new relationship object IfcRelReferencedInSpatialStructure. The IfcRelAssignsToProduct shall not be used to represent this relation from IFC2x3 onwards.
 class IFC_PARSE_API IfcRelAssignsToProduct : public IfcRelAssigns {
 public:
     /// Reference to the product or product type to which the objects are assigned to.
@@ -22089,7 +22105,7 @@ class IFC_PARSE_API IfcRelAssociates : public IfcRelationship {
 public:
     /// Set of object or property definitions to which the external references or information is associated. It includes object and type objects, property set templates, property templates and property sets and contexts.
     /// 
-    /// IFC2x4 CHANGE The attribute datatype has been changed from IfcRoot to IfcDefinitionSelect.
+    /// IFC2x4 CHANGE  The attribute datatype has been changed from IfcRoot to IfcDefinitionSelect.
     IfcTemplatedEntityList< IfcRoot >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcRoot >::ptr v);
     virtual unsigned int getArgumentCount() const { return 5; }
@@ -22155,7 +22171,7 @@ public:
 /// classification system, or
 /// a reference to the classification system itself
 /// 
-/// NOTE The reference to a classification item
+/// NOTE  The reference to a classification item
 /// includes a link to the classification system within which the item
 /// is declared. It assigns the meaning of the classification item to
 /// the object (ocurrence or type). The reference to the classification
@@ -22481,16 +22497,16 @@ public:
 /// 
 /// Figure 115 shows the application of IfcRelConnectsPathElements with the ConnectionGeometry of type IfcConnectionCurveGeometry. The example shows the connection relationship between two instances of IfcWallStandardCase using the IfcRelConnectsPathElements relationship. The ConnectionCurveGeometry defines the CurveOnReleatingElement and CurveOnRelatedElement, both are of type IfcPolyline.
 /// 
-/// Figure 115 &#8212; Path connection geometry
+/// Figure 115 — Path connection geometry
 /// 
 /// Figure 116 illustrates using the IfcRelConnectsPathElements for a "T" type connection between two instances of IfcWallStandardCase.
 /// Figure 117 illustrates using the IfcRelConnectsPathElements for a "L" type connection between two instances of IfcWallStandardCase.
-/// NOTE The two wall axes connect in each case.
+/// NOTE  The two wall axes connect in each case.
 /// 
+/// ÿ
 /// 
-/// 
-/// Figure 116 &#8212; Path connection T-Type
-/// Figure 117 &#8212; Path connection L-Type
+/// Figure 116 — Path connection T-Type
+/// Figure 117 — Path connection L-Type
 class IFC_PARSE_API IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     /// Priorities for connection. It refers to the layers of the RelatingObject.
@@ -22538,9 +22554,9 @@ public:
 /// IfcDistributionElement for examples and port use
 /// definition sections.
 /// 
-/// HISTORY New
+/// HISTORY  New
 /// entity in Release IFC2x Edition 2.
-/// IFC2x4 CHANGE The
+/// IFC2x4 CHANGE  The
 /// definition has been extended to include element types.
 class IFC_PARSE_API IfcRelConnectsPortToElement : public IfcRelConnects {
 public:
@@ -22646,7 +22662,7 @@ public:
 };
 /// The entity IfcRelConnectsStructuralMember defines all needed properties describing the connection between structural members and structural connection objects (nodes or supports).
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Use Definition
 /// 
@@ -22667,7 +22683,7 @@ public:
 /// 
 /// Figure 235 illustrates the appropriate definition of support lengths.
 /// 
-/// Figure 235 &#8212; Structural member support lengths
+/// Figure 235 — Structural member support lengths
 class IFC_PARSE_API IfcRelConnectsStructuralMember : public IfcRelConnects {
 public:
     /// Reference to an instance of IfcStructuralMember (or its subclasses) which is connected to the specified structural connection.
@@ -22710,9 +22726,9 @@ public:
 };
 /// Definition from IAI: The entity IfcRelConnectsWithEccentricity adds the definition of eccentricity to the connection between a structural member and a structural connection (representing either a node or support).
 /// 
-/// NOTE  Another eccentricity model is available independently of eccentric connection specification:  The section profile of a curve member may be inserted eccentrically with respect to the member's reference curve, see definitions at IfcStructuralCurveMember.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
+/// NOTE   Another eccentricity model is available independently of eccentric connection specification:  The section profile of a curve member may be inserted eccentrically with respect to the member's reference curve, see definitions at IfcStructuralCurveMember.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
 /// 
-/// HISTORY New entity in IFC 2x3.
+/// HISTORY  New entity in IFC 2x3.
 /// Use definitions changed in IFC 2x4 to always require two topology items.
 /// 
 /// Use Definition
@@ -22846,14 +22862,14 @@ public:
 /// Containment Use Definition
 ///   Figure 39 shows the use of IfcRelContainedInSpatialStructure to assign a stair and two walls to two different levels within the spatial structure.
 /// 
+/// ÿ
 /// 
-/// 
-/// Figure 39 &#8212; Relationship for spatial structure containment
+/// Figure 39 — Relationship for spatial structure containment
 class IFC_PARSE_API IfcRelContainedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of elements products, which are contained within this level of the spatial structure hierarchy.
     /// 
-    /// IFC2x PLATFORM CHANGE The data type has been changed from IfcElement to IfcProduct with upward compatibility
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcElement to IfcProduct with upward compatibility
     IfcTemplatedEntityList< IfcProduct >::ptr RelatedElements() const;
     void setRelatedElements(IfcTemplatedEntityList< IfcProduct >::ptr v);
     /// Spatial structure element, within which the element is contained. Any element can only be contained within one element of the project spatial structure.
@@ -22910,7 +22926,7 @@ public:
     typedef IfcTemplatedEntityList< IfcRelCoversBldgElements > list;
 };
 /// Definition from IAI: The objectified relationship,
-///   IfcRelCoversSpace, relatesa space object to one or
+///   IfcRelCoversSpace, relatesÿa space object to one or
 ///   many coverings, which faces (or is assigned to) the space.
 /// 
 /// NOTE Particularly floorings, ceilings and wall
@@ -22933,7 +22949,7 @@ public:
 /// NOTE View definition may determine the necessity
 ///   to use either of the two relationship elements
 /// 
-/// HISTORY New Entity in Release
+/// HISTORYÿ New Entity in Release
 ///   IFC 2x Edition 3.
 class IFC_PARSE_API IfcRelCoversSpaces : public IfcRelConnects {
 public:
@@ -23008,7 +23024,7 @@ public:
 /// assign a property set to an object instance
 /// assign a property set template to a property set
 /// 
-/// EXAMPLE Several instances of windows within
+/// EXAMPLE ÿSeveral instances of windows within
 /// the IFC project model may be of the same (catalogue or
 /// manufacturer) type. Thereby they share the same properties. This
 /// relationship is established by the subtype
@@ -23016,7 +23032,7 @@ public:
 /// assigning an IfcWindowStyle to multiple occurrences
 /// IfcWindow.
 /// 
-/// EXAMPLE The (same) property set, e.g.
+/// EXAMPLE ÿThe (same) property set, e.g.ÿ
 /// Pset_ProductManufacturerInfo, keeping the manufacturer name,
 /// label and production year of a product, can be assigned to one,
 /// or many instances of furnishing. This relationship is established
@@ -23122,7 +23138,7 @@ public:
 /// corresponding object type definition, then the occurrence
 /// property value overrides the type property value.
 /// 
-/// Figure 8 &#8212; Type definition relationships
+/// Figure 8 — Type definition relationships
 /// 
 /// The following table provides an example of assigning
 /// 
@@ -23135,18 +23151,18 @@ public:
 /// 
 /// Pset_WallCommon
 /// Pset_WallCommon
+/// ÿ
 /// 
-/// 
-/// -ExtendToStructure = TRUE
-/// 
+/// ÿ-ÿExtendToStructure = TRUE
+/// ÿ
 /// TRUE
 /// 
-/// 
-/// -ThermalTransmittance = 0.375
+/// ÿ
+/// ÿ-ÿThermalTransmittance = 0.375
 /// 0.375
 /// 
-/// -ExtendToStructure = FALSE
-/// -ExtendToStructure = TRUE
+/// ÿ-ÿExtendToStructure = FALSE
+/// ÿ-ÿExtendToStructure = TRUE
 /// FALSE
 class IFC_PARSE_API IfcRelDefinesByType : public IfcRelDefines {
 public:
@@ -23173,7 +23189,7 @@ public:
 /// 
 /// As shown in Figure 40, the insertion of a door into a wall is represented by two separate relationships. First the door opening is created within the wall by IfcWall(StandardCase) o-- IfcRelVoidsElement --o IfcOpeningElement, then the door is inserted within the opening by IfcOpeningElement o-- IfcRelFillsElement --o IfcDoor.
 /// 
-/// Figure 40 &#8212; Relationships for element filling
+/// Figure 40 — Relationships for element filling
 class IFC_PARSE_API IfcRelFillsElement : public IfcRelConnects {
 public:
     /// Opening Element being filled by virtue of this relationship.
@@ -23335,7 +23351,7 @@ public:
 /// relationship between the main element and a sub ordinary addition
 /// feature.
 /// 
-/// NOTE In contrary the
+/// NOTE  In contrary the
 /// IfcRelAggregates relationship established an aggregation
 /// of equal parts to a whole.
 /// 
@@ -23355,7 +23371,7 @@ public:
 /// 
 /// HISTORY New entity in
 /// Release IFC2x Edition 2.
-/// IFC2x4 CHANGE
+/// IFC2x4 CHANGE 
 /// Supertype changed to IfcRelDecomposes.
 class IFC_PARSE_API IfcRelProjectsElement : public IfcRelConnects {
 public:
@@ -23380,14 +23396,14 @@ public:
 /// The objectified relationship,
 ///   IfcRelReferencedInSpatialStructure is used to
 ///   assign elements in addition to those levels of the project
-///   spatialstructure, in which they are referenced, but not
-///   primarily contained.
+///   spatialÿstructure, in which they are referenced, but not
+///   primarily contained.ÿ
 /// 
-/// NOTE The primary containment relationship between
+/// NOTE ÿThe primary containment relationship between
 ///   an element and the spatial structure is handled
-///   byIfcRelContainsInSpatialStructure.
+///   byÿIfcRelContainsInSpatialStructure.
 /// 
-/// Any element can be referencedto zero, one or several
+/// Any element can be referencedÿto zero, one or several
 ///   levels of the spatial structure. Whereas the
 ///   IfcRelContainsInSpatialStructure relationship is
 ///   required to be hierarchical (an element can only be
@@ -23420,21 +23436,21 @@ public:
 ///   structure elements depending on the context.
 /// 
 /// HISTORY New entity
-///   inRelease IFC2x Edition 3.
+///   inÿRelease IFC2x Edition 3.
 /// 
 /// Use Definition
-/// Figure 41 shows the use of IfcRelContainedInSpatialStructure and IfcRelReferencedInSpatialStructure to assign an IfcCurtainWallto two different levels within the spatial structure. It is primarily contained within the ground floor, and additionally referenced within the first and second floor.
+/// Figure 41 shows the use of IfcRelContainedInSpatialStructure and IfcRelReferencedInSpatialStructure to assign an IfcCurtainWallÿto two different levels within the spatial structure. It is primarily contained within the ground floor, and additionally referenced within the first and second floor.
 /// 
-/// Figure 41 &#8212; Relationship for spatial structure referencing
+/// Figure 41 — Relationship for spatial structure referencing
 class IFC_PARSE_API IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     /// Set of products, which are referenced within this level of the spatial structure hierarchy.
-    /// NOTE Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
+    /// NOTE  Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
     IfcTemplatedEntityList< IfcProduct >::ptr RelatedElements() const;
     void setRelatedElements(IfcTemplatedEntityList< IfcProduct >::ptr v);
     /// Spatial structure element, within which the element is referenced. Any element can be contained within zero, one or many elements of the project spatial and zoning structure.
     /// 
-    /// IFC2x Edition 4 CHANGE The attribute relatingStructure as been promoted to the new supertype IfcSpatialElement with upward compatibility for file based exchange.
+    /// IFC2x Edition 4 CHANGE  The attribute relatingStructure as been promoted to the new supertype IfcSpatialElement with upward compatibility for file based exchange.
     IfcSpatialStructureElement* RelatingStructure() const;
     void setRelatingStructure(IfcSpatialStructureElement* v);
     virtual unsigned int getArgumentCount() const { return 6; }
@@ -23478,9 +23494,9 @@ public:
 ///   relationship; therefore it assigns one predecessor to one
 ///   successor.
 /// 
-/// HISTORY New entity in IFC 1.0.
+/// HISTORY  New entity in IFC 1.0.
 /// 
-/// IFC2x4 CHANGE Relocated to IfcProcessExtension schema.
+/// IFC2x4 CHANGE  Relocated to IfcProcessExtension schema.
 ///   TimeLag and SequenceType made optional.
 ///   USERDEFINED added to the IfcSequenceType
 ///   enumeration. UserDefinedSequenceType attribute
@@ -23560,12 +23576,12 @@ public:
 /// HISTORY New entity in IFC
 ///   Release 1.0
 /// 
-/// IFC2x PLATFORM CHANGE The
+/// IFC2x PLATFORM CHANGEÿ The
 ///   data type of the attributeRelatedBuildings has been
 ///   changed from IfcBuilding to its supertype
 ///   IfcSpatialStructureElement with upward compatibility
 ///   for file based exchange. The name
-///   IfcRelServicesBuildings is a knownanomaly, as the
+///   IfcRelServicesBuildings is a knownÿanomaly, as the
 ///   relationship is not restricted to buildings anymore.
 class IFC_PARSE_API IfcRelServicesBuildings : public IfcRelConnects {
 public:
@@ -23574,9 +23590,9 @@ public:
     void setRelatingSystem(IfcSystem* v);
     /// Spatial structure elements (including site, building, storeys) that are serviced by the system.
     /// 
-    /// IFC2x PLATFORM CHANGE The data type has been changed from IfcBuilding to IfcSpatialStructureElement with upward compatibility for file based exchange.
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcBuilding to IfcSpatialStructureElement with upward compatibility for file based exchange.
     /// 
-    /// IFC2x Edition 4 CHANGE The data type has been changed from IfcSpatialStructureElement to IfcSpatialElement with upward compatibility for file based exchange.
+    /// IFC2x Edition 4 CHANGE  The data type has been changed from IfcSpatialStructureElement to IfcSpatialElement with upward compatibility for file based exchange.
     IfcTemplatedEntityList< IfcSpatialStructureElement >::ptr RelatedBuildings() const;
     void setRelatedBuildings(IfcTemplatedEntityList< IfcSpatialStructureElement >::ptr v);
     virtual unsigned int getArgumentCount() const { return 6; }
@@ -23639,11 +23655,11 @@ public:
 /// element and the adjacent spaces behind. This is a
 /// 2nd level space boundary.
 /// 
-/// Figure 42 &#8212; Space boundary at first level
-/// Figure 43 &#8212; Space boundary at second level
+/// Figure 42 — Space boundary at first level
+/// Figure 43 — Space boundary at second level
 /// 
-/// Figure 44 &#8212; Space boundary at second level type A
-/// Figure 45 &#8212; Space boundary at second level type B
+/// Figure 44 — Space boundary at second level type A
+/// Figure 45 — Space boundary at second level type B
 /// 
 /// HISTORY New entity in IFC Release 1.5, the entity has been modified in IFC Release
 /// 2x.
@@ -23670,11 +23686,11 @@ public:
 /// As shown in Figure 46, if the IfcRelSpaceBoundary is used to express a virtual boundary, the attribute PhysicalOrVirtualBoundary has to be set to VIRTUAL. The attribute RelatedBuildingElement shall point to an instance of IfcVirtualElement. If the correct location is of interest, the attribute ConnectionGeometry is required.
 /// NOTE The connection geometry, either by a 2D curve or a 3D surface, is used to describe the portion of the "virtual wall" that separates the two spaces. All instances of IfcRelSpaceBoundary given at the adjacent spaces share the same instance of IfcVirtualElement. Each instance of IfcRelSpaceBoundary provides in addition the ConnectionGeometry given within the local placement of each space.
 /// 
-/// Figure 46 &#8212; Space boundary of virtual element
+/// Figure 46 — Space boundary of virtual element
 /// 
 /// As shown in Figure 47, if the IfcRelSpaceBoundary is used to express a physical boundary between two spaces, the attribute PhysicalOrVirtualBoundary has to be set to PHYSICAL. The attribute RelatedBuildingElement has to be given and points to the element providing the space boundary. The attribute ConnectionGeometry may be inserted, in this case it describes the physical space boundary geometically, or it may be omited, in that case it describes a physical space boundary logically.
 /// 
-/// Figure 47 &#8212; Space boundary of physical element
+/// Figure 47 — Space boundary of physical element
 /// 
 /// Geometry Use Definitions
 /// The IfcRelSpaceBoundary may have geometry attached. If
@@ -23762,16 +23778,16 @@ public:
     bool hasRelatedBuildingElement() const;
     /// Reference to Building Element, that defines the Space Boundaries.
     /// 
-    /// IFC2x PLATFORM CHANGE The data type has been changed from IfcBuildingElement to IfcElement with upward compatibility for file based exchange.
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcBuildingElement to IfcElement with upward compatibility for file based exchange.
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to be mandatory.
+    /// IFC2x4 CHANGE  The attribute has been changed to be mandatory.
     IfcElement* RelatedBuildingElement() const;
     void setRelatedBuildingElement(IfcElement* v);
     /// Whether the optional attribute ConnectionGeometry is defined for this IfcRelSpaceBoundary
     bool hasConnectionGeometry() const;
     /// Physical representation of the space boundary. Provided as a curve or surface given within the LCS of the space.
     /// 
-    /// IFC2x PLATFORM CHANGE The data type has been changed from IfcConnectionSurfaceGeometry to IfcConnectionGeometry with upward compatibility for file based exchange.
+    /// IFC2x PLATFORM CHANGE  The data type has been changed from IfcConnectionSurfaceGeometry to IfcConnectionGeometry with upward compatibility for file based exchange.
     IfcConnectionGeometry* ConnectionGeometry() const;
     void setConnectionGeometry(IfcConnectionGeometry* v);
     /// Defines, whether the Space Boundary is physical (Physical) or virtual (Virtual).
@@ -23796,7 +23812,7 @@ public:
 /// 
 /// As shown in Figure 50, the insertion of a void into a wall is represented by the relationship IfcRelVoidsElement. The opening is created within the wall by IfcWall(StandardCase) o-- IfcRelVoidsElement --o IfcOpeningElement.
 /// 
-/// Figure 50 &#8212; Relationship for element voiding
+/// Figure 50 — Relationship for element voiding
 /// 
 /// HISTORY New entity in IFC Release 1.0
 class IFC_PARSE_API IfcRelVoidsElement : public IfcRelConnects {
@@ -23874,11 +23890,11 @@ public:
 /// 
 /// The AxisLine can have any orientation within the XY plane, it does not have to be parallel to the y-axis as shown in the illustration.
 /// 
-/// Figure 262 &#8212; Revolved area solid geometry
+/// Figure 262 — Revolved area solid geometry
 /// 
-/// NOTE Corresponding ISO 10303-42 entity: revolved_area_solid. Please refer to ISO/IS 10303-42:1994, p. 184 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The position attribute has been added to position the cross section used for the revolution.
+/// NOTE  Corresponding ISO 10303-42 entity: revolved_area_solid. Please refer to ISO/IS 10303-42:1994, p. 184 for the final definition of the formal standard. The data type of the inherited SweptArea attribute is different, i.e. of type IfcProfileDef. The position attribute has been added to position the cross section used for the revolution.
 /// 
-/// HISTORY New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
+/// HISTORY  New entity in IFC Release 1.5, capabilities of this entity have been enhanced in IFC Release 2x.
 /// 
 /// Informal propositions:
 /// 
@@ -23888,8 +23904,8 @@ public:
 /// The AxisLine shall not intersect the interior of the
 /// SweptArea (as defined at supertype
 /// IfcSweptAreaSolid).
-/// The Angle shall be between 0 and 360, or 0
-/// and 2&#960; (depending on the unit type for
+/// The Angle shall be between 0° and 360°, or 0
+/// and 2π (depending on the unit type for
 /// IfcPlaneAngleMeasure).
 /// 
 /// Texture Use Definition
@@ -23920,7 +23936,7 @@ public:
 /// 
 /// Figure 263 illustrates default texture mapping with a repeated texture (RepeatS=True and RepeatT=True). The image on the left shows the texture where the S axis points to the right and the T axis points up. The image on the right shows the texture applied to the geometry where the X axis points back to the right, the Y axis points back to the left, and the Z axis points up. For an IfcRevolvedAreaSolid having a profile of IfcTShapeProfileDef and revolved at 22.5 degrees, the side texture coordinate origin is the first corner counter-clockwise from the +Y axis, which equals (-0.5*IfcTShapeProfileDef.OverallWidth, +0.5*IfcTShapeProfileDef.OverallDepth), while the top (end cap) texture coordinates start at (-0.5*IfcTShapeProfileDef.OverallWidth, -0.5*IfcTShapeProfileDef.OverallDepth).
 /// 
-/// Figure 263 &#8212; Revolved area solid textures
+/// Figure 263 — Revolved area solid textures
 class IFC_PARSE_API IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
 public:
     /// Axis about which revolution will take place.
@@ -23950,7 +23966,7 @@ public:
 /// location and orientation of the cone:
 /// 
 /// SELF\IfcCsgPrimitive3D.Position: The location and
-/// orientation of the axis system for the primitive.
+/// orientation of the axis system for the primitive. 
 /// SELF\IfcCsgPrimitive3D.Position.Location: The center
 /// of the circular area being the bottom face of the cone.
 /// SELF\IfcCsgPrimitive3D.Position.Position[3]: The
@@ -23962,11 +23978,11 @@ public:
 /// 
 /// Figure 264 illustrates geometric parameters of the cone. The cone is positioned within its own placement coordinate system. The origin is the center of the bottom circular disk, that lies in the XY plane. The apex lies on the positive z axis at [0, 0, Height].
 /// 
-/// Figure 264 &#8212; Right circular cone geometry
+/// Figure 264 — Right circular cone geometry
 /// 
-/// NOTE Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: right_circular_cone, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. No semi_angle attribute, and the radius defines the bottom radius, since only a non-truncated cone is in scope. Please refer to ISO/IS 10303-42:1994, p. 176 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x3
+/// HISTORY  New entity in IFC2x3
 /// 
 /// Texture use definition
 /// On the circular side, textures are aligned facing upright with
@@ -24005,7 +24021,7 @@ public:
 /// -X
 /// +Y
 /// 
-/// Figure 265 &#8212; Right circular cone textures
+/// Figure 265 — Right circular cone textures
 class IFC_PARSE_API IfcRightCircularCone : public IfcCsgPrimitive3D {
 public:
     /// The distance between the base of the cone and the apex.
@@ -24054,11 +24070,11 @@ public:
 /// 
 /// Figure 266 illustrates geometric parameters of the cylinder. The cylinder is positioned within its own placement coordiante system. The origin is the center of the bottom circular disk, that lies in the XY plane. The center of the top circular disk is on the positive z axis at [0, 0, Height].
 /// 
-/// Figure 266 &#8212; Right circular cylinder geometry
+/// Figure 266 — Right circular cylinder geometry
 /// 
-/// NOTE Corresponding ISO 10303 entity: right_circular_cyclinder, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 177 for the definition in the international standard.
+/// NOTE  Corresponding ISO 10303 entity: right_circular_cyclinder, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 177 for the definition in the international standard.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Texture use definition
 /// On the circular side, textures are aligned facing upright with
@@ -24106,7 +24122,7 @@ public:
 /// +X
 /// +Y
 /// 
-/// Figure 267 &#8212; Right circular cylinder textures
+/// Figure 267 — Right circular cylinder textures
 class IFC_PARSE_API IfcRightCircularCylinder : public IfcCsgPrimitive3D {
 public:
     /// The distance between the planar circular faces of the cylinder.
@@ -24200,7 +24216,7 @@ public:
 /// 
 /// Figure 62 shows the use of IfcRelAggregates to establish a spatial structure including site, building, building section and storey. More information is provided at the level of the subtypes.
 /// 
-/// Figure 62 &#8212; Spatial structure element composition
+/// Figure 62 — Spatial structure element composition
 class IFC_PARSE_API IfcSpatialStructureElement : public IfcProduct {
 public:
     /// Whether the optional attribute LongName is defined for this IfcSpatialStructureElement
@@ -24236,7 +24252,7 @@ public:
 ///   specification (i.e. the specific element information, that
 ///   is common to all occurrences of that element type).
 /// 
-/// NOTE The product representations are defined as
+/// NOTE ÿThe product representations are defined as
 ///   representation maps (at the level of the supertype
 ///   IfcTypeProduct, which gets assigned by an element
 ///   occurrence instance through the
@@ -24245,22 +24261,22 @@ public:
 /// 
 /// A spatial structure element type is used to define the
 ///   common properties of a certain type of a spatial structure
-///   element that may be applied to many instances of thattype
+///   element that may be applied to many instances of thatÿtype
 ///   to assign a specific style. Spatial structure element types
 ///   (i.e. the instantiable subtypes) may be exchanged without
 ///   being already assigned to occurrences.
 /// 
-/// NOTE The spatial structure element types are
+/// NOTE ÿThe spatial structure element types are
 ///   often used to represent catalogues of predefined spatial
 ///   types for shared attributes, less so for sharing a common
 ///   representation map.
 /// 
 /// The occurrences of subtypes of the
-///   abstractIfcSpatialStructureElementType are
+///   abstractÿIfcSpatialStructureElementType are
 ///   represented by instances of subtypes of
 ///   IfcSpatialStructureElement.
 /// 
-/// HISTORY New entity in
+/// HISTORY ÿNew entity in
 ///   Release IFC2x Edition 3.
 class IFC_PARSE_API IfcSpatialStructureElementType : public IfcElementType {
 public:
@@ -24283,7 +24299,7 @@ public:
 /// and provides:
 /// 
 /// SELF\IfcCsgPrimitive3D.Position: The location and
-/// orientation of the axis system for the primitive.
+/// orientation of the axis system for the primitive. 
 /// SELF\IfcCsgPrimitive3D.Position.Location: The center
 /// of the sphere.
 /// SELF\IfcCsgPrimitive3D.Position.Position[3]: The z
@@ -24298,11 +24314,11 @@ public:
 /// 
 /// Figure 270 illustrates geometric parameters of the sphere. The sphere is positioned within its own placement coordiante system. The origin is the center of the sphere.
 /// 
-/// Figure 270 &#8212; Sphere geometry
+/// Figure 270 — Sphere geometry
 /// 
-/// NOTE Corresponding STEP entity: sphere, the position attribute, including the centre point, has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 175 for the final definition of the formal standard.
+/// NOTE  Corresponding STEP entity: sphere, the position attribute, including the centre point,  has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO/IS 10303-42:1994, p. 175 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Texture Use Definition
 /// Textures are aligned facing upright with origin at the back (+Y direction) revolving counter-clockwise. Textures are stretched or repeated to the extent of the circumference at the equator according to RepeatS and RepeatT.
@@ -24325,7 +24341,7 @@ public:
 /// (-X, then curving counter-clockwise)
 /// (+Y, then curving towards top)
 /// 
-/// Figure 271 &#8212; Sphere textures
+/// Figure 271 — Sphere textures
 class IFC_PARSE_API IfcSphere : public IfcCsgPrimitive3D {
 public:
     /// The radius of the sphere.
@@ -24347,9 +24363,9 @@ public:
 /// 
 /// The differentiation between actions and reactions is realized by instantiating objects either from subclasses of IfcStructuralAction or IfcStructuralReaction respectively.  They inherit commonly needed attributes from the abstract superclass IfcStructuralActivity, notably the relationship which connects actions or reactions with connections, analysis members, or elements (subtypes of IfcStructuralItem or IfcElement).
 /// 
-/// NOTE Instances of IfcStructuralActivity which are connected with an IfcElement are subject to agreements outside the scope of this specification.
+/// NOTE  Instances of IfcStructuralActivity which are connected with an IfcElement are subject to agreements outside the scope of this specification.
 /// 
-/// NOTE The semantics of IfcStructuralActivity are only fully defined
+/// NOTE  The semantics of IfcStructuralActivity are only fully defined
 /// if an activity instance is connected with exactly one structural item.  The inverse attribute
 /// AssignedToStructuralItem can only be empty in incomplete models or in conceptual models
 /// which are not yet ready for analysis.
@@ -24358,7 +24374,7 @@ public:
 /// 
 /// IFC 2x4 change:  Cardinality of attribute
 /// AssignedToStructuralItem relaxed from 1 to 0..1 in order to allow for schema-compliant
-/// incomplete models as well as conceptual models without load&#8212;item relationships.
+/// incomplete models as well as conceptual models without load—item relationships.
 /// 
 /// Coordinate Systems:
 /// 
@@ -24423,7 +24439,7 @@ public:
 /// RepresentationIdentifier: 'Reference'
 ///   RepresentationType: 'Edge'
 /// 
-/// NOTE While an IfcEdge (or IfcOrientedEdge with underlying IfcEdge) does not provide an explicit underlying curve geometry, it may be used to imply an underlying straight line as reference curve with the origin of the curve parameter at the start vertex point.
+/// NOTE  While an IfcEdge (or IfcOrientedEdge with underlying IfcEdge) does not provide an explicit underlying curve geometry, it may be used to imply an underlying straight line as reference curve with the origin of the curve parameter at the start vertex point.
 /// 
 /// Instances of IfcStructuralActivity which act on a single point on a curve or surface item shall have a topology representation given by an IfcVertexPoint, which should be the single item of IfcTopologyRepresentation.Items.  The point geometry shall be compatible with the curve or surface geometry of the connected item.  The local coordinate system of the activity is oriented by the curve or surface geometry of the connected item as described above for activities with edge or face topology.
 /// 
@@ -24522,7 +24538,7 @@ public:
 /// RepresentationIdentifier: 'Reference'
 ///   RepresentationType: 'Edge'
 /// 
-/// NOTE While an IfcEdge (or IfcOrientedEdge with underlying
+/// NOTE  While an IfcEdge (or IfcOrientedEdge with underlying
 ///   IfcEdge) does not provide an explicit underlying curve geometry, it may be used to imply an
 ///   underlying straight line as reference curve with the origin of the curve parameter at the start vertex
 ///   point.
@@ -24559,9 +24575,9 @@ public:
 /// 
 /// The ObjectPlacements of all structural items which are grouped into the same instance of IfcStructuralAnalysisModel shall refer to the same instance of IfcObjectPlacement.
 /// 
-/// NOTE This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
+/// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
-/// NOTE A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
+/// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
 class IFC_PARSE_API IfcStructuralItem : public IfcProduct {
 public:
     virtual unsigned int getArgumentCount() const { return 7; }
@@ -24601,7 +24617,7 @@ public:
 /// structural action imposed to a structural item or building element.  Examples are support reactions,
 /// internal forces, and deflections.
 /// 
-/// HISTORY New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 /// 
 /// IFC 2x4 change:  Inverse attribute Causes deleted; use IfcRelAssignsToProduct via HasAssignments instead.
 /// 
@@ -24676,7 +24692,7 @@ public:
 };
 /// Definition from IAI: Describes surface members with varying section properties.  The properties are provided by means of a property set and IfcRelDefinesByProperties or by means of aggregation:  An instance of IfcStructuralSurfaceMemberVarying may be composed of two or more instances of IfcStructuralSurfaceMember with differing section properties.  These subordinate members relate to the instance of IfcStructuralSurfaceMemberVarying by IfcRelAggregates.
 /// 
-/// NOTE  It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralSurfaceMemberVarying but only with the IfcStructuralSurfaceMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
+/// NOTE   It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralSurfaceMemberVarying but only with the IfcStructuralSurfaceMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// Use definition changed and attributes deleted in IFC 2x4.
@@ -24767,7 +24783,7 @@ public:
 /// transformation matrix T(u), which varies with the
 /// Directrix parameter u.
 /// 
-/// NOTE The
+/// NOTE  The
 /// geometric shape of the solid is not dependent upon the curve
 /// parameterization; the volume depends upon the area swept and the
 /// length of the Directrix.
@@ -24778,9 +24794,9 @@ public:
 /// and the ReferenceSurface are positioned within the 3D
 /// Position coordinate system.
 /// 
-/// NOTE Corresponding ISO 10303-42 entity: surface_curve_swept_area_solid. Please refer to ISO 10303-42 ed.2:1999, p. 274 for the definition in the international standard.
+/// NOTE  Corresponding ISO 10303-42 entity: surface_curve_swept_area_solid. Please refer to ISO 10303-42 ed.2:1999, p. 274 for the definition in the international standard.
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Informal propositions:
 /// 
@@ -24794,12 +24810,12 @@ public:
     void setDirectrix(IfcCurve* v);
     /// The parameter value on the Directrix at which the sweeping operation commences. If no value is provided the start of the sweeping operation is at the start of the Directrix..
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     double StartParam() const;
     void setStartParam(double v);
     /// The parameter value on the Directrix at which the sweeping operation ends. If no value is provided the end of the sweeping operation is at the end of the Directrix..
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
+    /// IFC2x4 CHANGE  The attribute has been changed to OPTIONAL with upward compatibility for file-based exchange.
     double EndParam() const;
     void setEndParam(double v);
     /// The surface containing the Directrix.
@@ -24821,7 +24837,7 @@ public:
 /// 
 /// V = ExtrusionAxis 
 /// 
-/// The parameterization range for v is - < v <  and for u it is defined by the curve parameterization. 
+/// The parameterization range for v is -¥ < v < ¥ and for u it is defined by the curve parameterization. 
 /// 
 /// NOTE: Corresponding ISO 10303 entity: surface_of_linear_extrusion. Please refer to ISO/IS 10303-42:1994, p.76 for the final definition of the formal standard. The following adaption has been made. The ExtrusionAxis and the Direction are defined as two separate attributes in correlation to the definition of the extruded_area_solid, and not as a single vector attribute. The vector is derived as ExtrusionAxis.
 /// 
@@ -24856,7 +24872,7 @@ public:
 /// 
 /// C = AxisPosition.LocationV = AxisPosition.Z
 /// 
-/// In order to produce a single-value surface the a complete revolution, the curve shall be such that when expressed in a cylindrical coordinate system the curve shall be such that when expressed in a cylindrical coordinate system (r,&#966; ,z) centred at C with an axis V no two distinct parametric points on the curve shall have the same values for (r, z).  
+/// In order to produce a single-value surface the a complete revolution, the curve shall be such that when expressed in a cylindrical coordinate system the curve shall be such that when expressed in a cylindrical coordinate system (r,φ ,z) centred at C with an axis V no two distinct parametric points on the curve shall have the same values for (r, z).  
 /// For a surface of revolution the parametric range is 0 < u < 360 degree. The parameterization range for v is defined by referenced curve. 
 /// 
 /// NOTE: Corresponding ISO 10303 entity: surface_of_revolution. Please refer to ISO/IS 10303-42:1994, p.76 for the final definition of the formal standard.
@@ -24938,9 +24954,9 @@ public:
 ///   design, construction and operation related activities as
 ///   well.
 /// 
-/// HISTORY New entity in IFC 1.0. Renamed from IfcWorkTask in IFC 2x.
+/// HISTORY  New entity in IFC 1.0. Renamed from IfcWorkTask in IFC 2x.
 /// 
-/// IFC2x4 CHANGE Attributes TaskTime and PredefinedType added.  IfcMove and IfcOrderRequest has been removed in IFC2x4 and are now represented by IfcTask. Further information can be found in the description below.
+/// IFC2x4 CHANGE  Attributes TaskTime and PredefinedType added.  IfcMove and IfcOrderRequest has been removed in IFC2x4 and are now represented by IfcTask. Further information can be found in the description below.
 /// 
 /// Type use definition
 /// 
@@ -25020,7 +25036,7 @@ public:
 ///   IfcTask represents the occurrence of a work
 ///   performance of a type of process in a construction plan.
 /// 
-/// Figure 13 &#8212; Task visualization
+/// Figure 13 — Task visualization
 /// 
 /// A task may nest other tasks as sub-items; the nesting
 ///   relationship is modeled by IfcRelNests as shown in Figure 14. For example,
@@ -25039,7 +25055,7 @@ public:
 ///   through IfcRelNests enables to order the tasks in a
 ///   tree view or list view structure.
 /// 
-/// Figure 14 &#8212; Task nesting relationships
+/// Figure 14 — Task nesting relationships
 /// 
 /// Time and duration use definition
 /// 
@@ -25127,7 +25143,7 @@ public:
 ///   TaskTime.ScheduleStart and
 ///   TaskTime.ScheduleFinish.
 /// 
-/// Figure 15 &#8212; Task constraints
+/// Figure 15 — Task constraints
 /// 
 /// Use Definition to represent other activities
 /// 
@@ -25547,11 +25563,11 @@ public:
 /// to an external document or library should be provided to further define the
 /// profile as described at IfcProfileDef.
 /// 
-/// HISTORY New entity in Release IFC2x Edition 2.
+/// HISTORY  New entity in Release IFC2x Edition 2.
 /// 
-/// IFC2x3 CHANGE All profile origins are now in the center of the bounding box. The attribute CentreOfGravityInY has been made OPTIONAL.
+/// IFC2x3 CHANGE  All profile origins are now in the center of the bounding box. The attribute CentreOfGravityInY has been made OPTIONAL.
 /// 
-/// IFC2x4 CHANGE Bottom flange is not necessarily wider than top flange. TopFlangeThickness changed from OPTIONAL to mandatory. Type of TopFlangeFilletRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
+/// IFC2x4 CHANGE  Bottom flange is not necessarily wider than top flange. TopFlangeThickness changed from OPTIONAL to mandatory. Type of TopFlangeFilletRadius relaxed to allow for zero radius. Trailing attribute CentreOfGravityInY deleted, use respective property in IfcExtendedProfileProperties instead.
 /// 
 /// Figure 310 illustrates parameters of the asymmetric I-shaped section definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept area solid that uses the profile definition. It is the xy plane of:
 /// 
@@ -25560,7 +25576,7 @@ public:
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position
 /// relative to the profile. The parameterized profile is defined by a set of parameter attributes.  In the illustrated example, the 'CentreOfGravityInY' property in IfcExtendedProfileProperties, if provided, is negative.
 /// 
-/// Figure 310 &#8212; Assymetric I-shape profile
+/// Figure 310 — Assymetric I-shape profile
 class IFC_PARSE_API IfcAsymmetricIShapeProfileDef : public IfcIShapeProfileDef {
 public:
     /// Extent of the top flange, defined parallel to the x axis of the position coordinate system.
@@ -25618,11 +25634,11 @@ public:
 /// 
 /// Figure 250 illustrates geometric parameters of a block where the block positioned within its own placement coordinate system. The values for XLength, YLength, and ZLength are applied to the positive direction of the X, Y, and Z axis.
 /// 
-/// Figure 250 &#8212; Block geometry
+/// Figure 250 — Block geometry
 /// 
-/// NOTE Corresponding ISO 10303-42 entity: block, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO 10303-42:1994, p. 244 for the definition in the international standard.
+/// NOTE  Corresponding ISO 10303-42 entity: block, the position attribute has been promoted to the immediate supertype IfcCsgPrimitive3D. Please refer to ISO 10303-42:1994, p. 244 for the definition in the international standard.
 /// 
-/// HISTORY New entity in IFC2x3.
+/// HISTORY  New entity in IFC2x3.
 /// 
 /// Texture use definition
 /// On each side face, textures are aligned facing upright. On the
@@ -25688,7 +25704,7 @@ public:
 /// +X
 /// +Y
 /// 
-/// Figure 251 &#8212; Block textures
+/// Figure 251 — Block textures
 class IFC_PARSE_API IfcBlock : public IfcCsgPrimitive3D {
 public:
     /// The size of the block along the placement X axis. It is provided by the inherited axis placement through SELF\IfcCsgPrimitive3D.Position.P[1].
@@ -25833,13 +25849,13 @@ public:
 /// IfcBuilding.IsDecomposedBy -- referencing
 /// (IfcBuilding || IfcBuildingStorey) by
 /// IfcRelAggregates.RelatedObjects. If it refers to another
-/// instance ofIfcBuilding, the referenced IfcBuilding
+/// instance ofÿIfcBuilding, the referenced IfcBuilding
 /// needs to have a different and lower CompositionType, i.e. ELEMENT
 /// (if the other IfcBuilding has COMPLEX), or PARTIAL (if the
 /// other IfcBuilding has ELEMENT).
 /// 
 /// If there are building elements and/or other elements directly
-/// related to the IfcBuilding(like a curtain wall spanning
+/// related to the IfcBuildingÿ(like a curtain wall spanning
 /// several stories), they are associated with the IfcBuilding
 /// by using the objectified relationship
 /// IfcRelContainedInSpatialStructure. The IfcBuilding
@@ -25857,7 +25873,7 @@ public:
 /// containment and placement structure relationships are given in
 /// view definitions and implementer agreements.
 /// 
-/// Figure 20 &#8212; Building composition
+/// Figure 20 — Building composition
 /// 
 /// Systems, such as building service or electrical distribution
 /// systems, zonal systems, or structural analysis systems, relate to
@@ -25873,8 +25889,8 @@ public:
 /// total height of building, also referred to as ridge height (top of roof structure, e.g the ridge against terrain): provided by BaseQuantity with Name="TotalHeight"
 /// eaves height of building (base of roof structure, e.g the eaves against terrain): provided by BaseQuantity with Name="EavesHeight"
 /// 
-/// 
-/// Figure 21 &#8212; Building elevations
+/// ÿ
+/// Figure 21 — Building elevations
 /// 
 /// Geometry Use Definitions
 /// The geometric representation of IfcBuilding is given by
@@ -26061,7 +26077,7 @@ public:
 /// IfcBuildingStorey.Decomposes -- referencing
 /// (IfcBuilding || IfcBuildingStorey) by
 /// IfcRelAggregates.RelatingObject, If it refers to another
-/// instance ofIfcBuildingStorey, the referenced
+/// instance ofÿIfcBuildingStorey, the referenced
 /// IfcBuildingStorey needs to have a different and higher
 /// CompositionType, i.e. COMPLEX (if the other
 /// IfcBuildingStorey has ELEMENT), or ELEMENT (if the other
@@ -26069,7 +26085,7 @@ public:
 /// IfcBuildingStorey.IsDecomposedBy -- referencing
 /// (IfcBuildingStorey || IfcSpace) by
 /// IfcRelAggregates.RelatedObjects. If it refers to another
-/// instance ofIfcBuildingStorey, the referenced
+/// instance ofÿIfcBuildingStorey, the referenced
 /// IfcBuildingStorey needs to have a different and lower
 /// CompositionType, i.e. ELEMENT (if the other
 /// IfcBuildingStorey has COMPLEX), or PARTIAL (if the other
@@ -26095,7 +26111,7 @@ public:
 /// containment and placement structure relationships are given in
 /// view definitions and implementer agreements.
 /// 
-/// Figure 25 &#8212; Building storey composition
+/// Figure 25 — Building storey composition
 /// 
 /// Elements can also be referenced in an
 /// IfcBuildingStorey, for example, if they span through several
@@ -26115,7 +26131,7 @@ public:
 /// net height of storey, also referred to as total height or system height (top of construction slab to top of construction slab above): provided by BaseQuantity with Name="GrossHeight"
 /// net height of storey (top of construction slab to bottom of construction slab above): provided by BaseQuantity with Name="NetHeight"
 /// 
-/// Figure 26 &#8212; Building storey elevations
+/// Figure 26 — Building storey elevations
 /// 
 /// Geometry Use Definitions
 /// The geometric representation of IfcBuildingStorey is
@@ -26209,7 +26225,7 @@ public:
 /// profile's centre of the bounding box (for symmetric profiles identical
 /// with the centre of gravity).
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
 /// Figure 312 illustrates parameters of the circular hollow profile definition. The parameterized profile defines its own position coordinate system. The underlying coordinate system is defined by the swept area solid that uses the profile definition. It is the xy plane of:
 /// 
@@ -26217,7 +26233,7 @@ public:
 /// 
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (for example, upper-left bound). The parameterized profile is defined by a set of parameter attributes.
 /// 
-/// Figure 312 &#8212; Circle hollow profile
+/// Figure 312 — Circle hollow profile
 class IFC_PARSE_API IfcCircleHollowProfileDef : public IfcCircleProfileDef {
 public:
     /// Thickness of the material, it is the difference between the outer and inner radius.
@@ -26358,7 +26374,7 @@ public:
 ///   of the referenced bounded curves. The first segment is
 ///   parameterized from 0 to
 ///   l1 and for i
-///   &#8804; 2, the
+///   ≤ 2, the
 ///   ith segment is
 ///   parameterized from:
 /// 
@@ -26371,7 +26387,7 @@ public:
 ///   Then, if the ith segment is not a reparameterised
 ///   composite curve segment, T is related to the
 ///   parameter ti; ti0
-///   &#8804; ti &#8804;
+///   ≤ ti ≤
 ///   ti1; for the ith segment by the
 ///   equation:
 /// 
@@ -26386,13 +26402,13 @@ public:
 /// If the segments[i] is of type reparameterised composite
 ///   curve segment,
 /// 
-/// where &#964; is defined at
+/// where τ is defined at
 ///   reparameterized composite curve segment (see
 ///   IfcReparameterizedCompositeCurveSegment).
 /// 
 /// Figure 279 illustrates an example of a composite curve.
 /// 
-/// Figure 279 &#8212; Composite curve
+/// Figure 279 — Composite curve
 /// 
 /// Consider an IfcCompositeCurve having line segment and an arc segment. The line should be parameterized:
 /// 
@@ -26404,7 +26420,7 @@ public:
 /// 
 /// Then the parameterization of the composite curve is:
 /// 
-/// IfcCompositeCurve with 0. &#8804; T &#8804; 1. (line segment) and 1. &#8804; T &#8804; 91. (arc segment), parametric length = 91.
+/// IfcCompositeCurve with 0. ≤ T ≤ 1. (line segment) and 1. ≤ T ≤ 91. (arc segment), parametric length = 91.
 /// 
 /// NOTE Corresponding ISO 10303 entity: composite_curve, please refer to ISO/IS 10303-42:1994, p. 56 for the final definition of the formal standard. The WR2 is added to ensure consistent Dim at all segments.
 /// 
@@ -26465,21 +26481,21 @@ public:
 /// represents a pool of items having limited availability such as general labor or an equipment fleet. A resource can represent either a generic resource pool (not having any task assignment) or a task-specific resource allocation (having an IfcTask
 /// assignment).
 /// 
-/// HISTORY New entity in IFC2x2.
+/// HISTORY  New entity in IFC2x2.
 /// 
-/// IFC2x4 CHANGE Modified in to promote ResourceIdentifer and ResourceGroup (renamed to LongDescription) to supertype IfcResource and add attributes as described.
+/// IFC2x4 CHANGE  Modified in to promote ResourceIdentifer and ResourceGroup (renamed to LongDescription) to supertype IfcResource and add attributes as described.
 /// 
 /// Type use definition
 /// IfcConstructionResource defines the occurrence of any construction resource; common information about construction resource types is handled by IfcConstructionResourceType. The IfcConstructionResourceType (if present) may establish the common type name, common properties, common cost rates, and common productivities applied to specific task types. The IfcConstructionResourceType is attached using the IfcRelDefinesByType.RelatingType objectified relationship and is accessible by the inverse IsTypedBy attribute as shown in Figure 186.
 /// The resource type may provide shared productivity and cost information, allowing tasks and resources to be selected according to lowest cost and/or shortest duration. Given an IfcProduct of a particular IfcTypeProduct type, an IfcTypeProcess may be selected from those assigned to the product type using IfcRelAssignsToProduct, and an IfcTypeResource may be selected from those assigned to the process type using IfcRelAssignsToProcess. Then IfcTask and IfcConstructionResource occurrences may be instantiated from the type definitions, applying productivitity and rate information to assigned quantities to calculate ResourceTime.ScheduleWork. Task durations can then be calculated by dividing ResourceTime.ScheduleWork by ResourceTime.ScheduleUsage.
 /// 
-/// Figure 186 &#8212; Construction resource type use
+/// Figure 186 — Construction resource type use
 /// 
 /// Composition use definition
 /// Resources may be decomposed into allocation pools using the IfcRelNests relationship as shown in Figure 187. For example, an IfcLaborResource for "Electrician" may be decomposed into three task-specific IfcLaborResource objects: "Electrical Rough-in", "First Floor Circuits", and "Second Floor Circuits". Both relating and related sides may represent the same ResourceTime.ScheduleUsage quantity (for example, 6 workers time-shared), or the related side may break out ResourceTime.ScheduleUsage quantities for reserved use (for example, 4 workers and 2 workers). 
 /// A common scenario is two nesting levels where the first-level resources have no task assignments; while second-level resources have specific task assignments indicating that the resource is subdivided into allocations for specific tasks. While the model allows unlimited nesting of resources, implementer agreements may restrict to two nesting levels with task assignments specifically at the second level.
 /// 
-/// Figure 187 &#8212; Construction resource composition use
+/// Figure 187 — Construction resource composition use
 /// 
 /// Declaration use definition
 /// A root-level resource (specifically IfcCrewResource or IfcSubContractResource) is declared within the project by IfcRelDeclares where RelatingContext refers to the single IfcProject and RelatedObjects refers to one or more IfcConstructionResource, and other root-level objects within the project.
@@ -26494,7 +26510,7 @@ public:
 /// A resource may have assignments of other objects using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionResource and RelatedObjects refers to one or more objects such as IfcActor or IfcProduct subtypes. This relationship indicates specific objects assigned to fulfill resource usage.
 /// Figure 188 illustrates resource assignment.
 /// 
-/// Figure 188 &#8212; Construction resource assignment use
+/// Figure 188 — Construction resource assignment use
 /// 
 /// Constraint use definition
 /// Constraints may be applied to a resource to indicate fixed work (such as total person-hours) or fixed usage (such as simultaneous workers). The relationship IfcRelAssociatesConstraint is used where RelatingConstraint points to an IfcMetric and RelatedObjects includes the IfcConstructionResource as shown in Figure 189. IfcRelAssociatesConstraint.Name identifies the attribute to be constrained using a period (".") to dereference; for example, "ResourceTime.ScheduleWork" refers to the ScheduleWork attribute on the IfcResourceTime entity referenced on the ResourceTime attribute. The following attributes may be constrained:
@@ -26510,26 +26526,26 @@ public:
 /// ResourceTime.ScheduleUsage should impact the assigned
 /// IfcTask.TaskTime.ScheduleDuration and vice-versa.
 /// 
-/// Figure 189 &#8212; Construction resource constraint use
+/// Figure 189 — Construction resource constraint use
 /// 
 /// Time series use definition
 /// Time series may be applied to a resource to indicate the break-out of attribute values over time. The relationship IfcRelAssociatesTimeSeries is used where RelatingTimeSeries points to an IfcTimeSeries (either IfcRegularTimeSeries or IfcIrregularTimeSeries) and RelatedObjects includes the IfcConstructionResource as shown in Figure 190. IfcRelAssociatesTimeSeries.Name identifies the attribute to be constrained using a period (".") to dereference; for example, "ResourceTime.ScheduleWork" refers to the ScheduleWork attribute on the IfcResourceTime entity referenced on the ResourceTime attribute. Refer to attribute descriptions on IfcResourceTime for attribute-specific usage.
 /// Each IfcTimeSeriesValue indicates a LIST of values, where the sequence of the value corresponds to the IfcCostValue at IfcConstructionResource.CostRatesConsumed. For example, if CostRatesConsumed has two IfcCostValue items in the LIST, "Standard" and "Overtime", then IfcTimeSeriesValue(IfcDuration('T8H0M0S'),IfcDuration('T2H0M0S')) would indicate 8 hours at Standard rate and 2 hours at Overtime rate. If the list of values at IfcTimeSeriesValue.ListValues is less than the size of CostRatesConsumed, then subsequent values are considered to be zero.
 /// 
-/// Figure 190 &#8212; Construction resource time series use
+/// Figure 190 — Construction resource time series use
 /// 
 /// Document use definition
 /// Documents may be published for work plans consisting of schedules, calendars, tasks, and resources. The relationship IfcRelAssociatesDocument may be used to preserve mappings to such document where RelatingDocument points to an IfcDocumentReference and RelatedObjects includes the IfcConstructionResource as shown in Figure 191.
 /// IfcDocumentReference.ItemReference identifies the resource within the scope of the document, such as an integer or guid. The IfcDocumentReference.ReferencedDocument corresponds to the document which is uniquely identified by IfcDocumentInformation.DocumentId and/or IfcDocumentInformation.PublicationLocation. Such document mapping allows items in the document to be updated from the building information model and vice-versa.
 /// 
-/// Figure 191 &#8212; Construction resource document use
+/// Figure 191 — Construction resource document use
 /// 
 /// Baseline use definition
 /// A resource may have any number of baselines defined using the relationship IfcRelDefinesByObject where RelatingObject is the "current" resource and RelatedObjects consists of multiple "baseline" resources, each representing a copy of the resource as it existed at an earlier point in time as shown in Figure 192. Each baseline IfcConstructionResource is identified by its nested IfcRelAssignsToControl relationship to an IfcWorkSchedule having
 /// PredefinedType=BASELINE, IfcWorkSchedule.CreationDate indicating the date of the baseline, and
 /// IfcWorkSchedule.Name indicating the name of the baseline.
 /// 
-/// Figure 192 &#8212; Construction resource baseline use
+/// Figure 192 — Construction resource baseline use
 class IFC_PARSE_API IfcConstructionResource : public IfcResource {
 public:
     /// Whether the optional attribute ResourceIdentifier is defined for this IfcConstructionResource
@@ -26607,7 +26623,7 @@ public:
 /// 
 /// Figure 157 illustrates a cost item composition used for a cost schedule.  Each line item has a quantity and separate unit costs where IfcCostValue.CostType indicates the category of cost.  The summary item has a hierarchy of costs calculated according to IfcAppliedValueRelationship.ArithmeticOperator, where IfcCostValue.CostType identifies the category to be totalled.  The Tax component has IfcCostValue.CostType set to 'Material' which indicates it is the sum of all nested values of the 'Material' category ($3 x 3000 + $118 x 100 = $20800).  The Subtotal component has IfcCostValue.CostType set to an asterisk ('*') which indicates it is the sum of all nested values of all categories.
 /// 
-/// Figure 157 &#8212; Cost composition
+/// Figure 157 — Cost composition
 /// 
 /// Assignment Use Definition
 /// 
@@ -26621,7 +26637,7 @@ public:
 /// 
 /// Figure 158 illustrates cost item assignment derived from building elements.  The IfcRelAssignsToControl relationship indicates building elements for which quantities are derived.  Not shown, costs may also be derived from building elements by traversing assignment relationships from the assigned IfcProduct to IfcProcess to IfcResource, where all costs ultimately originate at resources.  It is also possible for cost items to have assignments from processes or resources directly.
 /// 
-/// Figure 168 &#8212; Cost assignment
+/// Figure 168 — Cost assignment
 class IFC_PARSE_API IfcCostItem : public IfcControl {
 public:
     virtual unsigned int getArgumentCount() const { return 5; }
@@ -26896,7 +26912,7 @@ public:
 /// of product representations. It is used to define an element
 /// specification (i.e. the specific product information, that is
 /// common to all occurrences of that product type).
-/// NOTE The product representations are defined
+/// NOTEÿ The product representations are defined
 /// as representation maps (at the level of the supertype
 /// IfcTypeProduct, which gets assigned by an element
 /// occurrence instance through the
@@ -26911,9 +26927,9 @@ public:
 /// The occurrences of the IfcDistributionElementType are
 /// represented by instances of IfcDistributionElement (or its
 /// subtypes).
-/// HISTORY New entity in
+/// HISTORYÿ New entity in
 /// Release IFC2x Edition 2.
-/// IFC2x3 CHANGE The entity has been made
+/// IFC2x3 CHANGEÿ The entity has been made
 /// non-abstract
 /// IFC2x4 CHANGE The entity is marked
 /// as deprecated for instantiation - will be made ABSTRACT after
@@ -26954,7 +26970,7 @@ public:
 /// 
 /// Figure 148 illustrates a project containing a light fixture in a building, where the definition of the light fixture is obtained from an external project.
 /// 
-/// Figure 148 &#8212; Distribution flow element library
+/// Figure 148 — Distribution flow element library
 /// 
 /// Composition Use Definition
 /// The IfcDistributionFlowElementType may be decomposed into components using IfcRelAggregates where RelatingObject refers to the enclosing IfcDistributionFlowElementType and RelatedObjects contains one or more components.  For example, a cable type may be decomposed into wires.  Standard types for composition are defined at occurrences for subtypes.
@@ -27187,7 +27203,7 @@ public:
 /// SELF\IfcObjectDefinition.IsDecomposedBy. Components of an
 /// assembly are described by instances of subtypes of
 /// IfcElement.
-/// In this case, the containedsubtypes of IfcElement
+/// In this case, the containedÿsubtypes of IfcElement
 /// shall not be additionally contained in the project spatial
 /// hierarchy, i.e. the inverse attribute
 /// SELF\IfcElement.ContainedInStructure of those
@@ -27195,7 +27211,7 @@ public:
 /// 
 /// Figure 27 illustrates spatial containment and element aggregation relationships.
 /// 
-/// Figure 27 &#8212; Element assembly containment
+/// Figure 27 — Element assembly containment
 /// 
 /// Geometry Use Definitions
 /// The geometric representation of IfcElementAssembly is
@@ -27221,7 +27237,7 @@ public:
 /// have an explicit geometric representation. In some cases it may
 /// be useful to also expose an own explicit representation of the
 /// aggregate.
-/// NOTE View definitions or implementer
+/// NOTEÿ View definitions or implementer
 /// agreements may further constrain the applicability of certain
 /// shape representations at the IfcElementAssembly in respect
 /// of the shape representations of its parts.
@@ -27239,7 +27255,7 @@ public:
     void setAssemblyPlace(IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum v);
     /// Predefined generic types for a element assembly that are specified in an enumeration. There might be property sets defined specifically for each predefined type.
     /// 
-    /// IFC2x4 CHANGE The attribute has been changed to be optional.
+    /// IFC2x4 CHANGE  The attribute has been changed to be optional.
     IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 10; }
@@ -27326,7 +27342,7 @@ public:
 /// 
 /// Figure 151 illustrates multiple components modeled as a single occurrence object (here: IfcFastener)
 /// 
-/// Figure 151 &#8212; Element component mapped representation
+/// Figure 151 — Element component mapped representation
 /// 
 /// Representation identifier and type are the same as in single mapped representation.
 /// The number of mapped items in the representation corresponds with the count of
@@ -27378,9 +27394,9 @@ public:
 ///   R2 = SemiAxis2 
 ///   and the ellipse is parameterized as:  
 /// 
-/// The parameterization range is 0 
-///   u  2p (or 0
-///    u 
+/// The parameterization range is 0 £
+///   u £ 2p (or 0
+///   £ u £
 ///   360 degree). In the placement coordinate system defined above, the ellipse is
 ///   the equation C = 0, where 
 /// 
@@ -27388,13 +27404,13 @@ public:
 /// 
 /// The inherited Position.Location from IfcConic is the center of the IfcEllipse, and the inherited Position.P[1] from IfcConic the direction of the SemiAxis1.  
 /// 
-/// NOTE Corresponding ISO 10303 entity: ellipse. Please refer to ISO/IS 10303-42:1994, p. 39 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: ellipse. Please refer to ISO/IS 10303-42:1994, p. 39 for the final definition of the formal standard.
 /// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Figure 280 illustrates the definition of the IfcEllipse within the (in this case three-dimensional) position coordinate system. 
 /// 
-/// Figure 280 &#8212; Ellipse geometry
+/// Figure 280 — Ellipse geometry
 class IFC_PARSE_API IfcEllipse : public IfcConic {
 public:
     /// The first radius of the ellipse which shall be positive. Placement.Axes[1] gives the direction of the SemiAxis1.
@@ -27429,7 +27445,9 @@ public:
 /// A energy conversion type is used to define the common properties of a
 ///   energy conversion device that may be applied to many occurrences of that type. 
 /// An energy conversion device is a building systems device that converts energy from one form into another such 
+/// 
 /// as a boiler (i.e., combusting gas to heat water), chiller (i.e., using a refrigeration cycle to cool a 
+/// 
 /// liquid), or a cooling coil (i.e., using the phase-change characteristics of a refrigerant to cool air).
 ///   Energy conversion types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -27580,7 +27598,7 @@ public:
 /// 
 /// NOTE Corresponding ISO 10303-42 entity: faceted_brep. Please refer to ISO/IS 10303-42:1994, p. 173 for the final definition of the formal standard. In the current IFC Release faceted B-rep with voids is represented by an own subtype and not defined via an implicit ANDOR supertype constraint as in ISO/IS 10303-42:1994. This change has been made due to the fact, that only ONEOF supertype constraint is allowed within the IFC data schema.
 /// 
-/// HISTORY New entity in IFC Release 1.0
+/// HISTORY  New entity in IFC Release 1.0
 /// 
 /// Informal proposition:
 /// 
@@ -27591,7 +27609,7 @@ public:
 /// 
 /// Figure 257 illustrates use of IfcFacetedBrep for boundary representation models with planar surfaces only. The diagram shows the topological and geometric representation items that are used for faceted breps. Each IfcCartesianPoint, used within the IfcFacetedBrep shall be referenced three times by an IfcPolyLoop bounding a different IfcFace.
 /// 
-/// Figure 257 &#8212; Faceted B-rep
+/// Figure 257 — Faceted B-rep
 class IFC_PARSE_API IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
     virtual unsigned int getArgumentCount() const { return 1; }
@@ -27612,11 +27630,11 @@ public:
 /// which are defined so that the shell normal point into the
 /// void.
 /// 
-/// NOTE Corresponding ISO 10303-42 entity: brep_with_voids (see note above). Please refer to ISO/IS 10303-42:1994, p. 173 for the final definition of the formal standard. In IFC faceted B-rep with voids is represented by this subtype IfcFacetedBrepWithVoids and not defined via an implicit ANDOR supertype constraint as in ISO/IS 10303-42:1994 between an instance of faceted_brep AND brep_with_voids. This change has been made due to the fact, that only ONEOF supertype constraint is allowed within the IFC object model.
+/// NOTEÿ Corresponding ISO 10303-42 entity: brep_with_voids (see note above). Please refer to ISO/IS 10303-42:1994, p. 173 for the final definition of the formal standard. In IFC faceted B-rep with voids is represented by this subtype IfcFacetedBrepWithVoids and not defined via an implicit ANDOR supertype constraint as in ISO/IS 10303-42:1994 between an instance of faceted_brep AND brep_with_voids. This change has been made due to the fact, that only ONEOF supertype constraint is allowed within the IFC object model.
 /// 
-/// HISTORY New entity in IFC Release 1.0
+/// HISTORYÿ New entity in IFC Release 1.0
 /// 
-/// IFC2x4 CHANGE Subtyping changed from IfcManifoldSolidBrep to IfcFacetedBrep with upward compatibility for file based exchange.
+/// IFC2x4 CHANGEÿ Subtyping changed from IfcManifoldSolidBrep to IfcFacetedBrep with upward compatibility for file based exchange.
 /// 
 /// Informal propositions:
 /// 
@@ -27963,7 +27981,9 @@ public:
 /// A flow controller type is used to define the common properties of a
 ///   flow controller that may be applied to many occurrences of that type.
 /// A flow controller is a device that regulates flow within a distribution system, such as a valve in a piping 
+/// 
 /// system, modulating damper in an air distribution system, or electrical switch in an electrical distribution 
+/// 
 /// system. Flow controller types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
 /// 
@@ -27999,7 +28019,9 @@ public:
 /// A flow fitting type is used to define the common properties of a
 ///   flow fitting that may be applied to many occurrences of that type.
 /// A flow fitting is a device that is used to interconnect flow segments or other fittings within a distribution 
+/// 
 /// system, such as a tee in a ducted system that branches flow into two directions, a junction box in an 
+/// 
 /// electrical distribution system, etc. 
 ///   Flow fitting types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -28085,6 +28107,7 @@ public:
 /// A flow moving type is used to define the common properties of a
 ///   flow moving device that may be applied to many occurrences of that type.
 /// A flow moving device is a device that is used to produce a pressure differential in a distribution system, 
+/// 
 /// such as a pump, fan, compressor, etc. 
 ///   Flow moving types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -28121,6 +28144,7 @@ public:
 /// A flow segment type is used to define the common properties of a
 ///   flow segment that may be applied to many occurrences of that type.
 /// A flow segment is a section of a distribution system, such as a duct, pipe, conduit, etc. that typically has 
+/// 
 /// only two ports. 
 ///   Flow segment types (or the instantiable subtypes) may be exchanged 
 ///   without being already assigned to occurrences. 
@@ -28197,6 +28221,7 @@ public:
 /// The element type IfcFlowTreatmentDeviceType defines a list of commonly shared property set definitions of a flow treatment device and an optional set of product representations. It is used to define a flow treatment device specification (the specific product information that is common to all occurrences of that product type). 
 /// 
 /// A flow treatment device is a device used to change the physical properties of the medium, such as an air, oil 
+/// 
 /// or water filter (used to remove particulates from the fluid), or a duct silencer (used to attenuate noise).  Flow treatment types (or the instantiable subtypes) may be exchanged without being already assigned to occurrences. 
 /// 
 /// The occurrences of the IfcFlowTreatmentDeviceType are represented by instances of IfcFlowTreatmentDevice or its subtypes. 
@@ -28378,14 +28403,14 @@ public:
 /// curve).
 /// The inherited attributes Name and Description can
 /// be used to define a descriptive name of the grid and to indicate
-/// the grid's purpose.A grid is defined by (normally) two, or
+/// the grid's purpose. A grid is defined by (normally) two, or
 /// (in case of a triangular grid) three lists of grid axes. The
 /// following table shows some examples.
 /// A grid may support a rectangular layout (Figure 28), a radial layout (Figure 29), or a triangular layout (Figure 30).
 /// 
-/// Figure 28 &#8212; Grid rectangular layout
-/// Figure 29 &#8212; Grid radial layout
-/// Figure 30 &#8212; Grid triangular layout
+/// Figure 28 — Grid rectangular layout
+/// Figure 29 — Grid radial layout
+/// Figure 30 — Grid triangular layout
 /// 
 /// The grid axes, defined within the design grid, are those
 /// elements to which project objects will be placed relatively using
@@ -28404,7 +28429,7 @@ public:
 /// right side: the conflict can be resolved by splitting one grid
 /// axis in a way, such as no ambiguous intersections exist.
 /// 
-/// Figure 31 &#8212; Grid intersections
+/// Figure 31 — Grid intersections
 /// 
 /// Geometry Use Definitions
 /// The geometric representation of IfcGrid is given by the
@@ -28446,7 +28471,7 @@ public:
 /// IfcCurve, each representing a grid axis. Applicable subtypes
 /// of IfcCurve are: IfcPolyline, IfcCircle,
 /// IfcTrimmedCurve (based on BaseCurve referencing
-/// IfcLine or IfcCircle).
+/// IfcLine or IfcCircle). 
 /// Each subtype of IfcCurve may have a curve style
 /// assigned, using IfcAnnotationCurveOccurrence referencing
 /// IfcCurveStyle.
@@ -28455,13 +28480,13 @@ public:
 /// using IfcAnnotationTextOccurrence referencing
 /// IfcTextStyle.
 /// 
-/// As shown in Figure 32, the IfcGrid defines a placement coordinate system using the ObjectPlacement. The XY plane of the coordinate system is used to place the 2D grid axes. The Representation of IfcGrid is defined using IfcProductRepresentation, referencing an IfcShapeRepresentation, that includesIfcGeometricCurveSet as Items. All grid axes are added as IfcPolyline to the IfcGeometricCurveSet.
+/// As shown in Figure 32, the IfcGrid defines a placement coordinate system using the ObjectPlacement. The XY plane of the coordinate system is used to place the 2D grid axes. The Representation of IfcGrid is defined using IfcProductRepresentation, referencing an IfcShapeRepresentation, that includes IfcGeometricCurveSet as Items. All grid axes are added as IfcPolyline to the IfcGeometricCurveSet.
 /// 
-/// Figure 32 &#8212; Grid layout
+/// Figure 32 — Grid layout
 /// 
-/// As shown in Figure 33, the attributes UAxes and VAxes define lists of IfcGridAxis within the context of thegrid. Each instance of IfcGridAxis refers to the same instance of IfcCurve (here the subtype IfcPolyline) that is contained within the IfcGeometricCurveSet that represents the IfcGrid.
+/// As shown in Figure 33, the attributes UAxes and VAxes define lists of IfcGridAxis within the context of the grid. Each instance of IfcGridAxis refers to the same instance of IfcCurve (here the subtype IfcPolyline) that is contained within the IfcGeometricCurveSet that represents the IfcGrid.
 /// 
-/// Figure 33 &#8212; Grid representation
+/// Figure 33 — Grid representation
 class IFC_PARSE_API IfcGrid : public IfcProduct {
 public:
     /// List of grid axes defining the first row of grid lines.
@@ -28494,7 +28519,7 @@ public:
 /// 
 /// EXAMPLE An example for a group is a system, since it groups elements under the aspect of their role, regardless of their position in a building.
 /// 
-/// A group can hold any collection of objects (beingproducts, processes, controls, resources, actors or other groups). Thus groups can be nested. An object can be part of zero, one, or many groups. Grouping relationships are not required to be hierarchical nor do they imply a dependency.
+/// A group can hold any collection of objects (beingÿproducts, processes, controls, resources, actors or other groups). Thus groups can be nested. An object can be part of zero, one, or many groups. Grouping relationships are not required to be hierarchical nor do they imply a dependency.
 /// 
 /// NOTE Use IfcRelDecomposes together with the appropriate subtypes of IfcProduct to define an hierarchical aggregation of products.
 /// 
@@ -28737,7 +28762,7 @@ public:
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResource, a labor resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcLaborResource and RelatedObjects contains one or more IfcActor subtypes as shown in Figure 194.  Such relationship indicates the specific people used as input for the resource.  Such actors are nested according to organizational structure with the root organization assigned to the IfcProject.  The IfcActor entity is used to represent the people or organizations.
 /// 
-/// Figure 194 &#8212; Labor resource assignment use
+/// Figure 194 — Labor resource assignment use
 class IFC_PARSE_API IfcLaborResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute SkillSet is defined for this IfcLaborResource
@@ -29332,7 +29357,7 @@ public:
 /// Figure 34 illustrates an opening with horizontal extrusion.
 /// NOTE  The local placement directions for the IfcOpeningElement are only given as an example, other directions are valid as well.
 /// 
-/// Figure 34 &#8212; Opening with full extrusion
+/// Figure 34 — Opening with full extrusion
 /// 
 /// Figure 35 illustrates an opening for a recess.
 /// NOTE  The local placement directions for the IfcOpeningElement are only given as an example, other directions are valid as well.
@@ -29341,7 +29366,7 @@ public:
 /// 
 /// IfcCartesianPoint(XDim/2,YDim/2)
 /// 
-/// Figure 35 &#8212; Opening with recess extrusion
+/// Figure 35 — Opening with recess extrusion
 /// 
 /// Swept Solid Representation with Vertical Extrusion
 /// The 'SweptSolid' geometric representation of
@@ -29367,7 +29392,7 @@ public:
 /// IfcArbitraryClosedProfileDef shall be supported.
 /// Extrusion: The profile shall be extruded vertically,
 /// i.e. for wall openings along the extrusion direction of the
-/// voided element. If multiple instances of
+/// voided element.ÿ If multiple instances of
 /// IfcExtrudedAreaSolid are used, the extrusion direction
 /// should be equal.
 /// 
@@ -29377,7 +29402,7 @@ public:
 /// Figure 36 shows a vertical extrusion with multiple extrusion bodies for the opening. Each extrusion body has a different extrusion lenght.
 /// NOTE  The local placement directions for the IfcOpeningElement are only given as an example, other directions are valid as well.
 /// 
-/// Figure 36 &#8212; Opening with multiple extrusions
+/// Figure 36 — Opening with multiple extrusions
 class IFC_PARSE_API IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
@@ -29501,7 +29526,7 @@ public:
 /// 
 /// (All Types): May contain IfcPermit sub-items.  A permit may be nested to indicate permit ammendments, in order of issue. 
 /// 
-/// Figure 159 &#8212; Permit composition
+/// Figure 159 — Permit composition
 /// 
 /// Assignment Use Definition 
 /// As shown in Figure 160, an IfcPermit may be assigned to the following entities using relationships as indicated: 
@@ -29511,7 +29536,7 @@ public:
 /// The IfcPermit may have assignments of its own using the IfcRelAssignsToControl relationship where RelatingControl refers to the IfcPermit and RelatedObjects contains one or more objects of the following types:  
 /// IfcActor: Organization(s) bound to the permit, typically a single contractor.
 /// 
-/// Figure 160 &#8212; Permit assignment
+/// Figure 160 — Permit assignment
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcPermit.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
@@ -29655,7 +29680,7 @@ public:
 /// IfcMaterialLayerSet; otherwise they are represented by
 /// instances of IfcPlate.
 /// 
-/// HISTORY New
+/// HISTORY  New
 /// entity in Release IFC2x2.
 /// 
 /// Informal proposition:
@@ -29726,15 +29751,15 @@ public:
 ///   list of n points, P1, P2 ... Pn. 
 ///   The ith segment of the curve is parameterized as follows:
 /// 
+///    
+///   for 1 ≤ i ≤ n - 1
 /// 
-///   for 1 &#8804; i &#8804; n - 1
+/// where i - 1 ≤ u ≤ i and
+///   with parametric range of 0 <≤ u ≤ n - 1.
 /// 
-/// where i - 1 &#8804; u &#8804; i and
-///   with parametric range of 0 <&#8804; u &#8804; n - 1.
+/// NOTE  Corresponding ISO 10303 entity: polyline. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
-/// NOTE Corresponding ISO 10303 entity: polyline. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
-/// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 class IFC_PARSE_API IfcPolyline : public IfcBoundedCurve {
 public:
     /// The points defining the polyline.
@@ -29826,9 +29851,9 @@ public:
 ///   logical set of actions to be taken in response to an event
 ///   or to cause an event to occur.
 /// 
-/// HISTORY New entity in IFC2x2
+/// HISTORY  New entity in IFC2x2
 /// 
-/// IFC2x4 CHANGE ProcedureType renamed to PredefinedType and made optional (upward compatible).  Where rules WR1 and WR2 have been removed.
+/// IFC2x4 CHANGE  ProcedureType renamed to PredefinedType and made optional (upward compatible).  Where rules WR1 and WR2 have been removed.
 /// 
 /// Use definitions
 /// 
@@ -29925,7 +29950,7 @@ public:
 ///   be assembled". Consequently, it doesn't restrict the outer
 ///   item as a whole but provides inner detail of the item.
 /// 
-/// Figure 12 &#8212; Procedure relationships
+/// Figure 12 — Procedure relationships
 class IFC_PARSE_API IfcProcedure : public IfcProcess {
 public:
     std::string ProcedureID() const;
@@ -29977,7 +30002,7 @@ public:
 /// 
 /// WORKORDER: May contain IfcProjectOrder sub-items having PredefinedType CHANGEORDER.  A work order may be nested into change orders to indicate contract ammendment, in order of issue. 
 /// 
-/// Figure 161 &#8212; Project order composition
+/// Figure 161 — Project order composition
 /// 
 /// Assignment Use Definition 
 /// As shown in Figure 161, an IfcProjectOrder may be assigned to the following entities using relationships as indicated: 
@@ -29987,7 +30012,7 @@ public:
 /// The IfcProjectOrder may have assignments of its own using the IfcRelAssignsToControl relationship where RelatingControl refers to the IfcProjectOrder and RelatedObjects contains one or more objects of the following types:  
 /// IfcActor: Organization(s) contracted to fulfill the order, typically a single contractor, subcontractor, or supplier.
 /// 
-/// Figure 162 &#8212; Project order assignment
+/// Figure 162 — Project order assignment
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcProjectOrder.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
@@ -30135,11 +30160,11 @@ public:
 /// IfcExtrudedAreaSolid.Depth is interpreted as projection
 /// depth
 /// 
-/// NOTE Rectangles are now defined centric, the placement location has to be set:
+/// NOTE  Rectangles are now defined centric, the placement location has to be set:
 /// IfcCartesianPoint(XDim/2,YDim/2)
-/// NOTE The local placement directions for the IfcProjectionElement are only given as an example, other directions are valid as well.
+/// NOTE  The local placement directions for the IfcProjectionElement are only given as an example, other directions are valid as well.
 /// 
-/// Figure 38 &#8212; Projection representation
+/// Figure 38 — Projection representation
 /// 
 /// Brep Representation
 /// The general b-rep geometric representation of
@@ -30604,7 +30629,7 @@ public:
 /// ELEMENT = site
 /// PARTIAL = site section
 /// 
-/// HISTORY New entity in IFC Release 1.0.
+/// HISTORY  New entity in IFC Release 1.0.
 /// 
 /// Property Set Use Definition
 /// The property sets relating to the IfcSite are defined by
@@ -30669,7 +30694,7 @@ public:
 /// Figure 51 shows the IfcSite as part of the spatial structure. In addition to the logical spatial structure, also the placement hierarchy is shown. In this example the spatial structure hierarchy and the placement hierarchy are identical.
 /// NOTE Detailed requirements on mandatory element containment and placement structure relationships are given in view definitions and implementer agreements.
 /// 
-/// Figure 51 &#8212; Site composition
+/// Figure 51 — Site composition
 /// 
 /// Attribute Use Definition
 /// Figure 52 describes the heights and elevations of the IfcSite. It is used to provide the geographic longitude, latitude, and height above sea level for the origin of the site. The origin of the site is the local placement.
@@ -30680,8 +30705,8 @@ public:
 /// the reference height of each building situated at the site is given againt the same height datum used at this location.
 /// the elevations of each storey belonging to each building are given as local height relative to the reference height of the building.
 /// 
-/// 
-/// Figure 52 &#8212; Site elevations
+///  
+/// Figure 52 — Site elevations
 /// 
 /// Geometry Use Definitions
 /// The geometric representation of IfcSite is given by the
@@ -30732,16 +30757,16 @@ public:
 /// Figure 53 shows a set of survey points, given as 3D Cartesian points within the object coordinate system of the site.  Figure 54 shows the result after facetation.
 /// The set of IfcCartesianPoint is included in the set of IfcGeometricCurveSet.Elements.
 /// 
-/// Figure 53 &#8212; Site survey points
-/// Figure 54 &#8212; Site survey points facetation
+/// Figure 53 — Site survey points
+/// Figure 54 — Site survey points facetation
 /// 
 /// Figure 55 shows A set of survey points, given as 3D Cartesian points, and a set of break points, given as a set of lines, connecting some survey points, within the object coordinate system of the site.  Figure 56 shows the result after facetation.
 /// The set of IfcCartesianPoint and the set of IfcPolyline are included in the set of IfcGeometricCurveSet.Elements.
 /// 
-/// Figure 55 &#8212; Site breaklines
-/// Figure 56 &#8212; Site breaklines facetation
+/// Figure 55 — Site breaklines
+/// Figure 56 — Site breaklines facetation
 /// 
-/// NOTE The geometric representation of the site has been based on the ARM level description of the site_shape_representation given within the ISO 10303-225 "Building Elements using explicit shape representation".
+/// NOTE  The geometric representation of the site has been based on the ARM level description of the site_shape_representation given within the ISO 10303-225 "Building Elements using explicit shape representation".
 /// 
 /// Body Representation
 /// The body representation of IfcSite is defined using a
@@ -30826,7 +30851,7 @@ public:
 /// IfcMaterialLayerSet; otherwise they are represented by
 /// instances of IfcSlab, or IfcSlabElementedCase.
 /// 
-/// HISTORY New
+/// HISTORY  New
 /// entity in Release IFC2x2.
 /// 
 /// Informal proposition:
@@ -30956,7 +30981,7 @@ public:
 /// set for all types of spaces to capture the thermal
 /// requirements
 /// Pset_SpaceThermalDesign: common property set
-/// for allall types of spaces to capture building service design
+/// for all all types of spaces to capture building service design
 /// values
 /// 
 /// Quantity Use Definition
@@ -30985,7 +31010,7 @@ public:
 /// IfcSpace.Decomposes -- referencing (IfcSite ||
 /// IfcBuildingStorey || IfcSpace) by
 /// IfcRelAggregates.RelatingObject, If it refers to another
-/// instance ofIfcSpace, the referenced IfcSpace
+/// instance of IfcSpace, the referenced IfcSpace
 /// needs to have a different and higher CompositionType, i.e.
 /// COMPLEX (if the other IfcSpace has ELEMENT), or ELEMENT (if
 /// the other IfcSpace has PARTIAL).
@@ -30997,7 +31022,7 @@ public:
 /// other IfcSpace has ELEMENT).
 /// 
 /// If there are building elements and/or other elements directly
-/// related to the IfcSpace(like most furniture and
+/// related to the IfcSpace (like most furniture and
 /// distribution elements), they are associated with the
 /// IfcSpace by using the objectified relationship
 /// IfcRelContainedInSpatialStructure. The IfcSpace
@@ -31011,7 +31036,7 @@ public:
 /// Figure 57 shows the IfcSpace as part of the spatial structure. It also serves as the spatial container for space related elements.
 /// NOTE Detailed requirements on mandatory element containment and placement structure relationships are given in view definitions and implementer agreements.
 /// 
-/// Figure 57 &#8212; Space composition
+/// Figure 57 — Space composition
 /// 
 /// Attribute Use Definition
 /// 
@@ -31023,7 +31048,7 @@ public:
 /// floor height of space (top of slab below to top of flooring): provided by BaseQuantity with Name="FinishFloorHeight"
 /// net height of space (top of flooring to bottom of suspended ceiling): provided by BaseQuantity with Name="FinishCeilingHeight"
 /// 
-/// Figure 58 &#8212; Space elevations
+/// Figure 58 — Space elevations
 /// 
 /// Geometry Use Definition
 /// The geometric representation of IfcSpace is given by the
@@ -31076,7 +31101,7 @@ public:
 /// Figure 59 shows a two-dimensional bounded curve representing the
 /// foot print of IfcSpace.
 /// 
-/// Figure 59 &#8212; Space footprint
+/// Figure 59 — Space footprint
 /// 
 /// 'Swept Solid' Representation
 /// The standard geometric representation of IfcSpace is
@@ -31101,7 +31126,7 @@ public:
 /// 
 /// Figure 60 shows an extrusion of an arbitrary profile definition with voids into the swept area solid of IfcSpace.
 /// 
-/// Figure 60 &#8212; Space body swept solid
+/// Figure 60 — Space body swept solid
 /// 
 /// 'Clipping' representation
 /// The advanced geometric representation of IfcSpace is
@@ -31126,11 +31151,11 @@ public:
 /// 
 /// Figure 61 shows an extrusion of an arbitrary profile definition into the swept area solid. The solid and an half space solid are operands of the Boolean result of IfcSpace.
 /// 
-/// Figure 61 &#8212; Space body clipping
+/// Figure 61 — Space body clipping
 /// 
 /// 'Brep' representation
 /// The fallback advanced geometric representation of
-/// IfcSpace is defined using the Brep solid geometry.may
+/// IfcSpace is defined using the Brep solid geometry. may
 /// be represented as a single or multiple instances of
 /// IfcFacetedBrep or IfcFacetedBrepWithVoids. The Brep
 /// representation allows for the representation of complex element
@@ -31259,7 +31284,7 @@ public:
 /// space information, that is common to all occurrences of that
 /// space type. Space types may be exchanged without being already
 /// assigned to occurrences.
-/// NOTE The space types are often used to
+/// NOTE ÿThe space types are often used to
 /// represent space catalogues, less so for sharing a common
 /// representation map. Space types in a space catalogue share same
 /// space classification and a common set of space requirement
@@ -31267,7 +31292,7 @@ public:
 /// The occurrences of IfcSpaceType are represented by
 /// instances of IfcSpace.
 /// 
-/// HISTORY New entity in
+/// HISTORY ÿNew entity in
 /// IFC2x3.
 /// 
 /// Property Set Use Definition:
@@ -31304,7 +31329,7 @@ public:
 /// property set for all types of spaces to capture the thermal
 /// requirements
 /// Pset_SpaceThermalDesign: common property set
-/// for allall types of spaces to capture building service design
+/// for allÿall types of spaces to capture building service design
 /// values
 /// 
 /// Geometry Use Definition:
@@ -31315,7 +31340,7 @@ public:
 /// representations (e.g. with IfcShaperepresentation's having
 /// an RepresentationIdentifier 'Box', 'FootPrint', or 'Body').
 /// 
-/// NOTE The product representations are defined as
+/// NOTE ÿThe product representations are defined as
 /// representation maps (at the level of the supertype
 /// IfcTypeProduct, which gets assigned by an element
 /// occurrence instance through the
@@ -31426,7 +31451,7 @@ public:
 /// Definition from IAI: A structural action is a structural activity that acts upon
 /// a structural item or building element.
 /// 
-/// HISTORY New entity in IFC 2x2.
+/// HISTORY  New entity in IFC 2x2.
 /// IFC 2x4 change:  Attribute DestabilizingLoad made optional.  Attribute CausedBy deleted; use IfcRelAssignsToProduct via ReferencedBy instead.
 /// 
 /// Structural actions are grouped into either an IfcStructuralLoadGroup of predefined
@@ -31537,7 +31562,7 @@ public:
 /// 
 /// An IfcProfileDef is a two-dimensional geometric object with a xp,yp coordinate system.  The profile is inserted into the curve member model thus that the origin of xp,yp is located at the member's reference curve and that xp,yp are parallel with and directed like the local y,z.
 /// 
-/// NOTE  Due to convention in structural mechanics, axis names of IfcStructuralCurveMember differ from axis names of building elements like IfcBeamStandardCase:  The extrusion axis of IfcStructuralCurveMember is called x while the extrusion axis of IfcBeamStandardCase is called z.  Hence x,y,z of IfcStructuralCurveMember correspond with z,x,y of IfcBeamStandardCase.
+/// NOTE   Due to convention in structural mechanics, axis names of IfcStructuralCurveMember differ from axis names of building elements like IfcBeamStandardCase:  The extrusion axis of IfcStructuralCurveMember is called x while the extrusion axis of IfcBeamStandardCase is called z.  Hence x,y,z of IfcStructuralCurveMember correspond with z,x,y of IfcBeamStandardCase.
 /// 
 /// If the profile is meant to be inserted centrically in terms of structural section properties, it is necessary that the origin of xp,yp is identical with the geometric centroid of the profile (commonly also called centre of gravity).  If subtypes of IfcParameterizedProfileDef are used which are only singly symmetric or are asymmetric, an explicit translation by IfcParameterizedProfileDef.Position.Location is required then.
 /// 
@@ -31545,7 +31570,7 @@ public:
 /// 
 /// Otherwise, the profile is inserted eccentrically and a different cardinal point should be set accordingly.
 /// 
-/// NOTE  Another eccentricity model is available independently of eccentric profile specification:  The reference curve of the member may be located eccentrically relative to the reference points of the connected IfcStructuralPointConnections.  The connection relationship is then established by IfcRelConnectsWithEccentricity.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
+/// NOTE   Another eccentricity model is available independently of eccentric profile specification:  The reference curve of the member may be located eccentrically relative to the reference points of the connected IfcStructuralPointConnections.  The connection relationship is then established by IfcRelConnectsWithEccentricity.  Whether one or the other or both eccentricity models may be used is subject to information requirements and local agreements.
 /// 
 /// Topology Use Definitions:
 /// 
@@ -31573,9 +31598,9 @@ public:
 };
 /// Definition from IAI: Describes edge members with varying profile properties.  Each instance of IfcStructuralCurveMemberVarying is composed of two or more instances of IfcStructuralCurveMember with differing profile properties.  These subordinate members relate to the instance of IfcStructuralCurveMemberVarying by IfcRelAggregates.
 /// 
-/// NOTE  A curve member whose variation of profile properties can be sufficiently described by a start profile and an end profile (e.g. tapers) shall be modeled as a single direct instance of the supertype IfcStructuralCurveMember.
+/// NOTE   A curve member whose variation of profile properties can be sufficiently described by a start profile and an end profile (e.g. tapers) shall be modeled as a single direct instance of the supertype IfcStructuralCurveMember.
 /// 
-/// NOTE  It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralCurveMemberVarying but only with the IfcStructuralCurveMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
+/// NOTE   It is recommended that structural activities (actions or reactions) are not connected with aggregated IfcStructuralCurveMemberVarying but only with the IfcStructuralCurveMembers in the aggregation.  That way, difficulties in interpretation of local coordinates are avoided.
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// Use definition changed in IFC 2x4.
@@ -31611,7 +31636,7 @@ public:
 /// 
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralCurveAction inserted.  Derived attribute PredefinedType added.
 /// 
-/// NOTE Like its supertype IfcStructuralCurveAction, this action type may also act on curved edges.
+/// NOTE  Like its supertype IfcStructuralCurveAction, this action type may also act on curved edges.
 class IFC_PARSE_API IfcStructuralLinearAction : public IfcStructuralAction {
 public:
     IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum ProjectedOrTrue() const;
@@ -31661,7 +31686,7 @@ public:
 /// used to group load cases into load combinations.  The factor provided in this assignment relationship
 /// is to applied together with the optional IfcStructuralLoadGroup.Coefficient.  Unlike this
 /// coefficient which always affects the load group, the IfcRelAssignsToGroupByFactor.Factor is
-/// specific for a load case&#8212;load combination pair.  As many instances of
+/// specific for a load case—load combination pair.  As many instances of
 /// IfcRelAssignsToGroupByFactor are used within one load combination as there are different
 /// Factors to be applied to load cases in the load combination.
 /// 
@@ -31721,7 +31746,7 @@ public:
 /// 
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralSurfaceAction inserted.  Derived attribute PredefinedType added.
 /// 
-/// NOTE Like its supertype IfcStructuralSurfaceAction, this action type may also act on curved faces.
+/// NOTE  Like its supertype IfcStructuralSurfaceAction, this action type may also act on curved faces.
 class IFC_PARSE_API IfcStructuralPlanarAction : public IfcStructuralAction {
 public:
     IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum ProjectedOrTrue() const;
@@ -31979,7 +32004,7 @@ public:
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResource, a subcontract resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcSubContractResource and RelatedObjects contains one or more IfcActor, IfcCostSchedule, and/or IfcWorkOrder objects as shown in Figure 195.  An IfcActor indicates a specific organization to be considered to fulfill the resource or invited to bid on the resource.  An IfcCostSchedule indicates a bid or price quote made on behalf of an organization.  An IfcProjectOrder indicates a specific work order committed to fulfill the resource.
 /// 
-/// Figure 195 &#8212; Subcontract assignment use
+/// Figure 195 — Subcontract assignment use
 class IFC_PARSE_API IfcSubContractResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute SubContractor is defined for this IfcSubContractResource
@@ -32233,13 +32258,13 @@ public:
 /// device types (or styles) is handled by
 /// IfcTransportElementType. The
 /// IfcTransportElementType (if present) may establish the
-/// commontype name, usage (or predefined) type, common material
+/// commonÿtype name, usage (or predefined) type, common material
 /// layer set, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcTransportElementType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcTransportElementType is attached(i.e. if only
+/// If no IfcTransportElementType is attachedÿ(i.e. if only
 /// occurrence information is given) the PredefinedType should
 /// be provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -32268,7 +32293,7 @@ public:
 /// spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuilding being the default
 /// container.
 /// 
@@ -32614,7 +32639,7 @@ public:
 /// Space Boundary Use Definition
 /// The IfcVirtualElement is mainly used to define a virtual boundary between two spaces. Figure 63 describes how to use IfcRelSpaceBoundary in conjunction with IfcVirtualElement to define space boundaries.
 /// 
-/// Figure 63 &#8212; Virtual element space boundaries
+/// Figure 63 — Virtual element space boundaries
 /// 
 /// Geometry Use Definition
 /// The geometric representation of any IfcVirtualElement
@@ -32860,9 +32885,9 @@ public:
 };
 /// An IfcWorkControl is an abstract supertype which captures information that is common to both IfcWorkPlan and IfcWorkSchedule.
 /// 
-/// HISTORY New class in IFC 2x
+/// HISTORY  New class in IFC 2x
 /// 
-/// CHANGE IFC2x4 Corrected assignment of resources to work control in documentation. Assignment of tasks to work control updated based on changes of task time definitions and the introduction of a summary task. Identifier has been renamed (now Identification) and promoted to supertype IfcControl
+/// CHANGE IFC2x4  Corrected assignment of resources to work control in documentation. Assignment of tasks to work control updated based on changes of task time definitions and the introduction of a summary task. Identifier has been renamed (now Identification) and promoted to supertype IfcControl
 /// 
 /// A work control may have resources assigned to it, this is
 ///   handled by the IfcRelAssignsToControl relationship.
@@ -32981,7 +33006,7 @@ public:
 ///   to contained work schedules, assigned tasks and resources
 ///   through IfcRelAssignsToControl.
 /// 
-/// Figure 18 &#8212; Work plan relationships
+/// Figure 18 — Work plan relationships
 class IFC_PARSE_API IfcWorkPlan : public IfcWorkControl {
 public:
     virtual unsigned int getArgumentCount() const { return 15; }
@@ -33035,7 +33060,7 @@ public:
 ///   note that a work calendar shall be assigned to the summary
 ///   task and not the work schedule.
 /// 
-/// Figure 19 &#8212; Work schedule relationships
+/// Figure 19 — Work schedule relationships
 class IFC_PARSE_API IfcWorkSchedule : public IfcWorkControl {
 public:
     virtual unsigned int getArgumentCount() const { return 15; }
@@ -33050,7 +33075,7 @@ public:
     IfcWorkSchedule (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, IfcDateTimeSelect* v7_CreationDate, boost::optional< IfcTemplatedEntityList< IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, IfcDateTimeSelect* v12_StartTime, IfcDateTimeSelect* v13_FinishTime, boost::optional< IfcWorkControlTypeEnum::IfcWorkControlTypeEnum > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
     typedef IfcTemplatedEntityList< IfcWorkSchedule > list;
 };
-/// Definition from IAI: A zone isa group of spaces,
+/// Definition from IAI: A zone isÿa group of spaces,
 /// partial spaces or other zones. Zone structures may not be
 /// hierarchical (in contrary to the spatial structure of a project -
 /// see IfcSpatialStructureElement), i.e. one individual
@@ -33059,9 +33084,9 @@ public:
 /// IfcZone by using the objectified relationship
 /// IfcRelAssignsToGroup as specified at the supertype
 /// IfcGroup.
-/// NOTE Certain use cases may restrict the
+/// NOTE ÿCertain use cases may restrict the
 /// freedom of non hierarchical relationships. In some building
-/// service use cases the zone denotes aview based delimited volume
+/// service use cases the zone denotes aÿview based delimited volume
 /// for the purpose of analysis and calculation. This type of zone
 /// cannot overlap with respect to that analysis, but may overlap
 /// otherwise.
@@ -33072,12 +33097,12 @@ public:
 /// and placement. Therefore it cannot be used for spatial zones
 /// having a different shape and size compared to the shape and size
 /// of aggregated spaces.
-/// NOTE The IfcZone is regarded as the
+/// NOTEÿ The IfcZone is regarded as the
 /// spatial system (as compared to the building service, electrical,
 /// or analytical system), the name remains IfcZone for
 /// compatibility reasons, instead of using a proper naming
 /// convention, like IfcSpatialSystem.
-/// NOTE One of the purposes of a zone is to
+/// NOTE ÿOne of the purposes of a zone is to
 /// define a fire compartmentation. In this case it defines the
 /// geometric information about the fire compartment (through the
 /// contained spaces) and information, whether this compartment is
@@ -33088,7 +33113,7 @@ public:
 /// independent shape has to be provided to the fire compartment,
 /// then the entity IfcSpatialZone shall be
 /// used.
-/// RECOMMENDATION In case of a zone denoting a
+/// RECOMMENDATIONÿ In case of a zone denoting a
 /// (fire) compartment, the following types should be used, if
 /// applicable, as values of the ObjectType attribute:
 /// 
@@ -33107,9 +33132,9 @@ public:
 /// refers to, e.g. to a particular IfcBuildingStorey by using
 /// the IfcRelServicesBuildings relationship, accessible via
 /// the inverse attribute ServicesBuilding.
-/// HISTORY New entity in
+/// HISTORYÿ New entity in
 /// IFC Release 1.0
-/// IFC2x4 CHANGE The entity is now
+/// IFC2x4 CHANGEÿ The entity is now
 /// subtyped from IfcSystem (not its supertype
 /// IfcGroup) with upward compatibility for file based
 /// exchange.
@@ -33188,7 +33213,7 @@ public:
 /// 
 /// (All Types): May contain IfcActionRequest sub-items.  A request may be nested into follow-up requests, in order of issue. 
 /// 
-/// Figure 155 &#8212; Action request composition
+/// Figure 155 — Action request composition
 /// 
 /// Assignment Use Definition 
 /// As shown in Figure 156, an IfcActionRequest may be assigned to the following entities using relationships as indicated: 
@@ -33198,7 +33223,7 @@ public:
 /// The IfcActionRequest may have assignments of its own using the IfcRelAssignsToControl relationship where RelatingControl refers to the IfcActionRequest and RelatedObjects contains one or more objects of the following types:  
 /// IfcActor: Person or organization(s) fulfilling the request such as a facilities manager or contractor.
 /// 
-/// Figure 156 &#8212; Action request assignment
+/// Figure 156 — Action request assignment
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcActionRequest.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
@@ -33473,11 +33498,11 @@ public:
 /// 
 /// Figure 277 (from ISO 10303-42) illustrates a B-spline curve.
 /// 
-/// Figure 277 &#8212; B-spline curve
+/// Figure 277 — B-spline curve
 /// 
-/// NOTE Corresponding ISO 10303 entity: b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
-/// HISTORY New entity in Release IFC2x2.
+/// HISTORY  New entity in Release IFC2x2.
 class IFC_PARSE_API IfcBSplineCurve : public IfcBoundedCurve {
 public:
     /// The algebraic degree of the basis functions.
@@ -33933,7 +33958,7 @@ public:
 /// IfcShapeRepresentation that includes a single item, an
 /// IfcBoundingBox.
 /// 
-/// Figure 22 &#8212; Building element box representation
+/// Figure 22 — Building element box representation
 /// 
 /// Axis Representation
 /// Some IfcBuildingElement may be represented by an axis
@@ -33991,7 +34016,7 @@ public:
 /// IfcShellBasedSurfaceModel, or
 /// IfcFaceBasedSurfaceModel.
 /// 
-/// Figure 23 &#8212; Building element surface model representation
+/// Figure 23 — Building element surface model representation
 /// 
 /// Brep Representation Type
 /// Any IfcBuildingElement (so far no further constraints
@@ -34011,7 +34036,7 @@ public:
 /// complex shape.
 /// As shown in Figure 24, the Brep representation is given by an IfcShapeRepresentation, which includes one or more items, all of type IfcFacetedBrep.
 /// 
-/// Figure 24 &#8212; Building element body boundary representation
+/// Figure 24 — Building element body boundary representation
 /// 
 /// AdvancedBrep Representation Type
 /// An IfcBuildingElement (so far no further constraints
@@ -34129,9 +34154,9 @@ public:
 /// applications can not provide additional semantic
 /// classification.
 /// 
-/// HISTORY New entity
+/// HISTORY  New entity
 /// in IFC Release 2x.
-/// IFC2x4 CHANGE The attribute
+/// IFC2x4 CHANGE  The attribute
 /// CompositionType has been replaced by PredefinedType,
 /// being a superset of the enumerators.
 /// Type Use Definition
@@ -34165,7 +34190,7 @@ public:
 /// PredefinedType = ProvisionForVoid.
 /// Material information can also be given at the
 /// IfcBuildingElementProxyType, defining the common attribute
-/// data for all occurrences of the same type.It is then
+/// data for all occurrences of the same type. It is then
 /// accessible by the inverse IsTypedBy relationship pointing to
 /// IfcBuildingElementProxyType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial to
@@ -34188,7 +34213,7 @@ public:
 /// 
 /// Property sets can also be given at the
 /// IfcBuildingElementProxyType, defining the common property
-/// data for all occurrences of the same type.It is then
+/// data for all occurrences of the same type. It is then
 /// accessible by the inverse IsTypedBy relationship pointing to
 /// IfcBuildingElementProxyType.HasPropertySets. If both are
 /// given, then the properties directly assigned to
@@ -34200,13 +34225,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the aggregation
-/// within anelement assembly.
+/// within an element assembly.
 /// 
 /// The IfcBuildingElementProxy is places within the project
 /// spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid
+/// Subtypes of IfcSpatialStructureElement are valid
 /// spatial containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcBuildingElementProxy may be aggregated into an
@@ -34216,7 +34241,7 @@ public:
 /// IfcElement can be an element assembly, with
 /// IfcElementAssembly as a special focus subtype. In this case
 /// it should not be additionally contained in the project spatial
-/// hierarchy, i.e.SELF\IfcElement.ContainedInStructure
+/// hierarchy, i.e. SELF\IfcElement.ContainedInStructure
 /// should be NIL.
 /// 
 /// Geometry Use Definition
@@ -34315,14 +34340,14 @@ public:
     typedef IfcTemplatedEntityList< IfcBuildingElementProxy > list;
 };
 /// Definition from IAI:
-///   TheIfcBuildingElementProxyType defines a list of
+///   TheÿIfcBuildingElementProxyType defines a list of
 ///   commonly shared property set definitions of a building
 ///   element proxy and an optional set of product
 ///   representations. It is used to define an element
 ///   specification (i.e. the specific product information, that
 ///   is common to all occurrences of that product type).
 /// 
-/// NOTE The product representations are defined as
+/// NOTEÿ The product representations are defined as
 ///   representation maps (at the level of the supertype
 ///   IfcTypeProduct, which gets assigned by an element
 ///   occurrence instance through the
@@ -34331,8 +34356,8 @@ public:
 /// 
 /// A building element proxy type is used to define the common
 ///   properties of a certain type of a building element proxy
-///   that may be applied to many instances of thattype to
-///   assign a specific style. Building element proxy typesmay
+///   that may be applied to many instances of thatÿtype to
+///   assign a specific style. Building element proxy typesÿmay
 ///   be exchanged without being already assigned to occurrences.
 /// 
 /// NOTE  Although an building element proxy does not have
@@ -34346,7 +34371,7 @@ public:
 ///   are represented by instances of
 ///   IfcBuildingElementProxy.
 /// 
-/// HISTORY New entity in
+/// HISTORYÿ New entity in
 ///   Release IFC2x Edition 3.
 class IFC_PARSE_API IfcBuildingElementProxyType : public IfcBuildingElementType {
 public:
@@ -34574,23 +34599,23 @@ public:
 /// 
 /// and the circle is parameterized as  
 /// 
-/// The parameterization range is 0 
-///   u 2p (or 0
-///   u 
+/// The parameterization range is 0 £
+///   u £2p (or 0
+///   £u £
 ///   360 degree). In the placement coordinate system defined above, the circle is
 ///   the equation C = 0, where 
 /// 
 /// The positive sense of the circle at any point is in the tangent direction, T, to the curve at the point, where 
 /// 
-/// NOTE A circular arc is defined by using the trimmed curve (IfcTrimmedCurve) entity in conjunction with the circle (IfcCircle) entity as the BasisCurve.
+/// NOTE  A circular arc is defined by using the trimmed curve (IfcTrimmedCurve) entity in conjunction with the circle (IfcCircle) entity as the BasisCurve.
 /// 
-/// NOTE Corresponding ISO 10303 entity: circle, please refer to ISO/IS 10303-42:1994, p. 38 for the final definition of the formal standard.
+/// NOTE  Corresponding ISO 10303 entity: circle, please refer to ISO/IS 10303-42:1994, p. 38 for the final definition of the formal standard.
 /// 
-/// HISTORY New class in IFC Release 1.0
+/// HISTORY  New class in IFC Release 1.0
 /// 
 /// Figure 278 illustrates the definition of the IfcCircle within the (in this case three-dimensional) position coordinate system. 
 /// 
-/// Figure 278 &#8212; Circle geometry
+/// Figure 278 — Circle geometry
 class IFC_PARSE_API IfcCircle : public IfcConic {
 public:
     /// The radius of the circle, which shall be greater than zero.
@@ -34667,7 +34692,7 @@ public:
 /// IfcStructuralCurveMember being part of an
 /// IfcStructuralAnalysisModel.
 /// 
-/// NOTE For any longitudial structural member, not
+/// NOTE ÿFor any longitudial structural member, not
 /// constrained to be predominately horizontal nor vertical, or where
 /// this semantic information is irrelevant, the entity
 /// IfcMember exists.
@@ -34685,7 +34710,7 @@ public:
 /// geometry based on the swept solid), if a 3D geometric
 /// representation is assigned. In addition they have to have a
 /// corresponding IfcMaterialProfileSetUsage assigned.
-/// NOTE View definitions and implementer
+/// NOTEÿ View definitions and implementer
 /// agreements may further constrain the applicable geometry types,
 /// e.g. by excluding tapering from an IfcColumnStandardCase
 /// implementation.
@@ -34701,13 +34726,13 @@ public:
 /// IfcColumn defines the occuurence of any column, common
 /// information about column types (or styles) is handled by
 /// IfcColumnType. The IfcColumnType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material layer set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcColumnType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcColumnType is attached(i.e. if only
+/// If no IfcColumnType is attachedÿ(i.e. if only
 /// occurrence information is given) the PredefinedType should
 /// be provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -34724,7 +34749,7 @@ public:
 /// concept.
 /// Material information can also be given at the
 /// IfcColumnType, defining the common attribute data for all
-/// occurrences of the same type.It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsTypedBy
 /// relationship pointing to
 /// IfcColumnType.HasAssociations and via
@@ -34745,7 +34770,7 @@ public:
 /// 
 /// Property sets can also be given at the IfcColumnType,
 /// defining the common property data for all occurrences of the same
-/// type.It is then accessible by the inverse IsTypedBy relationship pointing to
+/// type.ÿIt is then accessible by the inverse IsTypedBy relationship pointing to
 /// IfcColumnType.HasPropertySets. If both are given, then the
 /// properties directly assigned to IfcColumn overrides the
 /// properties assigned to IfcColumnType.
@@ -34770,13 +34795,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcColumn, is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcColumn, may be aggregated into an element
@@ -34787,7 +34812,7 @@ public:
 /// IfcElementAssembly as a special focus subtype. In this
 /// case it should not be additionally contained in the project
 /// spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definition
@@ -34846,18 +34871,18 @@ public:
 /// Solid: IfcExtrudedAreaSolid,
 /// IfcRevolvedAreaSolid shall be supported
 /// Profile: all subtypes of IfcProfileDef (with
-/// exception of IfcArbitraryOpenProfileDef)
-/// Extrusion:All extrusion directions shall be
+/// exception of IfcArbitraryOpenProfileDef)ÿ
+/// Extrusion:ÿAll extrusion directions shall be
 /// supported
 /// 
 /// Figure 81 illustrates a 'SweptSolid' geometric representation. There are no restrictions or conventions on
 /// how to use the local placement (black), solid of extrusion placement (red) and profile placement (green).
 /// 
-/// Figure 81 &#8212; Column swept solid
+/// Figure 81 — Column swept solid
 /// 
 /// Figure 82 illustrates use of a special profile type (here IfcIShapeProfileDef) for the definition of the IfcExtrudedAreaSolid.
 /// 
-/// Figure 82 &#8212; Column extrusion of I-Shape
+/// Figure 82 — Column extrusion of I-Shape
 /// 
 /// Clipping Representation Type
 /// The following attribute values for the
@@ -34883,7 +34908,7 @@ public:
 /// Figure 83 illustrates a 'Clipping' geometric representation with use of IfcBooleanClippingResult between
 /// an IfcExtrudedAreaSolid and an IfcHalfSpaceSolid to create a clipped body.
 /// 
-/// Figure 83 &#8212; Column clipping
+/// Figure 83 — Column clipping
 /// 
 /// AdvancedSweptSolid Representation Type
 /// The following attribute values for the
@@ -34906,7 +34931,7 @@ public:
 /// 
 /// Profile: see 'SweptSolid' geometric
 /// representation
-/// Extrusion:not applicable
+/// Extrusion:ÿnot applicable
 /// 
 /// MappedRepresentation Representation Type
 /// The 'MappedRepresentation' representation type is supported as
@@ -34918,7 +34943,7 @@ public:
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for the 'SweptSolid',
+/// The same constraints, as given for theÿ 'SweptSolid',
 /// 'Clipping', 'AdvancedSweptSolid', 'SurfaceModel' and 'Bre'
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
@@ -35080,7 +35105,7 @@ public:
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction equipment resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionEquipmentResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 183.  Such relationship indicates the equipment used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  There may be multiple chains of production such that the assigned equipment may have their own task and resource assignments for assembling such equipment.
 /// 
-/// Figure 183 &#8212; Construction equipment resource assignment
+/// Figure 183 — Construction equipment resource assignment
 class IFC_PARSE_API IfcConstructionEquipmentResource : public IfcConstructionResource {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
@@ -35120,7 +35145,7 @@ public:
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction material resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionMaterialResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 184.  Such relationship indicates the physical material used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  The IfcGeographicElement object is used to represent the physical material occurrence, which may optionally have placement and representation indicating intended storage on the construction site.  There may be multiple chains of production such that the assigned product material(s) may have their own task and resource assignments for transporting or extracting such material.
 /// 
-/// Figure 184 &#8212; Construction material resource assignment
+/// Figure 184 — Construction material resource assignment
 class IFC_PARSE_API IfcConstructionMaterialResource : public IfcConstructionResource {
 public:
     /// Whether the optional attribute Suppliers is defined for this IfcConstructionMaterialResource
@@ -35157,7 +35182,7 @@ public:
 /// Assignment use definition
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction product resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionProductResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 185.  Such relationship indicates the products used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  There may be multiple chains of production such that the assigned products may have their own task and resource assignments.
 /// 
-/// Figure 185 &#8212; Construction product resource assignment
+/// Figure 185 — Construction product resource assignment
 class IFC_PARSE_API IfcConstructionProductResource : public IfcConstructionResource {
 public:
     virtual unsigned int getArgumentCount() const { return 9; }
@@ -35324,7 +35349,7 @@ public:
 /// representation and the space has defined space boundaries, then
 /// the covering, which relates to that space, may be assigned to the
 /// space boundaries using the link
-/// toIfcRelSpaceBoundary,
+/// toÿIfcRelSpaceBoundary,
 /// if the covering does not relate to a space, then the covering
 /// should be assigned to the building element or a distribution
 /// element using the IfcRelCoversBldgElements
@@ -35339,7 +35364,7 @@ public:
 /// The IfcCovering defines the occuurence of any covering,
 /// common information about covering types (or styles) is handled by
 /// IfcCoveringType. The IfcCoveringType (if present)
-/// may establish the commontype name, usage (or predefined) type,
+/// may establish the commonÿtype name, usage (or predefined) type,
 /// common set of properties, common material layer set, and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcCoveringType is attached using the
@@ -35350,12 +35375,12 @@ public:
 /// slabs with constant thickness along the extrusion direction), the
 /// IfcCoveringType should have a unique
 /// IfcMaterialLayerSet, that is referenced by
-/// theIfcMaterialLayerSetUsage assigned to all occurrences
+/// theÿIfcMaterialLayerSetUsage assigned to all occurrences
 /// of this covering type.
 /// 
 /// Figure 91 illustrates assignment of IfcMaterialLayerSetUsage and IfcMaterialLayerSet to the covering type and the covering occurrence.
 /// 
-/// Figure 91 &#8212; Covering material usage
+/// Figure 91 — Covering material usage
 /// 
 /// If an IfcCoveringType is assigned to the
 /// IfcCovering, the attribute PredefinedType shall not
@@ -35440,7 +35465,7 @@ public:
 /// 
 /// GeometricSet Representation
 /// The 'GeometricSet' geometric representation of
-/// IfcCovering supports area definitions as 3D surfaces.
+/// IfcCovering supports area definitions as 3D surfaces.ÿ
 /// 
 /// RepresentationIdentifier : 'Surface'
 /// RepresentationType : 'GeometricSet'
@@ -35457,18 +35482,18 @@ public:
 /// 
 /// The implicit planar surface of the IfcPolyLoop shall be identical with the planar surface defined by the IfcRelSpaceBoundary.
 /// 
-/// Figure 92 &#8212; Covering surface planar
+/// Figure 92 — Covering surface planar
 /// 
 /// Figure 93 illustrates a cylindrical surface representation where the area of the IfcCovering is given by an IfcSurfaceOfLinearExtrusion for cylindrical base surfaces (here given by the IfcRelSpaceBoundary - such as caused by a round wall).
 /// 
 /// The geometry representation of the IfcCovering is given by the IfcTrimmedCurved (the Curve parameter of the
 /// IfcArbitraryOpenProfileDef - in cases of faceted representation also an IfcPolyline). It is extruded within the plane of the base surface using the Depth parameter of the IfcSurfaceOfLinearExtrusion.
 /// 
-/// Figure 93 &#8212; Covering surface cylindrical
+/// Figure 93 — Covering surface cylindrical
 /// 
 /// SweptSolid Representation
 /// The 'SweptSolid' geometric representation of
-/// IfcCovering supports volume definitions as 3D solids.
+/// IfcCovering supports volume definitions as 3D solids.ÿ
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'SweptSolid'
@@ -35484,14 +35509,14 @@ public:
 /// 
 /// The extruded area (IfcArbitraryClosedProfileDef) shall be coplanar to the surface defined by the IfcRelSpaceBoundary.
 /// 
-/// Figure 94 &#8212; Covering body planar
+/// Figure 94 — Covering body planar
 /// 
 /// Figure 95 illustrates a body representation where the volume of the IfcCovering is given by an IfcExtrudedAreaSolid for cylindrical base surfaces (here given by the IfcRelSpaceBoundary - such as caused by a round wall).
 /// 
 /// The geometry representation of the IfcCovering is given by the IfcCompositeCurve (the OuterCurve parameter of the
 /// IfcArbitraryClosedProfileDef - in cases of faceted representation also a closed IfcPolyline). It is extruded along the plane of the base surface using the Depth parameter of the IfcSurfaceOfLinearExtrusion.
 /// 
-/// Figure 95 &#8212; Covering body circular
+/// Figure 95 — Covering body circular
 class IFC_PARSE_API IfcCovering : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcCovering
@@ -35528,14 +35553,14 @@ public:
 /// wall, common information about curtain wall types (or styles) is
 /// handled by IfcCurtainWallType. The
 /// IfcCurtainWallType (if present) may establish the
-/// commontype name, usage (or predefined) type, common material
+/// commonÿtype name, usage (or predefined) type, common material
 /// information, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcCurtainWallType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsDefinedBy
 /// attribute.
-/// If no IfcCurtainWallType is attached(i.e. if only
+/// If no IfcCurtainWallType is attachedÿ(i.e. if only
 /// occurrence information is given) the predefined type may be given
 /// by using the ObjectType attribute.
 /// NOTE Since the IfcCurtainWall might be
@@ -36305,13 +36330,13 @@ public:
 /// different containment relationships. The first (and in most
 /// implementation scenarios mandatory) relationship is the
 /// hierachical spatial containment, the second (optional)
-/// relationship is the aggregation within anelement assembly.
+/// relationship is the aggregation within anÿelement assembly.
 /// 
 /// The IfcDistributionElement is places within the
 /// project spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcSpace being the default
 /// container.
 /// The IfcDistributionElement may be aggregated into an
@@ -36322,7 +36347,7 @@ public:
 /// IfcElementAssembly as a special focus subtype. In this
 /// case it should not be additionally contained in the project
 /// spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definitions
@@ -36566,7 +36591,7 @@ public:
 /// 
 /// Figure 149 illustrates distribution port connectivity.
 /// 
-/// Figure 149 &#8212; Distribution port connectivity
+/// Figure 149 — Distribution port connectivity
 /// 
 /// Assignment Use Definition
 ///   The IfcDistributionPort may be assigned to the following entities using relationships as indicated:
@@ -36617,7 +36642,7 @@ public:
 /// IfcRelFillsElement relationship, then the IfcDoor
 /// has an inverse attribute FillsVoids provided,
 /// 
-/// NOTE View definitions or
+/// NOTEÿ View definitions or
 /// implementer agreements may restrict the relationship to only
 /// include one window (or door) into one opening.
 /// 
@@ -36639,7 +36664,7 @@ public:
 /// that references one IfcDoorLiningProperties and on to many
 /// IfcDoorPanelProperties.
 /// 
-/// NOTE see
+/// NOTEÿ see
 /// IfcDoorStandardCase for all specific constraints imposed
 /// by this subtype.
 /// 
@@ -36672,7 +36697,7 @@ public:
 /// the construction material type
 /// the particular attributes for the lining by the
 /// IfcDoorLiningProperties
-/// the particular attributes for the panels by the
+/// the particular attributes for the panels by theÿ
 /// IfcDoorPanelProperties
 /// 
 /// HISTORY New entity in IFC Release 1.0.
@@ -36737,13 +36762,13 @@ public:
 /// containment relationships as shown in Figure 96. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcDoor is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcDoor may be aggregated into an element assembly
@@ -36752,7 +36777,7 @@ public:
 /// SELF\IfcObjectDefinition.Decomposes. Doors may be part of
 /// an IfcCurtainWall as a special focus subtype. In this case
 /// it should not be additionally contained in the project spatial
-/// hierarchy, i.e.SELF\IfcElement.ContainedInStructure
+/// hierarchy, i.e.ÿSELF\IfcElement.ContainedInStructure
 /// should be NIL.
 /// 
 /// NOTE The containment shall be defined independently of the
@@ -36761,7 +36786,7 @@ public:
 /// it is also contained in the spatial structure by an
 /// IfcRelContainedInSpatialStructure.
 /// 
-/// Figure 96 &#8212; Door containment
+/// Figure 96 — Door containment
 /// 
 /// Geometry Use Definitions:
 /// The geometric representation of IfcDoor is given by the
@@ -36793,12 +36818,12 @@ public:
 /// is defined within the world coordinate system.
 /// 
 /// Geometric Representation
-/// Thegeometric representation of IfcDoor is defined
-/// using the following (potentiallymultiple)
+/// Theÿgeometric representation of IfcDoor is defined
+/// using the following (potentiallyÿmultiple)
 /// IfcShapeRepresentation's for its
 /// IfcProductDefinitionShape:
 /// 
-/// Profile: A'Curve3D'
+/// Profile: Aÿ'Curve3D'
 /// consisting of a single losed curve defining the outer boundary of
 /// the door (lining). The door parametric representation uses this
 /// profile in order to apply the door lining and panel parameter. If
@@ -36815,11 +36840,11 @@ public:
 /// IfcDoorPanelProperties. The purpose of the parameter is
 /// described at those entities and below (door opening operation by
 /// door type).
-/// Profile -'Curve3D' representation
+/// Profile -ÿ'Curve3D' representation
 /// The door profile is represented by a three-dimensional closed
 /// curve within a particular shape representation. The profile is
 /// used to apply the parameter of the parametric door
-/// representation.The following attribute values for the
+/// representation.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -36833,18 +36858,18 @@ public:
 /// a parametric representation shall be applied to the door
 /// AND
 /// 
-/// thedoor is 'free standing', or
-/// the opening into which thedoor is inserted is not extruded
+/// theÿdoor is 'free standing', or
+/// the opening into which theÿdoor is inserted is not extruded
 /// horizontally (i.e. where the opening profile does not match
-/// thedoor profile)
+/// theÿdoor profile)
 /// 
-/// FootPrint -'GeometricCurveSet' or 'Annotation2D'
+/// FootPrint -ÿ'GeometricCurveSet' or 'Annotation2D'
 /// representation
 /// The door foot print is represented by a set of
-/// two-dimensionalcurves (or in case of 'Annotation2D' additional
+/// two-dimensionalÿcurves (or in case of 'Annotation2D' additional
 /// hatching and text) within a particular shape representation. The
 /// foot print is used for the planview representation of the
-/// door.The following attribute values for the
+/// door.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -36858,7 +36883,7 @@ public:
 /// parametric representation) or by explicit 3D shape. The 3D shape
 /// is given by using extrusion geometry, or surface models, or Brep
 /// models within a particular shape representation. The body is used
-/// for the model view representation of the door.The following
+/// for the model view representation of the door.ÿThe following
 /// attribute values for the IfcShapeRepresentation holding
 /// this geometric representation shall be used:
 /// 
@@ -36876,7 +36901,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint', 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for the 'FootPrint', 'Body'
+/// The same constraints, as given for theÿ 'FootPrint', 'Body'
 /// representation identifiers, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
@@ -36895,13 +36920,13 @@ public:
 /// relatioship, having a horizontal extrusion (along the y-axis of
 /// the IfcDoor), the overall size is determined by the
 /// extrusion profile of the IfcOpeningElement.
-/// NOTE The OverallWidth and
+/// NOTE ÿThe OverallWidth and
 /// OverallHeight parameters are for informational purpose
 /// only.
 /// The opening direction is determined by the local placement of
 /// IfcDoor and the OperationType of the door
 /// style as shown in Figure 97.
-/// NOTE There are different definitions in
+/// NOTE ÿThere are different definitions in
 /// various countries on what a left opening or left hung or left
 /// swing door is (same for right). Therefore the IFC definition may
 /// derivate from the local standard and need to be mapped
@@ -36919,7 +36944,7 @@ public:
 /// placement. The determination of whether the door opens to the
 /// left or to the right is done at the level of the
 /// IfcDoorType. Here it is a left side opening door given
-/// byIfcDoorType.OperationType =
+/// byÿIfcDoorType.OperationType =
 /// SingleSwingLeft
 /// refered to as LEFT HAND (LH) in US *
 /// 
@@ -36938,7 +36963,7 @@ public:
 /// opens to the right, a separate door style needs to be used (here
 /// IfcDoorTypee.OperationType = SingleSwingRight) and it
 /// always opens into the direction of the positive Y axis of the
-/// local placement.
+/// local placement.ÿ
 /// refered to as RIGHT HAND (RH) in US *
 /// 
 /// refered to as DIN-L (left hung) in Germany
@@ -36957,21 +36982,21 @@ public:
 /// the 'outside/public/secondary' space is below (bottom in the
 /// pictures).
 /// 
-/// Figure 97 &#8212; Door swing
+/// Figure 97 — Door swing
 class IFC_PARSE_API IfcDoor : public IfcBuildingElement {
 public:
     /// Whether the optional attribute OverallHeight is defined for this IfcDoor
     bool hasOverallHeight() const;
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
-    /// NOTE The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallHeight shall still be given as the door opening height, and not as the total height of the door lining.
+    /// NOTE  The body of the door might be taller then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallHeight shall still be given as the door opening height, and not as the total height of the door lining.
     double OverallHeight() const;
     void setOverallHeight(double v);
     /// Whether the optional attribute OverallWidth is defined for this IfcDoor
     bool hasOverallWidth() const;
     /// Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
-    /// NOTE The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallWidth shall still be given as the door opening width, and not as the total width of the door lining.
+    /// NOTE  The body of the door might be wider then the door opening (e.g. in cases where the door lining includes a casing). In these cases the OverallWidth shall still be given as the door opening width, and not as the total width of the door lining.
     double OverallWidth() const;
     void setOverallWidth(double v);
     virtual unsigned int getArgumentCount() const { return 10; }
@@ -37727,7 +37752,8 @@ public:
 ///   the occurrence of a device that participates in a distribution
 ///   system and is used for temporary storage of a fluid
 ///   such as a liquid or a gas (e.g., tank). Its type is defined by 
-///   IfcFlowStorageDeviceType or its subtypes.
+/// 
+/// IfcFlowStorageDeviceType or its subtypes.
 /// 
 /// HISTORY: New entity in IFC R2x.
 /// 
@@ -37816,7 +37842,7 @@ class IFC_PARSE_API IfcFooting : public IfcBuildingElement {
 public:
     /// The generic type of the footing.
     /// 
-    /// IFC 2x4 change: Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcFootingType.
+    /// IFC 2x4 change:  Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcFootingType.
     IfcFootingTypeEnum::IfcFootingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFootingTypeEnum::IfcFootingTypeEnum v);
     virtual unsigned int getArgumentCount() const { return 9; }
@@ -37859,7 +37885,7 @@ public:
 /// geometry based on the swept solid), if a 3D geometric
 /// representation is assigned. In addition they have to have a
 /// corresponding IfcMaterialProfileSetUsage assigned.
-/// NOTE View definitions and implementer
+/// NOTEÿ View definitions and implementer
 /// agreements may further constrain the applicable geometry types,
 /// e.g. by excluding tapering from an IfcMemberStandardCase
 /// implementation.
@@ -37875,13 +37901,13 @@ public:
 /// IfcMember defines the occuurence of any member, common
 /// information about member types (or styles) is handled by
 /// IfcMemberType. The IfcMemberType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material profile set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcMemberType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcMemberType is attached(i.e. if only
+/// If no IfcMemberType is attachedÿ(i.e. if only
 /// occurrence information is given) the PredefinedType should
 /// be provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -37892,14 +37918,14 @@ public:
 /// IfcRelAssociatesMaterial.RelatingMaterial. It is
 /// accessible by the inverse HasAssociations relationship.
 /// Material information can also be given at
-/// theIfcMemberType, defining the common attribute data for
-/// all occurrences of the same type.It is then accessible by the
+/// theÿIfcMemberType, defining the common attribute data for
+/// all occurrences of the same type.ÿIt is then accessible by the
 /// inverse <IsTypedBy
 /// relationship pointing to IfcMemberType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial to
 /// IfcMaterialProfileSet or IfcMaterial. If both are
 /// given, then the material directly assigned to IfcMember
-/// overrides the material assigned toIfcMemberType.
+/// overrides the material assigned toÿIfcMemberType.
 /// Property Set Use Definition
 /// The property sets relating to the IfcMember are defined
 /// by the IfcPropertySet and attached by the
@@ -37933,13 +37959,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcMember is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcMember may be aggregated into an element
@@ -38009,14 +38035,14 @@ public:
 /// Solid: IfcExtrudedAreaSolid,
 /// IfcRevolvedAreaSolid shall be supported
 /// Profile: all subtypes of IfcProfileDef (with
-/// exception of IfcArbitraryOpenProfileDef)
+/// exception of IfcArbitraryOpenProfileDef)ÿ
 /// Extrusion: All extrusion directions shall be
 /// supported.
 /// 
 /// Figure 99 illustrates a 'SweptSolid' geometric representation.  There are no restrictions or conventions on
 /// how to use the local placement (black), solid of extrusion placement (red) and profile placement (green).
 /// 
-/// Figure 99 &#8212; Member swept solid
+/// Figure 99 — Member swept solid
 /// 
 /// Clipping Representation Type
 /// The following attribute values for the
@@ -38032,7 +38058,7 @@ public:
 /// Solid: see 'SweptSolid' geometric representation
 /// Profile: see 'SweptSolid' geometric
 /// representation
-/// Extrusion:see 'SweptSolid' geometric
+/// Extrusion:ÿsee 'SweptSolid' geometric
 /// representation
 /// Boolean result: The IfcBooleanClippingResult
 /// shall be supported, allowing for Boolean differences between the
@@ -38041,7 +38067,7 @@ public:
 /// 
 /// Figure 100 illustrates a 'Clipping' geometric representation with use of IfcBooleanClippingResult between an IfcExtrudedAreaSolid and an IfcHalfSpaceSolid to create a clipped body.
 /// 
-/// Figure 100 &#8212; Member clipping
+/// Figure 100 — Member clipping
 /// 
 /// AdvancedSweptSolid Representation Type
 /// The following attribute values for the
@@ -38064,7 +38090,7 @@ public:
 /// 
 /// Profile: see 'SweptSolid' geometric
 /// representation
-/// Extrusion:not applicable
+/// Extrusion:ÿnot applicable
 /// 
 /// MappedRepresentation Representation Type
 /// The 'MappedRepresentation' representation type is supported as
@@ -38076,7 +38102,7 @@ public:
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for the 'SweptSolid',
+/// The same constraints, as given for theÿ 'SweptSolid',
 /// 'Clipping', 'AdvancedSweptSolid', 'SurfaceModel' and 'Bre'
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
@@ -38117,14 +38143,14 @@ class IFC_PARSE_API IfcPile : public IfcBuildingElement {
 public:
     /// The predefined generic type of the pile according to function.
     /// 
-    /// IFC 2x4 change: Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcPileType.
+    /// IFC 2x4 change:  Attribute made optional.  Type information can be provided by IfcRelDefinesByType and IfcPileType.
     IfcPileTypeEnum::IfcPileTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPileTypeEnum::IfcPileTypeEnum v);
     /// Whether the optional attribute ConstructionType is defined for this IfcPile
     bool hasConstructionType() const;
     /// General designator for how the pile is constructed.
     /// 
-    /// IFC 2x4 change: Material profile association capability by means of IfcRelAssociatesMaterial has been added.  The attribute ConstructionType should not be used whenever its information can be provided by a material profile set, either associated with the IfcPile object or, if present, with a corresponding instance of IfcPileType.
+    /// IFC 2x4 change:  Material profile association capability by means of IfcRelAssociatesMaterial has been added.  The attribute ConstructionType should not be used whenever its information can be provided by a material profile set, either associated with the IfcPile object or, if present, with a corresponding instance of IfcPileType.
     IfcPileConstructionEnum::IfcPileConstructionEnum ConstructionType() const;
     void setConstructionType(IfcPileConstructionEnum::IfcPileConstructionEnum v);
     virtual unsigned int getArgumentCount() const { return 10; }
@@ -38142,22 +38168,22 @@ public:
 /// Definition from IAI: An IfcPlate is a planar and
 /// often flat part with constant thickness. A plate can be a
 /// structural part carrying loads between or beyond points of
-/// support, however it is not required to be load bearing.The
+/// support, however it is not required to be load bearing.ÿThe
 /// location of the plate (being horizontal, vertical or sloped) is
 /// not relevant to its definition (in contrary to IfcWall and
-/// IfcSlab (as floor slab)).
-/// NOTE Plates arenormally made of steel, other
+/// IfcSlab (as floor slab)).ÿ
+/// NOTE ÿPlates areÿnormally made of steel, other
 /// metallic material, or by glass panels. However the definition of
 /// IfcPlate is material independent and specific material
 /// information shall be handled by using
 /// IfcAssociatesMaterial to assign a material specification
-/// to the IfcPlate.
+/// to the IfcPlate.ÿ
 /// 
-/// NOTE Although not necessarily, plates are often add-on
+/// NOTE ÿAlthough not necessarily, plates are often add-on
 /// parts. This is represented by the IfcRelAggregates
 /// decomposition mechanism used to aggregate parts, such as
 /// IfcPlate, into a container element, e.g.
-/// IfcElementAssembly, or IfcCurtainWall.
+/// IfcElementAssembly, or IfcCurtainWall.ÿ
 /// 
 /// NOTE The representation of a plate in a structural
 /// analysis model is provided by IfcStructuralSurfaceMember
@@ -38197,13 +38223,13 @@ public:
 /// The IfcPlate defines the occuurence of any plate,
 /// common information about plate types (or styles) is handled by
 /// IfcPlateType. The IfcPlateType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common set of properties, common material layer set, and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcPlateType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcPlateType is attached(i.e. if only occurrence
+/// If no IfcPlateType is attachedÿ(i.e. if only occurrence
 /// information is given) the PredefinedType should be
 /// provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -38219,7 +38245,7 @@ public:
 /// concept.
 /// Material information can also be given at the
 /// IfcPlateType, defining the common attribute data for all
-/// occurrences of the same type.It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsTypedBy
 /// relationship pointing to IfcPlateType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial.
@@ -38256,23 +38282,23 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second relationship is the aggregation within
-/// anelement assembly.
+/// anÿelement assembly.
 /// 
-/// TheIfcPlate is places within the project spatial
+/// TheÿIfcPlate is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
-/// TheIfcPlate may be aggregated into an element
+/// TheÿIfcPlate may be aggregated into an element
 /// assembly using the objectified relationship
 /// IfcRelAggregates, referring to it by its inverse attribute
 /// SELF\IfcObjectDefinition.Decomposes. Any subtype of
 /// IfcElement can be an element assembly, with
 /// IfcElementAssembly as a special focus subtype. In this
 /// case, no additional relationship to the spatial hierarchy shall
-/// be given (i.e.SELF\IfcElement.ContainedInStructure =
+/// be given (i.e.ÿSELF\IfcElement.ContainedInStructure =
 /// NIL), the relationship to the spatial container is handled by the
 /// element assembly.
 /// 
@@ -38392,7 +38418,7 @@ public:
 /// IfcRailing defines the occuurence of any railing,
 /// common information about railing types (or styles) is handled by
 /// IfcRailingType. The IfcRailingType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcRailingType is attached using the
@@ -38407,7 +38433,7 @@ public:
 /// relationship.
 /// Material information can also be given at the
 /// IfcRailingType, defining the common attribute data for all
-/// occurrences of the same type.It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsDefinedBy relationship pointing to
 /// IfcRailingType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial to
@@ -38445,13 +38471,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcRailing is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcRailing may be aggregated into an element
@@ -38462,7 +38488,7 @@ public:
 /// IfcStair, or IfcRamp as a special focus subtypes.
 /// In this case it should not be additionally contained in the
 /// project spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definition
@@ -38557,7 +38583,7 @@ public:
 /// IfcRamp defines the occuurence of any ramp, common
 /// information about ramp types (or styles) is handled by
 /// IfcRampType. The IfcRampType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcRampType is attached using the
@@ -38578,7 +38604,7 @@ public:
 /// relationship.
 /// Material information can also be given at the
 /// IfcRampType, defining the common attribute data for all
-/// occurrences of the same type.It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsDefinedBy relationship pointing to
 /// IfcRampType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial to
@@ -38666,7 +38692,7 @@ public:
 /// 
 /// Figure 111 illustrates IfcRamp defining the local placement for all components.
 /// 
-/// Figure 111 &#8212; Ramp placement
+/// Figure 111 — Ramp placement
 class IFC_PARSE_API IfcRamp : public IfcBuildingElement {
 public:
     IfcRampTypeEnum::IfcRampTypeEnum ShapeType() const;
@@ -38701,7 +38727,7 @@ public:
 /// IfcRampFlight defines the occurrence of any ramp flight,
 /// common information about ramp flight types (or styles) is handled
 /// by IfcRampFlightType. The IfcRampFlightType (if
-/// present) may establish the commontype name, usage (or
+/// present) may establish the common type name, usage (or
 /// predefined) type, common material layer set, common set of
 /// properties and common shape representations (using
 /// IfcRepresentationMap). The IfcRampFlightType is
@@ -38744,13 +38770,13 @@ public:
 /// IfcBuildingElement, may participate in two different
 /// containment relationships. The first relationship is the
 /// hierachical spatial containment, the second relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within an element assembly.
 /// 
 /// The IfcRampFlight is placed within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid
+/// Subtypes of IfcSpatialStructureElement are valid
 /// spatial containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcRampFlight may be aggregated into an element
@@ -38760,7 +38786,7 @@ public:
 /// IfcElement can be an element assembly, with IfcRamp
 /// as a special focus subtype. In this case it should not be
 /// additionally contained in the project spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e. SELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Geometry Use Definition
@@ -38815,7 +38841,7 @@ public:
 /// In case of winding flights the curve shall be a single item of type IfcCompositeCurve.
 /// In case of a curved flight or a spiral flight the curve shall be a single item of type IfcTrimmedCurve.
 /// 
-/// Figure 112 &#8212; Ramp flight axis
+/// Figure 112 — Ramp flight axis
 /// 
 /// FootPrint Representation
 /// The flight foot print, including the flight boundary is represented by a two-dimensional geometric curve set. The following attribute values for the IfcShapeRepresentation holding this geometric representation shall be used:
@@ -38831,7 +38857,7 @@ public:
 /// In case of a spiral flight the curve set shall consists of a single item of type IfcConic or
 /// IfcPolyline.
 /// 
-/// Figure 113 &#8212; Ramp flight footprint
+/// Figure 113 — Ramp flight footprint
 /// 
 /// Body Representation
 /// The body representation of IfcRampFlight can be
@@ -38870,7 +38896,7 @@ public:
 /// 
 /// Figure 114 illustrates the body representation.
 /// 
-/// Figure 114 &#8212; Ramp flight body
+/// Figure 114 — Ramp flight body
 class IFC_PARSE_API IfcRampFlight : public IfcBuildingElement {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
@@ -39045,7 +39071,7 @@ public:
 /// spatial hierarchy, i.e.
 /// SELF\IfcElement.ContainedInStructure should be NIL.
 /// 
-/// NOTE A roof contained in another roof could
+/// NOTEÿ A roof contained in another roof could
 /// be the representation of a dormer.
 /// The IfcRoof may be an aggregate i.e. being composed by
 /// other elements and acting as an assembly using the objectified
@@ -39063,7 +39089,7 @@ public:
 /// Figure 118 illustrates roof containment, where only the IfcRoof as the aggregate
 /// is included in the spatial structure.
 /// 
-/// Figure 118 &#8212; Roof containment
+/// Figure 118 — Roof containment
 /// 
 /// Geometry Use Definitions:
 /// The geometric representation of IfcRoof is given by the
@@ -39073,7 +39099,7 @@ public:
 /// aggregate. If defined as an aggregate, the geometric
 /// representation is the sum of the representation of the components
 /// within the aggregate.
-/// NOTE View definitions and implementer
+/// NOTEÿ View definitions and implementer
 /// agreements may restrict the IfcRoof to not have an
 /// independent geometry, but to always require aggregated elements
 /// to represent the shape of the roof.
@@ -39130,7 +39156,7 @@ public:
 /// 
 /// Figure 119 illustrates roof placement, with an IfcRoof defining the local placement for all aggregated elements.
 /// 
-/// Figure 119 &#8212; Roof placement
+/// Figure 119 — Roof placement
 class IFC_PARSE_API IfcRoof : public IfcBuildingElement {
 public:
     IfcRoofTypeEnum::IfcRoofTypeEnum ShapeType() const;
@@ -39246,7 +39272,7 @@ public:
 /// IfcStructuralMember being part of the
 /// IfcStructuralAnalysisModel.
 /// 
-/// NOTE An arbitrary planar element to which this semantic
+/// NOTE ÿAn arbitrary planar element to which this semantic
 /// information is not applicable or irrelevant shall be modeled as
 /// IfcPlate.
 /// A slab may have openings, such as floor openings, or recesses.
@@ -39280,13 +39306,13 @@ public:
 /// The IfcSlab defines the occurrence of any slab, common
 /// information about slab types (or styles) is handled by
 /// IfcSlabType. The IfcSlabType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common set of properties, common material layer set, and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcSlabType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcSlabType is attached(i.e. if only occurrence
+/// If no IfcSlabType is attachedÿ(i.e. if only occurrence
 /// information is given) the PredefinedType should be
 /// provided. Values of the enumeration are .FLOOR. (the default),
 /// .ROOF., .LANDING., .BASESLAB. If set to .USERDEFINED. a user
@@ -39308,12 +39334,12 @@ public:
 /// the slab is extruded along the slab thickness, are exchanged as
 /// IfcSlabStandardCase, The material for
 /// IfcSlabStandardCase shall be defined
-/// byIfcMaterialLayerSetUsage. Multi-layer slabs can be
+/// byÿIfcMaterialLayerSetUsage. Multi-layer slabs can be
 /// represented by referring to several IfcMaterialLayer's
-/// within the IfcMaterialLayerSet.
+/// within the IfcMaterialLayerSet.ÿ
 /// Material information can also be given at the
 /// IfcSlabType, defining the common attribute data for all
-/// occurrences of the same type.It is then accessible by the
+/// occurrences of the same type.ÿIt is then accessible by the
 /// inverse IsTypedBy
 /// relationship pointing to IfcSlabType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial.
@@ -39330,7 +39356,7 @@ public:
 /// 
 /// Property sets can also be given at the IfcSlabType,
 /// defining the common property data for all occurrences of the same
-/// type.It is then accessible by the inverse IsTypedBy relationship pointing to
+/// type.ÿIt is then accessible by the inverse IsTypedBy relationship pointing to
 /// IfcSlabType.HasPropertySets. If both are given, then the
 /// properties directly assigned to IfcSlab overrides the
 /// properties assigned to IfcSlabType.
@@ -39356,16 +39382,16 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierarchical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
-/// TheIfcSlab is places within the project spatial
+/// TheÿIfcSlab is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
-/// TheIfcSlab may be aggregated into an element assembly
+/// TheÿIfcSlab may be aggregated into an element assembly
 /// using the objectified relationship IfcRelAggregates,
 /// referring to it by its inverse attribute
 /// SELF\IfcObjectDefinition.Decomposes. Any subtype of
@@ -39373,10 +39399,10 @@ public:
 /// IfcElementAssembly as a special focus subtype.
 /// In this case it should not be additionally contained in the
 /// project spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
-/// The IfcSlabmay also be an aggregate i.e. being
+/// The IfcSlabÿmay also be an aggregate i.e. being
 /// composed by other elements and acting as an assembly using the
 /// objectified relationship IfcRelAggregates, referring to it
 /// by its inverse attribute
@@ -39466,7 +39492,7 @@ public:
 /// 
 /// IfcArbitraryClosedProfileDef.OuterCurve: closed bounded curve interpreted as area (or foot print) of the slab.
 /// 
-/// Figure 120 &#8212; Slab body extrusion
+/// Figure 120 — Slab body extrusion
 /// 
 /// Clipping Representation Type
 /// The following attribute values for the
@@ -39480,8 +39506,8 @@ public:
 /// representation:
 /// 
 /// Solid: see 'SweptSolid' shape representation,
-/// Profile:see 'SweptSolid' shape representation,
-/// Extrusion:see 'SweptSolid' shape representation,
+/// Profile:ÿsee 'SweptSolid' shape representation,
+/// Extrusion:ÿsee 'SweptSolid' shape representation,
 /// Boolean result: The IfcBooleanClippingResult
 /// shall be supported, allowing for Boolean differences between the
 /// swept solid (here IfcExtrudedAreaSolid) and one or several
@@ -39490,7 +39516,7 @@ public:
 /// Figure 121 illustrates a 'Clipping' geometric representation with definition of a roof slab using advanced
 /// geometric representation. The profile is extruded non-perpendicular and the slab body is clipped at the eave.
 /// 
-/// Figure 121 &#8212; Slab body clipping
+/// Figure 121 — Slab body clipping
 class IFC_PARSE_API IfcSlab : public IfcBuildingElement {
 public:
     /// Whether the optional attribute PredefinedType is defined for this IfcSlab
@@ -39582,7 +39608,7 @@ public:
 /// Figure 127 shows the use of property sets Pset_StairCommon and
 /// Pset_StairFlightCommon for the various stair properties.
 /// 
-/// Figure 127 &#8212; Stair properties
+/// Figure 127 — Stair properties
 /// 
 /// Geometry Use Definitions:
 /// The geometric representation of IfcStair is given by the
@@ -39633,7 +39659,7 @@ public:
 /// RepresentationIdentifier : 'Axis'
 /// RepresentationType : 'Curve2D'
 /// 
-/// NOTE The 'Axis' representation of IfcStair
+/// NOTE  The 'Axis' representation of IfcStair
 /// may be provided even if the IfcStair has components with own
 /// shape representations.
 /// 
@@ -39646,7 +39672,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint'
 /// RepresentationType : 'GeometricCurveSet'
 /// 
-/// NOTE The 'Footprint' representation of
+/// NOTE  The 'Footprint' representation of
 /// IfcStair may be provided even if the IfcStair has
 /// components with own shape representations.
 /// 
@@ -39677,7 +39703,7 @@ public:
 /// 
 /// Figure 128 illustrates stair placement, where the IfcStair defines the local placement for all components and the common 'Axis' representation, and each component has its own 'Body' representation.
 /// 
-/// Figure 128 &#8212; Stair placement
+/// Figure 128 — Stair placement
 class IFC_PARSE_API IfcStair : public IfcBuildingElement {
 public:
     IfcStairTypeEnum::IfcStairTypeEnum ShapeType() const;
@@ -39716,7 +39742,7 @@ public:
 /// flight, common information about stair flight types (or styles)
 /// is handled by IfcStairFlightType. The
 /// IfcStairFlightType (if present) may establish the
-/// commontype name, usage (or predefined) type, common material
+/// commonÿtype name, usage (or predefined) type, common material
 /// layer set, common set of properties and common shape
 /// representations (using IfcRepresentationMap). The
 /// IfcStairFlightType is attached using the
@@ -39760,13 +39786,13 @@ public:
 /// IfcBuildingElement, may participate in two different
 /// containment relationships. The first relationship is the
 /// hierachical spatial containment, the second relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcStairFlight is placed within the project
 /// spatial hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcStairFlight may be aggregated into an element
@@ -39776,7 +39802,7 @@ public:
 /// IfcElement can be an element assembly, with
 /// IfcStair as a special focus subtype. In this case it
 /// shall not be additionally contained in the project spatial
-/// hierarchy, i.e.SELF\IfcElement.ContainedInStructure
+/// hierarchy, i.e.ÿSELF\IfcElement.ContainedInStructure
 /// shall be NIL.
 /// 
 /// Geometry Use Definition
@@ -39831,7 +39857,7 @@ public:
 /// In case of winding flights the curve shall be a single item of type IfcCompositeCurve.
 /// In case of a curved flight or a spiral flight the curve shall be a single item of type IfcTrimmedCurve.
 /// 
-/// Figure 129 &#8212; Stair flight axis
+/// Figure 129 — Stair flight axis
 /// 
 /// FootPrint Representation
 /// The flight foot print, including the flight boundary is
@@ -39848,7 +39874,7 @@ public:
 /// In case of winding flights or curved flights the curve set shall consists of a single item of type IfcCompositeCurve.
 /// In case of a spiral flight the curve set shall consists of a single item of type IfcConic or IfcPolyline.
 /// 
-/// Figure 130 &#8212; Stair flight footprint
+/// Figure 130 — Stair flight footprint
 /// 
 /// Body Representation
 /// The body representation of IfcStairFlight can be represented using the representation types 'SweptSolid', 'SurfaceModel', 'Brep', and 'MappedRepresentation'. The general usage of representation is are explained at
@@ -39860,7 +39886,7 @@ public:
 /// 
 /// Figure 131 illustrates the body representation.
 /// 
-/// Figure 131 &#8212; Stair flight body
+/// Figure 131 — Stair flight body
 class IFC_PARSE_API IfcStairFlight : public IfcBuildingElement {
 public:
     /// Whether the optional attribute NumberOfRiser is defined for this IfcStairFlight
@@ -39923,9 +39949,9 @@ public:
 /// If one or more structural item (instance of a subtype of IfcStructuralItem) is grouped into an IfcStructuralAnalysisModel, the attribute SharedPlacement shall be provided with a value.
 ///   The ObjectPlacements of all structural items which are grouped into the same instance of IfcStructuralAnalysisModel shall refer to the same instance of IfcObjectPlacement as IfcStructuralAnalysisModel.SharedPlacement.
 /// 
-/// NOTE This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
+/// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
-/// NOTE A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
+/// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
 class IFC_PARSE_API IfcStructuralAnalysisModel : public IfcSystem {
 public:
     /// Defines the type of the structural analysis model.
@@ -40069,7 +40095,7 @@ public:
 /// Definition from IAI: The wall represents a vertical
 /// construction that bounds or subdivides spaces. Wall are usually
 /// vertical, or nearly vertical, planar elements, often designed to
-/// bear structural loads. A wall is howevernot required to be load
+/// bear structural loads. A wall is howeverÿnot required to be load
 /// bearing.
 /// NOTE NOTE There is a representation of walls
 /// for structural analysis provided by a proper subtype of
@@ -40088,7 +40114,7 @@ public:
 /// The IFC specification provides two entities for wall
 /// occurrences:
 /// 
-/// IfcWallStandardCase used for all occurrences of
+/// IfcWallStandardCase ÿused for all occurrences of
 /// walls, that have a non-changing thickness along the wall path and
 /// where the thickness parameter can be fully described by a
 /// material layer set. These walls are always represented
@@ -40101,7 +40127,7 @@ public:
 /// which are aggregated from subordinate elements, following
 /// specific decomposition rules expressed by the mandatory use of
 /// IfcRelAggregates relationship.
-/// IfcWall used for all other occurrences of wall,
+/// IfcWall ÿused for all other occurrences of wall,
 /// particularly for walls with changing thickness along the wall
 /// path (e.g. polygonal walls), or walls with a non-rectangular
 /// cross sections (e.g. L-shaped retaining walls), and walls having
@@ -40113,15 +40139,15 @@ public:
 /// IFC Release 1.0
 /// Type Use Definition
 /// IfcWall defines the occurrence of any wall, common
-/// information aboutwall types (or styles) is handled by
+/// information aboutÿwall types (or styles) is handled by
 /// IfcWallType. The IfcWallType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the commonÿtype name, usage (or predefined) type,
 /// common material layer set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcWallType is attached using the
 /// IfcRelDefinedByType.RelatingType objectified relationship
 /// and is accessible by the inverse IsTypedBy attribute.
-/// If no IfcWallType is attached(i.e. if only occurrence
+/// If no IfcWallType is attachedÿ(i.e. if only occurrence
 /// information is given) the PredefinedType should be
 /// provided. If set to .USERDEFINED. a user defined value can be
 /// provided by the ObjectType attribute.
@@ -40132,14 +40158,14 @@ public:
 /// accessible by the inverse HasAssociations relationship.
 /// Multi-layer walls can be represented by referring to several
 /// IfcMaterialLayer's within the
-/// IfcMaterialLayerSet.
+/// IfcMaterialLayerSet.ÿ
 /// Note: It is illegal to assign an
 /// IfcMaterialLayerSetUsage to an IfcWall. Only the
 /// subtype IfcWallStandardCase supports this
 /// concept.
 /// Material information can also be given at the
 /// IfcWallType, defining the common attribute data for all
-/// occurrences of the same type.It is then in addition accessible
+/// occurrences of the same type.ÿIt is then in addition accessible
 /// by the inverse IsTypedBy
 /// relationship pointing to IfcWallType.HasAssociations and
 /// via IfcRelAssociatesMaterial.RelatingMaterial.
@@ -40156,7 +40182,7 @@ public:
 /// 
 /// Property sets can also be given at the IfcWallType,
 /// defining the common property data for all occurrences of the same
-/// type.It is then accessible by the inverse IsTypedBy relationship pointing to
+/// type.ÿIt is then accessible by the inverse IsTypedBy relationship pointing to
 /// IfcWallType.HasPropertySets. If both are given, then the
 /// properties directly assigned to IfcWall overrides the
 /// properties assigned to IfcWallType.
@@ -40183,16 +40209,16 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierarchical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcWall is places within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, referring to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
-/// TheIfcWall may be aggregated into an element assembly
+/// TheÿIfcWall may be aggregated into an element assembly
 /// using the objectified relationship IfcRelAggregates,
 /// referring to it by its inverse attribute
 /// SELF\IfcObjectDefinition.Decomposes. Any subtype of
@@ -40200,17 +40226,17 @@ public:
 /// IfcElementAssembly as a special focus subtype.
 /// In this case the wall should not be additionally contained in the
 /// project spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
-/// TheIfcWallmay also be an aggregate i.e. being
+/// TheÿIfcWallÿmay also be an aggregate i.e. being
 /// composed by other elements and acting as an assembly using the
 /// objectified relationship IfcRelAggregates, referring to it
 /// by its inverse attribute
 /// SELF\IfcObjectDefinition.IsDecomposedBy. Components of a
 /// wall are described by instances of IfcBuildingElementPart
 /// that are aggregated to form a complex wall.
-/// In this case, the containedIfcBuildingElementPart's
+/// In this case, the containedÿIfcBuildingElementPart's
 /// should not be additionally contained in the project spatial
 /// hierarchy, i.e. the inverse attribute
 /// SELF\IfcElement.ContainedInStructure of
@@ -40285,7 +40311,7 @@ public:
 /// Solid: IfcExtrudedAreaSolid is required,
 /// Profile: IfcArbitraryClosedProfileDef is
 /// required.
-/// Extrusion:All extrusion directions shall be
+/// Extrusion:ÿAll extrusion directions shall be
 /// supported.
 /// 
 /// Clipping Representation Type
@@ -40371,7 +40397,7 @@ public:
 /// IfcWall. As an additional use agreement for standard
 /// walls, the IfcWallType should have a unique
 /// IfcMaterialLayerSet, that is referenced by
-/// theIfcMaterialLayerSetUsage assigned to all
+/// the IfcMaterialLayerSetUsage assigned to all
 /// occurrences of this IfcWallType.
 /// 
 /// Figure 134 illustrates assignment of IfcMaterialLayerSetUsage and IfcMaterialLayerSet to the wall type and the wall occurrence.
@@ -40386,10 +40412,10 @@ public:
 /// Multi-layer walls can be represented by refering to several
 /// IfcMaterialLayer's within the IfcMaterialLayerSet
 /// that is referenced from the
-/// IfcMaterialLayerSetUsage.
+/// IfcMaterialLayerSetUsage. 
 /// Material information can also be given at the
 /// IfcWallType, defining the common attribute data for all
-/// occurrences of the same type.It is then accessible by the
+/// occurrences of the same type. It is then accessible by the
 /// inverse IsDefinedBy relationship pointing to
 /// IfcSlabType.HasAssociations and via
 /// IfcRelAssociatesMaterial.RelatingMaterial. See Type Use
@@ -40408,7 +40434,7 @@ public:
 /// The Thickness of each IfcMaterialLayer is provided starting from the OffsetFromReferenceLine and in the direction given by DirectionSense. It is applied without any gap or overlap between two consecutive layers. The TotalThickness of the IfcMaterialLayerSet is the sum of all layer thicknesses.
 /// The IfcMaterialLayerSetUsage.LayerSetDirection is always AXIS2.
 /// 
-/// Figure 134 &#8212; Wall material layers
+/// Figure 134 — Wall material layers
 /// 
 /// Property Set Use Definition:
 /// The property sets relating to the IfcWallStandardCase
@@ -40434,7 +40460,7 @@ public:
 /// Body: A Swept Solid Representation or a CSG
 /// representation defining the 3D shape of the standard wall
 /// 
-/// NOTE It is invalid to exhange a
+/// NOTE  It is invalid to exhange a
 /// 'SurfaceModel', or 'Brep' or 'MappedRepresentation' representation
 /// for the 'Body' shape representation of an
 /// IfcWallStandardCase.
@@ -40454,8 +40480,8 @@ public:
 /// Figure 136 illustrates an axis representation for a curved wall. In case of a curved wall, the set of items shall include
 /// a single geometric representation item of type IfcTrimmedCurve. The curve shall have a BasisCurve of type IfcCircle. The tangent of the IfcTrimmedCurve shall be parallel at start to the x-axis of the object coordinate system. The direction shall be identical to the direction of the x-axis.
 /// 
-/// Figure 135 &#8212; Wall axis straight
-/// Figure 136 &#8212; Wall axis curved
+/// Figure 135 — Wall axis straight
+/// Figure 136 — Wall axis curved
 /// 
 /// Body Representation
 /// The body representation of IfcWallStandardCase is
@@ -40490,8 +40516,8 @@ public:
 /// 
 /// Figure 138 illustrates a body representation for a curved wall. In case of a curved wall, the two sides of the profile shall be parallel (with defined offset) to the wall axis, that is, the wall has a single unchanged thickness.
 /// 
-/// Figure 137 &#8212; Wall body extrusion straight
-/// Figure 138 &#8212; Wall body extrusion curved
+/// Figure 137 — Wall body extrusion straight
+/// Figure 138 — Wall body extrusion curved
 /// 
 /// Clipping Representation Type
 /// The following attribute values for the
@@ -40518,8 +40544,8 @@ public:
 /// Figure 140 illustrates a clipping for a curved wall using an IfcHalfSpaceSolid as SecondOperand in the
 /// IfcBooleanClippingResult.
 /// 
-/// Figure 139 &#8212; Wall body clipping straight
-/// Figure 140 &#8212; Wall body clipping curved
+/// Figure 139 — Wall body clipping straight
+/// Figure 140 — Wall body clipping curved
 class IFC_PARSE_API IfcWallStandardCase : public IfcWall {
 public:
     virtual unsigned int getArgumentCount() const { return 8; }
@@ -40551,7 +40577,7 @@ public:
 /// IfcRelFillsElement relationship, , then the IfcDoor
 /// has an inverse attribute FillsVoids provided,
 /// 
-/// NOTE View definitions or
+/// NOTEÿ View definitions or
 /// implementer agreements may restrict the relationship to only
 /// include one window (or door) into one opening.
 /// 
@@ -40574,7 +40600,7 @@ public:
 /// IfcWindowLiningProperties and on to many
 /// IfcWindowPanelProperties.
 /// 
-/// NOTE see
+/// NOTEÿ see
 /// IfcWindowStandardCase for all specific constraints imposed
 /// by this subtype.
 /// 
@@ -40609,7 +40635,7 @@ public:
 /// the construction material type
 /// the particular attributes for the lining by the
 /// IfcWindowLiningProperties
-/// the particular attributes for the panels by the
+/// the particular attributes for the panels by theÿ
 /// IfcWindowPanelProperties
 /// 
 /// HISTORY New entity in IFC Release 1.0.
@@ -40675,13 +40701,13 @@ public:
 /// containment relationships. The first (and in most implementation
 /// scenarios mandatory) relationship is the hierachical spatial
 /// containment, the second (optional) relationship is the
-/// aggregation within anelement assembly.
+/// aggregation within anÿelement assembly.
 /// 
 /// The IfcWindow is placed within the project spatial
 /// hierarchy using the objectified relationship
 /// IfcRelContainedInSpatialStructure, refering to it by its
 /// inverse attribute SELF\IfcElement.ContainedInStructure.
-/// Subtypes ofIfcSpatialStructureElement are valid spatial
+/// Subtypes ofÿIfcSpatialStructureElement are valid spatial
 /// containers, with IfcBuildingStorey being the default
 /// container.
 /// The IfcWindow may be aggregated into an element
@@ -40691,13 +40717,13 @@ public:
 /// of an IfcCurtainWall as a special focus subtype. In this
 /// case it should not be additionally contained in the project
 /// spatial hierarchy,
-/// i.e.SELF\IfcElement.ContainedInStructure should be
+/// i.e.ÿSELF\IfcElement.ContainedInStructure should be
 /// NIL.
 /// 
 /// Figure 141 illustrates window containment.
 /// NOTE The containment shall be defined independently of the filling relationship, that is, even if the IfcWindow is a filling of an opening established by IfcRelFillsElement, it is also contained in the spatial structure by an IfcRelContainedInSpatialStructure.
 /// 
-/// Figure 141 &#8212; Window containment
+/// Figure 141 — Window containment
 /// 
 /// Geometry Use Definitions:
 /// The geometric representation of IfcWindow is given by
@@ -40730,34 +40756,34 @@ public:
 /// is defined within the world coordinate system.
 /// 
 /// Geometric Representation
-/// Thegeometric representation of IfcWindow is defined
-/// using the following (potentiallymultiple)
+/// Theÿgeometric representation of IfcWindow is defined
+/// using the following (potentiallyÿmultiple)
 /// IfcShapeRepresentation's for its
 /// IfcProductDefinitionShape:
 /// 
-/// Profile: A'Curve3D'
+/// Profile: Aÿ'Curve3D'
 /// consisting of a single losed curve defining the outer boundary of
-/// the window (lining). Thewindow parametric representation uses
-/// this profile in order to apply thewindow lining and panel
+/// the window (lining). Theÿwindow parametric representation uses
+/// this profile in order to apply theÿwindow lining and panel
 /// parameter. If not provided, the profile of the
 /// IfcOpeningElement is taken.
 /// FootPrint: A 'GeometricCurveSet', or 'Annotation2D'
-/// representation defining the 2D shape of thewindow
+/// representation defining the 2D shape of theÿwindow
 /// Body: A 'SweptSolid', 'SurfaceModel', or 'Brep'
-/// representation defining the 3D shape of thewindow.
+/// representation defining the 3D shape of theÿwindow.
 /// 
 /// In addition the parametric representation of a
-/// (limited)window shape is available by applying the parameters
-/// fromIfcWindowType
-/// referencingIfcWindowLiningProperties
-/// andIfcWindowPanelProperties. The purpose of the parameter
+/// (limited)ÿwindow shape is available by applying the parameters
+/// fromÿIfcWindowType
+/// referencingÿIfcWindowLiningProperties
+/// andÿIfcWindowPanelProperties. The purpose of the parameter
 /// is described at those entities and below (parametric
 /// representation).
-/// Profile -'Curve3D' representation
-/// Thewindow profile is represented by a three-dimensional
+/// Profile -ÿ'Curve3D' representation
+/// Theÿwindow profile is represented by a three-dimensional
 /// closed curve within a particular shape representation. The
-/// profile is used to apply the parameter of the parametricwindow
-/// representation.The following attribute values for the
+/// profile is used to apply the parameter of the parametricÿwindow
+/// representation.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -40769,20 +40795,20 @@ public:
 /// A 'Profile' representation has to be provided if:
 /// 
 /// a parametric representation shall be applied to the
-/// windowAND
+/// windowÿAND
 /// 
 /// the window is 'free standing', or
 /// the opening into which the window is inserted is not extruded
 /// horizontally (i.e. where the opening profile does not match the
 /// window profile)
 /// 
-/// FootPrint -'GeometricCurveSet' or 'Annotation2D'
+/// FootPrint -ÿ'GeometricCurveSet' or 'Annotation2D'
 /// representation
-/// Thewindow foot print is represented by a set of
-/// two-dimensionalcurves (or in case of 'Annotation2D' additional
+/// Theÿwindow foot print is represented by a set of
+/// two-dimensionalÿcurves (or in case of 'Annotation2D' additional
 /// hatching and text) within a particular shape representation. The
 /// foot print is used for the plan view representation of
-/// thewindow.The following attribute values for the
+/// theÿwindow.ÿThe following attribute values for the
 /// IfcShapeRepresentation holding this geometric
 /// representation shall be used:
 /// 
@@ -40792,11 +40818,11 @@ public:
 /// 
 /// Body - 'SweptSolid', 'SurfaceModel', or 'Brep'
 /// representation
-/// Thewindow body is either represented parameterically (see
+/// Theÿwindow body is either represented parameterically (see
 /// parametric representation) or by explicit 3D shape. The 3D shape
 /// is given by using extrusion geometry, or surface models, or Brep
 /// models within a particular shape representation. The body is used
-/// for the model view representation of thewindow.The following
+/// for the model view representation of theÿwindow.ÿThe following
 /// attribute values for the IfcShapeRepresentation holding
 /// this geometric representation shall be used:
 /// 
@@ -40806,7 +40832,7 @@ public:
 /// 
 /// MappedRepresentation
 /// The 'FootPrint' and 'Body' geometric representation
-/// ofIfcWindow can be shared among several identicalwindows
+/// ofÿIfcWindow can be shared among several identicalÿwindows
 /// using the 'MappedRepresentation'. The following attribute values
 /// for the IfcShapeRepresentation holding this geometric
 /// representation shall be used:
@@ -40814,7 +40840,7 @@ public:
 /// RepresentationIdentifier : 'FootPrint', 'Body'
 /// RepresentationType : 'MappedRepresentation'
 /// 
-/// The same constraints, as given for the 'FootPrint', 'Body'
+/// The same constraints, as given for theÿ 'FootPrint', 'Body'
 /// representation identifiers, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
@@ -40837,11 +40863,11 @@ public:
 /// Figure 142 illustrates the insertion of a window into the IfcOpeningElement by creating an instance of
 /// IfcWindow with PartitioningType = DoublePanelHorizontal. The parameters OverallHeight and OverallWidth show the extent of the window in the positive Z and X axis of the local placement of the window. The lining and the transom are created by the given parameters.
 /// 
-/// Figure 142 &#8212; Window placement
+/// Figure 142 — Window placement
 /// 
 /// Figure 143 illustrates the final window (DoublePanelHorizontal) with first panel having PanelPosition = TOP, OperationType = BOTTOMHUNG and second panel having PanelPosition = BOTTOM and OperationType = TILTANDTURNLEFTHAND.
 /// 
-/// Figure 143 &#8212; Window planes
+/// Figure 143 — Window planes
 /// 
 /// Window opening operation by window type
 /// The parameters that defines the shape of the IfcWindow,
@@ -40850,14 +40876,14 @@ public:
 /// IfcWindow only defines the local placement which
 /// determines the opening direction of the window. The overall
 /// layout of the IfcWindow is determined by
-/// itsIfcWindowType.PartitioningType. Each window panel has
+/// itsÿIfcWindowType.PartitioningType. Each window panel has
 /// its own operation type, provided by
 /// IfcWindowPanelProperties.OperationType. All window panels
 /// are assumed to open into the same direction (if relevant for the
 /// particular window panel operation. The hindge side (whether a
 /// window opens to the left or to the right) is determined by the
 /// IfcWindowPanelProperties.OperationType.
-/// NOTE There are different conventions in
+/// NOTE ÿThere are different conventions in
 /// different countries on how to show the symbolic presentation of
 /// the window panel operation (the "triangles"). Either as seen from
 /// the exterior, or from the interior side. The following figures
@@ -40871,41 +40897,41 @@ public:
 /// The determination of whether the window opens to the left or to
 /// the right is done at
 /// IfcWindowPanelProperties.OperationType. Here it is a left
-/// side opening window given byOperationType =
+/// side opening window given byÿOperationType =
 /// SideHungLeftHand.
 /// 
 /// If the window should open to the other side, then the
 /// local placement has to be changed. It is still a left hung
 /// window, given by IfcWindowPanelProperties.OperationType
-/// =SideHungLeftHand.
+/// =ÿSideHungLeftHand.
 /// 
 /// If the window panel (for side hung windows) opens to
 /// the right, a separate window panel style needs to be used (here
 /// IfcWindowPanelProperties.OperationType
-/// =SideHungRightHand) and it always opens into the direction of
-/// the positive Y axis of the local placement.
+/// =ÿSideHungRightHand) and it always opens into the direction of
+/// the positive Y axis of the local placement.ÿ
 /// 
 /// If the window should open to the other side, then the
 /// local placement has to be changed. It is still a right hung
 /// window, given by IfcWindowPanelProperties.OperationType
-/// =SideHungRightHand.
+/// =ÿSideHungRightHand.
 /// .
 /// 
-/// Figure 144 &#8212; Window operations
+/// Figure 144 — Window operations
 class IFC_PARSE_API IfcWindow : public IfcBuildingElement {
 public:
     /// Whether the optional attribute OverallHeight is defined for this IfcWindow
     bool hasOverallHeight() const;
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
-    /// NOTE The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallHeight shall still be given as the window opening height, and not as the total height of the window lining.
+    /// NOTE  The body of the window might be taller then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallHeight shall still be given as the window opening height, and not as the total height of the window lining.
     double OverallHeight() const;
     void setOverallHeight(double v);
     /// Whether the optional attribute OverallWidth is defined for this IfcWindow
     bool hasOverallWidth() const;
     /// Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
-    /// NOTE The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallWidth shall still be given as the window opening width, and not as the total width of the window lining.
+    /// NOTE  The body of the window might be wider then the window opening (e.g. in cases where the window lining includes a casing). In these cases the OverallWidth shall still be given as the window opening width, and not as the total width of the window lining.
     double OverallWidth() const;
     void setOverallWidth(double v);
     virtual unsigned int getArgumentCount() const { return 10; }
@@ -41015,15 +41041,15 @@ public:
 /// 
 /// An IfcBeam is a horizontal, or nearly horizontal, structural member that is capable of withstanding load primarily by resisting bending. It represents such a member from an architectural point of view. It is not required to be load bearing.
 /// 
-/// NOTE The representation of a beam in a structural analysis model is provided by
+/// NOTE  The representation of a beam in a structural analysis model is provided by
 /// IfcStructuralCurveMember being part of an IfcStructuralAnalysisModel.
 /// 
-/// NOTE For any longitudial structural member, not constrained to be predominately horizontal nor vertical, or where this semantic information is irrelevant, the entity IfcMember should be used.
+/// NOTE  For any longitudial structural member, not constrained to be predominately horizontal nor vertical, or where this semantic information is irrelevant, the entity IfcMember should be used.
 /// 
 /// The IFC specification provides two entities for beam occurrences:
 /// 
 /// IfcBeamStandardCase used for all occurrences of beams, that have a profile defined that is swept along a directrix. The profile might be changed uniformly by a taper definition along the directrix. The profile parameter and its cardinal point of insertion can be fully described by the IfcMaterialProfileSetUsage. These beams are always represented geometricly by an 'Axis' and a 'SweptSolid' or 'AdvancedSweptSolid' shape representation (or by a 'Clipping' geometry based on the swept solid), if a 3D geometric representation is assigned. In addition they have to have a corresponding IfcMaterialProfileSetUsage assigned.
-/// NOTE View definitions and implementer agreements may further constrain the applicable geometry types, for example, by excluding tapering from an IfcBeamStandardCase implementation.
+/// NOTE  View definitions and implementer agreements may further constrain the applicable geometry types, for example, by excluding tapering from an IfcBeamStandardCase implementation.
 /// 
 /// IfcBeam used for all other occurrences of beams, particularly for beams with changing profile sizes along the extrusion, or beams defined by non-linear extrusion, or beams having only 'Brep', or 'SurfaceModel' geometry.
 /// 
@@ -41033,7 +41059,7 @@ public:
 /// IfcBeam defines the occuurence of any beam, common
 /// information about beam types (or styles) is handled by
 /// IfcBeamType. The IfcBeamType (if present) may
-/// establish the commontype name, usage (or predefined) type,
+/// establish the common type name, usage (or predefined) type,
 /// common material layer set, common set of properties and common
 /// shape representations (using IfcRepresentationMap). The
 /// IfcBeamType is attached using the
@@ -41177,16 +41203,16 @@ public:
 /// IfcRevolvedAreaSolid shall be supported
 /// Profile: all subtypes of IfcProfileDef (with
 /// exception of IfcArbitraryOpenProfileDef)
-/// Extrusion: All extrusion directions shall be
+/// Extrusion:  All extrusion directions shall be
 /// supported.
 /// 
 /// Figure 71 illustrates the 'SweptSolid' geometric representation.  There are no restrictions or conventions on how to use the local placement (black), solid of extrusion placement (red) and profile placement (green).
 /// 
-/// Figure 71 &#8212; Beam swept solid
+/// Figure 71 — Beam swept solid
 /// 
 /// Figure 72 illustrates the use of non-perpendicular extrusion to create the IfcExtrudedAreaSolid.
 /// 
-/// Figure 72 &#8212; Beam non-perpendicular extrusion
+/// Figure 72 — Beam non-perpendicular extrusion
 /// 
 /// Clipping Representation Type
 /// The following attribute values for the
@@ -41210,7 +41236,7 @@ public:
 /// 
 /// Figure 73 illustrates use of IfcBooleanClippingResult between an IfcExtrudedAreaSolid and an IfcHalfSpaceSolid to create a clipped body.
 /// 
-/// Figure 73 &#8212; Beam clipping
+/// Figure 73 — Beam clipping
 /// 
 /// AdvancedSweptSolid Representation Type
 /// The following attribute values for the
@@ -41415,7 +41441,7 @@ public:
 /// 
 /// Figure 147 illustrates classification usage.
 /// 
-/// Figure 147 &#8212; Distribution control classification
+/// Figure 147 — Distribution control classification
 /// 
 /// Composition Use Definition
 /// The IfcDistributionControlElement may be decomposed into components using IfcRelAggregates where RelatingObject refers to the enclosing IfcDistributionControlElement and RelatedObjects contains one or more components.  Likewise, a control element may be aggregated within another element.  For example, a thermostat may contain temperature sensors, and a programmable logic controller may contain virtual (software-based) control elements.  Standard types for composition are defined at subtypes.
