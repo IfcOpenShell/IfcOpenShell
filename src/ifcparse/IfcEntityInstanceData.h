@@ -85,7 +85,7 @@ public:
 		if (!initialized_) {
 			load_();
 		}
-		return attributes_.size();
+		return (unsigned int)attributes_.size();
 	}
 
 	IfcSchema::Type::Enum type() const {

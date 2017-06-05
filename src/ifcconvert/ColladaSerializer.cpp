@@ -475,7 +475,7 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 
 		if (use_hierarchy)
 		{
-			unsigned parentsNumber = it->parents_.size();
+			size_t parentsNumber = it->parents_.size();
 			bool finished = false;
 
 			// If we have no parent in the stack and the object has no parent, nothing to do : skip the loop
@@ -489,14 +489,14 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 					if (serializer->parentStackId.empty()) { scene.addParent(*(it->parents_.at(0))); }
 					else
 					{
-						unsigned diff = parentsNumber - serializer->parentStackId.size();
+						size_t diff = parentsNumber - serializer->parentStackId.size();
 
 						// If we have the wrong parent in the list
 						if (serializer->parentStackId.top() != it->parents_.at(parentsNumber - diff - 1)->id()) {
 							scene.closeParent();
 						} else {
 							// So far we have the right parents, we just need to add the missing ones
-							for (unsigned i = parentsNumber - diff; i < parentsNumber; i++) { scene.addParent(*(it->parents_.at(i))); }
+							for (size_t i = parentsNumber - diff; i < parentsNumber; i++) { scene.addParent(*(it->parents_.at(i))); }
 
 							// if diff == 0, we can leave the loop. In fact we have the right number of parents, and the last one is ok
 							if (diff == 0) { finished = true; }
