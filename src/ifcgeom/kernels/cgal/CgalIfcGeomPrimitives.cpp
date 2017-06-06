@@ -236,10 +236,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOpe
   return true;
 }
 
-bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* l, cgal_placement_t& gtrsf) {
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* l, cgal_placement_t& trsf) {
   //  IN_CACHE(IfcCartesianTransformationOperator2DnonUniform,l,cgal_placement_t,gtrsf)
   
-  cgal_placement_t trsf;
   cgal_point_t origin;
   cgal_direction_t axis1 (1.,0.,0.);
   cgal_direction_t axis2 (0.,1.,0.);

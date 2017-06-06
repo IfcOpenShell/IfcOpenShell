@@ -34,17 +34,13 @@ namespace IfcGeom {
 		operator const cgal_placement_t& () { return trsf_; }
 		
 		virtual double Value(int i, int j) const {
-			// TODO: Check
-//      std::cout << "Getting CgalPlacement with i = " << i << " and j = " << j << std::endl;
-      return CGAL::to_double(trsf_.cartesian(i-1, j-1));
+			return CGAL::to_double(trsf_.cartesian(i-1, j-1));
 		}
 		virtual void Multiply(const ConversionResultPlacement* other) {
-			// TODO: Check
-      trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
+			trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
 		}
 		virtual void PreMultiply(const ConversionResultPlacement* other) {
-			// TODO: Check
-      trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
+			trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
 		}
 		virtual ConversionResultPlacement* clone() const {
 			return new CgalPlacement(trsf_);
