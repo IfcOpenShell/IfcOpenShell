@@ -1179,7 +1179,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 				entity_type = IfcSchema::Type::FromString(TokenFunc::asStringRef(token_stream[2]));
 			} catch (const IfcException& ex) {
 				Logger::Message(Logger::LOG_ERROR, ex.what());
-				continue;
+				goto advance;
 			}		
 				
 			data = new IfcEntityInstanceData(entity_type, this, current_id, token_stream[2].startPos);
@@ -1235,6 +1235,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			register_inverse(current_id, token_stream[0]);
 		}
 
+	advance:
 		Token next_token;
 		try {
 			next_token = tokens->Next();
