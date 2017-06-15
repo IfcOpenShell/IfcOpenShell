@@ -529,7 +529,7 @@ int main(int argc, char** argv)
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width, bounding_height);
 		}
 	} else {
-		Logger::Error("Unknown output filename extension '" + output_extension + "'");
+        std::cerr << "[Error] Unknown output filename extension '" + output_extension + "'\n";
 		write_log();
 		print_usage();
 		return EXIT_FAILURE;
@@ -538,7 +538,7 @@ int main(int argc, char** argv)
     // NOTE After this point, make sure to delete serializer upon application exit.
 
     if (use_element_hierarchy && output_extension != ".dae") {
-		Logger::Error("--use-element-hierarchy can be used only with .dae output.");
+        std::cerr << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
 		write_log();
 		print_usage();
         delete serializer;
@@ -718,7 +718,7 @@ size_t read_filters_from_file(
 {
     std::ifstream filter_file(filename.c_str());
     if (!filter_file.is_open()) {
-        std::cerr << "[Error] Unable to open filter file '" + filename + "'\n";
+        std::cerr << "[Error] Unable to open filter file '" + filename + "' or the file does not exist.\n";
         return 0;
     }
 
