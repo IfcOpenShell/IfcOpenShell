@@ -148,6 +148,8 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
+bool init_input_file(const std::string& filename, IfcParse::IfcFile& ifc_file, bool no_progress);
+
 int main(int argc, char** argv)
 {
     po::options_description generic_options("Command line options");
@@ -421,28 +423,19 @@ int main(int argc, char** argv)
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
     IfcParse::IfcFile ifc_file;
-    // Prevent IfcFile::Init() prints by setting output to null temporarily
-    if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
-
-    /// @todo Do not read/initialize the file just yet. We got many potential error and
-    /// exit points below and reading/initializing at this point can stall up to tens of
-    /// seconds if the file is very large.
-    if (!ifc_file.Init(input_filename)) {
-        Logger::Error("Unable to parse input file '" + input_filename + "'");
-        return EXIT_FAILURE;
-    }
-    if (no_progress) { Logger::SetOutput(&std::cout, &log_stream); }
 
     if (output_extension == ".xml") {
         int exit_code = EXIT_FAILURE;
         try {
-            XmlSerializer s(output_temp_filename);
-            s.setFile(&ifc_file);
-            Logger::Status("Writing XML output...");
-            s.finalize();
-            Logger::Status("Done!");
-            rename_file(output_temp_filename, output_filename);
-            exit_code = EXIT_SUCCESS;
+            if (init_input_file(input_filename, ifc_file, no_progress)) {
+                XmlSerializer s(output_temp_filename);
+                s.setFile(&ifc_file);
+                Logger::Status("Writing XML output...");
+                s.finalize();
+                Logger::Status("Done!");
+                rename_file(output_temp_filename, output_filename);
+                exit_code = EXIT_SUCCESS;
+            }
         } catch (...) {}
         write_log();
         return exit_code;
@@ -571,6 +564,10 @@ int main(int argc, char** argv)
 	time_t start,end;
 	time(&start);
 	
+    if (!init_input_file(input_filename, ifc_file, no_progress)) {
+        return EXIT_FAILURE;
+    }
+
     IfcGeom::Iterator<real_t> context_iterator(settings, &ifc_file, filter_funcs);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
@@ -692,6 +689,21 @@ void write_log() {
 	if (!log.empty()) {
 		std::cout << "\nLog:\n" << log << std::endl;
 	}
+}
+
+bool init_input_file(const std::string &filename, IfcParse::IfcFile &ifc_file, bool no_progress)
+{
+    // Prevent IfcFile::Init() prints by setting output to null temporarily
+    if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
+
+    if (!ifc_file.Init(filename)) {
+        Logger::Error("Unable to parse input file '" + filename + "'");
+        return false;
+    }
+
+    if (no_progress) { Logger::SetOutput(&std::cout, &log_stream); }
+
+    return true;
 }
 
 bool append_filter(const std::string& type, const std::vector<std::string>& values, geom_filter& filter)
