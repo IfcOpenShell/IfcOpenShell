@@ -1008,6 +1008,10 @@ Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
 }
 
 void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type) {
+	if (!initialized_) {
+		load_();
+	}
+
 	while (attributes_.size() < i) {
 		attributes_.push_back(new NullArgument());
 	}

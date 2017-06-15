@@ -41,6 +41,8 @@ HeaderEntity::HeaderEntity(const char * const datatype, IfcFile* file)
 	if (file) {
 		offset_in_file_ = file->stream->Tell();
 		load_();
+	} else {
+		initialized_ = true;
 	}
 }
 
