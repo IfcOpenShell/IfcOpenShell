@@ -535,11 +535,14 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_HIERARCHY) && output_extension != ".dae")
-	{
+    // NOTE After this point, make sure to delete serializer upon application exit.
+
+    if (use_element_hierarchy && output_extension != ".dae") {
 		Logger::Error("--use-element-hierarchy can be used only with .dae output.");
 		write_log();
 		print_usage();
+        delete serializer;
+        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
 		return EXIT_FAILURE;
 	}
 
@@ -559,6 +562,8 @@ int main(int argc, char** argv)
 	}
 
 	if (!serializer->ready()) {
+        delete serializer;
+        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
 		write_log();
 		return EXIT_FAILURE;
 	}
@@ -571,6 +576,8 @@ int main(int argc, char** argv)
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Error("No geometrical entities found");
+        delete serializer;
+        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
         write_log();
         return EXIT_FAILURE;
     }
@@ -597,8 +604,10 @@ int main(int argc, char** argv)
         } else {
             if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
                 std::cerr << "[Error] Invalid use of --model-offset\n";
+                delete serializer;
+                std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
                 print_options(serializer_options);
-                return 1;
+                return EXIT_FAILURE;
             }
         }
 
@@ -650,7 +659,8 @@ int main(int argc, char** argv)
     // Do not remove the temp file as user can salvage the conversion result from it.
     bool successful = rename_file(output_temp_filename, output_filename);
     if (!successful) {
-        Logger::Error("Unable to write output file '" + output_filename + "'");
+        Logger::Error("Unable to write output file '" + output_filename + "', see '" +
+            output_temp_filename + "' for the conversion result.");
     }
 
 	write_log();
