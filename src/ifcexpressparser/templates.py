@@ -469,7 +469,7 @@ constructor_stmt_enum     = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::I
 constructor_stmt_array    = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(name)s)->generalize()"                                                                  +");entity->setArgument(%(index)d,attr);}"
 constructor_stmt_derived  = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::Derived()"                                                     +");entity->setArgument(%(index)d,attr);}"
 
-constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::none); entity->setArgument(%(index)d, attr); }"
+constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); entity->setArgument(%(index)d, attr); }"
 
 inverse_implementation = "    inverse_map[Type::%(type)s].insert(std::make_pair(\"%(name)s\", std::make_pair(Type::%(related_type)s, %(index)d)));"
 
