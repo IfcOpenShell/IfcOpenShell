@@ -50,6 +50,7 @@ public:
 	}
 	void remove(IfcUtil::IfcBaseClass*);
 	IfcEntityList::ptr filtered(const std::set<IfcSchema::Type::Enum>& entities);
+	IfcEntityList::ptr unique();
 };
 
 template <class T>

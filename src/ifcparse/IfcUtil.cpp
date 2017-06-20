@@ -62,6 +62,7 @@ void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
 		ls.erase(it);
 	}
 }
+
 IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>& entities) {
 	IfcEntityList::ptr return_value(new IfcEntityList);
 	for (it it = begin(); it != end(); ++it) {
@@ -76,6 +77,18 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 			return_value->push(*it);
 		}
 	}	
+	return return_value;
+}
+
+IfcEntityList::ptr IfcEntityList::unique() {
+	std::set<IfcUtil::IfcBaseClass*> encountered;
+	IfcEntityList::ptr return_value(new IfcEntityList);
+	for (it it = begin(); it != end(); ++it) {
+		if (encountered.find(*it) == encountered.end()) {
+			return_value->push(*it);
+			encountered.insert(*it);
+		}
+	}
 	return return_value;
 }
 
