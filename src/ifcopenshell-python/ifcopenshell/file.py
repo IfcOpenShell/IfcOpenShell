@@ -25,7 +25,7 @@ from .entity_instance import entity_instance
 
 class file(object):
     def __init__(self, f=None):
-        self.wrapped_data = f or ifcopenshell_wrapper.file(True)
+        self.wrapped_data = f or ifcopenshell_wrapper.file()
     def create_entity(self,type,*args,**kwargs):
         e = entity_instance(type)
         attrs = list(enumerate(args)) + \
