@@ -1261,7 +1261,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	return true;
 }
 
-void IfcFile::traverse(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level) {
+void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level) {
 	if (visited.find(instance) != visited.end()) {
 		return;
 	}
@@ -1274,28 +1274,33 @@ void IfcFile::traverse(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBas
 		Argument* arg = instance->getArgument(i);
 
 		if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-			traverse(*arg, visited, list, level + 1, max_level);
+			traverse_(*arg, visited, list, level + 1, max_level);
 		} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcEntityList::ptr entity_list_attribute = *arg;
 			for (IfcEntityList::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
-				traverse(*it, visited, list, level + 1, max_level);
+				traverse_(*it, visited, list, level + 1, max_level);
 			}
 		} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcEntityListList::ptr entity_list_attribute = *arg;
 			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
 				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
-					traverse(*jt, visited, list, level + 1, max_level);
+					traverse_(*jt, visited, list, level + 1, max_level);
 				}
 			}
 		}
 	}
 }
 
-IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
+IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
 	std::set<IfcUtil::IfcBaseClass*> visited;
 	IfcEntityList::ptr return_value(new IfcEntityList);
-	traverse(instance, visited, return_value, 0, max_level);
+	traverse_(instance, visited, return_value, 0, max_level);
 	return return_value;
+}
+
+/// @note: for backwards compatibility
+IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
+	return IfcParse::traverse(instance, max_level);
 }
 
 void IfcFile::addEntities(IfcEntityList::ptr es) {

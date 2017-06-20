@@ -55,7 +55,6 @@ private:
 	IfcSpfHeader _header;
 
 	void setDefaultHeaderValues();
-	void traverse(IfcUtil::IfcBaseClass*, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level);
 	void register_inverse(unsigned, Token);
 public:
 	IfcParse::IfcSpfLexer* tokens;
