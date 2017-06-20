@@ -479,9 +479,9 @@ int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 			faces->push(f);
 		} else {
 			/// Cleanup:
-			for (auto it = faces->begin(); it != faces->end(); ++it) {
+			for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
 				IfcEntityList::ptr data = IfcParse::traverse(*it)->unique();
-				for (auto jt = data->begin(); jt != data->end(); ++jt) {
+				for (IfcEntityList::it jt = data->begin(); jt != data->end(); ++jt) {
 					delete *jt;
 				}
 			}
