@@ -50,6 +50,11 @@
 %include "std_string.i"
 %include "exception.i"
 
+// General python-specific rename rules for comparison operators.
+// Mostly to silence warnings, but might be of use some time.
+%rename("__eq__") operator ==;
+%rename("__lt__") operator <;
+
 %exception {
 	try {
 		$action
