@@ -629,9 +629,10 @@ TokenArgument::TokenArgument(const Token& t) {
 EntityArgument::EntityArgument(const Token& t) {
 	IfcParse::IfcFile* file = t.lexer->file;
 	IfcEntityInstanceData* data = read(0, file, t.startPos);
+	// Data needs to be loaded, for the tokens
+	// to be consumed and parsing to continue.
+	data->load();
 	entity = IfcSchema::SchemaEntity(data);
-	// Needs to be loaded, for the tokens to be consumed
-	file->load(*data);
 }
 
 // 
@@ -920,7 +921,7 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, Token t) {
 //
 std::string IfcEntityInstanceData::toString(bool upper) const {
 	if (!initialized_) {
-		load_();
+		load();
 	}
 
 	std::stringstream ss;
@@ -979,7 +980,7 @@ IfcFile::IfcFile()
 	setDefaultHeaderValues();
 }
 
-void IfcEntityInstanceData::load_() const {
+void IfcEntityInstanceData::load() const {
 	file->load(*this);
 	initialized_ = true;
 }
@@ -998,7 +999,7 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 
 Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
 	if (!initialized_) {
-		load_();
+		load();
 	}
 	if (i < attributes_.size()) {
 		return attributes_[i];
@@ -1009,7 +1010,7 @@ Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
 
 void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type) {
 	if (!initialized_) {
-		load_();
+		load();
 	}
 
 	while (attributes_.size() < i) {

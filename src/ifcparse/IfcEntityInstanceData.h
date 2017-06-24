@@ -48,7 +48,6 @@ protected:
 	mutable bool initialized_;
 	unsigned offset_in_file_;
 
-	void load_() const;
 public:
 	IfcEntityInstanceData(IfcSchema::Type::Enum type, IfcParse::IfcFile* file_, unsigned id = 0, unsigned offset_in_file = 0)
 		: file(file_), id_(id), type_(type), initialized_(false), offset_in_file_(offset_in_file)
@@ -70,6 +69,8 @@ public:
 	{}
 	*/
 
+	void load() const;
+
 	IfcEntityInstanceData(const IfcEntityInstanceData& e);
 
 	~IfcEntityInstanceData();
@@ -83,7 +84,7 @@ public:
 
 	unsigned int getArgumentCount() const {
 		if (!initialized_) {
-			load_();
+			load();
 		}
 		return (unsigned int)attributes_.size();
 	}
