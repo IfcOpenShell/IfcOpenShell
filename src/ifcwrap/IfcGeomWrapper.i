@@ -374,7 +374,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					IfcGeom::IfcRepresentationShapeItems shapes;
 					if (kernel.convert_shapes(instance, shapes)) {
 						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->type()));
-						IfcGeom::Representation::BRep brep(element_settings, instance->entity->id(), shapes);
+						IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->entity->id()), shapes);
 						try {
 							if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
 								return new IfcGeom::Representation::Serialization(brep);

@@ -240,7 +240,12 @@ protected:
 			   0,    0,    0,     1
 		};
 		swrite(s, std::string((char*)matrix_array, 16 * sizeof(float)));
-		swrite<int32_t>(s, geom->geometry().id());
+		
+		// The first bit of the string is always the instance name of the representation.
+		const std::string& representation_id = geom->geometry().id();
+		const int integer_representation_id = atoi(representation_id.c_str());
+		swrite<int32_t>(s, (int32_t)integer_representation_id);
+
 		swrite(s, std::string((char*)geom->geometry().verts().data(), geom->geometry().verts().size() * sizeof(float)));
 		swrite(s, std::string((char*)geom->geometry().normals().data(), geom->geometry().normals().size() * sizeof(float)));
 		{
