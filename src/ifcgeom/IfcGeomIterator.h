@@ -340,6 +340,8 @@ namespace IfcGeom {
 
 		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
 
+		bool geometry_reuse_ok_for_current_representation_;
+
 		BRepElement<P>* create_shape_model_for_next_entity() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
@@ -397,14 +399,14 @@ namespace IfcGeom {
 					
 					// With world coords enabled, object transformations are directly applied to
 					// the BRep. There is no way to re-use the geometry for multiple products.
-					const bool process_maps_for_current_representation = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
+					geometry_reuse_ok_for_current_representation_ = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
 						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) &&
 						(!has_layers || !settings.get(IteratorSettings::APPLY_LAYERSETS));
 					bool representation_processed_as_mapped_item = false;
 
 					IfcSchema::IfcRepresentation* representation_mapped_to = 0;
 					
-					if (process_maps_for_current_representation) {
+					if (geometry_reuse_ok_for_current_representation_) {
 						IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
 						if (items->size() == 1) {
 							IfcSchema::IfcRepresentationItem* item = *items->begin();
@@ -457,7 +459,7 @@ namespace IfcGeom {
 
 					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 					
-					if (process_maps_for_current_representation && maps->size() == 1) {
+					if (geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
 						IfcSchema::IfcRepresentationMap* map = *maps->begin();
 						if (kernel.is_identity_transform(map->MappingOrigin())) {
 							IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
@@ -511,7 +513,7 @@ namespace IfcGeom {
                 Logger::SetProduct(product);
 
 				BRepElement<P>* element;
-				if (ifcproduct_iterator == ifcproducts->begin() || settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+				if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
 					element = kernel.create_brep_for_representation_and_product<P>(settings, representation, product);
 				} else {
 					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
@@ -678,7 +680,7 @@ namespace IfcGeom {
 					}
 				} else if (!settings.get(IteratorSettings::DISABLE_TRIANGULATION)) {
 					try {
-						if (ifcproduct_iterator == ifcproducts->begin() || settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+						if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
 							next_triangulation = new TriangulationElement<P>(*next_shape_model);
 						} else {
 							next_triangulation = new TriangulationElement<P>(*next_shape_model, current_triangulation->geometry_pointer());

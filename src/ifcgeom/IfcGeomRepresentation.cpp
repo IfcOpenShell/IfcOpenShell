@@ -29,7 +29,7 @@
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
-	, _id(brep.getId())
+	, id_(brep.id())
 {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
@@ -40,18 +40,18 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 		
 		if (it->hasStyle() && it->Style().Diffuse()) {
 			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
-			_surface_styles.push_back(clr.R());
-			_surface_styles.push_back(clr.G());
-			_surface_styles.push_back(clr.B());
+			surface_styles_.push_back(clr.R());
+			surface_styles_.push_back(clr.G());
+			surface_styles_.push_back(clr.B());
 		} else {
-			_surface_styles.push_back(-1.);
-			_surface_styles.push_back(-1.);
-			_surface_styles.push_back(-1.);
+			surface_styles_.push_back(-1.);
+			surface_styles_.push_back(-1.);
+			surface_styles_.push_back(-1.);
 		}
 		if (it->hasStyle() && it->Style().Transparency()) {
-			_surface_styles.push_back(1. - *it->Style().Transparency());
+			surface_styles_.push_back(1. - *it->Style().Transparency());
 		} else {
-			_surface_styles.push_back(1.);
+			surface_styles_.push_back(1.);
 		}
 		
 		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
@@ -66,5 +66,5 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	}
 	std::stringstream sstream;
 	BRepTools::Write(compound,sstream);
-	_brep_data = sstream.str();
+	brep_data_ = sstream.str();
 }

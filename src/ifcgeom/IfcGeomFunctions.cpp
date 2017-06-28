@@ -1082,6 +1082,10 @@ template <typename P>
 IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_product(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 {
+	std::stringstream representation_id_builder;
+
+	representation_id_builder << representation->entity->id();
+
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::IfcRepresentationShapeItems shapes, shapes2;
 
@@ -1098,6 +1102,17 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
 				std::vector<const SurfaceStyle*> styles;
 				if (convert_layerset(product, layers, styles, thickness)) {
+
+					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
+					for (IfcSchema::IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
+						IfcSchema::IfcRelAssociatesMaterial* associates_material = (**it).as<IfcSchema::IfcRelAssociatesMaterial>();
+						if (associates_material) {
+							unsigned layerset_id = associates_material->RelatingMaterial()->entity->id();
+							representation_id_builder << "-layerset-" << layerset_id;
+							break;
+						}
+					}
+					
 					if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
 						if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
 							std::swap(shapes, shapes2);
@@ -1136,6 +1151,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
     if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
+		representation_id_builder << "-openings";
+		for (IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++it) {
+			representation_id_builder << "-" << (*it)->entity->id();
+		}
+
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
 		try {
 #if OCC_VERSION_HEX < 0x60900
@@ -1160,16 +1180,18 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				it->prepend(trsf);
 			}
 			trsf = gp_Trsf();
+			representation_id_builder << "-world-coords";
 		}
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), opened_shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), opened_shapes);
     } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			it->prepend(trsf);
 		}
 		trsf = gp_Trsf();
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
+		representation_id_builder << "-world-coords";
+		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
 	} else {
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
 	}
 
 	std::string context_string = "";
