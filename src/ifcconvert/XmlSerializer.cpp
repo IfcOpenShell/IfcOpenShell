@@ -173,6 +173,10 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
     return format_entity_instance(instance, child, tree, as_link);
 }
 
+std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
+	return IfcSchema::Type::ToString(inst->type()) + "_" + boost::lexical_cast<std::string>(inst->entity->id());
+}
+
 // A function to be called recursively. Template specialization is used 
 // to descend into decomposition, containment and property relationships.
 template <typename A>
@@ -280,6 +284,16 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
             node.put("<xmlattr>.xlink:href", "#" + it->first);
             format_entity_instance(it->second, node, child, true);
         }
+		
+		IfcRelAssociates::list::ptr associations = product->HasAssociations();
+		for (IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
+			if ((*it)->as<IfcRelAssociatesMaterial>()) {
+				IfcMaterialSelect* mat = (*it)->as<IfcRelAssociatesMaterial>()->RelatingMaterial();
+				ptree node;
+				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
+				format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, child, true);
+			}
+		}
     }
 
 	return child;
@@ -310,7 +324,7 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, types, layers;
+	ptree root, header, units, decomposition, properties, types, layers, materials;
 	
 	// Write the SPF header as XML nodes.
 	foreach(const std::string& s, file->header().file_description().description()) {
@@ -388,11 +402,38 @@ void XmlSerializer::finalize() {
         }
     }
 
+	IfcRelAssociatesMaterial::list::ptr materal_associations = file->entitiesByType<IfcRelAssociatesMaterial>();
+	std::set<IfcMaterialSelect*> emitted_materials;
+	for (IfcRelAssociatesMaterial::list::it it = materal_associations->begin(); it != materal_associations->end(); ++it) {
+		IfcMaterialSelect* mat = (**it).RelatingMaterial();
+		if (emitted_materials.find(mat) == emitted_materials.end()) {
+			emitted_materials.insert(mat);
+			ptree node;
+			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
+			if (mat->as<IfcMaterialLayerSetUsage>()) {
+				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
+				if (layerset->hasLayerSetName()) {
+					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
+				}
+				IfcMaterialLayer::list::ptr ls = layerset->MaterialLayers();
+				for (IfcMaterialLayer::list::it jt = ls->begin(); jt != ls->end(); ++jt) {
+					ptree subnode;
+					if ((*jt)->hasMaterial()) {
+						subnode.put("<xmlattr>.Name", (*jt)->Material()->Name());
+					}
+					format_entity_instance(*jt, subnode, node);
+				}
+			}
+			format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, materials);
+		}
+	}
+
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.types",         types);
     root.add_child("ifc.layers",        layers);
+	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
