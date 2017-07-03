@@ -436,9 +436,19 @@ os.environ["CFLAGS"]=CFLAGS_MINIMAL
 PYTHON_CONFIGURE_ARGS=[]
 if get_os() == "Darwin":
     PYTHON_CONFIGURE_ARGS=["--disable-static", "--enable-shared"]
+    
+def get_python_unicode_confs(py_ver):
+    if py_ver < "3.3":
+        return [("--enable-unicode=ucs2",""), ("--enable-unicode=ucs4","u")]
+    else: return [("","")]
+    
+def PYTHON_VERSION_CONFS():
+    for v in PYTHON_VERSIONS:
+        for unicode_conf, abi_tag in get_python_unicode_confs(v):
+            yield v, unicode_conf, abi_tag
 
-for PYTHON_VERSION in PYTHON_VERSIONS:
-    build_dependency("python-%s" % (PYTHON_VERSION,), "autoconf", PYTHON_CONFIGURE_ARGS, "http://www.python.org/ftp/python/%s/" % (PYTHON_VERSION,), "Python-%s.tgz" % (PYTHON_VERSION,))
+for PYTHON_VERSION, unicode_conf, abi_tag in PYTHON_VERSION_CONFS():
+    build_dependency("python-%s%s" % (PYTHON_VERSION,abi_tag), "autoconf", PYTHON_CONFIGURE_ARGS + [unicode_conf], "http://www.python.org/ftp/python/%s/" % (PYTHON_VERSION,), "Python-%s.tgz" % (PYTHON_VERSION,))
 
 os.environ["CXXFLAGS"]=OLD_CXX_FLAGS
 os.environ["CFLAGS"]=OLD_C_FLAGS
@@ -487,16 +497,16 @@ os.environ["CXXFLAGS"]="%s %s" % (CXXFLAGS_MINIMAL, ADDITIONAL_ARGS)
 os.environ["CFLAGS"]="%s %s" % (CFLAGS_MINIMAL, ADDITIONAL_ARGS)
 os.environ["LDFLAGS"]="%s %s" % (LDFLAGS, ADDITIONAL_ARGS)
 
-for PYTHON_VERSION in PYTHON_VERSIONS:
-    logger.info("\rConfiguring python %s wrapper..." % (PYTHON_VERSION,))
+for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
+    logger.info("\rConfiguring python %s%s wrapper..." % (PYTHON_VERSION, TAG))
     
-    python_dir = os.path.join(IFCOS_DIR, "python-%s" % (PYTHON_VERSION,))
+    python_dir = os.path.join(IFCOS_DIR, "python-%s%s" % (PYTHON_VERSION, TAG))
     if not os.path.exists(python_dir):
         os.makedirs(python_dir)
 
-    PYTHON_LIBRARY=__check_output__([bash, "-c", "ls    %s/install/python-%s/lib/libpython*.*" % (DEPS_DIR, PYTHON_VERSION)], cwd=None).strip()
-    PYTHON_INCLUDE=__check_output__([bash, "-c", "ls -d %s/install/python-%s/include/python*" % (DEPS_DIR, PYTHON_VERSION)], cwd=None).strip()
-    PYTHON_EXECUTABLE=os.path.join(DEPS_DIR, "install", "python-%s" % (PYTHON_VERSION,), "bin", "python%s" % (PYTHON_VERSION[0],))
+    PYTHON_LIBRARY=__check_output__([bash, "-c", "ls    %s/install/python-%s%s/lib/libpython*.*" % (DEPS_DIR, PYTHON_VERSION, TAG)], cwd=None).strip()
+    PYTHON_INCLUDE=__check_output__([bash, "-c", "ls -d %s/install/python-%s%s/include/python*" % (DEPS_DIR, PYTHON_VERSION, TAG)], cwd=None).strip()
+    PYTHON_EXECUTABLE=os.path.join(DEPS_DIR, "install", "python-%s%s" % (PYTHON_VERSION, TAG), "bin", "python%s" % (PYTHON_VERSION[0],))
     os.environ["PYTHON_LIBRARY_BASENAME"]=os.path.basename(PYTHON_LIBRARY)
     
     run_cmake("", cmake_args=["-DBOOST_ROOT=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
@@ -513,7 +523,7 @@ for PYTHON_VERSION in PYTHON_VERSIONS:
     "-DCMAKE_INSTALL_PREFIX=%s/install/ifcopenshell/tmp" % (DEPS_DIR,),
     "-DCOLLADA_SUPPORT=OFF"], cmake_dir=CMAKE_DIR, cwd=python_dir)
     
-    logger.info("\rBuilding python %s wrapper...   " % (PYTHON_VERSION,))
+    logger.info("\rBuilding python %s%s wrapper...   " % (PYTHON_VERSION, TAG))
     
     __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,), "_ifcopenshell_wrapper"], cwd=python_dir)
     __check_call__([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
@@ -524,6 +534,6 @@ for PYTHON_VERSION in PYTHON_VERSIONS:
         # TODO: This symbol name depends on the Python version?
         __check_call__([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
         
-    __check_call__([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", "python-%s" % (PYTHON_VERSION,))])
+    __check_call__([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", "python-%s%s" % (PYTHON_VERSION, TAG))])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")
