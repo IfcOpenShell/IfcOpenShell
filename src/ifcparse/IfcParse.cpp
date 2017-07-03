@@ -1279,7 +1279,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
 	}
 
-	boost::circular_buffer<Token> token_stream(3);
+	boost::circular_buffer<Token> token_stream(3, Token());
 
 	IfcEntityInstanceData* data;
 	IfcUtil::IfcBaseClass* instance = 0;
