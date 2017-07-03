@@ -921,7 +921,7 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, IfcUtil::IfcBaseClass
 
 void IfcParse::IfcFile::unregister_inverse(unsigned id_from, IfcUtil::IfcBaseClass* inst) {
 	std::vector<unsigned int>& ids = byref[inst->entity->id()];
-	std::vector<unsigned int>::const_iterator it = std::find(ids.begin(), ids.end(), id_from);
+	std::vector<unsigned int>::iterator it = std::find(ids.begin(), ids.end(), id_from);
 	if (it == ids.end()) {
 		throw IfcParse::IfcException("Instance not found among inverses");
 	} else {
