@@ -423,6 +423,12 @@ void XmlSerializer::finalize() {
 					}
 					format_entity_instance(*jt, subnode, node);
 				}
+			} else if (mat->as<IfcMaterialList>()) {
+				IfcMaterial::list::ptr mats = mat->as<IfcMaterialList>()->Materials();
+				for (IfcMaterial::list::it jt = mats->begin(); jt != mats->end(); ++jt) {
+					ptree subnode;
+					format_entity_instance(*jt, subnode, node);
+				}
 			}
 			format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, materials);
 		}
