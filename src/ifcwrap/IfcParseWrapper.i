@@ -28,6 +28,8 @@ private:
 
 %ignore IfcParse::IfcFile::Init;
 %ignore IfcParse::IfcFile::entityByGuid;
+%ignore IfcParse::IfcFile::register_inverse;
+%ignore IfcParse::IfcFile::unregister_inverse;
 %ignore operator<<;
 
 %ignore IfcParse::FileDescription::FileDescription;
