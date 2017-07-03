@@ -52,6 +52,16 @@ f[22].MiddleNames = 'John', 'Matthew'
 assert "('John','Matthew')" in str(f[22])
 assert ("Id", "123") in list(f[22].get_info().items())
 
+# Assignment of instances and implications on inverse attributes
+assert f[288].ConnectedTo[0].RelatingElement == f[288]
+num_connections_1 = len(f[340].ConnectedTo + f[340].ConnectedFrom)
+f[288].ConnectedTo[0].RelatingElement = f[340]
+num_connections_2 = len(f[340].ConnectedTo + f[340].ConnectedFrom)
+assert num_connections_2 == num_connections_1 + 1
+assert f[288].ConnectedTo == ()
+rel = f.createIfcRelConnectsPathElements(RelatingElement=f[288])
+assert f[288].ConnectedTo == (rel,)
+
 # Some operations on ifcopenshell.guid
 assert len(ifcopenshell.guid.compress(uuid.uuid1().hex)) == 22
 

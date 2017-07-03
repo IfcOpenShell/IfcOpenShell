@@ -915,6 +915,20 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, Token t) {
 	byref[t.value_int].push_back(id_from);
 }
 
+void IfcParse::IfcFile::register_inverse(unsigned id_from, IfcUtil::IfcBaseClass* inst) {
+	byref[inst->entity->id()].push_back(id_from);
+}
+
+void IfcParse::IfcFile::unregister_inverse(unsigned id_from, IfcUtil::IfcBaseClass* inst) {
+	std::vector<unsigned int>& ids = byref[inst->entity->id()];
+	std::vector<unsigned int>::const_iterator it = std::find(ids.begin(), ids.end(), id_from);
+	if (it == ids.end()) {
+		throw IfcParse::IfcException("Instance not found among inverses");
+	} else {
+		ids.erase(it);
+	}
+}
+
 //
 // Returns a string representation of the entity
 // Note that this initializes the entity if it is not initialized
@@ -1008,6 +1022,97 @@ Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
 	}
 }
 
+class unregister_inverse_visitor {
+private:
+	IfcFile& file_;
+	const IfcEntityInstanceData& data_;
+
+public:
+	unregister_inverse_visitor(IfcFile& file, const IfcEntityInstanceData& data)
+		: file_(file), data_(data)
+	{}
+
+	void operator()(IfcUtil::IfcBaseClass* inst) {
+		file_.unregister_inverse(data_.id(), inst);
+	}
+};
+
+class register_inverse_visitor {
+private:
+	IfcFile& file_;
+	const IfcEntityInstanceData& data_;
+
+public:
+	register_inverse_visitor(IfcFile& file, const IfcEntityInstanceData& data)
+		: file_(file), data_(data)
+	{}
+
+	void operator()(IfcUtil::IfcBaseClass* inst) {
+		file_.register_inverse(data_.id(), inst);
+	}
+};
+
+class add_to_instance_list_visitor {
+private:
+	IfcEntityList::ptr& list_;
+
+public:
+	add_to_instance_list_visitor(IfcEntityList::ptr& list)
+		: list_(list)
+	{}
+
+	void operator()(IfcUtil::IfcBaseClass* inst) {
+		list_->push(inst);
+	}
+};
+
+class apply_individual_instance_visitor {
+private:
+	Argument* attribute_;
+	IfcEntityInstanceData* data_;
+
+	template <typename T>
+	void apply_attribute_(T& t, Argument* attr) const {
+		if (attr->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+			IfcUtil::IfcBaseClass* inst = *attr;
+			t(inst);
+		} else if (attr->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+			IfcEntityList::ptr entity_list_attribute = *attr;
+			for (IfcEntityList::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
+				t(*it);
+			}
+		} else if (attr->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+			IfcEntityListList::ptr entity_list_attribute = *attr;
+			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
+				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
+					t(*jt);
+				}
+			}
+		}
+	};
+public:
+	apply_individual_instance_visitor(Argument* attribute)
+		: attribute_(attribute), data_(0)
+	{}
+
+	apply_individual_instance_visitor(IfcEntityInstanceData* data)
+		: attribute_(0), data_(data)
+	{}
+
+	template <typename T>
+	void apply(T& t) const {
+		if (attribute_) {
+			apply_attribute_(t, attribute_);
+		} else {
+			for (unsigned i = 0; i < data_->getArgumentCount(); ++i) {
+				Argument* attr = data_->getArgument(i);
+				apply_attribute_(t, attr);
+			}
+		}
+	};
+
+};
+
 void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type) {
 	if (!initialized_) {
 		load();
@@ -1017,10 +1122,6 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		attributes_.push_back(new NullArgument());
 	}
 
-	if (i < attributes_.size()) {
-		delete attributes_[i];
-	}
-	
 	if (attr_type == IfcUtil::Argument_UNKNOWN) {
 		attr_type = a->type();
 	}
@@ -1116,6 +1217,20 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		throw IfcParse::IfcException(std::string("Unknown attribute encountered: '") + a->toString() + "' at index '" + boost::lexical_cast<std::string>(i) + "'");
 		break;
 	}
+
+	if (i < attributes_.size()) {
+		Argument* current_attribute = attributes_[i];
+		if (this->file) {
+			unregister_inverse_visitor visitor(*this->file, *this);
+			apply_individual_instance_visitor(current_attribute).apply(visitor);
+		}
+		delete attributes_[i];
+	}
+
+	if (this->file) {
+		register_inverse_visitor visitor(*this->file, *this);
+		apply_individual_instance_visitor(copy).apply(visitor);
+	}	
 
 	if (i < attributes_.size()) {
 		attributes_[i] = copy;
@@ -1271,25 +1386,8 @@ void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>
 
 	if (level >= max_level && max_level > 0) return;
 
-	for (unsigned i = 0; i < instance->getArgumentCount(); ++i) {
-		Argument* arg = instance->getArgument(i);
-
-		if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-			traverse_(*arg, visited, list, level + 1, max_level);
-		} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-			IfcEntityList::ptr entity_list_attribute = *arg;
-			for (IfcEntityList::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
-				traverse_(*it, visited, list, level + 1, max_level);
-			}
-		} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-			IfcEntityListList::ptr entity_list_attribute = *arg;
-			for (IfcEntityListList::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
-				for (IfcEntityListList::inner_it jt = it->begin(); jt != it->end(); ++jt) {
-					traverse_(*jt, visited, list, level + 1, max_level);
-				}
-			}
-		}
-	}
+	add_to_instance_list_visitor visit(list);
+	apply_individual_instance_visitor(instance->entity).apply(visit);
 }
 
 IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {

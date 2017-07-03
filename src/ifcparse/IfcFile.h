@@ -55,7 +55,7 @@ private:
 	IfcSpfHeader _header;
 
 	void setDefaultHeaderValues();
-	void register_inverse(unsigned, Token);
+
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
@@ -130,6 +130,10 @@ public:
 
 	void load(const IfcEntityInstanceData&);
 	void load(unsigned entity_instance_name, std::vector<Argument*>& attributes);
+
+	void register_inverse(unsigned, Token);
+	void register_inverse(unsigned, IfcUtil::IfcBaseClass*);
+	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
 };
 
 }
