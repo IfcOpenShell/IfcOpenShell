@@ -26,9 +26,8 @@ from . import ifcopenshell_wrapper
 
 try:
     import logging
-    log = logging.getLogger(__name__)
 except ImportError as e:
-    log = type('logger', (object,), {'exception': lambda s: print(s)})
+    logging = type('logger', (object,), {'exception': staticmethod(lambda s: print(s))})
 
 
 class entity_instance(object):
@@ -129,12 +128,12 @@ class entity_instance(object):
             _info["id"] = self.id()
             _info["type"] = self.is_a()
         except:
-            log.exception("unhandled exception while getting id / type info on {}".format(self))
+            logging.exception("unhandled exception while getting id / type info on {}".format(self))
         for i in range(len(self)):
             try:
                 _info[self.attribute_name(i)] = self[i]
             except:
-                log.exception("unhandled exception occured setting attribute name for {}".format(self))
+                logging.exception("unhandled exception occured setting attribute name for {}".format(self))
         return _info
 
     __dict__ = property(get_info)
