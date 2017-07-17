@@ -104,6 +104,12 @@ private:
 			}
 		}
 	}
+
+	// id() is defined on IfcBaseEntity and not on IfcBaseClass, in order
+	// to expose it to the Python wrapper it is simply duplicated here.
+	int id() const {
+		return $self->entity->id();
+	}
 	
 	bool is_a(const std::string& s) {
 		return self->is(IfcSchema::Type::FromString(boost::to_upper_copy(s)));
