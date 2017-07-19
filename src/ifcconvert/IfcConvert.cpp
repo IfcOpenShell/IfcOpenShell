@@ -293,6 +293,9 @@ int main(int argc, char** argv)
             "all placements as an offset. Applicable for OBJ and DAE output.")
         ("model-offset", po::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
+		("site-local-placement",
+			"Place elements locally in the IfcSite coordinate system, instead of placing "
+			"them in the IFC global coords. Applicable for OBJ and DAE output.")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
             "Sets the precision to be used to format floating-point values, 15 by default. "
             "Use a negative value to use the system's default precision (should be 6 typically). "
@@ -364,6 +367,7 @@ int main(int argc, char** argv)
     const bool no_normals = vmap.count("no-normals") != 0 ;
     const bool center_model = vmap.count("center-model") != 0 ;
     const bool model_offset = vmap.count("model-offset") != 0 ;
+	const bool site_local_placement = vmap.count("site-local-placement") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
 
 #ifdef HAVE_ICU
@@ -496,6 +500,7 @@ int main(int argc, char** argv)
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
 	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
+	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -602,6 +607,11 @@ int main(int argc, char** argv)
     if (center_model || model_offset) {
         double* offset = serializer->settings().offset;
         if (center_model) {
+			if (site_local_placement) {
+				Logger::Error("Cannot use --center-model together with --site-local-placement");
+				delete serializer;
+				return EXIT_FAILURE;
+			}
             gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
             offset[0] = -center.X();
             offset[1] = -center.Y();
