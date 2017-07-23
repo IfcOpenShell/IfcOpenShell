@@ -29,6 +29,7 @@ OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when swi
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
+OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
@@ -112,7 +113,19 @@ IF(WIN32)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
 ENDIF()
-FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_time)
+
+set(BOOST_COMPONENTS system program_options regex thread date_time)
+if(USE_MMAP)
+    if(MSVC)
+        # filesystem is necessary for the utf-16 wpath
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams filesystem)
+    else()
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
+    endif()
+    add_definitions(-DUSE_MMAP)
+endif()
+
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 

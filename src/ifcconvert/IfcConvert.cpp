@@ -148,7 +148,7 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile& ifc_file, bool no_progress);
+bool init_input_file(const std::string& filename, IfcParse::IfcFile& ifc_file, bool no_progress, bool mmap);
 
 int main(int argc, char** argv)
 {
@@ -162,8 +162,12 @@ int main(int argc, char** argv)
 
     po::options_description fileio_options;
 	fileio_options.add_options()
+#ifdef USE_MMAP
+		("mmap", "use memory-mapped file for input")
+#endif
 		("input-file", po::value<std::string>(), "input IFC file")
 		("output-file", po::value<std::string>(), "output geometry file");
+		
 
     double deflection_tolerance;
     inclusion_filter include_filter;
@@ -337,6 +341,7 @@ int main(int argc, char** argv)
         print_usage();
         return EXIT_FAILURE;
     }
+	const bool mmap = vmap.count("mmap") != 0;
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
@@ -427,7 +432,7 @@ int main(int argc, char** argv)
     if (output_extension == ".xml") {
         int exit_code = EXIT_FAILURE;
         try {
-            if (init_input_file(input_filename, ifc_file, no_progress)) {
+            if (init_input_file(input_filename, ifc_file, no_progress, mmap)) {
                 XmlSerializer s(output_temp_filename);
                 s.setFile(&ifc_file);
                 Logger::Status("Writing XML output...");
@@ -564,7 +569,7 @@ int main(int argc, char** argv)
 	time_t start,end;
 	time(&start);
 	
-    if (!init_input_file(input_filename, ifc_file, no_progress)) {
+    if (!init_input_file(input_filename, ifc_file, no_progress, mmap)) {
         return EXIT_FAILURE;
     }
 
@@ -691,12 +696,16 @@ void write_log() {
 	}
 }
 
-bool init_input_file(const std::string &filename, IfcParse::IfcFile &ifc_file, bool no_progress)
+bool init_input_file(const std::string &filename, IfcParse::IfcFile &ifc_file, bool no_progress, bool mmap)
 {
     // Prevent IfcFile::Init() prints by setting output to null temporarily
     if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
 
-    if (!ifc_file.Init(filename)) {
+#ifdef USE_MMAP
+	if (!ifc_file.Init(filename, mmap)) {
+#else
+	if (!ifc_file.Init(filename)) {
+#endif
         Logger::Error("Unable to parse input file '" + filename + "'");
         return false;
     }

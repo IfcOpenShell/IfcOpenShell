@@ -46,6 +46,10 @@
 #include "../ifcparse/Ifc2x3-latebound.h"
 #endif
 
+#ifdef USE_MMAP
+#include <boost/filesystem/path.hpp>
+#endif
+
 #define PERMISSIVE_FLOAT
 
 using namespace IfcParse;
@@ -105,69 +109,99 @@ void init_locale() {
 #endif
 
 // 
-// Opens the file, gets the filesize and reads a chunk in memory
+// Opens the file and gets the filesize
 //
+#ifdef USE_MMAP
+IfcSpfStream::IfcSpfStream(const std::string& fn, bool mmap)
+#else
 IfcSpfStream::IfcSpfStream(const std::string& fn)
-		: stream(0)
-		, buffer(0)
+#endif
+	: stream(0)
+	, buffer(0)
+	, valid(false)
+	, eof(false)
 {
-	eof = false;
 #ifdef _MSC_VER
 	int fn_buffer_size = MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, 0, 0);
 	wchar_t* fn_wide = new wchar_t[fn_buffer_size];
 	MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, fn_wide, fn_buffer_size);
-	stream = _wfopen(fn_wide, L"rb");
+
+#ifdef USE_MMAP
+	if (mmap) {
+		mfs = boost::iostreams::mapped_file_source(boost::filesystem::wpath(fn_wide));
+	} else {
+#endif
+		stream = _wfopen(fn_wide, L"rb");
+#ifdef USE_MMAP	
+	}
+#endif
+
 	delete[] fn_wide;
 #else
-	stream = fopen(fn.c_str(), "rb");
+
+#ifdef USE_MMAP
+	if (mmap) {
+		mfs = boost::iostreams::mapped_file_source(fn);
+	} else {
 #endif
-	if (stream == NULL) {
-		valid = false;
-		return;
+		stream = fopen(fn.c_str(), "rb");
+#ifdef USE_MMAP	
 	}
-	valid = true;
-	fseek(stream, 0, SEEK_END);
-	size = (unsigned int) ftell(stream);
-	rewind(stream);
-#ifdef BUF_SIZE
-	offset = 0;
-	paging = size > BUF_SIZE;
-	buffer = new char[size < BUF_SIZE ? size : BUF_SIZE];
-#else
-	buffer = new char[size];
 #endif
-	ptr = 0;
-	len = 0;
-	ReadBuffer(false);
+
+#endif
+
+#ifdef USE_MMAP
+	if (mmap) {
+		if (!mfs.is_open()) {
+			return;
+		}
+
+		valid = true;
+		buffer = mfs.data();
+		ptr = 0;
+		len = mfs.size();
+	} else {
+#endif
+		if (stream == NULL) {
+			return;
+		}
+
+		valid = true;
+		fseek(stream, 0, SEEK_END);
+		size = (unsigned int)ftell(stream);
+		rewind(stream);
+		char* buffer_rw = new char[size];
+		len = (unsigned int)fread(buffer_rw, 1, size, stream);
+		buffer = buffer_rw;
+		eof = len == 0;
+		ptr = 0;
+		fclose(stream);
+#ifdef USE_MMAP	
+	}
+#endif
 }
 
 IfcSpfStream::IfcSpfStream(std::istream& f, int l)
-		: stream(0)
-		, buffer(0)
+	: stream(0)
+	, buffer(0)
 {
 	eof = false;
 	size = l;
-#ifdef BUF_SIZE
-	paging = false;
-	offset = 0;
-#endif
-	buffer = new char[size];
-	f.read(buffer,size);
+	char* buffer_rw = new char[size];
+	f.read(buffer_rw,size);
+	buffer = buffer_rw;
 	valid = f.gcount() == size;
 	ptr = 0;
 	len = l;	
 }
 
 IfcSpfStream::IfcSpfStream(void* data, int l)
-		: stream(0)
-		, buffer(0)
+	: stream(0)
+	, buffer(0)
 {
 	eof = false;
 	size = l;
-#ifdef BUF_SIZE
-	paging = false;
-	offset = 0;
-#endif
 	buffer = (char*) data;
 	valid = true;
 	ptr = 0;
@@ -180,60 +214,22 @@ IfcSpfStream::~IfcSpfStream()
 }
 
 void IfcSpfStream::Close() {
-#ifdef BUF_SIZE
-	if ( paging ) fclose(stream);
+#ifdef USE_MMAP
+	if (mfs.is_open()) {
+		mfs.close();
+		return;
+	}
 #endif
 	delete[] buffer;
-}
-
-//
-// Reads a chunk of BUF_SIZE in memory and increments cursor if requested
-//
-void IfcSpfStream::ReadBuffer(bool inc) {
-#ifdef BUF_SIZE
-	if ( inc ) {
-		offset += len;
-		fseek(stream, offset, SEEK_SET);
-	}
-#else
-	(void)inc;
-#endif
-	eof = feof(stream) != 0;
-	if ( eof ) return;
-#ifdef BUF_SIZE
-	len = (unsigned int) fread(buffer, 1, size < BUF_SIZE ? size : BUF_SIZE, stream);
-#else
-	len = (unsigned int) fread(buffer, 1, size, stream);
-#endif
-	eof = len == 0;
-	ptr = 0;
-#ifdef BUF_SIZE
-	if (!paging) fclose(stream);
-#else
-	fclose(stream);
-#endif
 }
 
 //
 // Seeks an arbitrary position in the file
 //
 void IfcSpfStream::Seek(unsigned int o) {
-#ifdef BUF_SIZE
-	if ( !paging ) {
-#endif
-		ptr = o;
-		if (ptr >= len) throw IfcException("Reading outside of file limits");
-		eof = false;
-#ifdef BUF_SIZE
-	} else if ( o >= offset && (o < (offset+len)) ) {
-		ptr = o - offset;
-	} else {
-		offset = o;
-		clearerr(stream);
-		fseek(stream, o, SEEK_SET);
-		ReadBuffer(false);
-	}
-#endif
+	ptr = o;
+	if (ptr >= len) throw IfcException("Reading outside of file limits");
+	eof = false;
 }
 
 //
@@ -247,30 +243,14 @@ char IfcSpfStream::Peek() {
 // Returns the character at specified offset
 //
 char IfcSpfStream::Read(unsigned int o) {
-#ifdef BUF_SIZE
-	if ( ! paging ) {
-#endif
-		return buffer[o];
-#ifdef BUF_SIZE
-	} else if ( o >= offset && (o < (offset+len)) ) {
-		return buffer[o-offset];
-	} else {
-		clearerr(stream);
-		fseek(stream, o, SEEK_SET);
-		return ungetc(getc(stream), stream);
-	}
-#endif
+	return buffer[o];
 }
 
 //
 // Returns the cursor position
 //
 unsigned int IfcSpfStream::Tell() {
-#ifdef BUF_SIZE
-	return offset + ptr;
-#else
 	return ptr;
-#endif
 }
 
 //
@@ -278,16 +258,10 @@ unsigned int IfcSpfStream::Tell() {
 //
 void IfcSpfStream::Inc() {
 	if ( ++ptr == len ) { 
-#ifdef BUF_SIZE
-		if ( paging ) ReadBuffer();
-		else {
-#endif
-			eof = true;
-			return;
-#ifdef BUF_SIZE
-		}
-#endif
+		eof = true;
+		return;
 	}
+	/// @todo: Shouldn't this be a loop of some kind
 	const char current = IfcSpfStream::Peek();
 	if ( current == '\n' || current == '\r' ) IfcSpfStream::Inc();
 }
@@ -1245,9 +1219,15 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 // Parses the IFC file in fn
 // Creates the maps
 //
+#ifdef USE_MMAP
+bool IfcFile::Init(const std::string& fn, bool mmap) {
+	return IfcFile::Init(new IfcSpfStream(fn, mmap));
+}
+#else
 bool IfcFile::Init(const std::string& fn) {
 	return IfcFile::Init(new IfcSpfStream(fn));
 }
+#endif
 
 bool IfcFile::Init(std::istream& f, int len) {
 	return IfcFile::Init(new IfcSpfStream(f,len));
