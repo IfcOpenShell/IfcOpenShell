@@ -169,7 +169,7 @@ if not exist "%DEPS_DIR%\boost\project-config.jam". (
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
-set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time
+set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPS_DIR%\boost"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."

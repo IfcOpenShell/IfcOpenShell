@@ -19,7 +19,7 @@
  
 /*********************************************************************************
  *                                                                               *
- * Reads a file in chunks of BUF_SIZE and provides functions to access its       *
+ * Reads a file and provides functions to access its                             *
  * contents randomly and character by character                                  *
  *                                                                               *
  ********************************************************************************/
@@ -30,40 +30,34 @@
 #include <fstream>
 #include <string>
 
-#include "ifc_parse_api.h"
+#ifdef USE_MMAP
+#include <boost/iostreams/device/mapped_file.hpp>
+#endif
 
-// As of IfcOpenShell version 0.3.0 the paging functionality, which
-// loads a file on disk into multiple chunks, has been disabled.
-// It proved to be an inefficient way of working with large files,
-// as often these did not facilitate to be parsed in a sequential 
-// manner efficiently. To enable the paging functionality uncomment
-// the following statement.
-// #define BUF_SIZE (8 * 1024 * 1024)
+#include "ifc_parse_api.h"
 
 namespace IfcParse {
 	/// The IfcSpfStream class represents a ISO 10303-21 IFC-SPF file in memory.
 	/// The file is interpreted as a sequence of tokens which are lazily
-	/// interpreted only when requested. If the size of the file is
-	/// larger than BUF_SIZE, the file is split into seperate pages, of
-	/// which only one is simultaneously kept in memory, for files
-	/// that define their entities not in a sequential nature, this is
-	/// detrimental for the performance of the parser.
+	/// interpreted only when requested.
 	class IFC_PARSE_API IfcSpfStream {
 	private:
+#ifdef USE_MMAP
+		boost::iostreams::mapped_file_source mfs;
+#endif
 		FILE* stream;
-		char* buffer;
+		const char* buffer;
 		unsigned int ptr;
 		unsigned int len;
-		void ReadBuffer(bool inc=true);
-#ifdef BUF_SIZE
-		unsigned int offset;
-		bool paging;
-#endif
 	public:
 		bool valid;
 		bool eof;
 		unsigned int size;
+#ifdef USE_MMAP
+		IfcSpfStream(const std::string& fn, bool mmap=false);
+#else
 		IfcSpfStream(const std::string& fn);
+#endif
 		IfcSpfStream(std::istream& f, int len);
 		IfcSpfStream(void* data, int len);
 		~IfcSpfStream();

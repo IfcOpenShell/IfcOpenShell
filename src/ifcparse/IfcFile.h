@@ -107,7 +107,11 @@ public:
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
+#ifdef USE_MMAP
+	bool Init(const std::string& fn, bool mmap=false);
+#else
 	bool Init(const std::string& fn);
+#endif
 	bool Init(std::istream& fn, int len);
 	bool Init(void* data, int len);
 	bool Init(IfcParse::IfcSpfStream* f);
