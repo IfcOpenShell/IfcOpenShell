@@ -454,7 +454,7 @@ os.environ["CXXFLAGS"]=OLD_CXX_FLAGS
 os.environ["CFLAGS"]=OLD_C_FLAGS
 
 str_concat = lambda prefix: lambda postfix: "=".join((prefix, postfix.strip()))
-build_dependency("boost-%s" % (BOOST_VERSION,), mode="bjam", build_tool_args=["--stagedir=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "--with-system", "--with-program_options", "--with-regex", "--with-thread", "--with-date_time", "--with-iostreams", "link=static"]+BOOST_ADDRESS_MODEL+list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + ["stage"], download_url="http://downloads.sourceforge.net/project/boost/boost/%s/" % (BOOST_VERSION,), download_name="boost_%s.tar.bz2" % (BOOST_VERSION_UNDERSCORE,))
+build_dependency("boost-%s" % (BOOST_VERSION,), mode="bjam", build_tool_args=["--stagedir=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "--with-system", "--with-program_options", "--with-regex", "--with-thread", "--with-date_time", "--with-iostreams", "link=static"]+BOOST_ADDRESS_MODEL+list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + ["stage", "-s", "NO_BZIP2=1"], download_url="http://downloads.sourceforge.net/project/boost/boost/%s/" % (BOOST_VERSION,), download_name="boost_%s.tar.bz2" % (BOOST_VERSION_UNDERSCORE,))
 
 build_dependency(name="icu-%s" % (ICU_VERSION,), mode="icu", build_tool_args=["--enable-static", "--disable-shared"], download_url="http://download.icu-project.org/files/icu4c/%s/" % (ICU_VERSION,), download_name="icu4c-%s-src.tgz" % (ICU_VERSION_UNDERSCORE,))
 
@@ -481,7 +481,7 @@ run_cmake("", cmake_args=[
     "-DICU_LIBRARY_DIR="         "%s/install/icu-%s/lib" % (DEPS_DIR, ICU_VERSION),
     "-DPCRE_LIBRARY_DIR="        "%s/install/pcre-%s/lib" % (DEPS_DIR, PCRE_VERSION),
     "-DBUILD_IFCPYTHON="         "OFF",
-    "-DUSE_MMAP="                "ON",
+    "-DUSE_MMAP="                "OFF",
     "-DCMAKE_INSTALL_PREFIX="    "%s/install/ifcopenshell" % (DEPS_DIR,)], cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
 logger.info("\rBuilding executables...   ")
