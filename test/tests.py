@@ -41,6 +41,8 @@ assert f[16] in f.get_inverse(f[15])
 assert f[16].UnitComponent is not None
 f.remove(f[15])
 assert f[16].UnitComponent is None
+prop = f.by_type("IfcPropertySingleValue")[0]
+assert prop.NominalValue.wrappedValuex in str(prop)
 
 # Some operations on ifcopenshell.entity_instance
 assert f[22].Id == ''

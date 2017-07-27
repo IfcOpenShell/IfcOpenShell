@@ -90,7 +90,9 @@ private:
 %extend IfcUtil::IfcBaseClass {
 
 	int get_attribute_category(const std::string& name) const {
-		if (IfcSchema::Type::IsSimple($self->type())) return -1;
+		if (IfcSchema::Type::IsSimple($self->type())) {
+			return name == "wrappedValue";
+		}
 		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
 		const std::vector<std::string> names = self_->getAttributeNames();
 		if (std::find(names.begin(), names.end(), name) != names.end()) {
