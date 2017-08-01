@@ -1254,7 +1254,10 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	std::vector<std::string> schemas;
 	try {
 		schemas = _header.file_schema().schema_identifiers();
-	} catch (...) {}
+	} catch (...) {
+		// Purposely empty catch block
+	}
+
 	if (schemas.size() != 1 || schemas[0] != IfcSchema::Identifier) {
 		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
 	}
@@ -1558,7 +1561,10 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	IfcEntityList::ptr entity_attributes(new IfcEntityList);
 	try {
 		entity_attributes = traverse(entity, 1);
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
+
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		if (*it == entity) continue;
@@ -1567,7 +1573,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				unsigned entity_attribute_id = entity_attribute->entity->id();
 				byref[entity_attribute_id].push_back(entity->entity->id());
 			}
-		} catch (const IfcParse::IfcException&) {}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
 	}
 
 	return entity;

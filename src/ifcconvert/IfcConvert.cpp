@@ -322,6 +322,7 @@ int main(int argc, char** argv)
         print_usage();
         return EXIT_FAILURE;
     } catch (...) {
+		std::cerr << "[Error] Unknown error parsing command line options\n\n";
         print_usage();
         return EXIT_FAILURE;
     }
@@ -441,7 +442,9 @@ int main(int argc, char** argv)
                 rename_file(output_temp_filename, output_filename);
                 exit_code = EXIT_SUCCESS;
             }
-        } catch (...) {}
+        } catch (const std::exception& e) {
+			Logger::Error(e);
+		}
         write_log();
         return exit_code;
     }

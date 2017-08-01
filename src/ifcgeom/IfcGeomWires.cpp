@@ -104,13 +104,33 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		TopoDS_Wire wire_radians, wire_degrees;
         try {
 		    succes_radians = IfcGeom::Kernel::convert(l,wire_radians);
-        } catch (...) {}
+        } catch (const std::exception& e) {
+			Logger::Notice(e);
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Notice(e.GetMessageString());
+			} else {
+				Logger::Notice("Unknown error using radians");
+			}
+		} catch (...) {
+			Logger::Notice("Unknown error using radians");
+		}
 
 		// Now try degrees
 		setValue(GV_PLANEANGLE_UNIT,0.0174532925199433);
         try {
 		    succes_degrees = IfcGeom::Kernel::convert(l,wire_degrees);
-        } catch (...) {}
+        } catch (const std::exception& e) {
+			Logger::Notice(e);
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Notice(e.GetMessageString());
+			} else {
+				Logger::Notice("Unknown error using degrees");
+			}
+		} catch (...) {
+			Logger::Notice("Unknown error using degrees");
+		}
 
 		// Restore to unknown unit state
 		setValue(GV_PLANEANGLE_UNIT,-1.0);

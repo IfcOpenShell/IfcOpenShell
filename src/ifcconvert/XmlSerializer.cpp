@@ -149,7 +149,9 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 		boost::optional<std::string> value;
 		try {
 			value = format_attribute(argument, argument_type, qualified_name);
-		} catch (...) {}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
 
 		if (value) {
 			if (as_link) {

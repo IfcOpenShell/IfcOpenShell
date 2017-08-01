@@ -579,7 +579,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		
 		try {
 			success = convert_face(*it, face);
-		} catch (...) {}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Error(e.GetMessageString());
+			} else {
+				Logger::Error("Unknown error creating face");
+			}
+		} catch (...) {
+			Logger::Error("Unknown error creating face");
+		}
 
 		if (!success) {
 			Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);

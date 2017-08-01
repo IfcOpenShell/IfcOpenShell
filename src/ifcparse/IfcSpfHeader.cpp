@@ -104,9 +104,10 @@ bool IfcSpfHeader::tryRead() {
 	try {
 		read();
 		return true;
-	} catch(const IfcException&) { 
+	} catch (const std::exception& e) {
+		Logger::Error(e);
 		return false;
-	}		
+	}
 }
 
 void IfcSpfHeader::write(std::ostream& os) const {
