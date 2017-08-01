@@ -1361,6 +1361,24 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	return true;
 }
 
+class traversal_visitor {
+private:
+	std::set<IfcUtil::IfcBaseClass*>& visited_;
+	IfcEntityList::ptr& list_;
+	int level_;
+	int max_level_;
+
+public:
+	traversal_visitor(std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr& list, int level, int max_level)
+		: visited_(visited)
+		, list_(list)
+		, level_(level)
+		, max_level_(max_level)
+	{}
+
+	void operator()(IfcUtil::IfcBaseClass* inst);
+};
+
 void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>& visited, IfcEntityList::ptr list, int level, int max_level) {
 	if (visited.find(instance) != visited.end()) {
 		return;
@@ -1370,8 +1388,12 @@ void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>
 
 	if (level >= max_level && max_level > 0) return;
 
-	add_to_instance_list_visitor visit(list);
+	traversal_visitor visit(visited, list, level + 1, max_level);
 	apply_individual_instance_visitor(instance->entity).apply(visit);
+}
+
+void traversal_visitor::operator()(IfcUtil::IfcBaseClass* inst) {
+	traverse_(inst, visited_, list_, level_, max_level_);
 }
 
 IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {

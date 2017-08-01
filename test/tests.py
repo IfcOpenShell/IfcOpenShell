@@ -37,6 +37,8 @@ assert f.by_guid("28pa2ppDf1IA$BaQrvAf48").is_a("IfcProject")
 assert f.createIfcCartesianPoint((0., 0., 0.)).is_a("IfcCartesianPoint")
 assert f.by_type("IfcProject")[0].is_a("IfcProject")
 assert f.traverse(f[16])[-1].is_a("IFCSIUNIT")
+assert len(f.traverse(f[35], 1)) == 2
+assert len(f.traverse(f[35])) == 3
 assert f[16] in f.get_inverse(f[15])
 assert f[16].UnitComponent is not None
 f.remove(f[15])
