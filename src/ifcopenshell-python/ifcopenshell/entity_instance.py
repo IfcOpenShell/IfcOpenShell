@@ -124,16 +124,25 @@ class entity_instance(object):
             self.wrapped_data.get_inverse_attribute_names()
         )))
 
-    def get_info(self):
+    def get_info(self, include_identifier=True, recursive=False):
         _info = {}
         try:
-            _info["id"] = self.id()
+            if include_identifier:
+                _info["id"] = self.id()
             _info["type"] = self.is_a()
         except:
             logging.exception("unhandled exception while getting id / type info on {}".format(self))
         for i in range(len(self)):
             try:
-                _info[self.attribute_name(i)] = self[i]
+                attr_value = self[i]
+                if recursive:
+                    is_instance = lambda e: isinstance(e, entity_instance)
+                    get_info = lambda inst: entity_instance.get_info(inst,
+                        include_identifier=include_identifier,
+                        recursive=recursive
+                    )
+                    attr_value = entity_instance.walk(is_instance, get_info, attr_value)
+                _info[self.attribute_name(i)] = attr_value
             except:
                 logging.exception("unhandled exception occured setting attribute name for {}".format(self))
         return _info
