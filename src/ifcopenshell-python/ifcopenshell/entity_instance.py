@@ -80,6 +80,8 @@ class entity_instance(object):
         self[self.wrapped_data.get_argument_index(key)] = value
 
     def __getitem__(self, key):
+        if key < 0 or key >= len(self):
+            raise IndexError("Attribute index {} out of range for instance of type {}".format(key, self.is_a()))
         return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
 
     def __setitem__(self, idx, value):
