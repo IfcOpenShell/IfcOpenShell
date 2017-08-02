@@ -120,8 +120,8 @@ class entity_instance(object):
     def __dir__(self):
         return sorted(set(itertools.chain(
             dir(type(self)),
-            self.wrapped_data.get_attribute_names(),
-            self.wrapped_data.get_inverse_attribute_names()
+            map(str, self.wrapped_data.get_attribute_names()),
+            map(str, self.wrapped_data.get_inverse_attribute_names())
         )))
 
     def get_info(self, include_identifier=True, recursive=False):
