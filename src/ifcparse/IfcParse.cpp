@@ -975,9 +975,12 @@ void IfcEntityInstanceData::load() const {
 }
 
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
-	file = e.file;
+	file = 0;
 	type_ = e.type_;
 	id_ = 0;
+
+	// In order not to have the instance read from file
+	initialized_ = true;
 
 	const unsigned int count = e.getArgumentCount();
 	for (unsigned int i = 0; i < count; ++i) {
@@ -1185,12 +1188,17 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
 		IfcUtil::ArgumentType t2 = IfcSchema::Type::GetAttributeType(type(), (unsigned char)i);
 		delete copy;
+		copy = 0;
 		setArgument(i, a, t2);
 		break; }
 	default:
 	case IfcUtil::Argument_UNKNOWN:
 		throw IfcParse::IfcException(std::string("Unknown attribute encountered: '") + a->toString() + "' at index '" + boost::lexical_cast<std::string>(i) + "'");
 		break;
+	}
+
+	if (!copy) {
+		return;
 	}
 
 	if (i < attributes_.size()) {
@@ -1422,13 +1430,18 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		return mit->second;
 	}
 
+	IfcUtil::IfcBaseClass* new_entity = entity;
+
 	// Obtain all forward references by a depth-first 
 	// traversal and add them to the file.
 	try {
 		IfcEntityList::ptr entity_attributes = traverse(entity, 1);
 		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 			if (*it != entity) {
-				entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+				entity_entity_map_t::iterator mit2 = entity_file_map.find(*it);
+				if (mit2 == entity_file_map.end()) {
+					entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+				}
 			}
 		}
 	} catch (...) {
@@ -1448,7 +1461,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// need to be updated to point to instances in this file.
 		IfcFile* other_file = entity->entity->file;
 		IfcEntityInstanceData* we = new IfcEntityInstanceData(*entity->entity);
-		entity = IfcSchema::SchemaEntity(we);
+		new_entity = IfcSchema::SchemaEntity(we);
 		
 		// In case an entity is added that contains geometry, the unit
 		// information needs to be accounted for for IfcLengthMeasures.
@@ -1523,12 +1536,16 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// A new entity instance name is generated and
 		// the instance is pointed to this file.
 		we->file = this;
-		we->set_id(FreshId());
+		if (!IfcSchema::Type::IsSimple(we->type())) {
+			we->set_id(FreshId());
+		}
+
+		entity_file_map.insert(entity_entity_map_t::value_type(entity, new_entity));
 	}
 
 	// For subtypes of IfcRoot, the GUID mapping needs to be updated.
-	if (entity->is(IfcSchema::Type::IfcRoot)) {
-		IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) entity;
+	if (new_entity->is(IfcSchema::Type::IfcRoot)) {
+		IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) new_entity;
 		try {
 			const std::string guid = ifc_root->GlobalId();
 			if ( byguid.find(guid) != byguid.end() ) {
@@ -1543,14 +1560,14 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 
 	// The mapping by entity type is updated.
-	IfcSchema::Type::Enum ty = entity->type();
+	IfcSchema::Type::Enum ty = new_entity->type();
 	for (;;) {
 		IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 		if (!instances_by_type) {
 			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
 			bytype[ty] = instances_by_type;
 		}
-		instances_by_type->push(entity);
+		instances_by_type->push(new_entity);
 		boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
 		if (pt) {
 			ty = *pt;
@@ -1561,12 +1578,12 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 	
 	int new_id = -1;
-	if (!entity->entity->file) {
+	if (!new_entity->entity->file) {
 		// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
-		entity->entity->file = this;
-		new_id = entity->entity->set_id();
+		new_entity->entity->file = this;
+		new_id = new_entity->entity->set_id();
 	} else {
-		new_id = entity->entity->id();
+		new_id = new_entity->entity->id();
 	}
 
 	if (byid.find(new_id) != byid.end()) {
@@ -1577,30 +1594,30 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 
 	// The mapping by entity instance name is updated.
-	byid[new_id] = entity;
+	byid[new_id] = new_entity;
 
 	// The mapping by reference is updated.
 	IfcEntityList::ptr entity_attributes(new IfcEntityList);
 	try {
-		entity_attributes = traverse(entity, 1);
+		entity_attributes = traverse(new_entity, 1);
 	} catch (const std::exception& e) {
 		Logger::Error(e);
 	}
 
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
-		if (*it == entity) continue;
+		if (*it == new_entity) continue;
 		try {
 			if (!IfcSchema::Type::IsSimple(entity_attribute->type())) {
 				unsigned entity_attribute_id = entity_attribute->entity->id();
-				byref[entity_attribute_id].push_back(entity->entity->id());
+				byref[entity_attribute_id].push_back(new_entity->entity->id());
 			}
 		} catch (const std::exception& e) {
 			Logger::Error(e);
 		}
 	}
 
-	return entity;
+	return new_entity;
 }
 
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
