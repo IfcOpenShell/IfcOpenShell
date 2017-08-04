@@ -1510,8 +1510,14 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				entity->getArgumentEntity(i) == IfcSchema::Type::IfcPositiveLengthMeasure) 
 			{
 				if (boost::math::isnan(conversion_factor)) {
-					conversion_factor = other_file->getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT).second / 
-						getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT).second;
+					const std::pair<IfcSchema::IfcNamedUnit*, double> this_file_unit = getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
+					const std::pair<IfcSchema::IfcNamedUnit*, double> other_file_unit = other_file->getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
+					std::cerr << other_file_unit.second << " " << this_file_unit.second << std::endl;
+					if (this_file_unit.first && other_file_unit.first) {
+						conversion_factor = other_file_unit.second / this_file_unit.second;
+					} else {
+						conversion_factor = 1.;
+					}
 				}
 				if (attr_type == IfcUtil::Argument_DOUBLE) {
 					double v = *attr;
