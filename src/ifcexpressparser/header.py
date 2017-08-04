@@ -17,6 +17,8 @@
 #                                                                             #
 ###############################################################################
 
+import operator
+
 import codegen
 import templates
 import documentation
@@ -106,8 +108,14 @@ class Header(codegen.Base):
                     argument_name_function_body_tail = (" return %s::getArgumentName(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
 
                     argument_name_function_body = argument_name_function_body_switch_stmt + argument_name_function_body_tail
-
-                    argument_type_function_body_switch_stmt = " switch (i) {%s}"%("".join(['case %d: return %s; '%(i+argument_start, mapping.make_argument_type(attr)) for i, attr in enumerate(type.attributes)])) if len(type.attributes) else ""
+                    
+                    derived = mapping.derived_in_supertype(type)
+                    attribute_names = list(map(operator.attrgetter('name'), mapping.arguments(type)))
+                    derived_in_supertype = set(derived) & set(attribute_names)
+                    derived_in_supertype_indices = sorted(attribute_names.index(nm) for nm in derived_in_supertype)
+                    attribute_type_cases = ['case %d: return IfcUtil::Argument_DERIVED; ' % idx for idx in derived_in_supertype_indices]
+                    attribute_type_cases += ['case %d: return %s; '%(i+argument_start, mapping.make_argument_type(attr)) for i, attr in enumerate(type.attributes)]
+                    argument_type_function_body_switch_stmt = " switch (i) {%s}"%("".join(attribute_type_cases)) if len(type.attributes) else ""
                     argument_type_function_body_tail = (" return %s::getArgumentType(i); "%type.supertypes[0]) if len(type.supertypes) == 1 else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
 
                     argument_type_function_body = argument_type_function_body_switch_stmt + argument_type_function_body_tail

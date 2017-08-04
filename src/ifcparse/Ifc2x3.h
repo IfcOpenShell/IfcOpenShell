@@ -10847,7 +10847,7 @@ public:
     IfcSIUnitName::IfcSIUnitName Name() const;
     void setName(IfcSIUnitName::IfcSIUnitName v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENUMERATION; } return IfcNamedUnit::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DERIVED; case 2: return IfcUtil::Argument_ENUMERATION; case 3: return IfcUtil::Argument_ENUMERATION; } return IfcNamedUnit::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcSIPrefix; case 3: return Type::IfcSIUnitName; } return IfcNamedUnit::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "Prefix"; case 3: return "Name"; } return IfcNamedUnit::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -14253,7 +14253,7 @@ public:
     std::string UserDefinedTargetView() const;
     void setUserDefinedTargetView(std::string v);
     virtual unsigned int getArgumentCount() const { return 10; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_STRING; } return IfcGeometricRepresentationContext::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_DERIVED; case 3: return IfcUtil::Argument_DERIVED; case 4: return IfcUtil::Argument_DERIVED; case 5: return IfcUtil::Argument_DERIVED; case 6: return IfcUtil::Argument_ENTITY_INSTANCE; case 7: return IfcUtil::Argument_DOUBLE; case 8: return IfcUtil::Argument_ENUMERATION; case 9: return IfcUtil::Argument_STRING; } return IfcGeometricRepresentationContext::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 6: return Type::IfcGeometricRepresentationContext; case 7: return Type::IfcPositiveRatioMeasure; case 8: return Type::IfcGeometricProjectionEnum; case 9: return Type::IfcLabel; } return IfcGeometricRepresentationContext::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 6: return "ParentContext"; case 7: return "TargetScale"; case 8: return "TargetView"; case 9: return "UserDefinedTargetView"; } return IfcGeometricRepresentationContext::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
@@ -15142,7 +15142,7 @@ public:
     bool Orientation() const;
     void setOrientation(bool v);
     virtual unsigned int getArgumentCount() const { return 4; }
-    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
+    virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const { switch (i) {case 0: return IfcUtil::Argument_DERIVED; case 1: return IfcUtil::Argument_DERIVED; case 2: return IfcUtil::Argument_ENTITY_INSTANCE; case 3: return IfcUtil::Argument_BOOL; } return IfcEdge::getArgumentType(i); }
     virtual Type::Enum getArgumentEntity(unsigned int i) const { switch (i) {case 2: return Type::IfcEdge; case 3: return Type::UNDEFINED; } return IfcEdge::getArgumentEntity(i); }
     virtual const char* getArgumentName(unsigned int i) const { switch (i) {case 2: return "EdgeElement"; case 3: return "Orientation"; } return IfcEdge::getArgumentName(i); }
     virtual Argument* getArgument(unsigned int i) const { return entity->getArgument(i); }
