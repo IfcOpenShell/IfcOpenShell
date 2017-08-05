@@ -114,6 +114,9 @@ WIRE(IfcPolyLoop);
 WIRE(IfcCompositeCurve);
 WIRE(IfcTrimmedCurve);
 WIRE(IfcArbitraryOpenProfileDef);
+#ifdef USE_IFC4
+WIRE(IfcIndexedPolyCurve)
+#endif
 
 CURVE(IfcCircle);
 CURVE(IfcEllipse);
