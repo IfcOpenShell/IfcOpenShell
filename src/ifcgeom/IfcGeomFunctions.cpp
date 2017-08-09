@@ -762,10 +762,12 @@ gp_Pnt IfcGeom::Kernel::point_above_plane(const gp_Pln& pln, bool agree) {
 }
 
 void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
+	/*
+	// This does not result in actionable error messages and has been disabled.
 	ShapeAnalysis_ShapeTolerance toler;
 	if (Logger::LOG_WARNING >= Logger::Verbosity()) {
-		if (toler.Tolerance(s, 0) > t + ALMOST_ZERO) {
-			Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t + ALMOST_ZERO);
+		if (toler.Tolerance(s, 0) > t * 10.) {
+			Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t * 10.);
 			for (int i = 1; i <= shapes->Length(); ++i) {
 				const TopoDS_Shape& sub = shapes->Value(i);
 				std::stringstream ss;
@@ -774,6 +776,7 @@ void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
 			}
 		}
 	}
+	*/
 	ShapeFix_ShapeTolerance tol;
 	tol.LimitTolerance(s, t);
 }
