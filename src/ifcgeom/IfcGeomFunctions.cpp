@@ -1554,9 +1554,16 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		IfcSchema::IfcExtrudedAreaSolid* extrusion = *extrusions->begin();
 
 		gp_Trsf extrusion_position;
-		if (!convert(extrusion->Position(), extrusion_position)) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product->entity);
-			return false;
+
+		bool has_position = true;
+#ifdef USE_IFC4
+		has_position = extrusion->hasPosition();
+#endif
+		if (has_position) {
+			if (!convert(extrusion->Position(), extrusion_position)) {
+				Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product->entity);
+				return false;
+			}
 		}
 
 		gp_Dir extrusion_direction;
