@@ -37,6 +37,7 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 		log2 = &log_stream;
 	}
 }
+
 void Logger::Message(Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] ";
@@ -47,6 +48,11 @@ void Logger::Message(Logger::Severity type, const std::string& message, IfcEntit
 		if ( entity ) (*log2) << entity->toString() << std::endl;
 	}
 }
+
+void Logger::Message(Logger::Severity type, const std::exception& exception, IfcEntityInstanceData* entity) {
+	Message(type, exception.what(), entity);
+}
+
 void Logger::Status(const std::string& message, bool new_line) {
 	if ( log1 ) {
 		(*log1) << message;

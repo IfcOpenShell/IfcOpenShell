@@ -104,17 +104,18 @@ bool IfcSpfHeader::tryRead() {
 	try {
 		read();
 		return true;
-	} catch(const IfcException&) { 
+	} catch (const std::exception& e) {
+		Logger::Error(e);
 		return false;
-	}		
+	}
 }
 
 void IfcSpfHeader::write(std::ostream& os) const {
 	os << ISO_10303_21 << ";" << "\n";
 	os << HEADER << ";" << "\n";
-	os << file_description().toString(true) << "\n";
-	os << file_name().toString(true) << "\n";
-	os << file_schema().toString(true) << "\n";
+	os << file_description().toString(true) << ";" << "\n";
+	os << file_name().toString(true) << ";" << "\n";
+	os << file_schema().toString(true) << ";" << "\n";
 	os << ENDSEC << ";" << "\n";
 	os << DATA << ";" << "\n";
 }

@@ -25,6 +25,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <exception>
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
@@ -53,12 +54,21 @@ public:
 	/// Determines the types of log messages to get logged
 	static void Verbosity(Severity v);
 	static Severity Verbosity();
+	
 	/// Log a message to the output stream
 	static void Message(Severity type, const std::string& message, IfcEntityInstanceData* entity=0);
-    static void Notice(const std::string& message, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, message, entity); }
+	static void Message(Severity type, const std::exception& message, IfcEntityInstanceData* entity = 0);
+	
+	static void Notice(const std::string& message, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, message, entity); }
     static void Warning(const std::string& message, IfcEntityInstanceData* entity=0) { Message(LOG_WARNING, message, entity); }
     static void Error(const std::string& message, IfcEntityInstanceData* entity=0) { Message(LOG_ERROR, message, entity); }
+	
+	static void Notice(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, exception, entity); }
+	static void Warning(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_WARNING, exception, entity); }
+	static void Error(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_ERROR, exception, entity); }
+
 	static void Status(const std::string& message, bool new_line=true);
+
 	static void ProgressBar(int progress);
 	static std::string GetLog();
 };

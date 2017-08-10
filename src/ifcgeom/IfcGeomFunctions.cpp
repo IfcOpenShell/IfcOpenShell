@@ -177,7 +177,15 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 		builder.Perform();
 		shape = builder.SewedShape();
 		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0 && count(shape, TopAbs_SHELL) > 0;
-	} catch (...) {}
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error sewing shell");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error sewing shell");
+	}
 
 	if (valid_shell) {
 		TopoDS_Shape complete_shape;
@@ -197,9 +205,25 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 						if (classifier.State() == TopAbs_IN) {
 							shape.Reverse();
 						}
-					} catch (...) {}
+					} catch (const Standard_Failure& e) {
+						if (e.GetMessageString() && strlen(e.GetMessageString())) {
+							Logger::Error(e.GetMessageString());
+						} else {
+							Logger::Error("Unknown error classifying solid");
+						}
+					} catch (...) {
+						Logger::Error("Unknown error classifying solid");
+					}
 				}
-			} catch (...) {}
+			} catch (const Standard_Failure& e) {
+				if (e.GetMessageString() && strlen(e.GetMessageString())) {
+					Logger::Error(e.GetMessageString());
+				} else {
+					Logger::Error("Unknown error creating solid");
+				}
+			} catch (...) {
+				Logger::Error("Unknown error creating solid");
+			}
 
 			if (complete_shape.IsNull()) {
 				complete_shape = result_shape;
@@ -269,7 +293,11 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			if (fes->hasObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (...) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				} catch (...) {
+					Logger::Error("Failed to construct placement");
+				}
 			}
 
 			// Move the opening into the coordinate system of the IfcProduct
@@ -438,7 +466,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			if (fes->hasObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (...) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				} catch (...) {
+					Logger::Error("Failed to construct placement");
+				}
 			}
 
 			// Move the opening into the coordinate system of the IfcProduct
@@ -513,7 +545,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			if (fes->hasObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (...) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				} catch (...) {
+					Logger::Error("Failed to construct placement");
+				}
 			}
 
 			// Move the opening into the coordinate system of the IfcProduct
@@ -597,8 +633,17 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face&
 bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
 	try {
 		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
-	} catch(...) { return false; }
-	return true;
+		return true;
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error convering curve to wire");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error convering curve to wire");
+	}
+	return false;
 }
 
 bool IfcGeom::Kernel::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face_shape) {
@@ -717,10 +762,12 @@ gp_Pnt IfcGeom::Kernel::point_above_plane(const gp_Pln& pln, bool agree) {
 }
 
 void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
+	/*
+	// This does not result in actionable error messages and has been disabled.
 	ShapeAnalysis_ShapeTolerance toler;
 	if (Logger::LOG_WARNING >= Logger::Verbosity()) {
-		if (toler.Tolerance(s, 0) > t + ALMOST_ZERO) {
-			Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t + ALMOST_ZERO);
+		if (toler.Tolerance(s, 0) > t * 10.) {
+			Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t * 10.);
 			for (int i = 1; i <= shapes->Length(); ++i) {
 				const TopoDS_Shape& sub = shapes->Value(i);
 				std::stringstream ss;
@@ -729,6 +776,7 @@ void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
 			}
 		}
 	}
+	*/
 	ShapeFix_ShapeTolerance tol;
 	tol.LimitTolerance(s, t);
 }
@@ -896,7 +944,15 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 		ShapeFix_Solid solid;
 		solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		shape = solid.SolidFromShell(TopoDS::Shell(shape));
-	} catch(...) {}
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error creating solid");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error creating solid");
+	}
 
 	return true;
 }
@@ -1133,7 +1189,9 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		if (parent_object) {
 			parent_id = parent_object->entity->id();
 		}
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
 		
 	const std::string name = product->hasName() ? product->Name() : "";
 	const std::string guid = product->GlobalId();
@@ -1141,7 +1199,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	gp_Trsf trsf;
 	try {
 		convert(product->ObjectPlacement(),trsf);
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	} catch (...) {
+		Logger::Error("Failed to construct placement");
+	}
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
@@ -1225,7 +1287,9 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 		if (parent_object) {
 			parent_id = parent_object->entity->id();
 		}
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
 		
 	const std::string name = product->hasName() ? product->Name() : "";
 	const std::string guid = product->GlobalId();
@@ -1233,7 +1297,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 	gp_Trsf trsf;
 	try {
 		convert(product->ObjectPlacement(),trsf);
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	} catch (...) {
+		Logger::Error("Failed to construct placement");
+	}
 
 	std::string context_string = "";
 	if (representation->hasRepresentationIdentifier()) {
@@ -1486,9 +1554,16 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		IfcSchema::IfcExtrudedAreaSolid* extrusion = *extrusions->begin();
 
 		gp_Trsf extrusion_position;
-		if (!convert(extrusion->Position(), extrusion_position)) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product->entity);
-			return false;
+
+		bool has_position = true;
+#ifdef USE_IFC4
+		has_position = extrusion->hasPosition();
+#endif
+		if (has_position) {
+			if (!convert(extrusion->Position(), extrusion_position)) {
+				Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product->entity);
+				return false;
+			}
 		}
 
 		gp_Dir extrusion_direction;
@@ -2255,7 +2330,15 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 			if (fix.Perform()) {
 				shape = fix.Shape();
 			}
-		} catch(...) {}
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Error(e.GetMessageString());
+			} else {
+				Logger::Error("Unknown error performing fixes");
+			}
+		} catch (...) {
+			Logger::Error("Unknown error performing fixes");
+		}
 		BRepCheck_Analyzer analyser(shape);
 		bool is_valid = analyser.IsValid() != 0;
 		if (!is_valid) {

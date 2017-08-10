@@ -159,7 +159,9 @@ namespace IfcGeom {
 		bool initialize() {
 			try {
 				initUnits();
-			} catch (...) {}
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			}
 
 			std::set<std::string> allowed_context_types;
 			allowed_context_types.insert("model");
@@ -212,7 +214,9 @@ namespace IfcGeom {
 							filtered_contexts->push(context);
 						}
 					}
-				} catch (const IfcParse::IfcException&) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
 			}
 
 			// In case no contexts are identified based on their ContextType, all contexts are
@@ -235,7 +239,10 @@ namespace IfcGeom {
 						lowest_precision_encountered = context->Precision();
 						any_precision_encountered = true;
 					}
-				} catch (const IfcParse::IfcException&) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
+
 				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
 				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
 					representations->push((*jt)->RepresentationsInContext());
@@ -286,9 +293,15 @@ namespace IfcGeom {
 					// Use a fresh trsf every time in order to prevent the result to be concatenated
                     gp_Trsf trsf; 
 					bool success = false;
+					
 					try {
 						success = kernel.convert(product->ObjectPlacement(), trsf);
-					} catch (...) {}
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+					} catch (...) {
+						Logger::Error("Failed to construct placement");
+					}
+					
 					if (!success) {
 						continue;
 					}
@@ -590,9 +603,10 @@ namespace IfcGeom {
 					bool hasParent = true;
 
 					// get the parent 
-					try { parent_object = getObject(ret->parent_id()); }
-					catch (std::exception e)
-					{
+					try {
+						parent_object = getObject(parent_object->parent_id());
+					} catch (const std::exception& e) {
+						Logger::Error(e);
 						hasParent = false;
 					}
 
@@ -603,10 +617,10 @@ namespace IfcGeom {
 					while (parent_object != NULL && hasParent)
 					{
 						// Find the next parent
-						try { parent_object = getObject(parent_object->parent_id()); }
-						catch (std::exception e)
-						{
-							std::cout << e.what();
+						try {
+							parent_object = getObject(parent_object->parent_id());
+						} catch (const std::exception& e) {
+							Logger::Error(e);
 							hasParent = false;
 						}
 
@@ -650,12 +664,32 @@ namespace IfcGeom {
 						if (parent_object) {
 							parent_id = parent_object->entity->id();
 						}
-					} catch (...) {}
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+					} catch (...) {
+						Logger::Error("Failed to find decomposing entity");
+					}
+
 					try {
 						kernel.convert(ifc_product->ObjectPlacement(), trsf);
-					} catch (...) {}
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+					} catch (...) {
+						Logger::Error("Failed to construct placement");
+					}
 				}
-			} catch(...) {}
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			} catch (const Standard_Failure& e) {
+				if (e.GetMessageString() && strlen(e.GetMessageString())) {
+					Logger::Error(e.GetMessageString());
+				} else {
+					Logger::Error("Unknown error returning product");
+				}
+			} catch (...) {
+				Logger::Error("Unknown error returning product");
+			}
+
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
 
 			Element<P>* ifc_object = new Element<P>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf, ifc_product);
@@ -669,7 +703,17 @@ namespace IfcGeom {
 
 			try {
 				next_shape_model = create_shape_model_for_next_entity();
-			} catch (...) {}
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			} catch (const Standard_Failure& e) {
+				if (e.GetMessageString() && strlen(e.GetMessageString())) {
+					Logger::Error(e.GetMessageString());
+				} else {
+					Logger::Error("Unknown error creating geometry");
+				}
+			} catch (...) {
+				Logger::Error("Unknown error creating geometry");
+			}
 
 			if (next_shape_model) {
 				if (settings.get(IteratorSettings::USE_BREP_DATA)) {

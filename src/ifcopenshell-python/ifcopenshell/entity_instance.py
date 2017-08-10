@@ -80,6 +80,8 @@ class entity_instance(object):
         self[self.wrapped_data.get_argument_index(key)] = value
 
     def __getitem__(self, key):
+        if key < 0 or key >= len(self):
+            raise IndexError("Attribute index {} out of range for instance of type {}".format(key, self.is_a()))
         return entity_instance.wrap_value(self.wrapped_data.get_argument(key))
 
     def __setitem__(self, idx, value):
@@ -118,22 +120,39 @@ class entity_instance(object):
     def __dir__(self):
         return sorted(set(itertools.chain(
             dir(type(self)),
-            self.wrapped_data.get_attribute_names(),
-            self.wrapped_data.get_inverse_attribute_names()
+            map(str, self.wrapped_data.get_attribute_names()),
+            map(str, self.wrapped_data.get_inverse_attribute_names())
         )))
 
-    def get_info(self):
-        _info = {}
-        try:
-            _info["id"] = self.id()
-            _info["type"] = self.is_a()
-        except:
-            logging.exception("unhandled exception while getting id / type info on {}".format(self))
-        for i in range(len(self)):
+    def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
+        def _():
             try:
-                _info[self.attribute_name(i)] = self[i]
+                if include_identifier:
+                    yield "id", self.id()
+                yield "type", self.is_a()
             except:
-                logging.exception("unhandled exception occured setting attribute name for {}".format(self))
-        return _info
+                logging.exception("unhandled exception while getting id / type info on {}".format(self))
+            for i in range(len(self)):
+                try:
+                    if self.wrapped_data.get_attribute_names()[i] in ignore:
+                        continue
+                    attr_value = self[i]
+                    if recursive:
+                        is_instance = lambda e: isinstance(e, entity_instance)
+                        def get_info_(inst):
+                            # for ty in ignore:
+                            #     if inst.is_a(ty):
+                            #         return None
+                            return entity_instance.get_info(inst,
+                                include_identifier=include_identifier,
+                                recursive=recursive,
+                                return_type=return_type,
+                                ignore=ignore
+                            )
+                        attr_value = entity_instance.walk(is_instance, get_info_, attr_value)
+                    yield self.attribute_name(i), attr_value
+                except:
+                    logging.exception("unhandled exception occured setting attribute name for {}".format(self))
+        return return_type(_())
 
     __dict__ = property(get_info)

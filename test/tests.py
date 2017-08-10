@@ -37,12 +37,27 @@ assert f.by_guid("28pa2ppDf1IA$BaQrvAf48").is_a("IfcProject")
 assert f.createIfcCartesianPoint((0., 0., 0.)).is_a("IfcCartesianPoint")
 assert f.by_type("IfcProject")[0].is_a("IfcProject")
 assert f.traverse(f[16])[-1].is_a("IFCSIUNIT")
+assert len(f.traverse(f[35], 1)) == 2
+assert len(f.traverse(f[35])) == 3
 assert f[16] in f.get_inverse(f[15])
 assert f[16].UnitComponent is not None
 f.remove(f[15])
 assert f[16].UnitComponent is None
 prop = f.by_type("IfcPropertySingleValue")[0]
 assert prop.NominalValue.wrappedValue in str(prop)
+
+# An instance added to a new file yields the same string
+# representation, except for any instance name identifiers.
+f2 = ifcopenshell.open()
+prop2 = f2.add(prop)
+assert str(prop) == str(prop2).replace(str(prop2.id()), str(prop.id()))
+assert prop2.id() == 1
+
+# A recursively obtained python dictionary representation
+# matches for copied instances as well
+app = f.by_type("IfcApplication")[0]
+assert f2.add(app).get_info(False, True) == app.get_info(False, True)
+assert "Version" in dir(app)
 
 # Some operations on ifcopenshell.entity_instance
 assert f[22].Id == ''

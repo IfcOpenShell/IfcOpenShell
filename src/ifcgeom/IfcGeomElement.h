@@ -142,8 +142,9 @@ namespace IfcGeom {
 			} else {
 				try {
 					oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
-				} catch (const std::exception&) {
+				} catch (const std::exception& e) {
 					oss << "product";
+					Logger::Error(e);
 				}
 			}
 

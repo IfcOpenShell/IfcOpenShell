@@ -322,6 +322,7 @@ int main(int argc, char** argv)
         print_usage();
         return EXIT_FAILURE;
     } catch (...) {
+		std::cerr << "[Error] Unknown error parsing command line options\n\n";
         print_usage();
         return EXIT_FAILURE;
     }
@@ -441,7 +442,9 @@ int main(int argc, char** argv)
                 rename_file(output_temp_filename, output_filename);
                 exit_code = EXIT_SUCCESS;
             }
-        } catch (...) {}
+        } catch (const std::exception& e) {
+			Logger::Error(e);
+		}
         write_log();
         return exit_code;
     }
@@ -704,6 +707,7 @@ bool init_input_file(const std::string &filename, IfcParse::IfcFile &ifc_file, b
 #ifdef USE_MMAP
 	if (!ifc_file.Init(filename, mmap)) {
 #else
+	(void)mmap;
 	if (!ifc_file.Init(filename)) {
 #endif
         Logger::Error("Unable to parse input file '" + filename + "'");

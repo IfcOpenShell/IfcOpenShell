@@ -109,8 +109,25 @@ private:
 
 	// id() is defined on IfcBaseEntity and not on IfcBaseClass, in order
 	// to expose it to the Python wrapper it is simply duplicated here.
+	// Same applies to the two methods reimplemented below.
 	int id() const {
 		return $self->entity->id();
+	}
+
+	std::vector<std::string> getAttributeNames() const {
+		if (IfcSchema::Type::IsSimple($self->type())) {
+			return std::vector<std::string>(1, "wrappedValue");
+		}
+		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
+		return self_->getAttributeNames();
+	}
+
+	std::vector<std::string> getInverseAttributeNames() const {
+		if (IfcSchema::Type::IsSimple($self->type())) {
+			return std::vector<std::string>(0);
+		}
+		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
+		return self_->getInverseAttributeNames();
 	}
 	
 	bool is_a(const std::string& s) {

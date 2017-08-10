@@ -189,7 +189,9 @@ namespace IfcGeom
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 try {
                     ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->getArgumentName(it->second);
-                } catch(...) {}
+                } catch (const std::exception& e) {
+					Logger::Error(e);
+				}
                 delete base;
             }
 

@@ -40,8 +40,8 @@ class file(object):
     def __getitem__(self, key):
         if isinstance(key, numbers.Integral):
             return entity_instance(self.wrapped_data.by_id(key))
-        elif isinstance(key, str):
-            return entity_instance(self.wrapped_data.by_guid(key))
+        elif isinstance(key, basestring):
+            return entity_instance(self.wrapped_data.by_guid(str(key)))
     def by_id(self, id): return self[id]
     def by_guid(self, guid): return self[guid]
     def add(self, inst):
