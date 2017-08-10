@@ -106,7 +106,7 @@ public:
 	/// attributes as a flat list. NB: includes the root instance specified
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
-
+    
 #ifdef USE_MMAP
 	bool Init(const std::string& fn, bool mmap=false);
 #else
@@ -115,6 +115,8 @@ public:
 	bool Init(std::istream& fn, int len);
 	bool Init(void* data, int len);
 	bool Init(IfcParse::IfcSpfStream* f);
+	
+    //bool Dup(const std::string& data);
 
 	IfcEntityList::ptr getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index);
 
