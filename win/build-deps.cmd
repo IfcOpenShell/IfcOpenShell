@@ -260,34 +260,48 @@ if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error 
 
-set DEPENDENCY_NAME=Open CASCADE 7.0.0
-set OCCT_FILENAME=occt-V7_0_0-9059ca1
+set DEPENDENCY_NAME=Open CASCADE 7.1.0
+set OCCT_FILENAME=occt-89aebde
 set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
 cd "%DEPS_DIR%"
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=V7_0_0;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=89aebde;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
 if not %ERRORLEVEL%==0 goto :Error
+
+if exist "%DEPS_DIR%\%OCCT_FILENAME%" (
+    :: TK: I am having a hard time to reinitialize OCCT, because the directory ends up being recreated by a prior cmake step, even if manually deleted.
+    :: Therefore check if the directory contains a full checkout [using a single file as proxy] and delete the directory tree if it is not.
+    if not exist "%DEPS_DIR%\%OCCT_FILENAME%\OCCT_LGPL_EXCEPTION.txt". rd /s/q "%DEPS_DIR%\%OCCT_FILENAME%"
+)
+
 call :ExtractArchive %OCCT_FILENAME%.tar.gz "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %OCCT_FILENAME%.tar "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
 
+set DEPENDENCY_NAME=Additional files
+:: Somehow these two files are not present in the downloaded
+:: snapshot. Path names being too long for gitweb snapshot?
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx
+if not %ERRORLEVEL%==0 goto :Error
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx
+if not %ERRORLEVEL%==0 goto :Error
+set DEPENDENCY_NAME=Open CASCADE 7.1.0
+
 :: Patching always blindly would trigger a rebuild each time
-findstr IfcOpenShell "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx">NUL
+findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
     echo Patching %DEPENDENCY_NAME%'s CMake files
     REM OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
+    copy /y "%~dp0patches\89aebde_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
     REM Patch OCCT to be built against the static MSVC run-time.
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
+    copy /y "%~dp0patches\89aebde_adm-cmake-occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
     REM OCCT tries to deploy PDBs from the bin directory even if static build is used.
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
-    REM Defining HAVE_NO_DLL causes compilation errors due to Win32 GetObject and max macros
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_Dimension.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_Dimension.cxx"
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_OpenGl_PrimitiveArray.cxx" "%DEPENDENCY_DIR%\src\OpenGl\OpenGl_PrimitiveArray.cxx"
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_GeomTolerance.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx"
+    copy /y "%~dp0patches\89aebde_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
+    REM Patch header file for HAVE_NO_DLL
+    copy /y "%~dp0patches\89aebde_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
     REM NOTE If adding a new patch, adjust the checks above and below accordingly
 )
-findstr IfcOpenShell "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx">NUL
+findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
