@@ -24,12 +24,20 @@
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
 #     * git * bzip2 * tar * c(++) compilers * yacc * autoconf                 #
+#                                                                             #
+#   if building with USE_OCCT additionally:                                   #
+#     * freetype * glx.h                                                      #
+#                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2                 #
+#            libfreetype6-dev mesa-common-dev                                 #
+#                                                                             #
 #     on ubuntu 14.04:                                                        #
 #          $ apt-get install git gcc g++ autoconf bison make                  #
+#            libfreetype6-dev mesa-common-dev                                 #
+#                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
-#          $ brew install git bison autoconf automake                         #
+#          $ brew install git bison autoconf automake freetype                #
 #                                                                             #
 ###############################################################################
 
@@ -41,6 +49,7 @@ import shutil
 import time
 import tarfile
 import multiprocessing
+import urllib
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -50,6 +59,8 @@ logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
 OCE_VERSION="0.18"
+OCCT_VERSION="7.1.0"
+OCCT_HASH="89aebde"
 PYTHON_VERSIONS=["2.7.12", "3.2.6", "3.3.6", "3.4.6", "3.5.3"]
 BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.39"
@@ -86,7 +97,7 @@ MAGENTA="\033[35m"
 
 def cecho(message, color=NO_COLOR):
     """Logs message `message` in color `color`."""
-    logger.info("%s%s\033[0m\n" % (color, message))
+    logger.info("%s%s\033[0m" % (color, message))
 
 def fullpath(arg):
 	return os.path.realpath(os.path.dirname(sys.argv[1]))
@@ -131,11 +142,7 @@ except KeyError:
     BUILD_CFG="RelWithDebInfo"
     os.environ["BUILD_CFG"]=BUILD_CFG
 
-try:
-    BUILD_TYPE=os.environ["BUILD_TYPE"]
-except KeyError:
-    BUILD_TYPE="Build"
-    os.environ["BUILD_TYPE"] = BUILD_TYPE
+USE_OCCT = os.environ.get("USE_OCCT", "false").lower() == "true"
 
 # Print build configuration information
 
@@ -146,6 +153,11 @@ cecho("""Script configuration:
 """, GREEN)
 cecho("""* Target Architecture    = %s""" % (TARGET_ARCH,), MAGENTA)
 cecho(" - Whether 32-bit (i686) or 64-bit (x86_64) will be built.")
+cecho("""* USE_OCCT               = %r""" % (USE_OCCT,), MAGENTA)
+if USE_OCCT:
+    cecho(" - Compiling against official Open Cascade")
+else:
+    cecho(" - Compiling against Open Cascade Community Edition")
 cecho("* Dependency Directory   = %s" % (DEPS_DIR,), MAGENTA)
 cecho(" - The directory where %s dependencies are installed." % (PROJECT_NAME,))
 cecho("* Build Config Type      = %s" % (BUILD_CFG,), MAGENTA)
@@ -239,7 +251,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     else:
         P=cmake_dir
     cmake_path= os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake")
-    __check_call__([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_TYPE,)], cwd=cwd)
+    __check_call__([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
 
 def run_icu(arg1, icu_args, cwd):
     PLATFORM=get_os()
@@ -261,7 +273,7 @@ def git_clone(clone_url, target_dir, revision=None):
     if revision != None:
         __check_call__([git, "checkout", revision], cwd=target_dir)
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None):
+def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, additional_files={}):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -292,6 +304,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     else:
         raise ValueError("download tool '%s' is not supported" % (download_tool,))
     download_dir = os.path.join(build_dir, download_name)
+    
     if os.path.isdir(download_dir):
         extract_dir_name=download_name
         extract_dir = os.path.join(build_dir, extract_dir_name)
@@ -312,6 +325,10 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         if not os.path.exists(extract_dir):
             __check_call__([tar, "-xf", download_name], cwd=build_dir)
     
+    for path, url in additional_files.items():
+        if not os.path.exists(path):
+            urllib.urlretrieve(url, os.path.join(extract_dir, path))
+            
     if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, "build")
         if os.path.exists(extract_build_dir):
@@ -420,7 +437,26 @@ build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_a
 # Therefore, build a recent copy from source
 build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-3.0.8")
 
-build_dependency(name="oce-%s" % (OCE_VERSION,), mode="cmake", build_tool_args=["-DOCE_DISABLE_TKSERVICE_FONT=ON", "-DOCE_TESTING=OFF", "-DOCE_BUILD_SHARED_LIB=OFF", "-DOCE_DISABLE_X11=ON", "-DOCE_VISUALISATION=OFF", "-DOCE_OCAF=OFF", "-DOCE_INSTALL_PREFIX=%s/install/oce-%s" % (DEPS_DIR, OCE_VERSION)], download_url="https://github.com/tpaviot/oce/archive/", download_name="OCE-%s.tar.gz" % (OCE_VERSION,))
+if USE_OCCT:
+    long_filename = "src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation"
+    occt_gitweb = "http://git.dev.opencascade.org/gitweb/?p=occt.git"
+    build_dependency(
+        name="occt-%s" % OCCT_VERSION,
+        mode="cmake",
+        build_tool_args=[
+            "-DINSTALL_DIR=%s/install/occt-%s" % (DEPS_DIR, OCCT_VERSION),
+            "-DBUILD_LIBRARY_TYPE=Static",
+            "-DBUILD_MODULE_Draw=0",
+        ],
+        download_url="%s;a=snapshot;h=%s;sf=tgz" % (occt_gitweb, OCCT_HASH),
+        additional_files = {
+            "%s.hxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.hxx" % (occt_gitweb, OCCT_HASH, long_filename),
+            "%s.cxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.cxx" % (occt_gitweb, OCCT_HASH, long_filename)
+        },
+        download_name="occt-%s.tar.gz" % OCCT_HASH)
+else:
+    build_dependency(name="oce-%s" % (OCE_VERSION,), mode="cmake", build_tool_args=["-DOCE_DISABLE_TKSERVICE_FONT=ON", "-DOCE_TESTING=OFF", "-DOCE_BUILD_SHARED_LIB=OFF", "-DOCE_DISABLE_X11=ON", "-DOCE_VISUALISATION=OFF", "-DOCE_OCAF=OFF", "-DOCE_INSTALL_PREFIX=%s/install/oce-%s" % (DEPS_DIR, OCE_VERSION)], download_url="https://github.com/tpaviot/oce/archive/", download_name="OCE-%s.tar.gz" % (OCE_VERSION,))
+        
 build_dependency("libxml2-%s" % (LIBXML_VERSION,), "autoconf", build_tool_args=["--without-python", "--disable-shared", "--without-zlib", "--without-iconv", "--without-lzma"], download_url="ftp://xmlsoft.org/libxml2/", download_name="libxml2-%s.tar.gz" % (LIBXML_VERSION,))
 build_dependency("OpenCOLLADA", "cmake", build_tool_args=["-DLIBXML2_INCLUDE_DIR=%s/install/libxml2-%s/include/libxml2" % (DEPS_DIR, LIBXML_VERSION), "-DLIBXML2_LIBRARIES=%s/install/libxml2-%s/lib/libxml2.a" % (DEPS_DIR, LIBXML_VERSION), "-DPCRE_INCLUDE_DIR=%s/install/pcre-%s/include" % (DEPS_DIR, PCRE_VERSION), "-DPCRE_PCREPOSIX_LIBRARY=%s/install/pcre-%s/lib/libpcreposix.a" % (DEPS_DIR, PCRE_VERSION), "-DPCRE_PCRE_LIBRARY=%s/install/pcre-%s/lib/libpcre.a" % (DEPS_DIR, PCRE_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/OpenCOLLADA/" % (DEPS_DIR,)], download_url="https://github.com/KhronosGroup/OpenCOLLADA.git", download_name="OpenCOLLADA", download_tool=download_tool_git, revision=OPENCOLLADA_COMMIT)
 
@@ -471,10 +507,17 @@ if not os.path.exists(executables_dir):
 
 logger.info("\rConfiguring executables...")
 
+if USE_OCCT:
+    occ_include_dir = "%s/install/occt-%s/include/opencascade" % (DEPS_DIR, OCCT_VERSION)
+    occ_library_dir = "%s/install/occt-%s/lib" % (DEPS_DIR, OCCT_VERSION)
+else:
+    occ_include_dir = "%s/install/oce-%s/include/oce" % (DEPS_DIR, OCE_VERSION)
+    occ_library_dir = "%s/install/oce-%s/lib" % (DEPS_DIR, OCE_VERSION)
+
 run_cmake("", cmake_args=[
     "-DBOOST_ROOT="              "%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
-    "-DOCC_INCLUDE_DIR="         "%s/install/oce-%s/include/oce" % (DEPS_DIR, OCE_VERSION),
-    "-DOCC_LIBRARY_DIR="         "%s/install/oce-%s/lib" % (DEPS_DIR, OCE_VERSION),
+    "-DOCC_INCLUDE_DIR="        +occ_include_dir,
+    "-DOCC_LIBRARY_DIR="        +occ_library_dir,
     "-DOPENCOLLADA_INCLUDE_DIR=" "%s/install/OpenCOLLADA/include/opencollada" % (DEPS_DIR,),
     "-DOPENCOLLADA_LIBRARY_DIR=" "%s/install/OpenCOLLADA/lib/opencollada" % (DEPS_DIR,),
     "-DICU_INCLUDE_DIR="         "%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION),
@@ -511,8 +554,8 @@ for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
     os.environ["PYTHON_LIBRARY_BASENAME"]=os.path.basename(PYTHON_LIBRARY)
     
     run_cmake("", cmake_args=["-DBOOST_ROOT=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION),
-    "-DOCC_INCLUDE_DIR=%s/install/oce-%s/include/oce" % (DEPS_DIR, OCE_VERSION),
-    "-DOCC_LIBRARY_DIR=%s/install/oce-%s/lib" % (DEPS_DIR, OCE_VERSION),
+    "-DOCC_INCLUDE_DIR="+occ_include_dir,
+    "-DOCC_LIBRARY_DIR="+occ_library_dir,
     "-DOPENCOLLADA_INCLUDE_DIR=%s/install/OpenCOLLADA/include/opencollada" % (DEPS_DIR,),
     "-DOPENCOLLADA_LIBRARY_DIR=%s/install/OpenCOLLADA/lib/opencollada" % (DEPS_DIR,),
     "-DICU_INCLUDE_DIR=%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION),
