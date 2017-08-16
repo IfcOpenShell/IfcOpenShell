@@ -561,7 +561,7 @@ call "%~dp0\utils\cecho.cmd" 0 10 "Requirements for a successful execution:"
 echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.
-echo   - http://code.google.com/p/tortoisegit/
+echo   - https://git-for-windows.github.io/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
 echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolset.
