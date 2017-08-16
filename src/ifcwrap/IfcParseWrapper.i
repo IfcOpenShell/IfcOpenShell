@@ -394,7 +394,7 @@ private:
 
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;
-//%newobject read;
+%newobject read;
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& fn) {
@@ -402,13 +402,13 @@ private:
 		f->Init(fn);
 		return f;
 	}
-/*
-    IfcParse::IfcFile* read(const std::string& fn) {
+    IfcParse::IfcFile* read(const std::string& data) {
 		IfcParse::IfcFile* f = new IfcParse::IfcFile();
-		f->Dup(fn);
+        std::string copiedData;
+        copiedData = data;
+		f->Init((void *)copiedData.c_str(), data.length());
 		return f;
 	}
-*/
 	const char* schema_identifier() {
 		return IfcSchema::Identifier;
 	}

@@ -1252,11 +1252,6 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 // Parses the IFC file in fn
 // Creates the maps
 //
-/*
- * bool IfcFile::Dup(const std::string& data) {
- *     return IfcFile::Init(new IfcSpfStream(data, (unsigned int) 0));
- * }
- */
 
 #ifdef USE_MMAP
 bool IfcFile::Init(const std::string& fn, bool mmap) {
@@ -1264,7 +1259,7 @@ bool IfcFile::Init(const std::string& fn, bool mmap) {
 }
 #else
 bool IfcFile::Init(const std::string& fn) {
-    return IfcFile::Init(new IfcSpfStream(fn, (unsigned int) 0));
+    //return IfcFile::Init(new IfcSpfStream(fn, (unsigned int) 0));
 	return IfcFile::Init(new IfcSpfStream(fn));
 }
 #endif
@@ -1274,6 +1269,9 @@ bool IfcFile::Init(std::istream& f, int len) {
 
 bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
+}
+bool IfcFile::Init(const std::string& data, unsigned int unused) {
+    return IfcFile::Init(new IfcSpfStream(data, (unsigned int) 0));
 }
 
 
