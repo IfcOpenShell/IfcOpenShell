@@ -42,6 +42,8 @@ private:
 %ignore IfcParse::IfcSpfHeader::stream;
 %ignore IfcParse::HeaderEntity::is;
 
+%ignore IfcParse::IfcFile::type_iterator;
+
 %ignore IfcUtil::IfcBaseClass::is;
 
 %rename("by_id") entityById;
@@ -78,6 +80,22 @@ private:
 			keys.push_back(it->first);
 		}
 		return keys;
+	}
+
+	std::vector<std::string> types() const {
+		const size_t n = std::distance($self->types_begin(), $self->types_end());
+		std::vector<std::string> ts;
+		ts.reserve(n);
+		std::transform($self->types_begin(), $self->types_end(), std::back_inserter(ts), IfcSchema::Type::ToString);
+		return ts;
+	}
+
+	std::vector<std::string> types_with_super() const {
+		const size_t n = std::distance($self->types_incl_super_begin(), $self->types_incl_super_end());
+		std::vector<std::string> ts;
+		ts.reserve(n);
+		std::transform($self->types_incl_super_begin(), $self->types_incl_super_end(), std::back_inserter(ts), IfcSchema::Type::ToString);
+		return ts;
 	}
 
 	%pythoncode %{

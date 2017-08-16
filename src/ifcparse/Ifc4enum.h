@@ -42,7 +42,7 @@ namespace Type {
     } Enum;
     IFC_PARSE_API boost::optional<Enum> Parent(Enum v);
     IFC_PARSE_API Enum FromString(const std::string& s);
-    IFC_PARSE_API std::string ToString(Enum v);
+    IFC_PARSE_API const std::string& ToString(Enum v);
     IFC_PARSE_API bool IsSimple(Enum v);
 }
 
