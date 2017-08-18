@@ -1,10 +1,8 @@
+#include "../ifcparse/IfcHdf5File.h"
+
 #include <limits>
-
+#include <H5pubconf.h>
 #include <boost/lexical_cast.hpp>
-
-#include "IfcHdf5File.h"
-
-#include "H5pubconf.h"
 
 #ifndef H5_HAVE_FILTER_DEFLATE
 #pragma message("warning: HDF5 compression support is recommended")

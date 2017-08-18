@@ -22,7 +22,7 @@
 
 #define SORT_ON_NAME
 
-#include "H5Cpp.h"
+#include <H5Cpp.h>
 
 #include "../ifcparse/Hdf5Settings.h"
 #include "../ifcparse/IfcUtil.h"

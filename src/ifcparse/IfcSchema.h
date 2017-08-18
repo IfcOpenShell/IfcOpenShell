@@ -54,8 +54,8 @@ namespace IfcParse {
 		virtual const simple_type* as_simple_type() const { return static_cast<simple_type*>(0); }
 		virtual const aggregation_type* as_aggregation_type() const { return static_cast<aggregation_type*>(0); }
 
-		virtual bool is(const std::string& name) const { return false; }
-		virtual bool is(IfcSchema::Type::Enum name) const { return false; }
+		virtual bool is(const std::string& /*name*/) const { return false; }
+		virtual bool is(IfcSchema::Type::Enum /*name*/) const { return false; }
 	};
 
 	class named_type : public parameter_type {

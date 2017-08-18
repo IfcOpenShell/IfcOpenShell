@@ -23,6 +23,7 @@ project (IfcOpenShell)
 
 OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)." ON)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
+OPTION(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 #TODO OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." OFF)
 OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when switching this)" OFF)
@@ -46,6 +47,8 @@ UNIFY_ENVVARS_AND_CACHE(ICU_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(ICU_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 
@@ -187,6 +190,27 @@ IF(COLLADA_SUPPORT)
 	ENDIF()
 ENDIF()
 
+if(HDF5_SUPPORT)
+    IF("${HDF5_INCLUDE_DIR}" STREQUAL "")
+		MESSAGE(STATUS "No HDF5 include directory specified")
+	ElSE()
+		SET(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
+	ENDIF()
+    
+    IF("${HDF5_LIBRARY_DIR}" STREQUAL "")
+		MESSAGE(STATUS "No HDF5 library directory specified")
+	ElSE()
+		SET(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
+	ENDIF()
+    
+    IF(WIN32)
+        # An additional lib- prefix is added by HDF5 to denote static libraries
+        SET(HDF5_LIBRARIES libhdf5_cpp libhdf5 libzlib)
+    ELSE()
+        SET(HDF5_LIBRARIES hdf5_cpp hdf5 zlib)
+    ENDIF()
+endif()
+
  # TODO Are these needed on other platforms still or can these be removed for good?
 IF (NOT WIN32)
 	INCLUDE(CheckIncludeFileCXX)
@@ -269,7 +293,7 @@ ElSE()
 ENDIF()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS}
+	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR}
 )
 if(NOT WIN32)
 	INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} /usr/inc /usr/local/inc /usr/local/include/oce)
@@ -382,7 +406,7 @@ ADD_LIBRARY(IfcGeom STATIC ${IFCGEOM_FILES})
 TARGET_LINK_LIBRARIES(IfcGeom IfcParse)
 
 LINK_DIRECTORIES(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
-	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS}
+	${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS} ${HDF5_LIBRARY_DIR}
 )
 if(NOT WIN32)
 	LINK_DIRECTORIES(${LINK_DIRECTORIES} /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64)
@@ -401,7 +425,7 @@ if("${libTKernelExt}" STREQUAL ".a")
     set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} rt dl)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert IfcParse IfcGeom ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES} ${HDF5_LIBRARIES})
 
 # IfcGeomServer
 file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
