@@ -99,6 +99,10 @@ private:
 	std::map<int, SurfaceStyle> style_cache;
 
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
+
+	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
+	IfcSchema::Type::Enum placement_rel_to;
+
 public:
 	Kernel()
 		: deflection_tolerance(0.001)
@@ -109,6 +113,7 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
+		, placement_rel_to(IfcSchema::Type::UNDEFINED)
 	{}
 
 	Kernel(const Kernel& other) {
@@ -312,6 +317,8 @@ public:
 		cache = Cache(); 
 #endif
 	}
+
+	void set_conversion_placement_rel_to(IfcSchema::Type::Enum type);
 
 #include "IfcRegisterGeomHeader.h"
 
