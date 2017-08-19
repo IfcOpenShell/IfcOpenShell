@@ -446,3 +446,17 @@ private:
 		return IfcSchema::SchemaEntity(data);
 	}
 %}
+
+%{
+	static std::stringstream ifcopenshell_log_stream;
+%}
+%init %{
+	Logger::SetOutput(0, &ifcopenshell_log_stream);
+%}
+%inline %{
+	std::string get_log() {
+		std::string log = ifcopenshell_log_stream.str();
+		ifcopenshell_log_stream.str("");
+		return log;
+	}
+%}

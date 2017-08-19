@@ -70,3 +70,4 @@ def create_entity(type,*args,**kwargs):
 version = ifcopenshell_wrapper.version()
 schema_identifier = ifcopenshell_wrapper.schema_identifier()
 get_supertype = ifcopenshell_wrapper.get_supertype
+get_log = ifcopenshell_wrapper.get_log
