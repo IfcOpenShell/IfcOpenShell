@@ -403,10 +403,10 @@ private:
 		return f;
 	}
     IfcParse::IfcFile* read(const std::string& data) {
+		char* copiedData = new char[data.length()];
+		memcpy(copiedData, data.c_str(), data.length());
 		IfcParse::IfcFile* f = new IfcParse::IfcFile();
-        std::string copiedData;
-        copiedData = data;
-		f->Init((void *)copiedData.c_str(), data.length());
+		f->Init((void *)copiedData, data.length());
 		return f;
 	}
 	const char* schema_identifier() {
