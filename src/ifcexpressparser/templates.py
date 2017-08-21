@@ -73,7 +73,7 @@ namespace Type {
     } Enum;
     IFC_PARSE_API boost::optional<Enum> Parent(Enum v);
     IFC_PARSE_API Enum FromString(const std::string& s);
-    IFC_PARSE_API std::string ToString(Enum v);
+    IFC_PARSE_API const std::string& ToString(Enum v);
     IFC_PARSE_API bool IsSimple(Enum v);
 }
 
@@ -128,9 +128,9 @@ IfcUtil::IfcBaseClass* %(schema_name)s::SchemaEntity(IfcEntityInstanceData* e) {
     }
 }
 
-std::string Type::ToString(Enum v) {
+const std::string& Type::ToString(Enum v) {
     if (v < 0 || v >= %(max_id)d) throw IfcException("Unable to find find keyword in schema");
-    const char* names[] = { %(type_name_strings)s };
+    static std::string names[] = { %(type_name_strings)s };
     return names[v];
 }
 

@@ -1350,6 +1350,16 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			}
 
 			IfcSchema::Type::Enum ty = instance->type();
+
+			{
+				IfcEntityList::ptr instances_by_type = entitiesByTypeExclSubtypes(ty);
+				if (!instances_by_type) {
+					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
+					bytype_excl[ty] = instances_by_type;
+				}
+				instances_by_type->push(instance);
+			}
+
 			for (;;) {
 				IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 				if (!instances_by_type) {
@@ -1364,7 +1374,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 					break;
 				}
 			}
-			
+
 			if (byid.find(current_id) != byid.end()) {
 				std::stringstream ss;
 				ss << "Overwriting instance with name #" << current_id;
@@ -1597,6 +1607,16 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 
 	// The mapping by entity type is updated.
 	IfcSchema::Type::Enum ty = new_entity->type();
+
+	{
+		IfcEntityList::ptr instances_by_type = entitiesByTypeExclSubtypes(ty);
+		if (!instances_by_type) {
+			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
+			bytype_excl[ty] = instances_by_type;
+		}
+		instances_by_type->push(new_entity);
+	}
+
 	for (;;) {
 		IfcEntityList::ptr instances_by_type = entitiesByType(ty);
 		if (!instances_by_type) {
@@ -1612,7 +1632,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 			break;
 		}
 	}
-	
+
 	int new_id = -1;
 	if (!new_entity->entity->file) {
 		// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
@@ -1750,10 +1770,33 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 	
 	byid.erase(byid.find(id));
-	
-	IfcEntityList::ptr instances_of_same_type = entitiesByType(entity->type());
-	instances_of_same_type->remove(entity);
 
+	IfcSchema::Type::Enum ty = entity->type();
+
+	{
+		IfcEntityList::ptr instances_of_same_type = entitiesByTypeExclSubtypes(ty);
+		instances_of_same_type->remove(entity);
+		if (instances_of_same_type->size() == 0) {
+			bytype_excl.erase(ty);
+		}
+	}
+
+	for (;;) {
+		IfcEntityList::ptr instances_of_same_type = entitiesByType(ty);
+		if (instances_of_same_type) {
+			instances_of_same_type->remove(entity);
+		}
+		if (instances_of_same_type->size() == 0) {
+			bytype.erase(ty);
+		}
+		boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+		if (pt) {
+			ty = *pt;
+		} else {
+			break;
+		}
+	}
+	
 	delete entity->entity;
 	delete entity;
 }
@@ -1761,6 +1804,11 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 IfcEntityList::ptr IfcFile::entitiesByType(IfcSchema::Type::Enum t) {
 	entities_by_type_t::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntityList::ptr() : it->second;
+}
+
+IfcEntityList::ptr IfcFile::entitiesByTypeExclSubtypes(IfcSchema::Type::Enum t) {
+	entities_by_type_t::const_iterator it = bytype_excl.find(t);
+	return (it == bytype_excl.end()) ? IfcEntityList::ptr() : it->second;
 }
 
 IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
@@ -1815,6 +1863,22 @@ IfcFile::entity_by_id_t::const_iterator IfcFile::begin() const {
 
 IfcFile::entity_by_id_t::const_iterator IfcFile::end() const {
 	return byid.end();
+}
+
+IfcFile::type_iterator IfcFile::types_begin() const {
+	return bytype_excl.begin();
+}
+
+IfcFile::type_iterator IfcFile::types_end() const {
+	return bytype_excl.end();
+}
+
+IfcFile::type_iterator IfcFile::types_incl_super_begin() const {
+	return bytype.begin();
+}
+
+IfcFile::type_iterator IfcFile::types_incl_super_end() const {
+	return bytype.end();
 }
 
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {

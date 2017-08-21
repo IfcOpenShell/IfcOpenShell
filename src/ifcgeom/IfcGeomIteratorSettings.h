@@ -80,8 +80,10 @@ namespace IfcGeom
             APPLY_LAYERSETS = 1 << 13,
 			/// Search for a parent of type IfcBuildingStorey for each representation
 			SEARCH_FLOOR = 1 << 14,
+			///
+			SITE_LOCAL_PLACEMENT = 1 << 15,
             /// Number of different setting flags.
-            NUM_SETTINGS = 14
+            NUM_SETTINGS = 15
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;

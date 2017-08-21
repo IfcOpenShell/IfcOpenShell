@@ -59,6 +59,15 @@ app = f.by_type("IfcApplication")[0]
 assert f2.add(app).get_info(False, True) == app.get_info(False, True)
 assert "Version" in dir(app)
 
+# Enumeration of entity type names
+g = ifcopenshell.open()
+p = g.createIfcCartesianPoint((0.,0.))
+assert len(g.types()) == 1
+assert "IfcPoint" in g.types_with_super()
+g.remove(p)
+assert len(g.types()) == 0
+assert len(g.types_with_super()) == 0
+
 # Some operations on ifcopenshell.entity_instance
 assert f[22].Id == ''
 assert f[22].Addresses is None

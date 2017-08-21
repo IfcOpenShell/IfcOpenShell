@@ -39,6 +39,28 @@ public:
 	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
+
+	class type_iterator : public entities_by_type_t::const_iterator {
+	public:
+		type_iterator() : entities_by_type_t::const_iterator() {};
+
+		type_iterator(const entities_by_type_t::const_iterator& it)
+			: entities_by_type_t::const_iterator(it)
+		{};
+
+		entities_by_type_t::key_type const * operator->() const {
+			return &entities_by_type_t::const_iterator::operator->()->first;
+		}
+
+		const entities_by_type_t::key_type& operator*() const {
+			return entities_by_type_t::const_iterator::operator*().first;
+		}
+
+		const std::string& as_string() const {
+			return IfcSchema::Type::ToString(**this);
+		}
+	};
+
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
@@ -46,6 +68,7 @@ private:
 
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
+	entities_by_type_t bytype_excl;
 	entities_by_ref_t byref;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
@@ -69,7 +92,13 @@ public:
 	/// Returns the last entity in the file, this probably is the entity
 	/// with the highest id (EXPRESS ENTITY_INSTANCE_NAME)
 	const_iterator end() const;
-	
+
+	type_iterator types_begin() const;
+	type_iterator types_end() const;
+
+	type_iterator types_incl_super_begin() const;
+	type_iterator types_incl_super_end() const;
+
 	/// Returns all entities in the file that match the template argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
@@ -87,6 +116,9 @@ public:
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	IfcEntityList::ptr entitiesByType(IfcSchema::Type::Enum t);
+
+	/// Returns all entities in the file that match the positional argument.
+	IfcEntityList::ptr entitiesByTypeExclSubtypes(IfcSchema::Type::Enum t);
 
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
