@@ -214,6 +214,10 @@ if(MSVC)
     add_definitions(-DHAVE_NO_DLL)
     add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
 endif()
+if (WIN32)
+    # OCC might require linking to Winsock depending on the version and build configuration
+    list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
+endif()
 
 IF(UNICODE_SUPPORT)
 	# Find ICU 
