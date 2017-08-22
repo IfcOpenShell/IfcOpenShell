@@ -59,3 +59,6 @@ class file(object):
         return self.wrapped_data.remove(inst.wrapped_data)
     def __iter__(self):
         return iter(self[id] for id in self.wrapped_data.entity_names())
+    @staticmethod
+    def from_string(s):
+        return file(ifcopenshell_wrapper.read(s))

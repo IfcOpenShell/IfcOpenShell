@@ -53,7 +53,6 @@ namespace IfcParse {
 		bool valid;
 		bool eof;
 		unsigned int size;
-		IfcSpfStream();
 #ifdef USE_MMAP
 		IfcSpfStream(const std::string& fn, bool mmap=false);
 #else
@@ -62,7 +61,6 @@ namespace IfcParse {
 		IfcSpfStream(std::istream& f, int len);
 		IfcSpfStream(void* data, int len);
 		~IfcSpfStream();
-		IfcSpfStream(const std::string& data, unsigned int x);
 		/// Returns the character at the cursor 
 		char Peek();
 		/// Returns the character at specified offset

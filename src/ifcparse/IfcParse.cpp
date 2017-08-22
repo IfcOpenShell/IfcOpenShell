@@ -108,19 +108,6 @@ void init_locale() {
 
 #endif
 
-IfcSpfStream::IfcSpfStream()
-	: stream(0)
-	, buffer(0)
-	, valid(false)
-	, eof(false)
-{
-    ptr   = 0;
-    len   = 0;
-    valid = false;
-    eof   = false;
-    size  = 0;
-}
-
 // 
 // Opens the file and gets the filesize
 //
@@ -219,18 +206,6 @@ IfcSpfStream::IfcSpfStream(void* data, int l)
 	valid = true;
 	ptr = 0;
 	len = l;
-}
-
-IfcSpfStream::IfcSpfStream(const std::string& data, unsigned int x)
-	: stream(0)
-	, buffer(0)
-{
-	eof = false;
-	size = (unsigned int) data.length();
-	buffer = data.c_str();
-	valid = true;
-	ptr = 0;
-	len = (unsigned int) data.length();
 }
 
 IfcSpfStream::~IfcSpfStream()
@@ -1252,17 +1227,16 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 // Parses the IFC file in fn
 // Creates the maps
 //
-
 #ifdef USE_MMAP
 bool IfcFile::Init(const std::string& fn, bool mmap) {
 	return IfcFile::Init(new IfcSpfStream(fn, mmap));
 }
 #else
 bool IfcFile::Init(const std::string& fn) {
-    //return IfcFile::Init(new IfcSpfStream(fn, (unsigned int) 0));
 	return IfcFile::Init(new IfcSpfStream(fn));
 }
 #endif
+
 bool IfcFile::Init(std::istream& f, int len) {
 	return IfcFile::Init(new IfcSpfStream(f,len));
 }
@@ -1270,10 +1244,6 @@ bool IfcFile::Init(std::istream& f, int len) {
 bool IfcFile::Init(void* data, int len) {
 	return IfcFile::Init(new IfcSpfStream(data,len));
 }
-bool IfcFile::Init(const std::string& data, unsigned int unused) {
-    return IfcFile::Init(new IfcSpfStream(data, (unsigned int) 0));
-}
-
 
 bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
