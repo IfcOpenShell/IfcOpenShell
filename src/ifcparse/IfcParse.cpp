@@ -1603,24 +1603,26 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		}
 	}
 
-	int new_id = -1;
-	if (!new_entity->entity->file) {
-		// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
-		new_entity->entity->file = this;
-		new_id = new_entity->entity->set_id();
-	} else {
-		new_id = new_entity->entity->id();
-	}
+	if (!IfcSchema::Type::IsSimple(new_entity->entity->type())) {
+		int new_id = -1;
+		if (!new_entity->entity->file) {
+			// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
+			new_entity->entity->file = this;
+			new_id = new_entity->entity->set_id();
+		} else {
+			new_id = new_entity->entity->id();
+		}
 
-	if (byid.find(new_id) != byid.end()) {
-		// This should not happen
-		std::stringstream ss;
-		ss << "Overwriting entity with id " << new_id;
-		Logger::Message(Logger::LOG_WARNING, ss.str());
-	}
+		if (byid.find(new_id) != byid.end()) {
+			// This should not happen
+			std::stringstream ss;
+			ss << "Overwriting entity with id " << new_id;
+			Logger::Message(Logger::LOG_WARNING, ss.str());
+		}
 
-	// The mapping by entity instance name is updated.
-	byid[new_id] = new_entity;
+		// The mapping by entity instance name is updated.
+		byid[new_id] = new_entity;
+	}
 
 	// The mapping by reference is updated.
 	IfcEntityList::ptr entity_attributes(new IfcEntityList);
