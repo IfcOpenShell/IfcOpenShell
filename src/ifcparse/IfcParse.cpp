@@ -1552,5 +1552,5 @@ std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitE
 }
 
 void IfcFile::write_hdf5(const std::string& name, const Hdf5Settings& settings) {
-	IfcHdf5File(this, name, settings);
+	IfcHdf5File(this, name, settings, IfcHdf5File::standard);
 }

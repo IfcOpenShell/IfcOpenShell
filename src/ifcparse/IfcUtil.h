@@ -232,7 +232,7 @@ public:
 	}
 	outer_it begin() const { return ls.begin(); }
 	outer_it end() const { return ls.end(); }
-	int size() const { return (int)ls.size(); }
+	unsigned int size() const { return (unsigned int)ls.size(); }
 	int totalSize() const { 
 		int accum = 0; 
 		for (outer_it it = begin(); it != end(); ++it) { 
@@ -378,5 +378,28 @@ public:
 	static void ProgressBar(int progress);
 	static std::string GetLog();
 };
+
+namespace IfcUtil {
+	template <ArgumentType>
+	struct attr_type_to_cpp_type;
+	template <> struct attr_type_to_cpp_type <Argument_INT> { typedef int cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_BOOL> { typedef bool cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_DOUBLE> { typedef double cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_STRING> { typedef std::string cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_BINARY> { typedef boost::dynamic_bitset<> cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_ENTITY_INSTANCE> { typedef IfcUtil::IfcBaseClass* cpp_type; };
+
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_INT> { typedef std::vector<int> cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_BOOL> { typedef std::vector<bool> cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_DOUBLE> { typedef std::vector<double> cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_STRING> { typedef std::vector<std::string> cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_BINARY> { typedef std::vector< boost::dynamic_bitset<> > cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_ENTITY_INSTANCE> { typedef IfcEntityList::ptr cpp_type; };
+
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_INT> { typedef std::vector< std::vector<int> > cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL> { typedef std::vector< std::vector<bool> > cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE> { typedef std::vector< std::vector<double> > cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE> { typedef IfcEntityListList::ptr cpp_type; };
+}
 
 #endif

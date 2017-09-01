@@ -31,7 +31,17 @@
 namespace IfcParse {
 
 	class IfcHdf5File {
+	public:
+		enum Profile {
+			standard,
+			padded,
+			standard_referenced,
+			padded_referenced
+		};
+
 	private:
+		Profile profile_;
+
 		class allocator_t {
 		private:
 			// TODO: Change this?
@@ -57,6 +67,7 @@ namespace IfcParse {
 
 		std::string name_;
 		schema_definition schema_;
+		IfcFile& ifcfile_;
 
 		H5::H5File* file;
 		H5::Group schema_group;
@@ -68,10 +79,12 @@ namespace IfcParse {
 
 		std::map<IfcSchema::Type::Enum, H5::DataType*> declared_types;
 		// TODO: why? get_datatype()
+		/*
 		std::map<IfcParse::simple_type::data_type, const H5::DataType*> default_types;
 		std::map<std::string, const H5::DataType*> overridden_types;
 		std::map<IfcParse::simple_type::data_type, std::string> default_type_names;
 		std::map<IfcUtil::ArgumentType, std::string> default_cpp_type_names;
+		*/
 
 #ifdef SORT_ON_NAME
 		std::map<IfcSchema::Type::Enum, std::vector<uint32_t> > sorted_entities;
@@ -89,9 +102,9 @@ namespace IfcParse {
 		void visit_select(const IfcParse::select_type* pt, std::set<const IfcParse::declaration*>& leafs);
 		std::string flatten_aggregate_name(const IfcParse::parameter_type* at) const;
 		std::pair<size_t, size_t> make_instance_reference(const IfcUtil::IfcBaseClass* instance) const;
-		void write_select(void*& ptr, IfcUtil::IfcBaseClass* instance, const H5::CompType* datatype) const;
+		// void write_select(void*& ptr, IfcUtil::IfcBaseClass* instance, const H5::CompType* datatype) const;
 
-		void write_schema(const schema_definition& schema);
+		void write_schema(const schema_definition& schema, IfcFile& f);
 		void write_population(IfcFile& f);
 
 		template <typename T>
@@ -99,6 +112,7 @@ namespace IfcParse {
 			return default_types.find(IfcUtil::cpp_to_schema_type<T>::schema_type)->second;
 		}
 
+		/*
 		void advance(void*& ptr, size_t n) const;
 		
 		template <typename T>
@@ -112,11 +126,19 @@ namespace IfcParse {
 		template <typename T>
 		void write_number_of_size(void*& ptr, size_t n, T i) const;
 
+		void write_string_of_size(void*& ptr, const std::string& s, size_t n) const;
+
 		template <typename T>
 		void write_aggregate(void*& ptr, const T& ts) const;
 
 		template <typename T>
+		void write_consecutive(void*& ptr, const std::vector<T>& ts, hsize_t* num = 0, size_t* elem_size=0) const;
+
+		template <typename T>
 		void write_aggregate2(void*& ptr, const std::vector< std::vector<T> >& ts) const;
+
+		template <typename T>
+		void write_consecutive2(void*& ptr, const std::vector< std::vector<T> >& ts, hsize_t* num = 0, size_t* elem_size = 0) const;
 
 		template <typename T>
 		void write_reference_attribute(void*& ptr, const std::string& dsn, const std::vector<T>& vs);
@@ -124,16 +146,29 @@ namespace IfcParse {
 		template <typename T>
 		void write_reference_attribute2(void*& ptr, const std::string& dsn, const std::vector< std::vector<T> >& vs);
 
+		const H5::DataType* specify_length(const H5::DataType* dt, const size_t* n);
+		*/
+
+		H5::DataSet create_dataset(const std::string& path, H5::DataType datatype, int rank, hsize_t* dimensions);
+		
+		template <typename T>
+		void write_instance(void*& ptr, T& visitor, H5::DataType& datatype, IfcUtil::IfcBaseEntity* v);
+
+		// TODO: Obviously change this;
+		void* mapper_;
 	public:
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
-
-		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings)
-			: name_(name)
+		
+		
+		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings, Profile profile)
+			: profile_(profile)
+			, name_(name)
 			, schema_(*f->schema())
+			, ifcfile_(*f)
 			, settings_(settings)
 		{
-			write_schema(*f->schema());
-			write_population(*f);
+			write_schema(schema_, ifcfile_);
+			write_population(ifcfile_);
 		};
 	};
 

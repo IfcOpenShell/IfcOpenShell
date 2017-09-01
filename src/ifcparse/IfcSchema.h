@@ -75,7 +75,7 @@ namespace IfcParse {
 
 	class simple_type : public parameter_type {
 	public:
-		typedef enum { binary_type, boolean_type, integer_type, logical_type, number_type, real_type, string_type } data_type;
+		typedef enum { binary_type, boolean_type, integer_type, logical_type, number_type, real_type, string_type, datatype_COUNT } data_type;
 	protected:
 		data_type declared_type_;
 	public:
