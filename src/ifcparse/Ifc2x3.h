@@ -41584,8 +41584,8 @@ public:
     typedef IfcTemplatedEntityList< IfcReinforcingBar > list;
 };
 
-void InitStringMap();
-IfcUtil::IfcBaseClass* SchemaEntity(IfcEntityInstanceData* e = 0);
+IFC_PARSE_API void InitStringMap();
+IFC_PARSE_API IfcUtil::IfcBaseClass* SchemaEntity(IfcEntityInstanceData* e = 0);
 }
 
 #endif
