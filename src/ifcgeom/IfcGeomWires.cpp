@@ -164,20 +164,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 		return use_radians || use_degrees;
 	}
-	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
+
 	BRepBuilderAPI_MakeWire w;
-	//TopoDS_Vertex last_vertex;
+	TopoDS_Vertex v1, v2, last;
+	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
+	
 	for( IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++ it ) {
+		
 		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
 		TopoDS_Wire wire2;
-		if ( !convert_wire(curve,wire2) ) {
-			Logger::Message(Logger::LOG_ERROR,"Failed to convert curve:",curve->entity);
+		
+		if ( !convert_wire(curve, wire2) ) {
+			Logger::Message(Logger::LOG_ERROR, "Failed to convert curve:", curve->entity);
 			continue;
 		}
+		
 		if ( ! (*it)->SameSense() ) wire2.Reverse();
+		
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire2, getValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_WIRE);
-		/*if ( it != segments->begin() ) {
+		FTol.SetTolerance(wire2, getValue(GV_PRECISION), TopAbs_WIRE);
+		
+		/* 
+		// Create a line segment between distant vertices?
+		if ( it != segments->begin() ) {
 			TopExp_Explorer exp (wire2,TopAbs_VERTEX);
 			const TopoDS_Vertex& first_vertex = TopoDS::Vertex(exp.Current());
 			gp_Pnt first = BRep_Tool::Pnt(first_vertex);
@@ -186,32 +195,58 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 			if ( distance > ALMOST_ZERO ) {
 				w.Add( BRepBuilderAPI_MakeEdge( last_vertex, first_vertex ) );
 			}
-		}*/
+		}
+		*/
+
+		TopExp::Vertices(wire2, v1, v2);
+
 		w.Add(wire2);
-		//last_vertex = w.Vertex();
+
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
-			Logger::Message(Logger::LOG_ERROR,"Failed to join curve segments:",l->entity);
+			if (w.Error() == BRepBuilderAPI_NonManifoldWire) {
 
-			TopoDS_Vertex v1, v2, last;
-			last = w.Vertex();
+				Logger::Message(Logger::LOG_ERROR, "Non-manifold curve segments:", l->entity);
+
+			} else if (w.Error() == BRepBuilderAPI_DisconnectedWire) {
+
+				Logger::Message(Logger::LOG_ERROR, "Failed to join curve segments:", l->entity);
+
+				gp_Pnt p1, p2;
+				int precision = 4;
+				double d = 0.;
 				
-			if (!last.IsNull()) {
-				std::stringstream ss;
-				gp_Pnt p = BRep_Tool::Pnt(last);
-				ss << std::setprecision(4) << "Last vertex at (" << p.X() << " " << p.Y() << " " << p.Z() << ")";
-				Logger::Message(Logger::LOG_NOTICE, ss.str());
-			}
+				if (!last.IsNull()) {
+					p1 = BRep_Tool::Pnt(last);
+				}
+				if (!v1.IsNull()) {
+					p2 = BRep_Tool::Pnt(v1);
+				}
+				if (!last.IsNull() && !v1.IsNull()) {
+					d = p1.Distance(p2);
+					precision = ceil(-log10(d)) + 3;
+				}
 
-			TopExp::Vertices(wire2, v1, v2);
-			if (!v1.IsNull()) {
-				std::stringstream ss;
-				gp_Pnt p = BRep_Tool::Pnt(v1);
-				ss << std::setprecision(4) << "Segment starts at (" << p.X() << " " << p.Y() << " " << p.Z() << ") for:";
-				Logger::Message(Logger::LOG_NOTICE, ss.str(), (*it)->entity);
+				if (!last.IsNull()) {
+					std::stringstream ss;
+					ss << std::setprecision(precision) << "Last vertex at (" << p1.X() << " " << p1.Y() << " " << p1.Z() << ")";
+					Logger::Message(Logger::LOG_NOTICE, ss.str());
+				}
+
+				if (!v1.IsNull()) {
+					std::stringstream ss;
+					ss << std::setprecision(precision) << "Segment starts at (" << p2.X() << " " << p2.Y() << " " << p2.Z() << ")";
+					if (d > 0.) {
+						ss << ", distance " << d << " > precision " << std::fixed << getValue(GV_PRECISION) / 10.;
+					}
+					ss << " for:";
+					Logger::Message(Logger::LOG_NOTICE, ss.str(), (*it)->entity);
+				}
 			}
 			
 			return false;
 		}
+
+		last = v2;
 	}
 	wire = w.Wire();
 	return true;
