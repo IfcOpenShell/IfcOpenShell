@@ -161,20 +161,20 @@ void IfcUtil::sanitate_material_name(std::string &str)
 
 void IfcUtil::escape_xml(std::string &str)
 {
+	boost::replace_all(str, "&", "&amp;");
     boost::replace_all(str, "\"", "&quot;");
     boost::replace_all(str, "'", "&apos;");
     boost::replace_all(str, "<", "&lt;");
     boost::replace_all(str, ">", "&gt;");
-    boost::replace_all(str, "&", "&amp;");
 }
 
 void IfcUtil::unescape_xml(std::string &str)
 {
+	boost::replace_all(str, "&amp;", "&");
     boost::replace_all(str, "&quot;", "\"");
     boost::replace_all(str, "&apos;", "'");
     boost::replace_all(str, "&lt;", "<");
     boost::replace_all(str, "&gt;", ">");
-    boost::replace_all(str, "&amp;", "&");
 }
 
 std::vector<std::string> IfcUtil::IfcBaseEntity::getAttributeNames() const {
