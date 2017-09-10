@@ -142,7 +142,7 @@ except KeyError:
     BUILD_CFG="RelWithDebInfo"
     os.environ["BUILD_CFG"]=BUILD_CFG
 
-USE_OCCT = os.environ.get("USE_OCCT", "false").lower() == "true"
+USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
 
 # Print build configuration information
 
