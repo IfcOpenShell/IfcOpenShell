@@ -223,7 +223,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 				}
 				if (!last.IsNull() && !v1.IsNull()) {
 					d = p1.Distance(p2);
-					precision = ceil(-log10(d)) + 3;
+					precision = static_cast<int>(ceil(-log10(d))) + 3;
 				}
 
 				if (!last.IsNull()) {

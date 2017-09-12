@@ -30,22 +30,44 @@
 void Logger::SetProduct(boost::optional<IfcSchema::IfcProduct*> product) {
 	current_product = product;
 }
-void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
+
+void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
+	wlog1 = wlog2 = 0;
 	log1 = l1; 
 	log2 = l2; 
-	if ( ! log2 ) {
+	if (!log2) {
 		log2 = &log_stream;
 	}
 }
 
+void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
+	log1 = log2 = 0;
+	wlog1 = l1;
+	wlog2 = l2;
+	if (!wlog2) {
+		log2 = &log_stream;
+	}
+}
+
+template <typename T>
+void Logger::log(T& log2, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
+	log2 << "[" << severity_strings[type] << "] ";
+	if (current_product) {
+		log2 << "{" << (*current_product)->GlobalId().c_str() << "} ";
+	}
+	log2 << message.c_str() << std::endl;
+	if (entity) {
+		log2 << entity->toString().c_str() << std::endl;
+	}
+}
+
 void Logger::Message(Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
-	if ( log2 && type >= verbosity ) {
-		(*log2) << "[" << severity_strings[type] << "] ";
-		if ( current_product ) {
-		    (*log2) << "{" << (*current_product)->GlobalId() << "} ";
+	if (type >= verbosity) {
+		if (log2) {
+			log(*log2, type, message, entity);
+		} else if (wlog2) {
+			log(*wlog2, type, message, entity);
 		}
-		(*log2) << message << std::endl;
-		if ( entity ) (*log2) << entity->toString() << std::endl;
 	}
 }
 
@@ -53,26 +75,39 @@ void Logger::Message(Logger::Severity type, const std::exception& exception, Ifc
 	Message(type, exception.what(), entity);
 }
 
+template <typename T>
+void status(T& log1, const std::string& message, bool new_line) {
+	log1 << message.c_str();
+	if (new_line) {
+		log1 << std::endl;
+	} else {
+		log1 << std::flush;
+	}
+}
+
 void Logger::Status(const std::string& message, bool new_line) {
-	if ( log1 ) {
-		(*log1) << message;
-		if ( new_line ) (*log1) << std::endl;
-		else (*log1) << std::flush;
+	if (log1) {
+		status(*log1, message, new_line);
+	} else if (wlog1) {
+		status(*wlog1, message, new_line);
 	}
 }
+
 void Logger::ProgressBar(int progress) {
-	if ( log1 ) {
-		Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
-	}
+	Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
 }
+
 std::string Logger::GetLog() {
 	return log_stream.str();
 }
+
 void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
 Logger::Severity Logger::Verbosity() { return verbosity; }
 
 std::ostream* Logger::log1 = 0;
 std::ostream* Logger::log2 = 0;
+std::wostream* Logger::wlog1 = 0;
+std::wostream* Logger::wlog2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
 const char* Logger::severity_strings[] = { "Notice","Warning","Error" };

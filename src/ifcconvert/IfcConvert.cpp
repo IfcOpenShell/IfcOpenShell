@@ -35,6 +35,8 @@
 
 #include "../ifcgeom/IfcGeomIterator.h"
 
+#include "../ifcparse/utils.h"
+
 #include <IGESControl_Controller.hxx>
 #include <Standard_Version.hxx>
 
@@ -49,6 +51,23 @@
 #include <vld.h>
 #endif
 
+#ifdef _MSC_VER
+#include <io.h>
+#include <fcntl.h>
+// C++11 header:
+#include <random>
+#endif
+
+#if defined(_MSC_VER) && defined(_UNICODE)
+typedef std::wstring path_t;
+static std::wostream& cout_ = std::wcout;
+static std::wostream& cerr_ = std::wcerr;
+#else
+typedef std::string path_t;
+static std::ostream& cout_ = std::cout;
+static std::ostream& cerr_ = std::cerr;
+#endif
+
 const std::string DEFAULT_EXTENSION = "obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
@@ -56,12 +75,12 @@ namespace po = boost::program_options;
 
 void print_version()
 {
-    std::cout << "IfcOpenShell " << IfcSchema::Identifier << " IfcConvert " << IFCOPENSHELL_VERSION << " (OCC " << OCC_VERSION_STRING_EXT << ")\n";
+    cout_ << "IfcOpenShell " << IfcSchema::Identifier << " IfcConvert " << IFCOPENSHELL_VERSION << " (OCC " << OCC_VERSION_STRING_EXT << ")\n";
 }
 
 void print_usage(bool suggest_help = true)
 {
-    std::cout << "Usage: IfcConvert [options] <input.ifc> [<output>]\n"
+    cout_ << "Usage: IfcConvert [options] <input.ifc> [<output>]\n"
         << "\n"
         << "Converts the geometry in an IFC file into one of the following formats:\n"
         << "  .obj   WaveFront OBJ  (a .mtl file is also created)\n"
@@ -73,46 +92,43 @@ void print_usage(bool suggest_help = true)
         << "  .xml   XML            Property definitions and decomposition tree\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
         << "\n"
-        << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n";
+        << "If no output filename given, <input>." << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
-        std::cout << "\nRun 'IfcConvert --help' for more information.";
+        cout_ << "\nRun 'IfcConvert --help' for more information.";
     }
-    std::cout << std::endl;
+    cout_ << std::endl;
 }
 
 /// @todo Add help for single option
 void print_options(const po::options_description& options)
 {
-    std::cout << "\n" << options;
-    std::cout << std::endl;
+#if defined(_MSC_VER) && defined(_UNICODE)
+	// See issue https://svn.boost.org/trac10/ticket/10952
+	std::ostringstream temp;
+	temp << options;
+	cout_ << "\n" << temp.str().c_str();
+#else
+	cout_ << "\n" << options;
+#endif
+	cout_ << std::endl;
 }
 
-std::string change_extension(const std::string& fn, const std::string& ext) {
-	std::string::size_type dot = fn.find_last_of('.');
-	if (dot != std::string::npos) {
-		return fn.substr(0,dot+1) + ext;
+template <typename T>
+T change_extension(const T& fn, const T& ext) {
+	typename T::size_type dot = fn.find_last_of('.');
+	if (dot != T::npos) {
+		return fn.substr(0, dot) + ext;
 	} else {
-		return fn + "." + ext;
+		return fn + ext;
 	}
 }
 
-bool file_exists(const std::string& filename)
-{
-    /// @todo Windows Unicode support
-    std::ifstream file(filename.c_str());
+bool file_exists(const std::string& filename) {
+    std::ifstream file(IfcUtil::path::from_utf8(filename).c_str());
     return file.good();
 }
 
-bool rename_file(const std::string& old_filename, const std::string& new_filename)
-{
-    // Whether or not rename() replaces an existing file is implementation-specific,
-    // so remove() possible existing file always.
-    /// @todo Windows Unicode support
-    std::remove(new_filename.c_str());
-    return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
-}
-
-static std::stringstream log_stream;
+static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log();
 
 /// @todo make the filters non-global
@@ -150,8 +166,26 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, co
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile& ifc_file, bool no_progress, bool mmap);
 
-int main(int argc, char** argv)
-{
+#if defined(_MSC_VER) && defined(_UNICODE)
+int wmain(int argc, wchar_t** argv) {
+	typedef po::wcommand_line_parser command_line_parser;
+	typedef wchar_t char_t;
+
+	_setmode(_fileno(stdout), _O_U16TEXT);
+	_setmode(_fileno(stderr), _O_U16TEXT);
+#else
+int main(int argc, char** argv) {
+	typedef po::command_line_parser command_line_parser;
+	typedef char char_t;
+#endif
+
+	double deflection_tolerance;
+	inclusion_filter include_filter;
+	inclusion_traverse_filter include_traverse_filter;
+	exclusion_filter exclude_filter;
+	exclusion_traverse_filter exclude_traverse_filter;
+	path_t filter_filename;
+
     po::options_description generic_options("Command line options");
 	generic_options.add_options()
 		("help,h", "display usage information")
@@ -165,16 +199,8 @@ int main(int argc, char** argv)
 #ifdef USE_MMAP
 		("mmap", "use memory-mapped file for input")
 #endif
-		("input-file", po::value<std::string>(), "input IFC file")
-		("output-file", po::value<std::string>(), "output geometry file");
-		
-
-    double deflection_tolerance;
-    inclusion_filter include_filter;
-    inclusion_traverse_filter include_traverse_filter;
-    exclusion_filter exclude_filter;
-    exclusion_traverse_filter exclude_traverse_filter;
-    std::string filter_filename;
+		("input-file", new po::typed_value<path_t, char_t>(0), "input IFC file")
+		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file");
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -251,7 +277,7 @@ int main(int argc, char** argv)
         ("generate-uvs",
             "Generates UVs (texture coordinates) by using simple box projection. Requires normals. "
             "Not guaranteed to work properly if used with --weld-vertices.")
-        ("filter-file", po::value<std::string>(&filter_filename),
+        ("filter-file", new po::typed_value<path_t, char_t>(&filter_filename),
             "Specifies a filter file that describes the used filtering criteria. Supported formats "
             "are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimeters."
             "Multiple filters of same type with different values can be inserted on their own lines. "
@@ -311,21 +337,21 @@ int main(int argc, char** argv)
 
     po::variables_map vmap;
     try {
-        po::store(po::command_line_parser(argc, argv).
+        po::store(command_line_parser(argc, argv).
             options(cmdline_options).positional(positional_options).run(), vmap);
     } catch (const po::unknown_option& e) {
-        std::cerr << "[Error] Unknown option '" << e.get_option_name() << "'\n\n";
+        cerr_ << "[Error] Unknown option '" << e.get_option_name().c_str() << "'\n\n";
         print_usage();
         return EXIT_FAILURE;
     } catch (const po::error_with_option_name& e) {
-        std::cerr << "[Error] Invalid usage of '" << e.get_option_name() << "': " << e.what() << "\n\n";
+        cerr_ << "[Error] Invalid usage of '" << e.get_option_name().c_str() << "': " << e.what() << "\n\n";
         return EXIT_FAILURE;
     } catch (const std::exception& e) {
-        std::cerr << "[Error] " << e.what() << "\n\n";
+        cerr_ << "[Error] " << e.what() << "\n\n";
         print_usage();
         return EXIT_FAILURE;
     } catch (...) {
-		std::cerr << "[Error] Unknown error parsing command line options\n\n";
+		cerr_ << "[Error] Unknown error parsing command line options\n\n";
         print_usage();
         return EXIT_FAILURE;
     }
@@ -341,10 +367,11 @@ int main(int argc, char** argv)
         print_options(generic_options.add(geom_options).add(serializer_options));
         return EXIT_SUCCESS;
     } else if (!vmap.count("input-file")) {
-        std::cerr << "[Error] Input file not specified" << std::endl;
+        cerr << "[Error] Input file not specified" << std::endl;
         print_usage();
         return EXIT_FAILURE;
     }
+
 	const bool mmap = vmap.count("mmap") != 0;
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
@@ -377,7 +404,7 @@ int main(int argc, char** argv)
         } else if (unicode_mode == "escape") {
             IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::JSON;
         } else {
-            std::cerr << "[Error] Invalid value for --unicode" << std::endl;
+            cerr << "[Error] Invalid value for --unicode" << std::endl;
             print_options(serializer_options);
             return 1;
         }
@@ -391,77 +418,46 @@ int main(int argc, char** argv)
 			bounding_width = w;
 			bounding_height = h;
 		} else {
-			std::cerr << "[Error] Invalid use of --bounds" << std::endl;
+			cerr << "[Error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
 	}
 
-	const std::string input_filename = vmap["input-file"].as<std::string>();
-    if (!file_exists(input_filename)) {
-        std::cerr << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
+	const path_t input_filename = vmap["input-file"].as<path_t>();
+    if (!file_exists(IfcUtil::path::to_utf8(input_filename))) {
+        cerr_ << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
         return EXIT_FAILURE;
     }
 
 	// If no output filename is specified a Wavefront OBJ file will be output
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
-	const std::string output_filename = vmap.count("output-file") == 1 
-		? vmap["output-file"].as<std::string>()
-		: change_extension(input_filename, DEFAULT_EXTENSION);
+	const path_t output_filename = vmap.count("output-file") == 1 
+		? vmap["output-file"].as<path_t>()
+		: change_extension(input_filename, IfcUtil::path::from_utf8(DEFAULT_EXTENSION));
 	
 	if (output_filename.size() < 5) {
-        std::cerr << "[Error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
+        cerr_ << "[Error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
         print_usage();
 		return EXIT_FAILURE;
 	}
 
-    if (file_exists(output_filename) && !vmap.count("yes")) {
+    if (file_exists(IfcUtil::path::to_utf8(output_filename)) && !vmap.count("yes")) {
         std::string answer;
-        std::cout << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
+        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
         std::cin >> answer;
         if (!boost::iequals(answer, "yes") && !boost::iequals(answer, "y")) {
             return EXIT_SUCCESS;
         }
     }
 
-    std::string output_temp_filename = output_filename + TEMP_FILE_EXTENSION;
+	Logger::SetOutput(&cout_, &log_stream);
+	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
-	std::string output_extension = output_filename.substr(output_filename.size()-4);
+    path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
+
+	path_t output_extension = output_filename.substr(output_filename.size()-4);
 	boost::to_lower(output_extension);
-
-    Logger::SetOutput(&std::cout, &log_stream);
-    Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
-
-    IfcParse::IfcFile ifc_file;
-
-    if (output_extension == ".xml") {
-        int exit_code = EXIT_FAILURE;
-        try {
-            if (init_input_file(input_filename, ifc_file, no_progress, mmap)) {
-                XmlSerializer s(output_temp_filename);
-                s.setFile(&ifc_file);
-                Logger::Status("Writing XML output...");
-                s.finalize();
-                Logger::Status("Done!");
-                rename_file(output_temp_filename, output_filename);
-                exit_code = EXIT_SUCCESS;
-            }
-        } catch (const std::exception& e) {
-			Logger::Error(e);
-		}
-        write_log();
-        return exit_code;
-    }
-
-    if (!filter_filename.empty()) {
-        size_t num_filters = read_filters_from_file(filter_filename, include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
-        if (num_filters) {
-            Logger::Notice(boost::lexical_cast<std::string>(num_filters) + " filters read from '" + filter_filename + "'.");
-        } else {
-            std::cerr << "[Error] No filters read from '" + filter_filename + "'.\n";
-            return EXIT_FAILURE;
-        }
-    }
 
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
@@ -470,9 +466,9 @@ int main(int argc, char** argv)
     if (exclude_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_filter); }
     if (exclude_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_traverse_filter); }
 
-    std::vector<IfcGeom::filter_t> filter_funcs = setup_filters(used_filters, output_extension);
+    std::vector<IfcGeom::filter_t> filter_funcs = setup_filters(used_filters, IfcUtil::path::to_utf8(output_extension));
     if (filter_funcs.empty()) {
-        std::cerr << "[Error] Failed to set up geometry filters\n";
+        cerr << "[Error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
     }
 
@@ -482,6 +478,49 @@ int main(int argc, char** argv)
     if (!name_filter.values.empty()) { name_filter.update_description(); Logger::Notice(name_filter.description); }
     if (!desc_filter.values.empty()) { desc_filter.update_description(); Logger::Notice(desc_filter.description); }
     if (!tag_filter.values.empty()) { tag_filter.update_description(); Logger::Notice(tag_filter.description); }
+
+	const path_t OBJ = IfcUtil::path::from_utf8(".obj"),
+		MTL = IfcUtil::path::from_utf8(".mtl"),
+		DAE = IfcUtil::path::from_utf8(".dae"),
+		STP = IfcUtil::path::from_utf8(".stp"),
+		IGS = IfcUtil::path::from_utf8(".igs"),
+		SVG = IfcUtil::path::from_utf8(".svg"),
+		XML = IfcUtil::path::from_utf8(".xml");
+
+#ifdef _MSC_VER
+	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
+		// These serializers do not support opening unicode paths on Windows. Therefore
+		// a random temp file is generated using only ASCII characters instead.
+		std::random_device rng;
+		std::uniform_int_distribution<int> index_dist(L'A', L'Z');
+		output_temp_filename = L".ifcopenshell.";
+		for (int i = 0; i < 8; ++i) {
+			output_temp_filename.push_back(static_cast<wchar_t>(index_dist(rng)));
+		}
+		output_temp_filename += L".tmp";
+	}
+#endif
+
+	IfcParse::IfcFile ifc_file;
+
+	if (output_extension == XML) {
+		int exit_code = EXIT_FAILURE;
+		try {
+			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress, mmap)) {
+				XmlSerializer s(IfcUtil::path::to_utf8(output_temp_filename));
+				s.setFile(&ifc_file);
+				Logger::Status("Writing XML output...");
+				s.finalize();
+				Logger::Status("Done!");
+				IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+				exit_code = EXIT_SUCCESS;
+			}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
+		write_log();
+		return exit_code;
+	}
 
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
@@ -511,31 +550,31 @@ int main(int argc, char** argv)
     settings.precision = precision;
 
 	GeometrySerializer* serializer;
-	if (output_extension == ".obj") {
+	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
-        const std::string mtl_filename = change_extension(output_filename, "mtl");
+        const path_t mtl_filename = change_extension(output_filename, MTL);
 		if (!use_world_coords) {
 			Logger::Notice("Using world coords when writing WaveFront OBJ files");
 			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
-		serializer = new WaveFrontOBJSerializer(output_temp_filename, mtl_filename, settings);
+		serializer = new WaveFrontOBJSerializer(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), settings);
 #ifdef WITH_OPENCOLLADA
-	} else if (output_extension == ".dae") {
-		serializer = new ColladaSerializer(output_temp_filename, settings);
+	} else if (output_extension == DAE) {
+		serializer = new ColladaSerializer(IfcUtil::path::to_utf8(output_temp_filename), settings);
 #endif
-	} else if (output_extension == ".stp") {
-		serializer = new StepSerializer(output_temp_filename, settings);
-	} else if (output_extension == ".igs") {
+	} else if (output_extension == STP) {
+		serializer = new StepSerializer(IfcUtil::path::to_utf8(output_temp_filename), settings);
+	} else if (output_extension == IGS) {
 		IGESControl_Controller::Init(); // work around Open Cascade bug
-		serializer = new IgesSerializer(output_temp_filename, settings);
-	} else if (output_extension == ".svg") {
+		serializer = new IgesSerializer(IfcUtil::path::to_utf8(output_temp_filename), settings);
+	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = new SvgSerializer(output_temp_filename, settings);
+		serializer = new SvgSerializer(IfcUtil::path::to_utf8(output_temp_filename), settings);
 		if (bounding_width && bounding_height) {
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width, bounding_height);
 		}
 	} else {
-        std::cerr << "[Error] Unknown output filename extension '" + output_extension + "'\n";
+        cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log();
 		print_usage();
 		return EXIT_FAILURE;
@@ -543,12 +582,12 @@ int main(int argc, char** argv)
 
     // NOTE After this point, make sure to delete serializer upon application exit.
 
-    if (use_element_hierarchy && output_extension != ".dae") {
-        std::cerr << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
+    if (use_element_hierarchy && output_extension != DAE) {
+        cerr_ << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
 		write_log();
 		print_usage();
         delete serializer;
-        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
+		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 		return EXIT_FAILURE;
 	}
 
@@ -569,7 +608,7 @@ int main(int argc, char** argv)
 
 	if (!serializer->ready()) {
         delete serializer;
-        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
+		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 		write_log();
 		return EXIT_FAILURE;
 	}
@@ -577,7 +616,7 @@ int main(int argc, char** argv)
 	time_t start,end;
 	time(&start);
 	
-    if (!init_input_file(input_filename, ifc_file, no_progress, mmap)) {
+    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress, mmap)) {
         return EXIT_FAILURE;
     }
 
@@ -587,7 +626,7 @@ int main(int argc, char** argv)
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Error("No geometrical entities found");
         delete serializer;
-        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
+		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
         write_log();
         return EXIT_FAILURE;
     }
@@ -618,9 +657,9 @@ int main(int argc, char** argv)
             offset[2] = -center.Z();
         } else {
             if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
-                std::cerr << "[Error] Invalid use of --model-offset\n";
+                cerr << "[Error] Invalid use of --model-offset\n";
                 delete serializer;
-                std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
+				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
                 print_options(serializer_options);
                 return EXIT_FAILURE;
             }
@@ -672,10 +711,10 @@ int main(int argc, char** argv)
 
     // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
     // Do not remove the temp file as user can salvage the conversion result from it.
-    bool successful = rename_file(output_temp_filename, output_filename);
+    bool successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
     if (!successful) {
-        Logger::Error("Unable to write output file '" + output_filename + "', see '" +
-            output_temp_filename + "' for the conversion result.");
+        cerr_ << "Unable to write output file '" << output_filename << "', see '" <<
+            output_temp_filename << "' for the conversion result.";
     }
 
 	write_log();
@@ -703,9 +742,9 @@ int main(int argc, char** argv)
 }
 
 void write_log() {
-	std::string log = log_stream.str();
+	path_t log = log_stream.str();
 	if (!log.empty()) {
-		std::cout << "\nLog:\n" << log << std::endl;
+		cout_ << "\nLog:\n" << log << std::endl;
 	}
 }
 
@@ -724,7 +763,7 @@ bool init_input_file(const std::string &filename, IfcParse::IfcFile &ifc_file, b
         return false;
     }
 
-    if (no_progress) { Logger::SetOutput(&std::cout, &log_stream); }
+    if (no_progress) { Logger::SetOutput(&cout_, &log_stream); }
 
     return true;
 }
@@ -735,7 +774,7 @@ bool append_filter(const std::string& type, const std::vector<std::string>& valu
     parse_filter(temp, values);
     // Merge values only if type and arg match.
     if ((filter.type != geom_filter::UNUSED && filter.type != temp.type) || (!filter.arg.empty() && filter.arg != temp.arg)) {
-        std::cerr << "[Error] Multiple '" << type << "' filters specified with different criteria\n";
+        cerr_ << "[Error] Multiple '" << type.c_str() << "' filters specified with different criteria\n";
         return false;
     }
     filter.type = temp.type;
@@ -751,9 +790,21 @@ size_t read_filters_from_file(
     exclusion_filter& exclude_filter,
     exclusion_traverse_filter& exclude_traverse_filter)
 {
-    std::ifstream filter_file(filename.c_str());
+#ifdef _MSC_VER
+	std::wstring filename_wide = IfcUtil::path::from_utf8(filename);
+	const wchar_t* filename_cstr = filename_wide.c_str();
+#else
+	const char* filename_cstr = filename.c_str();
+#endif
+
+    std::ifstream filter_file(filename_cstr);
+
+#ifdef _MSC_VER
+	delete[] filename_cstr;
+#endif
+
     if (!filter_file.is_open()) {
-        std::cerr << "[Error] Unable to open filter file '" + filename + "' or the file does not exist.\n";
+        cerr_ << "[Error] Unable to open filter file '" << filename_cstr << "' or the file does not exist.\n";
         return 0;
     }
 
@@ -788,11 +839,11 @@ size_t read_filters_from_file(
             else if (type == "exclude") { if (append_filter("exclude", values, exclude_filter)) { ++num_filters; } }
             else if (type == "exclude+") { if (append_filter("exclude+", values, exclude_traverse_filter)) { ++num_filters; } }
             else {
-                std::cerr << "[Error] Invalid filtering type at line " + boost::lexical_cast<std::string>(line_number) + "\n";
+                cerr_ << "[Error] Invalid filtering type at line " << boost::lexical_cast<path_t>(line_number) << "\n";
                 return 0;
             }
         } catch(...) {
-            std::cerr << "[Error] Unable to parse filter at line " + boost::lexical_cast<std::string>(line_number) + ".\n";
+            cerr_ << "[Error] Unable to parse filter at line " << boost::lexical_cast<path_t>(line_number) << ".\n";
             return 0;
         }
     }
@@ -867,7 +918,7 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& fil
             try {
                 entity_filter.populate(f.values);
             } catch (const IfcParse::IfcException& e) {
-                std::cerr << "[Error] " << e.what() << std::endl;
+                cerr_ << "[Error] " << e.what() << std::endl;
                 return std::vector<IfcGeom::filter_t>();
             }
         } else if (f.type == geom_filter::LAYER_NAME) {
@@ -907,7 +958,7 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& fil
             }
             entity_filter.populate(entities);
         } catch (const IfcParse::IfcException& e) {
-            std::cerr << "[Error] " << e.what() << std::endl;
+            cerr_ << "[Error] " << e.what() << std::endl;
             return std::vector<IfcGeom::filter_t>();
         }
     }

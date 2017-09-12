@@ -195,7 +195,7 @@ private:
 		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer,
             bool double_precision)
             : filename(fn)
-            , stream(filename, double_precision)
+            , stream(COLLADASW::NativeString(filename.c_str(), COLLADASW::NativeString::ENCODING_UTF8), double_precision)
 			, scene(scene_name, stream, _serializer)
 			, materials(stream, _serializer)
 			, geometries(stream, _serializer)

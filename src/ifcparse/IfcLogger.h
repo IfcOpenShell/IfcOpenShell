@@ -41,16 +41,32 @@ class IFC_PARSE_API Logger {
 public:
 	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
 private:
+
+	// To both stream variants need to exist at runtime or should this be a 
+	// template argument of Logger or controlled using preprocessor directives?
 	static std::ostream* log1;
 	static std::ostream* log2;
+	
+	static std::wostream* wlog1;
+	static std::wostream* wlog2;
+
 	static std::stringstream log_stream;
+
 	static Severity verbosity;
 	static const char* severity_strings[];
 	static boost::optional<IfcSchema::IfcProduct*> current_product;
+
+	template <typename T>
+	static void log(T& log2, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity);
 public:
 	static void SetProduct(boost::optional<IfcSchema::IfcProduct*> product);
+
+	/// Determines to what stream respectively progress and errors are logged
+	static void SetOutput(std::wostream* l1, std::wostream* l2);
+	
 	/// Determines to what stream respectively progress and errors are logged
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
+	
 	/// Determines the types of log messages to get logged
 	static void Verbosity(Severity v);
 	static Severity Verbosity();
