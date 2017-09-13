@@ -790,21 +790,10 @@ size_t read_filters_from_file(
     exclusion_filter& exclude_filter,
     exclusion_traverse_filter& exclude_traverse_filter)
 {
-#ifdef _MSC_VER
-	std::wstring filename_wide = IfcUtil::path::from_utf8(filename);
-	const wchar_t* filename_cstr = filename_wide.c_str();
-#else
-	const char* filename_cstr = filename.c_str();
-#endif
-
-    std::ifstream filter_file(filename_cstr);
-
-#ifdef _MSC_VER
-	delete[] filename_cstr;
-#endif
+    std::ifstream filter_file(IfcUtil::path::from_utf8(filename).c_str());
 
     if (!filter_file.is_open()) {
-        cerr_ << "[Error] Unable to open filter file '" << filename_cstr << "' or the file does not exist.\n";
+        cerr_ << "[Error] Unable to open filter file '" << IfcUtil::path::from_utf8(filename) << "' or the file does not exist.\n";
         return 0;
     }
 
