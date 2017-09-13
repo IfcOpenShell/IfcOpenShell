@@ -23,6 +23,7 @@ import os
 import uuid
 
 import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.guid
 
 f = ifcopenshell.open("input/acad2010_walls.ifc")
@@ -90,6 +91,13 @@ assert f[288].ConnectedTo == (rel,)
 
 # Some operations on ifcopenshell.guid
 assert len(ifcopenshell.guid.compress(uuid.uuid1().hex)) == 22
+
+# Test the BVH tree
+tree_settings = ifcopenshell.geom.settings()
+tree_settings.set(tree_settings.DISABLE_OPENING_SUBTRACTIONS, True)
+t = ifcopenshell.geom.tree(f, tree_settings)
+# This wall is connected to two other walls
+assert len(t.select_box(f[48], extend=0.1)) == 3
 
 # Test serialization
 f.write("output.ifc")

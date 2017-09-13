@@ -433,7 +433,7 @@ namespace IfcGeom {
 											IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation_mapped_to->OfProductRepresentation();
 
 											bool all_product_without_openings = true;
-											IfcSchema::IfcProduct::list::ptr products;
+											IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
 
 											for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
 												IfcSchema::IfcProduct::list::ptr products_of_prodrep = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();

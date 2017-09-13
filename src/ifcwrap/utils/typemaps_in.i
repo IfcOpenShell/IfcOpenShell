@@ -109,3 +109,38 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
 	}
 }
+
+%typemap(in) const gp_Pnt& {
+	if (!check_aggregate_of_type($input, get_python_type<double>())) {
+		SWIG_exception(SWIG_TypeError, "<Point> type needs a python sequence of 3 floats");
+	}
+	std::vector<double> ds = python_sequence_as_vector<double>($input);
+	if (ds.size() != 3) {
+		SWIG_exception(SWIG_TypeError, "<Point> type needs a python sequence of 3 floats");
+	}
+	$1 = new gp_Pnt(ds[0], ds[1], ds[2]);
+}
+
+%typemap(in) const Bnd_Box& {
+	if (!check_aggregate_of_aggregate_of_type($input, get_python_type<double>())) {
+		SWIG_exception(SWIG_TypeError, "<AABB> type needs a python sequence of 2 x 3 floats");
+	}
+	std::vector< std::vector<double> > ds = python_sequence_as_vector_of_vector<double>($input);
+	if (ds.size() != 2) {
+		SWIG_exception(SWIG_TypeError, "<AABB> type needs a python sequence of 2 x 3 floats");
+	}
+	if (ds[0].size() != 3 || ds[1].size() != 3) {
+		SWIG_exception(SWIG_TypeError, "<AABB> type needs a python sequence of 2 x 3 floats");
+	}
+	$1 = new Bnd_Box();
+	$1->Add(gp_Pnt(ds[0][0], ds[0][1], ds[0][2]));
+	$1->Add(gp_Pnt(ds[1][0], ds[1][1], ds[1][2]));
+}
+
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const gp_Pnt& {
+   $1 = check_aggregate_of_type($input, get_python_type<double>());
+}
+
+%typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) const Bnd_Box& {
+   $1 = check_aggregate_of_aggregate_of_type($input, get_python_type<double>());
+}
