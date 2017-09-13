@@ -367,7 +367,7 @@ int main(int argc, char** argv) {
         print_options(generic_options.add(geom_options).add(serializer_options));
         return EXIT_SUCCESS;
     } else if (!vmap.count("input-file")) {
-        cerr << "[Error] Input file not specified" << std::endl;
+        cerr_ << "[Error] Input file not specified" << std::endl;
         print_usage();
         return EXIT_FAILURE;
     }
@@ -404,7 +404,7 @@ int main(int argc, char** argv) {
         } else if (unicode_mode == "escape") {
             IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::JSON;
         } else {
-            cerr << "[Error] Invalid value for --unicode" << std::endl;
+            cerr_ << "[Error] Invalid value for --unicode" << std::endl;
             print_options(serializer_options);
             return 1;
         }
@@ -418,7 +418,7 @@ int main(int argc, char** argv) {
 			bounding_width = w;
 			bounding_height = h;
 		} else {
-			cerr << "[Error] Invalid use of --bounds" << std::endl;
+			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
@@ -468,7 +468,7 @@ int main(int argc, char** argv) {
 
     std::vector<IfcGeom::filter_t> filter_funcs = setup_filters(used_filters, IfcUtil::path::to_utf8(output_extension));
     if (filter_funcs.empty()) {
-        cerr << "[Error] Failed to set up geometry filters\n";
+        cerr_ << "[Error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
     }
 
@@ -657,7 +657,7 @@ int main(int argc, char** argv) {
             offset[2] = -center.Z();
         } else {
             if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
-                cerr << "[Error] Invalid use of --model-offset\n";
+                cerr_ << "[Error] Invalid use of --model-offset\n";
                 delete serializer;
 				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
                 print_options(serializer_options);
