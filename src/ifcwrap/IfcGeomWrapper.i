@@ -36,6 +36,8 @@
 	$result = PyBool_FromLong(static_cast<long>(*$1));
 }
 
+%ignore IfcGeom::impl::tree::selector;
+
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/IfcGeomIteratorSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
