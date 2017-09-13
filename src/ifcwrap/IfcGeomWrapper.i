@@ -57,7 +57,7 @@
 		return r;
 	}
 
-	IfcEntityList::ptr select_box(IfcParse::IfcLateBoundEntity* e, bool completely_within = false, double extend=-1.e-5) const {
+	IfcEntityList::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
 		if (!e->is(IfcSchema::Type::IfcProduct)) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
@@ -75,7 +75,7 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	IfcEntityList::ptr select(IfcParse::IfcLateBoundEntity* e, bool completely_within = false) const {
+	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false) const {
 		if (!e->is(IfcSchema::Type::IfcProduct)) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
