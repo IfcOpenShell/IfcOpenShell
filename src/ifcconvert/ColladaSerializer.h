@@ -30,6 +30,7 @@
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #endif
 #include <COLLADASWStreamWriter.h>
+#include <COLLADASWNode.h>
 #include <COLLADASWLibraryGeometries.h>
 #include <COLLADASWLibraryVisualScenes.h>
 #include <COLLADASWLibraryEffects.h>
@@ -44,10 +45,16 @@
 
 #include "../ifcconvert/GeometrySerializer.h"
 
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
+
+
 class ColladaSerializer : public GeometrySerializer
 {
 	// TODO The vast amount of implement details of ColladaSerializer could be hidden to the cpp file.
 private:
+	std::stack<int> parentStackId;
+
 	class ColladaExporter
 	{
 	private:
@@ -78,6 +85,8 @@ private:
 
 			const std::string scene_id;
 			bool scene_opened;
+			std::stack<COLLADASW::Node*> parentNodes;
+			std::stack<IfcGeom::Transformation<double> > matrixStack;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
@@ -86,7 +95,10 @@ private:
                 , serializer(_serializer)
 			{}
 			void add(const std::string& node_id, const std::string& node_name, const std::string& geom_name,
-                const std::vector<std::string>& material_ids, const std::vector<real_t>& matrix);
+                const std::vector<std::string>& material_ids, const IfcGeom::Transformation<real_t>& matrix);
+			void addParent(const IfcGeom::Element<real_t>& parent);
+			void closeParent();
+			COLLADASW::Node* GetDirectParent();
 			void write();
             ColladaSerializer *serializer;
 		};
@@ -120,10 +132,29 @@ private:
             ColladaSerializer *serializer;
             ColladaEffects effects;
 		};
+
 		class DeferredObject {
+		
+			friend bool operator < (const DeferredObject& def_obj1, const DeferredObject& def_obj2) {
+				size_t size = (def_obj1.parents_.size() < def_obj2.parents_.size() ? def_obj1.parents_.size() : def_obj2.parents_.size());
+				size_t cpt = 0;
+
+				// Skip the shared parents
+				while (cpt < size && *(def_obj1.parents_.at(cpt)) == *(def_obj2.parents_.at(cpt))) {
+					cpt++;
+				}
+
+				// If a parent list container the other one
+				if (cpt >= size) {
+					return def_obj1.parents_.size() < def_obj2.parents_.size();
+				} else {
+					return *(def_obj1.parents_.at(cpt)) < *(def_obj2.parents_.at(cpt));
+				}
+			}
+
 		public:
 			std::string unique_id, representation_id, type;
-			std::vector<real_t> matrix;
+			IfcGeom::Transformation<real_t> transformation;
 			std::vector<real_t> vertices;
 			std::vector<real_t> normals;
 			std::vector<int> faces;
@@ -132,14 +163,16 @@ private:
 			std::vector<IfcGeom::Material> materials;
 			std::vector<std::string> material_references;
             std::vector<real_t> uvs;
-            DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const std::vector<real_t>& matrix,
-                const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
-                const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
-                const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
+			std::vector<const IfcGeom::Element<real_t>*> parents_;
+
+			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation<real_t>& transformation,
+				const std::vector<real_t>& vertices, const std::vector<real_t>& normals, const std::vector<int>& faces,
+				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
+				const std::vector<std::string>& material_references, const std::vector<real_t>& uvs)
 				: unique_id(unique_id)
 				, representation_id(representation_id)
 				, type(type)
-				, matrix(matrix)
+				, transformation(transformation)
 				, vertices(vertices)
 				, normals(normals)
 				, faces(faces)
@@ -147,12 +180,16 @@ private:
 				, material_ids(material_ids)
 				, materials(materials)
 				, material_references(material_references)
-                , uvs(uvs)
+				, uvs(uvs)
 			{}
+
+			std::vector<const IfcGeom::Element<real_t>*>& parents() { return parents_; }
+			const std::vector<const IfcGeom::Element<real_t>*>& parents() const { return parents_; }
 		};
 		COLLADABU::NativeString filename;
 		COLLADASW::StreamWriter stream;
 		ColladaScene scene;
+		std::string differentiateSlabTypes(const IfcGeom::TriangulationElement<real_t>* o);
 	public:
         /// @param double_precision Whether to use "double precision" (up to 16 decimals) or not (6 or 7 decimals).
 		ColladaExporter(const std::string& scene_name, const std::string& fn, ColladaSerializer *_serializer,
@@ -171,7 +208,7 @@ private:
 		std::vector<DeferredObject> deferreds;
 		virtual ~ColladaExporter() {}
 		void startDocument(const std::string& unit_name, float unit_magnitude);
-        void write(const IfcGeom::TriangulationElement<real_t>* o);
+		void write(const IfcGeom::TriangulationElement<real_t>* o);
 		void endDocument();
 	};
 	ColladaExporter exporter;
@@ -189,7 +226,7 @@ public:
     }
 	bool ready();
 	void writeHeader();
-    void write(const IfcGeom::TriangulationElement<real_t>* o);
+	void write(const IfcGeom::TriangulationElement<real_t>* o);
     void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }

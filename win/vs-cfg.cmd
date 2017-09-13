@@ -43,7 +43,11 @@ set GENERATORS[6]="Visual Studio 12 2013 Win64"
 set GENERATORS[7]="Visual Studio 12 2013"
 set GENERATORS[8]="Visual Studio 14 2015 Win64"
 set GENERATORS[9]="Visual Studio 14 2015"
-set LAST_GENERATOR_IDX=9
+:: NOTE VC version for VS 2017 is not 15 but 14.1: have to wait and see
+:: if CMake generator string is updated to reflect this.
+set GENERATORS[10]="Visual Studio 15 2017 Win64"
+set GENERATORS[11]="Visual Studio 15 2017"
+set LAST_GENERATOR_IDX=11
 
 set STEP=2
 :: Is generator shorthand used?
@@ -67,7 +71,8 @@ echo(!GENERATOR! | findstr /c:"vs20" >nul && (
 
 :: Deduce desired architecture from the location of cl.exe
 :: TODO harmless "INFO: Could not find files for the given pattern(s)." spam if cl.exe not in path
-where cl.exe | findstr /c:"amd64" >nul
+:: Look for path with either "amd64" or "x64" (VS 2017 and newer)
+where cl.exe | findstr "amd64 x64" >nul
 set START=%ERRORLEVEL%
 
 IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
@@ -108,7 +113,7 @@ set TARGET_ARCH=x86
 :: Visual Studio platform name, Win32 (i.e. x86) or x64.
 set VS_PLATFORM=Win32
 
-:: Find out VS version, VC versions and are we doing 64-bit or not.
+:: Find out VS (e.g. 2015) and VC (e.g. 14) versions and are we targeting x64 or not (x86).
 :: VS_VER and VC_VER are convenience variables used f.ex. for filenames.
 set GENERATOR_NO_DOUBLEQUOTES=%GENERATOR:"=%
 set GENERATOR_SPLIT=%GENERATOR_NO_DOUBLEQUOTES: =,%
@@ -144,7 +149,7 @@ IF %VS_VER%==2008 set VCPROJ_FILE_EXT=vcproj
 
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
-set PATH=%PATH%;%~dp0utils
+set PATH=%~dp0utils;%PATH%
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories

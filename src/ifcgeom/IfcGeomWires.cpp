@@ -104,13 +104,33 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		TopoDS_Wire wire_radians, wire_degrees;
         try {
 		    succes_radians = IfcGeom::Kernel::convert(l,wire_radians);
-        } catch (...) {}
+        } catch (const std::exception& e) {
+			Logger::Notice(e);
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Notice(e.GetMessageString());
+			} else {
+				Logger::Notice("Unknown error using radians");
+			}
+		} catch (...) {
+			Logger::Notice("Unknown error using radians");
+		}
 
 		// Now try degrees
 		setValue(GV_PLANEANGLE_UNIT,0.0174532925199433);
         try {
 		    succes_degrees = IfcGeom::Kernel::convert(l,wire_degrees);
-        } catch (...) {}
+        } catch (const std::exception& e) {
+			Logger::Notice(e);
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Notice(e.GetMessageString());
+			} else {
+				Logger::Notice("Unknown error using degrees");
+			}
+		} catch (...) {
+			Logger::Notice("Unknown error using degrees");
+		}
 
 		// Restore to unknown unit state
 		setValue(GV_PLANEANGLE_UNIT,-1.0);
@@ -144,20 +164,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 		return use_radians || use_degrees;
 	}
-	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
+
 	BRepBuilderAPI_MakeWire w;
-	//TopoDS_Vertex last_vertex;
+	TopoDS_Vertex v1, v2, last;
+	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
+	
 	for( IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++ it ) {
+		
 		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
 		TopoDS_Wire wire2;
-		if ( !convert_wire(curve,wire2) ) {
-			Logger::Message(Logger::LOG_ERROR,"Failed to convert curve:",curve->entity);
+		
+		if ( !convert_wire(curve, wire2) ) {
+			Logger::Message(Logger::LOG_ERROR, "Failed to convert curve:", curve->entity);
 			continue;
 		}
+		
 		if ( ! (*it)->SameSense() ) wire2.Reverse();
+		
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire2, getValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_WIRE);
-		/*if ( it != segments->begin() ) {
+		FTol.SetTolerance(wire2, getValue(GV_PRECISION), TopAbs_WIRE);
+		
+		/* 
+		// Create a line segment between distant vertices?
+		if ( it != segments->begin() ) {
 			TopExp_Explorer exp (wire2,TopAbs_VERTEX);
 			const TopoDS_Vertex& first_vertex = TopoDS::Vertex(exp.Current());
 			gp_Pnt first = BRep_Tool::Pnt(first_vertex);
@@ -166,32 +195,58 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 			if ( distance > ALMOST_ZERO ) {
 				w.Add( BRepBuilderAPI_MakeEdge( last_vertex, first_vertex ) );
 			}
-		}*/
+		}
+		*/
+
+		TopExp::Vertices(wire2, v1, v2);
+
 		w.Add(wire2);
-		//last_vertex = w.Vertex();
+
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
-			Logger::Message(Logger::LOG_ERROR,"Failed to join curve segments:",l->entity);
+			if (w.Error() == BRepBuilderAPI_NonManifoldWire) {
 
-			TopoDS_Vertex v1, v2, last;
-			last = w.Vertex();
+				Logger::Message(Logger::LOG_ERROR, "Non-manifold curve segments:", l->entity);
+
+			} else if (w.Error() == BRepBuilderAPI_DisconnectedWire) {
+
+				Logger::Message(Logger::LOG_ERROR, "Failed to join curve segments:", l->entity);
+
+				gp_Pnt p1, p2;
+				int precision = 4;
+				double d = 0.;
 				
-			if (!last.IsNull()) {
-				std::stringstream ss;
-				gp_Pnt p = BRep_Tool::Pnt(last);
-				ss << std::setprecision(4) << "Last vertex at (" << p.X() << " " << p.Y() << " " << p.Z() << ")";
-				Logger::Message(Logger::LOG_NOTICE, ss.str());
-			}
+				if (!last.IsNull()) {
+					p1 = BRep_Tool::Pnt(last);
+				}
+				if (!v1.IsNull()) {
+					p2 = BRep_Tool::Pnt(v1);
+				}
+				if (!last.IsNull() && !v1.IsNull()) {
+					d = p1.Distance(p2);
+					precision = ceil(-log10(d)) + 3;
+				}
 
-			TopExp::Vertices(wire2, v1, v2);
-			if (!v1.IsNull()) {
-				std::stringstream ss;
-				gp_Pnt p = BRep_Tool::Pnt(v1);
-				ss << std::setprecision(4) << "Segment starts at (" << p.X() << " " << p.Y() << " " << p.Z() << ") for:";
-				Logger::Message(Logger::LOG_NOTICE, ss.str(), (*it)->entity);
+				if (!last.IsNull()) {
+					std::stringstream ss;
+					ss << std::setprecision(precision) << "Last vertex at (" << p1.X() << " " << p1.Y() << " " << p1.Z() << ")";
+					Logger::Message(Logger::LOG_NOTICE, ss.str());
+				}
+
+				if (!v1.IsNull()) {
+					std::stringstream ss;
+					ss << std::setprecision(precision) << "Segment starts at (" << p2.X() << " " << p2.Y() << " " << p2.Z() << ")";
+					if (d > 0.) {
+						ss << ", distance " << d << " > precision " << std::fixed << getValue(GV_PRECISION) / 10.;
+					}
+					ss << " for:";
+					Logger::Message(Logger::LOG_NOTICE, ss.str(), (*it)->entity);
+				}
 			}
 			
 			return false;
 		}
+
+		last = v2;
 	}
 	wire = w.Wire();
 	return true;
@@ -203,7 +258,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	double parameterFactor = isConic ? getValue(GV_PLANEANGLE_UNIT) : getValue(GV_LENGTH_UNIT);
 	Handle(Geom_Curve) curve;
 	if ( !convert_curve(basis_curve,curve) ) return false;
-	bool trim_cartesian = l->MasterRepresentation() == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN;
+	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
 	IfcEntityList::ptr trims1 = l->Trim1();
 	IfcEntityList::ptr trims2 = l->Trim2();
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
@@ -510,7 +565,75 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& resul
 	}
 }
 
+#ifdef USE_IFC4
 
+#include <GC_MakeCircle.hxx>
 
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wire& result) {
+	
+	IfcSchema::IfcCartesianPointList* point_list = l->Points();
+	std::vector< std::vector<double> > coordinates;
+	if (point_list->as<IfcSchema::IfcCartesianPointList2D>()) {
+		coordinates = point_list->as<IfcSchema::IfcCartesianPointList2D>()->CoordList();
+	} else if (point_list->as<IfcSchema::IfcCartesianPointList3D>()) {
+		coordinates = point_list->as<IfcSchema::IfcCartesianPointList3D>()->CoordList();
+	}
 
+	std::vector<gp_Pnt> points;
+	points.reserve(coordinates.size());
+	for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
+		const std::vector<double>& coords = *it;
+		points.push_back(gp_Pnt(
+			coords.size() < 1 ? 0. : coords[0] * getValue(GV_LENGTH_UNIT),
+			coords.size() < 2 ? 0. : coords[1] * getValue(GV_LENGTH_UNIT),
+			coords.size() < 3 ? 0. : coords[2] * getValue(GV_LENGTH_UNIT)));
+	}
 
+	int max_index = points.size();
+
+	BRepBuilderAPI_MakeWire w;
+
+	IfcEntityList::ptr segments = l->Segments();
+	for (IfcEntityList::it it = segments->begin(); it != segments->end(); ++it) {
+		IfcUtil::IfcBaseClass* segment = *it;
+		if (segment->is(IfcSchema::Type::IfcLineIndex)) {
+			IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
+			std::vector<int> indices = *line;
+			gp_Pnt previous;
+			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
+				if (*jt < 1 || *jt > max_index) {
+					throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+				}
+				const gp_Pnt& current = points[*jt - 1];
+				if (jt != indices.begin()) {
+					w.Add(BRepBuilderAPI_MakeEdge(previous, current));
+				}
+				previous = current;
+			}
+		} else if (segment->is(IfcSchema::Type::IfcArcIndex)) {
+			IfcSchema::IfcArcIndex* arc = (IfcSchema::IfcArcIndex*) segment;
+			std::vector<int> indices = *arc;
+			if (indices.size() != 3) {
+				throw IfcParse::IfcException("Invalid IfcArcIndex encountered");
+			}
+			for (int i = 0; i < 3; ++i) {
+				const int& idx = indices[i];
+				if (idx < 1 || idx > max_index) {
+					throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
+				}
+			}
+			const gp_Pnt& a = points[indices[0] - 1];
+			const gp_Pnt& b = points[indices[1] - 1];
+			const gp_Pnt& c = points[indices[2] - 1];
+			Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
+			w.Add(BRepBuilderAPI_MakeEdge(circ, a, c));
+		} else {
+			throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + IfcSchema::Type::ToString(segment->type()));
+		}
+	}
+		
+	result = w.Wire();
+	return true;
+}
+
+#endif

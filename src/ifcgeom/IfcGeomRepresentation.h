@@ -32,12 +32,11 @@
 
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
+#include <Geom_SphericalSurface.hxx>
 
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
-
-#include <TopoDS_Compound.hxx>
 
 namespace IfcGeom {
 
@@ -47,46 +46,45 @@ namespace IfcGeom {
 			Representation(const Representation&); //N/A
 			Representation& operator =(const Representation&); //N/A
 		protected:
-			const ElementSettings _settings;
+			const ElementSettings settings_;
 		public:
 			explicit Representation(const ElementSettings& settings)
-				: _settings(settings) 
+				: settings_(settings) 
 			{}
-			const ElementSettings& settings() const { return _settings; }
+			const ElementSettings& settings() const { return settings_; }
 			virtual ~Representation() {}
 		};
 
 		class IFC_GEOM_API BRep : public Representation {
 		private:
-			unsigned int id;
-			const IfcGeom::IfcRepresentationShapeItems _shapes;
+			std::string id_;
+			const IfcGeom::IfcRepresentationShapeItems shapes_;
 			BRep(const BRep& other);
 			BRep& operator=(const BRep& other);
 		public:
-			BRep(const ElementSettings& settings, unsigned int id, const IfcGeom::IfcRepresentationShapeItems& shapes)
+			BRep(const ElementSettings& settings, const std::string& id, const IfcGeom::IfcRepresentationShapeItems& shapes)
 				: Representation(settings)
-				, id(id)
-				, _shapes(shapes)
+				, id_(id)
+				, shapes_(shapes)
 			{}
 			virtual ~BRep() {}
-			IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return _shapes.begin(); }
-			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return _shapes.end(); }
-			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return _shapes; }
-			const unsigned int& getId() const { return id; }
-			TopoDS_Compound as_compound() const;
+			IfcGeom::IfcRepresentationShapeItems::const_iterator begin() const { return shapes_.begin(); }
+			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return shapes_.end(); }
+			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return shapes_; }
+			const std::string& id() const { return id_; }
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {
 		private:
-			int _id;
-			std::string _brep_data;
-			std::vector<double> _surface_styles;
+			std::string id_;
+			std::string brep_data_;
+			std::vector<double> surface_styles_;
 		public:
-			int id() const { return _id; }
-			const std::string& brep_data() const { return _brep_data; }
-			const std::vector<double>& surface_styles() const { return _surface_styles; }
+			const std::string& brep_data() const { return brep_data_; }
+			const std::vector<double>& surface_styles() const { return surface_styles_; }
 			Serialization(const BRep& brep);
 			virtual ~Serialization() {}
+			const std::string& id() const { return id_; }
 		private:
 			Serialization();
 			Serialization(const Serialization&);
@@ -103,7 +101,7 @@ namespace IfcGeom {
 			typedef std::map<VertexKey, int> VertexKeyMap;
 			typedef std::pair<int, int> Edge;
 
-			int _id;
+			std::string id_;
 			std::vector<P> _verts;
 			std::vector<int> _faces;
 			std::vector<int> _edges;
@@ -114,7 +112,7 @@ namespace IfcGeom {
 			VertexKeyMap welds;
 
 		public:
-			int id() const { return _id; }
+			const std::string& id() const { return id_; }
 			const std::vector<P>& verts() const { return _verts; }
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
@@ -125,7 +123,7 @@ namespace IfcGeom {
 
 			Triangulation(const BRep& shape_model)
 					: Representation(shape_model.settings())
-					, _id(shape_model.getId())
+					, id_(shape_model.id())
 			{
 				for ( IfcGeom::IfcRepresentationShapeItems::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++ iit ) {
 
@@ -207,6 +205,18 @@ namespace IfcGeom {
 									gp_Vec normal(0., 0., 0.);
 									if (normal_direction.Magnitude() > ALMOST_ZERO) {
 										normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
+									} else {
+										Handle_Geom_Surface surf = BRep_Tool::Surface(face);
+										// Special case the normal at the poles of a spherical surface
+										if (surf->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface)) {
+											if (ALMOST_THE_SAME(fabs(uv.Y()), M_PI / 2.)) {
+												const bool is_top = uv.Y() > 0;
+												const bool is_forward = face.Orientation() == TopAbs_FORWARD;
+												const double z = (is_top == is_forward) ? 1. : -1.;
+												normal = gp_Dir(gp_XYZ(0, 0, z) * rotation_matrix);
+											}
+										}
+										// TODO: Do the same for conical surfaces, but they are rare in IFC.
 									}
 									_normals.push_back(static_cast<P>(normal.X()));
 									_normals.push_back(static_cast<P>(normal.Y()));

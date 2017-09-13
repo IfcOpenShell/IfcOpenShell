@@ -58,15 +58,25 @@ namespace IfcGeom {
 	template <typename P>
 	class Transformation {
 	private:
-		gp_Trsf trsf;
-		Matrix<P> _matrix;
+		ElementSettings settings_;
+		gp_Trsf trsf_;
+		Matrix<P> matrix_;
 	public:
 		Transformation(const ElementSettings& settings, const gp_Trsf& trsf)
-			: trsf(trsf)
-			, _matrix(settings, trsf) 
+			: settings_(settings)
+			, trsf_(trsf)
+			, matrix_(settings, trsf) 
 		{}
-		const gp_Trsf& data() const { return trsf; }
-		const Matrix<P>& matrix() const { return _matrix; }
+		const gp_Trsf& data() const { return trsf_; }
+		const Matrix<P>& matrix() const { return matrix_; }
+
+		Transformation inverted() const {
+			return Transformation(settings_, trsf_.Inverted());
+		}
+
+		Transformation multiplied(const Transformation& other) const {
+			return Transformation(settings_, trsf_.Multiplied(other.data()));
+		}
 	};
 
 	template <typename P>
@@ -80,7 +90,34 @@ namespace IfcGeom {
 		std::string _context;
 		std::string _unique_id;
 		Transformation<P> _transformation;
+        IfcSchema::IfcProduct* product_;
+		std::vector<const IfcGeom::Element<P>*> _parents;
 	public:
+
+		friend bool operator == (const Element<P> & element1, const Element<P> & element2)
+		{
+			return element1.id() == element2.id();
+		}
+
+		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
+		friend bool operator < (const Element<P> & element1, const Element<P> & element2)
+		{
+			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey")
+			{
+				IfcSchema::IfcBuildingStorey* storey1 = NULL;
+				IfcSchema::IfcBuildingStorey* storey2 = NULL;
+
+				storey1 = (IfcSchema::IfcBuildingStorey*)element1.product();
+				storey2 = (IfcSchema::IfcBuildingStorey*)element2.product();
+
+				if (storey1 != NULL && storey2 != NULL && storey1->hasElevation() && storey2->hasElevation())
+				{
+					return storey1->Elevation() < storey2->Elevation();
+				}
+			}
+			return element1.id() < element2.id();
+		}
+
 		int id() const { return _id; }
 		int parent_id() const { return _parent_id; }
 		const std::string& name() const { return _name; }
@@ -89,17 +126,35 @@ namespace IfcGeom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
-		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf)
+        IfcSchema::IfcProduct* product() const { return product_; }
+		const std::vector<const IfcGeom::Element<P>*> parents() const { return _parents; }
+		void SetParents(std::vector<const IfcGeom::Element<P>*> newparents) { _parents = newparents; }
+
+		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
+            const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcSchema::IfcProduct *product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
-		{
+            , product_(product)
+		{ 
 			std::ostringstream oss;
-			oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
+
+			if (type == "IfcProject") {
+				oss << "project";
+			} else {
+				try {
+					oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
+				} catch (const std::exception& e) {
+					oss << "product";
+					Logger::Error(e);
+				}
+			}
+
 			if (!_context.empty()) {
 				std::string ctx = _context;
-				std::transform(ctx.begin(), ctx.end(), ctx.begin(), ::tolower);
-				std::replace(ctx.begin(), ctx.end(), ' ', '-');
+                boost::to_lower(ctx);
+                boost::replace_all(ctx, " ", "-");
 				oss << "-" << ctx;
 			}
+
 			_unique_id = oss.str();
 		}
 		virtual ~Element() {}
@@ -112,8 +167,10 @@ namespace IfcGeom {
 	public:
 		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid, const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry)
-			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf)
+		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
+            const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry,
+            IfcSchema::IfcProduct* product)
+			: Element<P>(geometry->settings(),id,parent_id,name,type,guid,context,trsf, product)
 			, _geometry(geometry)
 		{}
 	private:

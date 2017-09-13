@@ -38,7 +38,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcParse.h"
 
 SHAPES(IfcShellBasedSurfaceModel);
@@ -114,6 +114,9 @@ WIRE(IfcPolyLoop);
 WIRE(IfcCompositeCurve);
 WIRE(IfcTrimmedCurve);
 WIRE(IfcArbitraryOpenProfileDef);
+#ifdef USE_IFC4
+WIRE(IfcIndexedPolyCurve)
+#endif
 
 CURVE(IfcCircle);
 CURVE(IfcEllipse);

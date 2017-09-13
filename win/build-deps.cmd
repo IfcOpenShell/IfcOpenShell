@@ -67,7 +67,7 @@ IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-IF NOT DEFINED IFCOS_USE_OCCT set IFCOS_USE_OCCT=FALSE
+IF NOT DEFINED IFCOS_USE_OCCT set IFCOS_USE_OCCT=TRUE
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
 IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
@@ -121,9 +121,10 @@ call :PrintUsage
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
 echo.
 
-call cecho.cmd black cyan "If you are not ready with the above, press Ctrl-C to abort!"
+call cecho.cmd black cyan "If you are not ready with the above: type n in the prompt below. Build proceeds on all other inputs!"
 
-pause
+set /p do_continue="> "
+if "%do_continue%"==n goto :Finish
 
 :: Cache last used CMake generator for other scripts to use
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
@@ -139,7 +140,7 @@ cd "%DEPS_DIR%"
 :: Note all of the depedencies have approriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
-set BOOST_VERSION=1.59.0
+set BOOST_VERSION=1.63.0
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR="%DEPS_DIR%\boost"
@@ -159,53 +160,55 @@ call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: Build Boost build script
-IF EXIST "%DEPS_DIR%\boost_%BOOST_VER%". (
+if not exist "%DEPS_DIR%\boost\project-config.jam". (
     cd "%DEPS_DIR%"
     ren boost_%BOOST_VER% boost
     IF NOT EXIST "%DEPS_DIR%\boost\boost.css" GOTO :Error
     cd "%DEPS_DIR%\boost"
     call cecho.cmd 0 13 "Building Boost build script."
-    call bootstrap vc%VC_VER%
+    call bootstrap msvc
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
-set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time
+set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPS_DIR%\boost"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-call .\b2 toolset=msvc-%VC_VER%.0 runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+call .\b2 toolset=msvc runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :ICU
 set DEPENDENCY_NAME=ICU
 set DEPENDENCY_DIR=N/A
-set ICU_ZIP=icu-55.1-vs%VS_VER%.7z
+set ICU_VER=58.2
+set ICU_ZIP=icu-%ICU_VER%-vs%VS_VER%.7z
 cd "%DEPS_DIR%"
 call :DownloadFile http://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" %ICU_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %ICU_ZIP% "%DEPS_DIR%" "%INSTALL_DIR%\icu"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: Rename lib and bin directories to predictable form
-IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%". (
-    pushd "%DEPS_DIR%\icu-55.1-vs%VS_VER%"
+IF EXIST "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%". (
+    pushd "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%"
     IF EXIST bin. ren bin bin%ARCH_BITS%"
     IF EXIST lib. ren lib lib%ARCH_BITS%"
     popd
 )
 
-IF EXIST "%DEPS_DIR%\icu-55.1-vs%VS_VER%\". (
-    robocopy "%DEPS_DIR%\icu-55.1-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
+IF EXIST "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\". (
+    robocopy "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
     IF NOT EXIST "%INSTALL_DIR%\icu\lib". mkdir "%INSTALL_DIR%\icu\lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-55.1-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin%POSTFIX_D%.lib"
+    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio%POSTFIX_D%.lib"
+    REM NOTE not available in 58.2 at least, nor needed by us.
+    REM copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule%POSTFIX_D%.lib"
+    REM copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx%POSTFIX_D%.lib"
 )
 
 :OpenCOLLADA
@@ -257,34 +260,48 @@ if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error 
 
-set DEPENDENCY_NAME=Open CASCADE 7.0.0
-set OCCT_FILENAME=occt-V7_0_0-9059ca1
+set DEPENDENCY_NAME=Open CASCADE 7.1.0
+set OCCT_FILENAME=occt-89aebde
 set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
 cd "%DEPS_DIR%"
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=V7_0_0;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=89aebde;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
 if not %ERRORLEVEL%==0 goto :Error
+
+if exist "%DEPS_DIR%\%OCCT_FILENAME%" (
+    :: TK: I am having a hard time to reinitialize OCCT, because the directory ends up being recreated by a prior cmake step, even if manually deleted.
+    :: Therefore check if the directory contains a full checkout [using a single file as proxy] and delete the directory tree if it is not.
+    if not exist "%DEPS_DIR%\%OCCT_FILENAME%\OCCT_LGPL_EXCEPTION.txt". rd /s/q "%DEPS_DIR%\%OCCT_FILENAME%"
+)
+
 call :ExtractArchive %OCCT_FILENAME%.tar.gz "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %OCCT_FILENAME%.tar "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
 
+set DEPENDENCY_NAME=Additional files
+:: Somehow these two files are not present in the downloaded
+:: snapshot. Path names being too long for gitweb snapshot?
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx
+if not %ERRORLEVEL%==0 goto :Error
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx
+if not %ERRORLEVEL%==0 goto :Error
+set DEPENDENCY_NAME=Open CASCADE 7.1.0
+
 :: Patching always blindly would trigger a rebuild each time
-findstr IfcOpenShell "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx">NUL
+findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
     echo Patching %DEPENDENCY_NAME%'s CMake files
     REM OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
+    copy /y "%~dp0patches\89aebde_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
     REM Patch OCCT to be built against the static MSVC run-time.
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
+    copy /y "%~dp0patches\89aebde_adm-cmake-occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
     REM OCCT tries to deploy PDBs from the bin directory even if static build is used.
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
-    REM Defining HAVE_NO_DLL causes compilation errors due to Win32 GetObject and max macros
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_Dimension.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_Dimension.cxx"
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_OpenGl_PrimitiveArray.cxx" "%DEPENDENCY_DIR%\src\OpenGl\OpenGl_PrimitiveArray.cxx"
-    copy /y "%~dp0patches\occt-V7_0_0-9059ca1_XCAFDoc_GeomTolerance.cxx" "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx"
+    copy /y "%~dp0patches\89aebde_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
+    REM Patch header file for HAVE_NO_DLL
+    copy /y "%~dp0patches\89aebde_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
     REM NOTE If adding a new patch, adjust the checks above and below accordingly
 )
-findstr IfcOpenShell "%DEPENDENCY_DIR%\src\XCAFDoc\XCAFDoc_GeomTolerance.cxx">NUL
+findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
@@ -297,9 +314,14 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
 :: Use a single lib directory for for release and debug libraries as is done with OCE
 if not exist "%OCC_LIBRARY_DIR%". mkdir "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
-rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%VC_VER%"
+:: NOTE OCCT (at least occt-V7_0_0-9059ca1) directory creation code is hardcoded and doesn't seem handle future VC versions
+set OCCT_VC_VER=%VC_VER%
+IF %OCCT_VC_VER% GTR 14 (
+    set OCCT_VC_VER=14
+)
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
+rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%"
 :: Removed unneeded bits
 rmdir /s /q "%INSTALL_DIR%\opencascade\data"
 rmdir /s /q "%INSTALL_DIR%\opencascade\samples"
@@ -315,7 +337,8 @@ echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
 set DEPENDENCY_NAME=Open CASCADE Community Edition
 set DEPENDENCY_DIR=%DEPS_DIR%\oce
-call :GitCloneOrPullRepository https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%"
+set OCE_VERSION=OCE-0.18
+call :GitCloneAndCheckoutRevision https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%" %OCE_VERSION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: Use the oce-win-bundle for OCE's dependencies
 call :GitCloneOrPullRepository https://github.com/QbProg/oce-win-bundle.git "%DEPENDENCY_DIR%\oce-win-bundle"
@@ -434,7 +457,7 @@ exit /b %IFCOS_SCRIPT_RET%
 pushd "%2"
 if not exist "%~3". (
     call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %~2."
-    powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.DownloadFile('%1', '%3')"
+    powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials; $webClient.DownloadFile('%1', '%3')"
     REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
@@ -472,7 +495,7 @@ if not exist "%~2". (
 popd
 exit /b %RET%
 
-:: GitCloneAndCheckoutRevision - Clones a Git repository and checks out a specific revision
+:: GitCloneAndCheckoutRevision - Clones a Git repository and checks out a specific revision or tag
 :: Params: %1 gitUrl, %2 destDir, %3 revision
 :: F.ex. call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
 :GitCloneAndCheckoutRevision
@@ -488,6 +511,7 @@ if not exist "%~2". (
     set RET=0
 )
 pushd "%2"
+call git fetch
 call cecho.cmd 0 13 "Checking out %DEPENDENCY_NAME% revision %3."
 call git checkout %3
 set RET=%ERRORLEVEL%
@@ -537,7 +561,7 @@ call "%~dp0\utils\cecho.cmd" 0 10 "Requirements for a successful execution:"
 echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.
-echo   - http://code.google.com/p/tortoisegit/
+echo   - https://git-for-windows.github.io/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
 echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolset.

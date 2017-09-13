@@ -19,10 +19,8 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from                                            *
- * http://www.buildingsmart-tech.org/ifc/IFC4/Add1/IFC4_ADD1.exp                *
- * Do not make modifications but instead modify the Python script that has been *
- * used to generate this.                                                       *
+ * This file has been generated from IFC4.exp. Do not make modifications        *
+ * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
 
@@ -32,9 +30,8 @@
 #define IfcSchema Ifc4
 
 #include "../ifcparse/ifc_parse_api.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcEntityDescriptor.h"
-#include "../ifcparse/IfcWritableEntity.h"
 
 namespace Ifc4 {
 namespace Type {
@@ -48,7 +45,7 @@ namespace Type {
     IFC_PARSE_API std::pair<const char*, int> GetEnumerationIndex(Enum t, const std::string& a);
     IFC_PARSE_API std::pair<Enum, unsigned> GetInverseAttribute(Enum t, const std::string& a);
     IFC_PARSE_API std::set<std::string> GetInverseAttributeNames(Enum t);
-    IFC_PARSE_API void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
+    IFC_PARSE_API void PopulateDerivedFields(IfcEntityInstanceData* e);
 }}
 
 #endif

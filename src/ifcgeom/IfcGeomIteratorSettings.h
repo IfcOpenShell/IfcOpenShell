@@ -22,7 +22,7 @@
 
 #include "ifc_geom_api.h"
 #include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 
 namespace IfcGeom
 {
@@ -78,12 +78,12 @@ namespace IfcGeom
             GENERATE_UVS = 1 << 12,
             /// Specifies whether to slice representations according to associated IfcLayerSets.
             APPLY_LAYERSETS = 1 << 13,
-            /// Marks that include/exclude filtering should be applied also to the decomposition
-            /// and/or containment (IsDecomposedBy, HasOpenings, FillsVoid, ContainedInStructure)
-            /// of the filtered entity.
-            TRAVERSE = 1 << 14,
+			/// Search for a parent of type IfcBuildingStorey for each representation
+			SEARCH_FLOOR = 1 << 14,
+			///
+			SITE_LOCAL_PLACEMENT = 1 << 15,
             /// Number of different setting flags.
-            NUM_SETTINGS = 14
+            NUM_SETTINGS = 15
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;

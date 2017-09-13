@@ -19,10 +19,8 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from                                            *
- * http://www.buildingsmart-tech.org/ifc/IFC4/Add1/IFC4_ADD1.exp                *
- * Do not make modifications but instead modify the Python script that has been *
- * used to generate this.                                                       *
+ * This file has been generated from IFC4.exp. Do not make modifications        *
+ * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
 
@@ -31,6 +29,7 @@
 
 #include "../ifcparse/ifc_parse_api.h"
 
+#include <string>
 #include <boost/optional.hpp>
 
 #define IfcSchema Ifc4
@@ -43,7 +42,7 @@ namespace Type {
     } Enum;
     IFC_PARSE_API boost::optional<Enum> Parent(Enum v);
     IFC_PARSE_API Enum FromString(const std::string& s);
-    IFC_PARSE_API std::string ToString(Enum v);
+    IFC_PARSE_API const std::string& ToString(Enum v);
     IFC_PARSE_API bool IsSimple(Enum v);
 }
 

@@ -50,6 +50,11 @@
 %include "std_string.i"
 %include "exception.i"
 
+// General python-specific rename rules for comparison operators.
+// Mostly to silence warnings, but might be of use some time.
+%rename("__eq__") operator ==;
+%rename("__lt__") operator <;
+
 %exception {
 	try {
 		$action
@@ -69,9 +74,9 @@
 	#include "../ifcgeom/IfcGeomIterator.h"
 	#include "../ifcgeom/IfcGeomTree.h"
 
+	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
-	#include "../ifcparse/IfcLateBoundEntity.h"
-
+	
 	#ifdef USE_IFC4
 	#include "../ifcparse/Ifc4-latebound.h"
 	#else

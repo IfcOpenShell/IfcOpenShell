@@ -51,8 +51,19 @@ script:
   - cd cmake
   - mkdir build-ifc2x3 build-ifc4
   - cd build-ifc2x3
-  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
+  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_EXECUTABLE=/usr/bin/python2.7 ..
   - make -j
-  - cd ../build-ifc4
-  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=True -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu  ..
+  - sudo make install
+  - ./examples/IfcOpenHouse
+  - ./examples/IfcAdvancedHouse
+  - test -f IfcOpenHouse.ifc
+  - test -f IfcAdvancedHouse.ifc
+  - cd ../../test
+  - /usr/bin/python2.7 tests.py
+  - cd ../cmake/build-ifc4
+  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=True -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_EXECUTABLE=/usr/bin/python2.7 ..
   - make -j
+  - ./examples/IfcOpenHouse
+  - ./examples/IfcAdvancedHouse
+  - test -f IfcOpenHouse.ifc
+  - test -f IfcAdvancedHouse.ifc

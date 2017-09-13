@@ -473,11 +473,22 @@ template <typename U>
 int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);
 	IfcSchema::IfcFace* f;
+
 	for (TopExp_Explorer exp(s, TopAbs_FACE); exp.More(); exp.Next()) {
 		if (convert_to_ifc(TopoDS::Face(exp.Current()), f, advanced)) {
 			faces->push(f);
+		} else {
+			/// Cleanup:
+			for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
+				IfcEntityList::ptr data = IfcParse::traverse(*it)->unique();
+				for (IfcEntityList::it jt = data->begin(); jt != data->end(); ++jt) {
+					delete *jt;
+				}
+			}
+			return 0;
 		}
 	}
+
 	item = new U(faces);
 	return faces->size();
 }

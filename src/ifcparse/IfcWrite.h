@@ -32,9 +32,13 @@
 #include <boost/optional.hpp>
 #include <boost/dynamic_bitset.hpp>
 
+#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/is_base_of.hpp>
+#include <boost/type_traits/remove_pointer.hpp>
+
 #include "ifc_parse_api.h"
 
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcParse.h"
 
 namespace IfcWrite {
@@ -54,10 +58,12 @@ namespace IfcWrite {
 				: data(data), enumeration_value(enumeration_value) {}
 		};		
 		class Derived {};
+		class empty_aggregate_t {};
+		class empty_aggregate_of_aggregate_t {};
 	private:
 		boost::variant<
 			// A null argument, it will always serialize to $
-			boost::none_t,
+			boost::blank,
 			// A derived argument, it will always serialize to *
 			Derived,
 			// An integer argument, e.g. 123 
@@ -85,6 +91,7 @@ namespace IfcWrite {
 			IfcUtil::IfcBaseClass*,
 
 			// AGGREGATES:
+			empty_aggregate_t,
 			// An aggregate of integers, e.g. (1,2,3)
 			std::vector<int>,
 			// An aggregate of floats, e.g. (12.3,4.) 
@@ -99,6 +106,7 @@ namespace IfcWrite {
 			IfcEntityList::ptr,
 
 			// AGGREGATES OF AGGREGATES:
+			empty_aggregate_of_aggregate_t,
 			// An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
 			std::vector< std::vector<int> >,
 			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
@@ -107,17 +115,31 @@ namespace IfcWrite {
 			IfcEntityListList::ptr
 		> container;
 	public:
-		template <typename T> const T& as() const {
+
+		template <typename T>
+		const T& as() const {
 			if (const T* val = boost::get<T>(&container)) {
 				return *val;
 			} else {
 				throw IfcParse::IfcException("Invalid cast");
 			}
 		}
-		template <typename T> void set(const T& t) {
+
+		template <typename T>
+		typename boost::disable_if<boost::is_base_of<IfcUtil::IfcBaseClass, typename boost::remove_pointer<T>::type>, void>::type
+		set(const T& t) {
 			container = t;
 		}
 
+		// Overload to detect null values
+		void set(const IfcEntityList::ptr& v);
+
+		// Overload to detect null values
+		void set(const IfcEntityListList::ptr& v);
+
+		// Overload to detect null values
+		void set(IfcUtil::IfcBaseClass*const & v);
+		
 		operator int() const;
 		operator bool() const;
 		operator double() const;
@@ -142,19 +164,7 @@ namespace IfcWrite {
 		IfcUtil::ArgumentType type() const;
 	};
 
-	// Accumulates all schema instances created from constructors
-	// This way they can be added in a single batch to the IfcFile
-	class IFC_PARSE_API EntityBuffer {
-	private:
-		IfcEntityList::ptr buffer;
-		static EntityBuffer* i;
-		static EntityBuffer* instance();
-	public:
-		static IfcEntityList::ptr Get();
-		static void Clear();
-		static void Add(IfcUtil::IfcBaseClass* e);
-	};
-
 }
+
 
 #endif

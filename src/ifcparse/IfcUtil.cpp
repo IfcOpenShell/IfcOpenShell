@@ -17,8 +17,16 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcEntityList.h"
+
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4-latebound.h"
+#else
+#include "../ifcparse/Ifc2x3-latebound.h"
+#endif
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
@@ -54,6 +62,7 @@ void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
 		ls.erase(it);
 	}
 }
+
 IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>& entities) {
 	IfcEntityList::ptr return_value(new IfcEntityList);
 	for (it it = begin(); it != end(); ++it) {
@@ -68,6 +77,18 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 			return_value->push(*it);
 		}
 	}	
+	return return_value;
+}
+
+IfcEntityList::ptr IfcEntityList::unique() {
+	std::set<IfcUtil::IfcBaseClass*> encountered;
+	IfcEntityList::ptr return_value(new IfcEntityList);
+	for (it it = begin(); it != end(); ++it) {
+		if (encountered.find(*it) == encountered.end()) {
+			return_value->push(*it);
+			encountered.insert(*it);
+		}
+	}
 	return return_value;
 }
 
@@ -140,18 +161,39 @@ void IfcUtil::sanitate_material_name(std::string &str)
 
 void IfcUtil::escape_xml(std::string &str)
 {
+	boost::replace_all(str, "&", "&amp;");
     boost::replace_all(str, "\"", "&quot;");
     boost::replace_all(str, "'", "&apos;");
     boost::replace_all(str, "<", "&lt;");
     boost::replace_all(str, ">", "&gt;");
-    boost::replace_all(str, "&", "&amp;");
 }
 
 void IfcUtil::unescape_xml(std::string &str)
 {
+	boost::replace_all(str, "&amp;", "&");
     boost::replace_all(str, "&quot;", "\"");
     boost::replace_all(str, "&apos;", "'");
     boost::replace_all(str, "&lt;", "<");
     boost::replace_all(str, "&gt;", ">");
-    boost::replace_all(str, "&amp;", "&");
+}
+
+std::vector<std::string> IfcUtil::IfcBaseEntity::getAttributeNames() const {
+	std::vector<std::string> return_value;
+	return_value.reserve(getArgumentCount());
+	for (unsigned i = 0; i < getArgumentCount(); ++i) {
+		return_value.push_back(getArgumentName(i));
+	}
+	return return_value;
+}
+
+std::vector<std::string> IfcUtil::IfcBaseEntity::getInverseAttributeNames() const {
+	std::vector<std::string> return_value;
+	std::set<std::string> values = IfcSchema::Type::GetInverseAttributeNames(entity->type());
+	std::copy(values.begin(), values.end(), std::back_inserter(return_value));
+	return return_value;
+}
+
+Argument* IfcUtil::IfcBaseEntity::getArgumentByName(const std::string& name) const {
+	unsigned int i = IfcSchema::Type::GetAttributeIndex(type(), name);
+	return getArgument(i);
 }

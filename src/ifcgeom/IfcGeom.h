@@ -44,9 +44,10 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <gp_Pln.hxx>
 #include <TColgp_SequenceOfPnt.hxx>
 #include <TopTools_ListOfShape.hxx>
+#include <BOPAlgo_Operation.hxx>
 
 #include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/IfcBaseClass.h"
 
 #include "../ifcgeom/IfcGeomElement.h" 
 #include "../ifcgeom/IfcGeomRepresentation.h" 
@@ -98,6 +99,10 @@ private:
 	std::map<int, SurfaceStyle> style_cache;
 
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
+
+	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
+	IfcSchema::Type::Enum placement_rel_to;
+
 public:
 	Kernel()
 		: deflection_tolerance(0.001)
@@ -108,6 +113,7 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
+		, placement_rel_to(IfcSchema::Type::UNDEFINED)
 	{}
 
 	Kernel(const Kernel& other) {
@@ -181,6 +187,14 @@ public:
 	bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&);
 	bool split_solid_by_shell(const TopoDS_Shape&, const TopoDS_Shape& s, TopoDS_Shape&, TopoDS_Shape&);
 
+#if OCC_VERSION_HEX < 0x60900
+	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&);
+	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&);
+#else
+	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+#endif
+
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
 	const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
@@ -206,8 +220,6 @@ public:
 	gp_Pnt point_above_plane(const gp_Pln& pln, bool agree=true);
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face); 
-	double shape_volume(const TopoDS_Shape& s);
-	double face_area(const TopoDS_Face& f);
 	void apply_tolerance(TopoDS_Shape& s, double t);
 	void setValue(GeomValue var, double value);
 	double getValue(GeomValue var) const;
@@ -218,6 +230,9 @@ public:
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
+
+	static double shape_volume(const TopoDS_Shape& s);
+	static double face_area(const TopoDS_Face& f);
 
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
@@ -230,7 +245,9 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-	IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
+    static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
+
+    static std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> get_layers(IfcSchema::IfcProduct* prod);
 
 	template <typename P>
     IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(
@@ -300,6 +317,8 @@ public:
 		cache = Cache(); 
 #endif
 	}
+
+	void set_conversion_placement_rel_to(IfcSchema::Type::Enum type);
 
 #include "IfcRegisterGeomHeader.h"
 

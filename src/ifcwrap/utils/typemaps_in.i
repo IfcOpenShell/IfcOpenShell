@@ -70,7 +70,7 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		$1 = IfcEntityList::ptr(new IfcEntityList());
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
-			IfcParse::IfcLateBoundEntity* inst = cast_pyobject<IfcParse::IfcLateBoundEntity*>(element);
+			IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element);
 			if (inst) {
 				$1->push(inst);
 			} else {
@@ -92,9 +92,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 				vector.reserve(PySequence_Size(element));
 				for(Py_ssize_t j = 0; j < PySequence_Size(element); ++j) {
 					PyObject* element_element = PySequence_GetItem(element, j);
-					IfcParse::IfcLateBoundEntity* inst = cast_pyobject<IfcParse::IfcLateBoundEntity*>(element_element);
+					IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element_element);
 					if (inst) {
-						vector.push_back(cast_pyobject<IfcParse::IfcLateBoundEntity*>(element_element));
+						vector.push_back(cast_pyobject<IfcUtil::IfcBaseClass*>(element_element));
 					} else {
 						SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
 					} 

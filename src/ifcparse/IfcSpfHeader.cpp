@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/IfcParse.h"
+#include "../ifcparse/IfcFile.h"
 
 #include "IfcSpfHeader.h"
 
@@ -35,20 +35,32 @@ static const char * const DATA				= "DATA";
 
 using namespace IfcParse;
 
+HeaderEntity::HeaderEntity(const char * const datatype, IfcFile* file)
+	: IfcEntityInstanceData(IfcSchema::Type::UNDEFINED, file), _datatype(datatype)
+{
+	if (file) {
+		offset_in_file_ = file->stream->Tell();
+		load();
+	} else {
+		initialized_ = true;
+	}
+}
+
+
 void IfcSpfHeader::readSemicolon() {
-	if (!TokenFunc::isOperator(_lexer->Next(), ';')) {
+	if (!TokenFunc::isOperator(file_->tokens->Next(), ';')) {
 		throw IfcException(std::string("Expected ;"));
 	}
 }
 
 void IfcSpfHeader::readParen() {
-	if (!TokenFunc::isOperator(_lexer->Next(), '(')) {
+	if (!TokenFunc::isOperator(file_->tokens->Next(), '(')) {
 		throw IfcException(std::string("Expected ("));
 	}
 }
 
 void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
-	if (TokenFunc::asStringRef(_lexer->Next()) != term) {
+	if (TokenFunc::asStringRef(file_->tokens->Next()) != term) {
 		throw IfcException(std::string("Expected " + term));
 	}
 	if (trail == TRAILING_SEMICOLON) {
@@ -72,37 +84,38 @@ void IfcSpfHeader::read() {
 	// 
 	// ISO 10303-21 Second edition 2002-01-15 p. 16
 
-	readTerminal(FILE_DESCRIPTION, TRAILING_PAREN);
+	readTerminal(FILE_DESCRIPTION, NONE);
 	delete _file_description;
-	_file_description = new FileDescription(_lexer);
-	readSemicolon();
+	_file_description = new FileDescription(file_);
+	// readSemicolon();
 
-	readTerminal(FILE_NAME, TRAILING_PAREN);
+	readTerminal(FILE_NAME, NONE);
 	delete _file_name;
-	_file_name = new FileName(_lexer);
-	readSemicolon();
+	_file_name = new FileName(file_);
+	// readSemicolon();
 
-	readTerminal(FILE_SCHEMA, TRAILING_PAREN);
+	readTerminal(FILE_SCHEMA, NONE);
 	delete _file_schema;
-	_file_schema = new FileSchema(_lexer);
-	readSemicolon();
+	_file_schema = new FileSchema(file_);
+	// readSemicolon();
 }
 
 bool IfcSpfHeader::tryRead() {
 	try {
 		read();
 		return true;
-	} catch(const IfcException&) { 
+	} catch (const std::exception& e) {
+		Logger::Error(e);
 		return false;
-	}		
+	}
 }
 
 void IfcSpfHeader::write(std::ostream& os) const {
 	os << ISO_10303_21 << ";" << "\n";
 	os << HEADER << ";" << "\n";
-	os << file_description().toString(true) << "\n";
-	os << file_name().toString(true) << "\n";
-	os << file_schema().toString(true) << "\n";
+	os << file_description().toString(true) << ";" << "\n";
+	os << file_name().toString(true) << ";" << "\n";
+	os << file_schema().toString(true) << ";" << "\n";
 	os << ENDSEC << ";" << "\n";
 	os << DATA << ";" << "\n";
 }
@@ -155,6 +168,6 @@ FileSchema& IfcSpfHeader::file_schema() {
 	}
 }
 
-FileDescription::FileDescription(IfcSpfLexer* lexer) : HeaderEntity(FILE_DESCRIPTION, lexer) {}
-FileName::FileName(IfcSpfLexer* lexer) : HeaderEntity(FILE_NAME, lexer) {}
-FileSchema::FileSchema(IfcSpfLexer* lexer) : HeaderEntity(FILE_SCHEMA, lexer) {}
+FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, file) {}
+FileName::FileName(IfcFile* file) : HeaderEntity(FILE_NAME, file) {}
+FileSchema::FileSchema(IfcFile* file) : HeaderEntity(FILE_SCHEMA, file) {}

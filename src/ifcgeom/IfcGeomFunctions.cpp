@@ -86,6 +86,7 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepAlgoAPI_BooleanOperation.hxx>
 
 #include <BRepAlgo_NormalProjection.hxx>
 
@@ -95,6 +96,7 @@
 
 #include <ShapeAnalysis_Curve.hxx>
 #include <ShapeAnalysis_Surface.hxx>
+#include <ShapeAnalysis_ShapeTolerance.hxx>
 
 #include <BRepFilletAPI_MakeFillet2d.hxx>
 
@@ -120,6 +122,7 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_HSequenceOfShape.hxx>
 
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_BOP.hxx>
@@ -173,8 +176,16 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	try {
 		builder.Perform();
 		shape = builder.SewedShape();
-		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0;
-	} catch (...) {}
+		valid_shell = BRepCheck_Analyzer(shape).IsValid() != 0 && count(shape, TopAbs_SHELL) > 0;
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error sewing shell");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error sewing shell");
+	}
 
 	if (valid_shell) {
 		TopoDS_Shape complete_shape;
@@ -194,9 +205,25 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 						if (classifier.State() == TopAbs_IN) {
 							shape.Reverse();
 						}
-					} catch (...) {}
+					} catch (const Standard_Failure& e) {
+						if (e.GetMessageString() && strlen(e.GetMessageString())) {
+							Logger::Error(e.GetMessageString());
+						} else {
+							Logger::Error("Unknown error classifying solid");
+						}
+					} catch (...) {
+						Logger::Error("Unknown error classifying solid");
+					}
 				}
-			} catch (...) {}
+			} catch (const Standard_Failure& e) {
+				if (e.GetMessageString() && strlen(e.GetMessageString())) {
+					Logger::Error(e.GetMessageString());
+				} else {
+					Logger::Error("Unknown error creating solid");
+				}
+			} catch (...) {
+				Logger::Error("Unknown error creating solid");
+			}
 
 			if (complete_shape.IsNull()) {
 				complete_shape = result_shape;
@@ -266,7 +293,11 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			if (fes->hasObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (...) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				} catch (...) {
+					Logger::Error("Failed to construct placement");
+				}
 			}
 
 			// Move the opening into the coordinate system of the IfcProduct
@@ -308,7 +339,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, opening_shape_gtrsf);
 					
 			double opening_volume;
-			if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
+			if (Logger::LOG_WARNING >= Logger::Verbosity()) {
 				opening_volume = shape_volume(opening_shape);
 				if ( opening_volume <= ALMOST_ZERO )
 					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity->entity);
@@ -394,7 +425,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 					bool is_valid = analyser.IsValid() != 0;
 					if ( is_valid ) {
 						entity_shape = brep_cut_result;
-						if ( Logger::Verbosity() >= Logger::LOG_WARNING ) {
+						if (Logger::LOG_WARNING >= Logger::Verbosity()) {
 							const double volume_after_subtraction = shape_volume(entity_shape);
 							double original_shape_volume = shape_volume(entity_shape);
 							if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
@@ -435,7 +466,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			if (fes->hasObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (...) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				} catch (...) {
+					Logger::Error("Failed to construct placement");
+				}
 			}
 
 			// Move the opening into the coordinate system of the IfcProduct
@@ -510,7 +545,11 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			if (fes->hasObjectPlacement()) {
 				try {
 					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (...) {}
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				} catch (...) {
+					Logger::Error("Failed to construct placement");
+				}
 			}
 
 			// Move the opening into the coordinate system of the IfcProduct
@@ -594,8 +633,17 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face&
 bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
 	try {
 		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
-	} catch(...) { return false; }
-	return true;
+		return true;
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error convering curve to wire");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error convering curve to wire");
+	}
+	return false;
 }
 
 bool IfcGeom::Kernel::profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face_shape) {
@@ -714,8 +762,23 @@ gp_Pnt IfcGeom::Kernel::point_above_plane(const gp_Pln& pln, bool agree) {
 }
 
 void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
+	/*
+	// This does not result in actionable error messages and has been disabled.
+	ShapeAnalysis_ShapeTolerance toler;
+	if (Logger::LOG_WARNING >= Logger::Verbosity()) {
+		if (toler.Tolerance(s, 0) > t * 10.) {
+			Handle_TopTools_HSequenceOfShape shapes = toler.OverTolerance(s, t * 10.);
+			for (int i = 1; i <= shapes->Length(); ++i) {
+				const TopoDS_Shape& sub = shapes->Value(i);
+				std::stringstream ss;
+				TopAbs::Print(sub.ShapeType(), ss);
+				Logger::Warning("Tolerance of " + boost::lexical_cast<std::string>(toler.Tolerance(sub, 0)) + " on " + ss.str());
+			}
+		}
+	}
+	*/
 	ShapeFix_ShapeTolerance tol;
-	tol.SetTolerance(s, t);
+	tol.LimitTolerance(s, t);
 }
 
 void IfcGeom::Kernel::setValue(GeomValue var, double value) {
@@ -881,7 +944,15 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 		ShapeFix_Solid solid;
 		solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		shape = solid.SolidFromShell(TopoDS::Shell(shape));
-	} catch(...) {}
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error creating solid");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error creating solid");
+	}
 
 	return true;
 }
@@ -1067,6 +1138,10 @@ template <typename P>
 IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_product(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 {
+	std::stringstream representation_id_builder;
+
+	representation_id_builder << representation->entity->id();
+
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::IfcRepresentationShapeItems shapes, shapes2;
 
@@ -1083,6 +1158,17 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
 				std::vector<const SurfaceStyle*> styles;
 				if (convert_layerset(product, layers, styles, thickness)) {
+
+					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
+					for (IfcSchema::IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
+						IfcSchema::IfcRelAssociatesMaterial* associates_material = (**it).as<IfcSchema::IfcRelAssociatesMaterial>();
+						if (associates_material) {
+							unsigned layerset_id = associates_material->RelatingMaterial()->entity->id();
+							representation_id_builder << "-layerset-" << layerset_id;
+							break;
+						}
+					}
+					
 					if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
 						if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
 							std::swap(shapes, shapes2);
@@ -1103,7 +1189,9 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		if (parent_object) {
 			parent_id = parent_object->entity->id();
 		}
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
 		
 	const std::string name = product->hasName() ? product->Name() : "";
 	const std::string guid = product->GlobalId();
@@ -1111,7 +1199,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	gp_Trsf trsf;
 	try {
 		convert(product->ObjectPlacement(),trsf);
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	} catch (...) {
+		Logger::Error("Failed to construct placement");
+	}
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
@@ -1121,6 +1213,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
     if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
+		representation_id_builder << "-openings";
+		for (IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++it) {
+			representation_id_builder << "-" << (*it)->entity->id();
+		}
+
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
 		try {
 #if OCC_VERSION_HEX < 0x60900
@@ -1145,16 +1242,18 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				it->prepend(trsf);
 			}
 			trsf = gp_Trsf();
+			representation_id_builder << "-world-coords";
 		}
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), opened_shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), opened_shapes);
     } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 			it->prepend(trsf);
 		}
 		trsf = gp_Trsf();
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
+		representation_id_builder << "-world-coords";
+		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
 	} else {
-		shape = new IfcGeom::Representation::BRep(element_settings, representation->entity->id(), shapes);
+		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
 	}
 
 	std::string context_string = "";
@@ -1172,7 +1271,8 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		guid,
 		context_string,
 		trsf,
-		boost::shared_ptr<IfcGeom::Representation::BRep>(shape)
+		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
+        product
 	);
 }
 
@@ -1187,7 +1287,9 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 		if (parent_object) {
 			parent_id = parent_object->entity->id();
 		}
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
 		
 	const std::string name = product->hasName() ? product->Name() : "";
 	const std::string guid = product->GlobalId();
@@ -1195,7 +1297,11 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 	gp_Trsf trsf;
 	try {
 		convert(product->ObjectPlacement(),trsf);
-	} catch (...) {}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	} catch (...) {
+		Logger::Error("Failed to construct placement");
+	}
 
 	std::string context_string = "";
 	if (representation->hasRepresentationIdentifier()) {
@@ -1214,7 +1320,8 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 		guid,
 		context_string,
 		trsf,
-		brep->geometry_pointer()
+		brep->geometry_pointer(),
+        product
 	);
 }
 
@@ -1232,7 +1339,7 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	} else if ( product->is(IfcSchema::Type::IfcElement ) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
-		// Incase of a RelatedBuildingElement parent to the opening element
+		// In case of a RelatedBuildingElement parent to the opening element
 		if ( fills->size() ) {
 			for ( IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it ) {
 				IfcSchema::IfcRelFillsElement* fill = *it;
@@ -1271,6 +1378,37 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 		}
 	}
 	return parent;
+}
+
+std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> IfcGeom::Kernel::get_layers(IfcSchema::IfcProduct* prod)
+{
+    using namespace IfcSchema;
+    std::map<std::string, IfcPresentationLayerAssignment*> layers;
+    if (prod->hasRepresentation()) {
+        IfcEntityList::ptr r = prod->entity->file->traverse(prod->Representation());
+        IfcRepresentation::list::ptr representations = r->as<IfcRepresentation>();
+        for (IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+            IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+            for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+                layers[(*jt)->Name()] = *jt;
+            }
+        }
+
+        IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
+        for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+            IfcPresentationLayerAssignment::list::ptr a = (*it)->
+                // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
+#ifdef USE_IFC4
+                LayerAssignment();
+#else
+                LayerAssignments();
+#endif
+            for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+                layers[(*jt)->Name()] = *jt;
+            }
+        }
+    }
+    return layers;
 }
 
 template IFC_GEOM_API IfcGeom::BRepElement<float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float>(
@@ -1416,9 +1554,16 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		IfcSchema::IfcExtrudedAreaSolid* extrusion = *extrusions->begin();
 
 		gp_Trsf extrusion_position;
-		if (!convert(extrusion->Position(), extrusion_position)) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product->entity);
-			return false;
+
+		bool has_position = true;
+#ifdef USE_IFC4
+		has_position = extrusion->hasPosition();
+#endif
+		if (has_position) {
+			if (!convert(extrusion->Position(), extrusion_position)) {
+				Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product->entity);
+				return false;
+			}
 		}
 
 		gp_Dir extrusion_direction;
@@ -2185,7 +2330,15 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 			if (fix.Perform()) {
 				shape = fix.Shape();
 			}
-		} catch(...) {}
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Error(e.GetMessageString());
+			} else {
+				Logger::Error("Unknown error performing fixes");
+			}
+		} catch (...) {
+			Logger::Error("Unknown error performing fixes");
+		}
 		BRepCheck_Analyzer analyser(shape);
 		bool is_valid = analyser.IsValid() != 0;
 		if (!is_valid) {
@@ -2413,3 +2566,112 @@ TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const 
 	}
 }
 
+#if OCC_VERSION_HEX < 0x60900
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result) {
+	result = a;
+	TopTools_ListIteratorOfListOfShape it(b);
+	for (; it.More(); it.Next()) {
+		TopoDS_Shape r;
+		if (!boolean_operation(result, it.Value(), op, r)) {
+			return false;
+		}
+		result = r;
+	}
+	return true;
+}
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result) {
+	bool succesful = true;
+	BRepAlgoAPI_BooleanOperation* builder;
+	if (op == BOPAlgo_CUT) {
+		builder = new BRepAlgoAPI_Cut(a, b);
+	} else if (op == BOPAlgo_COMMON) {
+		builder = new BRepAlgoAPI_Common(a, b);
+	} else if (op == BOPAlgo_FUSE) {
+		builder = new BRepAlgoAPI_Fuse(a, b);
+	} else {
+		return false;
+	}
+	if (builder->IsDone()) {
+		TopoDS_Shape r = *builder;
+		succesful = BRepCheck_Analyzer(r).IsValid() != 0;
+		if (succesful) {
+			result = r;
+
+			ShapeFix_Shape fix(result);
+			try {
+				fix.Perform();
+				result = fix.Shape();
+			} catch (...) {
+				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+			}
+
+		} else {
+			// Increase tolerance max 3 times until succesful
+			TopoDS_Shape a2 = a;
+			TopoDS_Shape b2 = b;
+			ShapeAnalysis_ShapeTolerance tolerance;
+			const double t1 = tolerance.Tolerance(a, 1) * 10.;
+			const double t2 = tolerance.Tolerance(b, 1) * 10.;
+			if (((std::max)(t1, t2) + 1e-15) > getValue(GV_PRECISION) * 1000.) {
+				return false;
+			}
+			apply_tolerance(a2, t1);
+			apply_tolerance(b2, t2);
+			succesful = boolean_operation(a2, b2, op, result);
+		}
+	}
+	delete builder;
+	return succesful;
+}
+#else
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	bool success = false;
+	BRepAlgoAPI_BooleanOperation* builder;
+	if (op == BOPAlgo_CUT) {
+		builder = new BRepAlgoAPI_Cut();
+	} else if (op == BOPAlgo_COMMON) {
+		builder = new BRepAlgoAPI_Common();
+	} else if (op == BOPAlgo_FUSE) {
+		builder = new BRepAlgoAPI_Fuse();
+	} else {
+		return false;
+	}
+	if (fuzziness < 0.) {
+		fuzziness = getValue(GV_PRECISION);
+	}
+	TopTools_ListOfShape s1s;
+	s1s.Append(a);
+	builder->SetFuzzyValue(fuzziness);
+	builder->SetArguments(s1s);
+	builder->SetTools(b);
+	builder->Build();
+	if (builder->IsDone()) {
+		TopoDS_Shape r = *builder;
+		success = BRepCheck_Analyzer(r).IsValid() != 0;
+		if (success) {
+			result = r;
+			ShapeFix_Shape fix(result);
+			try {
+				fix.Perform();
+				result = fix.Shape();
+			} catch (...) {
+				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+			}
+		}
+	}
+	delete builder;
+	if (!success) {
+        const double new_fuzziness = fuzziness * 10.;
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000.) {
+            return boolean_operation(a, b, op, result, new_fuzziness);
+        }
+	}
+	return success;
+}
+
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	TopTools_ListOfShape bs;
+	bs.Append(b);
+	return boolean_operation(a, bs, op, result, fuzziness);
+}
+#endif

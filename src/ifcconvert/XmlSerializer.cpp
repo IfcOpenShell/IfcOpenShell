@@ -110,6 +110,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				gp_Trsf trsf;
 				IfcGeom::Kernel kernel;
+				
 				if (kernel.convert(placement, trsf)) {
 					std::stringstream stream;
 					for (int i = 1; i < 5; ++i) {
@@ -148,7 +149,9 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 		boost::optional<std::string> value;
 		try {
 			value = format_attribute(argument, argument_type, qualified_name);
-		} catch (...) {}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
 
 		if (value) {
 			if (as_link) {
@@ -170,6 +173,10 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, bool as_link = false) {
     ptree child;
     return format_entity_instance(instance, child, tree, as_link);
+}
+
+std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
+	return IfcSchema::Type::ToString(inst->type()) + "_" + boost::lexical_cast<std::string>(inst->entity->id());
 }
 
 // A function to be called recursively. Template specialization is used 
@@ -270,42 +277,25 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 	}
 
     if (product->is(Type::IfcProduct)) {
-        IfcProduct* prod = product->as<IfcProduct>();
-        if (prod->hasRepresentation()) {
-            IfcEntityList::ptr r = prod->entity->file->traverse(prod->Representation());
-
-            std::map<std::string, IfcPresentationLayerAssignment*> layers;
-            IfcRepresentation::list::ptr representations = r->as<IfcRepresentation>();
-            for (IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
-                IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-                for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-                    layers[(*jt)->Name()] = *jt;
-                }
-            }
-
-            IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
-            for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-                IfcPresentationLayerAssignment::list::ptr a = (*it)->
-                    // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
-#ifdef USE_IFC4
-                    LayerAssignment();
-#else
-                    LayerAssignments();
-#endif
-                for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-                    layers[(*jt)->Name()] = *jt;
-                }
-            }
-
-            for (std::map<std::string, IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
-                // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
-                // Note that the IfcPresentationLayerAssignment passed here doesn't really matter as as_link is true
-                // for the format_entity_instance() call.
-                ptree node;
-                node.put("<xmlattr>.xlink:href", "#" + it->first);
-                format_entity_instance(it->second, node, child, true);
-            }
+        std::map<std::string, IfcPresentationLayerAssignment*> layers = IfcGeom::Kernel::get_layers(product->as<IfcProduct>());
+        for (std::map<std::string, IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+            // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
+            // Note that the IfcPresentationLayerAssignment passed here doesn't really matter as as_link is true
+            // for the format_entity_instance() call.
+            ptree node;
+            node.put("<xmlattr>.xlink:href", "#" + it->first);
+            format_entity_instance(it->second, node, child, true);
         }
+		
+		IfcRelAssociates::list::ptr associations = product->HasAssociations();
+		for (IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
+			if ((*it)->as<IfcRelAssociatesMaterial>()) {
+				IfcMaterialSelect* mat = (*it)->as<IfcRelAssociatesMaterial>()->RelatingMaterial();
+				ptree node;
+				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
+				format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, child, true);
+			}
+		}
     }
 
 	return child;
@@ -336,7 +326,7 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, types, layers;
+	ptree root, header, units, decomposition, properties, types, layers, materials;
 	
 	// Write the SPF header as XML nodes.
 	foreach(const std::string& s, file->header().file_description().description()) {
@@ -414,11 +404,44 @@ void XmlSerializer::finalize() {
         }
     }
 
+	IfcRelAssociatesMaterial::list::ptr materal_associations = file->entitiesByType<IfcRelAssociatesMaterial>();
+	std::set<IfcMaterialSelect*> emitted_materials;
+	for (IfcRelAssociatesMaterial::list::it it = materal_associations->begin(); it != materal_associations->end(); ++it) {
+		IfcMaterialSelect* mat = (**it).RelatingMaterial();
+		if (emitted_materials.find(mat) == emitted_materials.end()) {
+			emitted_materials.insert(mat);
+			ptree node;
+			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
+			if (mat->as<IfcMaterialLayerSetUsage>()) {
+				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
+				if (layerset->hasLayerSetName()) {
+					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
+				}
+				IfcMaterialLayer::list::ptr ls = layerset->MaterialLayers();
+				for (IfcMaterialLayer::list::it jt = ls->begin(); jt != ls->end(); ++jt) {
+					ptree subnode;
+					if ((*jt)->hasMaterial()) {
+						subnode.put("<xmlattr>.Name", (*jt)->Material()->Name());
+					}
+					format_entity_instance(*jt, subnode, node);
+				}
+			} else if (mat->as<IfcMaterialList>()) {
+				IfcMaterial::list::ptr mats = mat->as<IfcMaterialList>()->Materials();
+				for (IfcMaterial::list::it jt = mats->begin(); jt != mats->end(); ++jt) {
+					ptree subnode;
+					format_entity_instance(*jt, subnode, node);
+				}
+			}
+			format_entity_instance((IfcUtil::IfcBaseEntity*) mat, node, materials);
+		}
+	}
+
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
 	root.add_child("ifc.types",         types);
     root.add_child("ifc.layers",        layers);
+	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");

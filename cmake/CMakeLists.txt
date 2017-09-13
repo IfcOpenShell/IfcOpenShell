@@ -29,6 +29,7 @@ OPTION(USE_IFC4 "Use IFC 4 instead of IFC 2x3 (full rebuild recommended when swi
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
+OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
@@ -112,7 +113,19 @@ IF(WIN32)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
 ENDIF()
-FIND_PACKAGE(Boost REQUIRED COMPONENTS system program_options regex thread date_time)
+
+set(BOOST_COMPONENTS system program_options regex thread date_time)
+if(USE_MMAP)
+    if(MSVC)
+        # filesystem is necessary for the utf-16 wpath
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams filesystem)
+    else()
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
+    endif()
+    add_definitions(-DUSE_MMAP)
+endif()
+
+FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 MESSAGE(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
@@ -128,6 +141,7 @@ MESSAGE(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 # make sure the lib variable ends with not just contains it.
 function(add_debug_variants NAME LIBRARIES POSTFIX)
     set(LIBRARIES_STR "${LIBRARIES}")
+    set(LIBRARIES "")
     # the result, "optimized <lib> debug <lib>", needs to be a list instead of a string
     foreach(lib ${LIBRARIES_STR})
         list(APPEND LIBRARIES optimized)
@@ -188,14 +202,21 @@ ELSE()
 ENDIF()
 
 # Use the found libTKernel as a template for all other OCC libraries
+# TODO Extract this into macro/function
 foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
-    string(REPLACE TKernel "${lib}" lib_path "${libTKernel}")
-    list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
+    # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+    string(REPLACE TKerneld "${lib}" lib_path "${libTKernel}")
+    string(REPLACE TKernel "${lib}" lib_path "${lib_path}")
+	list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
 endforeach()
 
 if(MSVC)
     add_definitions(-DHAVE_NO_DLL)
     add_debug_variants(OPENCASCADE_LIBRARIES "${OPENCASCADE_LIBRARIES}" d)
+endif()
+if (WIN32)
+    # OCC might require linking to Winsock depending on the version and build configuration
+    list(APPEND OPENCASCADE_LIBRARIES ws2_32.lib)
 endif()
 
 IF(UNICODE_SUPPORT)
@@ -250,7 +271,13 @@ IF(COLLADA_SUPPORT)
 		GET_FILENAME_COMPONENT(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
 	ENDIF()
 
-	FIND_LIBRARY(OpenCOLLADAFramework NAMES OpenCOLLADAFramework PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+	FIND_LIBRARY(OpenCOLLADAFramework NAMES OpenCOLLADAFramework OpenCOLLADAFrameworkd PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+    if (OpenCOLLADAFramework)
+        message(STATUS "OpenCOLLADA library files found")
+    else()
+        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA libraries. "
+            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
+    endif()
 
 	SET(OPENCOLLADA_LIBRARY_DIR "${OPENCOLLADA_LIBRARY_DIR}" CACHE FILEPATH "OpenCOLLADA library files")
 
@@ -267,24 +294,31 @@ IF(COLLADA_SUPPORT)
 
 		# Use the found OpenCOLLADAFramework as a template for all other OpenCOLLADA libraries
 		foreach(lib ${OPENCOLLADA_LIBRARY_NAMES})
-			string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${OpenCOLLADAFramework}")
-			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
+            # Make sure we'll handle the Windows/MSVC debug postfix convetion too.
+            string(REPLACE OpenCOLLADAFrameworkd "${lib}" lib_path "${OpenCOLLADAFramework}")
+            string(REPLACE OpenCOLLADAFramework "${lib}" lib_path "${lib_path}")
+ 			list(APPEND OPENCOLLADA_LIBRARIES "${lib_path}")
 		endforeach()
 
 		if("${PCRE_LIBRARY_DIR}" STREQUAL "")
             if(WIN32)
-                find_library(pcre_library NAMES pcre PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
+                find_library(pcre_library NAMES pcre pcred PATHS ${OPENCOLLADA_LIBRARY_DIR} NO_DEFAULT_PATH)
             else()
                 find_library(pcre_library NAMES pcre PATHS ${OPENCOLLADA_LIBRARY_DIR})
             endif()
 			GET_FILENAME_COMPONENT(PCRE_LIBRARY_DIR ${pcre_library} PATH)
 		else()
-			find_library(pcre_library NAMES pcre PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
+			find_library(pcre_library NAMES pcre pcred PATHS ${PCRE_LIBRARY_DIR} NO_DEFAULT_PATH)
 		endif()
 
 		if (pcre_library)
 			SET(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_LIBRARY_DIR} ${PCRE_LIBRARY_DIR})
-			list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
+            if (MSVC)
+                # Add release lib regardless whether release or debug found. Debug version will be appended below.
+                list(APPEND OPENCOLLADA_LIBRARIES "${PCRE_LIBRARY_DIR}/pcre.lib")
+            else()
+                list(APPEND OPENCOLLADA_LIBRARIES "${pcre_library}")
+            endif()
         else()
             message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find PCRE. "
                 "Disable COLLADA_SUPPORT or fix PCRE_LIBRARY_DIR path to proceed.")
@@ -294,7 +328,8 @@ IF(COLLADA_SUPPORT)
 			add_debug_variants(OPENCOLLADA_LIBRARIES "${OPENCOLLADA_LIBRARIES}" d)
 		ENDIF()
 	ELSE()
-		MESSAGE(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA. Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
+        message(FATAL_ERROR "COLLADA_SUPPORT enabled, but unable to find OpenCOLLADA headers. "
+            "Disable COLLADA_SUPPORT or fix OpenCOLLADA paths to proceed.")
 	ENDIF()
 ENDIF()
 
@@ -304,7 +339,7 @@ get_filename_component(libTKernelExt ${libTKernel} EXT)
 if("${libTKernelExt}" STREQUAL ".a")
     find_package(Threads)
     # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
     if (NOT APPLE AND NOT WIN32)
         set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
     endif()
