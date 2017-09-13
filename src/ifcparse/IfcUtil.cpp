@@ -276,7 +276,7 @@ IFC_PARSE_API bool IfcUtil::path::rename_file(const std::string& old_filename, c
 }
 
 IFC_PARSE_API bool IfcUtil::path::delete_file(const std::string& filename) {
-	return std::remove(new_filename.c_str());
+	return std::remove(filename.c_str());
 }
 
 #endif
