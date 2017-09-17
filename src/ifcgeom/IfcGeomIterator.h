@@ -604,7 +604,7 @@ namespace IfcGeom {
 
 					// get the parent 
 					try {
-						parent_object = getObject(parent_object->parent_id());
+						parent_object = getObject(ret->parent_id());
 					} catch (const std::exception& e) {
 						Logger::Error(e);
 						hasParent = false;
