@@ -181,14 +181,15 @@ for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make]:
 download_tool_curl="curl"
 download_tool_wget="wget"
 download_tool_git = "git"
-# curl randomly has trouble and fails with return code 6 without further feedback -> prefer wget
+
 if which(wget) != None:
     download_tool_default = download_tool_wget
 elif which(curl) != None:
     download_tool_default = download_tool_curl
 else:
     raise ValueError("No download application found, tried: curl, wget")
-CURL = ["curl", "-sLO"]
+
+CURL = ["curl", "-sL"]
 WGET= ["wget", "-q", "--no-check-certificate"]
 
 # Create log directory and file
@@ -273,7 +274,7 @@ def git_clone(clone_url, target_dir, revision=None):
     if revision != None:
         __check_call__([git, "checkout", revision], cwd=target_dir)
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, additional_files={}):
+def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, additional_files={}, no_append_name=False):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -287,16 +288,23 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         os.makedirs(build_dir)
     
     logger.info("\rFetching %s...   " % (name,))
+    
+    if download_tool == download_tool_curl or download_tool == download_tool_wget:
+        if no_append_name:
+            url = download_url
+        else:
+            url = os.path.join(download_url, download_name)
+    
     if download_tool == download_tool_curl:
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            __check_call__(CURL+[download_url, download_name], cwd=build_dir)
+            __check_call__(CURL + ["-o", download_name, url], cwd=build_dir)
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_wget:
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            __check_call__(WGET+[os.path.join(download_url, download_name)], cwd=build_dir)
+            __check_call__(WGET + ["-O", download_name, url], cwd=build_dir)
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_git:
@@ -453,7 +461,8 @@ if USE_OCCT:
             "%s.hxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.hxx" % (occt_gitweb, OCCT_HASH, long_filename),
             "%s.cxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.cxx" % (occt_gitweb, OCCT_HASH, long_filename)
         },
-        download_name="occt-%s.tar.gz" % OCCT_HASH)
+        download_name="occt-%s.tar.gz" % OCCT_HASH,
+        no_append_name=True)
 else:
     build_dependency(name="oce-%s" % (OCE_VERSION,), mode="cmake", build_tool_args=["-DOCE_DISABLE_TKSERVICE_FONT=ON", "-DOCE_TESTING=OFF", "-DOCE_BUILD_SHARED_LIB=OFF", "-DOCE_DISABLE_X11=ON", "-DOCE_VISUALISATION=OFF", "-DOCE_OCAF=OFF", "-DOCE_INSTALL_PREFIX=%s/install/oce-%s" % (DEPS_DIR, OCE_VERSION)], download_url="https://github.com/tpaviot/oce/archive/", download_name="OCE-%s.tar.gz" % (OCE_VERSION,))
         
