@@ -340,7 +340,7 @@ get_filename_component(libTKernelExt ${libTKernel} EXT)
 if("${libTKernelExt}" STREQUAL ".a")
     find_package(Threads)
     # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
-    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
     if (NOT APPLE AND NOT WIN32)
         set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
     endif()
