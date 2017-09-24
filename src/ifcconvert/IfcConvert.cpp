@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 		("input-file", boost::program_options::value<std::string>(), "input IFC file")
 		("output-file", boost::program_options::value<std::string>(), "output geometry file");
 
-	std::string bounds;
+	std::string bounds, hdf5_profile;
 	uint32_t hdf5_chunk_size;
 	std::vector<std::string> entity_vector;
 	std::vector<std::string> hdf5_ref_attributes;
@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
 		("bounds", boost::program_options::value<std::string>(&bounds),
 			"Specifies the bounding rectangle, for example 512x512, to which the " 
 			"output will be scaled. Only used when converting to SVG.")
+		("hdf5-profile", boost::program_options::value<std::string>(&hdf5_profile), "")
 		("hdf5-compress", "")
 		("hdf5-fix-cartesian-point", "")
 		("hdf5-fix-global-id", "")
@@ -291,6 +292,9 @@ int main(int argc, char** argv) {
 				settings.ref_attributes() = hdf5_ref_attributes;
 				if (vmap.count("hdf5-chunk-size") == 1) {
 					settings.chunk_size() = hdf5_chunk_size;
+				}
+				if (vmap.count("hdf5-profile") == 1) {
+					settings.profile() = IfcParse::Hdf5Settings::ProfileFromString(hdf5_profile);
 				}
 				f.write_hdf5(output_filename, settings);
 				exit_code = 0;

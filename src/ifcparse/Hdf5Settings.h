@@ -30,6 +30,26 @@ namespace IfcParse {
 		bool compress_, fix_cartesian_point_, fix_global_id_, instantiate_select_, instantiate_inverse_;
 		unsigned int chunk_size_;
 		std::vector<std::string> ref_attributes_;
+
+	public:
+		enum Profile {
+			standard,
+			padded,
+			standard_referenced,
+			padded_referenced
+		};
+
+		static Profile ProfileFromString(const std::string& s) {
+			if (s == "standard") return standard;
+			if (s == "padded") return padded;
+			if (s == "standard-referenced") return standard_referenced;
+			if (s == "padded-referenced") return padded_referenced;
+			throw std::exception("Unrecognized profile");
+		}
+
+	private:
+		Profile profile_;
+
 	public:
 		Hdf5Settings()
 			: compress_(false)
@@ -38,6 +58,7 @@ namespace IfcParse {
 			, instantiate_select_(false)
 			, instantiate_inverse_(false)
 			, chunk_size_(false)
+			, profile_(standard)
 		{}
 
 		bool compress() const { return compress_; }
@@ -55,6 +76,9 @@ namespace IfcParse {
 		unsigned int chunk_size() const { return chunk_size_; }
 		unsigned int& chunk_size() { return chunk_size_; }
 
+		Profile profile() const { return profile_; }
+		Profile& profile() { return profile_; }
+		
 		const std::vector<std::string>& ref_attributes() const { return ref_attributes_; }
 		std::vector<std::string>& ref_attributes() { return ref_attributes_; }
 	};

@@ -31,17 +31,7 @@
 namespace IfcParse {
 
 	class IfcHdf5File {
-	public:
-		enum Profile {
-			standard,
-			padded,
-			standard_referenced,
-			padded_referenced
-		};
-
 	private:
-		Profile profile_;
-
 		class allocator_t {
 		private:
 			// TODO: Change this?
@@ -160,9 +150,8 @@ namespace IfcParse {
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
 		
 		
-		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings, Profile profile)
-			: profile_(profile)
-			, name_(name)
+		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings)
+			: name_(name)
 			, schema_(*f->schema())
 			, ifcfile_(*f)
 			, settings_(settings)
