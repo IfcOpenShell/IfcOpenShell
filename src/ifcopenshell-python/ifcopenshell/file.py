@@ -23,6 +23,13 @@ import functools
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
+try:
+    # Python 2
+    basestring
+except NameError:
+    # Python 3 or newer
+    basestring = (str, bytes)
+
 class file(object):
     def __init__(self, f=None):
         self.wrapped_data = f or ifcopenshell_wrapper.file()
