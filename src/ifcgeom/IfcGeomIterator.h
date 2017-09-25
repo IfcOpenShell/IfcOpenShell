@@ -614,7 +614,7 @@ namespace IfcGeom {
 					if (hasParent) parents.insert(parents.begin(), parent_object);
 					
 					// We need to find all the parents
-					while (parent_object != NULL && hasParent)
+					while (parent_object != NULL && hasParent && parent_object->parent_id() != -1)
 					{
 						// Find the next parent
 						try {
@@ -650,14 +650,19 @@ namespace IfcGeom {
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
             IfcSchema::IfcProduct* ifc_product = 0;
+
 			try {
-				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
+				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
-				if ( ifc_entity->is(IfcSchema::Type::IfcProduct) ) {
-					ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
-					product_guid = ifc_product->GlobalId();
-					product_name = ifc_product->hasName() ? ifc_product->Name() : "";
-					
+
+				if (ifc_entity->is(IfcSchema::Type::IfcRoot)) {
+					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();
+					product_guid = ifc_root->GlobalId();
+					product_name = ifc_root->hasName() ? ifc_root->Name() : "";
+				}
+
+				if (ifc_entity->is(IfcSchema::Type::IfcProduct)) {
+					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
 						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
