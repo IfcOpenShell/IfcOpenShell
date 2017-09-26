@@ -380,7 +380,7 @@ if TARGET_ARCH == "i686" and __check_output__([uname, "-m"]).strip() == "x86_64"
 if get_os() == "Darwin":
     # C++11 features used in OCCT 7+ need a more recent stdlib
     version_min = "10.9" if USE_OCCT else "10.6"
-    ADDITIONAL_ARGS=["-mmacosx-version-min=" % version_min]+ADDITIONAL_ARGS
+    ADDITIONAL_ARGS=["-mmacosx-version-min=%s" % version_min]+ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
