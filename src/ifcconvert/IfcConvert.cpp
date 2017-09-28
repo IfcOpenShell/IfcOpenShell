@@ -384,7 +384,8 @@ int main(int argc, char** argv)
     }
 #endif
 
-	int bounding_width = -1, bounding_height = -1;
+	boost::optional<double> bounding_width;
+	boost::optional<double> bounding_height;
 	if (vmap.count("bounds") == 1) {
 		int w, h;
 		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2 && w > 0 && h > 0) {
@@ -531,8 +532,8 @@ int main(int argc, char** argv)
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = new SvgSerializer(output_temp_filename, settings);
-		if (bounding_width && bounding_height) {
-            static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width, bounding_height);
+		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
+            static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}
 	} else {
         std::cerr << "[Error] Unknown output filename extension '" + output_extension + "'\n";
