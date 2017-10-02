@@ -114,6 +114,13 @@ def get_os():
 
 # Set defaults for missing empty environment variables
 
+USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
+
+TOOLSET = None
+if get_os() == "Darwin":
+    # C++11 features used in OCCT 7+ need a more recent stdlib
+    TOOLSET = "10.9" if USE_OCCT else "10.6"
+   
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
 except KeyError:
@@ -131,7 +138,10 @@ CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
 try:
     DEPS_DIR = os.environ["DEPS_DIR"]
 except KeyError:
-    DEPS_DIR = os.path.realpath(os.path.join("..", "build", sp.check_output(uname).strip(), TARGET_ARCH))
+    path = ["..", "build", sp.check_output(uname).strip(), TARGET_ARCH]
+    if TOOLSET:
+        path.append(TOOLSET)
+    DEPS_DIR = os.path.realpath(os.path.join(*path))
     os.environ["DEPS_DIR"] = DEPS_DIR
     if not os.path.exists(DEPS_DIR):
         os.makedirs(DEPS_DIR)
@@ -142,7 +152,6 @@ except KeyError:
     BUILD_CFG="RelWithDebInfo"
     os.environ["BUILD_CFG"]=BUILD_CFG
 
-USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
 
 # Print build configuration information
 
@@ -378,9 +387,7 @@ if TARGET_ARCH == "i686" and __check_output__([uname, "-m"]).strip() == "x86_64"
     BOOST_ADDRESS_MODEL=["architecture=x86", "address-model=32"]
 
 if get_os() == "Darwin":
-    # C++11 features used in OCCT 7+ need a more recent stdlib
-    version_min = "10.9" if USE_OCCT else "10.6"
-    ADDITIONAL_ARGS=["-mmacosx-version-min=%s" % version_min]+ADDITIONAL_ARGS
+    ADDITIONAL_ARGS=["-mmacosx-version-min=%s" % TOOLSET]+ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
