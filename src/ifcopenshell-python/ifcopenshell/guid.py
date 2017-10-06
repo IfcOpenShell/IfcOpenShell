@@ -17,6 +17,7 @@
 #                                                                             #
 ###############################################################################
 
+import uuid
 import string
 
 from functools import reduce
@@ -40,4 +41,6 @@ def expand(g):
 
 def split(g):
     return '{%s-%s-%s-%s-%s}'%(g[:8], g[8:12], g[12:16], g[16:20], g[20:])
-
+    
+def new():
+    return compress(uuid.uuid4().hex)
