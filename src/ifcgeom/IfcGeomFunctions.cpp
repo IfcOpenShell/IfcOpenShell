@@ -1134,6 +1134,26 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	return openings;
 }
 
+const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(const IfcSchema::IfcProduct* product) {
+	IfcSchema::IfcMaterial* single_material = 0;
+	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
+	if (associated_materials->size() == 1) {
+		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
+		single_material = associated_material->as<IfcSchema::IfcMaterial>();
+		// TODO: Should this check for APPLY_LAYERSETS setting?
+		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
+			if (layerset->MaterialLayers()->size() == 1) {
+				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
+				if (layer->hasMaterial()) {
+					single_material = layer->Material();
+				}
+			}
+		}
+	}
+	return single_material;
+}
+
 template <typename P>
 IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_product(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
@@ -1181,6 +1201,23 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				}
 			}
 		}
+	}
+
+	bool material_style_applied = false;
+
+	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
+	if (single_material) {
+		const IfcGeom::SurfaceStyle* s = get_style(single_material);
+		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
+			if (!it->hasStyle() && s) {
+				it->setStyle(s);
+				material_style_applied = true;
+			}
+		}
+	}
+
+	if (material_style_applied) {
+		representation_id_builder << "-material-" << single_material->entity->id();
 	}
 
 	int parent_id = -1;
@@ -1274,6 +1311,71 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
         product
 	);
+}
+
+IfcSchema::IfcRepresentation* IfcGeom::Kernel::representation_mapped_to(const IfcSchema::IfcRepresentation* representation) {
+	IfcSchema::IfcRepresentation* representation_mapped_to = 0;
+	IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
+	if (items->size() == 1) {
+		IfcSchema::IfcRepresentationItem* item = *items->begin();
+		if (item->is(IfcSchema::Type::IfcMappedItem)) {
+			if (item->StyledByItem()->size() == 0) {
+				IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
+				if (is_identity_transform(mapped_item->MappingTarget())) {
+					IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
+					if (is_identity_transform(map->MappingOrigin())) {
+						representation_mapped_to = map->MappedRepresentation();
+					}
+				}
+			}
+		}
+	}
+	return representation_mapped_to;
+}
+
+IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const IfcSchema::IfcRepresentation* representation) {
+	IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
+
+	IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
+
+	for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
+		// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
+		// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
+		// It will be changed into an ABSTRACT supertype in future releases of IFC.
+
+		// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
+		// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
+		products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
+	}
+	
+	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+	if (maps->size() == 1) {
+		IfcSchema::IfcRepresentationMap* map = *maps->begin();
+		if (is_identity_transform(map->MappingOrigin())) {
+			IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
+			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
+				IfcSchema::IfcMappedItem* item = *it;
+				if (item->StyledByItem()->size() != 0) continue;
+
+				if (!is_identity_transform(item->MappingTarget())) {
+					continue;
+				}
+
+				IfcSchema::IfcRepresentation::list::ptr reps = item->entity->getInverse(IfcSchema::Type::IfcRepresentation, -1)->as<IfcSchema::IfcRepresentation>();
+				for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
+					IfcSchema::IfcRepresentation* rep = *jt;
+					if (rep->Items()->size() != 1) continue;
+					IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
+					for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
+						IfcSchema::IfcProduct::list::ptr ps = (*kt)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
+						products->push(ps);
+					}
+				}
+			}
+		}
+	}
+
+	return products;
 }
 
 template <typename P>

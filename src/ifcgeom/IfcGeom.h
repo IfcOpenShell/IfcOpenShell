@@ -257,6 +257,9 @@ public:
     IfcGeom::BRepElement<P>* create_brep_for_processed_representation(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
 	
+	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
+	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
+	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
 	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
 	

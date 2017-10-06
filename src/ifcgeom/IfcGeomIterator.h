@@ -351,9 +351,43 @@ namespace IfcGeom {
 			++ done;
 		}
 
-		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
-
 		bool geometry_reuse_ok_for_current_representation_;
+
+		bool reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
+			// With world coords enabled, object transformations are directly applied to
+			// the BRep. There is no way to re-use the geometry for multiple products.
+			if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+				return false;
+			}
+
+			std::set<const IfcSchema::IfcMaterial*> associated_single_materials;
+
+			for (IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it) {
+				IfcSchema::IfcProduct* product = *it;
+
+				if (!settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && kernel.find_openings(product)->size()) {
+					return false;
+				}
+
+				if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
+					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
+					for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
+						IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
+						if (assoc) {
+							if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
+								// TODO: Check whether single layer? 
+								return false;
+							}
+						}
+					}
+				}
+
+				// Note that this can be a nullptr (!), but the fact that set size should be one still holds
+				associated_single_materials.insert(kernel.get_single_material_association(product));
+			}
+
+			return associated_single_materials.size() == 1;
+		}
 
 		BRepElement<P>* create_shape_model_for_next_entity() {
 			for (;;) {
@@ -368,140 +402,30 @@ namespace IfcGeom {
 
 				// Has the list of IfcProducts for this representation been initialized?
 				if (!ifcproducts) {
-					
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
-					IfcSchema::IfcProduct::list::ptr unfiltered_products(new IfcSchema::IfcProduct::list);
+					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel.products_represented_by(representation);
 
-					{
-						IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
+					geometry_reuse_ok_for_current_representation_ = reuse_ok_(unfiltered_products);
 
-						for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
-							if ((*it)->is(IfcSchema::Type::IfcProductDefinitionShape)) {
-								IfcSchema::IfcProductDefinitionShape* pds = (IfcSchema::IfcProductDefinitionShape*)*it;
-								unfiltered_products->push(pds->ShapeOfProduct());
-							}
-							else {
-								// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
-								// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
-								// It will be changed into an ABSTRACT supertype in future releases of IFC.
-
-								// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
-								// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-								unfiltered_products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
-							}
-						}
+					if (!geometry_reuse_ok_for_current_representation_ && representation->RepresentationMap()->size() == 1) {
+						// unfiltered_products contains products represented by this representation by means of mapped items.
+						// For example because of openings applied to products, reuse might not be acceptable and then the
+						// products will be processed by means of their immediate representation and not the mapped representation.
+						_nextShape();
+						continue;
 					}
 
-					bool has_openings = false;
-					bool has_layers = false;
-
-					for (IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it) {
-						if (kernel.find_openings(*it)->size()) {
-							has_openings = true;
-						}
-						IfcSchema::IfcRelAssociates::list::ptr associations = (*it)->HasAssociations();
-						for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
-							IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
-							if (assoc) {
-								if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
-									has_layers = true;
-								}
-							}
-						}
-					}
-					
-					// With world coords enabled, object transformations are directly applied to
-					// the BRep. There is no way to re-use the geometry for multiple products.
-					geometry_reuse_ok_for_current_representation_ = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
-						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) &&
-						(!has_layers || !settings.get(IteratorSettings::APPLY_LAYERSETS));
 					bool representation_processed_as_mapped_item = false;
 
-					IfcSchema::IfcRepresentation* representation_mapped_to = 0;
-					
-					if (geometry_reuse_ok_for_current_representation_) {
-						IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
-						if (items->size() == 1) {
-							IfcSchema::IfcRepresentationItem* item = *items->begin();
-							if (item->is(IfcSchema::Type::IfcMappedItem)) {
-								if (item->StyledByItem()->size() == 0) {
-									IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-									if (kernel.is_identity_transform(mapped_item->MappingTarget())) {
-										IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
-										if (kernel.is_identity_transform(map->MappingOrigin())) {
-											representation_mapped_to = map->MappedRepresentation();
-											IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation_mapped_to->OfProductRepresentation();
-
-											bool all_product_without_openings = true;
-											IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
-
-											for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
-												IfcSchema::IfcProduct::list::ptr products_of_prodrep = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
-												products->push(products_of_prodrep);
-												for (IfcSchema::IfcProduct::list::it jt = products_of_prodrep->begin(); jt != products_of_prodrep->end(); ++jt) {
-													if (kernel.find_openings(*jt)->size() > 0 && !settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
-														all_product_without_openings = false;
-														break;
-													}
-												}
-											}
-
-											if (all_product_without_openings) {
-												representation_processed_as_mapped_item = true;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-
+					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
-						if (mapped_representations_processed.find(representation_mapped_to) != mapped_representations_processed.end()) {
-							_nextShape();
-							continue;
-						}
-
-						mapped_representations_processed.insert(representation_mapped_to);
+						// Check if this represenation has (or will be) processed as part its mapped representation
+						representation_processed_as_mapped_item = reuse_ok_(kernel.products_represented_by(representation_mapped_to));
 					}
 
 					if (representation_processed_as_mapped_item) {
 						_nextShape();
 						continue;
-					}
-
-					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
-					
-					if (geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
-						IfcSchema::IfcRepresentationMap* map = *maps->begin();
-						if (kernel.is_identity_transform(map->MappingOrigin())) {
-							IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
-							for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
-								IfcSchema::IfcMappedItem* item = *it;
-								if (item->StyledByItem()->size() != 0) continue;
-								
-								if (!kernel.is_identity_transform(item->MappingTarget())) {
-									continue;
-								}
-
-								IfcSchema::IfcRepresentation::list::ptr reps = item->entity->getInverse(IfcSchema::Type::IfcRepresentation, -1)->as<IfcSchema::IfcRepresentation>();
-								for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
-									IfcSchema::IfcRepresentation* rep = *jt;
-									if (rep->Items()->size() != 1) continue;
-									IfcSchema::IfcProductRepresentation::list::ptr prodreps = rep->OfProductRepresentation();
-									for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps->begin(); kt != prodreps->end(); ++kt) {
-										IfcSchema::IfcProduct::list::ptr prods = (*kt)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
-										for (IfcSchema::IfcProduct::list::it lt = prods->begin(); lt != prods->end(); ++lt) {
-											if (kernel.find_openings(*lt)->size() == 0 || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
-                                                if (!unfiltered_products->contains(*lt)) {
-                                                    unfiltered_products->push(*lt);
-                                                }
-											}
-										}
-									}
-								}
-							}
-						}
 					}
 
                     // Filter the products based on the set of entities and/or names being included or excluded for processing.
@@ -522,7 +446,6 @@ namespace IfcGeom {
 				}
 
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
-
                 Logger::SetProduct(product);
 
 				BRepElement<P>* element;
