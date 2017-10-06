@@ -88,14 +88,17 @@ class entity_instance(object):
         if value is None:
             self.wrapped_data.setArgumentAsNull(idx)
         else:
-            attr_type = self.attribute_type(idx).title().replace(' ', '')
+            attr_type = real_attr_type = self.attribute_type(idx).title().replace(' ', '')
             attr_type = attr_type.replace('Binary', 'String')
             attr_type = attr_type.replace('Enumeration', 'String')
             try:
                 if isinstance(value, unicode): value = value.encode("utf-8")
             except:
                 pass
-            getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
+            try:
+                getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
+            except:
+                raise ValueError("Expected %s for attribute %s.%s, got %r" % (real_attr_type, self.is_a(), self.attribute_name(idx), value))
         return value
 
     def __len__(self):
