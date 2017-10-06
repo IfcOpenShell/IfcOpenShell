@@ -1208,7 +1208,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
 	if (single_material) {
 		const IfcGeom::SurfaceStyle* s = get_style(single_material);
-		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
+		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 			if (!it->hasStyle() && s) {
 				it->setStyle(s);
 				material_style_applied = true;
