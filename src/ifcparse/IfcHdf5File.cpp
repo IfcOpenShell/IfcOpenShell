@@ -427,7 +427,7 @@ public:
 			// A bit hard to figure out, but apparently a null-reference is simply zeros
 			// https://github.com/h5py/h5py/blob/e611b7ca47e49d83e908d0368d2d9ced224a9de0/h5py/h5r.pyx#L167
 			if (datatype_.getSize() != sizeof(hdset_reg_ref_t)) {
-				throw std::runtime_error("Unexpted datatype size for reference");
+				throw std::runtime_error("Unexpected datatype size for reference");
 			}
 			memset(ptr, 0, sizeof(hdset_reg_ref_t));
 			advance(ptr, sizeof(hdset_reg_ref_t));
@@ -2034,7 +2034,8 @@ void IfcParse::IfcHdf5File::write_population(IfcFile&) {
 		hsize_t dataset_names_length = dataset_names.size();
 		H5::DataSpace dataset_names_s(1, &dataset_names_length);
 
-		H5::Attribute attr = schema_group.createAttribute("iso_10303_26_data_set_names", H5::PredType::C_S1, dataset_names_s);
+		H5::StrType varlen_string_type(H5::PredType::C_S1, H5T_VARIABLE);
+		H5::Attribute attr = schema_group.createAttribute("iso_10303_26_data_set_names", varlen_string_type, dataset_names_s);
 		char** attr_data = (char**)allocator.allocate(static_cast<size_t>(sizeof(char*) * dataset_names_length));
 		size_t i = 0;
 		for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it, ++i) {
@@ -2042,8 +2043,9 @@ void IfcParse::IfcHdf5File::write_population(IfcFile&) {
 			attr_data[i] = (char*)allocator.allocate(nm.size() + 1);
 			strcpy(attr_data[i], nm.c_str());
 		}
-		attr.write(H5::PredType::C_S1, attr_data);
+		attr.write(varlen_string_type, attr_data);
 		attr.close();
+		varlen_string_type.close();
 	}
 
 	write_visit/*<sorted_instance_locator>*/ visitor(*this->file, padded, referenced, locator, *((type_mapper*)mapper_));
