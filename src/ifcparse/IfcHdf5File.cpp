@@ -8,20 +8,22 @@
 #pragma message("warning: HDF5 compression support is recommended")
 #endif
 
+static boost::optional< std::vector<Argument*> > no_instances = boost::none;
+
 class type_mapper {
 public:
 	type_mapper(IfcParse::IfcFile& ifc_file, H5::H5File* hdf5_file, const IfcParse::Hdf5Settings& settings);
 
 	H5::DataType* commit(H5::DataType* dt, const std::string& name);
 	
-	H5::DataType* operator()(const IfcParse::parameter_type* pt, IfcEntityList::ptr instances = nullptr, int dims = 0, const hsize_t* max_length = nullptr);
-	H5::DataType* operator()(const IfcParse::select_type* pt, IfcEntityList::ptr instances = nullptr, int dims = 0, const hsize_t* max_length = nullptr);
-	H5::CompType* operator()(const IfcParse::entity* e, IfcEntityList::ptr instances = nullptr, int dims = 0, const hsize_t* max_length = nullptr);
-	H5::EnumType* operator()(const IfcParse::enumeration_type* en, IfcEntityList::ptr instances = nullptr, int dims = 0, const hsize_t* max_length = nullptr);
+	H5::DataType* operator()(const IfcParse::parameter_type* pt, const boost::optional< std::vector<Argument*> >& instances = no_instances, int dims = 0, const hsize_t* max_length = nullptr);
+	H5::DataType* operator()(const IfcParse::select_type* pt, const boost::optional< std::vector<Argument*> >& instances = no_instances, int dims = 0, const hsize_t* max_length = nullptr);
+	H5::CompType* operator()(const IfcParse::entity* e, const boost::optional< std::vector<Argument*> >& instances = no_instances, int dims = 0, const hsize_t* max_length = nullptr);
+	H5::EnumType* operator()(const IfcParse::enumeration_type* en, const boost::optional< std::vector<Argument*> >& instances = no_instances, int dims = 0, const hsize_t* max_length = nullptr);
 	
 	void operator()();
 
-	std::pair<std::string, const H5::DataType*> make_select_leaf(const IfcParse::declaration* decl);
+	std::pair<std::string, const H5::DataType*> make_select_leaf(const IfcParse::declaration* decl, const boost::optional< std::vector<Argument*> >& instances);
 
 private:
 	IfcParse::Hdf5Settings settings_; 
@@ -31,7 +33,7 @@ private:
 	IfcParse::IfcFile& ifc_file_;
 	H5::H5File* hdf5_file_;
 	H5::Group schema_group_;
-	H5::CompType* instance_reference_;
+	H5::DataType* instance_reference_;
 	std::vector<const H5::DataType*> default_types_;
 	std::vector<std::string> default_type_names_;
 	std::vector<std::string> default_cpp_type_names_;
@@ -290,13 +292,17 @@ public:
 
 class sorted_instance_locator {
 private:
+	H5::H5File& hdf5_file_;
 	IfcParse::IfcFile& file_;
 	std::vector< IfcSchema::Type::Enum > dataset_names_;
 	std::vector< std::vector<IfcUtil::IfcBaseEntity*>* > cache_;
+	bool referenced_;
 
-public:
-	sorted_instance_locator(IfcParse::IfcFile& file)
-		: file_(file)
+public:	
+	sorted_instance_locator(H5::H5File& hdf5_file, IfcParse::IfcFile& file, bool referenced)
+		: hdf5_file_(hdf5_file)
+		, file_(file)
+		, referenced_(referenced)
 	{
 		std::set<IfcSchema::Type::Enum> dataset_names_temp;
 		for (auto it = file_.begin(); it != file_.end(); ++it) {
@@ -306,6 +312,44 @@ public:
 		std::sort(dataset_names_.begin(), dataset_names_.end());
 
 		cache_.resize(IfcSchema::Type::UNDEFINED);
+
+		if (referenced_) {
+			// Why not always populate?
+			const IfcSchema::Type::Enum begin = IfcSchema::Type::Ifc2DCompositeCurve;
+			const IfcSchema::Type::Enum end = IfcSchema::Type::UNDEFINED;
+			for (int i = begin; i != end; i++) {
+				instances((IfcSchema::Type::Enum)i);
+			}
+		}
+	}
+
+	typedef std::vector< IfcSchema::Type::Enum >::const_iterator const_iterator;
+	const_iterator begin() const { return dataset_names_.begin(); }
+	const_iterator end() const { return dataset_names_.end(); }
+
+	const std::vector<IfcUtil::IfcBaseEntity*>& instances(IfcSchema::Type::Enum t) {
+		if (cache_[t] == nullptr) {
+			auto li = file_.entitiesByType(t);
+			std::vector<IfcUtil::IfcBaseEntity*>* vs = cache_[t] = new std::vector<IfcUtil::IfcBaseEntity*>();
+			if (li) {
+				vs->reserve(li->size());
+
+				for (auto jt = li->begin(); jt != li->end(); ++jt) {
+					if ((*jt)->declaration().type() == t) {
+						vs->push_back(static_cast<IfcUtil::IfcBaseEntity*>(*jt));
+					}
+				}
+
+				std::sort(vs->begin(), vs->end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
+					return i1->data().id() < i2->data().id();
+				});
+			}
+		}
+		return *cache_[t];
+	}
+
+	std::string path(int dsidx) const {
+		return IfcSchema::Type::ToString(dataset_names_[dsidx]);
 	}
 
 	std::pair<int, int> operator()(IfcUtil::IfcBaseClass* v) {
@@ -318,24 +362,10 @@ public:
 		int a = std::distance(dataset_names_.begin(), tt);
 		int b;
 
-		if (cache_[t] == nullptr) {
-			auto li = file_.entitiesByType(t);
-			std::vector<IfcUtil::IfcBaseEntity*>* vs = cache_[t] = new std::vector<IfcUtil::IfcBaseEntity*>();
-			vs->reserve(li->size());
+		const std::vector<IfcUtil::IfcBaseEntity*>& insts = instances(t);
 
-			for (auto jt = li->begin(); jt != li->end(); ++jt) {
-				if ((*jt)->declaration().type() == t) {
-					vs->push_back(static_cast<IfcUtil::IfcBaseEntity*>(*jt));
-				}
-			}
-
-			std::sort(vs->begin(), vs->end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
-				return i1->data().id() < i2->data().id();
-			});
-		}
-
-		auto it = std::lower_bound(cache_[t]->begin(), cache_[t]->end(), v);
-		b = std::distance(cache_[t]->begin(), it);
+		auto it = std::lower_bound(insts.begin(), insts.end(), v);
+		b = std::distance(insts.begin(), it);
 		
 		return std::make_pair(a, b);
 	}
@@ -394,7 +424,13 @@ public:
 			break;
 		}
 		case H5T_REFERENCE:
-			throw std::runtime_error("Not implemented");
+			// A bit hard to figure out, but apparently a null-reference is simply zeros
+			// https://github.com/h5py/h5py/blob/e611b7ca47e49d83e908d0368d2d9ced224a9de0/h5py/h5r.pyx#L167
+			if (datatype_.getSize() != sizeof(hdset_reg_ref_t)) {
+				throw std::runtime_error("Unexpted datatype size for reference");
+			}
+			memset(ptr, 0, sizeof(hdset_reg_ref_t));
+			advance(ptr, sizeof(hdset_reg_ref_t));
 			break;
 		case H5T_ENUM:
 			write_number_of_size(ptr, datatype_.getSize(), 0);
@@ -431,6 +467,7 @@ public:
 // template <typename LocatorT>
 class write_visit {
 private:
+	H5::H5File& file_;
 	bool padded_;
 	bool referenced_;
 	type_mapper& type_mapper_;
@@ -440,8 +477,9 @@ public:
 
 	locator_type& instance_locator_;
 
-	write_visit(bool padded, bool referenced, locator_type& instance_locator, type_mapper& type_mapper)
-		: padded_(padded)
+	write_visit(H5::H5File& file, bool padded, bool referenced, locator_type& instance_locator, type_mapper& type_mapper)
+		: file_(file)
+		, padded_(padded)
 		, referenced_(referenced)
 		, instance_locator_(instance_locator)
 		, type_mapper_(type_mapper)
@@ -514,10 +552,19 @@ public:
 
 		pointer_increment_assert _(ptr, datatype.getSize());
 
+		std::pair<int, int> ref = instance_locator_(v);
+
 		if (referenced_) {
 			if (datatype.getClass() != H5T_REFERENCE) {
 				throw std::runtime_error("Datatype and value do not match");
 			}
+			hsize_t dims = instance_locator_.instances(v->declaration().type()).size();
+			H5::DataSpace space(1, &dims);
+			hsize_t coord = ref.second;
+			space.selectElements(H5S_SELECT_SET, 1, &coord);
+			// TODO: Make path configurable
+			file_.reference(ptr, "population/" + instance_locator_.path(ref.first) + "_instances", space);
+			advance(ptr, sizeof(hdset_reg_ref_t));
 		} else {
 			if (datatype.getClass() != H5T_COMPOUND) {
 				throw std::runtime_error("Datatype and value do not match");
@@ -530,8 +577,6 @@ public:
 			H5::CompType* compound = (H5::CompType*) &datatype;
 			H5::IntType ds_idx = compound->getMemberIntType(0);
 			H5::IntType ds_row = compound->getMemberIntType(1);
-
-			std::pair<int, int> ref = instance_locator_(v);
 
 			write_number_of_size(ptr, ds_idx.getSize(), ref.first);
 			write_number_of_size(ptr, ds_row.getSize(), ref.second);
@@ -698,7 +743,7 @@ void write_visit::visit(void*& ptr, H5::DataType& datatype, select_item& v) {
 			write_number_of_size(ptr, attr_type.getSize(), data->declaration().type());
 		} else if (data_is_entity && name == "instance-value") {
 			visit(ptr, attr_type, data);
-		} else if (type_mapper_.make_select_leaf(&data->declaration()).first == name) {
+		} else if (type_mapper_.make_select_leaf(&data->declaration(), no_instances).first == name) {
 			write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, *this, attr_type);
 			apply_attribute_visitor(data->data().getArgument(0), 0).apply(attribute_visitor);
 		} else {
@@ -779,11 +824,14 @@ type_mapper::type_mapper(IfcParse::IfcFile& ifc_file, H5::H5File* hdf5_file, con
 	default_cpp_type_names_.resize(IfcUtil::Argument_UNKNOWN);
 	declared_types_.resize(IfcSchema::Type::UNDEFINED);
 
-	{
+
+	if (referenced_) {
+		instance_reference_ = commit(new H5::PredType(H5::PredType::STD_REF_DSETREG), "_HDF_INSTANCE_REFERENCE_HANDLE_");
+	} else {
 		std::vector< IfcParse::IfcHdf5File::compound_member > members;
 		members.push_back(std::make_pair(std::string("_HDF5_dataset_index_"), new H5::PredType(H5::PredType::NATIVE_INT16)));
 		members.push_back(std::make_pair(std::string("_HDF5_instance_index_"), new H5::PredType(H5::PredType::NATIVE_INT32)));
-		instance_reference_ = static_cast<H5::CompType*>(commit(create_compound(members), "_HDF_INSTANCE_REFERENCE_HANDLE_"));
+		instance_reference_ = commit(create_compound(members), "_HDF_INSTANCE_REFERENCE_HANDLE_");
 	}
 
 	{
@@ -826,7 +874,7 @@ H5::DataType* type_mapper::commit(H5::DataType* dt, const std::string& name) {
 	return dt;
 }
 
-H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, IfcEntityList::ptr instances, int dims, const hsize_t* max_length) {
+H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, const boost::optional< std::vector<Argument*> >& instances, int dims, const hsize_t* max_length) {
 	H5::DataType* h5_dt = nullptr;
 	if (pt->as_aggregation_type()) {
 		if (padded_ && dims && max_length) {
@@ -837,7 +885,13 @@ H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, IfcEnt
 			memcpy(max_length_copy, max_length, sizeof(hsize_t) * dims);
 			if (max_length_copy[0] == 0) max_length_copy[0] = 1;
 			
-			H5::DataType* element_dt = (*this)(pt->as_aggregation_type()->type_of_element(), nullptr, dims - 1, max_length + 1);
+			// Assume attribute lists are homogeneous and can be directly passed to supertypes
+			H5::DataType* element_dt = (*this)(pt->as_aggregation_type()->type_of_element(), instances, dims - 1, max_length + 1);
+
+			if (element_dt == nullptr) {
+				// in case of select with all instance refs
+				element_dt = instance_reference_;
+			}
 
 			std::vector< IfcParse::IfcHdf5File::compound_member > members;
 			members.push_back(std::make_pair(std::string("length"), new H5::PredType(H5::PredType::NATIVE_UINT32)));
@@ -849,8 +903,6 @@ H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, IfcEnt
 			h5_dt = new H5::VarLenType((*this)(pt->as_aggregation_type()->type_of_element()));
 		}
 	} else if (pt->as_named_type()) {
-		// TODO: named types can also represent aggregations, can't they?
-
 		if (pt->as_named_type()->declared_type()->as_entity()) {
 			return instance_reference_;
 			// TFK: Do not copy, we want to retain path to simplify datatype identify checks later on
@@ -878,7 +930,20 @@ H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, IfcEnt
 					members.push_back(std::make_pair(std::string("length"), new H5::PredType(H5::PredType::NATIVE_UINT32)));
 					members.push_back(std::make_pair(std::string("data"), new H5::StrType(H5::PredType::C_S1, (size_t) max_length[0] + 1)));
 					h5_dt = create_compound(members);
+				} else if (decl->as_type_declaration() && decl->as_type_declaration()->declared_type()->as_aggregation_type()) {
+					H5::DataType* element_dt = (*this)(decl->as_type_declaration()->declared_type()->as_aggregation_type()->type_of_element(), instances, dims - 1, max_length + 1);
+
+					if (element_dt == nullptr) {
+						// in case of select with all instance refs
+						element_dt = instance_reference_;
+					}
+
+					std::vector< IfcParse::IfcHdf5File::compound_member > members;
+					members.push_back(std::make_pair(std::string("length"), new H5::PredType(H5::PredType::NATIVE_UINT32)));
+					members.push_back(std::make_pair(std::string("data"), new H5::ArrayType(*element_dt, 1, max_length)));
+					h5_dt = create_compound(members);
 				}
+
 			}
 
 			if (!h5_dt) {
@@ -922,144 +987,6 @@ H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, IfcEnt
 
 	return h5_dt;
 }
-
-std::pair<std::string, const H5::DataType*> type_mapper::make_select_leaf(const IfcParse::declaration* decl) {
-	std::string name;
-	const H5::DataType* dt = 0;
-
-	if (decl) {
-		while (decl->as_type_declaration()) {
-			const IfcParse::parameter_type* leaf_pt = decl->as_type_declaration()->declared_type();
-			const IfcParse::named_type* nt = leaf_pt->as_named_type();
-			const IfcParse::simple_type* st = leaf_pt->as_simple_type();
-			const IfcParse::aggregation_type* at = leaf_pt->as_aggregation_type();
-			if (nt) {
-				decl = nt->declared_type();
-			} else if (st) {
-				name = default_type_names_[st->declared_type()];
-				dt = default_types_[st->declared_type()];
-				break;
-			} else if (at) {
-				name = flatten_aggregate_name(at);
-				dt = (*this)(at);
-				break;
-			}
-		}
-	}
-
-	if (!dt) {
-		if (decl->as_entity()) {
-			name = "instance";
-			dt = instance_reference_;
-		} else if (decl->as_enumeration_type()) {
-			name = decl->name();
-			dt = declared_types_[decl->type()];
-		} else {
-			throw;
-		}
-	}
-
-	name += "-value";
-
-	return std::make_pair(name, dt);
-}
-
-H5::DataType* type_mapper::operator()(const IfcParse::select_type* pt, IfcEntityList::ptr instances, int, const hsize_t*) {
-	std::set<const IfcParse::declaration*> leafs_schema;
-	visit_select(pt, leafs_schema);
-
-	std::set<const IfcParse::declaration*> leafs_model;
-	std::set<const IfcParse::declaration*>* leafs = &leafs_schema;
-
-	if (padded_) {
-		std::set<const IfcParse::declaration*> instantiated;
-		std::for_each(instances->begin(), instances->end(), [&instantiated](IfcUtil::IfcBaseClass* inst) {
-			instantiated.insert(&inst->declaration());
-			if (inst->declaration().as_entity()) {
-				auto entity = inst->declaration().as_entity();
-				while (entity->supertype()) {
-					entity = entity->supertype();
-					instantiated.insert(entity);
-				}
-			}
-		});
-		std::set_intersection(leafs_schema.begin(), leafs_schema.end(), instantiated.begin(), instantiated.end(), std::inserter(leafs_model, leafs_model.end()));
-		leafs = &leafs_model;
-	}
-
-	bool all_entity_instance_refs = true;
-	for (auto it = leafs->begin(); it != leafs->end(); ++it) {
-		if (!(*it)->as_entity()) {
-			all_entity_instance_refs = false;
-			break;
-		}
-	}
-
-	if (all_entity_instance_refs) {
-		return 0;
-	} else {
-		std::set<std::string> member_names;
-		std::vector<IfcParse::IfcHdf5File::compound_member> h5_attributes;
-
-		h5_attributes.push_back(std::make_pair(std::string("type_code"), &H5::PredType::NATIVE_INT16));
-
-		for (auto it = leafs->begin(); it != leafs->end(); ++it) {
-			const IfcParse::declaration* decl = (*it);
-			auto leaf_type = make_select_leaf(decl);
-
-			if (member_names.find(leaf_type.first) != member_names.end()) {
-				continue;
-			}
-			member_names.insert(leaf_type.first);
-
-			h5_attributes.push_back(leaf_type);
-		}
-
-		return create_compound(h5_attributes);
-	}
-}
-
-class apply_attribute_visitor_instance_list {
-private:
-	const IfcEntityList::ptr& instances_;
-	int attribute_idx_;
-public:
-	apply_attribute_visitor_instance_list(const IfcEntityList::ptr& instances, int attribute_idx)
-		: instances_(instances)
-		, attribute_idx_(attribute_idx)
-	{}
-
-	template <typename T>
-	typename T::return_type apply(T& t) const {
-		for (auto it = instances_->begin(); it != instances_->end(); ++it) {
-			apply_attribute_visitor((**it).data().getArgument(attribute_idx_), (**it).declaration().as_entity()->all_attributes()[attribute_idx_]).apply(t);
-		}
-	}
-};
-
-class all_null_visitor {
-private:
-	bool all_null_;
-public:
-	typedef void return_type;
-
-	all_null_visitor()
-		: all_null_(true)
-	{}
-
-	void operator()(const boost::none_t&) {
-		// Empty on purpose
-	}
-
-	template <typename T>
-	void operator()(const T&) {
-		all_null_ = false;
-	}
-
-	bool all_null() const {
-		return all_null_;
-	}
-};
 
 class max_length_visitor {
 private:
@@ -1128,7 +1055,190 @@ public:
 	}
 };
 
-H5::CompType* type_mapper::operator()(const IfcParse::entity* e, IfcEntityList::ptr, int, const hsize_t*) {
+std::pair<std::string, const H5::DataType*> type_mapper::make_select_leaf(const IfcParse::declaration* decl, const boost::optional< std::vector<Argument*> >& instances) {
+	std::string name;
+	const H5::DataType* dt = 0;
+
+	if (decl) {
+		while (decl->as_type_declaration()) {
+			const IfcParse::parameter_type* leaf_pt = decl->as_type_declaration()->declared_type();
+			const IfcParse::named_type* nt = leaf_pt->as_named_type();
+			const IfcParse::simple_type* st = leaf_pt->as_simple_type();
+			const IfcParse::aggregation_type* at = leaf_pt->as_aggregation_type();
+			if (nt) {
+				decl = nt->declared_type();
+			} else if (st) {
+				name = default_type_names_[st->declared_type()];
+				if (padded_ && instances && st->declared_type() == IfcParse::simple_type::string_type) {
+					max_length_visitor visitor;
+					std::for_each(instances->begin(), instances->end(), [&visitor](Argument* attr) {
+						if (attr->type() != IfcUtil::Argument_ENTITY_INSTANCE) {
+							throw std::runtime_error("Expected an entity instance or simple type");
+						}
+						IfcUtil::IfcBaseClass* inst = *attr;
+						if (!inst->declaration().as_entity()) {
+							Argument* simple_type = inst->data().getArgument(0);
+							if (simple_type->type() == IfcUtil::Argument_STRING) {
+								// Reference to schema_attr is to resolve enumeration and unknown, it's not necessary here as we explicitely filter on strings.
+								apply_attribute_visitor(simple_type, nullptr).apply(visitor);
+							}
+						}
+					});
+
+					if (!visitor) {
+						throw std::runtime_error("Unable to determine string width within select type");
+					}
+
+					std::vector< IfcParse::IfcHdf5File::compound_member > members;
+					members.push_back(std::make_pair(std::string("length"), new H5::PredType(H5::PredType::NATIVE_UINT32)));
+					members.push_back(std::make_pair(std::string("data"), new H5::StrType(H5::PredType::C_S1, (size_t)visitor.max_length()[0] + 1)));
+					dt = create_compound(members);
+
+				} else {
+					dt = default_types_[st->declared_type()];
+				}
+				break;
+			} else if (at) {
+				name = flatten_aggregate_name(at);
+				dt = (*this)(at);
+				break;
+			}
+		}
+	}
+
+	if (!dt) {
+		if (decl->as_entity()) {
+			name = "instance";
+			dt = instance_reference_;
+		} else if (decl->as_enumeration_type()) {
+			name = decl->name();
+			dt = declared_types_[decl->type()];
+		} else {
+			throw;
+		}
+	}
+
+	name += "-value";
+
+	return std::make_pair(name, dt);
+}
+
+H5::DataType* type_mapper::operator()(const IfcParse::select_type* pt, const boost::optional< std::vector<Argument*> >& instances, int, const hsize_t*) {
+	std::set<const IfcParse::declaration*> leafs_schema;
+	visit_select(pt, leafs_schema);
+
+	std::set<const IfcParse::declaration*> leafs_model;
+	std::set<const IfcParse::declaration*>* leafs = &leafs_schema;
+
+	if (padded_ && instances) {
+		std::set<const IfcParse::declaration*> instantiated;
+		std::for_each(instances->begin(), instances->end(), [&instantiated](Argument* attr) {
+			auto add_to_instantiation = [&instantiated](IfcUtil::IfcBaseClass* inst){
+				instantiated.insert(&inst->declaration());
+				if (inst->declaration().as_entity()) {
+					auto entity = inst->declaration().as_entity();
+					while (entity->supertype()) {
+						entity = entity->supertype();
+						instantiated.insert(entity);
+					}
+				}
+			};
+			
+			switch (attr->type()) {
+			// Should check for null?
+			case IfcUtil::Argument_ENTITY_INSTANCE: {
+				IfcUtil::IfcBaseClass* inst = *attr;
+				add_to_instantiation(inst);
+				break;
+			}
+			case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+				IfcEntityList::ptr insts = *attr;
+				std::for_each(insts->begin(), insts->end(), add_to_instantiation);
+				break;
+			}
+			default:
+				throw std::exception("Unexpected attribute types for datatype width reference");
+			}
+		});
+		std::set_intersection(leafs_schema.begin(), leafs_schema.end(), instantiated.begin(), instantiated.end(), std::inserter(leafs_model, leafs_model.end()));
+		leafs = &leafs_model;
+	}
+
+	bool all_entity_instance_refs = true;
+	for (auto it = leafs->begin(); it != leafs->end(); ++it) {
+		if (!(*it)->as_entity()) {
+			all_entity_instance_refs = false;
+			break;
+		}
+	}
+
+	if (all_entity_instance_refs) {
+		return 0;
+	} else {
+		std::set<std::string> member_names;
+		std::vector<IfcParse::IfcHdf5File::compound_member> h5_attributes;
+
+		h5_attributes.push_back(std::make_pair(std::string("type_code"), &H5::PredType::NATIVE_INT16));
+
+		for (auto it = leafs->begin(); it != leafs->end(); ++it) {
+			const IfcParse::declaration* decl = (*it);
+			auto leaf_type = make_select_leaf(decl, instances);
+
+			if (member_names.find(leaf_type.first) != member_names.end()) {
+				continue;
+			}
+			member_names.insert(leaf_type.first);
+
+			h5_attributes.push_back(leaf_type);
+		}
+
+		return create_compound(h5_attributes);
+	}
+}
+
+class apply_attribute_visitor_instance_list {
+private:
+	const IfcEntityList::ptr& instances_;
+	int attribute_idx_;
+public:
+	apply_attribute_visitor_instance_list(const IfcEntityList::ptr& instances, int attribute_idx)
+		: instances_(instances)
+		, attribute_idx_(attribute_idx)
+	{}
+
+	template <typename T>
+	typename T::return_type apply(T& t) const {
+		for (auto it = instances_->begin(); it != instances_->end(); ++it) {
+			apply_attribute_visitor((**it).data().getArgument(attribute_idx_), (**it).declaration().as_entity()->all_attributes()[attribute_idx_]).apply(t);
+		}
+	}
+};
+
+class all_null_visitor {
+private:
+	bool all_null_;
+public:
+	typedef void return_type;
+
+	all_null_visitor()
+		: all_null_(true)
+	{}
+
+	void operator()(const boost::none_t&) {
+		// Empty on purpose
+	}
+
+	template <typename T>
+	void operator()(const T&) {
+		all_null_ = false;
+	}
+
+	bool all_null() const {
+		return all_null_;
+	}
+};
+
+H5::CompType* type_mapper::operator()(const IfcParse::entity* e, const boost::optional< std::vector<Argument*> >&, int, const hsize_t*) {
 
 	// List of entity instances of this type, no subtypes
 	IfcEntityList::ptr incl_subtypes = ifc_file_.entitiesByType(e->name());
@@ -1219,17 +1329,25 @@ H5::CompType* type_mapper::operator()(const IfcParse::entity* e, IfcEntityList::
 			}
 		}
 
-		IfcEntityList::ptr attribute_select_instances;
-		// What to with aggregates of select?
-		if (padded_ && (*it)->type_of_attribute()->as_named_type() && (*it)->type_of_attribute()->as_named_type()->declared_type()->as_select_type()) {
-			attribute_select_instances.reset(new IfcEntityList);
-			std::for_each(instances->begin(), instances->end(), [idx, attribute_select_instances](IfcUtil::IfcBaseClass* inst) {
-				IfcUtil::IfcBaseClass* attribute_value = *inst->data().getArgument(idx);
-				attribute_select_instances->push(attribute_value);
+		boost::optional< std::vector<Argument*> > attribute_select_instances;
+		
+		const bool is_select = (*it)->type_of_attribute()->as_named_type() && (*it)->type_of_attribute()->as_named_type()->declared_type()->as_select_type();
+		const bool is_select_aggregate = (*it)->type_of_attribute()->as_aggregation_type() &&
+			(*it)->type_of_attribute()->as_aggregation_type()->type_of_element()->as_named_type() &&
+			(*it)->type_of_attribute()->as_aggregation_type()->type_of_element()->as_named_type()->declared_type()->as_select_type();
+
+		if (padded_ && (is_select || is_select_aggregate)) {
+			attribute_select_instances.emplace();
+			std::for_each(instances->begin(), instances->end(), [idx, &attribute_select_instances](IfcUtil::IfcBaseClass* inst) {
+				Argument* attribute_value = inst->data().getArgument(idx);
+				attribute_select_instances->push_back(attribute_value);
 			});
 		}
 
 		const std::string& name = (*it)->name();
+		if (name == "FillStyles") {
+			std::cerr << 1;
+		}
 		const bool is_optional = (*it)->optional();
 		const H5::DataType* type;
 		const std::string qualified_attr_name = e->name() + "." + name;
@@ -1268,7 +1386,7 @@ H5::CompType* type_mapper::operator()(const IfcParse::entity* e, IfcEntityList::
 	return create_compound(h5_attributes);
 }
 
-H5::EnumType* type_mapper::operator()(const IfcParse::enumeration_type* en, IfcEntityList::ptr, int, const hsize_t*) {
+H5::EnumType* type_mapper::operator()(const IfcParse::enumeration_type* en, const boost::optional< std::vector<Argument*> >&, int, const hsize_t*) {
 	return create_enumeration(en->enumeration_items());
 }
 
@@ -1297,9 +1415,8 @@ void type_mapper::operator()() {
 			}
 		}
 
-		IfcEntityList::ptr _;
 		for (auto it = schema.select_types().begin(); it != schema.select_types().end(); ++it) {
-			H5::DataType* dt = (*this)(*it, _);
+			H5::DataType* dt = (*this)(*it);
 			if (dt) {
 				declared_types_[(*it)->type()] = commit(dt, (*it)->name());
 			} else {
@@ -1905,27 +2022,13 @@ H5::DataSet IfcParse::IfcHdf5File::create_dataset(const std::string& path, H5::D
 	return ds;
 }
 
-void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
-	std::set<IfcSchema::Type::Enum> tys;
+void IfcParse::IfcHdf5File::write_population(IfcFile&) {
+	const bool padded = settings_.profile() == IfcParse::Hdf5Settings::padded || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
+	const bool referenced = settings_.profile() == IfcParse::Hdf5Settings::standard_referenced || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
+	
+	sorted_instance_locator locator(*file, this->ifcfile_, referenced);
 
-	// Wth was this?
-	// this->file->close();
-
-	std::set<IfcSchema::Type::Enum> types_with_instiated_selected;
-
-	for (auto it = f.begin(); it != f.end(); ++it) {
-		IfcSchema::Type::Enum ty = it->second->declaration().type();
-		tys.insert(ty);
-		// This already is sorted on entity instance name
-#ifdef SORT_ON_NAME
-		sorted_entities[ty].push_back(static_cast<uint32_t>(it->first));
-#else
-		sorted_entities[ty].push_back(it->second);
-#endif
-	}
-
-	dataset_names.assign(tys.begin(), tys.end());
-	std::sort(dataset_names.begin(), dataset_names.end());
+	dataset_names.assign(locator.begin(), locator.end());
 
 	{
 		hsize_t dataset_names_length = dataset_names.size();
@@ -1943,35 +2046,39 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 		attr.close();
 	}
 
-#ifdef SORT_ON_NAME
-	for (auto it = sorted_entities.begin(); it != sorted_entities.end(); ++it) {
-		std::sort(it->second.begin(), it->second.end());
-	}
-#endif
+	write_visit/*<sorted_instance_locator>*/ visitor(*this->file, padded, referenced, locator, *((type_mapper*)mapper_));
 
-	sorted_instance_locator locator(this->ifcfile_);
-	const bool padded = settings_.profile() == IfcParse::Hdf5Settings::padded || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
-	const bool referenced = settings_.profile() == IfcParse::Hdf5Settings::standard_referenced || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
-	write_visit/*<sorted_instance_locator>*/ visitor(padded, referenced, locator, *((type_mapper*)mapper_));
+	if (referenced) {
+		for (auto dsn_it = dataset_names.begin(); dsn_it != dataset_names.end(); ++dsn_it) {
+			const std::string current_entity_name = IfcSchema::Type::ToString(*dsn_it);
+			const std::string dataset_path = current_entity_name + "_instances";
+
+			hsize_t num_instances = locator.instances(*dsn_it).size();
+			H5::DataType entity_datatype = schema_group.openDataType(current_entity_name);
+
+			create_dataset(dataset_path, entity_datatype, 1, &num_instances).close();
+			entity_datatype.close();
+		}
+	}
 
 	for (auto dsn_it = dataset_names.begin(); dsn_it != dataset_names.end(); ++dsn_it) {
 		
 		const std::string current_entity_name = IfcSchema::Type::ToString(*dsn_it);
+		const std::string dataset_path = current_entity_name + "_instances";
+		const std::vector<IfcUtil::IfcBaseEntity*>& instances = locator.instances(*dsn_it);
+		hsize_t num_instances = instances.size();
+
 		std::cerr << current_entity_name << std::endl;
 
-#ifdef SORT_ON_NAME
-		std::vector<IfcUtil::IfcBaseClass*> instances;
-		const auto& idxs = sorted_entities.find(*dsn_it)->second;
-		std::transform(idxs.begin(), idxs.end(), std::back_inserter(instances), [&f](uint32_t idx) {
-			return f.entityById(idx);
-		});
-#else
-		const std::vector<IfcUtil::IfcBaseClass*>& instances = sorted_entities.find(*it)->second;
-#endif
-		hsize_t num_instances = instances.size();
 		H5::DataType entity_datatype = schema_group.openDataType(current_entity_name);
-		H5::DataSet dataset = create_dataset(current_entity_name + "_instances", entity_datatype, 1, &num_instances);
+		H5::DataSet dataset;
 		
+		if (referenced) {
+			dataset = population_group.openDataSet(dataset_path);
+		} else {
+			dataset = create_dataset(dataset_path, entity_datatype, 1, &num_instances);
+		}
+
 		size_t dataset_size = entity_datatype.getSize() * static_cast<size_t>(num_instances);
 		void* data = allocator.allocate(dataset_size);
 		void* ptr = data;

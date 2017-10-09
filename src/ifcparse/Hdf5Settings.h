@@ -42,7 +42,7 @@ namespace IfcParse {
 		static Profile ProfileFromString(const std::string& s) {
 			if (s == "standard") return standard;
 			if (s == "padded") return padded;
-			if (s == "standard-referenced") return standard_referenced;
+			if (s == "referenced") return standard_referenced;
 			if (s == "padded-referenced") return padded_referenced;
 			throw std::exception("Unrecognized profile");
 		}
