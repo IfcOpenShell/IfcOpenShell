@@ -364,7 +364,15 @@ public:
 
 		const std::vector<IfcUtil::IfcBaseEntity*>& insts = instances(t);
 
-		auto it = std::lower_bound(insts.begin(), insts.end(), v);
+		auto it = std::lower_bound(insts.begin(), insts.end(), v, [](IfcUtil::IfcBaseClass* other, IfcUtil::IfcBaseClass* val) {
+			// An ordering based on ID is not equivalent to an ordering based on pointer address!
+			return other->data().id() < val->data().id();
+		});
+
+		if (it == insts.end()) {
+			throw std::runtime_error("Unable to find instance");
+		}
+
 		b = std::distance(insts.begin(), it);
 		
 		return std::make_pair(a, b);
