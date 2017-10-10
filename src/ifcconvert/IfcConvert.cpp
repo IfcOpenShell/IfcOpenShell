@@ -262,7 +262,7 @@ int main(int argc, char** argv)
     std::string unicode_mode;
 #endif
     short precision;
-
+	double section_height;
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
 #ifdef HAVE_ICU
@@ -273,6 +273,8 @@ int main(int argc, char** argv)
         ("bounds", po::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
+		("section-height", po::value<double>(&section_height),
+		    "Specifies the cut section height for SVG 2D geometry.")
         ("use-element-names",
             "Use entity names instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
@@ -532,6 +534,10 @@ int main(int argc, char** argv)
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = new SvgSerializer(output_temp_filename, settings);
+		if (vmap.count("section-height") != 0) {
+			Logger::Notice("Overriding section height");
+			static_cast<SvgSerializer*>(serializer)->setSectionHeight(section_height);
+		}
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
             static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}
