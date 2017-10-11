@@ -326,6 +326,55 @@ public:
 	int operator()(const IfcEntityListList::ptr& i) const { return i->size(); }
 };
 
+// The REAL token definition from the IFC SPF standard does not necessarily match
+// the output of the C++ ostream formatting operation.
+// REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
+std::string IfcWrite::format(double d) {
+	std::ostringstream oss;
+	oss.imbue(std::locale::classic());
+	oss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << d;
+	const std::string str = oss.str();
+	oss.str("");
+	std::string::size_type e = str.find('e');
+	if (e == std::string::npos) {
+		e = str.find('E');
+	}
+	const std::string mantissa = str.substr(0, e);
+	oss << mantissa;
+	if (mantissa.find('.') == std::string::npos) {
+		oss << ".";
+	}
+	if (e != std::string::npos) {
+		oss << "E";
+		oss << str.substr(e + 1);
+	}
+	return oss.str();
+}
+
+std::string IfcWrite::format(const boost::dynamic_bitset<>& b) {
+	std::ostringstream oss;
+	oss.imbue(std::locale::classic());
+	oss.put('"');
+	oss << std::hex << std::setw(1);
+	unsigned c = (unsigned)b.size();
+	unsigned n = (4 - (c % 4)) & 3;
+	oss << n;
+	for (unsigned i = 0; i < c + n;) {
+		unsigned accum = 0;
+		for (int j = 0; j < 4; ++j, ++i) {
+			unsigned bit = i < n ? 0 : b.test(c - i + n - 1) ? 1 : 0;
+			accum |= bit << (3 - j);
+		}
+		oss << accum;
+	}
+	oss.put('"');
+	return oss.str();
+}
+
+std::string IfcWrite::format(bool b) {
+	return b ? ".T." : ".F.";
+}
+
 class StringBuilderVisitor : public boost::static_visitor<void> {
 private:
 	StringBuilderVisitor(const StringBuilderVisitor&); //N/A
@@ -340,55 +389,7 @@ private:
 		}
 		data << ")";
 	}
-	// The REAL token definition from the IFC SPF standard does not necessarily match
-	// the output of the C++ ostream formatting operation.
-	// REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
-	std::string format_double(const double& d) {
-		std::ostringstream oss;
-		oss.imbue(std::locale::classic());
-		oss << std::setprecision(std::numeric_limits<double>::digits10) << d;
-		const std::string str = oss.str();
-		oss.str("");
-		std::string::size_type e = str.find('e');
-		if (e == std::string::npos) {
-			e = str.find('E');
-		}
-		const std::string mantissa = str.substr(0,e);
-		oss << mantissa;
-		if (mantissa.find('.') == std::string::npos) {
-			oss << ".";
-		}
-		if (e != std::string::npos) {
-			oss << "E";
-			oss << str.substr(e+1);
-		}
-		return oss.str();
-	}
-
-	std::string format_bool(bool b) {
-		return b ? ".T." : ".F.";
-	}
-
-	std::string format_binary(const boost::dynamic_bitset<>& b) {
-		std::ostringstream oss;
-		oss.imbue(std::locale::classic());
-		oss.put('"');
-		oss << std::hex << std::setw(1);
-		unsigned c = (unsigned)b.size();
-		unsigned n = (4 - (c % 4)) & 3;
-		oss << n;
-		for (unsigned i = 0; i < c + n;) {
-			unsigned accum = 0;
-			for (int j = 0; j < 4; ++j, ++i) {
-				unsigned bit = i < n ? 0 : b.test(c - i + n - 1) ? 1 : 0;
-				accum |= bit << (3-j);
-			}
-			oss << accum;
-		}
-		oss.put('"');
-		return oss.str();
-	}
-
+	
 	bool upper;
 public:
 	StringBuilderVisitor(std::ostringstream& stream, bool upper = false) 
@@ -396,9 +397,9 @@ public:
 	void operator()(const boost::none_t& /*i*/) { data << "$"; }
 	void operator()(const IfcWriteArgument::Derived& /*i*/) { data << "*"; }
 	void operator()(const int& i) { data << i; }
-	void operator()(const bool& i) { data << format_bool(i); }
-	void operator()(const double& i) { data << format_double(i); }
-	void operator()(const boost::dynamic_bitset<>& i) { data << format_binary(i); }
+	void operator()(const bool& i) { data << IfcWrite::format(i); }
+	void operator()(const double& i) { data << IfcWrite::format(i); }
+	void operator()(const boost::dynamic_bitset<>& i) { data << IfcWrite::format(i); }
 	void operator()(const std::string& i) { 
 		std::string s = i;
 		if (upper) {
@@ -470,7 +471,7 @@ void StringBuilderVisitor::serialize(const std::vector<double>& i) {
 	data << "(";
 	for (std::vector<double>::const_iterator it = i.begin(); it != i.end(); ++it) {
 		if (it != i.begin()) data << ",";
-		data << format_double(*it);
+		data << IfcWrite::format(*it);
 	}
 	data << ")";
 }
@@ -480,7 +481,7 @@ void StringBuilderVisitor::serialize(const std::vector<bool>& i) {
 	data << "(";
 	for (std::vector<bool>::const_iterator it = i.begin(); it != i.end(); ++it) {
 		if (it != i.begin()) data << ",";
-		data << format_bool(*it);
+		data << IfcWrite::format(*it);
 	}
 	data << ")";
 }
@@ -490,7 +491,7 @@ void StringBuilderVisitor::serialize(const std::vector< boost::dynamic_bitset<> 
 	data << "(";
 	for (std::vector< boost::dynamic_bitset<> >::const_iterator it = i.begin(); it != i.end(); ++it) {
 		if (it != i.begin()) data << ",";
-		data << format_binary(*it);
+		data << IfcWrite::format(*it);
 	}
 	data << ")";
 }

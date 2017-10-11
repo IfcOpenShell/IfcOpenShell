@@ -159,6 +159,8 @@ namespace IfcParse {
 			write_schema(schema_, ifcfile_);
 			write_population(ifcfile_);
 		};
+
+		static void convert_to_spf(const std::string& name, std::ostream& output);
 	};
 
 }

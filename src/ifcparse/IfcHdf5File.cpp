@@ -1,5 +1,7 @@
 #include "../ifcparse/IfcHdf5File.h"
+#include "../ifcparse/IfcWrite.h"
 
+#include <bitset>
 #include <limits>
 #include <H5pubconf.h>
 #include <boost/lexical_cast.hpp>
@@ -12,7 +14,8 @@ static boost::optional< std::vector<Argument*> > no_instances = boost::none;
 
 class type_mapper {
 public:
-	type_mapper(IfcParse::IfcFile& ifc_file, H5::H5File* hdf5_file, const IfcParse::Hdf5Settings& settings);
+	type_mapper();
+	type_mapper(IfcParse::IfcFile* ifc_file, H5::H5File* hdf5_file, const IfcParse::Hdf5Settings& settings);
 
 	H5::DataType* commit(H5::DataType* dt, const std::string& name);
 	
@@ -30,7 +33,7 @@ private:
 	bool padded_;
 	bool referenced_;
 	
-	IfcParse::IfcFile& ifc_file_;
+	IfcParse::IfcFile* ifc_file_;
 	H5::H5File* hdf5_file_;
 	H5::Group schema_group_;
 	H5::DataType* instance_reference_;
@@ -140,7 +143,8 @@ void advance(void*& ptr, size_t n) {
 
 template <typename T>
 void write(void*& ptr, const T& t) {
-	*((T*)ptr) = t;
+	// *((T*)ptr) = t;
+	memcpy(ptr, &t, sizeof(T));
 	advance(ptr, sizeof(T));
 }
 
@@ -416,7 +420,9 @@ public:
 			break;
 		case H5T_STRING:
 			if (datatype_ == H5::StrType(H5::PredType::C_S1, H5T_VARIABLE)) {
-				write(ptr, new char(0));
+				// write(ptr, new char(0));
+				memset(ptr, 0, sizeof(char*));
+				advance(ptr, sizeof(char*));
 			} else {
 				write_string_of_size(ptr, datatype_.getSize(), "");
 			}
@@ -818,20 +824,53 @@ std::string type_mapper::flatten_aggregate_name(const IfcParse::parameter_type* 
 	}
 }
 
-type_mapper::type_mapper(IfcParse::IfcFile& ifc_file, H5::H5File* hdf5_file, const IfcParse::Hdf5Settings& settings)
+type_mapper::type_mapper() {
+	default_type_names_[IfcParse::simple_type::logical_type] = "logical";
+	default_type_names_[IfcParse::simple_type::boolean_type] = "boolean";
+	default_type_names_[IfcParse::simple_type::binary_type] = "binary";
+	default_type_names_[IfcParse::simple_type::real_type] = "real";
+	default_type_names_[IfcParse::simple_type::number_type] = "number";
+	default_type_names_[IfcParse::simple_type::string_type] = "string";
+	default_type_names_[IfcParse::simple_type::integer_type] = "integer";
+
+	default_cpp_type_names_[IfcUtil::Argument_BOOL] = "boolean";
+	default_cpp_type_names_[IfcUtil::Argument_DOUBLE] = "real";
+	default_cpp_type_names_[IfcUtil::Argument_STRING] = "string";
+	default_cpp_type_names_[IfcUtil::Argument_INT] = "integer";
+}
+
+type_mapper::type_mapper(IfcParse::IfcFile* ifc_file, H5::H5File* hdf5_file, const IfcParse::Hdf5Settings& settings)
 	: ifc_file_(ifc_file)
 	, hdf5_file_(hdf5_file)
 	, settings_(settings)
 	, padded_(settings_.profile() == IfcParse::Hdf5Settings::padded || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced)
 	, referenced_(settings_.profile() == IfcParse::Hdf5Settings::standard_referenced || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced)
 {
-	schema_group_ = hdf5_file_->openGroup(ifc_file_.schema()->name() + "_encoding");
-
-	default_types_.resize(IfcParse::simple_type::datatype_COUNT);
 	default_type_names_.resize(IfcParse::simple_type::datatype_COUNT);
 	default_cpp_type_names_.resize(IfcUtil::Argument_UNKNOWN);
-	declared_types_.resize(IfcSchema::Type::UNDEFINED);
 
+	default_type_names_[IfcParse::simple_type::logical_type] = "logical";
+	default_type_names_[IfcParse::simple_type::boolean_type] = "boolean";
+	default_type_names_[IfcParse::simple_type::binary_type] = "binary";
+	default_type_names_[IfcParse::simple_type::real_type] = "real";
+	default_type_names_[IfcParse::simple_type::number_type] = "number";
+	default_type_names_[IfcParse::simple_type::string_type] = "string";
+	default_type_names_[IfcParse::simple_type::integer_type] = "integer";
+
+	default_cpp_type_names_[IfcUtil::Argument_BOOL] = "boolean";
+	default_cpp_type_names_[IfcUtil::Argument_DOUBLE] = "real";
+	default_cpp_type_names_[IfcUtil::Argument_STRING] = "string";
+	default_cpp_type_names_[IfcUtil::Argument_INT] = "integer";
+
+	if (!ifc_file_ && !hdf5_file_) {
+		// This mapper is only used to construct leaf names for select compounds
+		return;
+	}
+
+	schema_group_ = hdf5_file_->openGroup(ifc_file_->schema()->name() + "_encoding");
+
+	default_types_.resize(IfcParse::simple_type::datatype_COUNT);
+	declared_types_.resize(IfcSchema::Type::UNDEFINED);
 
 	if (referenced_) {
 		instance_reference_ = commit(new H5::PredType(H5::PredType::STD_REF_DSETREG), "_HDF_INSTANCE_REFERENCE_HANDLE_");
@@ -862,19 +901,6 @@ type_mapper::type_mapper(IfcParse::IfcFile& ifc_file, H5::H5File* hdf5_file, con
 	default_types_[IfcParse::simple_type::number_type] = &H5::PredType::NATIVE_DOUBLE;
 	default_types_[IfcParse::simple_type::string_type] = new H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
 	default_types_[IfcParse::simple_type::integer_type] = &H5::PredType::NATIVE_INT;
-
-	default_type_names_[IfcParse::simple_type::logical_type] = "logical";
-	default_type_names_[IfcParse::simple_type::boolean_type] = "boolean";
-	default_type_names_[IfcParse::simple_type::binary_type] = "binary";
-	default_type_names_[IfcParse::simple_type::real_type] = "real";
-	default_type_names_[IfcParse::simple_type::number_type] = "number";
-	default_type_names_[IfcParse::simple_type::string_type] = "string";
-	default_type_names_[IfcParse::simple_type::integer_type] = "integer";
-
-	default_cpp_type_names_[IfcUtil::Argument_BOOL] = "boolean";
-	default_cpp_type_names_[IfcUtil::Argument_DOUBLE] = "real";
-	default_cpp_type_names_[IfcUtil::Argument_STRING] = "string";
-	default_cpp_type_names_[IfcUtil::Argument_INT] = "integer";
 }
 
 H5::DataType* type_mapper::commit(H5::DataType* dt, const std::string& name) {
@@ -1067,6 +1093,8 @@ std::pair<std::string, const H5::DataType*> type_mapper::make_select_leaf(const 
 	std::string name;
 	const H5::DataType* dt = 0;
 
+	const bool should_return_type = ifc_file_ != nullptr && hdf5_file_ != nullptr;
+
 	if (decl) {
 		while (decl->as_type_declaration()) {
 			const IfcParse::parameter_type* leaf_pt = decl->as_type_declaration()->declared_type();
@@ -1100,21 +1128,21 @@ std::pair<std::string, const H5::DataType*> type_mapper::make_select_leaf(const 
 					std::vector< IfcParse::IfcHdf5File::compound_member > members;
 					members.push_back(std::make_pair(std::string("length"), new H5::PredType(H5::PredType::NATIVE_UINT32)));
 					members.push_back(std::make_pair(std::string("data"), new H5::StrType(H5::PredType::C_S1, (size_t)visitor.max_length()[0] + 1)));
-					dt = create_compound(members);
+					if (should_return_type) dt = create_compound(members);
 
 				} else {
-					dt = default_types_[st->declared_type()];
+					if (should_return_type) dt = default_types_[st->declared_type()];
 				}
 				break;
 			} else if (at) {
 				name = flatten_aggregate_name(at);
-				dt = (*this)(at);
+				if (should_return_type) dt = (*this)(at);
 				break;
 			}
 		}
 	}
 
-	if (!dt) {
+	if (!dt && should_return_type) {
 		if (decl->as_entity()) {
 			name = "instance";
 			dt = instance_reference_;
@@ -1249,7 +1277,7 @@ public:
 H5::CompType* type_mapper::operator()(const IfcParse::entity* e, const boost::optional< std::vector<Argument*> >&, int, const hsize_t*) {
 
 	// List of entity instances of this type, no subtypes
-	IfcEntityList::ptr incl_subtypes = ifc_file_.entitiesByType(e->name());
+	IfcEntityList::ptr incl_subtypes = ifc_file_->entitiesByType(e->name());
 	IfcEntityList::ptr instances(new IfcEntityList);
 	if (incl_subtypes) {
 		for (auto it = incl_subtypes->begin(); it != incl_subtypes->end(); ++it) {
@@ -1399,7 +1427,7 @@ H5::EnumType* type_mapper::operator()(const IfcParse::enumeration_type* en, cons
 }
 
 void type_mapper::operator()() {
-	const IfcParse::schema_definition& schema = *ifc_file_.schema();
+	const IfcParse::schema_definition& schema = *ifc_file_->schema();
 
 	for (auto it = schema.enumeration_types().begin(); it != schema.enumeration_types().end(); ++it) {
 		declared_types_[(*it)->type()] = commit((*this)(*it), (*it)->name());
@@ -1891,7 +1919,7 @@ void IfcParse::IfcHdf5File::write_schema(const IfcParse::schema_definition& sche
 	
 	// init_default_types();
 
-	mapper_ = new type_mapper(ifc_file, file, settings_);
+	mapper_ = new type_mapper(&ifc_file, file, settings_);
 	(*(type_mapper*)mapper_)();
 };
 
@@ -2678,3 +2706,334 @@ void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
 	}
 }
 */
+
+bool is_instance_ref(H5::DataType* dt) {
+	if (dt->getClass() != H5T_COMPOUND) return false;
+	H5::CompType* ct = (H5::CompType*) dt;
+	return ct->getMemberName(0) == "_HDF5_dataset_index_";
+}
+
+template <typename T>
+T read_(void* buffer, H5::DataType* dt) {
+	(void*)dt;
+	T t;
+	memcpy(&t, buffer, sizeof(T));
+	return t;
+}
+
+template <typename T>
+T read(void* buffer, H5::DataType* dt) {
+	return read_<T>(buffer, dt);
+}
+
+template <>
+int read(void* buffer, H5::DataType* dt) {
+	// TODO: Check for overflow
+	// TODO: Check signed
+	int i;
+	switch (dt->getSize()) {
+	case 1: i = (int) read_<int_of_size<1>::type>(buffer, dt); break;
+	case 2: i = (int) read_<int_of_size<2>::type>(buffer, dt); break;
+	case 4: i = (int) read_<int_of_size<4>::type>(buffer, dt); break;
+	case 8: i = (int) read_<int_of_size<8>::type>(buffer, dt); break;
+	default: throw std::runtime_error("Unexpected integer width");
+	}
+	return i;
+}
+
+template <>
+double read(void* buffer, H5::DataType* dt) {
+	double d;
+	switch (dt->getSize()) {
+	case 4: d = read_<float_of_size<4>::type>(buffer, dt); break;
+	case 8: d = read_<float_of_size<8>::type>(buffer, dt); break;
+	default: throw std::runtime_error("Unexpected float width");
+	}
+	return d;
+}
+
+static const std::bitset<64> many_trues(std::numeric_limits<unsigned long>::max());
+static const std::string no_name = "NO_NAME";
+
+class instance_resolver {
+private:
+	H5::H5File& file_;
+	std::vector<std::string> dataset_names_;
+
+public:
+	instance_resolver(H5::H5File& file)
+		: file_(file)
+	{
+		H5::Group schema_group = file_.openGroup("IFC2X3_encoding");
+		H5::Attribute names = schema_group.openAttribute("iso_10303_26_data_set_names");
+		H5::DataType datatype = names.getDataType();
+		if (datatype.getClass() != H5T_STRING || H5Tis_variable_str(datatype.getId()) <= 0) {
+			throw std::runtime_error("Expected variable string attribute");
+		}
+
+		H5::DataSpace dataspace = names.getSpace();
+		if (dataspace.getSimpleExtentNdims() != 1) {
+			throw std::runtime_error("Expected one-dimensional attribute");
+		}
+
+		hsize_t dim;
+		dataspace.getSimpleExtentDims(&dim, NULL);
+		dataset_names_.reserve(dim);
+
+		void* buffer;
+		uint8_t* ptr;
+		buffer = ptr = new uint8_t[datatype.getSize() * (size_t) dim];
+		names.read(datatype, buffer);
+
+		while (dim--) {
+			dataset_names_.push_back(*(char**) ptr);
+			ptr += datatype.getSize();
+		}
+
+		H5Dvlen_reclaim(datatype.getId(), dataspace.getId(), H5P_DEFAULT, buffer);
+		delete[] buffer;
+
+		dataspace.close();
+		datatype.close();
+		names.close();
+		schema_group.close();
+	}
+
+	size_t instance_name(void* data, H5::CompType* dt) {
+		hsize_t pair[2];
+		for (int i = 0; i < 2; ++i) {
+			H5::DataType mt = dt->getMemberDataType(i);
+			size_t offset = dt->getMemberOffset(i);
+			pair[i] = read<int>((uint8_t*)data + offset, &mt);
+		}
+
+		const std::string& nm = dataset_names_[pair[0]];
+
+		H5::DataSet dataset = file_.openDataSet("population/" + nm + "_instances");
+		H5::CompType datatype = dataset.getCompType();
+		H5::DataSpace dataspace = dataset.getSpace();
+		if (dataspace.getSimpleExtentNdims() != 1) {
+			throw std::runtime_error("Expected one-dimensional data");
+		}
+		dataspace.selectElements(H5S_SELECT_SET, 1, pair + 1);
+		const hsize_t one = 1;
+		H5::DataSpace memspace(1, &one);
+
+		uint8_t* buffer = new uint8_t[datatype.getSize()];
+		dataset.read(buffer, datatype, memspace, dataspace);
+
+		int idx = datatype.getMemberIndex("Entity-Instance-Identifier");
+		size_t inst_name_offset = datatype.getMemberOffset(idx);
+		H5::DataType member_type = datatype.getMemberDataType(idx);
+
+		size_t inst_name = read<int>((uint8_t*)buffer + inst_name_offset, &member_type);
+		
+		member_type.close();
+		memspace.close();
+		datatype.close();
+		dataspace.close();
+		dataset.close();
+
+		delete[] buffer;
+
+		return inst_name;
+	}
+};
+
+void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::bitset<64>& bitmask = many_trues) {
+	if (dt->getClass() == H5T_COMPOUND) {
+
+		// std::vector<IfcParse::entity::attribute*> schema_attributes;
+		std::vector<bool> derived;
+		std::vector<std::string> attribute_names;
+		std::vector<std::string>::const_iterator attribute_name_it;
+		if (&name != &no_name) {
+			auto entity = get_schema().declaration_by_name(IfcSchema::Type::FromString(boost::to_upper_copy(name)))->as_entity();
+			auto attributes = entity->all_attributes();
+			std::transform(attributes.begin(), attributes.end(), std::back_inserter(attribute_names), [](const IfcParse::entity::attribute* attr) {
+				return attr->name();
+			});
+			derived = entity->derived();
+			attribute_name_it = attribute_names.begin();
+		}
+
+		H5::CompType* ct = (H5::CompType*) dt;
+		const auto is_ref = is_instance_ref(dt);
+		if (is_ref) {
+			output << "#" << resolver.instance_name(buffer, ct);
+		} else {
+			int ifc_idx = 0;
+			const std::bitset<64>* mask = &bitmask;
+			std::string select_valuation;
+			bool is_instance = false;
+			bool is_select = false;
+			bool is_selected_simple_type = false;
+			bool select_valuation_encountered = false;
+
+			for (int i = 0; i < ct->getNmembers(); ++i) {
+				const std::string member_name = ct->getMemberName(i);
+				
+				const size_t offs = ct->getMemberOffset(i);
+				void* member_ptr = (uint8_t*)buffer + offs;
+				H5::DataType member_type = ct->getMemberDataType(i);
+
+				if (member_name == "set_unset_bitmap") {
+					mask = new std::bitset<64>(read<int>(member_ptr, &member_type));
+				} else if (member_name == "Entity-Instance-Identifier") {
+					is_instance = true;
+					output << "#" << read<int>(member_ptr, &member_type) << "=" << boost::to_upper_copy(name) << "(";
+				} else if (member_name == "type_code") {
+					is_select = true;
+					IfcSchema::Type::Enum ty = (IfcSchema::Type::Enum) read<int>(member_ptr, &member_type);
+					auto decl = get_schema().declaration_by_name(ty);
+					if (decl->as_entity()) {
+						select_valuation = "instance-value";
+					} else {
+						std::string type_string = IfcSchema::Type::ToString(ty);
+						boost::to_upper(type_string);
+						output << type_string << "(";
+						IfcParse::Hdf5Settings settings;
+						select_valuation = type_mapper(nullptr, nullptr, settings).make_select_leaf(decl, no_instances).first;
+						is_selected_simple_type = true;
+					}
+				} else {
+					if (is_select) {
+						if (member_name == select_valuation) {
+							visit(resolver, output, member_ptr, &member_type, name, many_trues);
+							select_valuation_encountered = true;
+						}
+					} else {
+						while (member_name != *attribute_name_it) {
+							if (ifc_idx) {
+								output << ",";
+							}
+							attribute_name_it++;
+							ifc_idx++;
+							output << "*";
+						}
+						if (ifc_idx) {
+							output << ",";
+						}
+						if ((*mask)[ifc_idx]) {
+							visit(resolver, output, member_ptr, &member_type, name, many_trues);
+						} else {
+							output << "$";
+						}
+						ifc_idx++;
+						attribute_name_it++;
+					}
+				}
+				member_type.close();
+			}
+			if (is_select && !select_valuation_encountered) {
+				throw std::runtime_error("Select valuation not encountered in compound");
+			}
+			if (mask != &many_trues) {
+				delete mask;
+			}
+			if (is_selected_simple_type || is_instance) {
+				output << ")";
+				if (is_instance) {
+					output << ";" << std::endl;
+				}
+			}
+		}
+	} else if (dt->getClass() == H5T_VLEN) {
+		hvl_t* ht = (hvl_t*)buffer;
+		H5::VarLenType* vt = (H5::VarLenType*) dt;
+		H5::DataType dt2 = vt->getSuper();
+		output << "(";
+		for (size_t i = 0; i < ht->len; ++i) {
+			if (i) {
+				output << ",";
+			}
+			visit(resolver, output, (uint8_t*)ht->p + i * dt2.getSize(), &dt2);
+		}
+		output << ")";
+		dt2.close();
+	} else if (dt->getClass() == H5T_STRING) {
+		const bool is_varlen = H5Tis_variable_str(dt->getId()) > 0;
+		if (is_varlen) {
+			const char* c = read<const char*>(buffer, dt);
+			output << "'" << c << "'";
+		} else {
+			throw std::runtime_error("blurgfh");
+		}
+	} else if (dt->getClass() == H5T_INTEGER) {
+		output << read<int>(buffer, dt);
+	} else if (dt->getClass() == H5T_FLOAT) {
+		output << IfcWrite::format(read<double>(buffer, dt));
+	} else if (dt->getClass() == H5T_ENUM) {
+		const char *enum_value;
+		char *to_free;
+		enum_value = to_free = H5Tget_member_name(dt->getId(), read<int>(buffer, dt));
+		char substr[2] = { 0,0 };
+		const char BOOLEAN[] = "BOOLEAN-";
+		const char LOGICAL[] = "LOGICAL-";
+		if (strstr(enum_value, BOOLEAN) || strstr(enum_value, LOGICAL)) {
+			// Hack to convert BOOLEAN-TRUE et al to T
+			// Boolean and logical are of the same length coincedentally
+			substr[0] = enum_value[strlen(BOOLEAN)];
+			enum_value = substr;
+		} 
+		output << "." << enum_value << ".";
+		H5free_memory(to_free);
+	} else {
+		throw std::runtime_error("Unexpected datatype encountered");
+	}
+}
+
+struct hdf5_output_info {
+	H5::H5File& file;
+	std::ostream& output;
+};
+
+herr_t iterate(hid_t, const char *name_, const H5O_info_t *object_info, void *op_data) {
+	H5::H5File& f = ((hdf5_output_info*)op_data)->file;
+	std::ostream& output = ((hdf5_output_info*)op_data)->output;
+
+	instance_resolver resolver(f);
+
+	if (object_info->type == H5O_TYPE_DATASET) {
+		std::string name = name_;
+
+		H5::DataSet dataset = f.openDataSet(name);
+		H5::DataType datatype = dataset.getDataType();
+		H5::DataSpace dataspace = dataset.getSpace();
+		if (dataspace.getSimpleExtentNdims() != 1) {
+			throw std::runtime_error("Expected one-dimensional data");
+		}
+		hsize_t dim;
+		dataspace.getSimpleExtentDims(&dim, NULL);
+		uint8_t* buffer, *ptr;
+		buffer = ptr = new uint8_t[(size_t) dim * datatype.getSize()];
+		dataset.read(buffer, datatype);
+
+		auto slash = name.find_last_of('/');
+		if (slash != std::string::npos) {
+			name = name.substr(slash + 1);
+		}
+		auto under = name.find('_');
+		if (under != std::string::npos) {
+			name = name.substr(0, under);
+		}
+
+		while (dim--) {
+			visit(resolver, output, ptr, &datatype, name);
+			ptr += datatype.getSize();
+		}
+
+		datatype.close();
+		dataspace.close();
+		dataset.close();
+
+		delete[] buffer;
+	}
+	return 0;
+}
+
+void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream& output) {
+	H5::H5File f(name, H5F_ACC_RDONLY);
+	hdf5_output_info info{ f,output };
+	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, iterate, &info);
+}

@@ -35,6 +35,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "../ifcparse/Hdf5Settings.h"
+#include "../ifcparse/IfcHdf5File.h"
 
 #include "../ifcgeom/IfcGeomIterator.h"
 
@@ -72,6 +73,7 @@ void printUsage(const boost::program_options::options_description& generic_optio
 	          << "  .xml   XML            Property definitions and decomposition tree" << std::endl
 			  << "  .svg   SVG            Scalable Vector Graphics (2d floor plan)" << std::endl
 			  << "  .hdf   HDF5           Efficient binary IFC serialization" << std::endl
+			  << "  .ifc   IFC-SPF        Standard p21 IFC serialization" << std::endl
 	          << std::endl
 	          << "Command line options" << std::endl << generic_options << std::endl
 	          << "Advanced options" << std::endl << geom_options << std::endl;
@@ -303,6 +305,28 @@ int main(int argc, char** argv) {
 		write_log();
 		// std::cin.get();
 		return exit_code;
+	} else if (output_extension == ".ifc") {
+		bool success = false;
+		const std::string input_extension = input_filename.substr(input_filename.size() - 4);
+		if (input_extension == ".ifc") {
+			IfcParse::IfcFile f;
+			if (f.Init(input_filename)) {
+				std::ofstream of(output_filename.c_str());
+				of << f;
+				success = true;
+			} else {
+				Logger::Message(Logger::LOG_ERROR, "Unable to parse .ifc file");
+			}
+		} else if (input_extension == ".hdf") {
+			std::ofstream fs(output_filename.c_str());
+			IfcParse::IfcHdf5File::convert_to_spf(input_filename, fs);
+			success = true;
+		} else {
+			Logger::Message(Logger::LOG_ERROR, "Unknown input extension");
+		}
+
+		write_log();
+		return success ? 0 : 1;
 	}
 
 	IfcGeom::IteratorSettings settings;

@@ -37,6 +37,10 @@
 
 namespace IfcWrite {
 
+	std::string format(bool b);
+	std::string format(double d);
+	std::string format(const boost::dynamic_bitset<>& b);
+	
 	/// This class is a writable container for attributes. A fundamental
 	/// difference with the attribute types counterparts defined in the 
 	/// IfcParse namespace is that this class has a Boost.Variant member
