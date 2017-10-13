@@ -20,9 +20,10 @@
 import operator
 
 import nodes
+import codegen
 import templates
 
-class SchemaClass:
+class SchemaClass(codegen.Base):
     def __init__(self, mapping):
         
         class UnmetDependenciesException(Exception): pass
@@ -191,10 +192,8 @@ class SchemaClass:
                            '}','',''))
                            
         self.str = "\n".join(statements)
+        
+        self.file_name = '%s-schema.cpp'%self.schema_name
+
     def __repr__(self):
         return self.str
-    def emit(self):
-        f = open('%s-schema.cpp'%self.schema_name, 'w', encoding='utf-8')
-        f.write(str(self))
-        f.close()
-
