@@ -51,7 +51,7 @@ namespace Ifc4 {
 const char* const Identifier = "IFC4";
 
 // Forward definitions
-class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; class IfcActuatorType; class IfcAddress; class IfcAdvancedBrep; class IfcAdvancedBrepWithVoids; class IfcAdvancedFace; class IfcAirTerminal; class IfcAirTerminalBox; class IfcAirTerminalBoxType; class IfcAirTerminalType; class IfcAirToAirHeatRecovery; class IfcAirToAirHeatRecoveryType; class IfcAlarm; class IfcAlarmType; class IfcAnnotation; class IfcAnnotationFillArea; class IfcApplication; class IfcAppliedValue; class IfcApproval; class IfcApprovalRelationship; class IfcArbitraryClosedProfileDef; class IfcArbitraryOpenProfileDef; class IfcArbitraryProfileDefWithVoids; class IfcAsset; class IfcAsymmetricIShapeProfileDef; class IfcAudioVisualAppliance; class IfcAudioVisualApplianceType; class IfcAxis1Placement; class IfcAxis2Placement2D; class IfcAxis2Placement3D; class IfcBSplineCurve; class IfcBSplineCurveWithKnots; class IfcBSplineSurface; class IfcBSplineSurfaceWithKnots; class IfcBeam; class IfcBeamStandardCase; class IfcBeamType; class IfcBlobTexture; class IfcBlock; class IfcBoiler; class IfcBoilerType; class IfcBooleanClippingResult; class IfcBooleanResult; class IfcBoundaryCondition; class IfcBoundaryCurve; class IfcBoundaryEdgeCondition; class IfcBoundaryFaceCondition; class IfcBoundaryNodeCondition; class IfcBoundaryNodeConditionWarping; class IfcBoundedCurve; class IfcBoundedSurface; class IfcBoundingBox; class IfcBoxedHalfSpace; class IfcBuilding; class IfcBuildingElement; class IfcBuildingElementPart; class IfcBuildingElementPartType; class IfcBuildingElementProxy; class IfcBuildingElementProxyType; class IfcBuildingElementType; class IfcBuildingStorey; class IfcBuildingSystem; class IfcBurner; class IfcBurnerType; class IfcCShapeProfileDef; class IfcCableCarrierFitting; class IfcCableCarrierFittingType; class IfcCableCarrierSegment; class IfcCableCarrierSegmentType; class IfcCableFitting; class IfcCableFittingType; class IfcCableSegment; class IfcCableSegmentType; class IfcCartesianPoint; class IfcCartesianPointList; class IfcCartesianPointList3D; class IfcCartesianTransformationOperator; class IfcCartesianTransformationOperator2D; class IfcCartesianTransformationOperator2DnonUniform; class IfcCartesianTransformationOperator3D; class IfcCartesianTransformationOperator3DnonUniform; class IfcCenterLineProfileDef; class IfcChiller; class IfcChillerType; class IfcChimney; class IfcChimneyType; class IfcCircle; class IfcCircleHollowProfileDef; class IfcCircleProfileDef; class IfcCivilElement; class IfcCivilElementType; class IfcClassification; class IfcClassificationReference; class IfcClosedShell; class IfcCoil; class IfcCoilType; class IfcColourRgb; class IfcColourRgbList; class IfcColourSpecification; class IfcColumn; class IfcColumnStandardCase; class IfcColumnType; class IfcCommunicationsAppliance; class IfcCommunicationsApplianceType; class IfcComplexProperty; class IfcComplexPropertyTemplate; class IfcCompositeCurve; class IfcCompositeCurveOnSurface; class IfcCompositeCurveSegment; class IfcCompositeProfileDef; class IfcCompressor; class IfcCompressorType; class IfcCondenser; class IfcCondenserType; class IfcConic; class IfcConnectedFaceSet; class IfcConnectionCurveGeometry; class IfcConnectionGeometry; class IfcConnectionPointEccentricity; class IfcConnectionPointGeometry; class IfcConnectionSurfaceGeometry; class IfcConnectionVolumeGeometry; class IfcConstraint; class IfcConstructionEquipmentResource; class IfcConstructionEquipmentResourceType; class IfcConstructionMaterialResource; class IfcConstructionMaterialResourceType; class IfcConstructionProductResource; class IfcConstructionProductResourceType; class IfcConstructionResource; class IfcConstructionResourceType; class IfcContext; class IfcContextDependentUnit; class IfcControl; class IfcController; class IfcControllerType; class IfcConversionBasedUnit; class IfcConversionBasedUnitWithOffset; class IfcCooledBeam; class IfcCooledBeamType; class IfcCoolingTower; class IfcCoolingTowerType; class IfcCoordinateOperation; class IfcCoordinateReferenceSystem; class IfcCostItem; class IfcCostSchedule; class IfcCostValue; class IfcCovering; class IfcCoveringType; class IfcCrewResource; class IfcCrewResourceType; class IfcCsgPrimitive3D; class IfcCsgSolid; class IfcCurrencyRelationship; class IfcCurtainWall; class IfcCurtainWallType; class IfcCurve; class IfcCurveBoundedPlane; class IfcCurveBoundedSurface; class IfcCurveStyle; class IfcCurveStyleFont; class IfcCurveStyleFontAndScaling; class IfcCurveStyleFontPattern; class IfcCylindricalSurface; class IfcDamper; class IfcDamperType; class IfcDerivedProfileDef; class IfcDerivedUnit; class IfcDerivedUnitElement; class IfcDimensionalExponents; class IfcDirection; class IfcDiscreteAccessory; class IfcDiscreteAccessoryType; class IfcDistributionChamberElement; class IfcDistributionChamberElementType; class IfcDistributionCircuit; class IfcDistributionControlElement; class IfcDistributionControlElementType; class IfcDistributionElement; class IfcDistributionElementType; class IfcDistributionFlowElement; class IfcDistributionFlowElementType; class IfcDistributionPort; class IfcDistributionSystem; class IfcDocumentInformation; class IfcDocumentInformationRelationship; class IfcDocumentReference; class IfcDoor; class IfcDoorLiningProperties; class IfcDoorPanelProperties; class IfcDoorStandardCase; class IfcDoorStyle; class IfcDoorType; class IfcDraughtingPreDefinedColour; class IfcDraughtingPreDefinedCurveFont; class IfcDuctFitting; class IfcDuctFittingType; class IfcDuctSegment; class IfcDuctSegmentType; class IfcDuctSilencer; class IfcDuctSilencerType; class IfcEdge; class IfcEdgeCurve; class IfcEdgeLoop; class IfcElectricAppliance; class IfcElectricApplianceType; class IfcElectricDistributionBoard; class IfcElectricDistributionBoardType; class IfcElectricFlowStorageDevice; class IfcElectricFlowStorageDeviceType; class IfcElectricGenerator; class IfcElectricGeneratorType; class IfcElectricMotor; class IfcElectricMotorType; class IfcElectricTimeControl; class IfcElectricTimeControlType; class IfcElement; class IfcElementAssembly; class IfcElementAssemblyType; class IfcElementComponent; class IfcElementComponentType; class IfcElementQuantity; class IfcElementType; class IfcElementarySurface; class IfcEllipse; class IfcEllipseProfileDef; class IfcEnergyConversionDevice; class IfcEnergyConversionDeviceType; class IfcEngine; class IfcEngineType; class IfcEvaporativeCooler; class IfcEvaporativeCoolerType; class IfcEvaporator; class IfcEvaporatorType; class IfcEvent; class IfcEventTime; class IfcEventType; class IfcExtendedProperties; class IfcExternalInformation; class IfcExternalReference; class IfcExternalReferenceRelationship; class IfcExternalSpatialElement; class IfcExternalSpatialStructureElement; class IfcExternallyDefinedHatchStyle; class IfcExternallyDefinedSurfaceStyle; class IfcExternallyDefinedTextFont; class IfcExtrudedAreaSolid; class IfcExtrudedAreaSolidTapered; class IfcFace; class IfcFaceBasedSurfaceModel; class IfcFaceBound; class IfcFaceOuterBound; class IfcFaceSurface; class IfcFacetedBrep; class IfcFacetedBrepWithVoids; class IfcFailureConnectionCondition; class IfcFan; class IfcFanType; class IfcFastener; class IfcFastenerType; class IfcFeatureElement; class IfcFeatureElementAddition; class IfcFeatureElementSubtraction; class IfcFillAreaStyle; class IfcFillAreaStyleHatching; class IfcFillAreaStyleTiles; class IfcFilter; class IfcFilterType; class IfcFireSuppressionTerminal; class IfcFireSuppressionTerminalType; class IfcFixedReferenceSweptAreaSolid; class IfcFlowController; class IfcFlowControllerType; class IfcFlowFitting; class IfcFlowFittingType; class IfcFlowInstrument; class IfcFlowInstrumentType; class IfcFlowMeter; class IfcFlowMeterType; class IfcFlowMovingDevice; class IfcFlowMovingDeviceType; class IfcFlowSegment; class IfcFlowSegmentType; class IfcFlowStorageDevice; class IfcFlowStorageDeviceType; class IfcFlowTerminal; class IfcFlowTerminalType; class IfcFlowTreatmentDevice; class IfcFlowTreatmentDeviceType; class IfcFooting; class IfcFootingType; class IfcFurnishingElement; class IfcFurnishingElementType; class IfcFurniture; class IfcFurnitureType; class IfcGeographicElement; class IfcGeographicElementType; class IfcGeometricCurveSet; class IfcGeometricRepresentationContext; class IfcGeometricRepresentationItem; class IfcGeometricRepresentationSubContext; class IfcGeometricSet; class IfcGrid; class IfcGridAxis; class IfcGridPlacement; class IfcGroup; class IfcHalfSpaceSolid; class IfcHeatExchanger; class IfcHeatExchangerType; class IfcHumidifier; class IfcHumidifierType; class IfcIShapeProfileDef; class IfcImageTexture; class IfcIndexedColourMap; class IfcIndexedTextureMap; class IfcIndexedTriangleTextureMap; class IfcInterceptor; class IfcInterceptorType; class IfcInventory; class IfcIrregularTimeSeries; class IfcIrregularTimeSeriesValue; class IfcJunctionBox; class IfcJunctionBoxType; class IfcLShapeProfileDef; class IfcLaborResource; class IfcLaborResourceType; class IfcLagTime; class IfcLamp; class IfcLampType; class IfcLibraryInformation; class IfcLibraryReference; class IfcLightDistributionData; class IfcLightFixture; class IfcLightFixtureType; class IfcLightIntensityDistribution; class IfcLightSource; class IfcLightSourceAmbient; class IfcLightSourceDirectional; class IfcLightSourceGoniometric; class IfcLightSourcePositional; class IfcLightSourceSpot; class IfcLine; class IfcLocalPlacement; class IfcLoop; class IfcManifoldSolidBrep; class IfcMapConversion; class IfcMappedItem; class IfcMaterial; class IfcMaterialClassificationRelationship; class IfcMaterialConstituent; class IfcMaterialConstituentSet; class IfcMaterialDefinition; class IfcMaterialDefinitionRepresentation; class IfcMaterialLayer; class IfcMaterialLayerSet; class IfcMaterialLayerSetUsage; class IfcMaterialLayerWithOffsets; class IfcMaterialList; class IfcMaterialProfile; class IfcMaterialProfileSet; class IfcMaterialProfileSetUsage; class IfcMaterialProfileSetUsageTapering; class IfcMaterialProfileWithOffsets; class IfcMaterialProperties; class IfcMaterialRelationship; class IfcMaterialUsageDefinition; class IfcMeasureWithUnit; class IfcMechanicalFastener; class IfcMechanicalFastenerType; class IfcMedicalDevice; class IfcMedicalDeviceType; class IfcMember; class IfcMemberStandardCase; class IfcMemberType; class IfcMetric; class IfcMirroredProfileDef; class IfcMonetaryUnit; class IfcMotorConnection; class IfcMotorConnectionType; class IfcNamedUnit; class IfcObject; class IfcObjectDefinition; class IfcObjectPlacement; class IfcObjective; class IfcOccupant; class IfcOffsetCurve2D; class IfcOffsetCurve3D; class IfcOpenShell; class IfcOpeningElement; class IfcOpeningStandardCase; class IfcOrganization; class IfcOrganizationRelationship; class IfcOrientedEdge; class IfcOuterBoundaryCurve; class IfcOutlet; class IfcOutletType; class IfcOwnerHistory; class IfcParameterizedProfileDef; class IfcPath; class IfcPcurve; class IfcPerformanceHistory; class IfcPermeableCoveringProperties; class IfcPermit; class IfcPerson; class IfcPersonAndOrganization; class IfcPhysicalComplexQuantity; class IfcPhysicalQuantity; class IfcPhysicalSimpleQuantity; class IfcPile; class IfcPileType; class IfcPipeFitting; class IfcPipeFittingType; class IfcPipeSegment; class IfcPipeSegmentType; class IfcPixelTexture; class IfcPlacement; class IfcPlanarBox; class IfcPlanarExtent; class IfcPlane; class IfcPlate; class IfcPlateStandardCase; class IfcPlateType; class IfcPoint; class IfcPointOnCurve; class IfcPointOnSurface; class IfcPolyLoop; class IfcPolygonalBoundedHalfSpace; class IfcPolyline; class IfcPort; class IfcPostalAddress; class IfcPreDefinedColour; class IfcPreDefinedCurveFont; class IfcPreDefinedItem; class IfcPreDefinedProperties; class IfcPreDefinedPropertySet; class IfcPreDefinedTextFont; class IfcPresentationItem; class IfcPresentationLayerAssignment; class IfcPresentationLayerWithStyle; class IfcPresentationStyle; class IfcPresentationStyleAssignment; class IfcProcedure; class IfcProcedureType; class IfcProcess; class IfcProduct; class IfcProductDefinitionShape; class IfcProductRepresentation; class IfcProfileDef; class IfcProfileProperties; class IfcProject; class IfcProjectLibrary; class IfcProjectOrder; class IfcProjectedCRS; class IfcProjectionElement; class IfcProperty; class IfcPropertyAbstraction; class IfcPropertyBoundedValue; class IfcPropertyDefinition; class IfcPropertyDependencyRelationship; class IfcPropertyEnumeratedValue; class IfcPropertyEnumeration; class IfcPropertyListValue; class IfcPropertyReferenceValue; class IfcPropertySet; class IfcPropertySetDefinition; class IfcPropertySetTemplate; class IfcPropertySingleValue; class IfcPropertyTableValue; class IfcPropertyTemplate; class IfcPropertyTemplateDefinition; class IfcProtectiveDevice; class IfcProtectiveDeviceTrippingUnit; class IfcProtectiveDeviceTrippingUnitType; class IfcProtectiveDeviceType; class IfcProxy; class IfcPump; class IfcPumpType; class IfcQuantityArea; class IfcQuantityCount; class IfcQuantityLength; class IfcQuantitySet; class IfcQuantityTime; class IfcQuantityVolume; class IfcQuantityWeight; class IfcRailing; class IfcRailingType; class IfcRamp; class IfcRampFlight; class IfcRampFlightType; class IfcRampType; class IfcRationalBSplineCurveWithKnots; class IfcRationalBSplineSurfaceWithKnots; class IfcRectangleHollowProfileDef; class IfcRectangleProfileDef; class IfcRectangularPyramid; class IfcRectangularTrimmedSurface; class IfcRecurrencePattern; class IfcReference; class IfcRegularTimeSeries; class IfcReinforcementBarProperties; class IfcReinforcementDefinitionProperties; class IfcReinforcingBar; class IfcReinforcingBarType; class IfcReinforcingElement; class IfcReinforcingElementType; class IfcReinforcingMesh; class IfcReinforcingMeshType; class IfcRelAggregates; class IfcRelAssigns; class IfcRelAssignsToActor; class IfcRelAssignsToControl; class IfcRelAssignsToGroup; class IfcRelAssignsToGroupByFactor; class IfcRelAssignsToProcess; class IfcRelAssignsToProduct; class IfcRelAssignsToResource; class IfcRelAssociates; class IfcRelAssociatesApproval; class IfcRelAssociatesClassification; class IfcRelAssociatesConstraint; class IfcRelAssociatesDocument; class IfcRelAssociatesLibrary; class IfcRelAssociatesMaterial; class IfcRelConnects; class IfcRelConnectsElements; class IfcRelConnectsPathElements; class IfcRelConnectsPortToElement; class IfcRelConnectsPorts; class IfcRelConnectsStructuralActivity; class IfcRelConnectsStructuralMember; class IfcRelConnectsWithEccentricity; class IfcRelConnectsWithRealizingElements; class IfcRelContainedInSpatialStructure; class IfcRelCoversBldgElements; class IfcRelCoversSpaces; class IfcRelDeclares; class IfcRelDecomposes; class IfcRelDefines; class IfcRelDefinesByObject; class IfcRelDefinesByProperties; class IfcRelDefinesByTemplate; class IfcRelDefinesByType; class IfcRelFillsElement; class IfcRelFlowControlElements; class IfcRelInterferesElements; class IfcRelNests; class IfcRelProjectsElement; class IfcRelReferencedInSpatialStructure; class IfcRelSequence; class IfcRelServicesBuildings; class IfcRelSpaceBoundary; class IfcRelSpaceBoundary1stLevel; class IfcRelSpaceBoundary2ndLevel; class IfcRelVoidsElement; class IfcRelationship; class IfcReparametrisedCompositeCurveSegment; class IfcRepresentation; class IfcRepresentationContext; class IfcRepresentationItem; class IfcRepresentationMap; class IfcResource; class IfcResourceApprovalRelationship; class IfcResourceConstraintRelationship; class IfcResourceLevelRelationship; class IfcResourceTime; class IfcRevolvedAreaSolid; class IfcRevolvedAreaSolidTapered; class IfcRightCircularCone; class IfcRightCircularCylinder; class IfcRoof; class IfcRoofType; class IfcRoot; class IfcRoundedRectangleProfileDef; class IfcSIUnit; class IfcSanitaryTerminal; class IfcSanitaryTerminalType; class IfcSchedulingTime; class IfcSectionProperties; class IfcSectionReinforcementProperties; class IfcSectionedSpine; class IfcSensor; class IfcSensorType; class IfcShadingDevice; class IfcShadingDeviceType; class IfcShapeAspect; class IfcShapeModel; class IfcShapeRepresentation; class IfcShellBasedSurfaceModel; class IfcSimpleProperty; class IfcSimplePropertyTemplate; class IfcSite; class IfcSlab; class IfcSlabElementedCase; class IfcSlabStandardCase; class IfcSlabType; class IfcSlippageConnectionCondition; class IfcSolarDevice; class IfcSolarDeviceType; class IfcSolidModel; class IfcSpace; class IfcSpaceHeater; class IfcSpaceHeaterType; class IfcSpaceType; class IfcSpatialElement; class IfcSpatialElementType; class IfcSpatialStructureElement; class IfcSpatialStructureElementType; class IfcSpatialZone; class IfcSpatialZoneType; class IfcSphere; class IfcStackTerminal; class IfcStackTerminalType; class IfcStair; class IfcStairFlight; class IfcStairFlightType; class IfcStairType; class IfcStructuralAction; class IfcStructuralActivity; class IfcStructuralAnalysisModel; class IfcStructuralConnection; class IfcStructuralConnectionCondition; class IfcStructuralCurveAction; class IfcStructuralCurveConnection; class IfcStructuralCurveMember; class IfcStructuralCurveMemberVarying; class IfcStructuralCurveReaction; class IfcStructuralItem; class IfcStructuralLinearAction; class IfcStructuralLoad; class IfcStructuralLoadCase; class IfcStructuralLoadConfiguration; class IfcStructuralLoadGroup; class IfcStructuralLoadLinearForce; class IfcStructuralLoadOrResult; class IfcStructuralLoadPlanarForce; class IfcStructuralLoadSingleDisplacement; class IfcStructuralLoadSingleDisplacementDistortion; class IfcStructuralLoadSingleForce; class IfcStructuralLoadSingleForceWarping; class IfcStructuralLoadStatic; class IfcStructuralLoadTemperature; class IfcStructuralMember; class IfcStructuralPlanarAction; class IfcStructuralPointAction; class IfcStructuralPointConnection; class IfcStructuralPointReaction; class IfcStructuralReaction; class IfcStructuralResultGroup; class IfcStructuralSurfaceAction; class IfcStructuralSurfaceConnection; class IfcStructuralSurfaceMember; class IfcStructuralSurfaceMemberVarying; class IfcStructuralSurfaceReaction; class IfcStyleModel; class IfcStyledItem; class IfcStyledRepresentation; class IfcSubContractResource; class IfcSubContractResourceType; class IfcSubedge; class IfcSurface; class IfcSurfaceCurveSweptAreaSolid; class IfcSurfaceFeature; class IfcSurfaceOfLinearExtrusion; class IfcSurfaceOfRevolution; class IfcSurfaceReinforcementArea; class IfcSurfaceStyle; class IfcSurfaceStyleLighting; class IfcSurfaceStyleRefraction; class IfcSurfaceStyleRendering; class IfcSurfaceStyleShading; class IfcSurfaceStyleWithTextures; class IfcSurfaceTexture; class IfcSweptAreaSolid; class IfcSweptDiskSolid; class IfcSweptDiskSolidPolygonal; class IfcSweptSurface; class IfcSwitchingDevice; class IfcSwitchingDeviceType; class IfcSystem; class IfcSystemFurnitureElement; class IfcSystemFurnitureElementType; class IfcTShapeProfileDef; class IfcTable; class IfcTableColumn; class IfcTableRow; class IfcTank; class IfcTankType; class IfcTask; class IfcTaskTime; class IfcTaskTimeRecurring; class IfcTaskType; class IfcTelecomAddress; class IfcTendon; class IfcTendonAnchor; class IfcTendonAnchorType; class IfcTendonType; class IfcTessellatedFaceSet; class IfcTessellatedItem; class IfcTextLiteral; class IfcTextLiteralWithExtent; class IfcTextStyle; class IfcTextStyleFontModel; class IfcTextStyleForDefinedFont; class IfcTextStyleTextModel; class IfcTextureCoordinate; class IfcTextureCoordinateGenerator; class IfcTextureMap; class IfcTextureVertex; class IfcTextureVertexList; class IfcTimePeriod; class IfcTimeSeries; class IfcTimeSeriesValue; class IfcTopologicalRepresentationItem; class IfcTopologyRepresentation; class IfcTransformer; class IfcTransformerType; class IfcTransportElement; class IfcTransportElementType; class IfcTrapeziumProfileDef; class IfcTriangulatedFaceSet; class IfcTrimmedCurve; class IfcTubeBundle; class IfcTubeBundleType; class IfcTypeObject; class IfcTypeProcess; class IfcTypeProduct; class IfcTypeResource; class IfcUShapeProfileDef; class IfcUnitAssignment; class IfcUnitaryControlElement; class IfcUnitaryControlElementType; class IfcUnitaryEquipment; class IfcUnitaryEquipmentType; class IfcValve; class IfcValveType; class IfcVector; class IfcVertex; class IfcVertexLoop; class IfcVertexPoint; class IfcVibrationIsolator; class IfcVibrationIsolatorType; class IfcVirtualElement; class IfcVirtualGridIntersection; class IfcVoidingFeature; class IfcWall; class IfcWallElementedCase; class IfcWallStandardCase; class IfcWallType; class IfcWasteTerminal; class IfcWasteTerminalType; class IfcWindow; class IfcWindowLiningProperties; class IfcWindowPanelProperties; class IfcWindowStandardCase; class IfcWindowStyle; class IfcWindowType; class IfcWorkCalendar; class IfcWorkControl; class IfcWorkPlan; class IfcWorkSchedule; class IfcWorkTime; class IfcZShapeProfileDef; class IfcZone; class IfcAbsorbedDoseMeasure; class IfcAccelerationMeasure; class IfcAmountOfSubstanceMeasure; class IfcAngularVelocityMeasure; class IfcAreaDensityMeasure; class IfcAreaMeasure; class IfcBoolean; class IfcBoxAlignment; class IfcCardinalPointReference; class IfcComplexNumber; class IfcCompoundPlaneAngleMeasure; class IfcContextDependentMeasure; class IfcCountMeasure; class IfcCurvatureMeasure; class IfcDate; class IfcDateTime; class IfcDayInMonthNumber; class IfcDayInWeekNumber; class IfcDescriptiveMeasure; class IfcDimensionCount; class IfcDoseEquivalentMeasure; class IfcDuration; class IfcDynamicViscosityMeasure; class IfcElectricCapacitanceMeasure; class IfcElectricChargeMeasure; class IfcElectricConductanceMeasure; class IfcElectricCurrentMeasure; class IfcElectricResistanceMeasure; class IfcElectricVoltageMeasure; class IfcEnergyMeasure; class IfcFontStyle; class IfcFontVariant; class IfcFontWeight; class IfcForceMeasure; class IfcFrequencyMeasure; class IfcGloballyUniqueId; class IfcHeatFluxDensityMeasure; class IfcHeatingValueMeasure; class IfcIdentifier; class IfcIlluminanceMeasure; class IfcInductanceMeasure; class IfcInteger; class IfcIntegerCountRateMeasure; class IfcIonConcentrationMeasure; class IfcIsothermalMoistureCapacityMeasure; class IfcKinematicViscosityMeasure; class IfcLabel; class IfcLanguageId; class IfcLengthMeasure; class IfcLinearForceMeasure; class IfcLinearMomentMeasure; class IfcLinearStiffnessMeasure; class IfcLinearVelocityMeasure; class IfcLogical; class IfcLuminousFluxMeasure; class IfcLuminousIntensityDistributionMeasure; class IfcLuminousIntensityMeasure; class IfcMagneticFluxDensityMeasure; class IfcMagneticFluxMeasure; class IfcMassDensityMeasure; class IfcMassFlowRateMeasure; class IfcMassMeasure; class IfcMassPerLengthMeasure; class IfcModulusOfElasticityMeasure; class IfcModulusOfLinearSubgradeReactionMeasure; class IfcModulusOfRotationalSubgradeReactionMeasure; class IfcModulusOfSubgradeReactionMeasure; class IfcMoistureDiffusivityMeasure; class IfcMolecularWeightMeasure; class IfcMomentOfInertiaMeasure; class IfcMonetaryMeasure; class IfcMonthInYearNumber; class IfcNonNegativeLengthMeasure; class IfcNormalisedRatioMeasure; class IfcNumericMeasure; class IfcPHMeasure; class IfcParameterValue; class IfcPlanarForceMeasure; class IfcPlaneAngleMeasure; class IfcPositiveLengthMeasure; class IfcPositivePlaneAngleMeasure; class IfcPositiveRatioMeasure; class IfcPowerMeasure; class IfcPresentableText; class IfcPressureMeasure; class IfcPropertySetDefinitionSet; class IfcRadioActivityMeasure; class IfcRatioMeasure; class IfcReal; class IfcRotationalFrequencyMeasure; class IfcRotationalMassMeasure; class IfcRotationalStiffnessMeasure; class IfcSectionModulusMeasure; class IfcSectionalAreaIntegralMeasure; class IfcShearModulusMeasure; class IfcSolidAngleMeasure; class IfcSoundPowerLevelMeasure; class IfcSoundPowerMeasure; class IfcSoundPressureLevelMeasure; class IfcSoundPressureMeasure; class IfcSpecificHeatCapacityMeasure; class IfcSpecularExponent; class IfcSpecularRoughness; class IfcTemperatureGradientMeasure; class IfcTemperatureRateOfChangeMeasure; class IfcText; class IfcTextAlignment; class IfcTextDecoration; class IfcTextFontName; class IfcTextTransformation; class IfcThermalAdmittanceMeasure; class IfcThermalConductivityMeasure; class IfcThermalExpansionCoefficientMeasure; class IfcThermalResistanceMeasure; class IfcThermalTransmittanceMeasure; class IfcThermodynamicTemperatureMeasure; class IfcTime; class IfcTimeMeasure; class IfcTimeStamp; class IfcTorqueMeasure; class IfcURIReference; class IfcVaporPermeabilityMeasure; class IfcVolumeMeasure; class IfcVolumetricFlowRateMeasure; class IfcWarpingConstantMeasure; class IfcWarpingMomentMeasure; 
+class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; class IfcActuatorType; class IfcAddress; class IfcAdvancedBrep; class IfcAdvancedBrepWithVoids; class IfcAdvancedFace; class IfcAirTerminal; class IfcAirTerminalBox; class IfcAirTerminalBoxType; class IfcAirTerminalType; class IfcAirToAirHeatRecovery; class IfcAirToAirHeatRecoveryType; class IfcAlarm; class IfcAlarmType; class IfcAnnotation; class IfcAnnotationFillArea; class IfcApplication; class IfcAppliedValue; class IfcApproval; class IfcApprovalRelationship; class IfcArbitraryClosedProfileDef; class IfcArbitraryOpenProfileDef; class IfcArbitraryProfileDefWithVoids; class IfcAsset; class IfcAsymmetricIShapeProfileDef; class IfcAudioVisualAppliance; class IfcAudioVisualApplianceType; class IfcAxis1Placement; class IfcAxis2Placement2D; class IfcAxis2Placement3D; class IfcBSplineCurve; class IfcBSplineCurveWithKnots; class IfcBSplineSurface; class IfcBSplineSurfaceWithKnots; class IfcBeam; class IfcBeamStandardCase; class IfcBeamType; class IfcBlobTexture; class IfcBlock; class IfcBoiler; class IfcBoilerType; class IfcBooleanClippingResult; class IfcBooleanResult; class IfcBoundaryCondition; class IfcBoundaryCurve; class IfcBoundaryEdgeCondition; class IfcBoundaryFaceCondition; class IfcBoundaryNodeCondition; class IfcBoundaryNodeConditionWarping; class IfcBoundedCurve; class IfcBoundedSurface; class IfcBoundingBox; class IfcBoxedHalfSpace; class IfcBuilding; class IfcBuildingElement; class IfcBuildingElementPart; class IfcBuildingElementPartType; class IfcBuildingElementProxy; class IfcBuildingElementProxyType; class IfcBuildingElementType; class IfcBuildingStorey; class IfcBuildingSystem; class IfcBurner; class IfcBurnerType; class IfcCShapeProfileDef; class IfcCableCarrierFitting; class IfcCableCarrierFittingType; class IfcCableCarrierSegment; class IfcCableCarrierSegmentType; class IfcCableFitting; class IfcCableFittingType; class IfcCableSegment; class IfcCableSegmentType; class IfcCartesianPoint; class IfcCartesianPointList; class IfcCartesianPointList2D; class IfcCartesianPointList3D; class IfcCartesianTransformationOperator; class IfcCartesianTransformationOperator2D; class IfcCartesianTransformationOperator2DnonUniform; class IfcCartesianTransformationOperator3D; class IfcCartesianTransformationOperator3DnonUniform; class IfcCenterLineProfileDef; class IfcChiller; class IfcChillerType; class IfcChimney; class IfcChimneyType; class IfcCircle; class IfcCircleHollowProfileDef; class IfcCircleProfileDef; class IfcCivilElement; class IfcCivilElementType; class IfcClassification; class IfcClassificationReference; class IfcClosedShell; class IfcCoil; class IfcCoilType; class IfcColourRgb; class IfcColourRgbList; class IfcColourSpecification; class IfcColumn; class IfcColumnStandardCase; class IfcColumnType; class IfcCommunicationsAppliance; class IfcCommunicationsApplianceType; class IfcComplexProperty; class IfcComplexPropertyTemplate; class IfcCompositeCurve; class IfcCompositeCurveOnSurface; class IfcCompositeCurveSegment; class IfcCompositeProfileDef; class IfcCompressor; class IfcCompressorType; class IfcCondenser; class IfcCondenserType; class IfcConic; class IfcConnectedFaceSet; class IfcConnectionCurveGeometry; class IfcConnectionGeometry; class IfcConnectionPointEccentricity; class IfcConnectionPointGeometry; class IfcConnectionSurfaceGeometry; class IfcConnectionVolumeGeometry; class IfcConstraint; class IfcConstructionEquipmentResource; class IfcConstructionEquipmentResourceType; class IfcConstructionMaterialResource; class IfcConstructionMaterialResourceType; class IfcConstructionProductResource; class IfcConstructionProductResourceType; class IfcConstructionResource; class IfcConstructionResourceType; class IfcContext; class IfcContextDependentUnit; class IfcControl; class IfcController; class IfcControllerType; class IfcConversionBasedUnit; class IfcConversionBasedUnitWithOffset; class IfcCooledBeam; class IfcCooledBeamType; class IfcCoolingTower; class IfcCoolingTowerType; class IfcCoordinateOperation; class IfcCoordinateReferenceSystem; class IfcCostItem; class IfcCostSchedule; class IfcCostValue; class IfcCovering; class IfcCoveringType; class IfcCrewResource; class IfcCrewResourceType; class IfcCsgPrimitive3D; class IfcCsgSolid; class IfcCurrencyRelationship; class IfcCurtainWall; class IfcCurtainWallType; class IfcCurve; class IfcCurveBoundedPlane; class IfcCurveBoundedSurface; class IfcCurveStyle; class IfcCurveStyleFont; class IfcCurveStyleFontAndScaling; class IfcCurveStyleFontPattern; class IfcCylindricalSurface; class IfcDamper; class IfcDamperType; class IfcDerivedProfileDef; class IfcDerivedUnit; class IfcDerivedUnitElement; class IfcDimensionalExponents; class IfcDirection; class IfcDiscreteAccessory; class IfcDiscreteAccessoryType; class IfcDistributionChamberElement; class IfcDistributionChamberElementType; class IfcDistributionCircuit; class IfcDistributionControlElement; class IfcDistributionControlElementType; class IfcDistributionElement; class IfcDistributionElementType; class IfcDistributionFlowElement; class IfcDistributionFlowElementType; class IfcDistributionPort; class IfcDistributionSystem; class IfcDocumentInformation; class IfcDocumentInformationRelationship; class IfcDocumentReference; class IfcDoor; class IfcDoorLiningProperties; class IfcDoorPanelProperties; class IfcDoorStandardCase; class IfcDoorStyle; class IfcDoorType; class IfcDraughtingPreDefinedColour; class IfcDraughtingPreDefinedCurveFont; class IfcDuctFitting; class IfcDuctFittingType; class IfcDuctSegment; class IfcDuctSegmentType; class IfcDuctSilencer; class IfcDuctSilencerType; class IfcEdge; class IfcEdgeCurve; class IfcEdgeLoop; class IfcElectricAppliance; class IfcElectricApplianceType; class IfcElectricDistributionBoard; class IfcElectricDistributionBoardType; class IfcElectricFlowStorageDevice; class IfcElectricFlowStorageDeviceType; class IfcElectricGenerator; class IfcElectricGeneratorType; class IfcElectricMotor; class IfcElectricMotorType; class IfcElectricTimeControl; class IfcElectricTimeControlType; class IfcElement; class IfcElementAssembly; class IfcElementAssemblyType; class IfcElementComponent; class IfcElementComponentType; class IfcElementQuantity; class IfcElementType; class IfcElementarySurface; class IfcEllipse; class IfcEllipseProfileDef; class IfcEnergyConversionDevice; class IfcEnergyConversionDeviceType; class IfcEngine; class IfcEngineType; class IfcEvaporativeCooler; class IfcEvaporativeCoolerType; class IfcEvaporator; class IfcEvaporatorType; class IfcEvent; class IfcEventTime; class IfcEventType; class IfcExtendedProperties; class IfcExternalInformation; class IfcExternalReference; class IfcExternalReferenceRelationship; class IfcExternalSpatialElement; class IfcExternalSpatialStructureElement; class IfcExternallyDefinedHatchStyle; class IfcExternallyDefinedSurfaceStyle; class IfcExternallyDefinedTextFont; class IfcExtrudedAreaSolid; class IfcExtrudedAreaSolidTapered; class IfcFace; class IfcFaceBasedSurfaceModel; class IfcFaceBound; class IfcFaceOuterBound; class IfcFaceSurface; class IfcFacetedBrep; class IfcFacetedBrepWithVoids; class IfcFailureConnectionCondition; class IfcFan; class IfcFanType; class IfcFastener; class IfcFastenerType; class IfcFeatureElement; class IfcFeatureElementAddition; class IfcFeatureElementSubtraction; class IfcFillAreaStyle; class IfcFillAreaStyleHatching; class IfcFillAreaStyleTiles; class IfcFilter; class IfcFilterType; class IfcFireSuppressionTerminal; class IfcFireSuppressionTerminalType; class IfcFixedReferenceSweptAreaSolid; class IfcFlowController; class IfcFlowControllerType; class IfcFlowFitting; class IfcFlowFittingType; class IfcFlowInstrument; class IfcFlowInstrumentType; class IfcFlowMeter; class IfcFlowMeterType; class IfcFlowMovingDevice; class IfcFlowMovingDeviceType; class IfcFlowSegment; class IfcFlowSegmentType; class IfcFlowStorageDevice; class IfcFlowStorageDeviceType; class IfcFlowTerminal; class IfcFlowTerminalType; class IfcFlowTreatmentDevice; class IfcFlowTreatmentDeviceType; class IfcFooting; class IfcFootingType; class IfcFurnishingElement; class IfcFurnishingElementType; class IfcFurniture; class IfcFurnitureType; class IfcGeographicElement; class IfcGeographicElementType; class IfcGeometricCurveSet; class IfcGeometricRepresentationContext; class IfcGeometricRepresentationItem; class IfcGeometricRepresentationSubContext; class IfcGeometricSet; class IfcGrid; class IfcGridAxis; class IfcGridPlacement; class IfcGroup; class IfcHalfSpaceSolid; class IfcHeatExchanger; class IfcHeatExchangerType; class IfcHumidifier; class IfcHumidifierType; class IfcIShapeProfileDef; class IfcImageTexture; class IfcIndexedColourMap; class IfcIndexedPolyCurve; class IfcIndexedTextureMap; class IfcIndexedTriangleTextureMap; class IfcInterceptor; class IfcInterceptorType; class IfcInventory; class IfcIrregularTimeSeries; class IfcIrregularTimeSeriesValue; class IfcJunctionBox; class IfcJunctionBoxType; class IfcLShapeProfileDef; class IfcLaborResource; class IfcLaborResourceType; class IfcLagTime; class IfcLamp; class IfcLampType; class IfcLibraryInformation; class IfcLibraryReference; class IfcLightDistributionData; class IfcLightFixture; class IfcLightFixtureType; class IfcLightIntensityDistribution; class IfcLightSource; class IfcLightSourceAmbient; class IfcLightSourceDirectional; class IfcLightSourceGoniometric; class IfcLightSourcePositional; class IfcLightSourceSpot; class IfcLine; class IfcLocalPlacement; class IfcLoop; class IfcManifoldSolidBrep; class IfcMapConversion; class IfcMappedItem; class IfcMaterial; class IfcMaterialClassificationRelationship; class IfcMaterialConstituent; class IfcMaterialConstituentSet; class IfcMaterialDefinition; class IfcMaterialDefinitionRepresentation; class IfcMaterialLayer; class IfcMaterialLayerSet; class IfcMaterialLayerSetUsage; class IfcMaterialLayerWithOffsets; class IfcMaterialList; class IfcMaterialProfile; class IfcMaterialProfileSet; class IfcMaterialProfileSetUsage; class IfcMaterialProfileSetUsageTapering; class IfcMaterialProfileWithOffsets; class IfcMaterialProperties; class IfcMaterialRelationship; class IfcMaterialUsageDefinition; class IfcMeasureWithUnit; class IfcMechanicalFastener; class IfcMechanicalFastenerType; class IfcMedicalDevice; class IfcMedicalDeviceType; class IfcMember; class IfcMemberStandardCase; class IfcMemberType; class IfcMetric; class IfcMirroredProfileDef; class IfcMonetaryUnit; class IfcMotorConnection; class IfcMotorConnectionType; class IfcNamedUnit; class IfcObject; class IfcObjectDefinition; class IfcObjectPlacement; class IfcObjective; class IfcOccupant; class IfcOffsetCurve2D; class IfcOffsetCurve3D; class IfcOpenShell; class IfcOpeningElement; class IfcOpeningStandardCase; class IfcOrganization; class IfcOrganizationRelationship; class IfcOrientedEdge; class IfcOuterBoundaryCurve; class IfcOutlet; class IfcOutletType; class IfcOwnerHistory; class IfcParameterizedProfileDef; class IfcPath; class IfcPcurve; class IfcPerformanceHistory; class IfcPermeableCoveringProperties; class IfcPermit; class IfcPerson; class IfcPersonAndOrganization; class IfcPhysicalComplexQuantity; class IfcPhysicalQuantity; class IfcPhysicalSimpleQuantity; class IfcPile; class IfcPileType; class IfcPipeFitting; class IfcPipeFittingType; class IfcPipeSegment; class IfcPipeSegmentType; class IfcPixelTexture; class IfcPlacement; class IfcPlanarBox; class IfcPlanarExtent; class IfcPlane; class IfcPlate; class IfcPlateStandardCase; class IfcPlateType; class IfcPoint; class IfcPointOnCurve; class IfcPointOnSurface; class IfcPolyLoop; class IfcPolygonalBoundedHalfSpace; class IfcPolyline; class IfcPort; class IfcPostalAddress; class IfcPreDefinedColour; class IfcPreDefinedCurveFont; class IfcPreDefinedItem; class IfcPreDefinedProperties; class IfcPreDefinedPropertySet; class IfcPreDefinedTextFont; class IfcPresentationItem; class IfcPresentationLayerAssignment; class IfcPresentationLayerWithStyle; class IfcPresentationStyle; class IfcPresentationStyleAssignment; class IfcProcedure; class IfcProcedureType; class IfcProcess; class IfcProduct; class IfcProductDefinitionShape; class IfcProductRepresentation; class IfcProfileDef; class IfcProfileProperties; class IfcProject; class IfcProjectLibrary; class IfcProjectOrder; class IfcProjectedCRS; class IfcProjectionElement; class IfcProperty; class IfcPropertyAbstraction; class IfcPropertyBoundedValue; class IfcPropertyDefinition; class IfcPropertyDependencyRelationship; class IfcPropertyEnumeratedValue; class IfcPropertyEnumeration; class IfcPropertyListValue; class IfcPropertyReferenceValue; class IfcPropertySet; class IfcPropertySetDefinition; class IfcPropertySetTemplate; class IfcPropertySingleValue; class IfcPropertyTableValue; class IfcPropertyTemplate; class IfcPropertyTemplateDefinition; class IfcProtectiveDevice; class IfcProtectiveDeviceTrippingUnit; class IfcProtectiveDeviceTrippingUnitType; class IfcProtectiveDeviceType; class IfcProxy; class IfcPump; class IfcPumpType; class IfcQuantityArea; class IfcQuantityCount; class IfcQuantityLength; class IfcQuantitySet; class IfcQuantityTime; class IfcQuantityVolume; class IfcQuantityWeight; class IfcRailing; class IfcRailingType; class IfcRamp; class IfcRampFlight; class IfcRampFlightType; class IfcRampType; class IfcRationalBSplineCurveWithKnots; class IfcRationalBSplineSurfaceWithKnots; class IfcRectangleHollowProfileDef; class IfcRectangleProfileDef; class IfcRectangularPyramid; class IfcRectangularTrimmedSurface; class IfcRecurrencePattern; class IfcReference; class IfcRegularTimeSeries; class IfcReinforcementBarProperties; class IfcReinforcementDefinitionProperties; class IfcReinforcingBar; class IfcReinforcingBarType; class IfcReinforcingElement; class IfcReinforcingElementType; class IfcReinforcingMesh; class IfcReinforcingMeshType; class IfcRelAggregates; class IfcRelAssigns; class IfcRelAssignsToActor; class IfcRelAssignsToControl; class IfcRelAssignsToGroup; class IfcRelAssignsToGroupByFactor; class IfcRelAssignsToProcess; class IfcRelAssignsToProduct; class IfcRelAssignsToResource; class IfcRelAssociates; class IfcRelAssociatesApproval; class IfcRelAssociatesClassification; class IfcRelAssociatesConstraint; class IfcRelAssociatesDocument; class IfcRelAssociatesLibrary; class IfcRelAssociatesMaterial; class IfcRelConnects; class IfcRelConnectsElements; class IfcRelConnectsPathElements; class IfcRelConnectsPortToElement; class IfcRelConnectsPorts; class IfcRelConnectsStructuralActivity; class IfcRelConnectsStructuralMember; class IfcRelConnectsWithEccentricity; class IfcRelConnectsWithRealizingElements; class IfcRelContainedInSpatialStructure; class IfcRelCoversBldgElements; class IfcRelCoversSpaces; class IfcRelDeclares; class IfcRelDecomposes; class IfcRelDefines; class IfcRelDefinesByObject; class IfcRelDefinesByProperties; class IfcRelDefinesByTemplate; class IfcRelDefinesByType; class IfcRelFillsElement; class IfcRelFlowControlElements; class IfcRelInterferesElements; class IfcRelNests; class IfcRelProjectsElement; class IfcRelReferencedInSpatialStructure; class IfcRelSequence; class IfcRelServicesBuildings; class IfcRelSpaceBoundary; class IfcRelSpaceBoundary1stLevel; class IfcRelSpaceBoundary2ndLevel; class IfcRelVoidsElement; class IfcRelationship; class IfcReparametrisedCompositeCurveSegment; class IfcRepresentation; class IfcRepresentationContext; class IfcRepresentationItem; class IfcRepresentationMap; class IfcResource; class IfcResourceApprovalRelationship; class IfcResourceConstraintRelationship; class IfcResourceLevelRelationship; class IfcResourceTime; class IfcRevolvedAreaSolid; class IfcRevolvedAreaSolidTapered; class IfcRightCircularCone; class IfcRightCircularCylinder; class IfcRoof; class IfcRoofType; class IfcRoot; class IfcRoundedRectangleProfileDef; class IfcSIUnit; class IfcSanitaryTerminal; class IfcSanitaryTerminalType; class IfcSchedulingTime; class IfcSectionProperties; class IfcSectionReinforcementProperties; class IfcSectionedSpine; class IfcSensor; class IfcSensorType; class IfcShadingDevice; class IfcShadingDeviceType; class IfcShapeAspect; class IfcShapeModel; class IfcShapeRepresentation; class IfcShellBasedSurfaceModel; class IfcSimpleProperty; class IfcSimplePropertyTemplate; class IfcSite; class IfcSlab; class IfcSlabElementedCase; class IfcSlabStandardCase; class IfcSlabType; class IfcSlippageConnectionCondition; class IfcSolarDevice; class IfcSolarDeviceType; class IfcSolidModel; class IfcSpace; class IfcSpaceHeater; class IfcSpaceHeaterType; class IfcSpaceType; class IfcSpatialElement; class IfcSpatialElementType; class IfcSpatialStructureElement; class IfcSpatialStructureElementType; class IfcSpatialZone; class IfcSpatialZoneType; class IfcSphere; class IfcStackTerminal; class IfcStackTerminalType; class IfcStair; class IfcStairFlight; class IfcStairFlightType; class IfcStairType; class IfcStructuralAction; class IfcStructuralActivity; class IfcStructuralAnalysisModel; class IfcStructuralConnection; class IfcStructuralConnectionCondition; class IfcStructuralCurveAction; class IfcStructuralCurveConnection; class IfcStructuralCurveMember; class IfcStructuralCurveMemberVarying; class IfcStructuralCurveReaction; class IfcStructuralItem; class IfcStructuralLinearAction; class IfcStructuralLoad; class IfcStructuralLoadCase; class IfcStructuralLoadConfiguration; class IfcStructuralLoadGroup; class IfcStructuralLoadLinearForce; class IfcStructuralLoadOrResult; class IfcStructuralLoadPlanarForce; class IfcStructuralLoadSingleDisplacement; class IfcStructuralLoadSingleDisplacementDistortion; class IfcStructuralLoadSingleForce; class IfcStructuralLoadSingleForceWarping; class IfcStructuralLoadStatic; class IfcStructuralLoadTemperature; class IfcStructuralMember; class IfcStructuralPlanarAction; class IfcStructuralPointAction; class IfcStructuralPointConnection; class IfcStructuralPointReaction; class IfcStructuralReaction; class IfcStructuralResultGroup; class IfcStructuralSurfaceAction; class IfcStructuralSurfaceConnection; class IfcStructuralSurfaceMember; class IfcStructuralSurfaceMemberVarying; class IfcStructuralSurfaceReaction; class IfcStyleModel; class IfcStyledItem; class IfcStyledRepresentation; class IfcSubContractResource; class IfcSubContractResourceType; class IfcSubedge; class IfcSurface; class IfcSurfaceCurveSweptAreaSolid; class IfcSurfaceFeature; class IfcSurfaceOfLinearExtrusion; class IfcSurfaceOfRevolution; class IfcSurfaceReinforcementArea; class IfcSurfaceStyle; class IfcSurfaceStyleLighting; class IfcSurfaceStyleRefraction; class IfcSurfaceStyleRendering; class IfcSurfaceStyleShading; class IfcSurfaceStyleWithTextures; class IfcSurfaceTexture; class IfcSweptAreaSolid; class IfcSweptDiskSolid; class IfcSweptDiskSolidPolygonal; class IfcSweptSurface; class IfcSwitchingDevice; class IfcSwitchingDeviceType; class IfcSystem; class IfcSystemFurnitureElement; class IfcSystemFurnitureElementType; class IfcTShapeProfileDef; class IfcTable; class IfcTableColumn; class IfcTableRow; class IfcTank; class IfcTankType; class IfcTask; class IfcTaskTime; class IfcTaskTimeRecurring; class IfcTaskType; class IfcTelecomAddress; class IfcTendon; class IfcTendonAnchor; class IfcTendonAnchorType; class IfcTendonType; class IfcTessellatedFaceSet; class IfcTessellatedItem; class IfcTextLiteral; class IfcTextLiteralWithExtent; class IfcTextStyle; class IfcTextStyleFontModel; class IfcTextStyleForDefinedFont; class IfcTextStyleTextModel; class IfcTextureCoordinate; class IfcTextureCoordinateGenerator; class IfcTextureMap; class IfcTextureVertex; class IfcTextureVertexList; class IfcTimePeriod; class IfcTimeSeries; class IfcTimeSeriesValue; class IfcTopologicalRepresentationItem; class IfcTopologyRepresentation; class IfcTransformer; class IfcTransformerType; class IfcTransportElement; class IfcTransportElementType; class IfcTrapeziumProfileDef; class IfcTriangulatedFaceSet; class IfcTrimmedCurve; class IfcTubeBundle; class IfcTubeBundleType; class IfcTypeObject; class IfcTypeProcess; class IfcTypeProduct; class IfcTypeResource; class IfcUShapeProfileDef; class IfcUnitAssignment; class IfcUnitaryControlElement; class IfcUnitaryControlElementType; class IfcUnitaryEquipment; class IfcUnitaryEquipmentType; class IfcValve; class IfcValveType; class IfcVector; class IfcVertex; class IfcVertexLoop; class IfcVertexPoint; class IfcVibrationIsolator; class IfcVibrationIsolatorType; class IfcVirtualElement; class IfcVirtualGridIntersection; class IfcVoidingFeature; class IfcWall; class IfcWallElementedCase; class IfcWallStandardCase; class IfcWallType; class IfcWasteTerminal; class IfcWasteTerminalType; class IfcWindow; class IfcWindowLiningProperties; class IfcWindowPanelProperties; class IfcWindowStandardCase; class IfcWindowStyle; class IfcWindowType; class IfcWorkCalendar; class IfcWorkControl; class IfcWorkPlan; class IfcWorkSchedule; class IfcWorkTime; class IfcZShapeProfileDef; class IfcZone; class IfcAbsorbedDoseMeasure; class IfcAccelerationMeasure; class IfcAmountOfSubstanceMeasure; class IfcAngularVelocityMeasure; class IfcArcIndex; class IfcAreaDensityMeasure; class IfcAreaMeasure; class IfcBinary; class IfcBoolean; class IfcBoxAlignment; class IfcCardinalPointReference; class IfcComplexNumber; class IfcCompoundPlaneAngleMeasure; class IfcContextDependentMeasure; class IfcCountMeasure; class IfcCurvatureMeasure; class IfcDate; class IfcDateTime; class IfcDayInMonthNumber; class IfcDayInWeekNumber; class IfcDescriptiveMeasure; class IfcDimensionCount; class IfcDoseEquivalentMeasure; class IfcDuration; class IfcDynamicViscosityMeasure; class IfcElectricCapacitanceMeasure; class IfcElectricChargeMeasure; class IfcElectricConductanceMeasure; class IfcElectricCurrentMeasure; class IfcElectricResistanceMeasure; class IfcElectricVoltageMeasure; class IfcEnergyMeasure; class IfcFontStyle; class IfcFontVariant; class IfcFontWeight; class IfcForceMeasure; class IfcFrequencyMeasure; class IfcGloballyUniqueId; class IfcHeatFluxDensityMeasure; class IfcHeatingValueMeasure; class IfcIdentifier; class IfcIlluminanceMeasure; class IfcInductanceMeasure; class IfcInteger; class IfcIntegerCountRateMeasure; class IfcIonConcentrationMeasure; class IfcIsothermalMoistureCapacityMeasure; class IfcKinematicViscosityMeasure; class IfcLabel; class IfcLanguageId; class IfcLengthMeasure; class IfcLineIndex; class IfcLinearForceMeasure; class IfcLinearMomentMeasure; class IfcLinearStiffnessMeasure; class IfcLinearVelocityMeasure; class IfcLogical; class IfcLuminousFluxMeasure; class IfcLuminousIntensityDistributionMeasure; class IfcLuminousIntensityMeasure; class IfcMagneticFluxDensityMeasure; class IfcMagneticFluxMeasure; class IfcMassDensityMeasure; class IfcMassFlowRateMeasure; class IfcMassMeasure; class IfcMassPerLengthMeasure; class IfcModulusOfElasticityMeasure; class IfcModulusOfLinearSubgradeReactionMeasure; class IfcModulusOfRotationalSubgradeReactionMeasure; class IfcModulusOfSubgradeReactionMeasure; class IfcMoistureDiffusivityMeasure; class IfcMolecularWeightMeasure; class IfcMomentOfInertiaMeasure; class IfcMonetaryMeasure; class IfcMonthInYearNumber; class IfcNonNegativeLengthMeasure; class IfcNormalisedRatioMeasure; class IfcNumericMeasure; class IfcPHMeasure; class IfcParameterValue; class IfcPlanarForceMeasure; class IfcPlaneAngleMeasure; class IfcPositiveInteger; class IfcPositiveLengthMeasure; class IfcPositivePlaneAngleMeasure; class IfcPositiveRatioMeasure; class IfcPowerMeasure; class IfcPresentableText; class IfcPressureMeasure; class IfcPropertySetDefinitionSet; class IfcRadioActivityMeasure; class IfcRatioMeasure; class IfcReal; class IfcRotationalFrequencyMeasure; class IfcRotationalMassMeasure; class IfcRotationalStiffnessMeasure; class IfcSectionModulusMeasure; class IfcSectionalAreaIntegralMeasure; class IfcShearModulusMeasure; class IfcSolidAngleMeasure; class IfcSoundPowerLevelMeasure; class IfcSoundPowerMeasure; class IfcSoundPressureLevelMeasure; class IfcSoundPressureMeasure; class IfcSpecificHeatCapacityMeasure; class IfcSpecularExponent; class IfcSpecularRoughness; class IfcStrippedOptional; class IfcTemperatureGradientMeasure; class IfcTemperatureRateOfChangeMeasure; class IfcText; class IfcTextAlignment; class IfcTextDecoration; class IfcTextFontName; class IfcTextTransformation; class IfcThermalAdmittanceMeasure; class IfcThermalConductivityMeasure; class IfcThermalExpansionCoefficientMeasure; class IfcThermalResistanceMeasure; class IfcThermalTransmittanceMeasure; class IfcThermodynamicTemperatureMeasure; class IfcTime; class IfcTimeMeasure; class IfcTimeStamp; class IfcTorqueMeasure; class IfcURIReference; class IfcVaporPermeabilityMeasure; class IfcVolumeMeasure; class IfcVolumetricFlowRateMeasure; class IfcWarpingConstantMeasure; class IfcWarpingMomentMeasure; 
 
 /// The actor select type allows a person, or an organization, or a person associated with an organization to be referenced.
 /// 
@@ -460,6 +460,8 @@ typedef IfcUtil::IfcBaseClass IfcResourceSelect;
 /// 
 /// HISTORY: New type in IFC 2x4.
 typedef IfcUtil::IfcBaseClass IfcRotationalStiffnessSelect;
+
+typedef IfcUtil::IfcBaseClass IfcSegmentIndexSelect;
 /// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
 /// 
 /// A shell of dimensionality 0 is represented by a graph consisting of a single vertex. The vertex shall not have any associated edges. 
@@ -4426,7 +4428,7 @@ namespace IfcSensorTypeEnum {
 /// WINDSENSOR: A device that senses or detects airflow speed and direction. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-typedef enum {IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} IfcSensorTypeEnum;
+typedef enum {IfcSensorType_CO2SENSOR, IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_FROSTSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IDENTIFIERSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} IfcSensorTypeEnum;
 const char* ToString(IfcSensorTypeEnum v);
 IfcSensorTypeEnum FromString(const std::string& s);
 }
@@ -5796,6 +5798,15 @@ public:
     operator double() const;
 };
 
+class IfcArcIndex : public IfcUtil::IfcBaseType {
+public:
+    virtual const IfcParse::type_declaration& declaration() const;
+    static Type::Enum Class();
+    explicit IfcArcIndex (IfcAbstractEntity* e);
+    IfcArcIndex (std::vector< int > /*[3:3]*/ v);
+    operator std::vector< int > /*[3:3]*/() const;
+};
+
 class IfcAreaDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
@@ -5818,6 +5829,15 @@ public:
     explicit IfcAreaMeasure (IfcAbstractEntity* e);
     IfcAreaMeasure (double v);
     operator double() const;
+};
+
+class IfcBinary : public IfcUtil::IfcBaseType {
+public:
+    virtual const IfcParse::type_declaration& declaration() const;
+    static Type::Enum Class();
+    explicit IfcBinary (IfcAbstractEntity* e);
+    IfcBinary (boost::dynamic_bitset<> v);
+    operator boost::dynamic_bitset<>() const;
 };
 /// IfcBoolean is a defined data type of simple data type Boolean. It is required since a select type (IfcSimpleValue) cannot directly include simple types in its select list.  A boolean type can have value TRUE or FALSE.
 /// 
@@ -6581,6 +6601,15 @@ public:
     IfcLengthMeasure (double v);
     operator double() const;
 };
+
+class IfcLineIndex : public IfcUtil::IfcBaseType {
+public:
+    virtual const IfcParse::type_declaration& declaration() const;
+    static Type::Enum Class();
+    explicit IfcLineIndex (IfcAbstractEntity* e);
+    IfcLineIndex (std::vector< int > /*[2:?]*/ v);
+    operator std::vector< int > /*[2:?]*/() const;
+};
 /// IfcLinearForceMeasure is a measure of linear force.
 /// Usually measured in N/m.
 /// Type: REAL
@@ -6643,8 +6672,8 @@ public:
     virtual const IfcParse::type_declaration& declaration() const;
     static Type::Enum Class();
     explicit IfcLogical (IfcAbstractEntity* e);
-    IfcLogical (bool v);
-    operator bool() const;
+    IfcLogical (boost::logic::tribool v);
+    operator boost::logic::tribool() const;
 };
 /// IfcLuminousFluxMeasure is a measure of the luminous flux.
 /// Usually measured in Lumen (lm, Candela Steradian).
@@ -7027,6 +7056,15 @@ public:
     IfcPlaneAngleMeasure (double v);
     operator double() const;
 };
+
+class IfcPositiveInteger : public IfcInteger {
+public:
+    virtual const IfcParse::type_declaration& declaration() const;
+    static Type::Enum Class();
+    explicit IfcPositiveInteger (IfcAbstractEntity* e);
+    IfcPositiveInteger (int v);
+    operator int() const;
+};
 /// Definition from ISO/CD 10303-41:1992: A positive length measure is a length measure that is greater than zero.
 /// Type: IfcLengthMeasure
 /// 
@@ -7335,6 +7373,15 @@ public:
     explicit IfcSpecularRoughness (IfcAbstractEntity* e);
     IfcSpecularRoughness (double v);
     operator double() const;
+};
+
+class IfcStrippedOptional : public IfcUtil::IfcBaseType {
+public:
+    virtual const IfcParse::type_declaration& declaration() const;
+    static Type::Enum Class();
+    explicit IfcStrippedOptional (IfcAbstractEntity* e);
+    IfcStrippedOptional (bool v);
+    operator bool() const;
 };
 /// The temperature gradient measures the difference of a temperature per lenght, as for instance used in an external wall or its layers.  It is usually measured in K/m.
 /// 
@@ -8400,8 +8447,6 @@ public:
 /// HISTORY  New entity in IFC2x4.
 class IfcCoordinateReferenceSystem : public IfcUtil::IfcBaseEntity {
 public:
-    /// Whether the optional attribute Name is defined for this IfcCoordinateReferenceSystem
-    bool hasName() const;
     /// Name by which the coordinate reference system is identified.
     /// Note  The name shall be taken from the list recognized by the European Petroleum Survey Group EPSG.
     std::string Name() const;
@@ -8411,6 +8456,8 @@ public:
     /// Informal description of this coordinate reference system.
     std::string Description() const;
     void setDescription(std::string v);
+    /// Whether the optional attribute GeodeticDatum is defined for this IfcCoordinateReferenceSystem
+    bool hasGeodeticDatum() const;
     /// Name by which this datum is identified. The geodetic datum is associated with the coordinate reference system and indicates the shape and size of the rotation ellipsoid and this ellipsoid's connection and orientation to the actual globe/earth. Examples for geodetic datums include:
     /// 
     /// ED50
@@ -8426,10 +8473,11 @@ public:
     ///   other sea levels
     std::string VerticalDatum() const;
     void setVerticalDatum(std::string v);
-        virtual const IfcParse::entity& declaration() const;
+        IfcTemplatedEntityList< IfcCoordinateOperation >::ptr HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
+    virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcCoordinateReferenceSystem (IfcAbstractEntity* e);
-    IfcCoordinateReferenceSystem (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, std::string v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum);
+    IfcCoordinateReferenceSystem (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum);
     typedef IfcTemplatedEntityList< IfcCoordinateReferenceSystem > list;
 };
 /// IfcCostValue is an amount of money or a value that affects an amount of money. 
@@ -9025,8 +9073,8 @@ public:
     /// set to TRUE if the material layer is an air gap and provides air exchange from the layer to the outside air.
     ///   set to UNKNOWN if the material layer is an air gap and does not provide air exchange (or when this information about air exchange of the air gap is not available).
     ///   set to FALSE if the material layer is a solid material layer (the default).
-    bool IsVentilated() const;
-    void setIsVentilated(bool v);
+    boost::logic::tribool IsVentilated() const;
+    void setIsVentilated(boost::logic::tribool v);
     /// Whether the optional attribute Name is defined for this IfcMaterialLayer
     bool hasName() const;
     /// The name by which the material layer is known.
@@ -9045,13 +9093,13 @@ public:
     /// Whether the optional attribute Priority is defined for this IfcMaterialLayer
     bool hasPriority() const;
     /// The relative priority of the layer, expressed as ratio measure, normalised to 0..1. Controls how layers intersect in connections and corners of building elements: a layer from one element protrudes into (i.e. displaces) a layer from another element in a joint of these elements if the former element's layer has higher priority than the latter. The priorty value for a material layer in an element has to be set and maintained by software applications, in relation to the material layers in connected elements. The usage has to be further specified for each element, especially to avoid simultanious use with IfcLayerOffset.
-    double Priority() const;
-    void setPriority(double v);
+    int Priority() const;
+    void setPriority(int v);
         IfcTemplatedEntityList< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
     virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcMaterialLayer (IfcAbstractEntity* e);
-    IfcMaterialLayer (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Category, boost::optional< double > v7_Priority);
+    IfcMaterialLayer (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< boost::logic::tribool > v3_IsVentilated, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Category, boost::optional< int > v7_Priority);
     typedef IfcTemplatedEntityList< IfcMaterialLayer > list;
 };
 /// IfcMaterialLayerSet is a designation by which materials of an element constructed of a number of material layers is known and through which the relative positioning of individual layers can be expressed.
@@ -9164,7 +9212,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcMaterialLayerWithOffsets (IfcAbstractEntity* e);
-    IfcMaterialLayerWithOffsets (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Category, boost::optional< double > v7_Priority, IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues);
+    IfcMaterialLayerWithOffsets (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< boost::logic::tribool > v3_IsVentilated, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Category, boost::optional< int > v7_Priority, IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues);
     typedef IfcTemplatedEntityList< IfcMaterialLayerWithOffsets > list;
 };
 /// IfcMaterialList is a list of the different materials
@@ -9223,8 +9271,8 @@ public:
     /// Whether the optional attribute Priority is defined for this IfcMaterialProfile
     bool hasPriority() const;
     /// The relative priority of the profile, expressed as ratio measure, normalised to 0..1. Controls how profiles intersect in connections and corners of building elements: a profile from one element protrudes into (i.e. displaces) a profile from another element in a joint of these elements if the former element's profile has higher priority than the latter. The priorty value for a material profile in an element has to be set and maintained by software applications, in relation to the material profiles in connected elements.
-    double Priority() const;
-    void setPriority(double v);
+    int Priority() const;
+    void setPriority(int v);
     /// Whether the optional attribute Category is defined for this IfcMaterialProfile
     bool hasCategory() const;
     /// Category of the material profile, e.g. the role it has in the profile set it belongs to.
@@ -9234,7 +9282,7 @@ public:
     virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcMaterialProfile (IfcAbstractEntity* e);
-    IfcMaterialProfile (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, IfcProfileDef* v4_Profile, boost::optional< double > v5_Priority, boost::optional< std::string > v6_Category);
+    IfcMaterialProfile (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, IfcProfileDef* v4_Profile, boost::optional< int > v5_Priority, boost::optional< std::string > v6_Category);
     typedef IfcTemplatedEntityList< IfcMaterialProfile > list;
 };
 /// IfcMaterialProfileSet is a designation by which individual material(s) of a prismatic element (for example, beam or column) constructed of a single or multiple material profiles is known. If only a single material profile is used (the most typical case) then no CompositeProfile is asserted.
@@ -9284,7 +9332,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcMaterialProfileWithOffsets (IfcAbstractEntity* e);
-    IfcMaterialProfileWithOffsets (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, IfcProfileDef* v4_Profile, boost::optional< double > v5_Priority, boost::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues);
+    IfcMaterialProfileWithOffsets (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, IfcProfileDef* v4_Profile, boost::optional< int > v5_Priority, boost::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues);
     typedef IfcTemplatedEntityList< IfcMaterialProfileWithOffsets > list;
 };
 /// IfcMaterialUsageDefinition is a general supertype for all
@@ -9413,6 +9461,8 @@ public:
     /// Reference source for data values.
     std::string ValueSource() const;
     void setValueSource(std::string v);
+    /// Whether the optional attribute DataValue is defined for this IfcMetric
+    bool hasDataValue() const;
     /// The value with data type defined by the underlying type accesses via IfcMetricValueSelect.
     IfcMetricValueSelect* DataValue() const;
     void setDataValue(IfcMetricValueSelect* v);
@@ -9860,14 +9910,14 @@ public:
 class IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
-    bool LayerOn() const;
-    void setLayerOn(bool v);
+    boost::logic::tribool LayerOn() const;
+    void setLayerOn(boost::logic::tribool v);
     /// A logical setting, TRUE indicates that the layer is set to 'Frozen', FALSE that the layer is set to 'Not frozen', UNKNOWN that such information is not available.
-    bool LayerFrozen() const;
-    void setLayerFrozen(bool v);
+    boost::logic::tribool LayerFrozen() const;
+    void setLayerFrozen(boost::logic::tribool v);
     /// A logical setting, TRUE indicates that the layer is set to 'Blocked', FALSE that the layer is set to 'Not blocked', UNKNOWN that such information is not available.
-    bool LayerBlocked() const;
-    void setLayerBlocked(bool v);
+    boost::logic::tribool LayerBlocked() const;
+    void setLayerBlocked(boost::logic::tribool v);
     /// Assignment of presentation styles to the layer to provide a default style for representation items.
     /// 
     /// NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
@@ -9878,7 +9928,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcPresentationLayerWithStyle (IfcAbstractEntity* e);
-    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, bool v5_LayerOn, bool v6_LayerFrozen, bool v7_LayerBlocked, IfcTemplatedEntityList< IfcPresentationStyle >::ptr v8_LayerStyles);
+    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, IfcTemplatedEntityList< IfcPresentationStyle >::ptr v8_LayerStyles);
     typedef IfcTemplatedEntityList< IfcPresentationLayerWithStyle > list;
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
@@ -10191,7 +10241,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcProjectedCRS (IfcAbstractEntity* e);
-    IfcProjectedCRS (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, std::string v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum, boost::optional< std::string > v5_MapProjection, boost::optional< std::string > v6_MapZone, IfcNamedUnit* v7_MapUnit);
+    IfcProjectedCRS (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum, boost::optional< std::string > v5_MapProjection, boost::optional< std::string > v6_MapZone, IfcNamedUnit* v7_MapUnit);
     typedef IfcTemplatedEntityList< IfcProjectedCRS > list;
 };
 
@@ -10843,8 +10893,8 @@ public:
     /// ---
     /// EXAMPLE: Would be FALSE for a center line, identified as shape aspect; would be TRUE for a cantilever.
     /// ---
-    bool ProductDefinitional() const;
-    void setProductDefinitional(bool v);
+    boost::logic::tribool ProductDefinitional() const;
+    void setProductDefinitional(boost::logic::tribool v);
     /// Whether the optional attribute PartOfProductDefinitionShape is defined for this IfcShapeAspect
     bool hasPartOfProductDefinitionShape() const;
     /// Reference to the product definition shape of which this class is an aspect.
@@ -10853,7 +10903,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcShapeAspect (IfcAbstractEntity* e);
-    IfcShapeAspect (IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, bool v4_ProductDefinitional, IfcProductRepresentationSelect* v5_PartOfProductDefinitionShape);
+    IfcShapeAspect (IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, boost::logic::tribool v4_ProductDefinitional, IfcProductRepresentationSelect* v5_PartOfProductDefinitionShape);
     typedef IfcTemplatedEntityList< IfcShapeAspect > list;
 };
 /// IfcShapeModel represents
@@ -11344,10 +11394,14 @@ public:
     /// The colour used to render the surface. The surface colour for visualisation is defined by specifying the intensity of red, green and blue.
     IfcColourRgb* SurfaceColour() const;
     void setSurfaceColour(IfcColourRgb* v);
+    /// Whether the optional attribute Transparency is defined for this IfcSurfaceStyleShading
+    bool hasTransparency() const;
+    double Transparency() const;
+    void setTransparency(double v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcSurfaceStyleShading (IfcAbstractEntity* e);
-    IfcSurfaceStyleShading (IfcColourRgb* v1_SurfaceColour);
+    IfcSurfaceStyleShading (IfcColourRgb* v1_SurfaceColour, boost::optional< double > v2_Transparency);
     typedef IfcTemplatedEntityList< IfcSurfaceStyleShading > list;
 };
 /// The entity IfcSurfaceStyleWithTextures allows to include image textures in surface styles. These image textures can be applied repeating across the surface or mapped with a particular scale upon the surface.
@@ -11613,8 +11667,7 @@ public:
     /// Flag which identifies if the row is a heading row or a row which contains row values. NOTE - If the row is a heading, the flag takes the value = TRUE.
     bool IsHeading() const;
     void setIsHeading(bool v);
-        IfcTemplatedEntityList< IfcTable >::ptr OfTable() const; // INVERSE IfcTable::Rows
-    virtual const IfcParse::entity& declaration() const;
+        virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcTableRow (IfcAbstractEntity* e);
     IfcTableRow (boost::optional< IfcEntityList::ptr > v1_RowCells, boost::optional< bool > v2_IsHeading);
@@ -11780,12 +11833,12 @@ public:
 /// HISTORY: New entity in IFC2x4.
 class IfcTaskTimeRecurring : public IfcTaskTime {
 public:
-    IfcRecurrencePattern* Recurrance() const;
-    void setRecurrance(IfcRecurrencePattern* v);
+    IfcRecurrencePattern* Recurrence() const;
+    void setRecurrence(IfcRecurrencePattern* v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcTaskTimeRecurring (IfcAbstractEntity* e);
-    IfcTaskTimeRecurring (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< IfcTaskDurationEnum::IfcTaskDurationEnum > v4_DurationType, boost::optional< std::string > v5_ScheduleDuration, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_EarlyStart, boost::optional< std::string > v9_EarlyFinish, boost::optional< std::string > v10_LateStart, boost::optional< std::string > v11_LateFinish, boost::optional< std::string > v12_FreeFloat, boost::optional< std::string > v13_TotalFloat, boost::optional< bool > v14_IsCritical, boost::optional< std::string > v15_StatusTime, boost::optional< std::string > v16_ActualDuration, boost::optional< std::string > v17_ActualStart, boost::optional< std::string > v18_ActualFinish, boost::optional< std::string > v19_RemainingTime, boost::optional< double > v20_Completion, IfcRecurrencePattern* v21_Recurrance);
+    IfcTaskTimeRecurring (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< IfcTaskDurationEnum::IfcTaskDurationEnum > v4_DurationType, boost::optional< std::string > v5_ScheduleDuration, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_EarlyStart, boost::optional< std::string > v9_EarlyFinish, boost::optional< std::string > v10_LateStart, boost::optional< std::string > v11_LateFinish, boost::optional< std::string > v12_FreeFloat, boost::optional< std::string > v13_TotalFloat, boost::optional< bool > v14_IsCritical, boost::optional< std::string > v15_StatusTime, boost::optional< std::string > v16_ActualDuration, boost::optional< std::string > v17_ActualStart, boost::optional< std::string > v18_ActualFinish, boost::optional< std::string > v19_RemainingTime, boost::optional< double > v20_Completion, IfcRecurrencePattern* v21_Recurrence);
     typedef IfcTemplatedEntityList< IfcTaskTimeRecurring > list;
 };
 /// Definition: Address to which telephone, electronic mail and other forms of telecommunications should be addressed.
@@ -13987,6 +14040,7 @@ public:
     IfcDirection* TrueNorth() const;
     void setTrueNorth(IfcDirection* v);
         IfcTemplatedEntityList< IfcGeometricRepresentationSubContext >::ptr HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
+    IfcTemplatedEntityList< IfcCoordinateOperation >::ptr HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
     virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcGeometricRepresentationContext (IfcAbstractEntity* e);
@@ -14228,10 +14282,10 @@ class IfcIndexedColourMap : public IfcPresentationItem {
 public:
     IfcTessellatedFaceSet* MappedTo() const;
     void setMappedTo(IfcTessellatedFaceSet* v);
-    /// Whether the optional attribute Overrides is defined for this IfcIndexedColourMap
-    bool hasOverrides() const;
-    IfcSurfaceStyleShading* Overrides() const;
-    void setOverrides(IfcSurfaceStyleShading* v);
+    /// Whether the optional attribute Opacity is defined for this IfcIndexedColourMap
+    bool hasOpacity() const;
+    double Opacity() const;
+    void setOpacity(double v);
     IfcColourRgbList* Colours() const;
     void setColours(IfcColourRgbList* v);
     std::vector< int > /*[1:?]*/ ColourIndex() const;
@@ -14239,7 +14293,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcIndexedColourMap (IfcAbstractEntity* e);
-    IfcIndexedColourMap (IfcTessellatedFaceSet* v1_MappedTo, IfcSurfaceStyleShading* v2_Overrides, IfcColourRgbList* v3_Colours, std::vector< int > /*[1:?]*/ v4_ColourIndex);
+    IfcIndexedColourMap (IfcTessellatedFaceSet* v1_MappedTo, boost::optional< double > v2_Opacity, IfcColourRgbList* v3_Colours, std::vector< int > /*[1:?]*/ v4_ColourIndex);
     typedef IfcTemplatedEntityList< IfcIndexedColourMap > list;
 };
 
@@ -15792,6 +15846,8 @@ public:
     IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyForDependance() const; // INVERSE IfcPropertyDependencyRelationship::DependingProperty
     IfcTemplatedEntityList< IfcPropertyDependencyRelationship >::ptr PropertyDependsOn() const; // INVERSE IfcPropertyDependencyRelationship::DependantProperty
     IfcTemplatedEntityList< IfcComplexProperty >::ptr PartOfComplex() const; // INVERSE IfcComplexProperty::HasProperties
+    IfcTemplatedEntityList< IfcResourceConstraintRelationship >::ptr HasConstraints() const; // INVERSE IfcResourceConstraintRelationship::RelatedResourceObjects
+    IfcTemplatedEntityList< IfcResourceApprovalRelationship >::ptr HasApprovals() const; // INVERSE IfcResourceApprovalRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcProperty (IfcAbstractEntity* e);
@@ -16777,12 +16833,6 @@ public:
 /// HISTORY: New Entity in IFC 2x.
 class IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
 public:
-    /// Whether the optional attribute Transparency is defined for this IfcSurfaceStyleRendering
-    bool hasTransparency() const;
-    /// Definition from ISO/CD 10303-46: The degree of transparency is indicated by the percentage of light traversing the surface.
-    /// Definition from VRML97 - ISO/IEC 14772-1:1997: The transparency field specifies how "clear" an object is, with 1.0 being completely transparent, and 0.0 completely opaque. If not given, the value 0.0 (opaque) is assumed.
-    double Transparency() const;
-    void setTransparency(double v);
     /// Whether the optional attribute DiffuseColour is defined for this IfcSurfaceStyleRendering
     bool hasDiffuseColour() const;
     /// The diffuse part of the reflectance equation can be given as either a colour or a scalar factor.
@@ -18162,6 +18212,17 @@ public:
     IfcCartesianPointList (IfcAbstractEntity* e);
     IfcCartesianPointList ();
     typedef IfcTemplatedEntityList< IfcCartesianPointList > list;
+};
+
+class IfcCartesianPointList2D : public IfcCartesianPointList {
+public:
+    std::vector< std::vector< double > > CoordList() const;
+    void setCoordList(std::vector< std::vector< double > > v);
+        virtual const IfcParse::entity& declaration() const;
+    static Type::Enum Class();
+    IfcCartesianPointList2D (IfcAbstractEntity* e);
+    IfcCartesianPointList2D (std::vector< std::vector< double > > v1_CoordList);
+    typedef IfcTemplatedEntityList< IfcCartesianPointList2D > list;
 };
 
 class IfcCartesianPointList3D : public IfcCartesianPointList {
@@ -20018,12 +20079,12 @@ public:
     double Distance() const;
     void setDistance(double v);
     /// An indication of whether the offset curve self-intersects; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcOffsetCurve2D (IfcAbstractEntity* e);
-    IfcOffsetCurve2D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect);
+    IfcOffsetCurve2D (IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcOffsetCurve2D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 3d is a curve at a constant distance from a basis curve in three-dimensional space. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve the transition code between each segment shall be cont same gradient or cont same gradient same curvature. The offset curve at any point (parameter) on the basis curve is in the direction V x T where V is the fixed reference direction and T is the unit tangent to the basis curve. For the offset direction to be well defined, T shall not at any point of the curve be in the same, or opposite, direction as V. 
@@ -20050,15 +20111,15 @@ public:
     double Distance() const;
     void setDistance(double v);
     /// An indication of whether the offset curve self-intersects, this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
     /// The direction used to define the direction of the offset curve 3d from the basis curve.
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcOffsetCurve3D (IfcAbstractEntity* e);
-    IfcOffsetCurve3D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect, IfcDirection* v4_RefDirection);
+    IfcOffsetCurve3D (IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect, IfcDirection* v4_RefDirection);
     typedef IfcTemplatedEntityList< IfcOffsetCurve3D > list;
 };
 
@@ -22058,11 +22119,11 @@ public:
 class IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     /// Priorities for connection. It refers to the layers of the RelatingObject.
-    std::vector< double > /*[0:?]*/ RelatingPriorities() const;
-    void setRelatingPriorities(std::vector< double > /*[0:?]*/ v);
+    std::vector< int > /*[0:?]*/ RelatingPriorities() const;
+    void setRelatingPriorities(std::vector< int > /*[0:?]*/ v);
     /// Priorities for connection. It refers to the layers of the RelatedObject.
-    std::vector< double > /*[0:?]*/ RelatedPriorities() const;
-    void setRelatedPriorities(std::vector< double > /*[0:?]*/ v);
+    std::vector< int > /*[0:?]*/ RelatedPriorities() const;
+    void setRelatedPriorities(std::vector< int > /*[0:?]*/ v);
     /// Indication of the connection type in relation to the path of the RelatingObject.
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatedConnectionType() const;
     void setRelatedConnectionType(IfcConnectionTypeEnum::IfcConnectionTypeEnum v);
@@ -22072,7 +22133,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcRelConnectsPathElements (IfcAbstractEntity* e);
-    IfcRelConnectsPathElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement, std::vector< double > /*[0:?]*/ v8_RelatingPriorities, std::vector< double > /*[0:?]*/ v9_RelatedPriorities, IfcConnectionTypeEnum::IfcConnectionTypeEnum v10_RelatedConnectionType, IfcConnectionTypeEnum::IfcConnectionTypeEnum v11_RelatingConnectionType);
+    IfcRelConnectsPathElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, IfcConnectionTypeEnum::IfcConnectionTypeEnum v10_RelatedConnectionType, IfcConnectionTypeEnum::IfcConnectionTypeEnum v11_RelatingConnectionType);
     typedef IfcTemplatedEntityList< IfcRelConnectsPathElements > list;
 };
 /// The objectified relationship
@@ -22820,12 +22881,12 @@ public:
     std::string InterferenceType() const;
     void setInterferenceType(std::string v);
     /// Logical value indicating whether the interference geometry should be subtracted from the RelatingElement (if TRUE), or whether it should be either subtracted from the RelatingElement or the RelatedElement (if FALSE), or whether no indication can be provided (if UNKNOWN).
-    bool ImpliedOrder() const;
-    void setImpliedOrder(bool v);
+    boost::logic::tribool ImpliedOrder() const;
+    void setImpliedOrder(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcRelInterferesElements (IfcAbstractEntity* e);
-    IfcRelInterferesElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcElement* v5_RelatingElement, IfcElement* v6_RelatedElement, IfcConnectionGeometry* v7_InterferenceGeometry, boost::optional< std::string > v8_InterferenceType, bool v9_ImpliedOrder);
+    IfcRelInterferesElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcElement* v5_RelatingElement, IfcElement* v6_RelatedElement, IfcConnectionGeometry* v7_InterferenceGeometry, boost::optional< std::string > v8_InterferenceType, boost::logic::tribool v9_ImpliedOrder);
     typedef IfcTemplatedEntityList< IfcRelInterferesElements > list;
 };
 /// The nesting relationship
@@ -25996,18 +26057,18 @@ public:
     IfcBSplineSurfaceForm::IfcBSplineSurfaceForm SurfaceForm() const;
     void setSurfaceForm(IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v);
     /// Indication of whether the surface is closed in the u direction; this is for information only.
-    bool UClosed() const;
-    void setUClosed(bool v);
+    boost::logic::tribool UClosed() const;
+    void setUClosed(boost::logic::tribool v);
     /// Indication of whether the surface is closed in the v direction; this is for information only.
-    bool VClosed() const;
-    void setVClosed(bool v);
+    boost::logic::tribool VClosed() const;
+    void setVClosed(boost::logic::tribool v);
     /// Flag to indicate whether, or not, surface is self-intersecting; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBSplineSurface (IfcAbstractEntity* e);
-    IfcBSplineSurface (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect);
+    IfcBSplineSurface (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBSplineSurface > list;
 };
 /// Definition from ISO 10303:42:1994: This is a B-spline surface in which the knot values are explicitly given. This subtype shall be used to represent non-uniform B-spline surfaces, and may also be used for other knot types.
@@ -26037,7 +26098,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBSplineSurfaceWithKnots (IfcAbstractEntity* e);
-    IfcBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec);
+    IfcBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec);
     typedef IfcTemplatedEntityList< IfcBSplineSurfaceWithKnots > list;
 };
 /// The IfcBlock is a Construction Solid Geometry (CSG) 3D
@@ -26896,12 +26957,12 @@ public:
     IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr Segments() const;
     void setSegments(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v);
     /// Indication of whether the curve intersects itself or not; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcCompositeCurve (IfcAbstractEntity* e);
-    IfcCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
+    IfcCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcCompositeCurve > list;
 };
 /// Definition from ISO/CD 10303-42:1992 A composite curve on surface is a collection of segments which are curves on a surface. Each segment shall lie on the basis surface.
@@ -26920,7 +26981,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcCompositeCurveOnSurface (IfcAbstractEntity* e);
-    IfcCompositeCurveOnSurface (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
+    IfcCompositeCurveOnSurface (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcCompositeCurveOnSurface > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A conic (IfcConic) is a planar curve which could be produced by intersecting a plane with a cone. A conic is defined in terms of its intrinsic geometric properties rather than being described in terms of other geometry. A conic class always has a placement coordinate system defined by a two or three dimensional placement. The parametric representation is defined in terms of this placement coordinate system.
@@ -28154,6 +28215,7 @@ public:
     IfcTemplatedEntityList< IfcRelSpaceBoundary >::ptr ProvidesBoundaries() const; // INVERSE IfcRelSpaceBoundary::RelatedBuildingElement
     IfcTemplatedEntityList< IfcRelConnectsElements >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsElements::RelatedElement
     IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
+    IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
     virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcElement (IfcAbstractEntity* e);
@@ -29851,6 +29913,25 @@ public:
     IfcHumidifierType (IfcAbstractEntity* e);
     IfcHumidifierType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcHumidifierTypeEnum::IfcHumidifierTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcHumidifierType > list;
+};
+
+class IfcIndexedPolyCurve : public IfcBoundedCurve {
+public:
+    IfcCartesianPointList* Points() const;
+    void setPoints(IfcCartesianPointList* v);
+    /// Whether the optional attribute Segments is defined for this IfcIndexedPolyCurve
+    bool hasSegments() const;
+    IfcEntityList::ptr Segments() const;
+    void setSegments(IfcEntityList::ptr v);
+    /// Whether the optional attribute SelfIntersect is defined for this IfcIndexedPolyCurve
+    bool hasSelfIntersect() const;
+    bool SelfIntersect() const;
+    void setSelfIntersect(bool v);
+        virtual const IfcParse::entity& declaration() const;
+    static Type::Enum Class();
+    IfcIndexedPolyCurve (IfcAbstractEntity* e);
+    IfcIndexedPolyCurve (IfcCartesianPointList* v1_Points, boost::optional< IfcEntityList::ptr > v2_Segments, boost::optional< bool > v3_SelfIntersect);
+    typedef IfcTemplatedEntityList< IfcIndexedPolyCurve > list;
 };
 /// The flow treatment device type IfcInterceptorType defines commonly shared information for occurrences of interceptors.  The set of shared information may include: 
 /// 
@@ -31735,7 +31816,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcRationalBSplineSurfaceWithKnots (IfcAbstractEntity* e);
-    IfcRationalBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData);
+    IfcRationalBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, boost::logic::tribool v5_UClosed, boost::logic::tribool v6_VClosed, boost::logic::tribool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData);
     typedef IfcTemplatedEntityList< IfcRationalBSplineSurfaceWithKnots > list;
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
@@ -35481,15 +35562,15 @@ public:
     IfcBSplineCurveForm::IfcBSplineCurveForm CurveForm() const;
     void setCurveForm(IfcBSplineCurveForm::IfcBSplineCurveForm v);
     /// Indication of whether the curve is closed; it is for information only.
-    bool ClosedCurve() const;
-    void setClosedCurve(bool v);
+    boost::logic::tribool ClosedCurve() const;
+    void setClosedCurve(boost::logic::tribool v);
     /// Indication whether the curve self-intersects or not; it is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBSplineCurve (IfcAbstractEntity* e);
-    IfcBSplineCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect);
+    IfcBSplineCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBSplineCurve > list;
 };
 /// Definition from ISO 10303:42:1994: This is the type of b-spline curve for which the knot values are explicitly given. This subtype shall be used to represent non-uniform B-spline curves and may be used for other knot types.
@@ -35523,7 +35604,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBSplineCurveWithKnots (IfcAbstractEntity* e);
-    IfcBSplineCurveWithKnots (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec);
+    IfcBSplineCurveWithKnots (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec);
     typedef IfcTemplatedEntityList< IfcBSplineCurveWithKnots > list;
 };
 /// Definition from IAI: The element type
@@ -35687,7 +35768,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBoundaryCurve (IfcAbstractEntity* e);
-    IfcBoundaryCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
+    IfcBoundaryCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBoundaryCurve > list;
 };
 /// Definition from ISO 6707-1:1989: Major functional part
@@ -36055,8 +36136,7 @@ public:
 /// IfcRepresentationMap.
 class IfcBuildingElement : public IfcElement {
 public:
-        IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
-    virtual const IfcParse::entity& declaration() const;
+        virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBuildingElement (IfcAbstractEntity* e);
     IfcBuildingElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
@@ -36397,10 +36477,14 @@ public:
     /// Predefined types of distribution systems.
     IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum v);
+    /// Whether the optional attribute LongName is defined for this IfcBuildingSystem
+    bool hasLongName() const;
+    std::string LongName() const;
+    void setLongName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBuildingSystem (IfcAbstractEntity* e);
-    IfcBuildingSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum > v6_PredefinedType);
+    IfcBuildingSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum > v6_PredefinedType, boost::optional< std::string > v7_LongName);
     typedef IfcTemplatedEntityList< IfcBuildingSystem > list;
 };
 /// The energy conversion device type IfcBurnerType defines commonly shared information for occurrences of burners.  The set of shared information may include: 
@@ -41531,7 +41615,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcOuterBoundaryCurve (IfcAbstractEntity* e);
-    IfcOuterBoundaryCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
+    IfcOuterBoundaryCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcOuterBoundaryCurve > list;
 };
 /// An outlet is a device installed at a point to receive one or more inserted plugs for electrical power or communications.
@@ -42971,7 +43055,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcRationalBSplineCurveWithKnots (IfcAbstractEntity* e);
-    IfcRationalBSplineCurveWithKnots (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData);
+    IfcRationalBSplineCurveWithKnots (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData);
     typedef IfcTemplatedEntityList< IfcRationalBSplineCurveWithKnots > list;
 };
 /// Definition from IAI: A steel bar, usually with manufactured deformations in the surface,
@@ -44549,13 +44633,10 @@ public:
 /// Figure 131 — Stair flight body
 class IfcStairFlight : public IfcBuildingElement {
 public:
-    /// Whether the optional attribute NumberOfRiser is defined for this IfcStairFlight
-    bool hasNumberOfRiser() const;
-    /// Number of the risers included in the stair flight
-    /// 
-    /// IFC2x4 CHANGE  The attribute has been deprecated it shall only be exposed with a NIL value. Use Pset_StairFlightCommon.NumberOfRisers instead.
-    int NumberOfRiser() const;
-    void setNumberOfRiser(int v);
+    /// Whether the optional attribute NumberOfRisers is defined for this IfcStairFlight
+    bool hasNumberOfRisers() const;
+    int NumberOfRisers() const;
+    void setNumberOfRisers(int v);
     /// Whether the optional attribute NumberOfTreads is defined for this IfcStairFlight
     bool hasNumberOfTreads() const;
     /// Number of treads included in the stair flight.
@@ -44588,7 +44669,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcStairFlight (IfcAbstractEntity* e);
-    IfcStairFlight (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRiser, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength, boost::optional< IfcStairFlightTypeEnum::IfcStairFlightTypeEnum > v13_PredefinedType);
+    IfcStairFlight (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRisers, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength, boost::optional< IfcStairFlightTypeEnum::IfcStairFlightTypeEnum > v13_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStairFlight > list;
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.

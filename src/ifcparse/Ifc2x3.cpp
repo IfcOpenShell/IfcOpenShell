@@ -6436,8 +6436,8 @@ IfcLinearVelocityMeasure::operator double() const { return *data_->getArgument(0
 Type::Enum IfcLogical::Class() { return Type::IfcLogical; }
 const IfcParse::type_declaration& IfcLogical::declaration() const { return *IfcLogical_type; }
 IfcLogical::IfcLogical(IfcAbstractEntity* e) { data_ = e; }
-IfcLogical::IfcLogical(bool v) { IfcWritableEntity* e = new IfcWritableEntity(Type::IfcLogical); e->setArgument(0, v); data_ = e; }
-IfcLogical::operator bool() const { return *data_->getArgument(0); }
+IfcLogical::IfcLogical(boost::logic::tribool v) { IfcWritableEntity* e = new IfcWritableEntity(Type::IfcLogical); e->setArgument(0, v); data_ = e; }
+IfcLogical::operator boost::logic::tribool() const { return *data_->getArgument(0); }
 
 // Function implementations for IfcLuminousFluxMeasure
 Type::Enum IfcLuminousFluxMeasure::Class() { return Type::IfcLuminousFluxMeasure; }
@@ -6922,7 +6922,7 @@ IfcYearNumber::operator int() const { return *data_->getArgument(0); }
 const IfcParse::entity& Ifc2DCompositeCurve::declaration() const { return *Ifc2DCompositeCurve_type; }
 Type::Enum Ifc2DCompositeCurve::Class() { return Type::Ifc2DCompositeCurve; }
 Ifc2DCompositeCurve::Ifc2DCompositeCurve(IfcAbstractEntity* e) : IfcCompositeCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::Ifc2DCompositeCurve)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-Ifc2DCompositeCurve::Ifc2DCompositeCurve(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect) : IfcCompositeCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Segments)->generalize()); e->setArgument(1,(v2_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
+Ifc2DCompositeCurve::Ifc2DCompositeCurve(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect) : IfcCompositeCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Segments)->generalize()); e->setArgument(1,(v2_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcActionRequest
 std::string IfcActionRequest::RequestID() const { return *data_->getArgument(5); }
@@ -7382,16 +7382,16 @@ IfcTemplatedEntityList< IfcCartesianPoint >::ptr IfcBSplineCurve::ControlPointsL
 void IfcBSplineCurve::setControlPointsList(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(1,v->generalize()); }
 IfcBSplineCurveForm::IfcBSplineCurveForm IfcBSplineCurve::CurveForm() const { return IfcBSplineCurveForm::FromString(*data_->getArgument(2)); }
 void IfcBSplineCurve::setCurveForm(IfcBSplineCurveForm::IfcBSplineCurveForm v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v,IfcBSplineCurveForm::ToString(v)); }
-bool IfcBSplineCurve::ClosedCurve() const { return *data_->getArgument(3); }
-void IfcBSplineCurve::setClosedCurve(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(3,v); }
-bool IfcBSplineCurve::SelfIntersect() const { return *data_->getArgument(4); }
-void IfcBSplineCurve::setSelfIntersect(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(4,v); }
+boost::logic::tribool IfcBSplineCurve::ClosedCurve() const { return *data_->getArgument(3); }
+void IfcBSplineCurve::setClosedCurve(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(3,v); }
+boost::logic::tribool IfcBSplineCurve::SelfIntersect() const { return *data_->getArgument(4); }
+void IfcBSplineCurve::setSelfIntersect(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(4,v); }
 
 
 const IfcParse::entity& IfcBSplineCurve::declaration() const { return *IfcBSplineCurve_type; }
 Type::Enum IfcBSplineCurve::Class() { return Type::IfcBSplineCurve; }
 IfcBSplineCurve::IfcBSplineCurve(IfcAbstractEntity* e) : IfcBoundedCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcBSplineCurve)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcBSplineCurve::IfcBSplineCurve(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect) : IfcBoundedCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
+IfcBSplineCurve::IfcBSplineCurve(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) : IfcBoundedCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcBeam
 
@@ -7417,7 +7417,7 @@ IfcBeamType::IfcBeamType(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHisto
 const IfcParse::entity& IfcBezierCurve::declaration() const { return *IfcBezierCurve_type; }
 Type::Enum IfcBezierCurve::Class() { return Type::IfcBezierCurve; }
 IfcBezierCurve::IfcBezierCurve(IfcAbstractEntity* e) : IfcBSplineCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcBezierCurve)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcBezierCurve::IfcBezierCurve(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect) : IfcBSplineCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
+IfcBezierCurve::IfcBezierCurve(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect) : IfcBSplineCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcBlobTexture
 std::string IfcBlobTexture::RasterFormat() const { return *data_->getArgument(4); }
@@ -8048,14 +8048,14 @@ IfcComplexProperty::IfcComplexProperty(std::string v1_Name, boost::optional< std
 // Function implementations for IfcCompositeCurve
 IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr IfcCompositeCurve::Segments() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<IfcCompositeCurveSegment>(); }
 void IfcCompositeCurve::setSegments(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(0,v->generalize()); }
-bool IfcCompositeCurve::SelfIntersect() const { return *data_->getArgument(1); }
-void IfcCompositeCurve::setSelfIntersect(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(1,v); }
+boost::logic::tribool IfcCompositeCurve::SelfIntersect() const { return *data_->getArgument(1); }
+void IfcCompositeCurve::setSelfIntersect(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(1,v); }
 
 
 const IfcParse::entity& IfcCompositeCurve::declaration() const { return *IfcCompositeCurve_type; }
 Type::Enum IfcCompositeCurve::Class() { return Type::IfcCompositeCurve; }
 IfcCompositeCurve::IfcCompositeCurve(IfcAbstractEntity* e) : IfcBoundedCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcCompositeCurve)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcCompositeCurve::IfcCompositeCurve(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect) : IfcBoundedCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Segments)->generalize()); e->setArgument(1,(v2_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
+IfcCompositeCurve::IfcCompositeCurve(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect) : IfcBoundedCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Segments)->generalize()); e->setArgument(1,(v2_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcCompositeCurveSegment
 IfcTransitionCode::IfcTransitionCode IfcCompositeCurveSegment::Transition() const { return IfcTransitionCode::FromString(*data_->getArgument(0)); }
@@ -10790,15 +10790,15 @@ void IfcMaterialLayer::setMaterial(IfcMaterial* v) { if ( ! data_->isWritable() 
 double IfcMaterialLayer::LayerThickness() const { return *data_->getArgument(1); }
 void IfcMaterialLayer::setLayerThickness(double v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(1,v); }
 bool IfcMaterialLayer::hasIsVentilated() const { return !data_->getArgument(2)->isNull(); }
-bool IfcMaterialLayer::IsVentilated() const { return *data_->getArgument(2); }
-void IfcMaterialLayer::setIsVentilated(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
+boost::logic::tribool IfcMaterialLayer::IsVentilated() const { return *data_->getArgument(2); }
+void IfcMaterialLayer::setIsVentilated(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
 
 IfcMaterialLayerSet::list::ptr IfcMaterialLayer::ToMaterialLayerSet() const { return data_->getInverse(Type::IfcMaterialLayerSet, 0)->as<IfcMaterialLayerSet>(); }
 
 const IfcParse::entity& IfcMaterialLayer::declaration() const { return *IfcMaterialLayer_type; }
 Type::Enum IfcMaterialLayer::Class() { return Type::IfcMaterialLayer; }
 IfcMaterialLayer::IfcMaterialLayer(IfcAbstractEntity* e) : IfcUtil::IfcBaseEntity() { if (!e) return; if (!e->is(Type::IfcMaterialLayer)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcMaterialLayer::IfcMaterialLayer(IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Material)); e->setArgument(1,(v2_LayerThickness)); if (v3_IsVentilated) { e->setArgument(2,(*v3_IsVentilated)); } else { e->setArgument(2); } data_ = e; EntityBuffer::Add(this); }
+IfcMaterialLayer::IfcMaterialLayer(IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< boost::logic::tribool > v3_IsVentilated) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Material)); e->setArgument(1,(v2_LayerThickness)); if (v3_IsVentilated) { e->setArgument(2,(*v3_IsVentilated)); } else { e->setArgument(2); } data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcMaterialLayerSet
 IfcTemplatedEntityList< IfcMaterialLayer >::ptr IfcMaterialLayerSet::MaterialLayers() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<IfcMaterialLayer>(); }
@@ -11109,22 +11109,22 @@ IfcCurve* IfcOffsetCurve2D::BasisCurve() const { return (IfcCurve*)((IfcUtil::If
 void IfcOffsetCurve2D::setBasisCurve(IfcCurve* v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(0,v); }
 double IfcOffsetCurve2D::Distance() const { return *data_->getArgument(1); }
 void IfcOffsetCurve2D::setDistance(double v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(1,v); }
-bool IfcOffsetCurve2D::SelfIntersect() const { return *data_->getArgument(2); }
-void IfcOffsetCurve2D::setSelfIntersect(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
+boost::logic::tribool IfcOffsetCurve2D::SelfIntersect() const { return *data_->getArgument(2); }
+void IfcOffsetCurve2D::setSelfIntersect(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
 
 
 const IfcParse::entity& IfcOffsetCurve2D::declaration() const { return *IfcOffsetCurve2D_type; }
 Type::Enum IfcOffsetCurve2D::Class() { return Type::IfcOffsetCurve2D; }
 IfcOffsetCurve2D::IfcOffsetCurve2D(IfcAbstractEntity* e) : IfcCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcOffsetCurve2D)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcOffsetCurve2D::IfcOffsetCurve2D(IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect) : IfcCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_BasisCurve)); e->setArgument(1,(v2_Distance)); e->setArgument(2,(v3_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
+IfcOffsetCurve2D::IfcOffsetCurve2D(IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect) : IfcCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_BasisCurve)); e->setArgument(1,(v2_Distance)); e->setArgument(2,(v3_SelfIntersect)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcOffsetCurve3D
 IfcCurve* IfcOffsetCurve3D::BasisCurve() const { return (IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void IfcOffsetCurve3D::setBasisCurve(IfcCurve* v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(0,v); }
 double IfcOffsetCurve3D::Distance() const { return *data_->getArgument(1); }
 void IfcOffsetCurve3D::setDistance(double v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(1,v); }
-bool IfcOffsetCurve3D::SelfIntersect() const { return *data_->getArgument(2); }
-void IfcOffsetCurve3D::setSelfIntersect(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
+boost::logic::tribool IfcOffsetCurve3D::SelfIntersect() const { return *data_->getArgument(2); }
+void IfcOffsetCurve3D::setSelfIntersect(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
 IfcDirection* IfcOffsetCurve3D::RefDirection() const { return (IfcDirection*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(3))); }
 void IfcOffsetCurve3D::setRefDirection(IfcDirection* v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(3,v); }
 
@@ -11132,7 +11132,7 @@ void IfcOffsetCurve3D::setRefDirection(IfcDirection* v) { if ( ! data_->isWritab
 const IfcParse::entity& IfcOffsetCurve3D::declaration() const { return *IfcOffsetCurve3D_type; }
 Type::Enum IfcOffsetCurve3D::Class() { return Type::IfcOffsetCurve3D; }
 IfcOffsetCurve3D::IfcOffsetCurve3D(IfcAbstractEntity* e) : IfcCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcOffsetCurve3D)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcOffsetCurve3D::IfcOffsetCurve3D(IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect, IfcDirection* v4_RefDirection) : IfcCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_BasisCurve)); e->setArgument(1,(v2_Distance)); e->setArgument(2,(v3_SelfIntersect)); e->setArgument(3,(v4_RefDirection)); data_ = e; EntityBuffer::Add(this); }
+IfcOffsetCurve3D::IfcOffsetCurve3D(IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect, IfcDirection* v4_RefDirection) : IfcCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_BasisCurve)); e->setArgument(1,(v2_Distance)); e->setArgument(2,(v3_SelfIntersect)); e->setArgument(3,(v4_RefDirection)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcOneDirectionRepeatFactor
 IfcVector* IfcOneDirectionRepeatFactor::RepeatFactor() const { return (IfcVector*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
@@ -11748,12 +11748,12 @@ IfcPresentationLayerAssignment::IfcPresentationLayerAssignment(IfcAbstractEntity
 IfcPresentationLayerAssignment::IfcPresentationLayerAssignment(std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Name)); if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } e->setArgument(2,(v3_AssignedItems)); if (v4_Identifier) { e->setArgument(3,(*v4_Identifier)); } else { e->setArgument(3); } data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPresentationLayerWithStyle
-bool IfcPresentationLayerWithStyle::LayerOn() const { return *data_->getArgument(4); }
-void IfcPresentationLayerWithStyle::setLayerOn(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(4,v); }
-bool IfcPresentationLayerWithStyle::LayerFrozen() const { return *data_->getArgument(5); }
-void IfcPresentationLayerWithStyle::setLayerFrozen(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(5,v); }
-bool IfcPresentationLayerWithStyle::LayerBlocked() const { return *data_->getArgument(6); }
-void IfcPresentationLayerWithStyle::setLayerBlocked(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(6,v); }
+boost::logic::tribool IfcPresentationLayerWithStyle::LayerOn() const { return *data_->getArgument(4); }
+void IfcPresentationLayerWithStyle::setLayerOn(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(4,v); }
+boost::logic::tribool IfcPresentationLayerWithStyle::LayerFrozen() const { return *data_->getArgument(5); }
+void IfcPresentationLayerWithStyle::setLayerFrozen(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(5,v); }
+boost::logic::tribool IfcPresentationLayerWithStyle::LayerBlocked() const { return *data_->getArgument(6); }
+void IfcPresentationLayerWithStyle::setLayerBlocked(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(6,v); }
 IfcEntityList::ptr IfcPresentationLayerWithStyle::LayerStyles() const { return *data_->getArgument(7); }
 void IfcPresentationLayerWithStyle::setLayerStyles(IfcEntityList::ptr v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(7,v); }
 
@@ -11761,7 +11761,7 @@ void IfcPresentationLayerWithStyle::setLayerStyles(IfcEntityList::ptr v) { if ( 
 const IfcParse::entity& IfcPresentationLayerWithStyle::declaration() const { return *IfcPresentationLayerWithStyle_type; }
 Type::Enum IfcPresentationLayerWithStyle::Class() { return Type::IfcPresentationLayerWithStyle; }
 IfcPresentationLayerWithStyle::IfcPresentationLayerWithStyle(IfcAbstractEntity* e) : IfcPresentationLayerAssignment((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcPresentationLayerWithStyle)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcPresentationLayerWithStyle::IfcPresentationLayerWithStyle(std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, bool v5_LayerOn, bool v6_LayerFrozen, bool v7_LayerBlocked, IfcEntityList::ptr v8_LayerStyles) : IfcPresentationLayerAssignment((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Name)); if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } e->setArgument(2,(v3_AssignedItems)); if (v4_Identifier) { e->setArgument(3,(*v4_Identifier)); } else { e->setArgument(3); } e->setArgument(4,(v5_LayerOn)); e->setArgument(5,(v6_LayerFrozen)); e->setArgument(6,(v7_LayerBlocked)); e->setArgument(7,(v8_LayerStyles)); data_ = e; EntityBuffer::Add(this); }
+IfcPresentationLayerWithStyle::IfcPresentationLayerWithStyle(std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, IfcEntityList::ptr v8_LayerStyles) : IfcPresentationLayerAssignment((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Name)); if (v2_Description) { e->setArgument(1,(*v2_Description)); } else { e->setArgument(1); } e->setArgument(2,(v3_AssignedItems)); if (v4_Identifier) { e->setArgument(3,(*v4_Identifier)); } else { e->setArgument(3); } e->setArgument(4,(v5_LayerOn)); e->setArgument(5,(v6_LayerFrozen)); e->setArgument(6,(v7_LayerBlocked)); e->setArgument(7,(v8_LayerStyles)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcPresentationStyle
 bool IfcPresentationStyle::hasName() const { return !data_->getArgument(0)->isNull(); }
@@ -12307,7 +12307,7 @@ void IfcRationalBezierCurve::setWeightsData(std::vector< double > /*[2:?]*/ v) {
 const IfcParse::entity& IfcRationalBezierCurve::declaration() const { return *IfcRationalBezierCurve_type; }
 Type::Enum IfcRationalBezierCurve::Class() { return Type::IfcRationalBezierCurve; }
 IfcRationalBezierCurve::IfcRationalBezierCurve(IfcAbstractEntity* e) : IfcBezierCurve((IfcAbstractEntity*)0) { if (!e) return; if (!e->is(Type::IfcRationalBezierCurve)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcRationalBezierCurve::IfcRationalBezierCurve(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData) : IfcBezierCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); e->setArgument(5,(v6_WeightsData)); data_ = e; EntityBuffer::Add(this); }
+IfcRationalBezierCurve::IfcRationalBezierCurve(int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData) : IfcBezierCurve((IfcAbstractEntity*)0) { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_Degree)); e->setArgument(1,(v2_ControlPointsList)->generalize()); e->setArgument(2,v3_CurveForm,IfcBSplineCurveForm::ToString(v3_CurveForm)); e->setArgument(3,(v4_ClosedCurve)); e->setArgument(4,(v5_SelfIntersect)); e->setArgument(5,(v6_WeightsData)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcRectangleHollowProfileDef
 double IfcRectangleHollowProfileDef::WallThickness() const { return *data_->getArgument(5); }
@@ -13459,8 +13459,8 @@ void IfcShapeAspect::setName(std::string v) { if ( ! data_->isWritable() ) { dat
 bool IfcShapeAspect::hasDescription() const { return !data_->getArgument(2)->isNull(); }
 std::string IfcShapeAspect::Description() const { return *data_->getArgument(2); }
 void IfcShapeAspect::setDescription(std::string v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(2,v); }
-bool IfcShapeAspect::ProductDefinitional() const { return *data_->getArgument(3); }
-void IfcShapeAspect::setProductDefinitional(bool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(3,v); }
+boost::logic::tribool IfcShapeAspect::ProductDefinitional() const { return *data_->getArgument(3); }
+void IfcShapeAspect::setProductDefinitional(boost::logic::tribool v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(3,v); }
 IfcProductDefinitionShape* IfcShapeAspect::PartOfProductDefinitionShape() const { return (IfcProductDefinitionShape*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(4))); }
 void IfcShapeAspect::setPartOfProductDefinitionShape(IfcProductDefinitionShape* v) { if ( ! data_->isWritable() ) { data_ = new IfcWritableEntity(data_); } ((IfcWritableEntity*)data_)->setArgument(4,v); }
 
@@ -13468,7 +13468,7 @@ void IfcShapeAspect::setPartOfProductDefinitionShape(IfcProductDefinitionShape* 
 const IfcParse::entity& IfcShapeAspect::declaration() const { return *IfcShapeAspect_type; }
 Type::Enum IfcShapeAspect::Class() { return Type::IfcShapeAspect; }
 IfcShapeAspect::IfcShapeAspect(IfcAbstractEntity* e) : IfcUtil::IfcBaseEntity() { if (!e) return; if (!e->is(Type::IfcShapeAspect)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-IfcShapeAspect::IfcShapeAspect(IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, bool v4_ProductDefinitional, IfcProductDefinitionShape* v5_PartOfProductDefinitionShape) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_ShapeRepresentations)->generalize()); if (v2_Name) { e->setArgument(1,(*v2_Name)); } else { e->setArgument(1); } if (v3_Description) { e->setArgument(2,(*v3_Description)); } else { e->setArgument(2); } e->setArgument(3,(v4_ProductDefinitional)); e->setArgument(4,(v5_PartOfProductDefinitionShape)); data_ = e; EntityBuffer::Add(this); }
+IfcShapeAspect::IfcShapeAspect(IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, boost::logic::tribool v4_ProductDefinitional, IfcProductDefinitionShape* v5_PartOfProductDefinitionShape) : IfcUtil::IfcBaseEntity() { IfcWritableEntity* e = new IfcWritableEntity(Class()); e->setArgument(0,(v1_ShapeRepresentations)->generalize()); if (v2_Name) { e->setArgument(1,(*v2_Name)); } else { e->setArgument(1); } if (v3_Description) { e->setArgument(2,(*v3_Description)); } else { e->setArgument(2); } e->setArgument(3,(v4_ProductDefinitional)); e->setArgument(4,(v5_PartOfProductDefinitionShape)); data_ = e; EntityBuffer::Add(this); }
 
 // Function implementations for IfcShapeModel
 

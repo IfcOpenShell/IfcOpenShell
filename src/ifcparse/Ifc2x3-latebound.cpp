@@ -155,7 +155,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcLinearVelocityMeasure] = new IfcEntityDescriptor(Type::IfcLinearVelocityMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcLogical] = new IfcEntityDescriptor(Type::IfcLogical,0);
-    current->add("wrappedValue",false,IfcUtil::Argument_BOOL);
+    current->add("wrappedValue",false,IfcUtil::Argument_TRIBOOL);
     current = entity_descriptor_map[Type::IfcLuminousFluxMeasure] = new IfcEntityDescriptor(Type::IfcLuminousFluxMeasure,0);
     current->add("wrappedValue",false,IfcUtil::Argument_DOUBLE);
     current = entity_descriptor_map[Type::IfcLuminousIntensityDistributionMeasure] = new IfcEntityDescriptor(Type::IfcLuminousIntensityDistributionMeasure,0);
@@ -540,7 +540,7 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcMaterialLayer] = new IfcEntityDescriptor(Type::IfcMaterialLayer,0);
     current->add("Material",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcMaterial);
     current->add("LayerThickness",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
-    current->add("IsVentilated",true,IfcUtil::Argument_BOOL,Type::IfcLogical);
+    current->add("IsVentilated",true,IfcUtil::Argument_TRIBOOL,Type::IfcLogical);
     current = entity_descriptor_map[Type::IfcMaterialLayerSet] = new IfcEntityDescriptor(Type::IfcMaterialLayerSet,0);
     current->add("MaterialLayers",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcMaterialLayer);
     current->add("LayerSetName",true,IfcUtil::Argument_STRING,Type::IfcLabel);
@@ -656,9 +656,9 @@ void InitDescriptorMap() {
     current->add("AssignedItems",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcLayeredItem);
     current->add("Identifier",true,IfcUtil::Argument_STRING,Type::IfcIdentifier);
     current = entity_descriptor_map[Type::IfcPresentationLayerWithStyle] = new IfcEntityDescriptor(Type::IfcPresentationLayerWithStyle,entity_descriptor_map.find(Type::IfcPresentationLayerAssignment)->second);
-    current->add("LayerOn",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("LayerFrozen",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("LayerBlocked",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("LayerOn",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
+    current->add("LayerFrozen",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
+    current->add("LayerBlocked",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
     current->add("LayerStyles",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcPresentationStyleSelect);
     current = entity_descriptor_map[Type::IfcPresentationStyle] = new IfcEntityDescriptor(Type::IfcPresentationStyle,0);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
@@ -766,7 +766,7 @@ void InitDescriptorMap() {
     current->add("ShapeRepresentations",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcShapeModel);
     current->add("Name",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current->add("Description",true,IfcUtil::Argument_STRING,Type::IfcText);
-    current->add("ProductDefinitional",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ProductDefinitional",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
     current->add("PartOfProductDefinitionShape",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcProductDefinitionShape);
     current = entity_descriptor_map[Type::IfcShapeModel] = new IfcEntityDescriptor(Type::IfcShapeModel,entity_descriptor_map.find(Type::IfcRepresentation)->second);
 
@@ -1574,11 +1574,11 @@ void InitDescriptorMap() {
     current = entity_descriptor_map[Type::IfcOffsetCurve2D] = new IfcEntityDescriptor(Type::IfcOffsetCurve2D,entity_descriptor_map.find(Type::IfcCurve)->second);
     current->add("BasisCurve",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current->add("Distance",false,IfcUtil::Argument_DOUBLE,Type::IfcLengthMeasure);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcOffsetCurve3D] = new IfcEntityDescriptor(Type::IfcOffsetCurve3D,entity_descriptor_map.find(Type::IfcCurve)->second);
     current->add("BasisCurve",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current->add("Distance",false,IfcUtil::Argument_DOUBLE,Type::IfcLengthMeasure);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
     current->add("RefDirection",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcDirection);
     current = entity_descriptor_map[Type::IfcPermeableCoveringProperties] = new IfcEntityDescriptor(Type::IfcPermeableCoveringProperties,entity_descriptor_map.find(Type::IfcPropertySetDefinition)->second);
     current->add("OperationType",false,IfcUtil::Argument_ENUMERATION,Type::IfcPermeableCoveringOperationEnum);
@@ -1846,7 +1846,7 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcColumnTypeEnum);
     current = entity_descriptor_map[Type::IfcCompositeCurve] = new IfcEntityDescriptor(Type::IfcCompositeCurve,entity_descriptor_map.find(Type::IfcBoundedCurve)->second);
     current->add("Segments",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCompositeCurveSegment);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcConic] = new IfcEntityDescriptor(Type::IfcConic,entity_descriptor_map.find(Type::IfcCurve)->second);
     current->add("Position",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcAxis2Placement);
     current = entity_descriptor_map[Type::IfcConstructionResource] = new IfcEntityDescriptor(Type::IfcConstructionResource,entity_descriptor_map.find(Type::IfcResource)->second);
@@ -2203,8 +2203,8 @@ void InitDescriptorMap() {
     current->add("Degree",false,IfcUtil::Argument_INT,Type::UNDEFINED);
     current->add("ControlPointsList",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCartesianPoint);
     current->add("CurveForm",false,IfcUtil::Argument_ENUMERATION,Type::IfcBSplineCurveForm);
-    current->add("ClosedCurve",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
-    current->add("SelfIntersect",false,IfcUtil::Argument_BOOL,Type::UNDEFINED);
+    current->add("ClosedCurve",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
+    current->add("SelfIntersect",false,IfcUtil::Argument_TRIBOOL,Type::UNDEFINED);
     current = entity_descriptor_map[Type::IfcBeamType] = new IfcEntityDescriptor(Type::IfcBeamType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcBeamTypeEnum);
     current = entity_descriptor_map[Type::IfcBezierCurve] = new IfcEntityDescriptor(Type::IfcBezierCurve,entity_descriptor_map.find(Type::IfcBSplineCurve)->second);

@@ -5193,8 +5193,8 @@ public:
     virtual const IfcParse::type_declaration& declaration() const;
     static Type::Enum Class();
     explicit IfcLogical (IfcAbstractEntity* e);
-    IfcLogical (bool v);
-    operator bool() const;
+    IfcLogical (boost::logic::tribool v);
+    operator boost::logic::tribool() const;
 };
 /// IfcLuminousFluxMeasure is a measure of the luminous flux.
 /// Usually measured in Lumen (lm, Candela Steradian).
@@ -7971,13 +7971,13 @@ public:
     /// set to TRUE if the material layer is an air gap and provides air exchange from the layer to the outside air.
     ///   set to UNKNOWN if the material layer is an air gap and does not provide air exchange (or when this information about air exchange of the air gap is not available).
     ///   set to FALSE if the material layer is a solid material layer (the default).
-    bool IsVentilated() const;
-    void setIsVentilated(bool v);
+    boost::logic::tribool IsVentilated() const;
+    void setIsVentilated(boost::logic::tribool v);
         IfcTemplatedEntityList< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
     virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcMaterialLayer (IfcAbstractEntity* e);
-    IfcMaterialLayer (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated);
+    IfcMaterialLayer (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< boost::logic::tribool > v3_IsVentilated);
     typedef IfcTemplatedEntityList< IfcMaterialLayer > list;
 };
 /// IfcMaterialLayerSet is a designation by which materials of an element constructed of a number of material layers is known and through which the relative positioning of individual layers can be expressed.
@@ -8933,14 +8933,14 @@ public:
 class IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
-    bool LayerOn() const;
-    void setLayerOn(bool v);
+    boost::logic::tribool LayerOn() const;
+    void setLayerOn(boost::logic::tribool v);
     /// A logical setting, TRUE indicates that the layer is set to 'Frozen', FALSE that the layer is set to 'Not frozen', UNKNOWN that such information is not available.
-    bool LayerFrozen() const;
-    void setLayerFrozen(bool v);
+    boost::logic::tribool LayerFrozen() const;
+    void setLayerFrozen(boost::logic::tribool v);
     /// A logical setting, TRUE indicates that the layer is set to 'Blocked', FALSE that the layer is set to 'Not blocked', UNKNOWN that such information is not available.
-    bool LayerBlocked() const;
-    void setLayerBlocked(bool v);
+    boost::logic::tribool LayerBlocked() const;
+    void setLayerBlocked(boost::logic::tribool v);
     /// Assignment of presentation styles to the layer to provide a default style for representation items.
     /// 
     /// NOTE  In most cases the assignment of styles to a layer is restricted to an IfcCurveStyle representing the layer curve colour, layer curve thickness, and layer curve type.
@@ -8951,7 +8951,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcPresentationLayerWithStyle (IfcAbstractEntity* e);
-    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, bool v5_LayerOn, bool v6_LayerFrozen, bool v7_LayerBlocked, IfcEntityList::ptr v8_LayerStyles);
+    IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, IfcEntityList::ptr v8_LayerStyles);
     typedef IfcTemplatedEntityList< IfcPresentationLayerWithStyle > list;
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
@@ -9954,15 +9954,15 @@ public:
     /// ---
     /// EXAMPLE: Would be FALSE for a center line, identified as shape aspect; would be TRUE for a cantilever.
     /// ---
-    bool ProductDefinitional() const;
-    void setProductDefinitional(bool v);
+    boost::logic::tribool ProductDefinitional() const;
+    void setProductDefinitional(boost::logic::tribool v);
     /// Reference to the product definition shape of which this class is an aspect.
     IfcProductDefinitionShape* PartOfProductDefinitionShape() const;
     void setPartOfProductDefinitionShape(IfcProductDefinitionShape* v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcShapeAspect (IfcAbstractEntity* e);
-    IfcShapeAspect (IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, bool v4_ProductDefinitional, IfcProductDefinitionShape* v5_PartOfProductDefinitionShape);
+    IfcShapeAspect (IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, boost::logic::tribool v4_ProductDefinitional, IfcProductDefinitionShape* v5_PartOfProductDefinitionShape);
     typedef IfcTemplatedEntityList< IfcShapeAspect > list;
 };
 /// IfcShapeModel represents
@@ -18678,12 +18678,12 @@ public:
     double Distance() const;
     void setDistance(double v);
     /// An indication of whether the offset curve self-intersects; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcOffsetCurve2D (IfcAbstractEntity* e);
-    IfcOffsetCurve2D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect);
+    IfcOffsetCurve2D (IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcOffsetCurve2D > list;
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 3d is a curve at a constant distance from a basis curve in three-dimensional space. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve the transition code between each segment shall be cont same gradient or cont same gradient same curvature. The offset curve at any point (parameter) on the basis curve is in the direction V x T where V is the fixed reference direction and T is the unit tangent to the basis curve. For the offset direction to be well defined, T shall not at any point of the curve be in the same, or opposite, direction as V. 
@@ -18710,15 +18710,15 @@ public:
     double Distance() const;
     void setDistance(double v);
     /// An indication of whether the offset curve self-intersects, this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
     /// The direction used to define the direction of the offset curve 3d from the basis curve.
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcOffsetCurve3D (IfcAbstractEntity* e);
-    IfcOffsetCurve3D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect, IfcDirection* v4_RefDirection);
+    IfcOffsetCurve3D (IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect, IfcDirection* v4_RefDirection);
     typedef IfcTemplatedEntityList< IfcOffsetCurve3D > list;
 };
 /// This entity is a description of a panel within a
@@ -23503,12 +23503,12 @@ public:
     IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr Segments() const;
     void setSegments(IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v);
     /// Indication of whether the curve intersects itself or not; this is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcCompositeCurve (IfcAbstractEntity* e);
-    IfcCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
+    IfcCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcCompositeCurve > list;
 };
 /// Definition from ISO/CD 10303-42:1992: A conic (IfcConic) is a planar curve which could be produced by intersecting a plane with a cone. A conic is defined in terms of its intrinsic geometric properties rather than being described in terms of other geometry. A conic class always has a placement coordinate system defined by a two or three dimensional placement. The parametric representation is defined in terms of this placement coordinate system.
@@ -29513,7 +29513,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     Ifc2DCompositeCurve (IfcAbstractEntity* e);
-    Ifc2DCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
+    Ifc2DCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< Ifc2DCompositeCurve > list;
 };
 /// A request is the act or instance of asking for something, such as a request for information, bid submission, or performance of work. 
@@ -29806,15 +29806,15 @@ public:
     IfcBSplineCurveForm::IfcBSplineCurveForm CurveForm() const;
     void setCurveForm(IfcBSplineCurveForm::IfcBSplineCurveForm v);
     /// Indication of whether the curve is closed; it is for information only.
-    bool ClosedCurve() const;
-    void setClosedCurve(bool v);
+    boost::logic::tribool ClosedCurve() const;
+    void setClosedCurve(boost::logic::tribool v);
     /// Indication whether the curve self-intersects or not; it is for information only.
-    bool SelfIntersect() const;
-    void setSelfIntersect(bool v);
+    boost::logic::tribool SelfIntersect() const;
+    void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBSplineCurve (IfcAbstractEntity* e);
-    IfcBSplineCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect);
+    IfcBSplineCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBSplineCurve > list;
 };
 /// Definition from IAI: The element type
@@ -29932,7 +29932,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcBezierCurve (IfcAbstractEntity* e);
-    IfcBezierCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect);
+    IfcBezierCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBezierCurve > list;
 };
 /// The energy conversion device type IfcBoilerType defines commonly shared information for occurrences of boilers.  The set of shared information may include: 
@@ -34802,7 +34802,7 @@ public:
         virtual const IfcParse::entity& declaration() const;
     static Type::Enum Class();
     IfcRationalBezierCurve (IfcAbstractEntity* e);
-    IfcRationalBezierCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
+    IfcRationalBezierCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
     typedef IfcTemplatedEntityList< IfcRationalBezierCurve > list;
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
