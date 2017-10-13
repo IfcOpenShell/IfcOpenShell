@@ -27,7 +27,7 @@ class Mapping:
 
     express_to_cpp_typemapping = {
         'boolean' : 'bool',
-        'logical' : 'bool',
+        'logical' : 'boost::logic::tribool',
         'integer' : 'int',
         'real'    : 'double',
         'number'  : 'double',
@@ -36,9 +36,9 @@ class Mapping:
     }
     
     supported_argument_types = set([
-        'INT', 'BOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
-        'AGGREGATE_OF_INT', 'AGGREGATE_OF_BOOL', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
-        'AGGREGATE_OF_AGGREGATE_OF_INT', 'AGGREGATE_OF_AGGREGATE_OF_BOOL', 'AGGREGATE_OF_AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE',
+        'INT', 'BOOL', 'TRIBOOL', 'DOUBLE', 'STRING', 'BINARY', 'ENUMERATION', 'ENTITY_INSTANCE',
+        'AGGREGATE_OF_INT', 'AGGREGATE_OF_BOOL', 'AGGREGATE_OF_TRIBOOL', 'AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_STRING', 'AGGREGATE_OF_BINARY', 'AGGREGATE_OF_ENTITY_INSTANCE',
+        'AGGREGATE_OF_AGGREGATE_OF_INT', 'AGGREGATE_OF_AGGREGATE_OF_BOOL', 'AGGREGATE_OF_AGGREGATE_OF_TRIBOOL', 'AGGREGATE_OF_AGGREGATE_OF_DOUBLE', 'AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE',
     ])
 
     def __init__(self, schema):
@@ -103,7 +103,7 @@ class Mapping:
                 raise ValueError("Unable to map type %r for attribute %r" % (type, attr))
         ty = _make_argument_type(attr.type if hasattr(attr, 'type') else attr)
         if ty not in self.supported_argument_types:
-            print("Attribute %r mapped as 'unknown'" % (attr), file=sys.stderr)
+            print("Attribute %r (%s) mapped as 'unknown'" % (attr, ty), file=sys.stderr)
             ty = 'UNKNOWN'
         return "IfcUtil::Argument_%s" % ty
 
