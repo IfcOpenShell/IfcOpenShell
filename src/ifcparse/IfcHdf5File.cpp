@@ -74,14 +74,16 @@ public:
 template <typename T> struct is_hdf5_integral { static const bool value = false; };
 template <> struct is_hdf5_integral <int>     { static const bool value =  true; };
 template <> struct is_hdf5_integral <bool>    { static const bool value =  true; };
+template <> struct is_hdf5_integral <boost::logic::tribool> { static const bool value = true; };
 template <> struct is_hdf5_integral <float>   { static const bool value =  true; };
 template <> struct is_hdf5_integral <double>  { static const bool value =  true; };
 template <> struct is_hdf5_integral <enumeration_reference> { static const bool value = true; };
 
 template <typename T> struct hdf5_datatype_for{};
 template <> struct hdf5_datatype_for <int>    { static const H5T_class_t value = H5T_INTEGER; };
-// Booleans are enumerations in HDF5 as well!
+// Booleans and logicals are enumerations in HDF5 as well!
 template <> struct hdf5_datatype_for <bool>   { static const H5T_class_t value = H5T_ENUM; };
+template <> struct hdf5_datatype_for <boost::logic::tribool> { static const H5T_class_t value = H5T_ENUM; };
 template <> struct hdf5_datatype_for <float>  { static const H5T_class_t value = H5T_FLOAT; };
 template <> struct hdf5_datatype_for <double> { static const H5T_class_t value = H5T_FLOAT; };
 template <> struct hdf5_datatype_for <enumeration_reference> { static const H5T_class_t value = H5T_ENUM; };
@@ -192,6 +194,13 @@ void write_number_of_size(void*& ptr, size_t n, T i) {
 	}
 }
 
+void write_number_of_size(void*& ptr, size_t n, boost::logic::tribool b) {
+	int i = b.value == boost::logic::tribool::false_value
+		? 0 : b.value == boost::logic::tribool::indeterminate_value
+		? -1 : 1;
+	write_number_of_size(ptr, n, i);
+}
+
 void write_string_of_size(void*& ptr, size_t n, const std::string& s) {
 	memset(ptr, 0, n);
 	memcpy(ptr, s.c_str(), s.size());
@@ -230,6 +239,7 @@ public:
 		}
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_INT)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_BOOL)
+		CHECK_CAST_AND_CALL(IfcUtil::Argument_TRIBOOL)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_DOUBLE)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_STRING)
 		else if (attr_->type() == IfcUtil::Argument_BINARY) {
@@ -246,6 +256,7 @@ public:
 
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_INT)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_BOOL)
+		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_TRIBOOL)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_DOUBLE)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_STRING)
 		else if (attr_->type() == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
@@ -259,6 +270,7 @@ public:
 
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL)
+		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_TRIBOOL)
 		CHECK_CAST_AND_CALL(IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE)
 		else if (attr_->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcUtil::attr_type_to_cpp_type<IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE>::cpp_type v = *attr_;
@@ -1985,20 +1997,17 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 	} else if (dt->getClass() == H5T_FLOAT) {
 		output << IfcWrite::format(read<double>(buffer, dt));
 	} else if (dt->getClass() == H5T_ENUM) {
-		const char *enum_value;
-		char *to_free;
-		enum_value = to_free = H5Tget_member_name(dt->getId(), read<int>(buffer, dt));
-		char substr[2] = { 0,0 };
+		char enum_value[255];
+		H5Tenum_nameof(dt->getId(), buffer, enum_value, 255);
 		const char BOOLEAN[] = "BOOLEAN-";
 		const char LOGICAL[] = "LOGICAL-";
 		if (strstr(enum_value, BOOLEAN) || strstr(enum_value, LOGICAL)) {
 			// Hack to convert BOOLEAN-TRUE et al to T
 			// Boolean and logical are of the same length coincedentally
-			substr[0] = enum_value[strlen(BOOLEAN)];
-			enum_value = substr;
+			enum_value[0] = enum_value[strlen(BOOLEAN)];
+			enum_value[1] = 0;
 		} 
 		output << "." << enum_value << ".";
-		H5free_memory(to_free);
 	} else {
 		throw std::runtime_error("Unexpected datatype encountered");
 	}

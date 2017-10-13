@@ -81,6 +81,7 @@ namespace IfcParse {
 		static bool isInt(const Token& t);
 		/// Returns whether the token can be interpreted as a boolean
 		static bool isBool(const Token& t);
+		static bool isLogical(const Token& t);
 		/// Returns whether the token can be interpreted as a floating point number
 		static bool isFloat(const Token& t);
 		/// Returns whether the token can be interpreted as a binary type
@@ -89,6 +90,7 @@ namespace IfcParse {
 		static int asInt(const Token& t);
 		/// Returns the token interpreted as an boolean (.T. or .F.)
 		static bool asBool(const Token& t);
+		static boost::logic::tribool asLogical(const Token& t);
 		/// Returns the token as a floating point number
 		static double asFloat(const Token& t);
 		/// Returns the token as a string (without the dot or apostrophe)
@@ -155,6 +157,10 @@ namespace IfcParse {
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
+		operator boost::logic::tribool() const;
+		operator std::vector<boost::logic::tribool>() const;
+		operator std::vector< std::vector<boost::logic::tribool> >() const;
+
 		bool isNull() const;
 		unsigned int size() const;
 
@@ -195,6 +201,10 @@ namespace IfcParse {
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
 
+		operator boost::logic::tribool() const;
+		operator std::vector<boost::logic::tribool>() const;
+		operator std::vector< std::vector<boost::logic::tribool> >() const;
+
 		bool isNull() const;
 		unsigned int size() const;
 
@@ -232,6 +242,10 @@ namespace IfcParse {
 		operator std::vector< std::vector<bool> >() const;
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
+
+		operator boost::logic::tribool() const;
+		operator std::vector<boost::logic::tribool>() const;
+		operator std::vector< std::vector<boost::logic::tribool> >() const;
 
 		bool isNull() const;
 		unsigned int size() const;

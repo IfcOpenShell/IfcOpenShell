@@ -155,6 +155,9 @@ void IfcWritableEntity::setArgument(int i, Argument* a) {
 	case IfcUtil::Argument_BOOL:
 		this->setArgument(i, static_cast<bool>(*a));
 		break;
+	case IfcUtil::Argument_TRIBOOL:
+		this->setArgument(i, a->operator boost::logic::tribool());
+		break;
 	case IfcUtil::Argument_DOUBLE:
 		this->setArgument(i, static_cast<double>(*a));
 		break;
@@ -309,14 +312,17 @@ public:
 	int operator()(const IfcWriteArgument::Derived& /*i*/) const { return -1; }
 	int operator()(const int& /*i*/) const { return -1; }
 	int operator()(const bool& /*i*/) const { return -1; }
+	int operator()(const boost::logic::tribool& /*i*/) const { return -1; }
 	int operator()(const double& /*i*/) const { return -1; }
 	int operator()(const std::string& /*i*/) const { return -1; }
 	int operator()(const boost::dynamic_bitset<>& /*i*/) const { return -1; }
 	int operator()(const std::vector<int>& i) const { return (int)i.size(); }
 	int operator()(const std::vector<bool>& i) const { return (int)i.size(); }
+	int operator()(const std::vector<boost::logic::tribool>& i) const { return (int)i.size(); }
 	int operator()(const std::vector<double>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<int> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<bool> >& i) const { return (int)i.size(); }
+	int operator()(const std::vector< std::vector<boost::logic::tribool> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector< std::vector<double> >& i) const { return (int)i.size(); }
 	int operator()(const std::vector<std::string>& i) const { return (int)i.size(); }
 	int operator()(const std::vector< boost::dynamic_bitset<> >& i) const { return (int)i.size(); }
@@ -375,6 +381,10 @@ std::string IfcWrite::format(bool b) {
 	return b ? ".T." : ".F.";
 }
 
+std::string IfcWrite::format(boost::logic::tribool b) {
+	return std::string(".") + "FTU"[b.value] + ".";
+}
+
 class StringBuilderVisitor : public boost::static_visitor<void> {
 private:
 	StringBuilderVisitor(const StringBuilderVisitor&); //N/A
@@ -398,6 +408,7 @@ public:
 	void operator()(const IfcWriteArgument::Derived& /*i*/) { data << "*"; }
 	void operator()(const int& i) { data << i; }
 	void operator()(const bool& i) { data << IfcWrite::format(i); }
+	void operator()(const boost::logic::tribool& i) { data << IfcWrite::format(i); }
 	void operator()(const double& i) { data << IfcWrite::format(i); }
 	void operator()(const boost::dynamic_bitset<>& i) { data << IfcWrite::format(i); }
 	void operator()(const std::string& i) { 
@@ -410,6 +421,7 @@ public:
 	}
 	void operator()(const std::vector<int>& i);
 	void operator()(const std::vector<bool>& i);
+	void operator()(const std::vector<boost::logic::tribool>& i);
 	void operator()(const std::vector<double>& i);
 	void operator()(const std::vector<std::string>& i);
 	void operator()(const std::vector< boost::dynamic_bitset<> >& i);
@@ -434,6 +446,7 @@ public:
 	}
 	void operator()(const std::vector< std::vector<int> >& i);
 	void operator()(const std::vector< std::vector<bool> >& i);
+	void operator()(const std::vector< std::vector<boost::logic::tribool> >& i);
 	void operator()(const std::vector< std::vector<double> >& i);
 	void operator()(const IfcEntityListList::ptr& i) { 
 		data << "(";
@@ -487,6 +500,16 @@ void StringBuilderVisitor::serialize(const std::vector<bool>& i) {
 }
 
 template <>
+void StringBuilderVisitor::serialize(const std::vector<boost::logic::tribool>& i) {
+	data << "(";
+	for (std::vector<boost::logic::tribool>::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		data << IfcWrite::format(*it);
+	}
+	data << ")";
+}
+
+template <>
 void StringBuilderVisitor::serialize(const std::vector< boost::dynamic_bitset<> >& i) {
 	data << "(";
 	for (std::vector< boost::dynamic_bitset<> >::const_iterator it = i.begin(); it != i.end(); ++it) {
@@ -498,6 +521,7 @@ void StringBuilderVisitor::serialize(const std::vector< boost::dynamic_bitset<> 
 
 void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<bool>& i) { serialize(i); }
+void StringBuilderVisitor::operator()(const std::vector<boost::logic::tribool>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
 void StringBuilderVisitor::operator()(const std::vector< boost::dynamic_bitset<> >& i) { serialize(i); }
@@ -517,6 +541,14 @@ void StringBuilderVisitor::operator()(const std::vector< std::vector<bool> >& i)
 	}
 	data << ")";
 }
+void StringBuilderVisitor::operator()(const std::vector< std::vector<boost::logic::tribool> >& i) {
+	data << "(";
+	for (std::vector< std::vector<boost::logic::tribool> >::const_iterator it = i.begin(); it != i.end(); ++it) {
+		if (it != i.begin()) data << ",";
+		serialize(*it);
+	}
+	data << ")";
+}
 void StringBuilderVisitor::operator()(const std::vector< std::vector<double> >& i) {
 	data << "(";
 	for (std::vector< std::vector<double> >::const_iterator it = i.begin(); it != i.end(); ++it) {
@@ -528,6 +560,7 @@ void StringBuilderVisitor::operator()(const std::vector< std::vector<double> >& 
 
 IfcWriteArgument::operator int() const { return as<int>(); }
 IfcWriteArgument::operator bool() const { return as<bool>(); }
+IfcWriteArgument::operator boost::logic::tribool() const { return as<boost::logic::tribool>(); }
 IfcWriteArgument::operator double() const { return as<double>(); }
 IfcWriteArgument::operator std::string() const { 
 	if (type() == IfcUtil::Argument_ENUMERATION) {
@@ -539,12 +572,14 @@ IfcWriteArgument::operator IfcUtil::IfcBaseClass*() const { return as<IfcUtil::I
 IfcWriteArgument::operator boost::dynamic_bitset<>() const { return as< boost::dynamic_bitset<> >(); }
 IfcWriteArgument::operator std::vector<int>() const { return as<std::vector<int> >(); }
 IfcWriteArgument::operator std::vector<bool>() const { return as<std::vector<bool> >(); }
+IfcWriteArgument::operator std::vector<boost::logic::tribool>() const { return as<std::vector<boost::logic::tribool> >(); }
 IfcWriteArgument::operator std::vector<double>() const { return as<std::vector<double> >(); }
 IfcWriteArgument::operator std::vector<std::string>() const { return as<std::vector<std::string > >(); }
 IfcWriteArgument::operator std::vector< boost::dynamic_bitset<> >() const { return as< std::vector< boost::dynamic_bitset<> > >(); }
 IfcWriteArgument::operator IfcEntityList::ptr() const { return as<IfcEntityList::ptr>(); }
 IfcWriteArgument::operator std::vector< std::vector<int> >() const { return as<std::vector< std::vector<int> > >(); }
 IfcWriteArgument::operator std::vector< std::vector<bool> >() const { return as<std::vector< std::vector<bool> > >(); }
+IfcWriteArgument::operator std::vector< std::vector<boost::logic::tribool> >() const { return as<std::vector< std::vector<boost::logic::tribool> > >(); }
 IfcWriteArgument::operator std::vector< std::vector<double> >() const { return as<std::vector< std::vector<double> > >(); }
 IfcWriteArgument::operator IfcEntityListList::ptr() const { throw; }
 bool IfcWriteArgument::isNull() const { return type() == IfcUtil::Argument_NULL; }

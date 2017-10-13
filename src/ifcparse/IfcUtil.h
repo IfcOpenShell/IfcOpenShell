@@ -20,6 +20,9 @@
 #ifndef IFCUTIL_H
 #define IFCUTIL_H
 
+#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#define BOOST_MPL_LIMIT_LIST_SIZE 30
+
 #include <set>
 #include <string>
 #include <vector>
@@ -28,6 +31,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/logic/tribool.hpp>
 
 #include "../ifcparse/IfcSchema.h"
 
@@ -58,6 +62,7 @@ namespace IfcUtil {
 		Argument_DERIVED,
 		Argument_INT,
 		Argument_BOOL,
+		Argument_TRIBOOL,
 		Argument_DOUBLE,
 		Argument_STRING,
 		Argument_BINARY,
@@ -66,13 +71,15 @@ namespace IfcUtil {
 
 		Argument_AGGREGATE_OF_INT, 
 		Argument_AGGREGATE_OF_BOOL, 
-		Argument_AGGREGATE_OF_DOUBLE, 
+		Argument_AGGREGATE_OF_TRIBOOL,
+		Argument_AGGREGATE_OF_DOUBLE,
 		Argument_AGGREGATE_OF_STRING,
 		Argument_AGGREGATE_OF_BINARY, 
 		Argument_AGGREGATE_OF_ENTITY_INSTANCE,
 	
 		Argument_AGGREGATE_OF_AGGREGATE_OF_INT,
 		Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL,
+		Argument_AGGREGATE_OF_AGGREGATE_OF_TRIBOOL,
 		Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,
 		Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE, 
 
@@ -314,6 +321,7 @@ class Argument {
 public:
 	virtual operator int() const = 0;
 	virtual operator bool() const = 0;
+	virtual operator boost::logic::tribool() const = 0;
 	virtual operator double() const = 0;
 	virtual operator std::string() const = 0;
 	virtual operator boost::dynamic_bitset<>() const = 0;
@@ -321,6 +329,7 @@ public:
 
 	virtual operator std::vector<int>() const = 0;
 	virtual operator std::vector<bool>() const = 0;
+	virtual operator std::vector<boost::logic::tribool>() const = 0;
 	virtual operator std::vector<double>() const = 0;
 	virtual operator std::vector<std::string>() const = 0;
 	virtual operator std::vector<boost::dynamic_bitset<> >() const = 0;
@@ -328,6 +337,7 @@ public:
 
 	virtual operator std::vector< std::vector<int> >() const = 0;
 	virtual operator std::vector< std::vector<bool> >() const = 0;
+	virtual operator std::vector< std::vector<boost::logic::tribool> >() const = 0;
 	virtual operator std::vector< std::vector<double> >() const = 0;
 	virtual operator IfcEntityListList::ptr() const = 0;
 
@@ -384,6 +394,7 @@ namespace IfcUtil {
 	struct attr_type_to_cpp_type;
 	template <> struct attr_type_to_cpp_type <Argument_INT> { typedef int cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_BOOL> { typedef bool cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_TRIBOOL> { typedef boost::logic::tribool cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_DOUBLE> { typedef double cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_STRING> { typedef std::string cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_BINARY> { typedef boost::dynamic_bitset<> cpp_type; };
@@ -391,6 +402,7 @@ namespace IfcUtil {
 
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_INT> { typedef std::vector<int> cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_BOOL> { typedef std::vector<bool> cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_TRIBOOL> { typedef std::vector<boost::logic::tribool> cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_DOUBLE> { typedef std::vector<double> cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_STRING> { typedef std::vector<std::string> cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_BINARY> { typedef std::vector< boost::dynamic_bitset<> > cpp_type; };
@@ -398,6 +410,7 @@ namespace IfcUtil {
 
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_INT> { typedef std::vector< std::vector<int> > cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL> { typedef std::vector< std::vector<bool> > cpp_type; };
+	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_TRIBOOL> { typedef std::vector< std::vector<boost::logic::tribool> > cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE> { typedef std::vector< std::vector<double> > cpp_type; };
 	template <> struct attr_type_to_cpp_type <Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE> { typedef IfcEntityListList::ptr cpp_type; };
 }

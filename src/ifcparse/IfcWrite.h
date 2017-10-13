@@ -40,6 +40,7 @@ namespace IfcWrite {
 	std::string format(bool b);
 	std::string format(double d);
 	std::string format(const boost::dynamic_bitset<>& b);
+	std::string format(boost::logic::tribool b);
 	
 	/// This class is a writable container for attributes. A fundamental
 	/// difference with the attribute types counterparts defined in the 
@@ -69,6 +70,8 @@ namespace IfcWrite {
 			int, 
 			// A boolean argument, it will serialize to either .T. or .F.
 			bool, 
+			// A logical argument, it will serialize to either .T. or .F. or .U.
+			boost::logic::tribool,
 			// A floating point argument, e.g. 12.3
 			double,
 			// A character string argument, e.g. 'IfcOpenShell'
@@ -92,6 +95,7 @@ namespace IfcWrite {
 			std::vector<int>,
 			// An aggregate of bools, e.g. (.T.,.F.)
 			std::vector<bool>,
+			std::vector<boost::logic::tribool>,
 			// An aggregate of floats, e.g. (12.3,4.) 
 			std::vector<double>,
 			// An aggregate of strings, e.g. ('Ifc','Open','Shell')
@@ -108,6 +112,7 @@ namespace IfcWrite {
 			std::vector< std::vector<int> >,
 			// An aggregate of bools, e.g. (.T.,(.T.,.F.))
 			std::vector< std::vector<bool> >,
+			std::vector< std::vector<boost::logic::tribool> >,
 			// An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
 			std::vector< std::vector<double> >,
 			// An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
@@ -144,6 +149,10 @@ namespace IfcWrite {
 		operator std::vector< std::vector<bool> >() const;
 		operator std::vector< std::vector<double> >() const;
 		operator IfcEntityListList::ptr() const;
+
+		operator boost::logic::tribool() const;
+		operator std::vector<boost::logic::tribool>() const;
+		operator std::vector< std::vector<boost::logic::tribool> >() const;
 
 		bool isNull() const;
 		Argument* operator [] (unsigned int i) const;
