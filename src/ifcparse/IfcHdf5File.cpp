@@ -1467,17 +1467,6 @@ void type_mapper::operator()() {
 			declared_types_[(*it)->type()] = commit(dt, (*it)->name());
 		}
 	}
-
-	H5::StrType schema_name_t;
-	schema_name_t.copy(H5::PredType::C_S1);
-	schema_name_t.setSize(schema.name().size());
-
-	hsize_t schema_name_length = 1;
-	H5::DataSpace schema_name_s(1, &schema_name_length);
-
-	H5::Attribute attr = schema_group_.createAttribute("iso_10303_26_data", schema_name_t, schema_name_s);
-	attr.write(schema_name_t, schema.name());
-	attr.close();
 }
 
 void visit(void* buffer, H5::DataType* dt) {
@@ -1505,45 +1494,6 @@ void visit(void* buffer, H5::DataType* dt) {
 	}
 }
 
-/*
-const H5::DataType* IfcParse::IfcHdf5File::specify_length(const H5::DataType* dt, const size_t * n) {
-	const hsize_t N = *n;
-
-	H5::DataType* dt3 = 0;
-	if (dt->getClass() == H5T_VLEN) {
-		H5::VarLenType* vt = (H5::VarLenType*) dt;
-		H5::DataType dt2 = vt->getSuper();
-		if (dt2.getClass() == H5T_VLEN) {
-			throw IfcParse::IfcException("Not supported");
-		}
-
-		if (dt2.getClass() == H5T_STRING) {
-			dt2.close();
-			dt2 = H5::StrType(H5::PredType::C_S1, n[1] + 1);
-		}
-
-		dt3 = new H5::ArrayType(dt2, 1, &N);
-
-		if (dt2.getClass() != H5T_STRING) {
-			dt2.close();
-		}
-	} else if (dt->getClass() == H5T_STRING) {
-		// + 1? 0-sized strings not allowed.
-		dt3 = new H5::StrType(H5::PredType::C_S1, *n + 1);
-	}
-
-	if (dt3) {
-		if (dt->committed()) {
-			std::string nm = dt->getObjName() + "_" + boost::lexical_cast<std::string>(*n);
-			dt3->commit(schema_group, nm);
-		}
-		return dt3;
-	} else {
-		return dt;
-	}
-}
-*/
-
 size_t get_alignment() {
 	return 0;
 }
@@ -1557,353 +1507,85 @@ H5::DataType* IfcParse::IfcHdf5File::commit(H5::DataType* dt, const std::string&
 	return dt;
 }
 
-// std::set< std::pair<std::string, int> > attributes_omitted;
-// std::set< std::string > entities_with_optional_attrs;
 
-/*
-template <>
-void IfcParse::IfcHdf5File::write(void*& ptr, const std::string& s) const {
-	char* c = new(allocator.allocate(s.size()+1)) char [s.size()+1];
-	strcpy(c, s.c_str());
-	write(ptr, c);
+
+void create_attribute(H5::H5Location& loc, const std::string& name, const std::vector<std::string>& v) {
+	const hsize_t dim = v.size();
+
+	H5::DataSpace attr_space(1, &dim);
+	H5::StrType attr_type(H5::PredType::C_S1, H5T_VARIABLE);
+	H5::Attribute attr = loc.createAttribute(name, attr_type, attr_space);
+
+	char **attr_data, **ptr;
+	attr_data = ptr = new char*[dim];
+	std::for_each(v.cbegin(), v.cend(), [&ptr](const std::string& s) {
+		*ptr = new char[s.size() + 1];
+		strcpy(*(ptr++), s.c_str());
+	});
+
+	attr.write(attr_type, attr_data);
+
+	attr.close();
+	attr_type.close();
+	attr_space.close();
+
+	std::for_each(attr_data, ptr, [](char* c) {
+		delete[] c;
+	});
+	delete[] attr_data;
 }
 
-void IfcParse::IfcHdf5File::write_string_of_size(void*& ptr, const std::string& s, size_t n) const {
-	memset(ptr, 0, n);
-	memcpy(ptr, s.c_str(), s.size());
-	advance(ptr, n);
+void create_attribute(H5::H5Location& loc, const std::string& name, const std::string& v) {
+	hsize_t dim = 1;
+
+	H5::DataSpace attr_space(1, &dim);
+	H5::StrType attr_type(H5::PredType::C_S1, v.size() + 1);
+	H5::Attribute attr = loc.createAttribute(name, attr_type, attr_space);
+
+	attr.write(attr_type, v);
+
+	attr.close();
+	attr_type.close();
+	attr_space.close();
 }
 
-void IfcParse::IfcHdf5File::write_vlen_t(void*& ptr, size_t n_elements, void* vlen_data) const {
-	advance(ptr, HOFFSET(hvl_t, len));
-	void* temp_ptr;
-	write_number_of_size(temp_ptr = ptr, sizeof(size_t), n_elements);
-	advance(ptr, HOFFSET(hvl_t, p));
-	write(ptr, vlen_data);
-}
-
-template <typename T>
-void IfcParse::IfcHdf5File::write_aggregate(void*& ptr, const T& ts) const {
-	size_t elem_size = get_datatype<typename T::value_type>()->getSize();
-	size_t n_elements = ts.size();
-	size_t size_in_bytes = elem_size * n_elements;
-	void* aggr_data = allocator.allocate(size_in_bytes);
-	void* aggr_ptr = aggr_data;
-	for (T::const_iterator it = ts.begin(); it != ts.end(); ++it) {
-		write_number_of_size(aggr_ptr, elem_size, *it);
-	}
-	write_vlen_t(ptr, n_elements, aggr_data);
-}
-
-template <typename T>
-void IfcParse::IfcHdf5File::write_consecutive(void*& ptr, const std::vector<T>& ts, hsize_t* num, size_t* elem_size) const {
-	size_t sz = get_datatype<T>()->getSize();
-	hsize_t n = 0;
-	for (typename std::vector<T>::const_iterator it = ts.begin(); it != ts.end(); ++it, ++n) {
-		write_number_of_size(ptr, sz, *it);
-	}
-	while (n++ < num[0]) {
-		write_number_of_size(ptr, sz, T());
-	}
-}
-
-template <>
-void IfcParse::IfcHdf5File::write_consecutive(void*& ptr, const std::vector<IfcUtil::IfcBaseClass*>& ts, hsize_t* num, size_t*) const {
-	hsize_t n = 0;
-	for (std::vector<IfcUtil::IfcBaseClass*>::const_iterator it = ts.begin(); it != ts.end(); ++it, ++n) {
-		auto ref = make_instance_reference(*it);
-		write_number_of_size(ptr, 2, ref.first);
-		write_number_of_size(ptr, 4, ref.second);
-	}
-	while (n++ < num[0]) {
-		write_number_of_size(ptr, 2, 0);
-		write_number_of_size(ptr, 4, 0);
-	}
-}
-
-template <>
-void IfcParse::IfcHdf5File::write_consecutive(void*& ptr, const std::vector<std::string>& ts, hsize_t* num, size_t* elem_size) const {
-	hsize_t n = 0;
-	for (std::vector<std::string>::const_iterator it = ts.begin(); it != ts.end(); ++it, ++n) {
-		write_string_of_size(ptr, *it, elem_size[0]);
-	}
-	while (n++ < num[0]) {
-		write_string_of_size(ptr, "", elem_size[0]);
-	}
-}
-
-template <>
-void IfcParse::IfcHdf5File::write_aggregate(void*& ptr, const std::vector<std::string>& ts) const {
-	size_t elem_size = sizeof(char*);
-	size_t n_elements = ts.size();
-	size_t size_in_bytes = elem_size * n_elements;
-	void* aggr_data = allocator.allocate(size_in_bytes);
-	void* aggr_ptr = aggr_data;
-	for (std::vector<std::string>::const_iterator it = ts.begin(); it != ts.end(); ++it) {
-		write(aggr_ptr, *it);
-	}
-	write_vlen_t(ptr, n_elements, aggr_data);
-}
-
-template <>
-void IfcParse::IfcHdf5File::write_aggregate(void*& ptr, const IfcEntityList::ptr& ts) const {
-	size_t elem_size = instance_reference->getSize();
-	size_t n_elements = ts->size();
-	size_t size_in_bytes = elem_size * n_elements;
-	void* aggr_data = allocator.allocate(size_in_bytes);
-	void* aggr_ptr = aggr_data;
-	for (IfcEntityList::it it = ts->begin(); it != ts->end(); ++it) {
-		auto ref = make_instance_reference(*it);
-		// write_number_of_size(aggr_ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
-		// write_number_of_size(aggr_ptr, instance_reference->getMemberDataType(1).getSize(), ref.second);
-		// Hard-coded for efficiency
-		write_number_of_size(aggr_ptr, 2, ref.first);
-		write_number_of_size(aggr_ptr, 4, ref.second);
-	}
-	write_vlen_t(ptr, n_elements, aggr_data);
-}
-
-template <typename T>
-void IfcParse::IfcHdf5File::write_aggregate2(void*& ptr, const std::vector< std::vector<T> >& ts) const {
-	size_t elem_size = sizeof(hvl_t);
-	size_t n_elements = ts.size();
-	size_t size_in_bytes = elem_size * n_elements;
-	void* aggr_data = allocator.allocate(size_in_bytes);
-	void* aggr_ptr = aggr_data;
-	for (std::vector< std::vector<T> >::const_iterator it = ts.begin(); it != ts.end(); ++it) {
-		write_aggregate(aggr_ptr, *it);
-	}
-	write_vlen_t(ptr, n_elements, aggr_data);
-}
-
-template <typename T>
-void IfcParse::IfcHdf5File::write_reference_attribute(void*& ptr, const std::string& dsn, const std::vector<T>& vs) {
-	const std::string dsn_path = "/population/" + dsn;
-	const hsize_t s = vs.size();
-	const H5::DataType& dt = *get_datatype<T>();
-	const size_t size_in_bytes = dt.getSize() * vs.size();
-
-	H5::DataSpace space(1, &s);
-	
-	void* buffer = allocator.allocate(size_in_bytes);
-	void* ds_ptr = buffer;
-	for (auto it = vs.begin(); it != vs.end(); ++it) {
-		write_number_of_size(ds_ptr, dt.getSize(), *it);
+class read_attribute {
+private:
+	H5::Attribute attribute_;
+	H5::DataType attr_type_;
+public:
+	read_attribute(const H5::H5Location& loc, const std::string& name) {
+		attribute_ = loc.openAttribute(name);
+		attr_type_ = attribute_.getDataType();
 	}
 
-	// TODO: Refactor
-	hsize_t chunk;
-	if (settings_.chunk_size() > 0 && settings_.chunk_size() < s) {
-		chunk = static_cast<hsize_t>(settings_.chunk_size());
-	} else {
-		chunk = s;
+	operator std::string() {
+		std::string str;
+		attribute_.read(attr_type_, str);
+		return str;
 	}
 
-	const H5::DSetCreatPropList* plist;
-	// H5O_MESG_MAX_SIZE = 65536
-	const bool compact = size_in_bytes < (1 << 15);
-	if (settings_.compress() && !compact) { 
-		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-		plist_->setChunk(1, &chunk);
-		// D'oh. Order is significant, according to h5ex_d_shuffle.c
-		plist_->setShuffle();
-		plist_->setDeflate(9);
-		plist = plist_;
-	} else if (compact) {
-		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-		// Set compact according to h5ex_d_compact.c
-		plist_->setLayout(H5D_COMPACT);
-		plist = plist_;
-	} else if (chunk != s){
-		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-		plist_->setChunk(1, &chunk);
-		plist = plist_;
-	} else {
-		plist = &H5::DSetCreatPropList::DEFAULT;
-	}
-	
-	H5::DataSet ds = population_group.createDataSet(dsn, dt, space, *plist);
-	ds.write(buffer, dt);
-	space.close();
-
-	ds.reference(ptr, dsn_path.c_str());
-	advance(ptr, sizeof(hobj_ref_t));
-
-	if (plist != &H5::DSetCreatPropList::DEFAULT) {
-		// ->close() doesn't work due to const, hack hack hack
-		H5Pclose(plist->getId());
-	}
-	
-	delete[] buffer;
-	ds.close();
-}
-
-template <typename T>
-void IfcParse::IfcHdf5File::write_reference_attribute2(void*& ptr, const std::string& dsn, const std::vector< std::vector<T> >& vs) {
-	
-	// See if the attribute is a 'jagged' array in which case a single row of
-	// vlens is written. Otherwise a two dimensional dataset is created.
-	bool is_rectangular = true;
-	size_t w = 0;
-	for (auto it = vs.begin(); it != vs.end(); ++it) {
-		if (it == vs.begin()) {
-			w = it->size();
-		} else {
-			if (w != it->size()) {
-				is_rectangular = false;
-				break;
-			}
+	operator std::vector<std::string>() {
+		H5::DataSpace space = attribute_.getSpace();
+		hsize_t dim;
+		space.getSimpleExtentDims(&dim);
+		std::vector<std::string> vec(dim);
+		char** buffer = new char*[dim];
+		attribute_.read(attr_type_, buffer);
+		for (size_t i = 0; i < dim; ++i) {
+			vec[i].assign(buffer[i]);
 		}
-	}
-	
-	// TODO: Please use smart pointers next time
-	hsize_t* s;
-	hsize_t* chunk;
-	const H5::DataType* dt;
-	H5::DataType* dt2;
-	bool scaled_type = false;
-	
-	if (is_rectangular) {
-		s = new hsize_t[2];
-		s[0] = vs.size();
-		s[1] = w;
-
-		// Try to find the narrowest integer that can represent values in the dataset
-		dt = dt2 = 0;
-		if (std::numeric_limits<T>::is_integer) {
-			T min_value = std::numeric_limits<T>::max();
-			T max_value = std::numeric_limits<T>::min();
-			for (auto it = vs.begin(); it != vs.end(); ++it) {
-				for (auto jt = it->begin(); jt != it->end(); ++jt) {
-					if ((*jt) > max_value) {
-						max_value = *jt;
-					}
-					if ((*jt) < min_value) {
-						min_value = *jt;
-					}
-				}
-			}
-
-			scaled_type = true;
-			if (min_value >= std::numeric_limits<uint8_t>::min() && max_value <= std::numeric_limits<uint8_t>::max()) {
-				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_UINT8);
-			} else if (min_value >= std::numeric_limits<int8_t>::min() && max_value <= std::numeric_limits<int8_t>::max()) {
-				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_INT8);
-			} else if (min_value >= std::numeric_limits<uint16_t>::min() && max_value <= std::numeric_limits<uint16_t>::max()) {
-				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_UINT16);
-			} else if (min_value >= std::numeric_limits<int16_t>::min() && max_value <= std::numeric_limits<int16_t>::max()) {
-				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_INT16);
-			} else if (min_value >= std::numeric_limits<uint32_t>::min() && max_value <= std::numeric_limits<uint32_t>::max()) {
-				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_UINT32);
-			} else if (min_value >= std::numeric_limits<int32_t>::min() && max_value <= std::numeric_limits<int32_t>::max()) {
-				dt = dt2 = new H5::PredType(H5::PredType::NATIVE_INT32);
-			} else {
-				scaled_type = false;
-			}
-
-		}
-		
-		if (dt == 0) {
-			dt = get_datatype<T>();
-		}
-		
-	} else {
-		s = new hsize_t(vs.size());
-		dt = dt2 = new H5::VarLenType(get_datatype<T>());
+		delete[] buffer;
+		return vec;
 	}
 
-	const std::string dsn_path = "/population/" + dsn;
-	const size_t size_in_bytes = is_rectangular
-		? sizeof(T) * vs.size() * w
-		: sizeof(hvl_t) * vs.size();
-
-	// TODO: Refactor
-	const bool is_chunked = settings_.chunk_size() > 0 && settings_.chunk_size() < s[0];
-	if (is_chunked) {
-		if (is_rectangular) {
-			chunk = new hsize_t[2];
-			chunk[0] = settings_.chunk_size();
-			chunk[1] = s[1];
-		} else {
-			chunk = new hsize_t(vs.size());
-		}
-	} else {
-		chunk = s;
+	~read_attribute() {
+		attr_type_.close();
+		attribute_.close();
 	}
-
-	const H5::DSetCreatPropList* plist;
-	// H5O_MESG_MAX_SIZE = 65536
-	const bool compact = size_in_bytes < (1 << 15);
-	if (settings_.compress() && !compact) { 
-		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-		plist_->setChunk(is_rectangular ? 2 : 1, chunk);
-		// D'oh. Order is significant, according to h5ex_d_shuffle.c
-		plist_->setShuffle();
-		plist_->setDeflate(9);
-		plist = plist_;
-	} else if (compact) {
-		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-		// Set compact according to h5ex_d_compact.c
-		plist_->setLayout(H5D_COMPACT);
-		plist = plist_;
-	} else if (chunk != s){
-		H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-		plist_->setChunk(is_rectangular ? 2 : 1, chunk);
-		plist = plist_;
-	} else {
-		plist = &H5::DSetCreatPropList::DEFAULT;
-	}
-
-	H5::DataSpace space(is_rectangular ? 2 : 1, s);
-	H5::DataSet ds = population_group.createDataSet(dsn, *dt, space, *plist);
-	
-	void* buffer = allocator.allocate(size_in_bytes);
-	void* ds_ptr = buffer;
-	for (auto it = vs.begin(); it != vs.end(); ++it) {
-		if (is_rectangular) {
-			for (auto jt = it->begin(); jt != it->end(); ++jt) {
-				write_number_of_size(ds_ptr, dt->getSize(), *jt);
-			}
-		} else {
-			write_aggregate(ds_ptr, *it);
-		}
-	}						
-	ds.write(buffer, *dt);
-	space.close();
-
-	ds.reference(ptr, dsn_path.c_str());
-	advance(ptr, sizeof(hobj_ref_t));
-	
-	delete[] buffer;
-	ds.close();
-
-	if (plist != &H5::DSetCreatPropList::DEFAULT) {
-		// ->close() doesn't work due to const, hack hack hack
-		H5Pclose(plist->getId());
-	}
-	
-	if (is_rectangular) {
-		delete[] s;
-		if (is_chunked) {
-			delete[] chunk;
-		}
-		if (scaled_type) {
-			dt2->close();
-			delete dt;
-		}
-	} else {
-		dt2->close();
-		delete dt;
-		delete s;
-		if (is_chunked) {
-			delete chunk;
-		}
-	}
-}
-*/
+};
 
 void IfcParse::IfcHdf5File::write_schema(const IfcParse::schema_definition& schema, IfcParse::IfcFile& ifc_file) {
-
 	// From h5ex_g_compact.c
 	// Compact groups?
 	H5::FileAccPropList* plist = new H5::FileAccPropList();
@@ -1916,6 +1598,7 @@ void IfcParse::IfcHdf5File::write_schema(const IfcParse::schema_definition& sche
 
 	schema_group = file->createGroup(schema.name() + "_encoding");
 	population_group = file->createGroup("population");
+	create_attribute(schema_group, "iso_10303_26_schema", IfcSchema::Identifier);
 	
 	// init_default_types();
 
@@ -1942,73 +1625,6 @@ std::pair<size_t, size_t> IfcParse::IfcHdf5File::make_instance_reference(const I
 
 	return std::make_pair(dataset_offset, instance_offset);
 }
-
-/*
-void IfcParse::IfcHdf5File::write_select(void*& ptr, IfcUtil::IfcBaseClass* instance, const H5::CompType* datatype) const {
-	int member_index = -1;
-
-	if (instance->declaration().as_entity()) {
-		member_index = datatype->getMemberIndex("instance-value");
-		size_t offset = datatype->getMemberOffset(member_index);
-		auto ref = make_instance_reference(instance);
-		void* ptr_member = (uint8_t*) ptr + offset;
-		// write_number_of_size(ptr_member, instance_reference->getMemberDataType(0).getSize(), ref.first);
-		// write_number_of_size(ptr_member, instance_reference->getMemberDataType(1).getSize(), ref.second);
-		write_number_of_size(ptr_member, 2, ref.first);
-		write_number_of_size(ptr_member, 4, ref.second);
-	} else {
-		Argument& wrapped_data = *instance->data().getArgument(0);
-		IfcUtil::ArgumentType ty = wrapped_data.type();
-		if (default_cpp_type_names.find(ty) == default_cpp_type_names.end()) {
-			Logger::Message(Logger::LOG_ERROR, "Unsupported select valuation encountered", instance);
-		} else {
-			std::string member_name = default_cpp_type_names.find(ty)->second + "-value";
-			member_index = datatype->getMemberIndex(member_name);
-			size_t offset = datatype->getMemberOffset(member_index);
-			H5::DataType memberdt = datatype->getMemberDataType(member_index);
-			size_t member_size = memberdt.getSize();
-			memberdt.close();
-			void* ptr_member = (uint8_t*) ptr + offset;
-			switch(wrapped_data.type()) {
-				case IfcUtil::Argument_BOOL: {
-					bool v = wrapped_data;
-					write_number_of_size(ptr_member, member_size, static_cast<uint8_t>(v ? 1 : 0));
-					break; }
-				case IfcUtil::Argument_DOUBLE: {
-					double d = wrapped_data;
-					write_number_of_size(ptr_member, member_size, d);
-					break; }
-				case IfcUtil::Argument_STRING: {
-					std::string s = wrapped_data;
-					write(ptr_member, s);
-					break; }
-				case IfcUtil::Argument_INT: {
-					int i = wrapped_data;
-					write_number_of_size(ptr_member, member_size, i);
-					break; }
-				default:
-					Logger::Message(Logger::LOG_ERROR, "Unsupported select valuation encountered", instance);
-					break;
-			}
-		}							
-	}
-
-	if (member_index == -1) {
-		member_index = 0;
-	} else {
-		member_index -= 2; // select_bitmap, type_path
-	}
-
-	void* temp_ptr = ptr;
-	write_number_of_size(temp_ptr, H5::PredType::NATIVE_INT8.getSize(), member_index);
-	write(temp_ptr, instance->declaration().name());
-
-	// TODO: Should string be set to "", or keep as null?
-	// std::cout << datatype->getMemberIndex("string-value") << std::endl;
-
-	advance(ptr, datatype->getSize());
-}
-*/
 
 H5::DataSet IfcParse::IfcHdf5File::create_dataset(const std::string& path, H5::DataType datatype, int rank, hsize_t* dimensions) {
 	if (rank != 1) {
@@ -2058,31 +1674,35 @@ H5::DataSet IfcParse::IfcHdf5File::create_dataset(const std::string& path, H5::D
 	return ds;
 }
 
+void IfcParse::IfcHdf5File::write_header(H5::Group& group, IfcSpfHeader& header) {
+	create_attribute(group, "iso_10303_26_data", IfcSchema::Identifier);
+	
+	create_attribute(group, "iso_10303_26_description", header.file_description().description());
+	create_attribute(group, "iso_10303_26_implementation_level", header.file_description().implementation_level());
+	
+	create_attribute(group, "iso_10303_26_name", header.file_name().name());
+	create_attribute(group, "iso_10303_26_time_stamp", header.file_name().time_stamp());
+	create_attribute(group, "iso_10303_26_author", header.file_name().author());
+	create_attribute(group, "iso_10303_26_organization", header.file_name().organization());
+	create_attribute(group, "iso_10303_26_preprocessor_version", header.file_name().preprocessor_version());
+	create_attribute(group, "iso_10303_26_originating_system", header.file_name().originating_system());
+	create_attribute(group, "iso_10303_26_authorization", header.file_name().authorization());
+}
+
 void IfcParse::IfcHdf5File::write_population(IfcFile&) {
 	const bool padded = settings_.profile() == IfcParse::Hdf5Settings::padded || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
 	const bool referenced = settings_.profile() == IfcParse::Hdf5Settings::standard_referenced || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
 	
 	sorted_instance_locator locator(*file, this->ifcfile_, referenced);
 
+	write_header(population_group, this->ifcfile_.header());
+
 	dataset_names.assign(locator.begin(), locator.end());
-
-	{
-		hsize_t dataset_names_length = dataset_names.size();
-		H5::DataSpace dataset_names_s(1, &dataset_names_length);
-
-		H5::StrType varlen_string_type(H5::PredType::C_S1, H5T_VARIABLE);
-		H5::Attribute attr = schema_group.createAttribute("iso_10303_26_data_set_names", varlen_string_type, dataset_names_s);
-		char** attr_data = (char**)allocator.allocate(static_cast<size_t>(sizeof(char*) * dataset_names_length));
-		size_t i = 0;
-		for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it, ++i) {
-			std::string nm = IfcSchema::Type::ToString(*it);
-			attr_data[i] = (char*)allocator.allocate(nm.size() + 1);
-			strcpy(attr_data[i], nm.c_str());
-		}
-		attr.write(varlen_string_type, attr_data);
-		attr.close();
-		varlen_string_type.close();
-	}
+	std::vector<std::string> dataset_names_string; dataset_names_string.reserve(dataset_names.size());
+	std::transform(dataset_names.begin(), dataset_names.end(), std::back_inserter(dataset_names_string), [](IfcSchema::Type::Enum v) {
+		return IfcSchema::Type::ToString(v);
+	});
+	create_attribute(population_group, "iso_10303_26_data_set_names", dataset_names_string);
 
 	write_visit/*<sorted_instance_locator>*/ visitor(*this->file, padded, referenced, locator, *((type_mapper*)mapper_));
 
@@ -2138,575 +1758,6 @@ void IfcParse::IfcHdf5File::write_population(IfcFile&) {
 	}
 }
 
-/*
-void IfcParse::IfcHdf5File::write_population(IfcFile& f) {
-	std::set<IfcSchema::Type::Enum> tys;
-
-	// Wth was this?
-	// this->file->close();
-	
-	std::set<IfcSchema::Type::Enum> types_with_instiated_selected;
-
-	for (auto it = f.begin(); it != f.end(); ++it) {
-		IfcSchema::Type::Enum ty = it->second->declaration().type();
-		tys.insert(ty);
-		// This already is sorted on entity instance name
-#ifdef SORT_ON_NAME
-		sorted_entities[ty].push_back(static_cast<uint32_t>(it->first));
-#else
-		sorted_entities[ty].push_back(it->second);
-#endif
-
-#ifndef SORT_ON_NAME
-		if (settings_.instantiate_select()) {
-			bool has=false;
-			for (unsigned i = 0; i < it->second->data().getArgumentCount(); ++i) {
-				Argument* attr = it->second->data().getArgument(i);
-				if (attr->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-					IfcUtil::IfcBaseClass* inst = *attr;
-					if (!inst->declaration().as_entity()) {
-						IfcSchema::Type::Enum ty2 = inst->declaration().type();
-						tys.insert(ty2);
-						sorted_entities[ty2].push_back(inst);
-						has = true;
-					}
-				} else if (attr->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-					IfcEntityList::ptr insts = *attr;
-					for (auto it = insts->begin(); it != insts->end(); ++it) {
-						if (!(*it)->declaration().as_entity()) {
-							IfcSchema::Type::Enum ty2 = (*it)->declaration().type();
-							tys.insert(ty2);
-							sorted_entities[ty2].push_back(*it);
-							has = true;
-						}
-					}
-				}
-			}
-			if (has) {
-				types_with_instiated_selected.insert(ty);
-			} else {
-				static_cast<IfcParse::Entity*>(&it->second->data())->Unload();
-			}
-		}
-#endif
-	}
-
-	dataset_names.assign(tys.begin(), tys.end());
-	std::sort(dataset_names.begin(), dataset_names.end());
-	
-	// dataset_names.push_back(IfcSchema::Type::IfcPostalAddress);
-
-	{
-		hsize_t dataset_names_length = dataset_names.size();
-		H5::DataSpace dataset_names_s(1, &dataset_names_length);
-
-		H5::Attribute attr = schema_group.createAttribute("iso_10303_26_data_set_names", *default_types[simple_type::string_type], dataset_names_s);
-		char** attr_data = (char**) allocator.allocate(static_cast<size_t>(sizeof(char*) * dataset_names_length));
-		size_t i = 0;
-		for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it, ++i) {
-			std::string nm = IfcSchema::Type::ToString(*it);
-			attr_data[i] = (char*) allocator.allocate(nm.size() + 1);
-			strcpy(attr_data[i], nm.c_str());
-		}
-		attr.write(*default_types[simple_type::string_type], attr_data);
-		attr.close();
-	}
-
-#ifdef SORT_ON_NAME
-	for (auto it = sorted_entities.begin(); it != sorted_entities.end(); ++it) {
-		std::sort(it->second.begin(), it->second.end());
-	}
-#endif
-	
-	for (auto it = dataset_names.begin(); it != dataset_names.end(); ++it) {
-
-		// std::cout << "begin inner loop" << std::endl;
-		// std::cin.get();
-
-		// if (*it != IfcSchema::Type::IfcUnitAssignment) continue;
-
-		const std::string current_entity_name = IfcSchema::Type::ToString(*it);
-		std::cerr << current_entity_name << std::endl;
-
-#ifdef SORT_ON_NAME
-		std::vector<IfcUtil::IfcBaseClass*> es;
-		es.reserve(sorted_entities.find(*it)->second.size());
-		for (auto jt = sorted_entities.find(*it)->second.begin(); jt != sorted_entities.find(*it)->second.end(); ++jt) {
-			es.push_back(f.entityById(*jt));
-		}
-#else
-		const std::vector<IfcUtil::IfcBaseClass*>& es = sorted_entities.find(*it)->second;
-#endif
-		size_t datatype_size = declared_types[*it]->getSize();
-		hsize_t dims = es.size();
-		
-		hsize_t chunk;
-		if (settings_.chunk_size() > 0 && settings_.chunk_size() < dims) {
-			chunk = static_cast<hsize_t>(settings_.chunk_size());
-		} else {
-			chunk = dims;
-		}
-
-		const H5::DSetCreatPropList* plist;
-		// H5O_MESG_MAX_SIZE = 65536
-		const bool compact = es.size() * datatype_size < (1 << 15);
-		if (settings_.compress() && !compact) { 
-			H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-			plist_->setChunk(1, &chunk);
-			// D'oh. Order is significant, according to h5ex_d_shuffle.c
-			plist_->setShuffle();
-			plist_->setDeflate(9);
-			plist = plist_;
-		} else if (compact) {
-			H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-			// Set compact according to h5ex_d_compact.c
-			plist_->setLayout(H5D_COMPACT);
-			plist = plist_;
-		} else if (chunk != dims){
-			H5::DSetCreatPropList* plist_ = new H5::DSetCreatPropList;
-			plist_->setChunk(1, &chunk);
-			plist = plist_;
-		} else {
-			plist = &H5::DSetCreatPropList::DEFAULT;
-		}
-
-		H5::DataSpace space(1, &dims);
-		H5::DataSet ds = population_group.createDataSet(IfcSchema::Type::ToString(*it) + "_instances", *declared_types[*it], space, *plist);
-		
-		size_t dataset_size = declared_types[*it]->getSize() * static_cast<size_t>(dims);
-		void* data = allocator.allocate(dataset_size);
-
-		std::cerr << dataset_size << std::endl;
-		
-		void* ptr = data;
-		const H5::CompType* dt = (H5::CompType*) declared_types[*it];
-		int ind = 0;
-
-		for (auto jt = es.begin(); jt != es.end(); ++jt, ++ind) {
-			void* start = ptr;
-
-			int member_idx = 0;
-
-			H5::DataType member_type;
-
-			IfcAbstractEntity& dat = (*jt)->data();
-			const declaration& decl = (*jt)->declaration();			
-
-			if (!decl.as_entity()) {
-				if (!settings_.instantiate_select()) throw;
-				// This is a type
-				// auto q = dt->getClass();
-				auto size = dt->getSize();
-				const Argument& attr_value = *dat.getArgument(0);
-				if (*dt == *default_types[simple_type::real_type]) {
-					double d = attr_value;
-					write_number_of_size(ptr, size, d);
-				} else if (*dt == *default_types[simple_type::string_type]) {
-					std::string s = attr_value;
-					write(ptr, s);
-				} else if (*dt == *default_types[simple_type::integer_type]) {
-					int i = attr_value;
-					write_number_of_size(ptr, size, i);
-				} else if (*dt == *default_types[simple_type::boolean_type] ||
-					        *dt == *default_types[simple_type::logical_type]) 
-				{
-					bool b = attr_value;
-					write_number_of_size(ptr, size, static_cast<uint8_t>(b ? 1 : 0));
-				} else {
-					throw;
-				}
-				continue;
-			}
-
-			std::vector<const IfcParse::entity::attribute*> attributes = decl.as_entity()->all_attributes();
-			std::vector<const IfcParse::entity::inverse_attribute*> inverse_attributes;
-			if (settings_.instantiate_inverse()) {
-				inverse_attributes = decl.as_entity()->all_inverse_attributes();
-			}
-			const std::vector<bool>& attributes_derived_in_subtype = decl.as_entity()->derived();
-			std::vector<bool>::const_iterator is_derived = attributes_derived_in_subtype.begin();
-
-			//for (auto qt = attributes_derived_in_subtype.begin(); qt != attributes_derived_in_subtype.end(); ++qt) {
-			//	std::cout << int(*qt);
-			//}
-			//std::cout << std::endl;
-
-			const bool has_optional = entities_with_optional_attrs.find(current_entity_name) != entities_with_optional_attrs.end();
-
-			uint32_t set_unset_mask;
-			size_t set_unset_size;
-			void* set_unset_ptr;
-
-			if (has_optional) {
-				member_type = dt->getMemberDataType(member_idx++);
-				set_unset_mask = 0;
-				set_unset_ptr = ptr;
-				set_unset_size = member_type.getSize();
-				// skip for now write later
-				advance(ptr, set_unset_size);
-				member_type.close();
-			}
-			
-			member_type = dt->getMemberDataType(member_idx++);
-			const unsigned int inst_name = static_cast<unsigned int>(dat.id());
-			write_number_of_size(ptr, member_type.getSize(), inst_name);
-			member_type.close();
-
-			//                        ----v-----   In some IFC files there are extra superfluous attributes in the instantiation. For example FJK haus.
-			const size_t attr_count = (std::min)(attributes.size(), (size_t) dat.getArgumentCount());
-			for (unsigned i = 0; i < attr_count; ++i, ++is_derived) {
-
-				//std::cout << i << std::endl;
-
-				if (*is_derived) {
-					continue;
-				}
-
-				if (attributes_omitted.find(std::make_pair(current_entity_name, i)) != attributes_omitted.end()) {
-					continue;
-				}
-
-				const IfcParse::entity::attribute* schema_attr = attributes[i];
-				const std::string& attribute_name = schema_attr->name();
-				//std::cout << "ifc " << attribute_name << std::endl;
-				Argument& attr_value = *dat.getArgument(i);
-
-				member_type = dt->getMemberDataType(member_idx++);
-
-				//std::cout << "hdf5 " << dt->getMemberName(member_idx - 1) << ": " << member_type.getClass() << std::endl;
-
-				if (attr_value.isNull()) {
-					if (member_type == *default_types[simple_type::string_type]) {
-						// HDF5 otherwise crashes on derefencing a zero pointer for the string type
-						write(ptr, new(allocator.allocate(1)) char(0));
-					} else {
-						memset(ptr, 0, member_type.getSize());
-						advance(ptr, member_type.getSize());
-					}
-				} else {
-					set_unset_mask |= 1 << i;
-					if (member_type.getClass() == H5T_REFERENCE) {
-						// Something that comes from the ref_attributes settings
-						const std::string dsn = current_entity_name + "." + attribute_name + "_" + boost::lexical_cast<std::string>(dat.id());
-						switch(attr_value.type()) {
-						case IfcUtil::Argument_AGGREGATE_OF_INT: {
-							std::vector<int> vs = attr_value;
-							write_reference_attribute(ptr, dsn, vs);
-							break; }
-						case IfcUtil::Argument_AGGREGATE_OF_BOOL: {
-							std::vector<bool> vs = attr_value;
-							write_reference_attribute(ptr, dsn, vs);
-							break; }
-						case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
-							std::vector<double> vs = attr_value;
-							write_reference_attribute(ptr, dsn, vs);
-							break; }
-						case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
-							std::vector< std::vector<int> > vs = attr_value;
-							write_reference_attribute2(ptr, dsn, vs);
-							break; }
-						case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL: {
-							std::vector< std::vector<int> > vs = attr_value;
-							write_reference_attribute2(ptr, dsn, vs);
-							break; }
-						case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
-							std::vector< std::vector<double> > vs = attr_value;
-							write_reference_attribute2(ptr, dsn, vs);
-							break; }
-						default:
-							throw IfcException(dsn + " is not a supported aggregate");
-						}
-					} if (settings_.fix_global_id() && attribute_name == "GlobalId") {
-						std::string s = attr_value;
-						memcpy(static_cast<char*>(ptr), s.c_str(), s.size());
-						advance(ptr, s.length());
-					} else if (settings_.fix_cartesian_point() && ((attribute_name == "Coordinates" && current_entity_name == "IfcCartesianPoint") || (attribute_name == "DirectionRatios" && current_entity_name == "IfcDirection"))) {
-						std::vector<double> vs = attr_value;
-						for (auto vs_it = vs.begin(); vs_it != vs.end(); ++vs_it) {
-							write_number_of_size(ptr, default_types[simple_type::real_type]->getSize(), *vs_it);
-						}
-						if (vs.size() == 2) {
-							write_number_of_size(ptr, default_types[simple_type::real_type]->getSize(), std::numeric_limits<double>::quiet_NaN());
-						}
-					} else if (member_type == *instance_reference) {
-						IfcUtil::IfcBaseClass* v = attr_value;
-						auto ref = make_instance_reference(v);
-						// write_number_of_size(ptr, instance_reference->getMemberDataType(0).getSize(), ref.first);
-						// write_number_of_size(ptr, instance_reference->getMemberDataType(1).getSize(), ref.second);
-						write_number_of_size(ptr, 2, ref.first);
-						write_number_of_size(ptr, 4, ref.second);
-					} else if (member_type == *default_types[simple_type::real_type]) {
-						double d = attr_value;
-						write_number_of_size(ptr, member_type.getSize(), d);
-					} else if (member_type == *default_types[simple_type::string_type] || member_type.getClass() == H5T_STRING) {
-						std::string s = attr_value;
-						if (member_type == *default_types[simple_type::string_type]) {
-							write(ptr, s);
-						} else {
-							write_string_of_size(ptr, s, member_type.getSize());
-						}
-					} else if (member_type == *default_types[simple_type::integer_type]) {
-						int v = attr_value;
-						write_number_of_size(ptr, member_type.getSize(), v);
-					} else if (member_type == *default_types[simple_type::boolean_type] ||
-					           member_type == *default_types[simple_type::logical_type]) 
-					{
-						bool b = attr_value;
-						write_number_of_size(ptr, member_type.getSize(), static_cast<uint8_t>(b ? 1 : 0));
-					} else if (member_type.getClass() == H5T_ENUM) {
-						// NB: Note that boolean and logical are also enums
-						// NB2: In IfcOpenShell an enum value can be read as a string
-						std::string s = attr_value;
-						const std::vector<std::string>& enum_values = schema_attr->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type()->enumeration_items();
-						size_t d = std::distance(enum_values.begin(), std::find(enum_values.begin(), enum_values.end(), s));
-						write_number_of_size(ptr, member_type.getSize(), d);
-					} else if (member_type.getClass() == H5T_VLEN || member_type.getClass() == H5T_ARRAY) {
-						const parameter_type* pt = schema_attr->type_of_attribute();
-						while (pt->as_named_type()) {
-							pt = pt->as_named_type()->declared_type()->as_type_declaration()->declared_type();
-						}
-						const named_type* nt = pt->as_aggregation_type()->type_of_element()->as_named_type();
-						if (nt && nt->declared_type()->as_select_type()) {
-							const H5::DataType* datatype = declared_types[nt->declared_type()->type()];
-							IfcEntityList::ptr vs = attr_value;
-							if (datatype == instance_reference) {
-								// For a SELECTs with only ENTITY leaves, a blind instance reference type is used
-								// TK: Is this actually correct?
-								if (member_type.getClass() == H5T_VLEN) {
-									write_aggregate(ptr, vs);
-								} else {
-									H5::ArrayType* adt = (H5::ArrayType*) &member_type;
-									size_t ndims = adt->getArrayNDims();
-									size_t element_size = adt->getSuper().getSize();
-									hsize_t* array_dims = new hsize_t[ndims];
-									adt->getArrayDims(array_dims);
-
-									std::vector<IfcUtil::IfcBaseClass*> es2(vs->begin(), vs->end());
-									write_consecutive(ptr, es2, array_dims, &element_size);
-								}
-							} else {
-								if (member_type.getClass() == H5T_VLEN) {
-									size_t size_in_bytes = datatype->getSize();
-									size_t num_elements = vs->size();
-									void* buffer_ptr;
-									// void* buffer = buffer_ptr = new uint8_t[size_in_bytes * num_elements];
-									void* buffer = buffer_ptr = allocator.allocate(size_in_bytes * num_elements);
-									memset(buffer, 0, size_in_bytes * num_elements);
-									for (auto vs_it = vs->begin(); vs_it != vs->end(); ++vs_it) {
-										write_select(buffer_ptr, *vs_it, static_cast<const H5::CompType*>(datatype));
-									}
-									write_vlen_t(ptr, num_elements, buffer);
-								} else {
-									// Set to zero in case of different size
-									memset(ptr, 0, member_type.getSize());
-									void* ptr_ = ptr;
-									for (auto vs_it = vs->begin(); vs_it != vs->end(); ++vs_it) {
-										write_select(ptr_, *vs_it, static_cast<const H5::CompType*>(datatype));
-									}
-									// This is cheating, let's hope the sizes align.
-									advance(ptr, member_type.getSize());
-								}
-							}
-						} else {
-							if (member_type.getClass() == H5T_VLEN) {
-								switch (attr_value.type()) {
-								case IfcUtil::Argument_AGGREGATE_OF_INT: {
-									std::vector<int> vs = attr_value;
-									write_aggregate(ptr, vs);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_BOOL: {
-									std::vector<bool> vs = attr_value;
-									write_aggregate(ptr, vs);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
-									std::vector<double> vs = attr_value;
-									write_aggregate(ptr, vs);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-									IfcEntityList::ptr vs = attr_value;
-									write_aggregate(ptr, vs);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_STRING: {
-									std::vector<std::string> ss = attr_value;
-									write_aggregate(ptr, ss);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
-									std::vector< std::vector<int> > vs = attr_value;
-									write_aggregate2(ptr, vs);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL: {
-									std::vector< std::vector<bool> > vs = attr_value;
-									write_aggregate2(ptr, vs);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
-									std::vector< std::vector<double> > vs = attr_value;
-									write_aggregate2(ptr, vs);
-									break; }
-								default:
-									// Can be an empty list in which case parser does not know type
-									if (attr_value.size() > 0) {
-										Logger::Message(Logger::LOG_ERROR, "Unsupported aggregate encountered", *jt);
-									}
-									memset(ptr, 0, member_type.getSize());
-									ptr = (uint8_t*)ptr + member_type.getSize();
-								}
-							} else {
-								if (member_type.getClass() != H5T_ARRAY) throw;
-								H5::ArrayType* adt = (H5::ArrayType*) &member_type;
-								size_t ndims = adt->getArrayNDims();
-								size_t element_size = adt->getSuper().getSize();
-								hsize_t* array_dims = new hsize_t[ndims];
-								adt->getArrayDims(array_dims);
-
-								size_t ifcdims = 0;
-
-								switch (attr_value.type()) {
-								case IfcUtil::Argument_AGGREGATE_OF_INT:
-								case IfcUtil::Argument_AGGREGATE_OF_BOOL:
-								case IfcUtil::Argument_AGGREGATE_OF_DOUBLE:
-								case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
-								case IfcUtil::Argument_AGGREGATE_OF_STRING:
-									ifcdims = 1;
-									break;
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL:
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
-									ifcdims = 2;
-									break;
-								}
-
-								// Caught in default block below and memset() to zero.
-								// if (false && ifcdims != ndims) {
-								// 	std::cerr << "Expected dim " << ndims << " got " << ifcdims << std::endl;
-								// 	std::cin.get();
-								// 	abort();
-								// }
-								
-								switch (attr_value.type()) {
-								case IfcUtil::Argument_AGGREGATE_OF_INT: {
-									std::vector<int> vs = attr_value;
-									write_consecutive(ptr, vs, array_dims, &element_size);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_BOOL: {
-									std::vector<bool> vs = attr_value;
-									write_consecutive(ptr, vs, array_dims, &element_size);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
-									std::vector<double> vs = attr_value;
-									write_consecutive(ptr, vs, array_dims, &element_size);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-									IfcEntityList::ptr vs = attr_value;
-									std::vector<IfcUtil::IfcBaseClass*> vs2(vs->begin(), vs->end());
-									write_consecutive(ptr, vs2, array_dims, &element_size);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_STRING: {
-									std::vector<std::string> vs = attr_value;
-									write_consecutive(ptr, vs, array_dims, &element_size);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
-									// std::vector< std::vector<int> > ds = attr_value;
-									// write_consecutive2(ptr, ds);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_BOOL: {
-									// std::vector< std::vector<bool> > ds = attr_value;
-									// write_consecutive2(ptr, ds);
-									break; }
-								case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
-									// std::vector< std::vector<double> > ds = attr_value;
-									// write_consecutive2(ptr, ds);
-									break; }
-								default:
-									// Can be an empty list in which case parser does not know type
-									if (attr_value.size() > 0) {
-										Logger::Message(Logger::LOG_ERROR, "Unsupported aggregate encountered", *jt);
-									}
-									memset(ptr, 0, member_type.getSize());
-									advance(ptr, member_type.getSize());
-								}
-
-
-
-
-								
-								delete[] array_dims;
-							}
-						}
-					} else if (member_type.getClass() == H5T_COMPOUND) {
-						memset(ptr, 0, member_type.getSize());
-						
-						IfcUtil::ArgumentType ty = attr_value.type();
-						if (ty != IfcUtil::Argument_ENTITY_INSTANCE) throw;
-						//                    v impl. cast
-						write_select(ptr, attr_value, static_cast<H5::CompType*>(&member_type));
-					}
-				}
-
-				member_type.close();
-			}
-
-			for (auto inv_it = inverse_attributes.begin(); inv_it != inverse_attributes.end(); ++inv_it) {
-				member_type = dt->getMemberDataType(member_idx++);
-
-				if (member_type.getClass() != H5T_VLEN) {
-					std::cerr << dt->getMemberName(member_idx - 1) << " ";
-					std::cerr << "Inverse attribute must be vlen" << std::endl;
-				}
-				const IfcParse::entity* entity_ref = (*inv_it)->entity_reference();
-				const IfcParse::entity::attribute* attribute_ref = (*inv_it)->attribute_reference();
-				IfcEntityList::ptr instances = f.getInverse(dat.id(), entity_ref->type(), entity_ref->attribute_index(attribute_ref));
-				if (instances->size() == 0) {
-					memset(ptr, 0, member_type.getSize());
-					advance(ptr, member_type.getSize());
-				} else {
-					write_aggregate(ptr, instances);
-				}
-
-				member_type.close();
-			}
-
-			if (has_optional) {
-				write_number_of_size(set_unset_ptr, set_unset_size, set_unset_mask);
-			}
-			const size_t written_length = (uint8_t*) ptr - (uint8_t*) start;
-			
-			if (written_length != datatype_size) {
-				std::cerr << "Written " << written_length << " bytes, but expected " << datatype_size << std::endl;
-				std::cin.get();
-				abort();
-			}
-		}
-
-		// for (size_t i = 0; i < dataset_size; ++i) {
-		// 	std::cout << std::hex << (int)((uint8_t*)data)[i] << " ";
-		// }
-
-		// visit(data, declared_types[*it]);
-		ds.write(data, *declared_types[*it]);
-		H5Dvlen_reclaim(declared_types[*it]->getId(), space.getId(), H5P_DEFAULT, data);
-
-		ds.close();
-		space.close();
-
-		if (plist != &H5::DSetCreatPropList::DEFAULT) {
-			// ->close() doesn't work due to const, hack hack hack
-			H5Pclose(plist->getId());
-		}
-
-		// allocator.free();
-		delete[] data;
-		
-		for (auto es_it = es.begin(); es_it != es.end(); ++es_it) {
-			if (types_with_instiated_selected.find((**es_it).declaration().type()) == types_with_instiated_selected.end()) {
-				// Instances possibly refering to embedded simple type instantiations are not freed
-				static_cast<IfcParse::Entity*>(&(**es_it).data())->Unload();
-			}
-		}
-
-	}
-}
-*/
-
 bool is_instance_ref(H5::DataType* dt) {
 	if (dt->getClass() != H5T_COMPOUND) return false;
 	H5::CompType* ct = (H5::CompType*) dt;
@@ -2758,45 +1809,15 @@ static const std::string no_name = "NO_NAME";
 class instance_resolver {
 private:
 	H5::H5File& file_;
+	H5::Group& population_group_;
 	std::vector<std::string> dataset_names_;
 
 public:
-	instance_resolver(H5::H5File& file)
+	instance_resolver(H5::H5File& file, H5::Group& population_group)
 		: file_(file)
+		, population_group_(population_group)
 	{
-		H5::Group schema_group = file_.openGroup("IFC2X3_encoding");
-		H5::Attribute names = schema_group.openAttribute("iso_10303_26_data_set_names");
-		H5::DataType datatype = names.getDataType();
-		if (datatype.getClass() != H5T_STRING || H5Tis_variable_str(datatype.getId()) <= 0) {
-			throw std::runtime_error("Expected variable string attribute");
-		}
-
-		H5::DataSpace dataspace = names.getSpace();
-		if (dataspace.getSimpleExtentNdims() != 1) {
-			throw std::runtime_error("Expected one-dimensional attribute");
-		}
-
-		hsize_t dim;
-		dataspace.getSimpleExtentDims(&dim, NULL);
-		dataset_names_.reserve(dim);
-
-		void* buffer;
-		uint8_t* ptr;
-		buffer = ptr = new uint8_t[datatype.getSize() * (size_t) dim];
-		names.read(datatype, buffer);
-
-		while (dim--) {
-			dataset_names_.push_back(*(char**) ptr);
-			ptr += datatype.getSize();
-		}
-
-		H5Dvlen_reclaim(datatype.getId(), dataspace.getId(), H5P_DEFAULT, buffer);
-		delete[] buffer;
-
-		dataspace.close();
-		datatype.close();
-		names.close();
-		schema_group.close();
+		dataset_names_ = read_attribute(population_group_, "iso_10303_26_data_set_names");
 	}
 
 	size_t instance_name(void* data, H5::CompType* dt) {
@@ -2988,16 +2009,17 @@ struct hdf5_output_info {
 	std::ostream& output;
 };
 
-herr_t iterate(hid_t, const char *name_, const H5O_info_t *object_info, void *op_data) {
+herr_t iterate(hid_t id, const char *name_, const H5O_info_t *object_info, void *op_data) {
 	H5::H5File& f = ((hdf5_output_info*)op_data)->file;
 	std::ostream& output = ((hdf5_output_info*)op_data)->output;
 
-	instance_resolver resolver(f);
-
 	if (object_info->type == H5O_TYPE_DATASET) {
+		H5::Group population_group(id);
+		instance_resolver resolver(f, population_group);
+		
 		std::string name = name_;
 
-		H5::DataSet dataset = f.openDataSet(name);
+		H5::DataSet dataset = population_group.openDataSet(name);
 		H5::DataType datatype = dataset.getDataType();
 		H5::DataSpace dataspace = dataset.getSpace();
 		if (dataspace.getSimpleExtentNdims() != 1) {
@@ -3026,14 +2048,101 @@ herr_t iterate(hid_t, const char *name_, const H5O_info_t *object_info, void *op
 		datatype.close();
 		dataspace.close();
 		dataset.close();
+		population_group.close();
 
 		delete[] buffer;
 	}
 	return 0;
 }
 
+class file_structure {
+public:
+	typedef std::map<std::string, H5::Group> schema_mapping_t;
+	typedef std::vector< std::pair<H5::Group, typename schema_mapping_t::const_iterator> > populations_t;
+	typedef populations_t::const_iterator const_iterator;
+	
+private:
+	schema_mapping_t schemas_;
+	populations_t populations_;
+	H5::H5File& file_;
+	bool finished_schema_;
+
+public:
+	file_structure(H5::H5File& file)
+		: file_(file)
+		, finished_schema_(false)
+	{}
+
+	void process_group(H5::Group& g) {
+		if (finished_schema_) {
+			if (g.attrExists("iso_10303_26_data")) {
+				const std::string name = read_attribute(g, "iso_10303_26_data");
+				if (schemas_.find(name) != schemas_.end()) {
+					populations_.push_back(std::make_pair(g, schemas_.find(name)));
+				}
+			}
+		} else {
+			if (g.attrExists("iso_10303_26_schema")) {
+				const std::string name = read_attribute(g, "iso_10303_26_schema");
+				schemas_.insert(std::make_pair(name, g));
+			}
+		}
+	}
+
+	void finished_schema() { finished_schema_ = true; }
+
+	const_iterator begin() const { return populations_.begin(); }
+	const_iterator end() const { return populations_.end(); }
+	H5::H5File& file() const { return file_; }
+};
+
+herr_t find_groups(hid_t, const char *name, const H5O_info_t *object_info, void *op_data) {
+	file_structure& fs = *(file_structure*)op_data;
+	if (object_info->type == H5O_TYPE_GROUP) {
+		H5::Group g = fs.file().openGroup(name);
+		fs.process_group(g);
+		g.close();
+	}
+	return 0;
+}
+
+void write_spf_header(const H5::Group& group, std::ostream& out) {
+	IfcParse::IfcSpfHeader spf_header;
+	
+	spf_header.file_schema().schema_identifiers(
+		std::vector<std::string>{read_attribute(group, "iso_10303_26_data")}
+	);
+
+	spf_header.file_description().description(read_attribute(group, "iso_10303_26_description"));
+	spf_header.file_description().implementation_level(read_attribute(group, "iso_10303_26_implementation_level"));
+
+	spf_header.file_name().name(read_attribute(group, "iso_10303_26_name"));
+	spf_header.file_name().time_stamp(read_attribute(group, "iso_10303_26_time_stamp"));
+	spf_header.file_name().author(read_attribute(group, "iso_10303_26_author"));
+	spf_header.file_name().organization(read_attribute(group, "iso_10303_26_organization"));
+	spf_header.file_name().preprocessor_version(read_attribute(group, "iso_10303_26_preprocessor_version"));
+	spf_header.file_name().originating_system(read_attribute(group, "iso_10303_26_originating_system"));
+	spf_header.file_name().authorization(read_attribute(group, "iso_10303_26_authorization"));
+
+	spf_header.write(out);
+}
+
 void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream& output) {
 	H5::H5File f(name, H5F_ACC_RDONLY);
-	hdf5_output_info info{ f,output };
-	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, iterate, &info);
+	
+	file_structure fs(f);
+	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_groups, &fs);
+	fs.finished_schema();
+	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_groups, &fs);
+
+	hdf5_output_info info{ f, output };
+	for (auto it = fs.begin(); it != fs.end(); ++it) {
+		auto& group = it->first;
+		auto& schema_id = it->second->first;
+		if (schema_id == IfcSchema::Identifier) {
+			write_spf_header(group, output);
+			H5Ovisit(group.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, iterate, &info);
+			output << "ENDSEC;\nEND-ISO-10303-21;\n";
+		}
+	}
 }

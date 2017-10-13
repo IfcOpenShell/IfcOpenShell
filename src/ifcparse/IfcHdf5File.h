@@ -68,13 +68,6 @@ namespace IfcParse {
 		const H5::DataType* object_reference_type;
 
 		std::map<IfcSchema::Type::Enum, H5::DataType*> declared_types;
-		// TODO: why? get_datatype()
-		/*
-		std::map<IfcParse::simple_type::data_type, const H5::DataType*> default_types;
-		std::map<std::string, const H5::DataType*> overridden_types;
-		std::map<IfcParse::simple_type::data_type, std::string> default_type_names;
-		std::map<IfcUtil::ArgumentType, std::string> default_cpp_type_names;
-		*/
 
 #ifdef SORT_ON_NAME
 		std::map<IfcSchema::Type::Enum, std::vector<uint32_t> > sorted_entities;
@@ -102,45 +95,10 @@ namespace IfcParse {
 			return default_types.find(IfcUtil::cpp_to_schema_type<T>::schema_type)->second;
 		}
 
-		/*
-		void advance(void*& ptr, size_t n) const;
-		
-		template <typename T>
-		void write(void*& ptr, const T& t) const;
-		
-		template <>
-		void write(void*& ptr, const std::string& s) const;
-
-		void write_vlen_t(void*& ptr, size_t n_elements, void* vlen_data) const;
-
-		template <typename T>
-		void write_number_of_size(void*& ptr, size_t n, T i) const;
-
-		void write_string_of_size(void*& ptr, const std::string& s, size_t n) const;
-
-		template <typename T>
-		void write_aggregate(void*& ptr, const T& ts) const;
-
-		template <typename T>
-		void write_consecutive(void*& ptr, const std::vector<T>& ts, hsize_t* num = 0, size_t* elem_size=0) const;
-
-		template <typename T>
-		void write_aggregate2(void*& ptr, const std::vector< std::vector<T> >& ts) const;
-
-		template <typename T>
-		void write_consecutive2(void*& ptr, const std::vector< std::vector<T> >& ts, hsize_t* num = 0, size_t* elem_size = 0) const;
-
-		template <typename T>
-		void write_reference_attribute(void*& ptr, const std::string& dsn, const std::vector<T>& vs);
-
-		template <typename T>
-		void write_reference_attribute2(void*& ptr, const std::string& dsn, const std::vector< std::vector<T> >& vs);
-
-		const H5::DataType* specify_length(const H5::DataType* dt, const size_t* n);
-		*/
-
 		H5::DataSet create_dataset(const std::string& path, H5::DataType datatype, int rank, hsize_t* dimensions);
 		
+		void write_header(H5::Group& group, IfcSpfHeader& header);
+
 		template <typename T>
 		void write_instance(void*& ptr, T& visitor, H5::DataType& datatype, IfcUtil::IfcBaseEntity* v);
 
