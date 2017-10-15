@@ -94,6 +94,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
         me = bpy.data.meshes.new('mesh%d' % ob.geometry.id)
         me.from_pydata(verts, [], faces)
+        me.validate()
         
         def add_material(mname, props):
             if mname in bpy.data.materials:
