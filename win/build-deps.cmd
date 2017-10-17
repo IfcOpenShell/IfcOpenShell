@@ -140,7 +140,8 @@ cd "%DEPS_DIR%"
 :: Note all of the depedencies have approriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
-set BOOST_VERSION=1.63.0
+:: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
+set BOOST_VERSION=1.65.1
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
 set DEPENDENCY_DIR="%DEPS_DIR%\boost"
