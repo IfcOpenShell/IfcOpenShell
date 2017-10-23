@@ -1726,12 +1726,13 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		if (entity_attribute == entity) continue;
-		if (entity_attribute->entity->id() != 0) {
-			// Do not update inverses for simple types.
-			const IfcEntityList::ptr attribute_inverses = entitiesByReference(entity_attribute->entity->id());
-
-			if (attribute_inverses) {
-				attribute_inverses->remove(entity);
+		const unsigned int name = entity_attribute->entity->id();
+		// Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
+		if (name != 0) {
+			entities_by_ref_t::iterator it = byref.find(name);
+			if (it != byref.end()) {
+				std::vector<unsigned>& ids = it->second;
+				std::remove(ids.begin(), ids.end(), name);
 			}
 		}
 	}
