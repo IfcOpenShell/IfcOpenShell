@@ -1729,9 +1729,9 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 		const unsigned int name = entity_attribute->entity->id();
 		// Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
 		if (name != 0) {
-			entities_by_ref_t::iterator it = byref.find(name);
-			if (it != byref.end()) {
-				std::vector<unsigned>& ids = it->second;
+			entities_by_ref_t::iterator byref_it = byref.find(name);
+			if (byref_it != byref.end()) {
+				std::vector<unsigned>& ids = byref_it->second;
 				std::remove(ids.begin(), ids.end(), name);
 			}
 		}
