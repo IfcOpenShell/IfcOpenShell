@@ -66,7 +66,7 @@ public:
     bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-    void setFile(IfcParse::IfcFile* f) { file = f; }
+	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
     void setSectionHeight(double h) { section_height = h; }
     std::string nameElement(const IfcGeom::Element<real_t>* elem);

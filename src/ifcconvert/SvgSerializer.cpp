@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include <gp_Pln.hxx>
+#include <gp_Trsf.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopExp_Explorer.hxx>
@@ -209,7 +210,8 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}
 	}
 
-	if (!storey) return;
+	// With a global section height, building storeys are not a requirement.
+	if (!storey && !section_height) return;
 
 	path_object& p = start_path(storey, nameElement(o));
 
@@ -343,8 +345,52 @@ std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
 }
 
 std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
+	if (elem == 0) { return ""; }
 	std::ostringstream oss;
 	const std::string type = elem->is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
 	oss << "id=\"product-" << IfcParse::IfcGlobalId(elem->GlobalId()).formatted() << "\"";
 	return oss.str();
+}
+
+void SvgSerializer::setFile(IfcParse::IfcFile* f) {
+	file = f;
+	IfcSchema::IfcBuildingStorey::list::ptr storeys = f->entitiesByType<IfcSchema::IfcBuildingStorey>();
+	if (!storeys || storeys->size() == 0) {
+		
+		IfcGeom::Kernel kernel;
+		
+		IfcSchema::IfcProject::list::ptr projects = f->entitiesByType<IfcSchema::IfcProject>();
+		if (projects->size() == 1) {
+			IfcSchema::IfcProject* project = *projects->begin();
+			std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
+		} else {
+			Logger::Error("No single project encountered, output might be invalid or missing");
+			return;
+		}
+		
+		std::vector<IfcSchema::Type::Enum> to_derive_from;
+		to_derive_from.push_back(IfcSchema::Type::IfcBuilding);
+		to_derive_from.push_back(IfcSchema::Type::IfcSite);
+		std::vector<IfcSchema::Type::Enum>::const_iterator it;
+		for (it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
+			IfcEntityList::ptr untyped = f->entitiesByType(*it);
+			if (untyped) {
+				IfcSchema::IfcProduct::list::ptr insts = untyped->as<IfcSchema::IfcProduct>();
+				IfcSchema::IfcProduct::list::it jt;
+				for (jt = insts->begin(); jt != insts->end(); ++jt) {
+					IfcSchema::IfcProduct* product = *jt;
+					if (product->hasObjectPlacement()) {
+						gp_Trsf trsf;
+						if (kernel.convert(product->ObjectPlacement(), trsf)) {
+							setSectionHeight(trsf.TranslationPart().Z() + 1.);
+							Logger::Warning("No building storeys encountered, used for reference:", product->entity);
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	Logger::Error("No building storeys encountered, output might be invalid or missing");
 }
