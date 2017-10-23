@@ -333,7 +333,7 @@ class application(QtGui.QApplication):
                             if type_psets is None: continue
                             for propset in type_psets:
                                 propsets.append(process_pset(propset))
-                except Exception, e:
+                except Exception as e:
                     import traceback
                     print("failed to load properties: {}".format(e))
                     traceback.print_exc()
