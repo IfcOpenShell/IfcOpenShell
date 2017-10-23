@@ -321,7 +321,9 @@ void SvgSerializer::finalize() {
 		first = false;
 	}
 	
-	svg_file << "    </g>\n";
+	if (!first) {
+		svg_file << "    </g>\n";
+	}
 	svg_file << "</svg>" << std::endl;
 }
 
