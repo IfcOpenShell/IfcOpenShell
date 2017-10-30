@@ -86,6 +86,9 @@
 	#include <BRepTools_ShapeSet.hxx>
 %}
 
+// Create docstrings for generated python code.
+%feature("autodoc", "1");
+
 %include "utils/type_conversion.i"
 
 %include "utils/typemaps_in.i"
