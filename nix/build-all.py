@@ -67,6 +67,7 @@ PCRE_VERSION="8.39"
 LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
 ICU_VERSION="56.1"
+SWIG_VERSION="3.0.12"
 
 # binaries
 cp="cp"
@@ -452,7 +453,7 @@ build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_a
 
 # An issue exists with swig-1.3 and python >= 3.2
 # Therefore, build a recent copy from source
-build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-3.0.8")
+build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-%s" % SWIG_VERSION)
 
 if USE_OCCT:
     long_filename = "src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation"
