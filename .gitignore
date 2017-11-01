@@ -7,6 +7,7 @@
 /src/ifcexpressparser/express_parser.py
 # General Python residue
 __pycache__
+*.py.bak
 # Visual Studio Code files
 .vscode
 # PyCharm files
