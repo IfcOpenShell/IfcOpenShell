@@ -51,7 +51,7 @@ class configuration(object):
             Cfg = ConfigParser.RawConfigParser
         except:
             import configparser
-            Cfg = configparser.ConfigParser(interpolation=None)
+            Cfg = lambda: configparser.ConfigParser(interpolation=None)
             
         conf_file = os.path.expanduser(os.path.join("~", ".ifcopenshell", "app", "snippets.conf"))
         if conf_file.startswith("~"):
