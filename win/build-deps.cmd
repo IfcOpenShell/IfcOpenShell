@@ -121,7 +121,7 @@ call :PrintUsage
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
 echo.
 
-call cecho.cmd black cyan "If you are not ready with the above: type n in the prompt below. Build proceeds on all other inputs!"
+call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
 
 set /p do_continue="> "
 if "%do_continue%"==n goto :Finish
@@ -176,7 +176,13 @@ set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options -
 cd "%DEPS_DIR%\boost"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-call .\b2 toolset=msvc runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+:: BOOST_VC_VER can be empty (or needs to be) for newer VS versions
+set BOOST_VC_VER=
+if %VS_VER% LSS 2017 (
+    set BOOST_VC_VER=-%VC_VER%.0
+)
+
+call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
