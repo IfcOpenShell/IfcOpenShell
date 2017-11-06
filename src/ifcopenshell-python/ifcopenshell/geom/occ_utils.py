@@ -61,7 +61,7 @@ def initialize_display():
             while True:
                 try:
                     active_light = viewer.ActiveLight()
-                except:
+                except BaseException:
                     break
                 yield active_light
                 viewer.NextActiveLights()
@@ -115,7 +115,8 @@ def display_shape(shape, clr=None, viewer_handle=None):
         ais.SetMaterial(material)
 
         if isinstance(clr, str):
-            qclr = getattr(OCC.Quantity, "Quantity_NOC_%s" % clr.upper(), getattr(OCC.Quantity, "Quantity_NOC_%s1" % clr.upper(), None))
+            qclr = getattr(OCC.Quantity, "Quantity_NOC_%s" % clr.upper(),
+                           getattr(OCC.Quantity, "Quantity_NOC_%s1" % clr.upper(), None))
             if qclr is None:
                 raise Exception("No color named '%s'" % clr.upper())
         elif isinstance(clr, Iterable):
@@ -146,7 +147,8 @@ def display_shape(shape, clr=None, viewer_handle=None):
             for shp, stl in zip(subshapes, representation.styles):
                 subshape = OCC.AIS.AIS_Shape(shp)
                 if min(stl) < 0. or max(stl) > 1.:
-                    default_style_applied = stl = DEFAULT_STYLES.get(representation.data.type, DEFAULT_STYLES["DEFAULT"])
+                    default_style_applied = stl = DEFAULT_STYLES.get(representation.data.type,
+                                                                     DEFAULT_STYLES["DEFAULT"])
                 subshape.SetColor(OCC.Quantity.Quantity_Color(stl[0], stl[1], stl[2], OCC.Quantity.Quantity_TOC_RGB))
                 subshape.SetMaterial(material)
                 if len(stl) == 4 and stl[3] < 1.:
@@ -171,7 +173,9 @@ def display_shape(shape, clr=None, viewer_handle=None):
         ais = OCC.AIS.AIS_Shape(shape)
         ais.SetMaterial(material)
 
-        def r(): return random.random() * 0.3 + 0.7
+        def r():
+            return random.random() * 0.3 + 0.7
+
         clr = OCC.Quantity.Quantity_Color(r(), r(), r(), OCC.Quantity.Quantity_TOC_RGB)
         ais.SetColor(clr)
 
@@ -211,12 +215,12 @@ def create_shape_from_serialization(brep_object):
     try:
         brep_data = brep_object.geometry.brep_data
         styles = brep_object.geometry.surface_styles
-    except:
+    except BaseException:
         try:
             brep_data = brep_object.brep_data
             styles = brep_object.surface_styles
             is_product_shape = False
-        except:
+        except BaseException:
             pass
 
     styles = tuple(styles[i:i + 4] for i in range(0, len(styles), 4))
@@ -228,7 +232,7 @@ def create_shape_from_serialization(brep_object):
         ss = OCC.BRepTools.BRepTools_ShapeSet()
         ss.ReadFromString(brep_data)
         occ_shape = ss.Shape(ss.NbShapes())
-    except:
+    except BaseException:
         pass
 
     if is_product_shape:
