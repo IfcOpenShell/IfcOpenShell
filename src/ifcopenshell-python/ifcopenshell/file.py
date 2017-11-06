@@ -61,9 +61,11 @@ class file(object):
         elif isinstance(key, basestring):
             return entity_instance(self.wrapped_data.by_guid(str(key)))
 
-    def by_id(self, id): return self[id]
+    def by_id(self, id):
+        return self[id]
 
-    def by_guid(self, guid): return self[guid]
+    def by_guid(self, guid):
+        return self[guid]
 
     def add(self, inst):
         inst.wrapped_data.this.disown()

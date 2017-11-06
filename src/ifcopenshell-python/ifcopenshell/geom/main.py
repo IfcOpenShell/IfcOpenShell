@@ -32,7 +32,7 @@ from ..entity_instance import entity_instance
 def has_occ():
     try:
         import OCC.BRepTools
-    except:
+    except BaseException:
         return False
     return True
 
@@ -40,13 +40,17 @@ def has_occ():
 has_occ = has_occ()
 
 
-def wrap_shape_creation(settings, shape): return shape
+def wrap_shape_creation(settings, shape):
+    return shape
 
 
 if has_occ:
     from . import occ_utils as utils
 
-    def wrap_shape_creation(settings, shape): return utils.create_shape_from_serialization(shape) if getattr(settings, 'use_python_opencascade', False) else shape
+    def wrap_shape_creation(settings, shape): return utils.create_shape_from_serialization(shape) if getattr(settings,
+                                                                                                             'use_python_opencascade',
+                                                                                                             False) else shape
+
 
 # Subclass the settings module to provide an additional
 # setting to enable pythonOCC when available
@@ -83,6 +87,7 @@ class iterator(_iterator):
         else:
             file_or_filename = os.path.abspath(file_or_filename)
         _iterator.__init__(self, settings, file_or_filename)
+
     if has_occ:
         def get(self):
             return wrap_shape_creation(self.settings, _iterator.get(self))
@@ -108,6 +113,7 @@ class tree(ifcopenshell_wrapper.tree):
             elif all(map(lambda v: hasattr(value, v), "XYZ")):
                 return value.X(), value.Y(), value.Z()
             return value
+
         args = [self, unwrap(value)]
         if isinstance(value, entity_instance):
             args.append(kwargs.get("completely_within", False))
@@ -124,6 +130,7 @@ class tree(ifcopenshell_wrapper.tree):
             elif hasattr(value, "Get"):
                 return value.Get()[:3], value.Get()[3:]
             return value
+
         args = [self, unwrap(value)]
         if "extend" in kwargs or "completely_within" in kwargs:
             args.append(kwargs.get("completely_within", False))
@@ -152,7 +159,9 @@ def iterate(settings, filename):
 
 
 def make_shape_function(fn):
-    def entity_instance_or_none(e): return None if e is None else entity_instance(e)
+    def entity_instance_or_none(e):
+        return None if e is None else entity_instance(e)
+
     if has_occ:
         import OCC.TopoDS
 

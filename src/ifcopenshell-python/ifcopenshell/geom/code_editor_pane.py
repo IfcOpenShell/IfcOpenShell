@@ -11,7 +11,7 @@ from PyQt4 import QtCore, QtGui
 
 try:
     from PyQt4 import QtWidgets
-except:
+except BaseException:
     QtWidgets = QtGui
 
 try:
@@ -24,14 +24,14 @@ try:
     from pyqode.python.backend import server
     from pyqode.python import modes as pymodes, panels as pypanels, widgets
     from pyqode.python.widgets import PyInteractiveConsole
+
     has_pyqode = True
-except:
+except BaseException:
     has_pyqode = False
     CodeEdit = QtWidgets.QPlainTextEdit
 
 
 class StdoutRedirector(object):
-
     '''A class for redirecting stdout to this Text widget.'''
 
     def __init__(self, widget):
@@ -49,7 +49,6 @@ class StdoutRedirector(object):
 
 
 class code_edit(QtGui.QWidget):
-
     class Console(InteractiveConsole):
         def __init__(*args):
             InteractiveConsole.__init__(*args)

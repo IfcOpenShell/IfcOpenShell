@@ -65,6 +65,7 @@ class entity_instance(object):
         def wrap(e): return entity_instance(e)
 
         def is_instance(e): return isinstance(e, ifcopenshell_wrapper.entity_instance)
+
         return entity_instance.walk(is_instance, wrap, v)
 
     @staticmethod
@@ -72,6 +73,7 @@ class entity_instance(object):
         def unwrap(e): return e.wrapped_data
 
         def is_instance(e): return isinstance(e, entity_instance)
+
         return entity_instance.walk(is_instance, unwrap, v)
 
     def attribute_type(self, attr):
@@ -99,12 +101,13 @@ class entity_instance(object):
             try:
                 if isinstance(value, unicode):
                     value = value.encode("utf-8")
-            except:
+            except BaseException:
                 pass
             try:
                 getattr(self.wrapped_data, "setArgumentAs%s" % attr_type)(idx, entity_instance.unwrap_value(value))
-            except:
-                raise ValueError("Expected %s for attribute %s.%s, got %r" % (real_attr_type, self.is_a(), self.attribute_name(idx), value))
+            except BaseException:
+                raise ValueError("Expected %s for attribute %s.%s, got %r" % (
+                    real_attr_type, self.is_a(), self.attribute_name(idx), value))
         return value
 
     def __len__(self):
@@ -120,7 +123,7 @@ class entity_instance(object):
         return self.wrapped_data.id()
 
     def __eq__(self, other):
-        if type(self) != type(other):
+        if not isinstance(self, type(other)):
             return False
         return self.wrapped_data == other.wrapped_data
 
@@ -140,7 +143,7 @@ class entity_instance(object):
                 if include_identifier:
                     yield "id", self.id()
                 yield "type", self.is_a()
-            except:
+            except BaseException:
                 logging.exception("unhandled exception while getting id / type info on {}".format(self))
             for i in range(len(self)):
                 try:
@@ -160,10 +163,12 @@ class entity_instance(object):
                                                             return_type=return_type,
                                                             ignore=ignore
                                                             )
+
                         attr_value = entity_instance.walk(is_instance, get_info_, attr_value)
                     yield self.attribute_name(i), attr_value
-                except:
+                except BaseException:
                     logging.exception("unhandled exception occured setting attribute name for {}".format(self))
+
         return return_type(_())
 
     __dict__ = property(get_info)

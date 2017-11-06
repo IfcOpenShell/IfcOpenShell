@@ -49,6 +49,7 @@ except Exception as e:
     if int(python_version_tuple[0]) == 2:
         # Only for py2, as py3 has exception chaining
         import traceback
+
         traceback.print_exc()
         print('-' * 64)
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)

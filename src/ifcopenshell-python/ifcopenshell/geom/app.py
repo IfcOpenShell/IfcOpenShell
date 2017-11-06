@@ -15,7 +15,7 @@ from collections import defaultdict, Iterable, OrderedDict
 os.environ['QT_API'] = 'pyqt4'
 try:
     from pyqode.qt import QtCore
-except:
+except BaseException:
     pass
 
 from PyQt4 import QtGui, QtCore
@@ -24,21 +24,20 @@ from .code_editor_pane import code_edit
 
 try:
     from OCC.Display.pyqt4Display import qtViewer3d
-except:
+except BaseException:
     import OCC.Display
 
     try:
         import OCC.Display.backend
-    except:
+    except BaseException:
         pass
 
     try:
         OCC.Display.backend.get_backend("qt-pyqt4")
-    except:
+    except BaseException:
         OCC.Display.backend.load_backend("qt-pyqt4")
 
     from OCC.Display.qtDisplay import qtViewer3d
-
 
 from .main import settings, iterator
 from .occ_utils import display_shape
@@ -58,10 +57,11 @@ class configuration(object):
         try:
             import ConfigParser
             Cfg = ConfigParser.RawConfigParser
-        except:
+        except BaseException:
             import configparser
 
-            def Cfg(): return configparser.ConfigParser(interpolation=None)
+            def Cfg():
+                return configparser.ConfigParser(interpolation=None)
 
         conf_file = os.path.expanduser(os.path.join("~", ".ifcopenshell", "app", "snippets.conf"))
         if conf_file.startswith("~"):
@@ -114,7 +114,6 @@ if selection:
 
 
 class application(QtGui.QApplication):
-
     """A pythonOCC, PyQt based IfcOpenShell application
     with two tree views and a graphical 3d view"""
 
@@ -165,7 +164,8 @@ class application(QtGui.QApplication):
             itm = self.product_to_item.get(product)
             if itm is None:
                 return
-            self.selectionModel().setCurrentIndex(itm, QtGui.QItemSelectionModel.SelectCurrent | QtGui.QItemSelectionModel.Rows)
+            self.selectionModel().setCurrentIndex(itm,
+                                                  QtGui.QItemSelectionModel.SelectCurrent | QtGui.QItemSelectionModel.Rows)
 
     class decomposition_treeview(abstract_treeview):
 
@@ -233,6 +233,7 @@ class application(QtGui.QApplication):
                         itm = items[t2] = QtGui.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
                         self.children[s2].append(t2)
+
                 add(t)
 
             for p in products:
@@ -379,6 +380,7 @@ class application(QtGui.QApplication):
                         shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
                         if not shp.IsNull():
                             yield shp
+
             return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
 
         def __init__(self, widget):
@@ -528,6 +530,7 @@ class application(QtGui.QApplication):
             for c in self.components:
                 if c != component:
                     c.select(inst)
+
         return handler
 
     def __init__(self, settings=None):
@@ -582,7 +585,8 @@ class application(QtGui.QApplication):
         sys.exit(self.exec_())
 
     def browse(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self.window, 'Open file', ".", "Industry Foundation Classes (*.ifc)")
+        filename = QtGui.QFileDialog.getOpenFileName(self.window, 'Open file', ".",
+                                                     "Industry Foundation Classes (*.ifc)")
         self.load(filename)
 
     def clear(self):
