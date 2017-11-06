@@ -28,17 +28,17 @@ try:
 except:
     has_pyqode = False
     CodeEdit = QtWidgets.QPlainTextEdit
-    
-    
+
+
 class StdoutRedirector(object):
 
     '''A class for redirecting stdout to this Text widget.'''
 
     def __init__(self, widget):
-       self.widget=widget
-       self.isError = False
+        self.widget = widget
+        self.isError = False
 
-    def write(self,str):
+    def write(self, str):
         self.widget.moveCursor(QtGui.QTextCursor.End)
         if self.isError:
             self.widget.setTextColor(QtCore.Qt.red)
@@ -60,37 +60,37 @@ class code_edit(QtGui.QWidget):
     def runCode(self):
         sys.stdout = StdoutRedirector(self.output)
         sys.stderr = StdoutRedirector(self.output)
-        sys.stderr.isError=True
+        sys.stderr.isError = True
 
         if not self.model:
             print("please load a model first", file=sys.stderr)
         else:
             self.c.enter(str(self.editor.toPlainText()))
-            
+
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-    def select(self,product):
-        self.c = self.Console({'model':self.model, 'viewer':self.viewer, 'selection':product})
+    def select(self, product):
+        self.c = self.Console({'model': self.model, 'viewer': self.viewer, 'selection': product})
 
-    def __init__(self,viewer,snippets=None):
-    
-        self.model=None
+    def __init__(self, viewer, snippets=None):
+
+        self.model = None
         self.viewer = viewer
         QtGui.QWidget.__init__(self)
-        self.layout= QtGui.QVBoxLayout(self)
+        self.layout = QtGui.QVBoxLayout(self)
         self.setLayout(self.layout)
         self.c = None
-        
+
         self.tools = QtGui.QHBoxLayout(self)
         self.layout.addLayout(self.tools)
-        
+
         self.runbutton = QtGui.QPushButton("Run")
         width = self.runbutton.fontMetrics().boundingRect("Run").width() + 20
         self.runbutton.setMaximumWidth(width)
         self.tools.addWidget(self.runbutton)
         self.runbutton.clicked.connect(self.runCode)
-        
+
         editor = CodeEdit()
         if has_pyqode:
             editor.backend.start(server.__file__)
@@ -150,5 +150,5 @@ class code_edit(QtGui.QWidget):
         output = []
         sys.stdout = StdoutRedirector(self.output)
         self.model = f
-        self.c = self.Console({'model':self.model, 'selection':None, 'viewer':self.viewer})
+        self.c = self.Console({'model': self.model, 'selection': None, 'viewer': self.viewer})
         sys.stdout = sys.__stdout__
