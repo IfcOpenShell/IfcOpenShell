@@ -70,15 +70,17 @@ DEFAULTS = {
     "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get('timestamp') or time.time()))
 }
 
-def create(filename=None, timestring=None, organization=None, creator=None,\
-           schema_identifier=None, application_version=None, timestamp=None,\
+
+def create(filename=None, timestring=None, organization=None, creator=None,
+           schema_identifier=None, application_version=None, timestamp=None,
            application=None, project_globalid=None, project_name=None):
-           
+
     d = dict(locals())
+
     def _():
         for var, value in d.items():
             if value is None:
                 yield var, DEFAULTS.get(var, lambda *args: '')(d)
     d.update(dict(_()))
-           
+
     return file.from_string(TEMPLATE % d)

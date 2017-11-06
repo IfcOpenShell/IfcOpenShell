@@ -28,17 +28,17 @@ if hasattr(os, 'uname'):
     platform_system = os.uname()[0].lower()
 else:
     platform_system = 'windows'
-    
+
 if sys.maxsize == (1 << 31) - 1:
     platform_architecture = '32bit'
 else:
     platform_architecture = '64bit'
-    
+
 python_version_tuple = tuple(sys.version.split(' ')[0].split('.'))
 
 python_distribution = os.path.join(platform_system,
-    platform_architecture,
-    'python%s.%s' % python_version_tuple[:2])
+                                   platform_architecture,
+                                   'python%s.%s' % python_version_tuple[:2])
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     'lib', python_distribution)))
@@ -52,20 +52,23 @@ except Exception as e:
         traceback.print_exc()
         print('-' * 64)
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
-    
+
 from . import guid
 from .file import file
 from .entity_instance import entity_instance
+
 
 def open(fn=None):
     return file(ifcopenshell_wrapper.open(os.path.abspath(fn))) if fn else file()
 
 
-def create_entity(type,*args,**kwargs):
+def create_entity(type, *args, **kwargs):
     e = entity_instance(type)
     attrs = list(enumerate(args)) + \
         [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
-    for idx, arg in attrs: e[idx] = arg
+    for idx, arg in attrs:
+        e[idx] = arg
     return e
+
 
 from .main import *

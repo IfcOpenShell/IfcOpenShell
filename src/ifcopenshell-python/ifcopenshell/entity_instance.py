@@ -62,14 +62,16 @@ class entity_instance(object):
 
     @staticmethod
     def wrap_value(v):
-        wrap = lambda e: entity_instance(e)
-        is_instance = lambda e: isinstance(e, ifcopenshell_wrapper.entity_instance)
+        def wrap(e): return entity_instance(e)
+
+        def is_instance(e): return isinstance(e, ifcopenshell_wrapper.entity_instance)
         return entity_instance.walk(is_instance, wrap, v)
 
     @staticmethod
     def unwrap_value(v):
-        unwrap = lambda e: e.wrapped_data
-        is_instance = lambda e: isinstance(e, entity_instance)
+        def unwrap(e): return e.wrapped_data
+
+        def is_instance(e): return isinstance(e, entity_instance)
         return entity_instance.walk(is_instance, unwrap, v)
 
     def attribute_type(self, attr):
@@ -95,7 +97,8 @@ class entity_instance(object):
             attr_type = attr_type.replace('Binary', 'String')
             attr_type = attr_type.replace('Enumeration', 'String')
             try:
-                if isinstance(value, unicode): value = value.encode("utf-8")
+                if isinstance(value, unicode):
+                    value = value.encode("utf-8")
             except:
                 pass
             try:
@@ -117,7 +120,8 @@ class entity_instance(object):
         return self.wrapped_data.id()
 
     def __eq__(self, other):
-        if type(self) != type(other): return False
+        if type(self) != type(other):
+            return False
         return self.wrapped_data == other.wrapped_data
 
     def __hash__(self):
@@ -144,17 +148,18 @@ class entity_instance(object):
                         continue
                     attr_value = self[i]
                     if recursive:
-                        is_instance = lambda e: isinstance(e, entity_instance)
+                        def is_instance(e): return isinstance(e, entity_instance)
+
                         def get_info_(inst):
                             # for ty in ignore:
                             #     if inst.is_a(ty):
                             #         return None
                             return entity_instance.get_info(inst,
-                                include_identifier=include_identifier,
-                                recursive=recursive,
-                                return_type=return_type,
-                                ignore=ignore
-                            )
+                                                            include_identifier=include_identifier,
+                                                            recursive=recursive,
+                                                            return_type=return_type,
+                                                            ignore=ignore
+                                                            )
                         attr_value = entity_instance.walk(is_instance, get_info_, attr_value)
                     yield self.attribute_name(i), attr_value
                 except:
