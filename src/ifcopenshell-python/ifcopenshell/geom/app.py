@@ -15,21 +15,27 @@ from collections import defaultdict, Iterable, OrderedDict
 os.environ['QT_API'] = 'pyqt4'
 try:
     from pyqode.qt import QtCore
-except: pass
+except:
+    pass
 
 from PyQt4 import QtGui, QtCore
 
 from .code_editor_pane import code_edit
 
-try: from OCC.Display.pyqt4Display import qtViewer3d
-except: 
+try:
+    from OCC.Display.pyqt4Display import qtViewer3d
+except:
     import OCC.Display
 
-    try: import OCC.Display.backend
-    except: pass
+    try:
+        import OCC.Display.backend
+    except:
+        pass
 
-    try: OCC.Display.backend.get_backend("qt-pyqt4")
-    except: OCC.Display.backend.load_backend("qt-pyqt4")
+    try:
+        OCC.Display.backend.get_backend("qt-pyqt4")
+    except:
+        OCC.Display.backend.load_backend("qt-pyqt4")
 
     from OCC.Display.qtDisplay import qtViewer3d
 
@@ -45,7 +51,8 @@ try:
     from PyQt4.QtCore import QString
 except ImportError:
     QString = str
-    
+
+
 class configuration(object):
     def __init__(self):
         try:
@@ -53,19 +60,20 @@ class configuration(object):
             Cfg = ConfigParser.RawConfigParser
         except:
             import configparser
-            Cfg = lambda: configparser.ConfigParser(interpolation=None)
-            
+
+            def Cfg(): return configparser.ConfigParser(interpolation=None)
+
         conf_file = os.path.expanduser(os.path.join("~", ".ifcopenshell", "app", "snippets.conf"))
         if conf_file.startswith("~"):
             conf_file = None
             return
-            
+
         self.config_encode = lambda s: s.replace("\\", "\\\\").replace("\n", "\n|")
         self.config_decode = lambda s: s.replace("\n|", "\n").replace("\\\\", "\\")
-            
+
         if not os.path.exists(os.path.dirname(conf_file)):
             os.makedirs(os.path.dirname(conf_file))
-            
+
         if not os.path.exists(conf_file):
             config = Cfg()
             config.add_section("snippets")
@@ -78,7 +86,7 @@ class configuration(object):
 for wall in model.by_type("IfcWall"):
     print ("wall with global id: "+str(wall.GlobalId))
 """.lstrip()))
-            
+
             config.set("snippets", "print properties of current selection", self.config_encode("""
 ###########################################################################
 # A simple script that iterates over all IfcPropertySets of the currently #
@@ -97,13 +105,13 @@ if selection:
 """.lstrip()))
             with open(conf_file, 'w') as configfile:
                 config.write(configfile)
-        
+
         self.config = Cfg()
         self.config.read(conf_file)
-        
+
     def options(self, s):
         return OrderedDict([(k, self.config_decode(self.config.get(s, k))) for k in self.config.options(s)])
-        
+
 
 class application(QtGui.QApplication):
 
@@ -111,19 +119,19 @@ class application(QtGui.QApplication):
     with two tree views and a graphical 3d view"""
 
     class abstract_treeview(QtGui.QTreeWidget):
-    
+
         """Base class for the two treeview controls"""
-        
+
         instanceSelected = QtCore.pyqtSignal([object])
         instanceVisibilityChanged = QtCore.pyqtSignal([object, int])
         instanceDisplayModeChanged = QtCore.pyqtSignal([object, int])
-        
+
         def __init__(self):
             QtGui.QTreeView.__init__(self)
             self.setColumnCount(len(self.ATTRIBUTES))
             self.setHeaderLabels(self.ATTRIBUTES)
             self.children = defaultdict(list)
-            
+
         def get_children(self, inst):
             c = [inst]
             i = 0
@@ -131,7 +139,7 @@ class application(QtGui.QApplication):
                 c.extend(self.children[c[i]])
                 i += 1
             return c
-            
+
         def contextMenuEvent(self, event):
             menu = QtGui.QMenu(self)
             visibility = [menu.addAction("Show"), menu.addAction("Hide")]
@@ -145,25 +153,26 @@ class application(QtGui.QApplication):
                 self.instanceVisibilityChanged.emit(inst, visibility.index(action))
             elif action in displaymode:
                 self.instanceDisplayModeChanged.emit(inst, displaymode.index(action))
-                    
+
         def clicked(self, index):
             inst = index.data(QtCore.Qt.UserRole)
             if hasattr(inst, 'toPyObject'):
                 inst = inst.toPyObject()
             if inst:
                 self.instanceSelected.emit(inst)
-        
+
         def select(self, product):
             itm = self.product_to_item.get(product)
-            if itm is None: return
-            self.selectionModel().setCurrentIndex(itm, QtGui.QItemSelectionModel.SelectCurrent | QtGui.QItemSelectionModel.Rows);
-        
+            if itm is None:
+                return
+            self.selectionModel().setCurrentIndex(itm, QtGui.QItemSelectionModel.SelectCurrent | QtGui.QItemSelectionModel.Rows)
+
     class decomposition_treeview(abstract_treeview):
-    
+
         """Treeview with typical IFC decomposition relationships"""
-    
+
         ATTRIBUTES = ['Entity', 'GlobalId', 'Name']
-        
+
         def parent(self, instance):
             if instance.is_a("IfcOpeningElement"):
                 return instance.VoidsElements[0].RelatingBuildingElement
@@ -178,7 +187,7 @@ class application(QtGui.QApplication):
                 decompositions = instance.Decomposes
                 if len(decompositions):
                     return decompositions[0].RelatingObject
-                    
+
         def load_file(self, f, **kwargs):
             products = list(f.by_type("IfcProduct")) + list(f.by_type("IfcProject"))
             parents = list(map(self.parent, products))
@@ -203,13 +212,13 @@ class application(QtGui.QApplication):
             self.product_to_item = dict(zip(items.keys(), map(self.indexFromItem, items.values())))
             self.connect(self, QtCore.SIGNAL("clicked(const QModelIndex &)"), self.clicked)
             self.expandAll()
-                
+
     class type_treeview(abstract_treeview):
-    
+
         """Treeview with typical IFC decomposition relationships"""
-    
+
         ATTRIBUTES = ['Name']
-                            
+
         def load_file(self, f, **kwargs):
             products = list(f.by_type("IfcProduct"))
             types = set(map(lambda i: i.is_a(), products))
@@ -217,31 +226,30 @@ class application(QtGui.QApplication):
             for t in types:
                 def add(t):
                     s = get_supertype(t)
-                    if s: add(s)
-                    s2, t2 = map(QString, (s,t))
+                    if s:
+                        add(s)
+                    s2, t2 = map(QString, (s, t))
                     if t2 not in items:
                         itm = items[t2] = QtGui.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
                         self.children[s2].append(t2)
                 add(t)
-            
+
             for p in products:
                 t = QString(p.is_a())
                 itm = items[p] = QtGui.QTreeWidgetItem(items.get(t, self), [p.Name or '<no name>'])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
-                
+
             self.product_to_item = dict(zip(items.keys(), map(self.indexFromItem, items.values())))
             self.connect(self, QtCore.SIGNAL("clicked(const QModelIndex &)"), self.clicked)
             self.expandAll()
-
-
 
     class property_table(QtGui.QWidget):
 
         def __init__(self):
             QtGui.QWidget.__init__(self)
-            self.layout= QtGui.QVBoxLayout(self)
+            self.layout = QtGui.QVBoxLayout(self)
             self.setLayout(self.layout)
             self.scroll = QtGui.QScrollArea(self)
             self.layout.addWidget(self.scroll)
@@ -252,9 +260,9 @@ class application(QtGui.QApplication):
             self.scroll.setWidget(self.scrollContent)
             self.prop_dict = {}
 
-        #triggered by selection event in either component of parent
+        # triggered by selection event in either component of parent
         def select(self, product):
-        
+
             # Clear the old contents if any
             while self.scrollLayout.count():
                 child = self.scrollLayout.takeAt(0)
@@ -266,47 +274,46 @@ class application(QtGui.QApplication):
             self.scroll.setWidgetResizable(True)
 
             prop_sets = self.prop_dict.get(str(product))
-            
+
             if prop_sets is not None:
-                for k,v in prop_sets:
+                for k, v in prop_sets:
                     group_box = QtGui.QGroupBox()
 
                     group_box.setTitle(k)
                     group_layout = QtGui.QVBoxLayout()
                     group_box.setLayout(group_layout)
-                    
+
                     for name, value in v.items():
                         prop_name = str(name)
-                        
+
                         value_str = value
                         if hasattr(value_str, "wrappedValue"):
                             value_str = value_str.wrappedValue
-                            
+
                         if isinstance(value_str, unicode):
                             value_str = value_str.encode('utf-8')
                         else:
                             value_str = str(value_str)
-                            
+
                         if hasattr(value, "is_a"):
                             type_str = " <i>(%s)</i>" % value.is_a()
                         else:
                             type_str = ""
                         label = QtGui.QLabel("<b>%s</b>: %s%s" % (prop_name, value_str, type_str))
                         group_layout.addWidget(label)
-                        
+
                     group_layout.addStretch()
                     self.scrollLayout.addWidget(group_box)
 
                 self.scrollLayout.addStretch()
             else:
-                label = QtGui.QLabel("No IfcPropertySets asscociated with selected entity instance" )
+                label = QtGui.QLabel("No IfcPropertySets asscociated with selected entity instance")
                 self.scrollLayout.addWidget(label)
-
 
         def load_file(self, f, **kwargs):
             for p in f.by_type("IfcProduct"):
                 propsets = []
-                
+
                 def process_pset(prop_def):
                     if prop_def is not None:
                         prop_set_name = prop_def.Name
@@ -314,36 +321,37 @@ class application(QtGui.QApplication):
                         if prop_def.is_a("IfcElementQuantity"):
                             for q in prop_def.Quantities:
                                 if q.is_a("IfcPhysicalSimpleQuantity"):
-                                    props[q.Name]=q[3]
+                                    props[q.Name] = q[3]
                         elif prop_def.is_a("IfcPropertySet"):
                             for prop in prop_def.HasProperties:
                                 if prop.is_a("IfcPropertySingleValue"):
-                                    props[prop.Name]=prop.NominalValue
+                                    props[prop.Name] = prop.NominalValue
                         else:
                             # Entity introduced in IFC4
                             # prop_def.is_a("IfcPreDefinedPropertySet"):
                             for prop in range(4, len(prop_def)):
-                                props[prop_def.attribute_name(prop)]=prop_def[prop]
+                                props[prop_def.attribute_name(prop)] = prop_def[prop]
                         return prop_set_name, props
-                
+
                 try:
                     for is_def_by in p.IsDefinedBy:
                         if is_def_by.is_a("IfcRelDefinesByProperties"):
                             propsets.append(process_pset(is_def_by.RelatingPropertyDefinition))
                         elif is_def_by.is_a("IfcRelDefinesByType"):
                             type_psets = is_def_by.RelatingType.HasPropertySets
-                            if type_psets is None: continue
+                            if type_psets is None:
+                                continue
                             for propset in type_psets:
                                 propsets.append(process_pset(propset))
                 except Exception as e:
                     import traceback
                     print("failed to load properties: {}".format(e))
                     traceback.print_exc()
-                    
+
                 if len(propsets):
                     self.prop_dict[str(p)] = propsets
-                
-            print ("property set dictionary has {} entries".format(len(self.prop_dict)))
+
+            print("property set dictionary has {} entries".format(len(self.prop_dict)))
 
     class viewer(qtViewer3d):
 
@@ -357,17 +365,20 @@ class application(QtGui.QApplication):
                     yield ais.Shape()
                     return
                 shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-                if not shp.IsNull(): yield shp.Shape()
+                if not shp.IsNull():
+                    yield shp.Shape()
                 return
                 mult = ais_handle
                 if mult.IsNull():
                     shp = OCC.AIS.Handle_AIS_Shape.DownCast(ais_handle)
-                    if not shp.IsNull(): yield shp
+                    if not shp.IsNull():
+                        yield shp
                 else:
                     li = mult.GetObject().ConnectedTo()
                     for i in range(li.Length()):
-                        shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i+1))
-                        if not shp.IsNull(): yield shp
+                        shp = OCC.AIS.Handle_AIS_Shape.DownCast(li.Value(i + 1))
+                        if not shp.IsNull():
+                            yield shp
             return tuple(shp.HashCode(1 << 24) for shp in yield_shapes())
 
         def __init__(self, widget):
@@ -390,7 +401,8 @@ class application(QtGui.QApplication):
             v = self._display
 
             t = {0: time.time()}
-            def update(dt = None):
+
+            def update(dt=None):
                 t1 = time.time()
                 if t1 - t[0] > (dt or -1):
                     v.FitAll()
@@ -408,7 +420,8 @@ class application(QtGui.QApplication):
 
             old_progress = -1
             while True:
-                if terminate[0]: break
+                if terminate[0]:
+                    break
                 shape = it.get()
                 product = f[shape.data.id]
                 ais = display_shape(shape, viewer_handle=v)
@@ -427,13 +440,14 @@ class application(QtGui.QApplication):
                     break
                 update(0.2)
 
-            print("\rOpened file in %.2f seconds%s" % (time.time() - t0, " "*25))
+            print("\rOpened file in %.2f seconds%s" % (time.time() - t0, " " * 25))
 
             update()
 
         def select(self, product):
             ais = self.product_to_ais.get(product)
-            if ais is None: return
+            if ais is None:
+                return
             v = self._display.Context
             v.ClearSelected(False)
             v.SetSelected(ais, True)
@@ -509,7 +523,6 @@ class application(QtGui.QApplication):
             a.triggered.connect(callback)
             m.addAction(a)
 
-
     def makeSelectionHandler(self, component):
         def handler(inst):
             for c in self.components:
@@ -536,8 +549,8 @@ class application(QtGui.QApplication):
         self.editor = code_edit(self.canvas, configuration().options('snippets'))
         splitter2.addWidget(self.editor)
         splitter.addWidget(splitter2)
-        splitter.setSizes([200,600])
-        splitter2.setSizes([400,200])
+        splitter.setSizes([200, 600])
+        splitter2.setSizes([400, 200])
         self.window.setCentralWidget(splitter)
         self.canvas.initialize()
         self.components = [self.tree, self.tree2, self.canvas, self.propview, self.editor]
@@ -562,27 +575,29 @@ class application(QtGui.QApplication):
 
     def change_displaymode(self, tree, inst, flag):
         insts = tree.get_children(inst)
-        self.canvas.toggle_wireframe(insts, flag)            
-                
+        self.canvas.toggle_wireframe(insts, flag)
+
     def start(self):
         self.window.show()
         sys.exit(self.exec_())
-    
+
     def browse(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self.window, 'Open file',".","Industry Foundation Classes (*.ifc)")
+        filename = QtGui.QFileDialog.getOpenFileName(self.window, 'Open file', ".", "Industry Foundation Classes (*.ifc)")
         self.load(filename)
-        
+
     def clear(self):
         self.canvas._display.Context.RemoveAll()
         self.tree.clear()
         self.files.clear()
-        
+
     def load(self, fn):
-        if fn in self.files: return        
+        if fn in self.files:
+            return
         f = open_ifc_file(str(fn))
         self.files[fn] = f
         for c in self.components:
             c.load_file(f, setting=self.settings)
-            
+
+
 if __name__ == "__main__":
     application().start()
