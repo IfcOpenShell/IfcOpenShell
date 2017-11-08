@@ -170,6 +170,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
 	IfcSchema::IfcBuildingStorey* storey = 0;
+	boost::optional<double> storey_elevation = boost::none;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
 #ifndef USE_IFC4
@@ -206,6 +207,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}
 		if (obdef->is(IfcSchema::Type::IfcBuildingStorey)) {
 			storey = static_cast<IfcSchema::IfcBuildingStorey*>(obdef);
+			if (storey->hasElevation()) {
+				const IfcGeom::ElementSettings& settings = o->geometry().settings();
+				storey_elevation = storey->Elevation() * settings.unit_magnitude();
+			}
 			break;
 		}
 	}
@@ -241,7 +246,18 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			if (zmin == inf || (zmax - zmin) < 1.) continue;
 		}
 
-		const double cut_z = section_height.get_value_or(zmin + 1.);
+		// Priority:
+		// 1) section_height
+		// 2) Storey elevation + 1m
+		// 3) zmin + 1m
+		double cut_z;
+		if (section_height) {
+			cut_z = section_height.get();
+		} else if (storey_elevation) {
+			cut_z = storey_elevation.get() + 1.;
+		} else {
+			cut_z = zmin + 1.;
+		}
 
 		// Create a horizontal cross section 1 meter above the bottom point of the shape		
 		TopoDS_Shape result = BRepAlgoAPI_Section(moved_shape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
