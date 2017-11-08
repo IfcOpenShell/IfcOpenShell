@@ -390,7 +390,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 				}
 			}
 		}
-	}
 
-	Logger::Error("No building storeys encountered, output might be invalid or missing");
+		Logger::Error("No building storeys encountered, output might be invalid or missing");
+	}
 }
