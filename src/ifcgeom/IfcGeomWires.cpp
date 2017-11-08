@@ -166,41 +166,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 	}
 
 	BRepBuilderAPI_MakeWire w;
-	TopoDS_Vertex v1, v2, last;
+	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
+
+	const double precision_sq_2 = 2 * getValue(GV_PRECISION) * getValue(GV_PRECISION);
 	
-	for( IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++ it ) {
+	for(IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++it) {
 		
 		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
-		TopoDS_Wire wire2;
+		TopoDS_Wire segment;
 		
-		if ( !convert_wire(curve, wire2) ) {
+		if (!convert_wire(curve, segment)) {
 			Logger::Message(Logger::LOG_ERROR, "Failed to convert curve:", curve->entity);
 			continue;
 		}
 		
-		if ( ! (*it)->SameSense() ) wire2.Reverse();
+		if (!(*it)->SameSense()) {
+			segment.Reverse();
+		}
 		
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire2, getValue(GV_PRECISION), TopAbs_WIRE);
+		FTol.SetTolerance(segment, getValue(GV_PRECISION), TopAbs_WIRE);
 		
-		/* 
-		// Create a line segment between distant vertices?
-		if ( it != segments->begin() ) {
-			TopExp_Explorer exp (wire2,TopAbs_VERTEX);
-			const TopoDS_Vertex& first_vertex = TopoDS::Vertex(exp.Current());
-			gp_Pnt first = BRep_Tool::Pnt(first_vertex);
-			gp_Pnt last = BRep_Tool::Pnt(last_vertex);
-			Standard_Real distance = first.Distance(last);
-			if ( distance > ALMOST_ZERO ) {
-				w.Add( BRepBuilderAPI_MakeEdge( last_vertex, first_vertex ) );
+		TopExp::Vertices(segment, edge_first_vertex, edge_last_vertex);
+
+		if (it == segments->begin()) {
+			wire_first_vertex = edge_first_vertex;
+		} else {
+			gp_Pnt first = BRep_Tool::Pnt(edge_first_vertex);
+			gp_Pnt last = BRep_Tool::Pnt(wire_last_vertex);
+
+			Standard_Real distance = first.SquareDistance(last);
+			if (distance > precision_sq_2) {
+				w.Add(BRepBuilderAPI_MakeEdge(wire_last_vertex, edge_first_vertex));
+
+				Logger::Message(Logger::LOG_ERROR, "Closed gap on:", l->entity);
 			}
 		}
-		*/
 
-		TopExp::Vertices(wire2, v1, v2);
-
-		w.Add(wire2);
+		w.Add(segment);
 
 		if ( w.Error() != BRepBuilderAPI_WireDone ) {
 			if (w.Error() == BRepBuilderAPI_NonManifoldWire) {
@@ -215,24 +219,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 				int precision = 4;
 				double d = 0.;
 				
-				if (!last.IsNull()) {
-					p1 = BRep_Tool::Pnt(last);
+				if (!wire_last_vertex.IsNull()) {
+					p1 = BRep_Tool::Pnt(wire_last_vertex);
 				}
-				if (!v1.IsNull()) {
-					p2 = BRep_Tool::Pnt(v1);
+				if (!edge_first_vertex.IsNull()) {
+					p2 = BRep_Tool::Pnt(edge_first_vertex);
 				}
-				if (!last.IsNull() && !v1.IsNull()) {
+				if (!wire_last_vertex.IsNull() && !edge_first_vertex.IsNull()) {
 					d = p1.Distance(p2);
 					precision = ceil(-log10(d)) + 3;
 				}
 
-				if (!last.IsNull()) {
+				if (!wire_last_vertex.IsNull()) {
 					std::stringstream ss;
 					ss << std::setprecision(precision) << "Last vertex at (" << p1.X() << " " << p1.Y() << " " << p1.Z() << ")";
 					Logger::Message(Logger::LOG_NOTICE, ss.str());
 				}
 
-				if (!v1.IsNull()) {
+				if (!edge_first_vertex.IsNull()) {
 					std::stringstream ss;
 					ss << std::setprecision(precision) << "Segment starts at (" << p2.X() << " " << p2.Y() << " " << p2.Z() << ")";
 					if (d > 0.) {
@@ -246,9 +250,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 			return false;
 		}
 
-		last = v2;
+		wire_last_vertex = edge_last_vertex;
 	}
+
+	gp_Pnt first = BRep_Tool::Pnt(edge_last_vertex);
+	gp_Pnt last = BRep_Tool::Pnt(wire_first_vertex);
+
+	Standard_Real distance = first.SquareDistance(last);
+	if (distance > precision_sq_2) {
+		w.Add(BRepBuilderAPI_MakeEdge(edge_last_vertex, wire_first_vertex));
+
+		Logger::Message(Logger::LOG_ERROR, "Closed gap on:", l->entity);
+	}
+
 	wire = w.Wire();
+
 	return true;
 }
 
@@ -256,16 +272,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	IfcSchema::IfcCurve* basis_curve = l->BasisCurve();
 	bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
 	double parameterFactor = isConic ? getValue(GV_PLANEANGLE_UNIT) : getValue(GV_LENGTH_UNIT);
+	
 	Handle(Geom_Curve) curve;
 	if ( !convert_curve(basis_curve,curve) ) return false;
+	
 	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
 	IfcEntityList::ptr trims1 = l->Trim1();
 	IfcEntityList::ptr trims2 = l->Trim2();
+	
 	unsigned sense_agreement = l->SenseAgreement() ? 0 : 1;
 	double flts[2];
 	gp_Pnt pnts[2];
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
+	
 	BRepBuilderAPI_MakeWire w;
 	for ( IfcEntityList::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
@@ -278,6 +298,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			has_flts[sense_agreement] = true;
 		}
 	}
+
 	for ( IfcEntityList::it it = trims2->begin(); it != trims2->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
@@ -289,18 +310,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			has_flts[1-sense_agreement] = true;
 		}
 	}
+
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
 	bool trim_cartesian_failed = !trim_cartesian;
 	if ( trim_cartesian ) {
-		if ( pnts[0].Distance(pnts[1]) < getValue(GV_WIRE_CREATION_TOLERANCE) ) {
+		if ( pnts[0].Distance(pnts[1]) < 2 * getValue(GV_PRECISION) ) {
 			Logger::Message(Logger::LOG_WARNING,"Skipping segment with length below tolerance level:",l->entity);
 			return false;
 		}
 		ShapeFix_ShapeTolerance FTol;
 		TopoDS_Vertex v1 = BRepBuilderAPI_MakeVertex(pnts[0]);
 		TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(pnts[1]);
-		FTol.SetTolerance(v1, getValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_VERTEX);
-		FTol.SetTolerance(v2, getValue(GV_WIRE_CREATION_TOLERANCE), TopAbs_VERTEX);
+		FTol.SetTolerance(v1, getValue(GV_PRECISION), TopAbs_VERTEX);
+		FTol.SetTolerance(v2, getValue(GV_PRECISION), TopAbs_VERTEX);
 		BRepBuilderAPI_MakeEdge e (curve,v1,v2);
 		if ( ! e.IsDone() ) {
 			BRepBuilderAPI_EdgeError err = e.Error();
@@ -312,6 +334,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			w.Add(e.Edge());
 		}
 	}
+
 	if ( (!trim_cartesian || trim_cartesian_failed) && (has_flts[0] && has_flts[1]) ) {
 		// The Geom_Line is constructed from a gp_Pnt and gp_Dir, whereas the IfcLine
 		// is defined by an IfcCartesianPoint and an IfcVector with Magnitude. Because
@@ -341,8 +364,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	} else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
 		w.Add(BRepBuilderAPI_MakeEdge(pnts[0],pnts[1]));
 	}
-	if ( w.IsDone() ) {
+
+	if (w.IsDone()) {
 		wire = w.Wire();
+
+		// When SenseAgreement == .F. the vertices above have been reversed to
+		// comply with the direction of conical curves. The ordering of the
+		// vertices then still needs to be reversed in order to have begin and
+		// end vertex consistent with IFC.
+		if (sense_agreement != 0) { // .F.
+			wire.Reverse();
+		}
+
 		return true;
 	} else {
 		return false;

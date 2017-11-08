@@ -616,17 +616,18 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 #endif
 
 bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
+	ShapeFix_ShapeTolerance FTol;
+	FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+
 	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
-	if ( er == BRepBuilderAPI_NotPlanar ) {
-		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(wire, 0.01, TopAbs_WIRE);
-		mf.~BRepBuilderAPI_MakeFace();
-		new (&mf) BRepBuilderAPI_MakeFace(wire);
-		er = mf.Error();
+
+	if (er != BRepBuilderAPI_FaceDone) {
+		Logger::Error("Failed to create face.");
+		return false;
 	}
-	if ( er != BRepBuilderAPI_FaceDone ) return false;
 	face = mf.Face();
+	
 	return true;
 }
 
