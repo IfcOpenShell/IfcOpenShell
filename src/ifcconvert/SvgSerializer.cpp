@@ -348,7 +348,11 @@ std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
 	if (elem == 0) { return ""; }
 	std::ostringstream oss;
 	const std::string type = elem->is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
-	oss << "id=\"product-" << IfcParse::IfcGlobalId(elem->GlobalId()).formatted() << "\"";
+    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+	  ? elem->GlobalId() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
+	  ? elem->Name() : IfcParse::IfcGlobalId(elem->GlobalId()).formatted()));
+
+	oss << "id=\"" << type << "-" << name << "\"";
 	return oss.str();
 }
 
