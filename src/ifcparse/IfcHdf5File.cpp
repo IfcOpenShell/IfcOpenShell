@@ -1776,6 +1776,33 @@ bool is_instance_ref(H5::DataType* dt) {
 	return ct->getMemberName(0) == "_HDF5_dataset_index_";
 }
 
+enum padded_datatype_type {
+	padded_string,
+	padded_array,
+	not_padded
+};
+
+padded_datatype_type is_padded_datatype(H5::DataType* dt) {
+	if (dt->getClass() != H5T_COMPOUND) {
+		return not_padded;
+	}
+	
+	H5::CompType* ct = (H5::CompType*) dt;
+	
+	if (ct->getNmembers() != 2) {
+		return not_padded;
+	}
+	if (ct->getMemberName(0) != "length" || ct->getMemberName(1) != "data") {
+		return not_padded;
+	}
+
+	if (ct->getMemberClass(1) == H5T_STRING) {
+		return padded_string;
+	} else {
+		return padded_array;
+	}
+}
+
 template <typename T>
 T read_(void* buffer, H5::DataType* dt) {
 	(void*)dt;
@@ -1873,13 +1900,14 @@ public:
 	}
 };
 
-void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::bitset<64>& bitmask = many_trues) {
+void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::bitset<64>& bitmask = many_trues, int padded_length=-1) {
 	if (dt->getClass() == H5T_COMPOUND) {
 
 		// std::vector<IfcParse::entity::attribute*> schema_attributes;
 		std::vector<bool> derived;
+		std::vector<bool>::const_iterator derived_it = derived.begin();
 		std::vector<std::string> attribute_names;
-		std::vector<std::string>::const_iterator attribute_name_it;
+		std::vector<std::string>::const_iterator attribute_name_it = attribute_names.begin();
 		if (&name != &no_name) {
 			auto entity = get_schema().declaration_by_name(IfcSchema::Type::FromString(boost::to_upper_copy(name)))->as_entity();
 			auto attributes = entity->all_attributes();
@@ -1887,13 +1915,23 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 				return attr->name();
 			});
 			derived = entity->derived();
+			derived_it = derived.begin();
 			attribute_name_it = attribute_names.begin();
 		}
 
 		H5::CompType* ct = (H5::CompType*) dt;
 		const auto is_ref = is_instance_ref(dt);
+		const auto is_padded = is_padded_datatype(dt);
+
 		if (is_ref) {
 			output << "#" << resolver.instance_name(buffer, ct);
+		} else if (is_padded != not_padded) {
+			const size_t offs = ct->getMemberOffset(1);
+			void* member_ptr = (uint8_t*)buffer + offs;
+			int N = read<int>(buffer, &ct->getMemberDataType(0));
+			H5::DataType member_type = ct->getMemberDataType(1);
+			
+			visit(resolver, output, member_ptr, &member_type, name, many_trues, N);
 		} else {
 			int ifc_idx = 0;
 			const std::bitset<64>* mask = &bitmask;
@@ -1941,8 +1979,9 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 								output << ",";
 							}
 							attribute_name_it++;
+							output << ((*derived_it) ? "*" : "$");
+							derived_it++;
 							ifc_idx++;
-							output << "*";
 						}
 						if (ifc_idx) {
 							output << ",";
@@ -1954,16 +1993,29 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 						}
 						ifc_idx++;
 						attribute_name_it++;
+						derived_it++;
 					}
 				}
 				member_type.close();
 			}
+
+			if (!is_select) {
+				for (; attribute_name_it != attribute_names.end(); ++attribute_name_it, ++derived_it, ++ifc_idx) {
+					if (ifc_idx) {
+						output << ",";
+					}
+					output << ((*derived_it) ? "*" : "$");
+				}
+			}
+
 			if (is_select && !select_valuation_encountered) {
 				throw std::runtime_error("Select valuation not encountered in compound");
 			}
+
 			if (mask != &many_trues) {
 				delete mask;
 			}
+
 			if (is_selected_simple_type || is_instance) {
 				output << ")";
 				if (is_instance) {
@@ -1990,7 +2042,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 			const char* c = read<const char*>(buffer, dt);
 			output << "'" << c << "'";
 		} else {
-			throw std::runtime_error("blurgfh");
+			output << "'" << ((char*)buffer) << "'";
 		}
 	} else if (dt->getClass() == H5T_INTEGER) {
 		output << read<int>(buffer, dt);
@@ -2008,6 +2060,19 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 			enum_value[1] = 0;
 		} 
 		output << "." << enum_value << ".";
+	} else if (dt->getClass() == H5T_ARRAY) {
+		H5::ArrayType* at = (H5::ArrayType*) dt;
+		H5::DataType dt2 = at->getSuper();
+		int N = padded_length >= 0 ? padded_length : (int) (at->getSize() / dt2.getSize());
+		output << "(";
+		for (size_t i = 0; i < N; ++i) {
+			if (i) {
+				output << ",";
+			}
+			visit(resolver, output, (uint8_t*)buffer + i * dt2.getSize(), &dt2);
+		}
+		output << ")";
+		dt2.close();
 	} else {
 		throw std::runtime_error("Unexpected datatype encountered");
 	}
