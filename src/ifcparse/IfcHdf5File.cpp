@@ -1898,6 +1898,8 @@ public:
 
 		return inst_name;
 	}
+
+	H5::H5File& file() { return file_; }
 };
 
 void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::bitset<64>& bitmask = many_trues, int padded_length=-1) {
@@ -2073,6 +2075,41 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		}
 		output << ")";
 		dt2.close();
+	} else if (dt->getClass() == H5T_REFERENCE) {
+		hid_t setid = H5Rdereference(resolver.file().getId(), H5R_DATASET_REGION, buffer);
+		hid_t spaceid = H5Rget_region(resolver.file().getId(), H5R_DATASET_REGION, buffer);
+		
+		H5::DataSet dset(setid);
+		H5::DataSpace dspace(spaceid);
+		H5::CompType dtype = dset.getCompType();
+		
+		if (dspace.getSelectNpoints() != 1) {
+			throw std::runtime_error("Unexpected number of points selected");
+		}
+		
+		hsize_t selected;
+		dspace.getSelectElemPointlist(0, 1, &selected);
+
+		hsize_t dims = 1;
+		H5::DataSpace memspace(1, &dims);
+		
+		uint8_t* buffer = new uint8_t[dtype.getSize()];
+		dset.read(buffer, dtype, memspace, dspace);
+
+		const int i = dtype.getMemberIndex(Entity_Instance_Identifier);
+		const size_t offs = dtype.getMemberOffset(i);
+		H5::DataType instidt = dtype.getMemberDataType(i);
+
+		const int name = read<int>(buffer + offs, &instidt);
+		output << "#" << name;
+
+		instidt.close();
+		dtype.close();
+		dspace.close();
+		memspace.close();
+		dset.close();
+
+		delete[] buffer;
 	} else {
 		throw std::runtime_error("Unexpected datatype encountered");
 	}
