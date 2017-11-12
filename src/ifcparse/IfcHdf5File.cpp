@@ -2056,7 +2056,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		const char BOOLEAN[] = "BOOLEAN-";
 		const char LOGICAL[] = "LOGICAL-";
 		if (strstr(enum_value, BOOLEAN) || strstr(enum_value, LOGICAL)) {
-			// Hack to convert BOOLEAN-TRUE et al to T
+			// Hack to convert "BOOLEAN-TRUE" et al to "T"
 			// Boolean and logical are of the same length coincedentally
 			enum_value[0] = enum_value[strlen(BOOLEAN)];
 			enum_value[1] = 0;
