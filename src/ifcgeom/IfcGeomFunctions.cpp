@@ -1255,7 +1255,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			if (faster_booleans) {
 				bool success = convert_openings_fast(product,openings,shapes,trsf,opened_shapes);
 #if OCC_VERSION_HEX < 0x60900
-				if ( ! succes ) {
+				if (!success) {
 					opened_shapes.clear();
 					convert_openings(product,openings,shapes,trsf,opened_shapes);
 				}
