@@ -583,33 +583,14 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity->entity);
 		}
 		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
-		
-		BRepAlgoAPI_Cut brep_cut;
-		TopTools_ListOfShape s1s;
-		s1s.Append(entity_shape);
-		brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
-		brep_cut.SetArguments(s1s);
-		brep_cut.SetTools(opening_shapelist);
-		brep_cut.Build();
 
-		bool is_valid = false;
-		if ( brep_cut.IsDone() ) {
-			TopoDS_Shape brep_cut_result = brep_cut;
-				
-			BRepCheck_Analyzer analyser(brep_cut_result);
-			is_valid = analyser.IsValid() != 0;
-			if ( is_valid ) {
-				cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(brep_cut_result, &it3->Style()));
-			}
+		TopoDS_Shape result;
+		if (boolean_operation(entity_shape, opening_shapelist, BOPAlgo_CUT, result)) {
+			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(result, &it3->Style()));
+		} else {
+			Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed:", entity->entity);
+			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(entity_shape, &it3->Style()));
 		}
-		if ( !is_valid ) {
-			// Apparently processing the boolean operation failed or resulted in an invalid result
-			// in which case the original shape without the subtractions is returned instead
-			// we try convert the openings in the original way, one by one.
-			Logger::Message(Logger::LOG_WARNING, "Subtracting combined openings compound failed:", entity->entity);
-			return false;
-		}
-		
 	}
 	return true;
 }
@@ -778,8 +759,16 @@ void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
 		}
 	}
 	*/
+
+#if OCC_VERSION_HEX < 0x60900
+	// This tolerance hack is not required as the boolean ops use a fuzziness value
+
 	ShapeFix_ShapeTolerance tol;
 	tol.LimitTolerance(s, t);
+#else
+	(void)s;
+	(void)t;
+#endif
 }
 
 void IfcGeom::Kernel::setValue(GeomValue var, double value) {
@@ -1264,11 +1253,15 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			const bool faster_booleans = true;
 #endif
 			if (faster_booleans) {
-				bool succes = convert_openings_fast(product,openings,shapes,trsf,opened_shapes);
+				bool success = convert_openings_fast(product,openings,shapes,trsf,opened_shapes);
+#if OCC_VERSION_HEX < 0x60900
 				if ( ! succes ) {
 					opened_shapes.clear();
 					convert_openings(product,openings,shapes,trsf,opened_shapes);
 				}
+#else
+				(void)success;
+#endif
 			} else {
 				convert_openings(product,openings,shapes,trsf,opened_shapes);
 			}
@@ -2750,16 +2743,19 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
+
+		ShapeFix_Shape fix(r);
+		try {
+			fix.Perform();
+			r = fix.Shape();
+		} catch (...) {
+			Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+		}
+
 		success = BRepCheck_Analyzer(r).IsValid() != 0;
+
 		if (success) {
 			result = r;
-			ShapeFix_Shape fix(result);
-			try {
-				fix.Perform();
-				result = fix.Shape();
-			} catch (...) {
-				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
-			}
 		}
 	}
 	delete builder;
