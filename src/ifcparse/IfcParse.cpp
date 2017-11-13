@@ -1085,7 +1085,14 @@ void IfcFile::traverse(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBas
 
 	if (level >= max_level && max_level > 0) return;
 
-	auto attributes = instance->declaration().as_entity()->all_attributes();
+	auto entity = instance->declaration().as_entity();
+	if (!entity) {
+		// This is a simple type instance, don't traverse attributes.
+		return;
+	}
+
+	auto attributes = entity->all_attributes();
+
 	for (unsigned i = 0; i < attributes.size(); ++i) {
 		Argument* arg = instance->data().getArgument(i);
 
