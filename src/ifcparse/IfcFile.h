@@ -127,8 +127,6 @@ public:
 	const IfcSpfHeader& header() const { return _header; }
 	IfcSpfHeader& header() { return _header; }
 
-	std::string createTimestamp() const;
-
 	bool create_latebound_entities() const { return _create_latebound_entities; }
 
 	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);

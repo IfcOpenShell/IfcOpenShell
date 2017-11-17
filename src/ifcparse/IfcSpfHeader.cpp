@@ -148,3 +148,40 @@ FileSchema& IfcSpfHeader::file_schema() {
 FileDescription::FileDescription(IfcSpfLexer* lexer) : HeaderEntity(FILE_DESCRIPTION, lexer) {}
 FileName::FileName(IfcSpfLexer* lexer) : HeaderEntity(FILE_NAME, lexer) {}
 FileSchema::FileSchema(IfcSpfLexer* lexer) : HeaderEntity(FILE_SCHEMA, lexer) {}
+
+std::string createTimestamp() {
+	char buf[255];
+
+	time_t t;
+	time(&t);
+
+	struct tm* ti = localtime(&t);
+
+	std::string result = "";
+	if (strftime(buf, 255, "%Y-%m-%dT%H:%M:%S", ti)) {
+		result = std::string(buf);
+	}
+
+	return result;
+}
+
+void IfcSpfHeader::set_default() {
+	const std::string empty_string = "";
+	std::vector<std::string> file_description_vector, schema_identifiers, empty_vector;
+
+	file_description_vector.push_back("ViewDefinition [CoordinationView]");
+	schema_identifiers.push_back(IfcSchema::Identifier);
+
+	file_description().description(file_description_vector);
+	file_description().implementation_level("2;1");
+
+	file_name().name(empty_string);
+	file_name().time_stamp(createTimestamp());
+	file_name().author(empty_vector);
+	file_name().organization(empty_vector);
+	file_name().preprocessor_version("IfcOpenShell " IFCOPENSHELL_VERSION);
+	file_name().originating_system("IfcOpenShell " IFCOPENSHELL_VERSION);
+	file_name().authorization(empty_string);
+
+	file_schema().schema_identifiers(schema_identifiers);
+}

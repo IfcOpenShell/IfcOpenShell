@@ -1492,22 +1492,6 @@ std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	return os;
 }
 
-std::string IfcFile::createTimestamp() const {
-	char buf[255];
-	
-	time_t t;
-	time(&t);
-	
-	struct tm* ti = localtime (&t);
-
-	std::string result = "";
-	if (strftime(buf,255,"%Y-%m-%dT%H:%M:%S",ti)) {
-		result = std::string(buf);
-	}
-
-	return result;
-}
-
 IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index) {
 	IfcUtil::IfcBaseClass* instance = entityById(instance_id);
 
@@ -1538,24 +1522,7 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 }
 
 void IfcFile::setDefaultHeaderValues() {
-	const std::string empty_string = "";
-	std::vector<std::string> file_description, schema_identifiers, empty_vector;
-
-	file_description.push_back("ViewDefinition [CoordinationView]");
-	schema_identifiers.push_back(IfcSchema::Identifier);
-
-	header().file_description().description(file_description);
-	header().file_description().implementation_level("2;1");
-
-	header().file_name().name(empty_string);
-	header().file_name().time_stamp(createTimestamp());
-	header().file_name().author(empty_vector);
-	header().file_name().organization(empty_vector);
-	header().file_name().preprocessor_version("IfcOpenShell " IFCOPENSHELL_VERSION);
-	header().file_name().originating_system("IfcOpenShell " IFCOPENSHELL_VERSION);
-	header().file_name().authorization(empty_string);
-
-	header().file_schema().schema_identifiers(schema_identifiers);
+	header().set_default();
 }
 
 std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum type) {

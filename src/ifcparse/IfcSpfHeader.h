@@ -193,6 +193,8 @@ public:
 	FileDescription& file_description();
 	FileName& file_name();
 	FileSchema& file_schema();
+
+	void set_default();
 };
 
 }
