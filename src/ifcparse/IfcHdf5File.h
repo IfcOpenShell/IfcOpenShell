@@ -30,6 +30,76 @@
 
 namespace IfcParse {
 
+	class instance_enumerator {
+	private:
+		boost::optional<IfcFile*> file_;
+		boost::optional< std::pair<
+			IfcSpfHeader*,
+			std::map<unsigned int, IfcUtil::IfcBaseClass*>
+		> > map_;
+	public:
+		typedef IfcFile::const_iterator const_iterator;
+
+		instance_enumerator(IfcFile* file)
+			: file_(file)
+		{}
+
+		template <typename T>
+		instance_enumerator(IfcSpfHeader* header, T begin, T end) {
+			std::map<unsigned int, IfcUtil::IfcBaseClass*> map;
+			std::for_each(begin, end, [&map](IfcUtil::IfcBaseClass* inst) {
+				map.insert(std::make_pair(inst->data().id(), inst));
+			});
+			map_ = std::make_pair(header, map);
+		}
+
+		const IfcSpfHeader& header() const {
+			if (map_) {
+				return *map_->first;
+			} else if (file_) {
+				return (**file_).header();
+			} else {
+				throw std::runtime_error("");
+			}
+		}
+
+		const_iterator begin() const {
+			if (map_) {
+				return map_->second.begin();
+			} else if (file_) {
+				return (**file_).begin();
+			} else {
+				throw std::runtime_error("");
+			}
+		}
+
+		const_iterator end() const {
+			if (map_) {
+				return map_->second.end();
+			} else if (file_) {
+				return (**file_).end();
+			} else {
+				throw std::runtime_error("");
+			}
+		}
+
+		IfcEntityList::ptr entitiesByType(IfcSchema::Type::Enum t) { 
+			if (map_) {
+				IfcEntityList::ptr insts(new IfcEntityList);
+				for (auto it = begin(); it != end(); ++it) {
+					if (it->second->declaration().is(t)) {
+						insts->push(it->second);
+					}
+				}
+				return insts;
+			} else if (file_) {
+				return (**file_).entitiesByType(t);
+			} else {
+				throw std::runtime_error("");
+			}
+		}
+	};
+
 	class IfcHdf5File {
 	private:
 		class allocator_t {
@@ -55,13 +125,13 @@ namespace IfcParse {
 		allocator_t allocator;
 		Hdf5Settings settings_;
 
-		std::string name_;
-		schema_definition schema_;
-		IfcFile& ifcfile_;
+		boost::optional<std::string> name_;
+		const schema_definition* schema_;
+		instance_enumerator ifcfile_;
 
-		H5::H5File* file;
+		H5::H5File* file_;
 		H5::Group schema_group;
-		H5::Group population_group;
+		// H5::Group population_group;
 
 		// TODO: const
 		H5::CompType* instance_reference;
@@ -87,17 +157,14 @@ namespace IfcParse {
 		std::pair<size_t, size_t> make_instance_reference(const IfcUtil::IfcBaseClass* instance) const;
 		// void write_select(void*& ptr, IfcUtil::IfcBaseClass* instance, const H5::CompType* datatype) const;
 
-		void write_schema(const schema_definition& schema, IfcFile& f);
-		void write_population(IfcFile& f);
-
 		template <typename T>
 		const H5::DataType* get_datatype() const {
 			return default_types.find(IfcUtil::cpp_to_schema_type<T>::schema_type)->second;
 		}
 
-		H5::DataSet create_dataset(const std::string& path, H5::DataType datatype, int rank, hsize_t* dimensions);
+		H5::DataSet create_dataset(H5::Group* population_group, const std::string& path, H5::DataType datatype, int rank, hsize_t* dimensions);
 		
-		void write_header(H5::Group& group, IfcSpfHeader& header);
+		void write_header(H5::Group& group, const IfcSpfHeader& header);
 
 		template <typename T>
 		void write_instance(void*& ptr, T& visitor, H5::DataType& datatype, IfcUtil::IfcBaseEntity* v);
@@ -107,15 +174,28 @@ namespace IfcParse {
 	public:
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
 		
+		void write_schema(IfcFile* f = nullptr);
+		void write_population(H5::Group&, instance_enumerator&);
 		
 		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings)
 			: name_(name)
-			, schema_(*f->schema())
-			, ifcfile_(*f)
+			, file_(nullptr)
+			, schema_(f->schema())
+			, ifcfile_(f)
 			, settings_(settings)
 		{
-			write_schema(schema_, ifcfile_);
-			write_population(ifcfile_);
+			write_schema(f);
+			instance_enumerator insts = f;
+			H5::Group population_group = file_->createGroup("population");
+			write_population(population_group, insts);
+		};
+
+		IfcHdf5File(H5::H5File& file, const IfcParse::schema_definition& schema, const Hdf5Settings& settings)
+			: file_(&file)
+			, schema_(&schema)
+			, settings_(settings)
+			, ifcfile_(nullptr)
+		{
 		};
 
 		static void convert_to_spf(const std::string& name, std::ostream& output);
