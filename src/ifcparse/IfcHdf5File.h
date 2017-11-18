@@ -48,7 +48,8 @@ namespace IfcParse {
 		instance_enumerator(IfcSpfHeader* header, T begin, T end) {
 			std::map<unsigned int, IfcUtil::IfcBaseClass*> map;
 			std::for_each(begin, end, [&map](IfcUtil::IfcBaseClass* inst) {
-				map.insert(std::make_pair(inst->data().id(), inst));
+				// Use an incrementing id here in order not to fold distinct instances from different files with the same identifier
+				map.insert(std::make_pair(map.size(), inst));
 			});
 			map_ = std::make_pair(header, map);
 		}
