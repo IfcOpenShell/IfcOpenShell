@@ -405,7 +405,8 @@ try:
     LDFLAGS=os.environ["LDFLAGS"]
 except KeyError:
     LDFLAGS=""
-if sp.call([bash, "-c", "man ld 2> /dev/null | grep gc-sections &> /dev/null"]) == 0:
+
+if sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep unrecognized &> /dev/null"]) != 0:
     CXXFLAGS_MINIMAL="%s -fPIC %s" % (CXXFLAGS, str.join(" ", ADDITIONAL_ARGS))
     os.environ["CXXFLAGS_MINIMAL"]=CXXFLAGS_MINIMAL
     CFLAGS_MINIMAL="%s -fPIC %s" % (CFLAGS, str.join(" ", ADDITIONAL_ARGS))
