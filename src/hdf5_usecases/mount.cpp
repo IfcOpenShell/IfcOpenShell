@@ -19,6 +19,8 @@
 
 #include "../../../src/ifcparse/IfcHdf5File.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include <set>
 
 #pragma warning(disable:4100) 
@@ -27,17 +29,17 @@ class ifc_inst_cmp {
 public:
 
 	// For these we simply assume that only a single instance exists
-	bool operator()(IfcSchema::IfcSite* a, IfcSchema::IfcSite* b) { return false; }
-	bool operator()(IfcSchema::IfcProject* a, IfcSchema::IfcProject* b) { return false; }
-	bool operator()(IfcSchema::IfcBuilding* a, IfcSchema::IfcBuilding* b) { return false; }
-	bool operator()(IfcSchema::IfcPostalAddress* a, IfcSchema::IfcPostalAddress* b) { return false; }
-	bool operator()(IfcSchema::IfcUnitAssignment* a, IfcSchema::IfcUnitAssignment* b) { return false; }
+	bool operator()(IfcSchema::IfcSite* a, IfcSchema::IfcSite* b) const { return false; }
+	bool operator()(IfcSchema::IfcProject* a, IfcSchema::IfcProject* b) const { return false; }
+	bool operator()(IfcSchema::IfcBuilding* a, IfcSchema::IfcBuilding* b) const { return false; }
+	bool operator()(IfcSchema::IfcPostalAddress* a, IfcSchema::IfcPostalAddress* b) const { return false; }
+	bool operator()(IfcSchema::IfcUnitAssignment* a, IfcSchema::IfcUnitAssignment* b) const { return false; }
 
-	bool operator()(IfcSchema::IfcConversionBasedUnit* a, IfcSchema::IfcConversionBasedUnit* b) {
+	bool operator()(IfcSchema::IfcConversionBasedUnit* a, IfcSchema::IfcConversionBasedUnit* b) const {
 		return a->Name() < b->Name();
 	}
 
-	bool operator()(IfcSchema::IfcDimensionalExponents* a, IfcSchema::IfcDimensionalExponents* b) {
+	bool operator()(IfcSchema::IfcDimensionalExponents* a, IfcSchema::IfcDimensionalExponents* b) const {
 		// For every attribute (which are all integers) check equality
 
 		unsigned num_attrs = a->data().getArgumentCount();
@@ -52,7 +54,7 @@ public:
 		return false;
 	}
 
-	bool operator()(IfcSchema::IfcMeasureWithUnit* a, IfcSchema::IfcMeasureWithUnit* b) {
+	bool operator()(IfcSchema::IfcMeasureWithUnit* a, IfcSchema::IfcMeasureWithUnit* b) const {
 		// Assume the value component is enough to differentiate
 
 		double v1 = *a->ValueComponent()->data().getArgument(0);
@@ -60,30 +62,69 @@ public:
 		return v1 < v2;
 	}
 
-	bool operator()(IfcSchema::IfcGeometricRepresentationSubContext* a, IfcSchema::IfcGeometricRepresentationSubContext* b) {
+	bool operator()(IfcSchema::IfcGeometricRepresentationSubContext* a, IfcSchema::IfcGeometricRepresentationSubContext* b) const {
 		return a->ContextType() < b->ContextType();
 	}
 
-	bool operator()(IfcSchema::IfcGeometricRepresentationContext* a, IfcSchema::IfcGeometricRepresentationContext* b) {
+	bool operator()(IfcSchema::IfcGeometricRepresentationContext* a, IfcSchema::IfcGeometricRepresentationContext* b) const {
 		return a->ContextType() < b->ContextType();
 	}
 
-	bool operator()(IfcSchema::IfcSIUnit* a, IfcSchema::IfcSIUnit* b) {
+	bool operator()(IfcSchema::IfcSIUnit* a, IfcSchema::IfcSIUnit* b) const {
 		// Assume same units accross files
 
 		return a->UnitType() < b->UnitType();
 	}
 
-	bool operator()(IfcSchema::IfcBuildingStorey* a, IfcSchema::IfcBuildingStorey* b) {
+	bool operator()(IfcSchema::IfcBuildingStorey* a, IfcSchema::IfcBuildingStorey* b) const {
 		return a->Name() < b->Name();
 	}
 
-	bool operator()(IfcUtil::IfcBaseClass* a, IfcUtil::IfcBaseClass* b) {
-		if (a->declaration().type() != b->declaration().type()) {
-			throw std::runtime_error("Types not matching");
-		}
+	bool operator()(IfcSchema::IfcCartesianPoint* a, IfcSchema::IfcCartesianPoint* b) const {
+		return a->Coordinates() < b->Coordinates();
+	}
 
-		std::cerr << IfcSchema::Type::ToString(a->declaration().type()) << std::endl;
+	bool operator()(IfcSchema::IfcDirection* a, IfcSchema::IfcDirection* b) const {
+		return a->DirectionRatios() < b->DirectionRatios();
+	}
+
+	bool operator()(IfcSchema::IfcAxis2Placement3D* a, IfcSchema::IfcAxis2Placement3D* b) const {
+		if (a->Location()->Coordinates() != b->Location()->Coordinates()) {
+			return (*this)(a->Location(), b->Location());
+		}
+		if (b->hasAxis()) {
+			if (!a->hasAxis()) {
+				return true;
+			} else {
+				return (*this)(a->Axis(), b->Axis());
+			}
+		}
+		if (b->hasRefDirection()) {
+			if (!a->hasRefDirection()) {
+				return true;
+			} else {
+				return (*this)(a->RefDirection(), b->RefDirection());
+			}
+		}
+		return false;
+	}
+
+	bool operator()(IfcSchema::IfcLocalPlacement* a, IfcSchema::IfcLocalPlacement* b) const {
+		if (b->hasPlacementRelTo()) {
+			if (!a->hasPlacementRelTo()) {
+				return true;
+			} else {
+				return (*this)(a->PlacementRelTo(), b->PlacementRelTo());
+			}
+		}
+		return (*this)(a->RelativePlacement(), b->RelativePlacement());
+	}
+
+	bool operator()(IfcUtil::IfcBaseClass* a, IfcUtil::IfcBaseClass* b) const {
+		if (a->declaration().type() != b->declaration().type()) {
+			return a->declaration().type() < b->declaration().type();
+			// throw std::runtime_error("Types not matching");
+		}
 
 		if (a->declaration().type() == IfcSchema::Type::IfcSite) { return (*this)((IfcSchema::IfcSite*) a, (IfcSchema::IfcSite*) b); }
 		if (a->declaration().type() == IfcSchema::Type::IfcConversionBasedUnit) { return (*this)((IfcSchema::IfcConversionBasedUnit*) a, (IfcSchema::IfcConversionBasedUnit*) b); }
@@ -97,8 +138,191 @@ public:
 		if (a->declaration().type() == IfcSchema::Type::IfcGeometricRepresentationContext) { return (*this)((IfcSchema::IfcGeometricRepresentationContext*) a, (IfcSchema::IfcGeometricRepresentationContext*) b); }
 		if (a->declaration().type() == IfcSchema::Type::IfcSIUnit) { return (*this)((IfcSchema::IfcSIUnit*) a, (IfcSchema::IfcSIUnit*) b); }
 		if (a->declaration().type() == IfcSchema::Type::IfcBuildingStorey) { return (*this)((IfcSchema::IfcBuildingStorey*) a, (IfcSchema::IfcBuildingStorey*) b); }
+		if (a->declaration().type() == IfcSchema::Type::IfcCartesianPoint) { return (*this)((IfcSchema::IfcCartesianPoint*) a, (IfcSchema::IfcCartesianPoint*) b); }
+		if (a->declaration().type() == IfcSchema::Type::IfcDirection) { return (*this)((IfcSchema::IfcDirection*) a, (IfcSchema::IfcDirection*) b); }
+		if (a->declaration().type() == IfcSchema::Type::IfcAxis2Placement3D) { return (*this)((IfcSchema::IfcAxis2Placement3D*) a, (IfcSchema::IfcAxis2Placement3D*) b); }
+		if (a->declaration().type() == IfcSchema::Type::IfcLocalPlacement) { return (*this)((IfcSchema::IfcLocalPlacement*) a, (IfcSchema::IfcLocalPlacement*) b); }
 
-		throw std::runtime_error("Unexpected type");
+		// Should these be removed if an owner history is created manually?
+		if (a->declaration().type() == IfcSchema::Type::IfcPerson) { return false; }
+		if (a->declaration().type() == IfcSchema::Type::IfcOrganization) { return false; }
+		if (a->declaration().type() == IfcSchema::Type::IfcPersonAndOrganization) { return false; }
+		if (a->declaration().type() == IfcSchema::Type::IfcOwnerHistory) { return false; }
+		if (a->declaration().type() == IfcSchema::Type::IfcApplication) { return false; }
+
+		std::cerr << "Unexpected type: " + IfcSchema::Type::ToString(a->declaration().type()) << std::endl;
+		throw std::runtime_error("Unexpected type: " + IfcSchema::Type::ToString(a->declaration().type()));
+	}
+};
+
+class multifile_instance_locator : public IfcParse::abstract_instance_locator {
+public:
+	typedef std::function<IfcUtil::IfcBaseClass*(IfcUtil::IfcBaseClass*)> mapping_t;
+	typedef std::pair<
+		std::vector<IfcSchema::Type::Enum>,
+		std::vector< std::vector<IfcUtil::IfcBaseEntity*> >
+	> population_t;
+	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator full_const_iterator;
+	
+private:
+	mapping_t mapping_;
+	std::set<IfcUtil::IfcBaseClass*> initial_population_set_;
+
+	population_t initial_population_;
+	population_t subsequent_population_;
+	std::vector<IfcUtil::IfcBaseClass*> subsequent_minus_initial_;
+
+	H5::Group& initial_group_;
+	H5::Group* subsequent_group_;
+
+public:
+
+	template <typename ForwardIterator>
+	multifile_instance_locator(H5::Group& group, mapping_t mapping, ForwardIterator b, ForwardIterator e)
+		: mapping_(mapping)
+		, initial_group_(group)
+		, subsequent_group_(nullptr)
+	{
+		initial_population_set_.insert(b, e);
+
+		std::set<IfcSchema::Type::Enum> names_set;
+		std::for_each(b, e, [this, &names_set](IfcUtil::IfcBaseClass* inst) {
+			IfcSchema::Type::Enum ty = inst->declaration().type();
+			if (names_set.find(ty) == names_set.end()) {
+				initial_population_.first.push_back(ty);
+				names_set.insert(ty);
+			}
+		});
+
+		std::sort(initial_population_.first.begin(), initial_population_.first.end());
+
+		std::for_each(this->begin(), this->end(), [this, &b, &e](IfcSchema::Type::Enum t) {
+			std::vector<IfcUtil::IfcBaseEntity*> by_type;
+
+			std::for_each(b, e, [t,&by_type](IfcUtil::IfcBaseClass* inst) {
+				if (inst->declaration().type() == t && inst->declaration().as_entity()) {
+					by_type.push_back((IfcUtil::IfcBaseEntity*) inst);
+				}
+			});
+
+			std::sort(by_type.begin(), by_type.end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
+				return i1->data().id() < i2->data().id();
+			});
+
+			initial_population_.second.emplace_back(by_type);
+		});
+	}
+
+	const_iterator begin() const {
+		if (subsequent_group_) {
+			return subsequent_population_.first.begin();
+		} else {
+			return initial_population_.first.begin();
+		}
+	}
+
+	const_iterator end() const {
+		if (subsequent_group_) {
+			return subsequent_population_.first.end();
+		} else {
+			return initial_population_.first.end();
+		}
+	}
+
+	full_const_iterator full_begin() const {
+		return subsequent_minus_initial_.begin();
+	}
+
+	full_const_iterator full_end() const {
+		return subsequent_minus_initial_.end();
+	}
+
+	const std::vector<IfcUtil::IfcBaseEntity*>& instances(IfcSchema::Type::Enum t) {
+		if (subsequent_group_) {
+			return subsequent_population_.second[std::lower_bound(begin(), end(), t) - begin()];
+		} else {
+			return initial_population_.second[std::lower_bound(begin(), end(), t) - begin()];
+		}
+	}
+
+	std::pair<int, int> operator()(IfcUtil::IfcBaseClass* v) {
+		throw std::runtime_error("This locator can only be used in referenced profile");
+	}
+
+	void make_reference(IfcUtil::IfcBaseClass* v, void*& ptr) {
+		v = mapping_(v);
+		IfcSchema::Type::Enum t = v->declaration().type();
+
+		population_t* pop;
+		H5::Group* group;
+		
+		if (initial_population_set_.find(v) != initial_population_set_.end()) {
+			pop = &initial_population_;
+			group = &initial_group_;
+		} else {
+			pop = &subsequent_population_;
+			group = subsequent_group_;
+		}
+
+		int a = std::lower_bound(pop->first.begin(), pop->first.end(), t) - pop->first.begin();
+		auto& vec = pop->second[a];
+
+		hsize_t coord = std::lower_bound(vec.begin(), vec.end(), v, [](IfcUtil::IfcBaseClass* other, IfcUtil::IfcBaseClass* val) {
+			return other->data().id() < val->data().id();
+		}) - vec.begin();
+
+		hsize_t dims = instances(v->declaration().type()).size();
+		H5::DataSpace space(1, &dims);
+		space.selectElements(H5S_SELECT_SET, 1, &coord);
+		const std::string path = IfcSchema::Type::ToString(pop->first[a]);
+		group->reference(ptr, path + "_instances", space);
+		ptr = static_cast<uint8_t*>(ptr) + sizeof(hdset_reg_ref_t);
+	}
+
+	void next(H5::Group& group, IfcParse::IfcFile* f) {
+		subsequent_group_ = &group;
+
+		subsequent_population_.first.clear();
+		subsequent_population_.second.clear();
+		subsequent_minus_initial_.clear();
+
+		auto f_begin = f->begin();
+		auto f_end = f->end();
+
+		std::set<IfcSchema::Type::Enum> names_set;
+		std::for_each(f_begin, f_end, [this, &names_set](auto& pair) {
+			IfcUtil::IfcBaseClass* inst = mapping_(pair.second);
+			if (initial_population_set_.find(inst) == initial_population_set_.end()) {
+				IfcSchema::Type::Enum ty = inst->declaration().type();
+				if (names_set.find(ty) == names_set.end()) {
+					subsequent_population_.first.push_back(ty);
+					names_set.insert(ty);
+				}
+				subsequent_minus_initial_.push_back(inst);
+			}
+		});
+		
+		auto& names = subsequent_population_.first;
+		std::sort(names.begin(), names.end());
+
+		auto& vecs = subsequent_population_.second;
+		vecs.resize(names.size());
+		
+		std::for_each(f_begin, f_end, [this, &names, &vecs](auto& pair) {
+			IfcUtil::IfcBaseClass* inst = mapping_(pair.second);
+			if (initial_population_set_.find(inst) == initial_population_set_.end() && inst->declaration().as_entity()) {
+				IfcSchema::Type::Enum ty = inst->declaration().type();
+				auto a = std::lower_bound(names.begin(), names.end(), ty) - names.begin();
+				auto& by_type = vecs[a];
+				by_type.push_back((IfcUtil::IfcBaseEntity*) inst);
+			}
+		});
+
+		std::for_each(vecs.begin(), vecs.end(), [](auto& vec) {
+			std::sort(vec.begin(), vec.end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
+				return i1->data().id() < i2->data().id();
+			});
+		});
 	}
 };
 
@@ -166,7 +390,12 @@ int main(int argc, char** argv) {
 		if (shared_instances.find(i) == shared_instances.end()) {
 			std::cerr << i->data().toString() << std::endl;
 		}
-	}		
+	}
+
+	std::cerr << "----" << std::endl;
+
+	std::set<IfcUtil::IfcBaseClass*, ifc_inst_cmp> shared_instances_and_refs_unique(shared_instances_and_refs.begin(), shared_instances_and_refs.end());
+	
 	
 	IfcParse::Hdf5Settings settings;
 	settings.profile() = IfcParse::Hdf5Settings::standard_referenced;
@@ -178,8 +407,25 @@ int main(int argc, char** argv) {
 	IfcParse::IfcSpfHeader header;
 	header.set_default();
 
-	IfcParse::instance_enumerator shared_insts_enum(&header, shared_instances_and_refs.begin(), shared_instances_and_refs.end());
+	IfcParse::instance_enumerator shared_insts_enum(&header, shared_instances_and_refs_unique.begin(), shared_instances_and_refs_unique.end());
+
+	multifile_instance_locator* locator = new multifile_instance_locator(group1, [&shared_instances_and_refs_unique](IfcUtil::IfcBaseClass* inst) {
+		auto it = shared_instances_and_refs_unique.find(inst);
+		if (it == shared_instances_and_refs_unique.end()) {
+			return inst;
+		} else {
+			return *it;
+		}
+	}, shared_instances_and_refs_unique.begin(), shared_instances_and_refs_unique.end());
 
 	ifc_hdf5.write_schema();
-	ifc_hdf5.write_population(group1, shared_insts_enum);
+	ifc_hdf5.write_population(group1, shared_insts_enum, locator);
+
+	int n = 0;
+	for (auto f : files) {
+		H5::Group groupn = file.createGroup("population_" + boost::lexical_cast<std::string>(n++));
+		locator->next(groupn, f);
+		IfcParse::instance_enumerator inst_enum(&f->header(), locator->full_begin(), locator->full_end());
+		ifc_hdf5.write_population(groupn, shared_insts_enum, locator);
+	}
 }
