@@ -30,6 +30,18 @@
 
 namespace IfcParse {
 
+	class abstract_instance_locator {
+	public:
+		typedef std::vector< IfcSchema::Type::Enum >::const_iterator const_iterator;
+
+		virtual const_iterator begin() const = 0;
+		virtual const_iterator end() const = 0;
+
+		virtual const std::vector<IfcUtil::IfcBaseEntity*>& instances(IfcSchema::Type::Enum) = 0;
+		virtual std::pair<int, int> operator()(IfcUtil::IfcBaseClass* v) = 0;
+		virtual void make_reference(IfcUtil::IfcBaseClass*, void*&) = 0;
+	};
+
 	class instance_enumerator {
 	private:
 		boost::optional<IfcFile*> file_;
@@ -176,7 +188,7 @@ namespace IfcParse {
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
 		
 		void write_schema(IfcFile* f = nullptr);
-		void write_population(H5::Group&, instance_enumerator&);
+		void write_population(H5::Group&, instance_enumerator&, IfcParse::abstract_instance_locator* locator = nullptr);
 		
 		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings)
 			: name_(name)

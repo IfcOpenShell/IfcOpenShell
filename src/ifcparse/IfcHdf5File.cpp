@@ -307,7 +307,7 @@ public:
 	}
 };
 
-class sorted_instance_locator {
+class sorted_instance_locator : public IfcParse::abstract_instance_locator {
 private:
 	H5::H5File& hdf5_file_;
 	IfcParse::instance_enumerator& file_;
@@ -343,7 +343,6 @@ public:
 		}
 	}
 
-	typedef std::vector< IfcSchema::Type::Enum >::const_iterator const_iterator;
 	const_iterator begin() const { return dataset_names_.begin(); }
 	const_iterator end() const { return dataset_names_.end(); }
 
@@ -366,10 +365,6 @@ public:
 			}
 		}
 		return *cache_[t];
-	}
-
-	std::string path(int dsidx) const {
-		return population_group_path_ + IfcSchema::Type::ToString(dataset_names_[dsidx]);
 	}
 
 	std::pair<int, int> operator()(IfcUtil::IfcBaseClass* v) {
@@ -397,6 +392,17 @@ public:
 		
 		return std::make_pair(a, b);
 	}
+
+	void make_reference(IfcUtil::IfcBaseClass* v, void*& ptr) {
+		std::pair<int, int> ref = (*this)(v);
+		hsize_t dims = instances(v->declaration().type()).size();
+		H5::DataSpace space(1, &dims);
+		hsize_t coord = ref.second;
+		space.selectElements(H5S_SELECT_SET, 1, &coord);
+		const std::string path = population_group_path_ + IfcSchema::Type::ToString(dataset_names_[ref.first]);
+		hdf5_file_.reference(ptr, path + "_instances", space);
+		advance(ptr, sizeof(hdset_reg_ref_t));
+	}
 };
 
 class pointer_increment_assert {
@@ -412,7 +418,10 @@ public:
 
 	~pointer_increment_assert() noexcept(false) {
 		if (ptr_initial_ + datatype_size_ != ptr_reference_) {
-			throw std::runtime_error("Incorrect amount of bytes written");
+			auto a = (uint8_t*) ptr_reference_ - ptr_initial_;
+			auto b = datatype_size_;
+			std::cerr << "Incorrect amount of bytes written: " + boost::lexical_cast<std::string>(a) + " instead of expected: " + boost::lexical_cast<std::string>(b) << std::endl;
+			throw std::runtime_error("Incorrect amount of bytes written: " + boost::lexical_cast<std::string>(a) + " instead of expected: " + boost::lexical_cast<std::string>(b));
 		}
 	}
 };
@@ -503,11 +512,11 @@ private:
 	type_mapper& type_mapper_;
 
 public:
-	typedef sorted_instance_locator locator_type;
+	typedef IfcParse::abstract_instance_locator locator_type;
 
-	locator_type& instance_locator_;
+	locator_type* instance_locator_;
 
-	write_visit(H5::H5File& file, bool padded, bool referenced, locator_type& instance_locator, type_mapper& type_mapper)
+	write_visit(H5::H5File& file, bool padded, bool referenced, locator_type* instance_locator, type_mapper& type_mapper)
 		: file_(file)
 		, padded_(padded)
 		, referenced_(referenced)
@@ -582,19 +591,11 @@ public:
 
 		pointer_increment_assert _(ptr, datatype.getSize());
 
-		std::pair<int, int> ref = instance_locator_(v);
-
 		if (referenced_) {
 			if (datatype.getClass() != H5T_REFERENCE) {
 				throw std::runtime_error("Datatype and value do not match");
 			}
-			hsize_t dims = instance_locator_.instances(v->declaration().type()).size();
-			H5::DataSpace space(1, &dims);
-			hsize_t coord = ref.second;
-			space.selectElements(H5S_SELECT_SET, 1, &coord);
-			// TODO: Make path configurable
-			file_.reference(ptr, instance_locator_.path(ref.first) + "_instances", space);
-			advance(ptr, sizeof(hdset_reg_ref_t));
+			instance_locator_->make_reference(v, ptr);			
 		} else {
 			if (datatype.getClass() != H5T_COMPOUND) {
 				throw std::runtime_error("Datatype and value do not match");
@@ -603,6 +604,8 @@ public:
 			if (compound_member_types_as_pair(datatype) != std::make_pair(H5T_INTEGER, H5T_INTEGER)) {
 				throw std::runtime_error("Datatype and value do not match");
 			}
+
+			std::pair<int, int> ref = (*instance_locator_)(v);
 
 			H5::CompType* compound = (H5::CompType*) &datatype;
 			H5::IntType ds_idx = compound->getMemberIntType(0);
@@ -1723,15 +1726,17 @@ void IfcParse::IfcHdf5File::write_header(H5::Group& group, const IfcSpfHeader& h
 	create_attribute(group, "iso_10303_26_authorization", header.file_name().authorization());
 }
 
-void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instance_enumerator& ifcfile) {
+void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instance_enumerator& ifcfile, IfcParse::abstract_instance_locator* locator) {
 	const bool padded = settings_.profile() == IfcParse::Hdf5Settings::padded || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
 	const bool referenced = settings_.profile() == IfcParse::Hdf5Settings::standard_referenced || settings_.profile() == IfcParse::Hdf5Settings::padded_referenced;
-	
-	sorted_instance_locator locator(*file_, population_group, ifcfile, referenced);
+
+	if (locator == nullptr) {
+		locator = new sorted_instance_locator(*file_, population_group, ifcfile, referenced);
+	}
 
 	write_header(population_group, ifcfile.header());
 
-	dataset_names.assign(locator.begin(), locator.end());
+	dataset_names.assign(locator->begin(), locator->end());
 	std::vector<std::string> dataset_names_string; dataset_names_string.reserve(dataset_names.size());
 	std::transform(dataset_names.begin(), dataset_names.end(), std::back_inserter(dataset_names_string), [](IfcSchema::Type::Enum v) {
 		return IfcSchema::Type::ToString(v);
@@ -1746,7 +1751,7 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 			const std::string current_entity_name = IfcSchema::Type::ToString(*dsn_it);
 			const std::string dataset_path = current_entity_name + "_instances";
 
-			hsize_t num_instances = locator.instances(*dsn_it).size();
+			hsize_t num_instances = locator->instances(*dsn_it).size();
 			H5::DataType entity_datatype = schema_group.openDataType(current_entity_name);
 
 			create_dataset(&population_group, dataset_path, entity_datatype, 1, &num_instances).close();
@@ -1758,7 +1763,7 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 		
 		const std::string current_entity_name = IfcSchema::Type::ToString(*dsn_it);
 		const std::string dataset_path = current_entity_name + "_instances";
-		const std::vector<IfcUtil::IfcBaseEntity*>& instances = locator.instances(*dsn_it);
+		const std::vector<IfcUtil::IfcBaseEntity*>& instances = locator->instances(*dsn_it);
 		hsize_t num_instances = instances.size();
 
 		std::cerr << current_entity_name << std::endl;
