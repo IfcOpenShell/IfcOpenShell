@@ -18,10 +18,12 @@
  ********************************************************************************/
 
 #include "../../../src/ifcparse/IfcHdf5File.h"
+#include "../../../src/ifcparse/IfcWritableEntity.h"
 
 #include <boost/lexical_cast.hpp>
 
 #include <set>
+#include <algorithm>
 
 #pragma warning(disable:4100) 
 
@@ -386,6 +388,55 @@ int main(int argc, char** argv) {
 		shared_instances_and_refs.insert(insts_without_types.begin(), insts_without_types.end());
 	}
 
+	time_t now_;
+	time(&now_);
+	int now = (int)now_;
+	
+	IfcSchema::IfcPerson* person = new IfcSchema::IfcPerson(std::string("tfk"), std::string("Krijnen"), std::string("Thomas"), boost::none, boost::none, boost::none, boost::none, boost::none);
+	IfcSchema::IfcOrganization* org = new IfcSchema::IfcOrganization(std::string("TU/e"), "Eindhoven University of Technology", boost::none, boost::none, boost::none);
+	IfcSchema::IfcPersonAndOrganization* pando = new IfcSchema::IfcPersonAndOrganization(person, org, boost::none);
+	IfcSchema::IfcApplication* appl = new IfcSchema::IfcApplication(org, "v1", "IfcOpenShell-HDF5", "IfcOpenShell-HDF5");
+	IfcSchema::IfcOwnerHistory* owner_history = new IfcSchema::IfcOwnerHistory(pando, appl, IfcSchema::IfcStateEnum::IfcState_READONLY, IfcSchema::IfcChangeActionEnum::IfcChangeAction_ADDED, now, pando, appl, now);
+
+	std::vector<IfcUtil::IfcBaseClass*> replacements{ person, org, pando, appl, owner_history};
+
+	std::vector<IfcUtil::IfcBaseClass*> shared_instances_and_refs_vector(shared_instances_and_refs.begin(), shared_instances_and_refs.end());
+
+	IfcParse::IfcFile temp;
+
+	std::for_each(replacements.begin(), replacements.end(), [&shared_instances_and_refs_vector, &temp](IfcUtil::IfcBaseClass* new_inst) {
+		temp.addEntity(new_inst);
+
+		std::remove_if(shared_instances_and_refs_vector.begin(), shared_instances_and_refs_vector.end(), [new_inst](IfcUtil::IfcBaseClass* orig_inst) {
+			return orig_inst->declaration().type() == new_inst->declaration().type();
+		});
+		shared_instances_and_refs_vector.push_back(new_inst);
+	});
+
+	shared_instances_and_refs.clear();
+	shared_instances_and_refs.insert(shared_instances_and_refs_vector.begin(), shared_instances_and_refs_vector.end());
+
+	std::for_each(shared_instances_and_refs.begin(), shared_instances_and_refs.end(), [owner_history](IfcUtil::IfcBaseClass* inst) {
+		const IfcParse::entity* e = inst->declaration().as_entity();
+		if (e) {
+			auto attributes = e->all_attributes();
+			int index = 0;
+			std::for_each(attributes.begin(), attributes.end(), [&index, inst, owner_history](const IfcParse::entity::attribute* attr) {
+				const IfcParse::named_type* nt = attr->type_of_attribute()->as_named_type();
+				if (nt) {
+					const IfcParse::entity* e2 = nt->declared_type()->as_entity();
+					if (e2 && e2->type() == IfcSchema::Type::IfcOwnerHistory) {
+						IfcWrite::IfcWritableEntity* writable = new IfcWrite::IfcWritableEntity(&inst->data());
+						writable->setArgument(index, owner_history);
+						inst->data(writable);
+					}
+				}
+				index++;
+			});
+		}
+	});
+
+	/*
 	for (auto& i : shared_instances_and_refs) {
 		if (shared_instances.find(i) == shared_instances.end()) {
 			std::cerr << i->data().toString() << std::endl;
@@ -393,6 +444,7 @@ int main(int argc, char** argv) {
 	}
 
 	std::cerr << "----" << std::endl;
+	*/
 
 	std::set<IfcUtil::IfcBaseClass*, ifc_inst_cmp> shared_instances_and_refs_unique(shared_instances_and_refs.begin(), shared_instances_and_refs.end());
 	
@@ -401,7 +453,7 @@ int main(int argc, char** argv) {
 	settings.profile() = IfcParse::Hdf5Settings::standard_referenced;
 
 	H5::H5File file("merged.hdf", H5F_ACC_TRUNC);
-	H5::Group group1 = file.createGroup("shared");
+	H5::Group group1 = file.createGroup("population");
 
 	IfcParse::IfcHdf5File ifc_hdf5(file, get_schema(), settings);
 	IfcParse::IfcSpfHeader header;
@@ -423,7 +475,13 @@ int main(int argc, char** argv) {
 
 	int n = 0;
 	for (auto f : files) {
-		H5::Group groupn = file.createGroup("population_" + boost::lexical_cast<std::string>(n++));
+		auto filename = argv[n++ + 1];
+		H5::H5File child(filename + std::string(".hdf"), H5F_ACC_TRUNC);
+		H5::Group groupn = child.createGroup("population");
+		
+		file.createGroup(filename).close();
+		file.mount(filename, child, H5::PropList::DEFAULT);
+
 		locator->next(groupn, f);
 		IfcParse::instance_enumerator inst_enum(&f->header(), locator->full_begin(), locator->full_end());
 		ifc_hdf5.write_population(groupn, shared_insts_enum, locator);
