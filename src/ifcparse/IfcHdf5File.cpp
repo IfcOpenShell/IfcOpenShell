@@ -1879,58 +1879,123 @@ private:
 	H5::Group& population_group_;
 	std::vector<std::string> dataset_names_;
 
+	std::map<std::string, int>* name_mapping_;
+
 public:
-	instance_resolver(H5::H5File& file, H5::Group& population_group)
+	instance_resolver(H5::H5File& file, H5::Group& population_group, std::map<std::string, int>* name_mapping = nullptr)
 		: file_(file)
 		, population_group_(population_group)
+		, name_mapping_(name_mapping)
 	{
 		dataset_names_ = read_attribute(population_group_, "iso_10303_26_data_set_names");
 	}
 
-	size_t instance_name(void* data, H5::CompType* dt) {
-		hsize_t pair[2];
-		for (int i = 0; i < 2; ++i) {
-			H5::DataType mt = dt->getMemberDataType(i);
-			size_t offset = dt->getMemberOffset(i);
-			pair[i] = read<int>((uint8_t*)data + offset, &mt);
+	size_t instance_name(const std::string& path, int row) {
+		if (name_mapping_) {
+			auto it = name_mapping_->find(path);
+			if (it != name_mapping_->end()) {
+				return it->second + row;
+			}
 		}
-
-		const std::string& nm = dataset_names_[pair[0]];
-
-		H5::DataSet dataset = file_.openDataSet("population/" + nm + "_instances");
-		H5::CompType datatype = dataset.getCompType();
-		H5::DataSpace dataspace = dataset.getSpace();
-		if (dataspace.getSimpleExtentNdims() != 1) {
-			throw std::runtime_error("Expected one-dimensional data");
-		}
-		dataspace.selectElements(H5S_SELECT_SET, 1, pair + 1);
-		const hsize_t one = 1;
-		H5::DataSpace memspace(1, &one);
-
-		uint8_t* buffer = new uint8_t[datatype.getSize()];
-		dataset.read(buffer, datatype, memspace, dataspace);
-
-		int idx = datatype.getMemberIndex("Entity-Instance-Identifier");
-		size_t inst_name_offset = datatype.getMemberOffset(idx);
-		H5::DataType member_type = datatype.getMemberDataType(idx);
-
-		size_t inst_name = read<int>((uint8_t*)buffer + inst_name_offset, &member_type);
-		
-		member_type.close();
-		memspace.close();
-		datatype.close();
-		dataspace.close();
-		dataset.close();
-
-		delete[] buffer;
-
-		return inst_name;
+		return 0;
 	}
 
+	size_t instance_name(void* data, H5::DataType* dt) {
+		if (dt->getClass() == H5T_COMPOUND) {
+			H5::CompType* ct = (H5::CompType*) dt;
+
+			hsize_t pair[2];
+			for (int i = 0; i < 2; ++i) {
+				H5::DataType mt = ct->getMemberDataType(i);
+				size_t offset = ct->getMemberOffset(i);
+				pair[i] = read<int>((uint8_t*)data + offset, &mt);
+			}
+
+			const std::string& nm = dataset_names_[pair[0]];
+
+			H5::DataSet dataset = file_.openDataSet("population/" + nm + "_instances");
+			H5::CompType datatype = dataset.getCompType();
+			H5::DataSpace dataspace = dataset.getSpace();
+			if (dataspace.getSimpleExtentNdims() != 1) {
+				throw std::runtime_error("Expected one-dimensional data");
+			}
+			dataspace.selectElements(H5S_SELECT_SET, 1, pair + 1);
+			const hsize_t one = 1;
+			H5::DataSpace memspace(1, &one);
+
+			uint8_t* buffer = new uint8_t[datatype.getSize()];
+			dataset.read(buffer, datatype, memspace, dataspace);
+
+			int idx = datatype.getMemberIndex("Entity-Instance-Identifier");
+			size_t inst_name_offset = datatype.getMemberOffset(idx);
+			H5::DataType member_type = datatype.getMemberDataType(idx);
+
+			size_t inst_name = read<int>((uint8_t*)buffer + inst_name_offset, &member_type);
+
+			member_type.close();
+			memspace.close();
+			datatype.close();
+			dataspace.close();
+			dataset.close();
+
+			delete[] buffer;
+
+			return inst_name;
+		} else if (dt->getClass() == H5T_REFERENCE) {
+
+			hid_t setid = H5Rdereference(file().getId(), H5R_DATASET_REGION, data);
+			hid_t spaceid = H5Rget_region(file().getId(), H5R_DATASET_REGION, data);
+
+			H5::DataSet dset(setid);
+			H5::DataSpace dspace(spaceid);			
+
+			if (dspace.getSelectNpoints() != 1) {
+				throw std::runtime_error("Unexpected number of points selected");
+			}
+
+			hsize_t selected;
+			dspace.getSelectElemPointlist(0, 1, &selected);
+
+			if (name_mapping_) {
+				dspace.close();
+				const std::string path = dset.getObjName();
+				dset.close();
+				return instance_name(path, selected);
+			}
+
+			H5::CompType dtype = dset.getCompType();
+
+			hsize_t dims = 1;
+			H5::DataSpace memspace(1, &dims);
+
+			uint8_t* buffer = new uint8_t[dtype.getSize()];
+			dset.read(buffer, dtype, memspace, dspace);
+
+			const int i = dtype.getMemberIndex(Entity_Instance_Identifier);
+			const size_t offs = dtype.getMemberOffset(i);
+			H5::DataType instidt = dtype.getMemberDataType(i);
+
+			const int name = read<int>(buffer + offs, &instidt);			
+
+			instidt.close();
+			dtype.close();
+			dspace.close();
+			memspace.close();
+			dset.close();
+
+			delete[] buffer;
+
+			return name;
+
+		} else {
+			throw std::runtime_error("Unexpected type for entity instance reference");
+		}
+	}
+	
 	H5::H5File& file() { return file_; }
 };
 
-void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::bitset<64>& bitmask = many_trues, int padded_length=-1) {
+void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::string& path = no_name, int row = -1, const std::bitset<64>& bitmask = many_trues, int padded_length=-1) {
 	if (dt->getClass() == H5T_COMPOUND) {
 
 		// std::vector<IfcParse::entity::attribute*> schema_attributes;
@@ -1961,7 +2026,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 			int N = read<int>(buffer, &ct->getMemberDataType(0));
 			H5::DataType member_type = ct->getMemberDataType(1);
 			
-			visit(resolver, output, member_ptr, &member_type, name, many_trues, N);
+			visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues, N);
 		} else {
 			int ifc_idx = 0;
 			const std::bitset<64>* mask = &bitmask;
@@ -1982,7 +2047,11 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 					mask = new std::bitset<64>(read<int>(member_ptr, &member_type));
 				} else if (member_name == "Entity-Instance-Identifier") {
 					is_instance = true;
-					output << "#" << read<int>(member_ptr, &member_type) << "=" << boost::to_upper_copy(name) << "(";
+					int inst_name = resolver.instance_name(path, row);
+					if (inst_name == 0) {
+						inst_name = read<int>(member_ptr, &member_type);
+					}
+					output << "#" << inst_name << "=" << boost::to_upper_copy(name) << "(";
 				} else if (member_name == "type_code") {
 					is_select = true;
 					IfcSchema::Type::Enum ty = (IfcSchema::Type::Enum) read<int>(member_ptr, &member_type);
@@ -2000,7 +2069,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 				} else {
 					if (is_select) {
 						if (member_name == select_valuation) {
-							visit(resolver, output, member_ptr, &member_type, name, many_trues);
+							visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues);
 							select_valuation_encountered = true;
 						}
 					} else {
@@ -2017,7 +2086,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 							output << ",";
 						}
 						if ((*mask)[ifc_idx]) {
-							visit(resolver, output, member_ptr, &member_type, name, many_trues);
+							visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues);
 						} else {
 							output << "$";
 						}
@@ -2104,40 +2173,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		output << ")";
 		dt2.close();
 	} else if (dt->getClass() == H5T_REFERENCE) {
-		hid_t setid = H5Rdereference(resolver.file().getId(), H5R_DATASET_REGION, buffer);
-		hid_t spaceid = H5Rget_region(resolver.file().getId(), H5R_DATASET_REGION, buffer);
-		
-		H5::DataSet dset(setid);
-		H5::DataSpace dspace(spaceid);
-		H5::CompType dtype = dset.getCompType();
-		
-		if (dspace.getSelectNpoints() != 1) {
-			throw std::runtime_error("Unexpected number of points selected");
-		}
-		
-		hsize_t selected;
-		dspace.getSelectElemPointlist(0, 1, &selected);
-
-		hsize_t dims = 1;
-		H5::DataSpace memspace(1, &dims);
-		
-		uint8_t* buffer = new uint8_t[dtype.getSize()];
-		dset.read(buffer, dtype, memspace, dspace);
-
-		const int i = dtype.getMemberIndex(Entity_Instance_Identifier);
-		const size_t offs = dtype.getMemberOffset(i);
-		H5::DataType instidt = dtype.getMemberDataType(i);
-
-		const int name = read<int>(buffer + offs, &instidt);
-		output << "#" << name;
-
-		instidt.close();
-		dtype.close();
-		dspace.close();
-		memspace.close();
-		dset.close();
-
-		delete[] buffer;
+		output << "#" << resolver.instance_name(buffer, dt);
 	} else {
 		throw std::runtime_error("Unexpected datatype encountered");
 	}
@@ -2145,18 +2181,20 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 
 struct hdf5_output_info {
 	H5::H5File& file;
-	std::ostream& output;
+	std::ostream& output; 
+
+	std::map<std::string, int>* name_mapping;
 };
 
-herr_t iterate(hid_t id, const char *name_, const H5O_info_t *object_info, void *op_data) {
+herr_t iterate(hid_t id, const char *path, const H5O_info_t *object_info, void *op_data) {
 	H5::H5File& f = ((hdf5_output_info*)op_data)->file;
 	std::ostream& output = ((hdf5_output_info*)op_data)->output;
 
 	if (object_info->type == H5O_TYPE_DATASET) {
 		H5::Group population_group(id);
-		instance_resolver resolver(f, population_group);
+		instance_resolver resolver(f, population_group, ((hdf5_output_info*)op_data)->name_mapping);
 		
-		std::string name = name_;
+		std::string name = path;
 
 		H5::DataSet dataset = population_group.openDataSet(name);
 		H5::DataType datatype = dataset.getDataType();
@@ -2179,8 +2217,11 @@ herr_t iterate(hid_t id, const char *name_, const H5O_info_t *object_info, void 
 			name = name.substr(0, under);
 		}
 
+		const std::string base_path = H5::Group(id).getObjName() + "/";
+
+		int row = 0;
 		while (dim--) {
-			visit(resolver, output, ptr, &datatype, name);
+			visit(resolver, output, ptr, &datatype, name, base_path + path, row++);
 			ptr += datatype.getSize();
 		}
 
@@ -2205,11 +2246,15 @@ private:
 	populations_t populations_;
 	H5::H5File& file_;
 	bool finished_schema_;
+	std::map<std::string, int>* offset_mapping_;
+	int last_offset_;
 
 public:
-	file_structure(H5::H5File& file)
+	file_structure(H5::H5File& file, std::map<std::string, int>* offset_mapping = nullptr)
 		: file_(file)
 		, finished_schema_(false)
+		, offset_mapping_(offset_mapping)
+		, last_offset_(1)
 	{}
 
 	void process_group(H5::Group& g) {
@@ -2228,6 +2273,16 @@ public:
 		}
 	}
 
+	void process_dataset(H5::DataSet& ds) {
+		if (offset_mapping_) {
+			H5::DataSpace space = ds.getSpace();
+			hsize_t dims;
+			space.getSimpleExtentDims(&dims);
+			offset_mapping_->insert({ds.getObjName(), last_offset_});
+			last_offset_ += dims;
+		}
+	}
+
 	void finished_schema() { finished_schema_ = true; }
 
 	const_iterator begin() const { return populations_.begin(); }
@@ -2241,6 +2296,16 @@ herr_t find_groups(hid_t, const char *name, const H5O_info_t *object_info, void 
 		H5::Group g = fs.file().openGroup(name);
 		fs.process_group(g);
 		g.close();
+	}
+	return 0;
+}
+
+herr_t find_datasets(hid_t, const char *name, const H5O_info_t *object_info, void *op_data) {
+	file_structure& fs = *(file_structure*)op_data;
+	if (object_info->type == H5O_TYPE_DATASET) {
+		H5::DataSet ds = fs.file().openDataSet(name);
+		fs.process_dataset(ds);
+		ds.close();
 	}
 	return 0;
 }
@@ -2269,12 +2334,15 @@ void write_spf_header(const H5::Group& group, std::ostream& out) {
 void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream& output) {
 	H5::H5File f(name, H5F_ACC_RDONLY);
 	
-	file_structure fs(f);
+	std::map<std::string, int> offset_mapping;
+
+	file_structure fs(f, &offset_mapping);
+	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_datasets, &fs);
 	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_groups, &fs);
 	fs.finished_schema();
 	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_groups, &fs);
 
-	hdf5_output_info info{ f, output };
+	hdf5_output_info info{ f, output, &offset_mapping };
 	for (auto it = fs.begin(); it != fs.end(); ++it) {
 		auto& group = it->first;
 		auto& schema_id = it->second->first;
