@@ -27,6 +27,8 @@
 
 #include <gp_Pln.hxx>
 #include <gp_Trsf.hxx>
+#include <gp_Circ.hxx>
+#include <gp_Elips.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopExp_Explorer.hxx>
@@ -76,10 +78,64 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
         bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
         bool closed = ALMOST_THE_SAME(u1 + PI2, u2);
         if (conical && closed) {
-            std::stringstream ss;
-            ss << "Full circles and ellipses currently not supported (id "
-               << p.first << ")";
-            Logger::Warning(ss.str());
+            if (first) {
+                if (ty == STANDARD_TYPE(Geom_Circle)) {
+                    Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
+                    double r = circle->Radius();
+                    gp_Circ c = circle->Circ();
+                    gp_Pnt center = c.Location();
+                    path.add("            <circle style=\"stroke:black; fill:none;\" r=\"");
+                    radii.push_back(path.add(r));
+                    path.add("\" cx=\"");
+                    xcoords.push_back(path.add(center.X()));
+                    path.add("\" cy=\"");
+                    ycoords.push_back(path.add(center.Y()));
+
+                    growBoundingBox(center.X() - r, center.Y() - r);
+                    growBoundingBox(center.X() + r, center.Y() + r);
+
+                    first = false;
+                    continue;
+                } else if (ty == STANDARD_TYPE(Geom_Ellipse)) {
+                    Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
+                    gp_Elips e = ellipse->Elips();
+                    gp_Pnt center = e.Location();
+
+                    // Write the ellipse with major radius along X axis:
+                    path.add("            <ellipse style=\"stroke:black; fill:none;\" rx=\"");
+                    radii.push_back(path.add(e.MajorRadius()));
+                    path.add("\" ry\"");
+                    radii.push_back(path.add(e.MinorRadius()));
+                    path.add("\" cx=\"");
+                    xcoords.push_back(path.add(center.X()));
+                    path.add("\" cy=\"");
+                    ycoords.push_back(path.add(center.Y()));
+                    path.add("\"");
+
+                    // Rotate it with "transform":
+                    gp_Ax1 major_axis = e.XAxis();
+                    double z_rotation = major_axis.Direction().AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+                    path.add(" transform=\"rotate(");
+                    path.add(z_rotation);
+                    path.add(" ");
+                    path.add(center.X());
+                    path.add(" ");
+                    path.add(center.Y());
+
+                    // Bounding box:
+                    // More important to have all geometry in bounding box than to be minimal
+                    growBoundingBox(center.X() - e.MajorRadius(), center.Y() - e.MajorRadius());
+                    growBoundingBox(center.X() + e.MajorRadius(), center.Y() + e.MajorRadius());
+
+                    first = false;
+                    continue;
+                }
+            } else {
+                std::stringstream ss;
+                ss << "Skipping full circle/ellipse inside aggregated <path> (id "
+                   << p.first << ")";
+                Logger::Warning(ss.str());
+            }
         }
 
         const bool reversed = edge.Orientation() == TopAbs_REVERSED;
