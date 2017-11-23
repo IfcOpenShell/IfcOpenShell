@@ -66,14 +66,23 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 
 	bool first = true;
 	util::string_buffer path;
-	path.add("            <path style=\"stroke:black; fill:none;\" d=\"");
 	for (TopExp_Explorer edges(wire, TopAbs_EDGE); edges.More(); edges.Next()) {
 		const TopoDS_Edge& edge = TopoDS::Edge(edges.Current());
 
 		double u1, u2;
 		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
 
-		const bool reversed = edge.Orientation() == TopAbs_REVERSED;
+        Handle(Standard_Type) ty = curve->DynamicType();
+        bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
+        bool closed = ALMOST_THE_SAME(u1 + PI2, u2);
+        if (conical && closed) {
+            std::stringstream ss;
+            ss << "Full circles and ellipses currently not supported (id "
+               << p.first << ")";
+            Logger::Warning(ss.str());
+        }
+
+        const bool reversed = edge.Orientation() == TopAbs_REVERSED;
 
 		gp_Pnt p1, p2;
 		curve->D0(u1, p1);
@@ -84,6 +93,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		}
 				
 		if (first) {
+            path.add("            <path style=\"stroke:black; fill:none;\" d=\"");
 			path.add("M");
 			addXCoordinate(path.add(p1.X()));
 			path.add(",");
@@ -94,7 +104,6 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 
 		growBoundingBox(p2.X(), p2.Y());
 
-		Handle(Standard_Type) ty = curve->DynamicType();
 
 		if (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse)) {
 			Handle(Geom_Conic) conic = Handle(Geom_Conic)::DownCast(curve);
