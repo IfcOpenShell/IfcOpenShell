@@ -118,15 +118,22 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 				// the direction is reversed.
 				positive_direction = !positive_direction;
 			}
-					
+
+			gp_Pnt center;
 			if (ty == STANDARD_TYPE(Geom_Circle)) {
 				Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
 				r1 = r2 = circle->Radius();
+				center = circle->Location();
 			} else {
 				Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
 				r1 = ellipse->MajorRadius();
 				r2 = ellipse->MinorRadius();
+				center = ellipse->Location();
 			}
+
+			// Make sure the arc segment is entirely inside bounding box:
+			growBoundingBox(center.X() - r1, center.Y() - r1);
+			growBoundingBox(center.X() + r1, center.Y() + r1);
 					
 			// Calculate the angle between 2d vecs to have signed result
 			const gp_Dir& d = conic->Position().XDirection();
