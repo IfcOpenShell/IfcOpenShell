@@ -19,3 +19,6 @@
 
 ADD_EXECUTABLE(hdf5_federate federate.cpp)
 TARGET_LINK_LIBRARIES(hdf5_federate IfcParse)
+
+ADD_EXECUTABLE(hdf5_lod lod.cpp)
+TARGET_LINK_LIBRARIES(hdf5_lod IfcParse IfcGeom)
