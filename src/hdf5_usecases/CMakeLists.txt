@@ -17,5 +17,5 @@
 #                                                                              #
 ################################################################################
 
-ADD_EXECUTABLE(hdf5_mount mount.cpp)
-TARGET_LINK_LIBRARIES(hdf5_mount IfcParse)
+ADD_EXECUTABLE(hdf5_federate federate.cpp)
+TARGET_LINK_LIBRARIES(hdf5_federate IfcParse)
