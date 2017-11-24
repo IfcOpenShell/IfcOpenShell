@@ -452,7 +452,43 @@ int main(int argc, char** argv) {
 	IfcParse::Hdf5Settings settings;
 	settings.profile() = IfcParse::Hdf5Settings::standard_referenced;
 
-	H5::H5File file("merged.hdf", H5F_ACC_TRUNC);
+	std::vector<std::string> names;
+	std::vector<std::pair<std::string::const_iterator, std::string::const_iterator>> fixes;
+	std::string common_prefix, common_postfix;
+	for (int i = 1; i < argc; ++i) {
+		names.push_back(argv[i]);
+		fixes.push_back({ names.back().begin(), names.back().end() - 1 });
+	}
+
+	while (true) {
+		std::vector<char> chars;
+		std::transform(fixes.begin(), fixes.end(), std::back_inserter(chars), [](auto& pair) {
+			if (pair.first == pair.second) return '\0';
+			return (*pair.first++);
+		});
+		auto pred = std::bind(std::equal_to<char>(), std::placeholders::_1, chars.front());
+		if (chars.front() != 0 && std::all_of(chars.begin()+1, chars.end(), pred)) {
+			common_prefix.push_back(chars.front());
+		} else {
+			break;
+		}
+	}
+
+	while (true) {
+		std::vector<char> chars;
+		std::transform(fixes.begin(), fixes.end(), std::back_inserter(chars), [](auto& pair) {
+			if (pair.first == pair.second) return '\0';
+			return (*pair.second--);
+		});
+		auto pred = std::bind(std::equal_to<char>(), std::placeholders::_1, chars.front());
+		if (chars.front() != 0 && std::all_of(chars.begin() + 1, chars.end(), pred)) {
+			common_postfix.insert(common_postfix.begin(), chars.front());
+		} else {
+			break;
+		}
+	}
+
+	H5::H5File file(common_prefix + common_postfix + ".hdf", H5F_ACC_TRUNC);
 	H5::Group group1 = file.createGroup("population");
 
 	IfcParse::IfcHdf5File ifc_hdf5(file, get_schema(), settings);
