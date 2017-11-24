@@ -146,12 +146,12 @@ public:
 		if (a->declaration().type() == IfcSchema::Type::IfcLocalPlacement) { return (*this)((IfcSchema::IfcLocalPlacement*) a, (IfcSchema::IfcLocalPlacement*) b); }
 
 		// Should these be removed if an owner history is created manually?
-		if (a->declaration().type() == IfcSchema::Type::IfcPerson) { return false; }
-		if (a->declaration().type() == IfcSchema::Type::IfcOrganization) { return false; }
-		if (a->declaration().type() == IfcSchema::Type::IfcPersonAndOrganization) { return false; }
-		if (a->declaration().type() == IfcSchema::Type::IfcOwnerHistory) { return false; }
-		if (a->declaration().type() == IfcSchema::Type::IfcApplication) { return false; }
-
+		if (a->declaration().type() == IfcSchema::Type::IfcPerson) { return (a->data().id() & 0x1000000) < (b->data().id() & 0x1000000); }
+		if (a->declaration().type() == IfcSchema::Type::IfcOrganization) { return (a->data().id() & 0x1000000) < (b->data().id() & 0x1000000); }
+		if (a->declaration().type() == IfcSchema::Type::IfcPersonAndOrganization) { return (a->data().id() & 0x1000000) < (b->data().id() & 0x1000000); }
+		if (a->declaration().type() == IfcSchema::Type::IfcOwnerHistory) { return (a->data().id() & 0x1000000) < (b->data().id() & 0x1000000); }
+		if (a->declaration().type() == IfcSchema::Type::IfcApplication) { return (a->data().id() & 0x1000000) < (b->data().id() & 0x1000000); }
+		
 		std::cerr << "Unexpected type: " + IfcSchema::Type::ToString(a->declaration().type()) << std::endl;
 		throw std::runtime_error("Unexpected type: " + IfcSchema::Type::ToString(a->declaration().type()));
 	}
@@ -167,6 +167,8 @@ public:
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator full_const_iterator;
 	
 private:
+	H5::H5File& root_file_;
+
 	mapping_t mapping_;
 	std::set<IfcUtil::IfcBaseClass*> initial_population_set_;
 
@@ -176,12 +178,15 @@ private:
 
 	H5::Group& initial_group_;
 	H5::Group* subsequent_group_;
+	H5::H5File* subsequent_file_;
+	std::string root_;
 
 public:
 
 	template <typename ForwardIterator>
-	multifile_instance_locator(H5::Group& group, mapping_t mapping, ForwardIterator b, ForwardIterator e)
-		: mapping_(mapping)
+	multifile_instance_locator(H5::H5File& root_file, H5::Group& group, mapping_t mapping, ForwardIterator b, ForwardIterator e)
+		: root_file_(root_file)
+		, mapping_(mapping)
 		, initial_group_(group)
 		, subsequent_group_(nullptr)
 	{
@@ -257,13 +262,16 @@ public:
 
 		population_t* pop;
 		H5::Group* group;
-		
+		boost::optional<std::string> current_root;
+				
 		if (initial_population_set_.find(v) != initial_population_set_.end()) {
 			pop = &initial_population_;
 			group = &initial_group_;
+			current_root = boost::none;
 		} else {
 			pop = &subsequent_population_;
 			group = subsequent_group_;
+			current_root = root_;
 		}
 
 		int a = std::lower_bound(pop->first.begin(), pop->first.end(), t) - pop->first.begin();
@@ -277,13 +285,17 @@ public:
 		H5::DataSpace space(1, &dims);
 		space.selectElements(H5S_SELECT_SET, 1, &coord);
 		const std::string path = IfcSchema::Type::ToString(pop->first[a]);
-		group->reference(ptr, path + "_instances", space);
+
+		std::string full_path = group->getObjName() + "/" + path + "_instances";
+
+		root_file_.reference(ptr, full_path, space);
 		ptr = static_cast<uint8_t*>(ptr) + sizeof(hdset_reg_ref_t);
 	}
 
-	void next(H5::Group& group, IfcParse::IfcFile* f) {
+	void next(const std::string& name, H5::Group& group, IfcParse::IfcFile* f) {
 		subsequent_group_ = &group;
-
+		root_ = name;
+		
 		subsequent_population_.first.clear();
 		subsequent_population_.second.clear();
 		subsequent_minus_initial_.clear();
@@ -403,13 +415,18 @@ int main(int argc, char** argv) {
 	std::vector<IfcUtil::IfcBaseClass*> shared_instances_and_refs_vector(shared_instances_and_refs.begin(), shared_instances_and_refs.end());
 
 	IfcParse::IfcFile temp;
+	for (int i = 0; i < 0x1000001; ++i) temp.FreshId();
 
 	std::for_each(replacements.begin(), replacements.end(), [&shared_instances_and_refs_vector, &temp](IfcUtil::IfcBaseClass* new_inst) {
 		temp.addEntity(new_inst);
 
-		std::remove_if(shared_instances_and_refs_vector.begin(), shared_instances_and_refs_vector.end(), [new_inst](IfcUtil::IfcBaseClass* orig_inst) {
-			return orig_inst->declaration().type() == new_inst->declaration().type();
-		});
+		shared_instances_and_refs_vector.erase(
+			std::remove_if(shared_instances_and_refs_vector.begin(), shared_instances_and_refs_vector.end(), [new_inst](IfcUtil::IfcBaseClass* orig_inst) {
+				return orig_inst->declaration().type() == new_inst->declaration().type();
+			}),
+			shared_instances_and_refs_vector.end()
+		);
+
 		shared_instances_and_refs_vector.push_back(new_inst);
 	});
 
@@ -497,7 +514,7 @@ int main(int argc, char** argv) {
 
 	IfcParse::instance_enumerator shared_insts_enum(&header, shared_instances_and_refs_unique.begin(), shared_instances_and_refs_unique.end());
 
-	multifile_instance_locator* locator = new multifile_instance_locator(group1, [&shared_instances_and_refs_unique](IfcUtil::IfcBaseClass* inst) {
+	multifile_instance_locator* locator = new multifile_instance_locator(file, group1, [&shared_instances_and_refs_unique](IfcUtil::IfcBaseClass* inst) {
 		auto it = shared_instances_and_refs_unique.find(inst);
 		if (it == shared_instances_and_refs_unique.end()) {
 			return inst;
@@ -512,14 +529,14 @@ int main(int argc, char** argv) {
 	int n = 0;
 	for (auto f : files) {
 		auto filename = argv[n++ + 1];
-		H5::H5File child(filename + std::string(".hdf"), H5F_ACC_TRUNC);
-		H5::Group groupn = child.createGroup("population");
-		
-		file.createGroup(filename).close();
-		file.mount(filename, child, H5::PropList::DEFAULT);
+		H5::Group discipline_group = file.createGroup(filename);
+		H5::Group child_group = discipline_group.createGroup("population");
 
-		locator->next(groupn, f);
+		locator->next(filename, child_group, f);
 		IfcParse::instance_enumerator inst_enum(&f->header(), locator->full_begin(), locator->full_end());
-		ifc_hdf5.write_population(groupn, shared_insts_enum, locator);
+		
+		ifc_hdf5.write_population(child_group, shared_insts_enum, locator);
 	}
+
+	return 0;
 }
