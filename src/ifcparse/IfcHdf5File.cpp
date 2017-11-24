@@ -1942,9 +1942,14 @@ public:
 
 			return inst_name;
 		} else if (dt->getClass() == H5T_REFERENCE) {
+			
+			hid_t setid = H5Rdereference(file_.getId(), H5R_DATASET_REGION, data);
 
-			hid_t setid = H5Rdereference(file().getId(), H5R_DATASET_REGION, data);
-			hid_t spaceid = H5Rget_region(file().getId(), H5R_DATASET_REGION, data);
+			if (setid == -1) {
+				throw std::runtime_error("Failed to dereference");
+			}
+
+			hid_t spaceid = H5Rget_region(file_.getId(), H5R_DATASET_REGION, data);
 
 			H5::DataSet dset(setid);
 			H5::DataSpace dspace(spaceid);			
