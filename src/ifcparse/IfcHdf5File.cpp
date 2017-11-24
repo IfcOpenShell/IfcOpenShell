@@ -2331,8 +2331,31 @@ void write_spf_header(const H5::Group& group, std::ostream& out) {
 	spf_header.write(out);
 }
 
-void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream& output) {
+void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream& output, const boost::optional< std::vector<std::string> >& mount_points) {
 	H5::H5File f(name, H5F_ACC_RDONLY);
+	std::vector<H5::H5File*> children;
+
+	if (mount_points) {
+		std::transform(mount_points->begin(), mount_points->end(), std::back_inserter(children), [&f](const std::string& directive) {
+			
+			auto split_string = [](const std::string& s, std::string& left, std::string& right) {
+				const size_t pos = s.find('=');
+				left = s.substr(0, pos);
+				if (pos != std::string::npos) {
+					right = s.substr(pos + 1);
+				}
+			};
+
+			std::string point, path;
+			split_string(directive, point, path);
+
+			H5::H5File* child = new H5::H5File(path, H5F_ACC_RDONLY);
+			f.mount(point, *child, H5::PropList::DEFAULT);
+
+			return child;
+
+		});
+	}
 	
 	std::map<std::string, int> offset_mapping;
 
@@ -2352,4 +2375,12 @@ void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream
 			output << "ENDSEC;\nEND-ISO-10303-21;\n";
 		}
 	}
+
+	std::for_each(children.begin(), children.end(), [](H5::H5File* child) {
+		child->close();
+		delete child;
+	});
+
+	f.close();
+	
 }

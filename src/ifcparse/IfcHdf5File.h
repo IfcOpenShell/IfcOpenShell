@@ -211,7 +211,7 @@ namespace IfcParse {
 		{
 		};
 
-		static void convert_to_spf(const std::string& name, std::ostream& output);
+		static void convert_to_spf(const std::string& name, std::ostream& output, const boost::optional< std::vector<std::string> >& mount_points = boost::none);
 	};
 
 }

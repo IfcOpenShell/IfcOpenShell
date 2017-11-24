@@ -108,8 +108,11 @@ int main(int argc, char** argv) {
 
 	std::string bounds, hdf5_profile;
 	uint32_t hdf5_chunk_size;
+	
 	std::vector<std::string> entity_vector;
 	std::vector<std::string> hdf5_ref_attributes;
+	std::vector<std::string> hdf5_mount_points;
+
 	boost::program_options::options_description geom_options;
 	geom_options.add_options()
 		("plan",
@@ -161,6 +164,8 @@ int main(int argc, char** argv) {
 		("hdf5-fix-global-id", "")
 		("hdf5-instantiate-inverse", "")
 		("hdf5-instantiate-select", "")
+		("hdf5-mount", boost::program_options::value< std::vector<std::string> >(&hdf5_mount_points)->multitoken(),
+			"")
 		("hdf5-chunk-size", boost::program_options::value(&hdf5_chunk_size), "")
 		("hdf5-ref-attributes", boost::program_options::value< std::vector<std::string> >(&hdf5_ref_attributes)->multitoken(), 
 			"")
@@ -322,7 +327,7 @@ int main(int argc, char** argv) {
 			}
 		} else if (input_extension == ".hdf") {
 			std::ofstream fs(output_filename.c_str());
-			IfcParse::IfcHdf5File::convert_to_spf(input_filename, fs);
+			IfcParse::IfcHdf5File::convert_to_spf(input_filename, fs, hdf5_mount_points);
 			success = true;
 		} else {
 			Logger::Message(Logger::LOG_ERROR, "Unknown input extension");
