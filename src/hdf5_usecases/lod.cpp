@@ -19,21 +19,113 @@
 
 #include "../../../src/ifcparse/IfcHdf5File.h"
 #include "../../../src/ifcgeom/IfcGeom.h"
+#include "../../../src/ifcparse/IfcWritableEntity.h"
 
 #include <Bnd_Box.hxx>
 #include <BRepBndLib.hxx>
+
+#include <algorithm>
+
+#include "multifile_instance_locator.h"
 
 int main(int, char** argv) {
 	IfcParse::IfcFile f;
 	f.Init(argv[1]);
 
-	std::vector<IfcSchema::IfcProductDefinitionShape*> new_defs;
-	IfcSchema::IfcProductDefinitionShape::list::ptr defs = f.entitiesByType<IfcSchema::IfcProductDefinitionShape>();
+	IfcSchema::IfcProductDefinitionShape::list::ptr defs_ = f.entitiesByType<IfcSchema::IfcProductDefinitionShape>();
+	std::vector<IfcSchema::IfcProductDefinitionShape*> defs(defs_->begin(), defs_->end());
+	// Make sure to sort by id to have new definitions lining up in the same order
+	std::sort(defs.begin(), defs.end(), [](IfcSchema::IfcProductDefinitionShape* a, IfcSchema::IfcProductDefinitionShape* b) {
+		return a->data().id() < b->data().id();
+	});
+
+	IfcSchema::IfcStyledItem::list::ptr styles = f.entitiesByType<IfcSchema::IfcStyledItem>();
 
 	IfcGeom::Kernel kernel;
 	kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
 
-	std::transform(defs->begin(), defs->end(), std::back_inserter(new_defs), [&kernel](IfcSchema::IfcProductDefinitionShape* def) {
+	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem };
+	std::set<IfcSchema::Type::Enum> other_types;
+
+	std::set<IfcUtil::IfcBaseClass*> geometric_instances;
+
+	std::for_each(styles->begin(), styles->end(), [&geometric_instances](IfcSchema::IfcStyledItem* style) {
+		geometric_instances.insert(style);
+	});
+
+	int N = defs.size();
+	int n = 0;
+
+	std::for_each(defs.begin(), defs.end(), [&f, &geometric_types, &geometric_instances, N, &n](IfcSchema::IfcProductDefinitionShape* def) {
+		auto refs = f.traverse(def);
+		geometric_instances.insert(refs->begin(), refs->end());
+		std::for_each(refs->begin(), refs->end(), [&geometric_types](IfcUtil::IfcBaseClass* inst) {
+			geometric_types.insert(inst->declaration().type());
+		});
+		if (n++ % 1000 == 0) {
+			std::cerr << "\r" << n * 100 / N << std::flush;
+		}
+	});
+
+	std::function<void(IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*)> fn;
+	fn = [&f, &geometric_instances, &other_types, &fn](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
+		if (geometric_instances.find(inst) == geometric_instances.end()) {
+			if (inst->declaration().type() == IfcSchema::Type::IfcCircle) {
+				std::cerr << "circle reached by " << root->data().toString() << std::endl;
+			}
+			other_types.insert(inst->declaration().type());
+			auto refs = f.traverse(inst, 1);
+			std::for_each(refs->begin() + 1, refs->end(), [&fn, root](IfcUtil::IfcBaseClass* inst) {
+				fn(root, inst);
+			});
+		}
+	};
+
+	N = std::distance(f.begin(), f.end());
+	n = 0;
+
+	std::for_each(f.begin(), f.end(), [&fn, N, &n](const auto& pair) {
+		fn(pair.second, pair.second);
+		if (n++ % 1000 == 0) {
+			std::cerr << "\r" << n * 100 / N << std::flush;
+		}
+	});
+
+	std::set<IfcSchema::Type::Enum> only_geometric;
+	std::set_difference(geometric_types.begin(), geometric_types.end(), 
+		other_types.begin(), other_types.end(), 
+		std::inserter(only_geometric, only_geometric.begin()));
+
+	for (auto ty : only_geometric) {
+		std::cerr << IfcSchema::Type::ToString(ty) << std::endl;
+	}
+
+	std::cin.get();
+
+	// IfcSchema::Type::IfcAxis2Placement3D,IfcSchema::Type::IfcCartesianPoint,IfcSchema::Type::IfcDirection,IfcSchema::Type::IfcGeometricRepresentationSubContext
+		
+	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_geom_defs, all_old_defs;
+
+	std::for_each(only_geometric.begin(), only_geometric.end(), [&f, &old_geom_defs](IfcSchema::Type::Enum t) {
+		auto insts = f.entitiesByType(t);
+		std::for_each(insts->begin(), insts->end(), [t, &old_geom_defs](IfcUtil::IfcBaseClass* inst) {
+			if (inst->declaration().type() == t) {
+				old_geom_defs.push_back(inst);
+			}
+		});
+	});
+
+	std::for_each(f.begin(), f.end(), [&fn, &only_geometric, &old_defs](const auto& pair) {
+		IfcUtil::IfcBaseClass* inst = pair.second;
+		auto ty = inst->declaration().type();
+		if (only_geometric.find(ty) == only_geometric.end()) {
+			old_defs.push_back(inst);
+		}
+	});
+
+	auto id = f.FreshId();
+
+	std::for_each(defs.begin(), defs.end(), [&kernel, &id, &old_defs, &new_defs](IfcSchema::IfcProductDefinitionShape* def) {
 		Bnd_Box box;
 		auto reps = def->Representations();
 		IfcSchema::IfcRepresentationContext* context;
@@ -64,6 +156,59 @@ int main(int, char** argv) {
 		new_reps->push(rep);
 		
 		IfcSchema::IfcProductDefinitionShape* new_def = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, new_reps);
+		
+		new_def->data().isWritable()->setId(id++);
+
+		// NB: Corner is added to existing definitions
+		old_defs.push_back(corner);
+		new_defs.push_back(bbox);
+		new_defs.push_back(rep);
+		new_defs.push_back(new_def);
+
 		return new_def;
 	});
+
+	H5::H5File hdf(argv[1] + std::string(".hdf"), H5F_ACC_TRUNC);
+	
+	H5::Group population = hdf.createGroup("population");
+	H5::Group low = hdf.createGroup("low");
+	H5::Group hi = hdf.createGroup("hi");
+	
+	auto iden = [](IfcUtil::IfcBaseClass* inst) { return inst; };
+
+	std::set<IfcSchema::Type::Enum> old_new_geom_types;
+
+	std::vector<std::vector<IfcUtil::IfcBaseClass*>*> all_vectors = std::vector<std::vector<IfcUtil::IfcBaseClass*>*>{ &new_defs, &old_defs, &old_geom_defs };
+	for (auto vec_ : all_vectors) {
+		auto& vec = *vec_;
+		for (auto& inst : vec) {
+			old_new_geom_types.insert(inst->declaration().type());
+		}
+	}
+
+	all_old_defs.insert(all_old_defs.end(), old_defs.begin(), old_defs.end());
+	all_old_defs.insert(all_old_defs.end(), old_geom_defs.begin(), old_geom_defs.end());
+
+	if (std::distance(all_old_defs.begin(), all_old_defs.end()) != std::distance(f.begin(), f.end())) {
+		std::cerr << "Missign instances";
+		abort();
+	}
+
+	multifile_instance_locator* locator = new multifile_instance_locator(
+		old_new_geom_types.begin(), old_new_geom_types.end(),
+		all_old_defs.begin(), all_old_defs.end());
+
+	IfcParse::Hdf5Settings settings;
+	// settings.profile() = IfcParse::Hdf5Settings::standard_referenced;
+
+	IfcParse::IfcHdf5File ifc_hdf5(hdf, get_schema(), settings);
+	ifc_hdf5.write_schema();
+	
+	IfcParse::IfcSpfHeader header;
+	header.set_default();
+
+	{
+		IfcParse::instance_enumerator enumerator(&f.header(), old_defs.begin(), old_defs.end());
+		ifc_hdf5.write_population(population, enumerator, locator);
+	}	
 }

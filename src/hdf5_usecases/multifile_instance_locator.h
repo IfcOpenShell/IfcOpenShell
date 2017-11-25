@@ -27,16 +27,17 @@ public:
 	typedef std::vector<IfcUtil::IfcBaseClass*>::const_iterator full_const_iterator;
 	
 private:
-	H5::H5File& root_file_;
+	H5::H5File* root_file_;
 
 	mapping_t mapping_;
 	std::set<IfcUtil::IfcBaseClass*> initial_population_set_;
+	std::set<IfcSchema::Type::Enum> initial_types_included_set_;
 
 	population_t initial_population_;
 	population_t subsequent_population_;
 	std::vector<IfcUtil::IfcBaseClass*> subsequent_minus_initial_;
 
-	H5::Group& initial_group_;
+	H5::Group* initial_group_;
 	H5::Group* subsequent_group_;
 	H5::H5File* subsequent_file_;
 	std::string root_;
@@ -45,9 +46,9 @@ public:
 
 	template <typename ForwardIterator>
 	multifile_instance_locator(H5::H5File& root_file, H5::Group& group, mapping_t mapping, ForwardIterator b, ForwardIterator e)
-		: root_file_(root_file)
+		: root_file_(&root_file)
 		, mapping_(mapping)
-		, initial_group_(group)
+		, initial_group_(&group)
 		, subsequent_group_(nullptr)
 	{
 		initial_population_set_.insert(b, e);
@@ -67,6 +68,28 @@ public:
 			std::vector<IfcUtil::IfcBaseEntity*> by_type;
 
 			std::for_each(b, e, [t,&by_type](IfcUtil::IfcBaseClass* inst) {
+				if (inst->declaration().type() == t && inst->declaration().as_entity()) {
+					by_type.push_back((IfcUtil::IfcBaseEntity*) inst);
+				}
+			});
+
+			std::sort(by_type.begin(), by_type.end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
+				return i1->data().id() < i2->data().id();
+			});
+
+			initial_population_.second.emplace_back(by_type);
+		});
+	}
+
+	template <typename ForwardIteratorTypes, typename ForwardIteratorInsts>
+	multifile_instance_locator(ForwardIteratorTypes types_all_begin, ForwardIteratorTypes types_all_end, ForwardIteratorInsts insts_begin, ForwardIteratorInsts insts_end) {
+		initial_population_.first.assign(types_all_begin, types_all_end);
+		std::sort(initial_population_.first.begin(), initial_population_.first.end());
+
+		std::for_each(this->begin(), this->end(), [this, &insts_begin, &insts_end](IfcSchema::Type::Enum t) {
+			std::vector<IfcUtil::IfcBaseEntity*> by_type;
+
+			std::for_each(insts_begin, insts_end, [t, &by_type](IfcUtil::IfcBaseClass* inst) {
 				if (inst->declaration().type() == t && inst->declaration().as_entity()) {
 					by_type.push_back((IfcUtil::IfcBaseEntity*) inst);
 				}
@@ -126,7 +149,7 @@ public:
 				
 		if (initial_population_set_.find(v) != initial_population_set_.end()) {
 			pop = &initial_population_;
-			group = &initial_group_;
+			group = initial_group_;
 			current_root = boost::none;
 		} else {
 			pop = &subsequent_population_;
@@ -148,7 +171,7 @@ public:
 
 		std::string full_path = group->getObjName() + "/" + path + "_instances";
 
-		root_file_.reference(ptr, full_path, space);
+		root_file_->reference(ptr, full_path, space);
 		ptr = static_cast<uint8_t*>(ptr) + sizeof(hdset_reg_ref_t);
 	}
 
