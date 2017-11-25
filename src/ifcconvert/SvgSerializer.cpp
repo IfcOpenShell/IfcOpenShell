@@ -39,6 +39,9 @@
 #include <ShapeAnalysis_FreeBounds.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 
+#include <BRepAdaptor_Curve.hxx>
+#include <GCPnts_QuasiUniformDeflection.hxx>
+
 #include <Geom_Curve.hxx>
 #include <Geom_Line.hxx>
 #include <Geom_Circle.hxx>
@@ -217,6 +220,19 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 			xcoords.push_back(path.add(p2.X()));
 			path.add(",");
 			ycoords.push_back(path.add(p2.Y()));
+		} else if (ty != STANDARD_TYPE(Geom_Line)) {
+			BRepAdaptor_Curve crv(edge);
+			GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
+			// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
+			for (int i = 2; i <= tessellater.NbPoints(); ++i) {
+				gp_Pnt p = tessellater.Value(i);
+				path.add(" L");
+				xcoords.push_back(path.add(p.X()));
+				path.add(",");
+				ycoords.push_back(path.add(p.Y()));
+
+				growBoundingBox(p.X(), p.Y());
+			}
 		} else {
 			// Either a Geom_Line or something unimplemented,
 			// drawn as a straight line segment.
