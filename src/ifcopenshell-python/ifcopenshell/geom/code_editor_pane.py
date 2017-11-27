@@ -32,19 +32,19 @@ except BaseException:
 
 
 class StdoutRedirector(object):
-    '''A class for redirecting stdout to this Text widget.'''
+    """A class for redirecting stdout to this Text widget."""
 
     def __init__(self, widget):
         self.widget = widget
         self.isError = False
 
-    def write(self, str):
+    def write(self, myStr):
         self.widget.moveCursor(QtGui.QTextCursor.End)
         if self.isError:
             self.widget.setTextColor(QtCore.Qt.red)
         else:
             self.widget.setTextColor(QtCore.Qt.white)
-        self.widget.insertPlainText(str)
+        self.widget.insertPlainText(myStr)
         self.widget.moveCursor(QtGui.QTextCursor.End)
 
 
