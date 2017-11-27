@@ -596,10 +596,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 			continue;
 		}
 
-		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
-			face_list.Append(face);
+		if (face.ShapeType() == TopAbs_COMPOUND) {
+			TopoDS_Iterator face_it(face, false);
+			for (; face_it.More(); face_it.Next()) {
+				if (face_it.Value().ShapeType() == TopAbs_FACE) {
+					// This should really be the case. This is not asserted.
+					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
+					if (face_area(triangle) > getValue(GV_MINIMAL_FACE_AREA)) {
+						face_list.Append(triangle);
+					} else {
+						Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+					}
+				}
+			}
 		} else {
-			Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+			if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+				face_list.Append(face);
+			} else {
+				Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+			}
 		}
 	}
 

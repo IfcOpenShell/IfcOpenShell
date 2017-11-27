@@ -166,9 +166,9 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
 	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetTolerance(getValue(GV_PRECISION));
+	builder.SetMaxTolerance(getValue(GV_PRECISION));
+	builder.SetMinTolerance(getValue(GV_PRECISION));
 	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 		builder.Add(face_iterator.Value());
 	}
@@ -195,7 +195,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 
 			try {
 				ShapeFix_Solid solid;
-				solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+				solid.SetMaxTolerance(getValue(GV_PRECISION));
 				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(exp.Current()));
 				if (!solid_shape.IsNull()) {
 					try {
@@ -2639,6 +2639,93 @@ bool IfcGeom::Kernel::flatten_wire(TopoDS_Wire& wire) {
 	return true;
 }
 
+bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfShape& faces) {
+	// This is a bit of a precarious approach, but seems to work for the 
+	// versions of OCCT tested for. OCCT has a Delaunay triangulation function 
+	// BRepMesh_Delaun, but it is notoriously hard to interpret the results 
+	// (due to the Bowyer-Watson super triangle perhaps?). Therefore 
+	// alternatively we use the regular OCCT incremental mesher on a new face 
+	// created from the UV coordinates of the original wire. Pray to our gods 
+	// that the vertex coordinates are unaffected by the meshing algorithm and 
+	// map them back to 3d coordinates when iterating over the mesh triangles. 
+
+	typedef std::pair<double, double> uv_node;
+
+	gp_Pln pln;
+	if (!approximate_plane_through_wire(wire, pln)) {
+		return false;
+	}
+
+	const gp_XYZ& udir = pln.Position().XDirection().XYZ();
+	const gp_XYZ& vdir = pln.Position().YDirection().XYZ();
+	const gp_XYZ& pnt = pln.Position().Location().XYZ();
+	
+	BRepTools_WireExplorer exp(wire);
+	BRepBuilderAPI_MakePolygon mp;
+	std::map<uv_node, gp_Pnt> mapping;
+
+	// Add UV coordinates to a newly created polygon
+	for (; exp.More(); exp.Next()) {
+		gp_Pnt p = BRep_Tool::Pnt(exp.CurrentVertex());
+		double u = (p.XYZ() - pnt).Dot(udir);
+		double v = (p.XYZ() - pnt).Dot(vdir);
+		mp.Add(gp_Pnt(u, v, 0));
+		mapping.insert(std::make_pair(std::make_pair(u, v), p));
+	}
+
+	// Not closed by default
+	mp.Close();
+
+	// Create a new face from the {u,v,0} wire and mesh the face
+	TopoDS_Face face = BRepBuilderAPI_MakeFace(mp.Wire());
+	BRepMesh_IncrementalMesh(face, Precision::Confusion());
+
+	int n123[3]; 
+	TopLoc_Location loc;
+	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
+	
+	if (!tri.IsNull()) {
+		const TColgp_Array1OfPnt& nodes = tri->Nodes();
+
+		const Poly_Array1OfTriangle& triangles = tri->Triangles();
+		for (int i = 1; i <= triangles.Length(); ++i) {			
+			if (face.Orientation() == TopAbs_REVERSED)
+				triangles(i).Get(n123[2], n123[1], n123[0]);
+			else triangles(i).Get(n123[0], n123[1], n123[2]);
+			
+			// Create polygons from the mesh vertices
+			BRepBuilderAPI_MakePolygon mp2;
+			for (int j = 0; j < 3; ++j) {
+				const gp_Pnt& uv = nodes.Value(n123[j]);
+				uv_node key = std::make_pair(uv.X(), uv.Y());
+
+				if (mapping.find(key) == mapping.end()) {
+					Logger::Error("Internal error: unable to unproject uv-mesh");
+					return false;
+				}
+
+				const gp_Pnt& p = mapping.find(key)->second;
+				mp2.Add(p);
+			}
+			mp2.Close();
+
+			BRepBuilderAPI_MakeFace mf(mp2.Wire());
+			if (mf.IsDone()) {
+				TopoDS_Face triangle_face = mf.Face();
+				TopoDS_Iterator jt(triangle_face, false);
+				for (; jt.More(); jt.Next()) {
+					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
+					if (w.Orientation() != wire.Orientation()) {
+						triangle_face.Reverse();
+					}
+				}
+				faces.Append(triangle_face);
+			}
+		}
+	}
+
+	return true;
+}
 
 TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
 	if (t.Form() == gp_Identity) {

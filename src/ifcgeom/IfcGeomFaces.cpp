@@ -271,6 +271,31 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				} else {
 					const bool non_planar = mf->Error() == BRepBuilderAPI_NotPlanar;
 					delete mf;
+
+					const bool sewing_shells = getValue(GV_MAX_FACES_TO_SEW) > -1;
+
+					if (non_planar && sewing_shells && bounds->size() == 1 && face_surface.IsNull()) {
+						Logger::Message(Logger::LOG_ERROR, "Triangulating face boundary", bound->entity);
+
+						// When creating a solid, flatting the boundary only postpones the issue to
+						// creating a topological manifold out of the individual faces.
+						TopTools_ListOfShape face_list;
+						triangulate_wire(wire, face_list);
+
+						TopoDS_Compound compound;
+						BRep_Builder builder;
+						builder.MakeCompound(compound);
+
+						TopTools_ListIteratorOfListOfShape face_iterator;
+						for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+							builder.Add(compound, face_iterator.Value());
+						}
+
+						face = compound;
+
+						return true;
+					}
+
 					if (!non_planar || flattened_wire || !flatten_wire(wire)) {
 						Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound->entity);
 						return false;
@@ -338,9 +363,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				face.Reverse();
 			}
 		}
-
-		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(face, getValue(GV_PRECISION), TopAbs_FACE);
 	}
 
 	delete mf;
