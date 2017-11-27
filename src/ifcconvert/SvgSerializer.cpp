@@ -225,13 +225,13 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 			GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
 			// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
 			for (int i = 2; i <= tessellater.NbPoints(); ++i) {
-				gp_Pnt p = tessellater.Value(i);
+				gp_Pnt pi = tessellater.Value(i);
 				path.add(" L");
-				xcoords.push_back(path.add(p.X()));
+				xcoords.push_back(path.add(pi.X()));
 				path.add(",");
-				ycoords.push_back(path.add(p.Y()));
+				ycoords.push_back(path.add(pi.Y()));
 
-				growBoundingBox(p.X(), p.Y());
+				growBoundingBox(pi.X(), pi.Y());
 			}
 		} else {
 			// Either a Geom_Line or something unimplemented,
