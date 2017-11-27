@@ -230,6 +230,7 @@ public:
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
+	bool triangulate_wire(const TopoDS_Wire&, TopTools_ListOfShape&);
 
 	static double shape_volume(const TopoDS_Shape& s);
 	static double face_area(const TopoDS_Face& f);
