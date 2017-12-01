@@ -82,7 +82,9 @@ public:
 	}
 
 	template <typename ForwardIteratorTypes, typename ForwardIteratorInsts>
-	multifile_instance_locator(ForwardIteratorTypes types_all_begin, ForwardIteratorTypes types_all_end, ForwardIteratorInsts insts_begin, ForwardIteratorInsts insts_end) {
+	multifile_instance_locator(ForwardIteratorTypes types_all_begin, ForwardIteratorTypes types_all_end, ForwardIteratorInsts insts_begin, ForwardIteratorInsts insts_end)
+		: subsequent_group_(nullptr)
+	{
 		initial_population_.first.assign(types_all_begin, types_all_end);
 		std::sort(initial_population_.first.begin(), initial_population_.first.end());
 
@@ -136,7 +138,32 @@ public:
 	}
 
 	std::pair<int, int> operator()(IfcUtil::IfcBaseClass* v) {
-		throw std::runtime_error("This locator can only be used in referenced profile");
+		if (IfcSchema::Type::IsSimple(v->declaration().type())) {
+			throw std::exception("Simple type not expected here");
+		}
+
+		IfcSchema::Type::Enum t = v->declaration().type();
+
+		// This remains constant for subsequent model serializations?
+		auto& dataset_names = initial_population_.first;
+		auto tt = std::lower_bound(dataset_names.begin(), dataset_names.end(), t);
+		int a = std::distance(dataset_names.begin(), tt);
+		int b;
+
+		const std::vector<IfcUtil::IfcBaseEntity*>& insts = instances(t);
+
+		auto it = std::lower_bound(insts.begin(), insts.end(), v, [](IfcUtil::IfcBaseClass* other, IfcUtil::IfcBaseClass* val) {
+			// An ordering based on ID is not equivalent to an ordering based on pointer address!
+			return other->data().id() < val->data().id();
+		});
+
+		if (it == insts.end()) {
+			throw std::runtime_error("Unable to find instance");
+		}
+
+		b = std::distance(insts.begin(), it);
+
+		return std::make_pair(a, b);
 	}
 
 	void make_reference(IfcUtil::IfcBaseClass* v, void*& ptr) {

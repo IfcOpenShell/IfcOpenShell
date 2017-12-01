@@ -44,6 +44,8 @@ int main(int, char** argv) {
 	IfcGeom::Kernel kernel;
 	kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
 
+	/*
+
 	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem };
 	std::set<IfcSchema::Type::Enum> other_types;
 
@@ -96,15 +98,36 @@ int main(int, char** argv) {
 		other_types.begin(), other_types.end(), 
 		std::inserter(only_geometric, only_geometric.begin()));
 
+	std::cerr << "\nOnly geometric:" << std::endl;
+
 	for (auto ty : only_geometric) {
 		std::cerr << IfcSchema::Type::ToString(ty) << std::endl;
 	}
 
-	std::cin.get();
+	*/
 
-	// IfcSchema::Type::IfcAxis2Placement3D,IfcSchema::Type::IfcCartesianPoint,IfcSchema::Type::IfcDirection,IfcSchema::Type::IfcGeometricRepresentationSubContext
-		
-	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_geom_defs, all_old_defs;
+	std::set<IfcSchema::Type::Enum> only_geometric{
+		IfcSchema::Type::IfcAxis2Placement2D					,
+		IfcSchema::Type::IfcCartesianTransformationOperator3D,
+		IfcSchema::Type::IfcCircleProfileDef					,
+		IfcSchema::Type::IfcClosedShell						,
+		IfcSchema::Type::IfcConnectedFaceSet					,
+		IfcSchema::Type::IfcExtrudedAreaSolid				,
+		IfcSchema::Type::IfcFace								,
+		IfcSchema::Type::IfcFaceBasedSurfaceModel			,
+		IfcSchema::Type::IfcFaceBound						,
+		IfcSchema::Type::IfcFaceOuterBound					,
+		IfcSchema::Type::IfcFacetedBrep						,
+		//IfcSchema::Type::IfcGeometricRepresentationContext	,
+		IfcSchema::Type::IfcMappedItem						,
+		IfcSchema::Type::IfcPolyLoop							,
+		IfcSchema::Type::IfcProductDefinitionShape			,
+		IfcSchema::Type::IfcRepresentationMap				,
+		IfcSchema::Type::IfcShapeRepresentation				,
+		IfcSchema::Type::IfcStyledItem
+	};
+
+	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_geom_defs, all_old_defs, all_defs;
 
 	std::for_each(only_geometric.begin(), only_geometric.end(), [&f, &old_geom_defs](IfcSchema::Type::Enum t) {
 		auto insts = f.entitiesByType(t);
@@ -115,7 +138,7 @@ int main(int, char** argv) {
 		});
 	});
 
-	std::for_each(f.begin(), f.end(), [&fn, &only_geometric, &old_defs](const auto& pair) {
+	std::for_each(f.begin(), f.end(), [&only_geometric, &old_defs](const auto& pair) {
 		IfcUtil::IfcBaseClass* inst = pair.second;
 		auto ty = inst->declaration().type();
 		if (only_geometric.find(ty) == only_geometric.end()) {
@@ -125,7 +148,9 @@ int main(int, char** argv) {
 
 	auto id = f.FreshId();
 
-	std::for_each(defs.begin(), defs.end(), [&kernel, &id, &old_defs, &new_defs](IfcSchema::IfcProductDefinitionShape* def) {
+	int num_points_added = 0;
+
+	std::for_each(defs.begin(), defs.end(), [&kernel, &id, &old_defs, &new_defs, &num_points_added](IfcSchema::IfcProductDefinitionShape* def) {
 		Bnd_Box box;
 		auto reps = def->Representations();
 		IfcSchema::IfcRepresentationContext* context;
@@ -134,7 +159,7 @@ int main(int, char** argv) {
 			IfcGeom::IfcRepresentationShapeItems items;
 
 			if (rep->RepresentationIdentifier() == "Body") {
-				kernel.convert(rep, items);
+				// kernel.convert(rep, items);
 				context = rep->ContextOfItems();
 			}
 
@@ -142,6 +167,8 @@ int main(int, char** argv) {
 				BRepBndLib::AddClose(i.Shape(), box);
 			}
 		});
+
+		box.Add(gp_Pnt(0, 0, 0));
 
 		double x1, y1, z1, x2, y2, z2;
 		box.Get(x1, y1, z1, x2, y2, z2);
@@ -157,10 +184,10 @@ int main(int, char** argv) {
 		
 		IfcSchema::IfcProductDefinitionShape* new_def = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, new_reps);
 		
-		new_def->data().isWritable()->setId(id++);
+		corner->data().isWritable()->setId(id++);
 
 		// NB: Corner is added to existing definitions
-		old_defs.push_back(corner);
+		old_defs.push_back(corner); ++num_points_added;
 		new_defs.push_back(bbox);
 		new_defs.push_back(rep);
 		new_defs.push_back(new_def);
@@ -168,12 +195,10 @@ int main(int, char** argv) {
 		return new_def;
 	});
 
-	H5::H5File hdf(argv[1] + std::string(".hdf"), H5F_ACC_TRUNC);
-	
-	H5::Group population = hdf.createGroup("population");
-	H5::Group low = hdf.createGroup("low");
-	H5::Group hi = hdf.createGroup("hi");
-	
+	std::for_each(new_defs.begin(), new_defs.end(), [&id](auto new_def) {
+		new_def->data().isWritable()->setId(id++);
+	});
+
 	auto iden = [](IfcUtil::IfcBaseClass* inst) { return inst; };
 
 	std::set<IfcSchema::Type::Enum> old_new_geom_types;
@@ -188,10 +213,16 @@ int main(int, char** argv) {
 
 	all_old_defs.insert(all_old_defs.end(), old_defs.begin(), old_defs.end());
 	all_old_defs.insert(all_old_defs.end(), old_geom_defs.begin(), old_geom_defs.end());
+	all_defs.insert(all_defs.end(), all_old_defs.begin(), all_old_defs.end());
+	all_defs.insert(all_defs.end(), new_defs.begin(), new_defs.end());
 
-	if (std::distance(all_old_defs.begin(), all_old_defs.end()) != std::distance(f.begin(), f.end())) {
-		std::cerr << "Missign instances";
-		abort();
+	{
+		int num_insts1 = std::distance(all_old_defs.begin(), all_old_defs.end());
+		int num_insts2 = std::distance(f.begin(), f.end());
+		if ((num_insts1 - num_points_added) != num_insts2) {
+			std::cerr << "Missign instances " << num_insts1 << " - " << num_points_added << " != " << num_insts2 << std::endl;
+			abort();
+		}
 	}
 
 	multifile_instance_locator* locator = new multifile_instance_locator(
@@ -199,16 +230,36 @@ int main(int, char** argv) {
 		all_old_defs.begin(), all_old_defs.end());
 
 	IfcParse::Hdf5Settings settings;
-	// settings.profile() = IfcParse::Hdf5Settings::standard_referenced;
+	settings.profile() = IfcParse::Hdf5Settings::padded;
+	settings.compress() = true;
 
-	IfcParse::IfcHdf5File ifc_hdf5(hdf, get_schema(), settings);
-	ifc_hdf5.write_schema();
-	
-	IfcParse::IfcSpfHeader header;
-	header.set_default();
+	H5::H5File hdf(argv[1] + std::string(".hdf"), H5F_ACC_TRUNC);
+	H5::H5File geom_hdf(argv[1] + std::string("-geometry.hdf"), H5F_ACC_TRUNC);
+	H5::H5File box_hdf(argv[1] + std::string("-bounding-boxes.hdf"), H5F_ACC_TRUNC);
+
+	hdf.createGroup("geometry").close();
+	hdf.createGroup("bounding-boxes").close();
+
+	hdf.mount("geometry", geom_hdf, H5::PropList::DEFAULT);
+	hdf.mount("bounding-boxes", box_hdf, H5::PropList::DEFAULT);
+
+	H5::Group main_population = hdf.createGroup("population");
+	H5::Group geom_population = hdf.createGroup("geometry/population");
+	H5::Group box_population = hdf.createGroup("bounding-boxes/population");
 
 	{
-		IfcParse::instance_enumerator enumerator(&f.header(), old_defs.begin(), old_defs.end());
-		ifc_hdf5.write_population(population, enumerator, locator);
-	}	
+		IfcParse::IfcHdf5File ifc_hdf5(hdf, get_schema(), settings);
+		IfcParse::instance_categorizer categorizer(all_defs.begin(), all_defs.end());
+		ifc_hdf5.write_schema(&categorizer);
+
+		{
+			IfcParse::instance_enumerator enumerator(&f.header(), old_defs.begin(), old_defs.end());
+			ifc_hdf5.write_population(main_population, enumerator, locator);
+		}
+		
+		{
+			IfcParse::instance_enumerator enumerator(&f.header(), old_geom_defs.begin(), old_geom_defs.end());
+			ifc_hdf5.write_population(geom_population, enumerator, locator);
+		}
+	}
 }

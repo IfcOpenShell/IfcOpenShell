@@ -42,75 +42,149 @@ namespace IfcParse {
 		virtual void make_reference(IfcUtil::IfcBaseClass*, void*&) = 0;
 	};
 
+	template <typename T>
+	class vector_vector_iterator {
+	private:
+		const std::vector<std::vector<T> >& container_;
+		const typename std::vector<std::vector<T> >::const_iterator a_;
+		boost::optional<typename std::vector<T>::const_iterator> b_;
+
+	public:
+		vector_vector_iterator(const std::vector<std::vector<T> >& container)
+			: container_(container)
+			, a_(container_.begin())
+		{
+			if (a_ != container_.end()) {
+				b_ = a_->begin();
+			}
+		}
+
+		vector_vector_iterator(const std::vector<std::vector<T> >& container, typename std::vector<std::vector<T> >::const_iterator x)
+			: container_(container)
+			, a_(x)
+		{
+			if (a_ != container_.end()) {
+				b_ = a_->begin();
+			}
+		}
+
+		bool operator==(const vector_vector_iterator<T>& other) const {
+			if (a_ != container_.end()) {
+				return a_ == other.a_ && b_ == other.b_;
+			} else {
+				return other.a_ == container_.end();
+			}
+		}
+
+		bool operator!=(const vector_vector_iterator<T>& other) const {
+			return !((*this) == other);
+		}
+
+		T& operator*() { return *b_; }
+		const T& operator*() const { return *b_; }
+		T* operator->() { return b_.operator->(); }
+
+		vector_vector_iterator<T>& operator++() {
+			if (!b_) {
+				throw std::exception;
+			}
+			++(*b_);
+			if ((*b_) == a_->end()) {
+				do {
+					++a;
+				} while (a_ != container_.end() && a_->size() == 0);
+				if (a_ != container_.end()) {
+					b_ = a_->begin();
+				}
+			}			
+		}
+	};
+
+	class instance_categorizer {
+	private:
+		std::vector< IfcSchema::Type::Enum > dataset_names_;
+		std::vector< std::vector<IfcUtil::IfcBaseEntity*> > instances_;
+		std::vector<IfcUtil::IfcBaseEntity*> empty_;
+
+	public:
+
+		typedef vector_vector_iterator<IfcUtil::IfcBaseEntity*> const_iterator;
+
+		template <typename ForwardIt>
+		instance_categorizer(ForwardIt begin, ForwardIt end) {
+			std::set<IfcSchema::Type::Enum> dataset_names_set;
+			std::map<IfcSchema::Type::Enum, std::vector<IfcUtil::IfcBaseEntity*> > instances_map;
+
+			std::for_each(begin, end, [&dataset_names_set, &instances_map](IfcUtil::IfcBaseClass* inst) {
+				if (inst->declaration().as_entity()) {
+					dataset_names_set.insert(inst->declaration().type());
+					instances_map[inst->declaration().type()].push_back((IfcUtil::IfcBaseEntity*) inst);
+				}
+			});
+
+			dataset_names_.assign(dataset_names_set.begin(), dataset_names_set.end());
+			for (IfcSchema::Type::Enum ty : dataset_names_) {
+				auto&& insts = instances_map[ty];
+				std::sort(insts.begin(), insts.end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
+					return i1->data().id() < i2->data().id();
+				});
+				instances_.emplace_back(insts);				
+			}
+		}
+
+		const std::vector<IfcUtil::IfcBaseEntity*>& instances(IfcSchema::Type::Enum t) {
+			auto it = std::lower_bound(dataset_names_.begin(), dataset_names_.end(), t);
+			if (it == dataset_names_.end() || (*it) != t) return empty_;
+			return instances_[std::distance(dataset_names_.begin(), it)];
+		}
+
+		const std::vector<IfcSchema::Type::Enum>& dataset_names() const { return dataset_names_; };
+
+		const_iterator begin() const { return const_iterator(instances_); }
+		const_iterator end() const { return const_iterator(instances_, instances_.end()); }
+	};
+
 	class instance_enumerator {
 	private:
-		boost::optional<IfcFile*> file_;
-		boost::optional< std::pair<
-			IfcSpfHeader*,
-			std::map<unsigned int, IfcUtil::IfcBaseClass*>
-		> > map_;
+		const IfcSpfHeader* header_;
+		instance_categorizer* categories_;
 	public:
-		typedef IfcFile::const_iterator const_iterator;
+		typedef instance_categorizer::const_iterator const_iterator;
 
-		instance_enumerator(IfcFile* file)
-			: file_(file)
+		instance_enumerator()
+			: header_(nullptr)
+			, categories_(nullptr)
 		{}
 
-		template <typename T>
-		instance_enumerator(IfcSpfHeader* header, T begin, T end) {
-			std::map<unsigned int, IfcUtil::IfcBaseClass*> map;
-			std::for_each(begin, end, [&map](IfcUtil::IfcBaseClass* inst) {
-				// Use an incrementing id here in order not to fold distinct instances from different files with the same identifier
-				map.insert(std::make_pair(map.size(), inst));
+		explicit instance_enumerator(IfcFile* file)
+			: header_(&file->header())
+		{
+			std::vector<IfcUtil::IfcBaseClass*> temp;
+			std::transform(file->begin(), file->end(), std::back_inserter(temp), [](auto& pair) {
+				return pair.second;
 			});
-			map_ = std::make_pair(header, map);
+			categories_ = new instance_categorizer(temp.begin(), temp.end());
 		}
+
+		template <typename T>
+		instance_enumerator(IfcSpfHeader* header, T begin, T end)
+			: header_(header)
+			, categories_(new instance_categorizer(begin, end))
+		{}
 
 		const IfcSpfHeader& header() const {
-			if (map_) {
-				return *map_->first;
-			} else if (file_) {
-				return (**file_).header();
-			} else {
-				throw std::runtime_error("");
-			}
+			return *header_;
 		}
 
-		const_iterator begin() const {
-			if (map_) {
-				return map_->second.begin();
-			} else if (file_) {
-				return (**file_).begin();
-			} else {
-				throw std::runtime_error("");
-			}
+		const std::vector<IfcUtil::IfcBaseEntity*>& by_type(IfcSchema::Type::Enum t) {
+			return categories_->instances(t);
 		}
 
-		const_iterator end() const {
-			if (map_) {
-				return map_->second.end();
-			} else if (file_) {
-				return (**file_).end();
-			} else {
-				throw std::runtime_error("");
-			}
-		}
+		const_iterator begin() const { return categories_->begin(); }
+		const_iterator end() const { return categories_->end(); }
 
-		IfcEntityList::ptr entitiesByType(IfcSchema::Type::Enum t) { 
-			if (map_) {
-				IfcEntityList::ptr insts(new IfcEntityList);
-				for (auto it = begin(); it != end(); ++it) {
-					if (it->second->declaration().is(t)) {
-						insts->push(it->second);
-					}
-				}
-				return insts;
-			} else if (file_) {
-				return (**file_).entitiesByType(t);
-			} else {
-				throw std::runtime_error("");
-			}
-		}
+		const std::vector<IfcSchema::Type::Enum>& dataset_names() const { return categories_->dataset_names(); }
+		instance_categorizer* categorizer() const { return categories_; }
 	};
 
 	class IfcHdf5File {
@@ -187,7 +261,7 @@ namespace IfcParse {
 	public:
 		typedef std::pair<std::string, const H5::DataType*> compound_member;
 		
-		void write_schema(IfcFile* f = nullptr);
+		void write_schema(IfcParse::instance_categorizer* ifc_file = nullptr);
 		void write_population(H5::Group&, instance_enumerator&, IfcParse::abstract_instance_locator* locator = nullptr);
 		
 		IfcHdf5File(IfcFile* f, const std::string& name, const Hdf5Settings& settings)
@@ -197,17 +271,15 @@ namespace IfcParse {
 			, ifcfile_(f)
 			, settings_(settings)
 		{
-			write_schema(f);
-			instance_enumerator insts = f;
+			write_schema(ifcfile_.categorizer());
 			H5::Group population_group = file_->createGroup("population");
-			write_population(population_group, insts);
+			write_population(population_group, ifcfile_);
 		};
 
 		IfcHdf5File(H5::H5File& file, const IfcParse::schema_definition& schema, const Hdf5Settings& settings)
 			: file_(&file)
 			, schema_(&schema)
 			, settings_(settings)
-			, ifcfile_(nullptr)
 		{
 		};
 
