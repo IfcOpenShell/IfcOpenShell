@@ -12,6 +12,8 @@
 
 static boost::optional< std::vector<Argument*> > no_instances = boost::none;
 
+#define MEMBER(name, compound, index) name(H5Tget_member_type((compound).getId(), index)); H5Idec_ref(name.getId());
+
 class type_mapper {
 public:
 	type_mapper();
@@ -122,8 +124,8 @@ std::pair<H5T_class_t, H5T_class_t> compound_member_types_as_pair(H5::DataType& 
 	}
 
 	return std::make_pair(
-		compound->getMemberDataType(0).getClass(),
-		compound->getMemberDataType(1).getClass());
+		compound->getMemberClass(0),
+		compound->getMemberClass(1));
 }
 
 bool is_select(H5::DataType& datatype) {
@@ -408,7 +410,7 @@ public:
 			write_number_of_size(ptr, datatype_.getSize(), 0.);
 			break;
 		case H5T_STRING:
-			if (datatype_ == H5::StrType(H5::PredType::C_S1, H5T_VARIABLE)) {
+			if (H5Tis_variable_str(datatype_.getId())) {
 				// write(ptr, new char(0));
 				memset(ptr, 0, sizeof(char*));
 				advance(ptr, sizeof(char*));
@@ -420,7 +422,7 @@ public:
 		{
 			H5::CompType* compound = (H5::CompType*) &datatype_;
 			for (int i = 0; i < compound->getNmembers(); ++i) {
-				H5::DataType attr_type = compound->getMemberDataType(i);
+				H5::DataType MEMBER(attr_type,*compound, i);
 				default_value_visitor visitor(attr_type);
 				visitor(ptr);
 			}
@@ -459,6 +461,8 @@ public:
 			for (hsize_t i = 0; i < array_dims[0]; ++i) {
 				visitor(ptr);
 			}
+			super.close();
+			delete[] array_dims;
 			break;
 		}
 		default:
@@ -511,8 +515,8 @@ public:
 			}
 
 			H5::CompType* compound = (H5::CompType*) &datatype;
-			H5::IntType int_type = compound->getMemberIntType(0);
-			H5::StrType string_type = compound->getMemberStrType(1);
+			H5::IntType MEMBER(int_type, *compound, 0);
+			H5::StrType MEMBER(string_type, *compound, 1);
 
 			if (string_type.getSize() < v.size()) {
 				throw std::runtime_error("Not enough space reserved for string");
@@ -527,8 +531,7 @@ public:
 
 			H5::StrType* string_type = (H5::StrType*) &datatype;
 
-			// TFK: Check whether this does not leak resources
-			if (*string_type == H5::StrType(H5::PredType::C_S1, H5T_VARIABLE)) {
+			if (H5Tis_variable_str(string_type->getId())) {
 				write(ptr, v);
 			} else {
 				if (string_type->getSize() < v.size()) {
@@ -572,8 +575,8 @@ public:
 			std::pair<int, int> ref = (*instance_locator_)(v);
 
 			H5::CompType* compound = (H5::CompType*) &datatype;
-			H5::IntType ds_idx = compound->getMemberIntType(0);
-			H5::IntType ds_row = compound->getMemberIntType(1);
+			H5::IntType MEMBER(ds_idx, *compound, 0);
+			H5::IntType MEMBER(ds_row, *compound, 1);
 
 			write_number_of_size(ptr, ds_idx.getSize(), ref.first);
 			write_number_of_size(ptr, ds_row.getSize(), ref.second);
@@ -593,8 +596,8 @@ public:
 			}
 
 			H5::CompType* compound = (H5::CompType*) &datatype;
-			H5::IntType size_dt = compound->getMemberIntType(0);
-			H5::ArrayType array_dt = compound->getMemberArrayType(1);
+			H5::IntType MEMBER(size_dt, *compound, 0);
+			H5::ArrayType MEMBER(array_dt, *compound, 1);
 
 			write_number_of_size(ptr, size_dt.getSize(), v.size());
 			
@@ -634,6 +637,8 @@ public:
 			}
 			
 			write_vlen_t(ptr, v.size(), vlen_data);
+
+			elem_dt.close();
 		}
 	}
 
@@ -692,31 +697,29 @@ void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType&
 
 	for (int i = 0; i < compound->getNmembers(); ++i) {
 		const std::string name = compound->getMemberName(i);
-		H5::DataType attr_type = compound->getMemberDataType(i);
+		H5::DataType MEMBER(attr_type, *compound, i);
 
 		if (name == Entity_Instance_Identifier) {
 			write_number_of_size(ptr, attr_type.getSize(), v->data().id());
-			continue;
 		} else if (name == set_unset_bitmap) {
 			set_unset_bitmap_location = ptr;
 			set_unset_bitmap_size = attr_type.getSize();
 			advance(ptr, set_unset_bitmap_size);
-			continue;
-		}
+		} else {
+			auto it = std::find(attribute_names.begin(), attribute_names.end(), name);
+			if (it == attribute_names.end()) {
+				throw std::runtime_error("Unexpected compound member");
+			}
+			int idx = std::distance(attribute_names.begin(), it);
 
-		auto it = std::find(attribute_names.begin(), attribute_names.end(), name);
-		if (it == attribute_names.end()) {
-			throw std::runtime_error("Unexpected compound member");
+			Argument* attr = v->data().getArgument(idx);
+			if (!attr->isNull()) {
+				// TODO: This is now index in IFC-attributes list, specify
+				set_unset_bitmap_value |= (1 << idx);
+			}
+			write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, visitor, attr_type);
+			apply_attribute_visitor(attr, attributes[idx]).apply(attribute_visitor);
 		}
-		int idx = std::distance(attribute_names.begin(), it);
-		
-		Argument* attr = v->data().getArgument(idx);
-		if (!attr->isNull()) {
-			// TODO: This is now index in IFC-attributes list, specify
-			set_unset_bitmap_value |= (1 << idx);
-		}
-		write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, visitor, attr_type);
-		apply_attribute_visitor(attr, attributes[idx]).apply(attribute_visitor);
 	}
 
 	if (set_unset_bitmap_size && set_unset_bitmap_location) {
@@ -734,7 +737,7 @@ void write_visit::visit(void*& ptr, H5::DataType& datatype, select_item& v) {
 
 	for (int i = 0; i < compound->getNmembers(); ++i) {
 		const std::string name = compound->getMemberName(i);
-		H5::DataType attr_type = compound->getMemberDataType(i);
+		H5::DataType MEMBER(attr_type, *compound, i);
 
 		if (name == "type_code") {
 			write_number_of_size(ptr, attr_type.getSize(), data->declaration().type());
@@ -1455,9 +1458,8 @@ void visit(void* buffer, H5::DataType* dt) {
 		for (int i = 0; i < ct->getNmembers(); ++i) {
 			std::cerr << ct->getMemberName(i) << " ";
 			size_t offs = ct->getMemberOffset(i);
-			H5::DataType dt2 = ct->getMemberDataType(i);
+			H5::DataType MEMBER(dt2, *ct, i);
 			visit((uint8_t*)buffer + offs, &dt2);
-			dt2.close();
 		}
 	} else if (dt->getClass() == H5T_VLEN) {
 		hvl_t* ht = (hvl_t*)buffer;
@@ -1870,7 +1872,7 @@ public:
 
 			hsize_t pair[2];
 			for (int i = 0; i < 2; ++i) {
-				H5::DataType mt = ct->getMemberDataType(i);
+				H5::DataType MEMBER(mt, *ct, i);
 				size_t offset = ct->getMemberOffset(i);
 				pair[i] = read<int>((uint8_t*)data + offset, &mt);
 			}
@@ -1892,7 +1894,7 @@ public:
 
 			int idx = datatype.getMemberIndex("Entity-Instance-Identifier");
 			size_t inst_name_offset = datatype.getMemberOffset(idx);
-			H5::DataType member_type = datatype.getMemberDataType(idx);
+			H5::DataType MEMBER(member_type, datatype, idx);
 
 			size_t inst_name = read<int>((uint8_t*)buffer + inst_name_offset, &member_type);
 
@@ -1942,7 +1944,7 @@ public:
 
 			const int i = dtype.getMemberIndex(Entity_Instance_Identifier);
 			const size_t offs = dtype.getMemberOffset(i);
-			H5::DataType instidt = dtype.getMemberDataType(i);
+			H5::DataType MEMBER(instidt, dtype, i);
 
 			const int name = read<int>(buffer + offs, &instidt);			
 
@@ -1993,7 +1995,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 			const size_t offs = ct->getMemberOffset(1);
 			void* member_ptr = (uint8_t*)buffer + offs;
 			int N = read<int>(buffer, &ct->getMemberDataType(0));
-			H5::DataType member_type = ct->getMemberDataType(1);
+			H5::DataType MEMBER(member_type, *ct, 1);
 			
 			visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues, N);
 		} else {
@@ -2010,7 +2012,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 				
 				const size_t offs = ct->getMemberOffset(i);
 				void* member_ptr = (uint8_t*)buffer + offs;
-				H5::DataType member_type = ct->getMemberDataType(i);
+				H5::DataType MEMBER(member_type, *ct, i);
 
 				if (member_name == "set_unset_bitmap") {
 					mask = new std::bitset<64>(read<int>(member_ptr, &member_type));
