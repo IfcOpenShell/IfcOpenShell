@@ -121,7 +121,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	std::for_each(connection_geom->begin(), connection_geom->end(), vist_geometric);
 
 	std::function<void(IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*)> fn;
-	fn = [&f, &geometric_instances, &other_types, &fn, &to_watch](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
+	fn = [&f, &geometric_instances, &other_types, &fn](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
 		if (geometric_instances.find(inst) == geometric_instances.end()) {
 			auto ty = inst->declaration().type();
 			other_types.insert(ty);
