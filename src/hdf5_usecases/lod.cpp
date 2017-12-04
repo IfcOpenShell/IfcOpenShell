@@ -28,9 +28,9 @@
 
 #include "multifile_instance_locator.h"
 
-int main(int, char** argv) {
-	IfcParse::IfcFile f;
-	f.Init(argv[1]);
+void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
+	IfcGeom::Kernel kernel;
+	kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
 
 	IfcSchema::IfcProductDefinitionShape::list::ptr defs_ = f.entitiesByType<IfcSchema::IfcProductDefinitionShape>();
 	std::vector<IfcSchema::IfcProductDefinitionShape*> defs(defs_->begin(), defs_->end());
@@ -39,118 +39,9 @@ int main(int, char** argv) {
 		return a->data().id() < b->data().id();
 	});
 
-	IfcSchema::IfcStyledItem::list::ptr styles = f.entitiesByType<IfcSchema::IfcStyledItem>();
+	std::ofstream str(fn.c_str(), std::ios_base::binary);
 
-	IfcGeom::Kernel kernel;
-	kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
-
-	/*
-
-	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem };
-	std::set<IfcSchema::Type::Enum> other_types;
-
-	std::set<IfcUtil::IfcBaseClass*> geometric_instances;
-
-	std::for_each(styles->begin(), styles->end(), [&geometric_instances](IfcSchema::IfcStyledItem* style) {
-		geometric_instances.insert(style);
-	});
-
-	int N = defs.size();
-	int n = 0;
-
-	std::for_each(defs.begin(), defs.end(), [&f, &geometric_types, &geometric_instances, N, &n](IfcSchema::IfcProductDefinitionShape* def) {
-		auto refs = f.traverse(def);
-		geometric_instances.insert(refs->begin(), refs->end());
-		std::for_each(refs->begin(), refs->end(), [&geometric_types](IfcUtil::IfcBaseClass* inst) {
-			geometric_types.insert(inst->declaration().type());
-		});
-		if (n++ % 1000 == 0) {
-			std::cerr << "\r" << n * 100 / N << std::flush;
-		}
-	});
-
-	std::function<void(IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*)> fn;
-	fn = [&f, &geometric_instances, &other_types, &fn](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
-		if (geometric_instances.find(inst) == geometric_instances.end()) {
-			if (inst->declaration().type() == IfcSchema::Type::IfcCircle) {
-				std::cerr << "circle reached by " << root->data().toString() << std::endl;
-			}
-			other_types.insert(inst->declaration().type());
-			auto refs = f.traverse(inst, 1);
-			std::for_each(refs->begin() + 1, refs->end(), [&fn, root](IfcUtil::IfcBaseClass* inst) {
-				fn(root, inst);
-			});
-		}
-	};
-
-	N = std::distance(f.begin(), f.end());
-	n = 0;
-
-	std::for_each(f.begin(), f.end(), [&fn, N, &n](const auto& pair) {
-		fn(pair.second, pair.second);
-		if (n++ % 1000 == 0) {
-			std::cerr << "\r" << n * 100 / N << std::flush;
-		}
-	});
-
-	std::set<IfcSchema::Type::Enum> only_geometric;
-	std::set_difference(geometric_types.begin(), geometric_types.end(), 
-		other_types.begin(), other_types.end(), 
-		std::inserter(only_geometric, only_geometric.begin()));
-
-	std::cerr << "\nOnly geometric:" << std::endl;
-
-	for (auto ty : only_geometric) {
-		std::cerr << IfcSchema::Type::ToString(ty) << std::endl;
-	}
-
-	*/
-
-	std::set<IfcSchema::Type::Enum> only_geometric{
-		IfcSchema::Type::IfcAxis2Placement2D					,
-		IfcSchema::Type::IfcCartesianTransformationOperator3D,
-		IfcSchema::Type::IfcCircleProfileDef					,
-		IfcSchema::Type::IfcClosedShell						,
-		IfcSchema::Type::IfcConnectedFaceSet					,
-		IfcSchema::Type::IfcExtrudedAreaSolid				,
-		IfcSchema::Type::IfcFace								,
-		IfcSchema::Type::IfcFaceBasedSurfaceModel			,
-		IfcSchema::Type::IfcFaceBound						,
-		IfcSchema::Type::IfcFaceOuterBound					,
-		IfcSchema::Type::IfcFacetedBrep						,
-		//IfcSchema::Type::IfcGeometricRepresentationContext	,
-		IfcSchema::Type::IfcMappedItem						,
-		IfcSchema::Type::IfcPolyLoop							,
-		IfcSchema::Type::IfcProductDefinitionShape			,
-		IfcSchema::Type::IfcRepresentationMap				,
-		IfcSchema::Type::IfcShapeRepresentation				,
-		IfcSchema::Type::IfcStyledItem
-	};
-
-	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_geom_defs, all_old_defs, all_defs;
-
-	std::for_each(only_geometric.begin(), only_geometric.end(), [&f, &old_geom_defs](IfcSchema::Type::Enum t) {
-		auto insts = f.entitiesByType(t);
-		std::for_each(insts->begin(), insts->end(), [t, &old_geom_defs](IfcUtil::IfcBaseClass* inst) {
-			if (inst->declaration().type() == t) {
-				old_geom_defs.push_back(inst);
-			}
-		});
-	});
-
-	std::for_each(f.begin(), f.end(), [&only_geometric, &old_defs](const auto& pair) {
-		IfcUtil::IfcBaseClass* inst = pair.second;
-		auto ty = inst->declaration().type();
-		if (only_geometric.find(ty) == only_geometric.end()) {
-			old_defs.push_back(inst);
-		}
-	});
-
-	auto id = f.FreshId();
-
-	int num_points_added = 0;
-
-	std::for_each(defs.begin(), defs.end(), [&kernel, &id, &old_defs, &new_defs, &num_points_added](IfcSchema::IfcProductDefinitionShape* def) {
+	std::for_each(defs.begin(), defs.end(), [&kernel, &str](IfcSchema::IfcProductDefinitionShape* def) {
 		Bnd_Box box;
 		auto reps = def->Representations();
 		IfcSchema::IfcRepresentationContext* context;
@@ -170,30 +61,206 @@ int main(int, char** argv) {
 
 		box.Add(gp_Pnt(0, 0, 0));
 
-		double x1, y1, z1, x2, y2, z2;
-		box.Get(x1, y1, z1, x2, y2, z2);
+		const size_t name = def->data().id();
 
-		IfcSchema::IfcCartesianPoint* corner = new IfcSchema::IfcCartesianPoint(std::vector<double>{x1, y1, z1});;
-		IfcSchema::IfcBoundingBox* bbox = new IfcSchema::IfcBoundingBox(corner, x2-x1, y2-y1, z2-z1);
-		IfcSchema::IfcRepresentationItem::list::ptr items(new IfcSchema::IfcRepresentationItem::list);
-		items->push(bbox);
-		
-		IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(context, std::string("Body"), std::string("BoundingBox"), items);
-		IfcSchema::IfcRepresentation::list::ptr new_reps(new IfcSchema::IfcRepresentation::list);
-		new_reps->push(rep);
-		
-		IfcSchema::IfcProductDefinitionShape* new_def = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, new_reps);
-		
-		corner->data().isWritable()->setId(id++);
+		double xyz[6];
+		box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
 
-		// NB: Corner is added to existing definitions
-		old_defs.push_back(corner); ++num_points_added;
-		new_defs.push_back(bbox);
-		new_defs.push_back(rep);
-		new_defs.push_back(new_def);
-
-		return new_def;
+		str.write((char*)&name, sizeof(size_t));
+		str.write((char*)xyz, sizeof(double) * 6);
 	});
+}
+
+
+void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
+	std::ofstream str(tfn.c_str(), std::ios_base::binary);
+
+	IfcSchema::IfcProductDefinitionShape::list::ptr defs_ = f.entitiesByType<IfcSchema::IfcProductDefinitionShape>();
+	std::vector<IfcSchema::IfcProductDefinitionShape*> defs(defs_->begin(), defs_->end());
+	// Make sure to sort by id to have new definitions lining up in the same order
+	std::sort(defs.begin(), defs.end(), [](IfcSchema::IfcProductDefinitionShape* a, IfcSchema::IfcProductDefinitionShape* b) {
+		return a->data().id() < b->data().id();
+	});
+
+	IfcSchema::IfcStyledItem::list::ptr styles = f.entitiesByType<IfcSchema::IfcStyledItem>();
+
+	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem };
+	std::set<IfcSchema::Type::Enum> other_types;
+
+	std::set<IfcUtil::IfcBaseClass*> geometric_instances;
+
+	std::for_each(styles->begin(), styles->end(), [&geometric_instances](IfcSchema::IfcStyledItem* style) {
+		geometric_instances.insert(style);
+	});
+
+	int N, n;
+
+	auto vist_geometric = [&f, &geometric_types, &geometric_instances, N, &n](IfcUtil::IfcBaseEntity* def) {
+		auto refs = f.traverse(def);
+		geometric_instances.insert(refs->begin(), refs->end());
+		std::for_each(refs->begin(), refs->end(), [&geometric_types](IfcUtil::IfcBaseClass* inst) {
+			if (inst->declaration().as_entity()) {
+				geometric_types.insert(inst->declaration().type());
+			}
+		});
+		if (n++ % 1000 == 0) {
+			std::cerr << "\r" << n * 100 / N << std::flush;
+		}
+	};
+
+	n = 0; 
+	N = defs.size();
+	
+	std::for_each(defs.begin(), defs.end(), vist_geometric);
+
+	auto connection_geom = f.entitiesByType<IfcSchema::IfcConnectionGeometry>();
+	
+	n = 0;
+	N = connection_geom->size();
+	
+	std::for_each(connection_geom->begin(), connection_geom->end(), vist_geometric);
+
+	std::function<void(IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*)> fn;
+	fn = [&f, &geometric_instances, &other_types, &fn, &to_watch](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
+		if (geometric_instances.find(inst) == geometric_instances.end()) {
+			auto ty = inst->declaration().type();
+			other_types.insert(ty);
+			auto refs = f.traverse(inst, 1);
+			std::for_each(refs->begin() + 1, refs->end(), [&fn, root](IfcUtil::IfcBaseClass* inst) {
+				if (inst->declaration().as_entity()) {
+					fn(root, inst);
+				}
+			});
+		}
+	};
+
+	N = std::distance(f.begin(), f.end());
+	n = 0;
+
+	std::for_each(f.begin(), f.end(), [&fn, N, &n](const auto& pair) {
+		fn(pair.second, pair.second);
+		if (n++ % 1000 == 0) {
+			std::cerr << "\r" << n * 100 / N << std::flush;
+		}
+	});
+
+	std::set<IfcSchema::Type::Enum> only_geometric;
+	std::set_difference(geometric_types.begin(), geometric_types.end(),
+		other_types.begin(), other_types.end(),
+		std::inserter(only_geometric, only_geometric.begin()));
+
+	only_geometric.erase(IfcSchema::Type::IfcGeometricRepresentationContext);
+
+	std::cerr << "\nOnly geometric:" << std::endl;
+
+	for (auto ty : only_geometric) {
+		std::cerr << IfcSchema::Type::ToString(ty) << std::endl;
+		const size_t name = ty;
+		str.write((char*)&name, sizeof(size_t));
+	}
+}
+
+int main(int argc, char** argv) {
+	const std::string cache_fn = argv[1] + std::string(".boxes.bin");
+	const std::string types_fn = argv[1] + std::string(".types.bin");
+
+	if (argc == 2 && !ifstream(cache_fn).good()) {
+		std::string command = std::string("\"\"") + argv[0] + "\" \"" + argv[1] + "\" -b\"";
+		if (system(command.c_str()) != 0) {
+			return 1;
+		}
+	}
+
+	if (argc == 2 && !ifstream(types_fn).good()) {
+		std::string command = std::string("\"\"") + argv[0] + "\" \"" + argv[1] + "\" -t\"";
+		if (system(command.c_str()) != 0) {
+			return 1;
+		}
+	}
+
+	IfcParse::IfcFile f;
+	f.Init(argv[1]);
+
+	if (argc == 3 && std::string(argv[2]) == "-b") {
+		generate_bounding_boxes(f, cache_fn);
+		return 0;
+	}
+
+	if (argc == 3 && std::string(argv[2]) == "-t") {
+		find_geometric_types(f, types_fn);
+		return 0;
+	}
+
+	std::set<IfcSchema::Type::Enum> only_geometric;
+	{
+		std::ifstream str(types_fn.c_str(), std::ios_base::binary);
+		while (!str.eof()) {
+			size_t name;
+			str.read((char*)&name, sizeof(size_t));
+			only_geometric.insert((IfcSchema::Type::Enum) name);
+		}
+	}
+
+	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_geom_defs, all_old_defs, all_defs;
+
+	std::for_each(only_geometric.begin(), only_geometric.end(), [&f, &old_geom_defs](IfcSchema::Type::Enum t) {
+		auto insts = f.entitiesByType(t);
+		std::for_each(insts->begin(), insts->end(), [t, &old_geom_defs](IfcUtil::IfcBaseClass* inst) {
+			if (inst->declaration().type() == t) {
+				old_geom_defs.push_back(inst);
+			}
+		});
+	});
+
+	std::for_each(f.begin(), f.end(), [&only_geometric, &old_defs](const auto& pair) {
+		IfcUtil::IfcBaseClass* inst = pair.second;
+		auto ty = inst->declaration().type();
+		if (only_geometric.find(ty) == only_geometric.end()) {
+			old_defs.push_back(inst);
+		}
+	});
+	
+	IfcSchema::IfcRepresentationContext* context = 0;
+	auto reps = (*f.entitiesByType<IfcSchema::IfcProductDefinitionShape>()->begin())->Representations();
+	std::for_each(reps->begin(), reps->end(), [&context](auto rep) {
+		IfcGeom::IfcRepresentationShapeItems items;
+		if (rep->RepresentationIdentifier() == "Body") {
+			context = rep->ContextOfItems();
+		}
+	});
+	
+	auto id = f.FreshId();
+	int num_points_added = 0;
+
+	{
+		std::ifstream str(cache_fn.c_str(), std::ios_base::binary);
+		while (!str.eof()) {
+			size_t name;
+			double xyz[6];
+
+			str.read((char*)&name, sizeof(size_t));
+			str.read((char*)xyz, sizeof(size_t));
+
+			IfcSchema::IfcCartesianPoint* corner = new IfcSchema::IfcCartesianPoint(std::vector<double>{xyz[0], xyz[1], xyz[2]});;
+			IfcSchema::IfcBoundingBox* bbox = new IfcSchema::IfcBoundingBox(corner, xyz[3] - xyz[0], xyz[4] - xyz[1], xyz[5] - xyz[2]);
+			IfcSchema::IfcRepresentationItem::list::ptr items(new IfcSchema::IfcRepresentationItem::list);
+			items->push(bbox);
+
+			IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(context, std::string("Body"), std::string("BoundingBox"), items);
+			IfcSchema::IfcRepresentation::list::ptr new_reps(new IfcSchema::IfcRepresentation::list);
+			new_reps->push(rep);
+
+			IfcSchema::IfcProductDefinitionShape* new_def = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, new_reps);
+
+			corner->data().isWritable()->setId(id++);
+
+			// NB: Corner is added to existing definitions
+			old_defs.push_back(corner); ++num_points_added;
+			new_defs.push_back(bbox);
+			new_defs.push_back(rep);
+			new_defs.push_back(new_def);
+		}
+	}
 
 	std::for_each(new_defs.begin(), new_defs.end(), [&id](auto new_def) {
 		new_def->data().isWritable()->setId(id++);
