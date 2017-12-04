@@ -136,10 +136,29 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.e-5))
-        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
-
+        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)
 
 def create_shape(settings, inst, repr=None):
+    """
+    Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
+    or
+    Return an OpenCASCADE BRep if settings.USE_PYTHON_OPENCASCADE == True
+
+    example:
+
+    settings = ifcopenshell.geom.settings()
+    settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+
+    ifc_file = ifcopenshell.open(file_path)
+    products = ifc_file.by_type("IfcProduct")
+
+    for i, product in enumerate(products):
+        if product.Representation is not None:
+            try:
+                shape = geom.create_shape(settings, inst=product).geometry
+                shape_gpXYZ = shape.Location().Transformation().TranslationPart() # These are methods of the TopoDS_Shape class from pythonOCC
+                print(shape_gpXYZ.X(), shape_gpXYZ.Y(), shape_gpXYZ.Z()) # These are methods of the gpXYZ class from pythonOCC
+    """
     return wrap_shape_creation(
         settings,
         ifcopenshell_wrapper.create_shape(

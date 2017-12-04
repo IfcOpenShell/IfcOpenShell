@@ -34,6 +34,22 @@ except ImportError as e:
 
 
 class entity_instance(object):
+    """
+    This is the base python class for all IFC objects.
+
+    An instantiated entity_instance will have methods of Python and the IFC class itself.
+
+    example:
+
+    ifc_file = ifcopenshell.open(file_path)
+    products = ifc_file.by_type("IfcProduct")
+
+    print(products[0].__class__)
+    >>> <class 'ifcopenshell.entity_instance.entity_instance'>
+
+    print(products[0].Representation)
+    >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
+    """
     def __init__(self, e):
         if isinstance(e, str):
             e = ifcopenshell_wrapper.new_IfcBaseClass(e)
@@ -138,6 +154,19 @@ class entity_instance(object):
         )))
 
     def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
+        """
+        Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
+
+        example:
+
+        ifc_file = ifcopenshell.open(file_path)
+        products = ifc_file.by_type("IfcProduct")
+        obj_info = products[0].get_info()
+        print(obj_info.keys())
+
+        >>> dict_keys(['Description', 'Name', 'BuildingAddress', 'LongName', 'GlobalId', 'ObjectPlacement', 'OwnerHistory', 'ObjectType',
+        >>> ...'ElevationOfTerrain', 'CompositionType', 'id', 'Representation', 'type', 'ElevationOfRefHeight'])
+        """
         def _():
             try:
                 if include_identifier:

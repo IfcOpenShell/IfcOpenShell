@@ -36,6 +36,25 @@ except NameError:
 
 
 class file(object):
+    """
+    Base class for containing IFC files.
+
+    Class has instance methods for filtering by element Id, Type, etc.
+
+    Instantiated objects can be subscripted by Id or Guid
+
+    example:
+
+    ifc_file = ifcopenshell.open(file_path)
+    products = ifc_file.by_type("IfcProduct")
+
+    print(products[0].id(), products[0].GlobalId)
+    >>> 122 2XQ$n5SLP5MBLyL442paFx
+
+    # Subscripting
+    print(products[0] == ifc_file[122] == ifc_file['2XQ$n5SLP5MBLyL442paFx'])
+    >>> True
+    """
     def __init__(self, f=None):
         self.wrapped_data = f or ifcopenshell_wrapper.file()
 
@@ -62,9 +81,19 @@ class file(object):
             return entity_instance(self.wrapped_data.by_guid(str(key)))
 
     def by_id(self, id):
+        """
+        Return IFC objects filtered by IFC ID.
+
+        Returned objects are unwrapped IFC objects.
+        """
         return self[id]
 
     def by_guid(self, guid):
+        """
+        Return IFC objects filtered by IFC GUID.
+
+        Returned objects are unwrapped IFC objects.
+        """
         return self[guid]
 
     def add(self, inst):
@@ -72,6 +101,11 @@ class file(object):
         return entity_instance(self.wrapped_data.add(inst.wrapped_data))
 
     def by_type(self, type):
+        """
+        Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
+
+        See ifcopenshell.entity_instance for class methods and properties
+        """
         return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
 
     def traverse(self, inst, max_levels=None):
