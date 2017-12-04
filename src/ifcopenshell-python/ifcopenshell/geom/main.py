@@ -136,7 +136,8 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.e-5))
-        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)
+        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
+
 
 def create_shape(settings, inst, repr=None):
     """
