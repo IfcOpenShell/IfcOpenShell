@@ -107,7 +107,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
                     // Write the ellipse with major radius along X axis:
                     path.add("            <ellipse style=\"stroke:black; fill:none;\" rx=\"");
                     radii.push_back(path.add(e.MajorRadius()));
-                    path.add("\" ry\"");
+                    path.add("\" ry=\"");
                     radii.push_back(path.add(e.MinorRadius()));
                     path.add("\" cx=\"");
                     xcoords.push_back(path.add(center.X()));
