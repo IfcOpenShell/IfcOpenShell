@@ -30,8 +30,8 @@
 
 void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 	IfcGeom::Kernel kernel;
-	kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
-
+	auto unit_factor = kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
+	
 	IfcSchema::IfcProductDefinitionShape::list::ptr defs_ = f.entitiesByType<IfcSchema::IfcProductDefinitionShape>();
 	std::vector<IfcSchema::IfcProductDefinitionShape*> defs(defs_->begin(), defs_->end());
 	// Make sure to sort by id to have new definitions lining up in the same order
@@ -41,7 +41,11 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 
 	std::ofstream str(fn.c_str(), std::ios_base::binary);
 
-	std::for_each(defs.begin(), defs.end(), [&kernel, &str](IfcSchema::IfcProductDefinitionShape* def) {
+	int N = defs.size(), n = 0;
+
+	std::cerr << "boxes:" << std::endl;
+
+	std::for_each(defs.begin(), defs.end(), [&kernel, &str, N, &n, &unit_factor](IfcSchema::IfcProductDefinitionShape* def) {
 		Bnd_Box box;
 		auto reps = def->Representations();
 		IfcSchema::IfcRepresentationContext* context;
@@ -50,7 +54,7 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 			IfcGeom::IfcRepresentationShapeItems items;
 
 			if (rep->RepresentationIdentifier() == "Body") {
-				// kernel.convert(rep, items);
+				kernel.convert(rep, items);
 				context = rep->ContextOfItems();
 			}
 
@@ -59,16 +63,24 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 			}
 		});
 
-		box.Add(gp_Pnt(0, 0, 0));
-
 		const size_t name = def->data().id();
 
 		double xyz[6];
 		box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
 
+		for (int i = 0; i < 6; ++i) {
+			xyz[i] *= unit_factor.second;
+		}
+
 		str.write((char*)&name, sizeof(size_t));
 		str.write((char*)xyz, sizeof(double) * 6);
+
+		if (n++ % 1000 == 0) {
+			std::cerr << "\r" << n * 100 / N << std::flush;
+		}
 	});
+
+	std::cerr << std::endl;
 }
 
 
@@ -201,7 +213,11 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_geom_defs, all_old_defs, all_defs;
+	std::set<IfcSchema::Type::Enum> property_types {
+		IfcSchema::Type::IfcRelDefines, IfcSchema::Type::IfcPropertySetDefinition, IfcSchema::Type::IfcTypeObject
+	};
+
+	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_prop_defs, old_geom_defs, all_old_defs, all_defs;
 
 	std::for_each(only_geometric.begin(), only_geometric.end(), [&f, &old_geom_defs](IfcSchema::Type::Enum t) {
 		auto insts = f.entitiesByType(t);
@@ -212,10 +228,23 @@ int main(int argc, char** argv) {
 		});
 	});
 
-	std::for_each(f.begin(), f.end(), [&only_geometric, &old_defs](const auto& pair) {
+	std::for_each(f.begin(), f.end(), [&only_geometric, &old_defs, &old_prop_defs, &property_types](const auto& pair) {
 		IfcUtil::IfcBaseClass* inst = pair.second;
+		
+		// This is checked the other way around to include subtypes
+		bool is_property = false;
+		for (auto pty : property_types) {
+			if (inst->declaration().is(pty)) {
+				is_property = true;
+				break;
+			}
+		}
+		
 		auto ty = inst->declaration().type();
-		if (only_geometric.find(ty) == only_geometric.end()) {
+
+		if (is_property) {
+			old_prop_defs.push_back(inst);
+		} else if (only_geometric.find(ty) == only_geometric.end()) {
 			old_defs.push_back(inst);
 		}
 	});
@@ -270,7 +299,7 @@ int main(int argc, char** argv) {
 
 	std::set<IfcSchema::Type::Enum> old_new_geom_types;
 
-	std::vector<std::vector<IfcUtil::IfcBaseClass*>*> all_vectors = std::vector<std::vector<IfcUtil::IfcBaseClass*>*>{ &new_defs, &old_defs, &old_geom_defs };
+	std::vector<std::vector<IfcUtil::IfcBaseClass*>*> all_vectors = std::vector<std::vector<IfcUtil::IfcBaseClass*>*>{ &new_defs, &old_prop_defs, &old_defs, &old_geom_defs };
 	for (auto vec_ : all_vectors) {
 		auto& vec = *vec_;
 		for (auto& inst : vec) {
@@ -279,6 +308,7 @@ int main(int argc, char** argv) {
 	}
 
 	all_old_defs.insert(all_old_defs.end(), old_defs.begin(), old_defs.end());
+	all_old_defs.insert(all_old_defs.end(), old_prop_defs.begin(), old_prop_defs.end());
 	all_old_defs.insert(all_old_defs.end(), old_geom_defs.begin(), old_geom_defs.end());
 	all_defs.insert(all_defs.end(), all_old_defs.begin(), all_old_defs.end());
 	all_defs.insert(all_defs.end(), new_defs.begin(), new_defs.end());
@@ -303,16 +333,20 @@ int main(int argc, char** argv) {
 	H5::H5File hdf(argv[1] + std::string(".hdf"), H5F_ACC_TRUNC);
 	H5::H5File geom_hdf(argv[1] + std::string("-geometry.hdf"), H5F_ACC_TRUNC);
 	H5::H5File box_hdf(argv[1] + std::string("-bounding-boxes.hdf"), H5F_ACC_TRUNC);
+	H5::H5File prop_hdf(argv[1] + std::string("-properties.hdf"), H5F_ACC_TRUNC);
 
 	hdf.createGroup("geometry").close();
 	hdf.createGroup("bounding-boxes").close();
+	hdf.createGroup("properties").close();
 
 	hdf.mount("geometry", geom_hdf, H5::PropList::DEFAULT);
 	hdf.mount("bounding-boxes", box_hdf, H5::PropList::DEFAULT);
+	hdf.mount("properties", prop_hdf, H5::PropList::DEFAULT);
 
 	H5::Group main_population = hdf.createGroup("population");
 	H5::Group geom_population = hdf.createGroup("geometry/population");
 	H5::Group box_population = hdf.createGroup("bounding-boxes/population");
+	H5::Group prop_population = hdf.createGroup("properties/population");
 
 	{
 		IfcParse::IfcHdf5File ifc_hdf5(hdf, get_schema(), settings);
@@ -327,6 +361,11 @@ int main(int argc, char** argv) {
 		{
 			IfcParse::instance_enumerator enumerator(&f.header(), old_geom_defs.begin(), old_geom_defs.end());
 			ifc_hdf5.write_population(geom_population, enumerator, locator);
+		}
+
+		{
+			IfcParse::instance_enumerator enumerator(&f.header(), old_prop_defs.begin(), old_prop_defs.end());
+			ifc_hdf5.write_population(prop_population, enumerator, locator);
 		}
 	}
 }
