@@ -1844,16 +1844,30 @@ private:
 	H5::H5File& file_;
 	H5::Group& population_group_;
 	std::vector<std::string> dataset_names_;
+	std::vector<std::string> dataset_paths_;
+	std::vector<bool> dataset_paths_warnings_emitted;
 
 	std::map<std::string, int>* name_mapping_;
+	std::map<std::pair<hsize_t, hsize_t>, size_t> cache_;
 
 public:
-	instance_resolver(H5::H5File& file, H5::Group& population_group, std::map<std::string, int>* name_mapping = nullptr)
+	instance_resolver(H5::H5File& file, H5::Group& population_group, std::map<std::string, int>* name_mapping = nullptr, std::map<std::string, std::string>* path_mapping = nullptr)
 		: file_(file)
 		, population_group_(population_group)
 		, name_mapping_(name_mapping)
 	{
 		dataset_names_ = read_attribute(population_group_, "iso_10303_26_data_set_names");
+		if (name_mapping != nullptr) {
+			for (const auto& s : dataset_names_) {
+				auto it = path_mapping->find(s);
+				if (it == path_mapping->end()) {
+					dataset_paths_.push_back("");
+				} else {
+					dataset_paths_.push_back(it->second);
+				}
+			}
+		}
+		dataset_paths_warnings_emitted.resize(dataset_names_.size());
 	}
 
 	size_t instance_name(const std::string& path, int row) {
@@ -1877,9 +1891,29 @@ public:
 				pair[i] = read<int>((uint8_t*)data + offset, &mt);
 			}
 
-			const std::string& nm = dataset_names_[pair[0]];
+			auto ppair = std::make_pair(pair[0], pair[1]);
 
-			H5::DataSet dataset = file_.openDataSet("population/" + nm + "_instances");
+			auto cache_it = cache_.find(ppair);
+			if (cache_it != cache_.end()) {
+				return cache_it->second;
+			}
+
+			std::string path;
+			if (dataset_paths_.empty()) {
+				const std::string& nm = dataset_names_[pair[0]];
+				path = "population/" + nm + "_instances";
+			} else {
+				path = dataset_paths_[pair[0]];
+				if (path.empty()) {
+					if (!dataset_paths_warnings_emitted[pair[0]]) {
+						std::cerr << "No dataset loaded for '" << dataset_names_[pair[0]] << "'" << std::endl;
+					}
+					dataset_paths_warnings_emitted[pair[0]] = true;
+					return 0;
+				}
+			}
+
+			H5::DataSet dataset = file_.openDataSet(path);
 			H5::CompType datatype = dataset.getCompType();
 			H5::DataSpace dataspace = dataset.getSpace();
 			if (dataspace.getSimpleExtentNdims() != 1) {
@@ -1905,6 +1939,8 @@ public:
 			dataset.close();
 
 			delete[] buffer;
+
+			cache_.insert(std::make_pair(ppair, inst_name));
 
 			return inst_name;
 		} else if (dt->getClass() == H5T_REFERENCE) {
@@ -2155,6 +2191,7 @@ struct hdf5_output_info {
 	std::ostream& output; 
 
 	std::map<std::string, int>* name_mapping;
+	std::map<std::string, std::string>* path_mapping;
 };
 
 herr_t iterate(hid_t id, const char *path, const H5O_info_t *object_info, void *op_data) {
@@ -2163,9 +2200,11 @@ herr_t iterate(hid_t id, const char *path, const H5O_info_t *object_info, void *
 
 	if (object_info->type == H5O_TYPE_DATASET) {
 		H5::Group population_group(id);
-		instance_resolver resolver(f, population_group, ((hdf5_output_info*)op_data)->name_mapping);
+		instance_resolver resolver(f, population_group, ((hdf5_output_info*)op_data)->name_mapping, ((hdf5_output_info*)op_data)->path_mapping);
 		
 		std::string name = path;
+
+		std::cerr << name << std::endl;
 
 		H5::DataSet dataset = population_group.openDataSet(name);
 		H5::DataType datatype = dataset.getDataType();
@@ -2218,13 +2257,15 @@ private:
 	H5::H5File& file_;
 	bool finished_schema_;
 	std::map<std::string, int>* offset_mapping_;
+	std::map<std::string, std::string>* path_mapping_;
 	int last_offset_;
 
 public:
-	file_structure(H5::H5File& file, std::map<std::string, int>* offset_mapping = nullptr)
+	file_structure(H5::H5File& file, std::map<std::string, int>* offset_mapping = nullptr, std::map<std::string, std::string>* path_mapping = nullptr)
 		: file_(file)
 		, finished_schema_(false)
 		, offset_mapping_(offset_mapping)
+		, path_mapping_(path_mapping)
 		, last_offset_(1)
 	{}
 
@@ -2251,6 +2292,27 @@ public:
 			space.getSimpleExtentDims(&dims);
 			offset_mapping_->insert({ds.getObjName(), last_offset_});
 			last_offset_ += dims;
+		}
+		if (path_mapping_) {
+			/*
+			std::string datatype = ds.getDataType().getObjName();
+			auto it = datatype.rfind('/');
+			if (it != std::string::npos) {
+				datatype = datatype.substr(it + 1);
+			}
+			*/
+
+			std::string name = ds.getObjName();
+			std::string path = name;
+			auto it = path.rfind('/');
+			if (it != std::string::npos) {
+				path = path.substr(it + 1);
+			}
+			it = path.find('_');
+			if (it != std::string::npos) {
+				path = path.substr(0, it);
+			}
+			path_mapping_->insert({ path, name });
 		}
 	}
 
@@ -2306,6 +2368,11 @@ void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream
 	H5::H5File f(name, H5F_ACC_RDONLY);
 	std::vector<H5::H5File*> children;
 
+	std::map<std::string, int> offset_mapping;
+	std::map<std::string, std::string> path_mapping;
+
+	file_structure fs(f, &offset_mapping, &path_mapping);
+
 	if (mount_points) {
 		std::transform(mount_points->begin(), mount_points->end(), std::back_inserter(children), [&f](const std::string& directive) {
 			
@@ -2328,15 +2395,13 @@ void IfcParse::IfcHdf5File::convert_to_spf(const std::string& name, std::ostream
 		});
 	}
 	
-	std::map<std::string, int> offset_mapping;
-
-	file_structure fs(f, &offset_mapping);
 	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_datasets, &fs);
+
 	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_groups, &fs);
 	fs.finished_schema();
 	H5Ovisit(f.getId(), H5_INDEX_NAME, H5_ITER_NATIVE, find_groups, &fs);
 
-	hdf5_output_info info{ f, output, &offset_mapping };
+	hdf5_output_info info{ f, output, &offset_mapping, &path_mapping };
 	for (auto it = fs.begin(); it != fs.end(); ++it) {
 		auto& group = it->first;
 		auto& schema_id = it->second->first;

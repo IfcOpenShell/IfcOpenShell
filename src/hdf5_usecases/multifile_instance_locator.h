@@ -202,6 +202,30 @@ public:
 		ptr = static_cast<uint8_t*>(ptr) + sizeof(hdset_reg_ref_t);
 	}
 
+	template <typename ForwardIt>
+	void next(H5::Group& group, ForwardIt insts_begin, ForwardIt insts_end) {
+		subsequent_group_ = &group;
+
+		subsequent_population_.first = initial_population_.first;
+		subsequent_population_.second.clear();
+
+		std::for_each(this->begin(), this->end(), [this, &insts_begin, &insts_end](IfcSchema::Type::Enum t) {
+			std::vector<IfcUtil::IfcBaseEntity*> by_type;
+
+			std::for_each(insts_begin, insts_end, [t, &by_type](IfcUtil::IfcBaseClass* inst) {
+				if (inst->declaration().type() == t && inst->declaration().as_entity()) {
+					by_type.push_back((IfcUtil::IfcBaseEntity*) inst);
+				}
+			});
+
+			std::sort(by_type.begin(), by_type.end(), [](IfcUtil::IfcBaseEntity* i1, IfcUtil::IfcBaseEntity* i2) {
+				return i1->data().id() < i2->data().id();
+			});
+
+			subsequent_population_.second.emplace_back(by_type);
+		});
+	}
+
 	void next(const std::string& name, H5::Group& group, IfcParse::IfcFile* f) {
 		subsequent_group_ = &group;
 		root_ = name;

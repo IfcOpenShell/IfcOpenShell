@@ -94,20 +94,21 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		return a->data().id() < b->data().id();
 	});
 
-	IfcSchema::IfcStyledItem::list::ptr styles = f.entitiesByType<IfcSchema::IfcStyledItem>();
-
-	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem };
+	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem, IfcSchema::Type::IfcMaterialDefinitionRepresentation, IfcSchema::Type::IfcStyledRepresentation };
 	std::set<IfcSchema::Type::Enum> other_types;
 
 	std::set<IfcUtil::IfcBaseClass*> geometric_instances;
 
-	std::for_each(styles->begin(), styles->end(), [&geometric_instances](IfcSchema::IfcStyledItem* style) {
-		geometric_instances.insert(style);
-	});
+	for (auto ty : geometric_types) {
+		auto insts = f.entitiesByType(ty);
+		std::for_each(insts->begin(), insts->end(), [&geometric_instances](IfcUtil::IfcBaseClass* inst) {
+			geometric_instances.insert(inst);
+		});
+	}
 
 	int N, n;
 
-	auto vist_geometric = [&f, &geometric_types, &geometric_instances, N, &n](IfcUtil::IfcBaseEntity* def) {
+	auto vist_geometric = [&f, &geometric_types, &geometric_instances, &N, &n](IfcUtil::IfcBaseEntity* def) {
 		auto refs = f.traverse(def);
 		geometric_instances.insert(refs->begin(), refs->end());
 		std::for_each(refs->begin(), refs->end(), [&geometric_types](IfcUtil::IfcBaseClass* inst) {
@@ -116,7 +117,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 			}
 		});
 		if (n++ % 1000 == 0) {
-			std::cerr << "\r" << n * 100 / N << std::flush;
+			std::cerr << "\r" << (n * 100 / N) << std::flush;
 		}
 	};
 
@@ -136,6 +137,16 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	fn = [&f, &geometric_instances, &other_types, &fn](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
 		if (geometric_instances.find(inst) == geometric_instances.end()) {
 			auto ty = inst->declaration().type();
+			if (ty == IfcSchema::Type::IfcExtrudedAreaSolid) {
+				std::cerr << inst->data().toString() << " reachded by " << root->data().toString() << std::endl;
+			}
+
+			// Not referenced. Revit generates unused IfcExtrudedAreaSolids some times.
+			auto invs = f.getInverse(inst->data().id(), IfcSchema::Type::UNDEFINED, -1);
+			if (root == inst && invs->size() == 0) {
+				return;
+			}
+
 			other_types.insert(ty);
 			auto refs = f.traverse(inst, 1);
 			std::for_each(refs->begin() + 1, refs->end(), [&fn, root](IfcUtil::IfcBaseClass* inst) {
@@ -170,6 +181,8 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		const size_t name = ty;
 		str.write((char*)&name, sizeof(size_t));
 	}
+
+	std::cin.get();
 }
 
 int main(int argc, char** argv) {
@@ -214,10 +227,21 @@ int main(int argc, char** argv) {
 	}
 
 	std::set<IfcSchema::Type::Enum> property_types {
-		IfcSchema::Type::IfcRelDefines, IfcSchema::Type::IfcPropertySetDefinition, IfcSchema::Type::IfcTypeObject
+		IfcSchema::Type::IfcRelDefines, 
+		IfcSchema::Type::IfcPropertySetDefinition, 
+		IfcSchema::Type::IfcTypeObject, 
+		IfcSchema::Type::IfcProperty, 
+		IfcSchema::Type::IfcPhysicalQuantity,
+		IfcSchema::Type::IfcRelAssociatesClassification,
+		IfcSchema::Type::IfcRelAssociatesMaterial,
+		IfcSchema::Type::IfcMaterialList,
+		IfcSchema::Type::IfcMaterialLayerSetUsage,
+		IfcSchema::Type::IfcMaterialLayerSet,
+		IfcSchema::Type::IfcMaterialLayer,
+		IfcSchema::Type::IfcMaterial
 	};
 
-	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_prop_defs, old_geom_defs, all_old_defs, all_defs;
+	std::vector<IfcUtil::IfcBaseClass*> new_defs, old_defs, old_prop_defs, old_geom_defs, old_box_defs, all_old_defs, all_defs;
 
 	std::for_each(only_geometric.begin(), only_geometric.end(), [&f, &old_geom_defs](IfcSchema::Type::Enum t) {
 		auto insts = f.entitiesByType(t);
@@ -312,6 +336,10 @@ int main(int argc, char** argv) {
 	all_old_defs.insert(all_old_defs.end(), old_geom_defs.begin(), old_geom_defs.end());
 	all_defs.insert(all_defs.end(), all_old_defs.begin(), all_old_defs.end());
 	all_defs.insert(all_defs.end(), new_defs.begin(), new_defs.end());
+	old_box_defs.insert(old_box_defs.end(), old_defs.begin(), old_defs.end());
+	old_box_defs.insert(old_box_defs.end(), new_defs.begin(), new_defs.end());
+	auto contexts = f.entitiesByType<IfcSchema::IfcRepresentationContext>();
+	old_box_defs.insert(old_box_defs.end(), contexts->begin(), contexts->end());
 
 	{
 		int num_insts1 = std::distance(all_old_defs.begin(), all_old_defs.end());
@@ -329,6 +357,7 @@ int main(int argc, char** argv) {
 	IfcParse::Hdf5Settings settings;
 	settings.profile() = IfcParse::Hdf5Settings::padded;
 	settings.compress() = true;
+	settings.chunk_size() = 256;
 
 	H5::H5File hdf(argv[1] + std::string(".hdf"), H5F_ACC_TRUNC);
 	H5::H5File geom_hdf(argv[1] + std::string("-geometry.hdf"), H5F_ACC_TRUNC);
@@ -366,6 +395,15 @@ int main(int argc, char** argv) {
 		{
 			IfcParse::instance_enumerator enumerator(&f.header(), old_prop_defs.begin(), old_prop_defs.end());
 			ifc_hdf5.write_population(prop_population, enumerator, locator);
+		}
+
+		{
+			// locator is setup with all_old_defs, need to switch to new_defs + old_defs for the cartesian points
+			// NB: also geom rep context
+			locator->next(box_population, old_box_defs.begin(), old_box_defs.end());
+
+			IfcParse::instance_enumerator enumerator(&f.header(), new_defs.begin(), new_defs.end());
+			ifc_hdf5.write_population(box_population, enumerator, locator);
 		}
 	}
 }
