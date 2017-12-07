@@ -695,6 +695,8 @@ void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType&
 	uint32_t set_unset_bitmap_value = 0;
 	size_t set_unset_bitmap_size = 0;
 
+	int ifc_hdf5_idx = 0;
+
 	for (int i = 0; i < compound->getNmembers(); ++i) {
 		const std::string name = compound->getMemberName(i);
 		H5::DataType MEMBER(attr_type, *compound, i);
@@ -710,15 +712,16 @@ void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType&
 			if (it == attribute_names.end()) {
 				throw std::runtime_error("Unexpected compound member");
 			}
-			int idx = std::distance(attribute_names.begin(), it);
+			
+			int ifc_attr_idx = std::distance(attribute_names.begin(), it);
 
-			Argument* attr = v->data().getArgument(idx);
+			Argument* attr = v->data().getArgument(ifc_attr_idx);
 			if (!attr->isNull()) {
 				// TODO: This is now index in IFC-attributes list, specify
-				set_unset_bitmap_value |= (1 << idx);
+				set_unset_bitmap_value |= (1 << (ifc_hdf5_idx++));
 			}
 			write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, visitor, attr_type);
-			apply_attribute_visitor(attr, attributes[idx]).apply(attribute_visitor);
+			apply_attribute_visitor(attr, attributes[ifc_attr_idx]).apply(attribute_visitor);
 		}
 	}
 
