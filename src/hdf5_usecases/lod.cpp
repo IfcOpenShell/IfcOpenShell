@@ -94,7 +94,10 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		return a->data().id() < b->data().id();
 	});
 
-	std::set<IfcSchema::Type::Enum> geometric_types{ IfcSchema::Type::IfcStyledItem, IfcSchema::Type::IfcMaterialDefinitionRepresentation, IfcSchema::Type::IfcStyledRepresentation };
+	std::set<IfcSchema::Type::Enum> geometric_types{
+		IfcSchema::Type::IfcStyledItem, IfcSchema::Type::IfcMaterialDefinitionRepresentation, IfcSchema::Type::IfcStyledRepresentation,
+		IfcSchema::Type::IfcSurfaceStyleRendering, IfcSchema::Type::IfcSurfaceStyle, IfcSchema::Type::IfcPresentationLayerAssignment	
+	};
 	std::set<IfcSchema::Type::Enum> other_types;
 
 	std::set<IfcUtil::IfcBaseClass*> geometric_instances;
@@ -107,6 +110,20 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	}
 
 	int N, n;
+
+	// Not referenced. Revit generates unused IfcExtrudedAreaSolids some times.
+	auto repitems = f.entitiesByType(IfcSchema::Type::IfcRepresentationItem);
+	std::for_each(repitems->begin(), repitems->end(), [&f, &geometric_instances](IfcUtil::IfcBaseClass* inst) {
+		auto invs = f.getInverse(inst->data().id(), IfcSchema::Type::UNDEFINED, -1);
+		if (invs->size() == 0) {
+			auto refs = f.traverse(inst);
+			std::for_each(refs->begin(), refs->end(), [&geometric_instances](IfcUtil::IfcBaseClass* inst2) {
+				if (inst2->declaration().as_entity()) {
+					geometric_instances.insert(inst2);
+				}
+			});
+		}
+	});
 
 	auto vist_geometric = [&f, &geometric_types, &geometric_instances, &N, &n](IfcUtil::IfcBaseEntity* def) {
 		auto refs = f.traverse(def);
@@ -137,15 +154,6 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	fn = [&f, &geometric_instances, &other_types, &fn](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
 		if (geometric_instances.find(inst) == geometric_instances.end()) {
 			auto ty = inst->declaration().type();
-			if (ty == IfcSchema::Type::IfcExtrudedAreaSolid) {
-				std::cerr << inst->data().toString() << " reachded by " << root->data().toString() << std::endl;
-			}
-
-			// Not referenced. Revit generates unused IfcExtrudedAreaSolids some times.
-			auto invs = f.getInverse(inst->data().id(), IfcSchema::Type::UNDEFINED, -1);
-			if (root == inst && invs->size() == 0) {
-				return;
-			}
 
 			other_types.insert(ty);
 			auto refs = f.traverse(inst, 1);
@@ -173,6 +181,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		std::inserter(only_geometric, only_geometric.begin()));
 
 	only_geometric.erase(IfcSchema::Type::IfcGeometricRepresentationContext);
+	only_geometric.erase(IfcSchema::Type::IfcGeometricRepresentationSubContext);
 
 	std::cerr << "\nOnly geometric:" << std::endl;
 
@@ -233,6 +242,8 @@ int main(int argc, char** argv) {
 		IfcSchema::Type::IfcProperty, 
 		IfcSchema::Type::IfcPhysicalQuantity,
 		IfcSchema::Type::IfcRelAssociatesClassification,
+		IfcSchema::Type::IfcClassification,
+		IfcSchema::Type::IfcClassificationReference,
 		IfcSchema::Type::IfcRelAssociatesMaterial,
 		IfcSchema::Type::IfcMaterialList,
 		IfcSchema::Type::IfcMaterialLayerSetUsage,
