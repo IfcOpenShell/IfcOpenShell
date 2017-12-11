@@ -576,7 +576,7 @@ namespace IfcGeom {
 
 			try {
 				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
-				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
+				instance_type = IfcSchema::Type::ToString(ifc_entity->declaration().type());
 
 				if (ifc_entity->declaration().is(IfcSchema::Type::IfcRoot)) {
 					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();

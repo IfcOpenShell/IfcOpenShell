@@ -156,7 +156,7 @@ namespace IfcGeom
         {
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
                 if (prod->declaration().is(it->first) && it->second < prod->data().getArgumentCount() &&
-                    prod->data().getArgumentType(it->second) == IfcUtil::Argument_STRING) {
+                    prod->data().getArgument(it->second)->type() == IfcUtil::Argument_STRING) {
                     Argument *arg = prod->data().getArgument(it->second);
                     if (!arg->isNull()) {
                         return *arg;
