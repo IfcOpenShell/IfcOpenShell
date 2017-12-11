@@ -60,7 +60,7 @@
 	}
 
 	IfcEntityList::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
-		if (!e->is(IfcSchema::Type::IfcProduct)) {
+		if (!e->declaration().is(IfcSchema::Type::IfcProduct)) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
 		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box((IfcSchema::IfcProduct*)e, completely_within, extend);
@@ -78,7 +78,7 @@
 	}
 
 	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false) const {
-		if (!e->is(IfcSchema::Type::IfcProduct)) {
+		if (!e->declaration().is(IfcSchema::Type::IfcProduct)) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
 		std::vector<IfcSchema::IfcProduct*> ps = $self->select((IfcSchema::IfcProduct*)e, completely_within);
@@ -301,7 +301,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 %inline %{
 	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
-		IfcParse::IfcFile* file = instance->entity->file;
+		IfcParse::IfcFile* file = instance->data().file;
 		IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
 		if (projects->size() != 1) {
 			throw IfcParse::IfcException("Not a single IfcProject instance");
@@ -313,9 +313,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			
-		if (instance->is(IfcSchema::Type::IfcProduct)) {
+		if (instance->declaration().is(IfcSchema::Type::IfcProduct)) {
 			if (representation) {
-				if (!representation->is(IfcSchema::Type::IfcRepresentation)) {
+				if (!representation->declaration().is(IfcSchema::Type::IfcRepresentation)) {
 					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
 				}
 			}
@@ -392,11 +392,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			}
 
 			IfcSchema::IfcRepresentationContext* ctx = ifc_representation->ContextOfItems();
-			if (!ctx->is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
+			if (!ctx->declaration().is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
 				throw IfcParse::IfcException("Context not of type IfcGeometricRepresentationContext");
 			}
 			IfcSchema::IfcGeometricRepresentationContext* context = (IfcSchema::IfcGeometricRepresentationContext*) ctx;
-			if (context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+			if (context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
 				IfcSchema::IfcGeometricRepresentationSubContext* subcontext = (IfcSchema::IfcGeometricRepresentationSubContext*) context;
 				context = subcontext->ParentContext();
 			}
@@ -429,11 +429,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			}
 		} else {
 			if (!representation) {
-				if (instance->is(IfcSchema::Type::IfcRepresentationItem) || instance->is(IfcSchema::Type::IfcRepresentation)) {
+				if (instance->declaration().is(IfcSchema::Type::IfcRepresentationItem) || instance->declaration().is(IfcSchema::Type::IfcRepresentation)) {
 					IfcGeom::IfcRepresentationShapeItems shapes;
 					if (kernel.convert_shapes(instance, shapes)) {
-						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->type()));
-						IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->entity->id()), shapes);
+						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->declaration().type()));
+						IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->data().id()), shapes);
 						try {
 							if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
 								return new IfcGeom::Representation::Serialization(brep);
