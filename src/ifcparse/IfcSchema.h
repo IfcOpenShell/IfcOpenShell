@@ -212,7 +212,6 @@ namespace IfcParse {
 			std::string name_;
 			aggregate_type type_of_aggregation_;
 			int bound1_, bound2_;
-			parameter_type* type_of_element_;
 			const entity* entity_reference_;
 			const attribute* attribute_reference_;
 		public:
@@ -252,6 +251,21 @@ namespace IfcParse {
 				return attr->name() == name_;
 			}
 		};
+
+		const attribute* attribute_by_index_(size_t& index) const {
+			const attribute* attr = 0;
+			if (supertype_) {
+				attr = supertype_->attribute_by_index_(index);
+			}
+			if (attr == 0) {
+				if (index < attributes_.size()) {
+					return attributes_[index];
+				}
+				index -= attributes_.size();
+			}
+			return 0;
+		}
+
 	public:
 		entity(const std::string& name, entity* supertype)
 			: declaration(name)
@@ -308,6 +322,22 @@ namespace IfcParse {
 			}
 			std::copy(inverse_attributes_.begin(), inverse_attributes_.end(), std::back_inserter(attrs));
 			return attrs;
+		}
+
+		const attribute* attribute_by_index(size_t index) const {
+			const attribute* attr = attribute_by_index_(index);
+			if (attr == 0) {
+				throw IfcParse::IfcException("Attribute index out of bounds");
+			}
+			return attr;
+		}
+
+		size_t attribute_count() const {
+			size_t super_count = 0;
+			if (supertype_) {
+				super_count = supertype_->attribute_count();
+			}
+			return super_count + attributes_.size();
 		}
 
 		ptrdiff_t attribute_index(const attribute* attr) const {

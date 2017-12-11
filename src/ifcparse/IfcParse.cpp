@@ -1124,9 +1124,15 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		std::string enum_literal = a->toString();
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
-		const IfcParse::enumeration_type* enum_type = get_schema().declaration_by_name(type())->as_entity()->all_attributes()[i]->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
-
-		std::vector<std::string>::const_iterator it = std::find(enum_type->enumeration_items().begin(), enum_type->enumeration_items().end(), enum_literal);
+		
+		const IfcParse::enumeration_type* enum_type = get_schema().declaration_by_name(type())->as_entity()->
+			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+		
+		std::vector<std::string>::const_iterator it = std::find(
+			enum_type->enumeration_items().begin(), 
+			enum_type->enumeration_items().end(), 
+			enum_literal);
+		
 		if (it == enum_type->enumeration_items().end()) {
 			throw IfcParse::IfcException(enum_literal + " does not name a valid item for " + enum_type->name());
 		}

@@ -24,8 +24,6 @@ private:
 	IfcEntityInstanceData();
 };
 
-#define invalid_argument(i, arg_name) { throw IfcParse::IfcException(IfcSchema::Type::GetAttributeName(self->entity->type(), (unsigned char)i) + " is not a valid type for '" + arg_name + "'"); }
-
 %ignore IfcParse::IfcFile::Init;
 %ignore IfcParse::IfcFile::entityByGuid;
 %ignore IfcParse::IfcFile::register_inverse;
@@ -65,7 +63,7 @@ private:
 		return $self->entityByGuid(guid);
 	}
 	IfcEntityList::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
-		return $self->getInverse(e->entity->id(), IfcSchema::Type::UNDEFINED, -1);
+		return $self->getInverse(e->data().id(), IfcSchema::Type::UNDEFINED, -1);
 	}
 
 	void write(const std::string& fn) {
@@ -108,180 +106,243 @@ private:
 %extend IfcUtil::IfcBaseClass {
 
 	int get_attribute_category(const std::string& name) const {
-		if (IfcSchema::Type::IsSimple($self->type())) {
+		if (IfcSchema::Type::IsSimple($self->declaration().type())) {
 			return name == "wrappedValue";
 		}
-		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
-		const std::vector<std::string> names = self_->getAttributeNames();
-		if (std::find(names.begin(), names.end(), name) != names.end()) {
-			return 1;
-		} else {
-			const std::vector<std::string> names = self_->getInverseAttributeNames();
-			if (std::find(names.begin(), names.end(), name) != names.end()) {
-				return 2;
-			} else {
-				return 0;
+		
+		{
+		const std::vector<const IfcParse::entity::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
+		std::vector<const IfcParse::entity::attribute*>::const_iterator it = attrs.begin();
+		for (; it != attrs.end(); ++it) {
+			if ((*it)->name() == name) {
+				return 1;
 			}
 		}
+		}
+
+		{
+		const std::vector<const IfcParse::entity::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		std::vector<const IfcParse::entity::inverse_attribute*>::const_iterator it = attrs.begin();
+		for (; it != attrs.end(); ++it) {
+			if ((*it)->name() == name) {
+				return 2;
+			}
+		}
+		}
+
+		return 0;
 	}
 
 	// id() is defined on IfcBaseEntity and not on IfcBaseClass, in order
 	// to expose it to the Python wrapper it is simply duplicated here.
 	// Same applies to the two methods reimplemented below.
 	int id() const {
-		return $self->entity->id();
+		return $self->data().id();
 	}
 
 	std::vector<std::string> getAttributeNames() const {
-		if (IfcSchema::Type::IsSimple($self->type())) {
+		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(1, "wrappedValue");
 		}
-		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
-		return self_->getAttributeNames();
+		
+		const std::vector<const IfcParse::entity::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
+		
+		std::vector<std::string> attr_names;
+		attr_names.reserve(attrs.size());		
+		
+		std::vector<const IfcParse::entity::attribute*>::const_iterator it = attrs.begin();
+		for (; it != attrs.end(); ++it) {
+			attr_names.push_back((*it)->name());
+		}
+
+		return attr_names;
 	}
 
 	std::vector<std::string> getInverseAttributeNames() const {
-		if (IfcSchema::Type::IsSimple($self->type())) {
+		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(0);
 		}
-		IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self; 
-		return self_->getInverseAttributeNames();
+
+		const std::vector<const IfcParse::entity::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		
+		std::vector<std::string> attr_names;
+		attr_names.reserve(attrs.size());		
+		
+		std::vector<const IfcParse::entity::inverse_attribute*>::const_iterator it = attrs.begin();
+		for (; it != attrs.end(); ++it) {
+			attr_names.push_back((*it)->name());
+		}
+
+		return attr_names;
 	}
 	
 	bool is_a(const std::string& s) {
-		return self->is(IfcSchema::Type::FromString(boost::to_upper_copy(s)));
+		return self->declaration().is(IfcSchema::Type::FromString(boost::to_upper_copy(s)));
 	}
 
 	std::string is_a() const {
-		return IfcSchema::Type::ToString(self->entity->type());
+		return self->declaration().name();
 	}
 
 	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i) {
-		return std::pair<IfcUtil::ArgumentType,Argument*>($self->getArgumentType(i), $self->getArgument(i));
+		return std::pair<IfcUtil::ArgumentType,Argument*>($self->data().getArgument(i)->type(), $self->data().getArgument(i));
 	}
 
 	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(const std::string& a) {
-		unsigned i = IfcSchema::Type::GetAttributeIndex($self->type(), a);
-		return std::pair<IfcUtil::ArgumentType,Argument*>($self->getArgumentType(i), $self->getArgument(i));
+		unsigned i = $self->declaration().as_entity()->attribute_index(a);
+		return std::pair<IfcUtil::ArgumentType,Argument*>($self->data().getArgument(i)->type(), $self->data().getArgument(i));
 	}
 
 	bool __eq__(IfcUtil::IfcBaseClass* other) const {
 		if ($self == other) {
 			return true;
 		}
-		if (IfcSchema::Type::IsSimple($self->type()) || IfcSchema::Type::IsSimple(other->type())) {
+		if (IfcSchema::Type::IsSimple($self->declaration().type()) || IfcSchema::Type::IsSimple(other->declaration().type())) {
 			/// @todo
 			return false;
 		} else {
 			IfcUtil::IfcBaseEntity* self_ = (IfcUtil::IfcBaseEntity*) self;
 			IfcUtil::IfcBaseEntity* other_ = (IfcUtil::IfcBaseEntity*) other;
-			return self_->id() == other_->id() && self_->entity->file == other_->entity->file;
+			return self_->data().id() == other_->data().id() && self_->data().file == other_->data().file;
 		} 
 	}
 
 	std::string __repr__() const {
-		return $self->entity->toString();
+		return $self->data().toString();
 	}
 
 	// Just something to have a somewhat sensible value to hash
 	size_t file_pointer() const {
-		return reinterpret_cast<size_t>($self->entity->file);
+		return reinterpret_cast<size_t>($self->data().file);
 	}
 
 	unsigned get_argument_index(const std::string& a) const {
-		return IfcSchema::Type::GetAttributeIndex(self->entity->type(), a);
+		return $self->declaration().as_entity()->attribute_index(a);
 	}
 
 	IfcEntityList::ptr get_inverse(const std::string& a) {
-		std::pair<IfcSchema::Type::Enum, unsigned> inv = IfcSchema::Type::GetInverseAttribute(self->entity->type(), a);
-		return self->entity->getInverse(inv.first, inv.second);
+		const std::vector<const IfcParse::entity::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		std::vector<const IfcParse::entity::inverse_attribute*>::const_iterator it = attrs.begin();
+		for (; it != attrs.end(); ++it) {
+			if ((*it)->name() == a) {
+				return self->data().getInverse(
+					(*it)->entity_reference()->type(),
+					(*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
+			}
+		}
+		throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
 	}
 
 	void setArgumentAsNull(unsigned int i) {
-		bool is_optional = IfcSchema::Type::GetAttributeOptional(self->entity->type(), (unsigned char)i);
+		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
 		if (is_optional) {
-			self->entity->setArgument(i, new IfcWrite::IfcWriteArgument());
-		} else invalid_argument(i,"NULL");
+			self->data().setArgument(i, new IfcWrite::IfcWriteArgument());
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsInt(unsigned int i, int v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_INT) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);	
+			self->data().setArgument(i, arg);	
 		} else if ( (arg_type == IfcUtil::Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v == 1);
-			self->entity->setArgument(i, arg);	
-		} else invalid_argument(i,"INTEGER");
+			self->data().setArgument(i, arg);	
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsBool(unsigned int i, bool v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_BOOL) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);	
-		} else invalid_argument(i,"BOOLEAN");
+			self->data().setArgument(i, arg);	
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsDouble(unsigned int i, double v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_DOUBLE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);	
-		} else invalid_argument(i,"REAL");
+			self->data().setArgument(i, arg);	
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsString(unsigned int i, const std::string& a) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_STRING) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(a);
-			self->entity->setArgument(i, arg);	
+			self->data().setArgument(i, arg);	
 		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
-			std::pair<const char*, int> enum_data = IfcSchema::Type::GetEnumerationIndex(IfcSchema::Type::GetAttributeEntity(self->entity->type(), (unsigned char)i), a);
+			const IfcParse::enumeration_type* enum_type = get_schema().declaration_by_name($self->declaration().type())->as_entity()->
+			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+		
+			std::vector<std::string>::const_iterator it = std::find(
+				enum_type->enumeration_items().begin(), 
+				enum_type->enumeration_items().end(), 
+				a);
+		
+			if (it == enum_type->enumeration_items().end()) {
+				throw IfcParse::IfcException(a + " does not name a valid item for " + enum_type->name());
+			}
+
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(IfcWrite::IfcWriteArgument::EnumerationReference(enum_data.second, enum_data.first));
-			self->entity->setArgument(i, arg);
+			arg->set(IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
+			self->data().setArgument(i, arg);
 		} else if (arg_type == IfcUtil::Argument_BINARY) {
 			if (IfcUtil::valid_binary_string(a)) {
 				boost::dynamic_bitset<> bits(a);
 				IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 				arg->set(bits);
-				self->entity->setArgument(i, arg);
+				self->data().setArgument(i, arg);
 			} else {
 				throw IfcParse::IfcException("String not a valid binary representation");
 			}
-		} else invalid_argument(i,"STRING");
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF INT");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF DOUBLE");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
+			self->data().setArgument(i, arg);
 		} else if (arg_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
 			std::vector< boost::dynamic_bitset<> > bits;
 			bits.reserve(v.size());
@@ -294,53 +355,65 @@ private:
 			}
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(bits);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF STRING");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsEntityInstance(unsigned int i, IfcUtil::IfcBaseClass* v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"ENTITY INSTANCE");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF ENTITY INSTANCE");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF INT");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF DOUBLE");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 
 	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v) {
-		IfcUtil::ArgumentType arg_type = IfcSchema::Type::GetAttributeType(self->entity->type(), (unsigned char)i);
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
-			self->entity->setArgument(i, arg);
-		} else invalid_argument(i,"AGGREGATE OF AGGREGATE OF ENTITY INSTANCE");
+			self->data().setArgument(i, arg);
+		} else {
+			throw IfcParse::IfcException("Attribute not set");
+		}
 	}
 }
 
@@ -448,8 +521,28 @@ private:
 	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& s) {
 		IfcSchema::Type::Enum ty = IfcSchema::Type::FromString(boost::to_upper_copy(s));
 		IfcEntityInstanceData* data = new IfcEntityInstanceData(ty);
-		data->setArgument(IfcSchema::Type::GetAttributeCount(ty) - 1, new IfcWrite::IfcWriteArgument());
-		IfcSchema::Type::PopulateDerivedFields(data);
+		
+		size_t attr_count = 1;
+		if (get_schema().declaration_by_name(ty)->as_entity()) {
+			attr_count = get_schema().declaration_by_name(ty)->as_entity()->attribute_count();
+		}
+
+		data->setArgument(attr_count - 1, new IfcWrite::IfcWriteArgument());
+
+		if (get_schema().declaration_by_name(ty)->as_entity()) {			
+			const std::vector<bool>& derived = get_schema().declaration_by_name(ty)->as_entity()->derived();
+			std::vector<bool>::const_iterator it = derived.begin();
+
+			size_t index = 0;
+			for (; it != derived.end(); ++it, ++index) {
+				if (*it) {
+					IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
+					arg->set(IfcWrite::IfcWriteArgument::Derived());
+					data->setArgument(index, arg);
+				}
+			}
+		}
+		
 		return IfcSchema::SchemaEntity(data);
 	}
 %}
