@@ -41,12 +41,6 @@
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcSchema.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4-latebound.h"
-#else
-#include "../ifcparse/Ifc2x3-latebound.h"
-#endif
-
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
 #endif
@@ -651,27 +645,7 @@ IfcUtil::ArgumentType ArgumentList::type() const {
 	}
 
 	const IfcUtil::ArgumentType elem_type = list[0]->type();
-	if (elem_type == IfcUtil::Argument_INT) {
-		return IfcUtil::Argument_AGGREGATE_OF_INT;
-	} else if (elem_type == IfcUtil::Argument_DOUBLE) {
-		return IfcUtil::Argument_AGGREGATE_OF_DOUBLE;
-	} else if (elem_type == IfcUtil::Argument_STRING) {
-		return IfcUtil::Argument_AGGREGATE_OF_STRING;
-	} else if (elem_type == IfcUtil::Argument_BINARY) {
-		return IfcUtil::Argument_AGGREGATE_OF_BINARY;
-	} else if (elem_type == IfcUtil::Argument_ENTITY_INSTANCE) {
-		return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE;
-	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
-		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT;
-	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
-		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE;
-	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
-	} else if (elem_type == IfcUtil::Argument_EMPTY_AGGREGATE) {
-		return IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE;
-	} else {
-		return IfcUtil::Argument_UNKNOWN;
-	}
+	return IfcUtil::make_aggregate(elem_type);
 }
 
 void ArgumentList::push(Argument* l) {
@@ -1147,12 +1121,17 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		copy->set(attr_value);
 		break; }
 	case IfcUtil::Argument_ENUMERATION: {
-		IfcSchema::Type::Enum ty = IfcSchema::Type::GetAttributeEntity(type_, (unsigned char)i);
 		std::string enum_literal = a->toString();
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
-		std::pair<const char*, int> enum_ref = IfcSchema::Type::GetEnumerationIndex(ty, enum_literal);
-		copy->set(IfcWrite::IfcWriteArgument::EnumerationReference(enum_ref.second, enum_ref.first));
+		const IfcParse::enumeration_type* enum_type = get_schema().declaration_by_name(type())->as_entity()->all_attributes()[i]->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+
+		std::vector<std::string>::const_iterator it = std::find(enum_type->enumeration_items().begin(), enum_type->enumeration_items().end(), enum_literal);
+		if (it == enum_type->enumeration_items().end()) {
+			throw IfcParse::IfcException(enum_literal + " does not name a valid item for " + enum_type->name());
+		}
+
+		copy->set(IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
 		break; }
 	case IfcUtil::Argument_ENTITY_INSTANCE: {
 		copy->set(static_cast<IfcUtil::IfcBaseClass*>(*a));
@@ -1187,7 +1166,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		break; }
 	case IfcUtil::Argument_EMPTY_AGGREGATE:
 	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
-		IfcUtil::ArgumentType t2 = IfcSchema::Type::GetAttributeType(type(), (unsigned char)i);
+		IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(get_schema().declaration_by_name(type())->as_entity()->all_attributes()[i]->type_of_attribute());
 		delete copy;
 		copy = 0;
 		setArgument(i, a, t2);

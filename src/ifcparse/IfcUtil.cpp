@@ -22,12 +22,6 @@
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcEntityList.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4-latebound.h"
-#else
-#include "../ifcparse/Ifc2x3-latebound.h"
-#endif
-
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
 
@@ -178,4 +172,69 @@ Argument* IfcUtil::IfcBaseEntity::getArgumentByName(const std::string& name) con
 void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
 	delete data_;
 	data_ = d; 
+}
+
+IfcUtil::ArgumentType IfcUtil::make_aggregate(IfcUtil::ArgumentType elem_type) {
+	if (elem_type == IfcUtil::Argument_INT) {
+		return IfcUtil::Argument_AGGREGATE_OF_INT;
+	} else if (elem_type == IfcUtil::Argument_DOUBLE) {
+		return IfcUtil::Argument_AGGREGATE_OF_DOUBLE;
+	} else if (elem_type == IfcUtil::Argument_STRING) {
+		return IfcUtil::Argument_AGGREGATE_OF_STRING;
+	} else if (elem_type == IfcUtil::Argument_BINARY) {
+		return IfcUtil::Argument_AGGREGATE_OF_BINARY;
+	} else if (elem_type == IfcUtil::Argument_ENTITY_INSTANCE) {
+		return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
+	} else if (elem_type == IfcUtil::Argument_EMPTY_AGGREGATE) {
+		return IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE;
+	} else {
+		return IfcUtil::Argument_UNKNOWN;
+	}
+}
+
+IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_type* pt) {
+	// TODO: How to detect derived types here without a reference to the refering entity?
+
+	const IfcParse::aggregation_type* at = pt->as_aggregation_type();
+	const IfcParse::named_type* nt = pt->as_named_type();
+	const IfcParse::simple_type* st = pt->as_simple_type();
+	
+	if (at) {
+		return make_aggregate(from_parameter_type(at->type_of_element()));
+	} else if (nt) {
+		if (nt->declared_type()->as_entity()) {
+			return IfcUtil::Argument_ENTITY_INSTANCE;
+		} else if (nt->declared_type()->as_enumeration_type()) {
+			return IfcUtil::Argument_ENUMERATION;
+		} else if (nt->declared_type()->as_select_type()) {
+			return IfcUtil::Argument_ENTITY_INSTANCE;
+		} else if (nt->declared_type()->as_type_declaration()) {
+			return from_parameter_type(nt->declared_type()->as_type_declaration()->declared_type());
+		}
+	} else if (st) {
+		switch (st->declared_type()) {
+		case IfcParse::simple_type::binary_type:
+			return IfcUtil::Argument_BINARY;
+		case IfcParse::simple_type::boolean_type:
+			return IfcUtil::Argument_BOOL;
+		case IfcParse::simple_type::integer_type:
+			return IfcUtil::Argument_INT;
+		case IfcParse::simple_type::logical_type:
+			return IfcUtil::Argument_BOOL;
+		case IfcParse::simple_type::number_type:
+			return IfcUtil::Argument_DOUBLE;
+		case IfcParse::simple_type::real_type:
+			return IfcUtil::Argument_DOUBLE;
+		case IfcParse::simple_type::string_type:
+			return IfcUtil::Argument_STRING;
+		}
+	}
+
+	return IfcUtil::Argument_UNKNOWN;
 }

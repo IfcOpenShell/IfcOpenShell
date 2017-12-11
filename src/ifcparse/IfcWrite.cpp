@@ -28,12 +28,6 @@
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcFile.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4-latebound.h"
-#else
-#include "../ifcparse/Ifc2x3-latebound.h"
-#endif
-
 using namespace IfcWrite;
 
 class SizeVisitor : public boost::static_visitor<int> {
