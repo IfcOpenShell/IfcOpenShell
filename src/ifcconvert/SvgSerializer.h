@@ -42,6 +42,7 @@ protected:
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
 	IfcParse::IfcFile* file;
+	IfcSchema::IfcBuildingStorey* storey_;
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -52,6 +53,7 @@ public:
 		, ymax(-std::numeric_limits<double>::infinity())
 		, rescale(false)
 		, file(0)
+		, storey_(0)
 	{}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
@@ -68,7 +70,7 @@ public:
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
-    void setSectionHeight(double h) { section_height = h; }
+	void setSectionHeight(double h, IfcSchema::IfcBuildingStorey* storey = 0) { section_height = h; storey_ = storey; }
     std::string nameElement(const IfcGeom::Element<real_t>* elem);
     std::string nameElement(const IfcSchema::IfcProduct* elem);
 };

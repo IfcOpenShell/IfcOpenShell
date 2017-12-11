@@ -282,7 +282,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
-	IfcSchema::IfcBuildingStorey* storey = 0;
+	IfcSchema::IfcBuildingStorey* storey = storey_;
 	boost::optional<double> storey_elevation = boost::none;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
@@ -292,7 +292,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 	typedef IfcSchema::IfcRelAggregates decomposition_element;
 #endif
 
-	for (;;) {
+	for (; storey == 0;) {
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {
