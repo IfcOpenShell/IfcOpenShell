@@ -39,6 +39,7 @@
 #include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
+#include "../ifcparse/IfcSchema.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4-latebound.h"

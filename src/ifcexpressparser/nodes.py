@@ -44,15 +44,17 @@ class TypeDeclaration(Node):
 class EntityDeclaration(Node):
     name = property(lambda self: self.tokens[1])
     attributes = property(lambda self: self.tokens_of_type(ExplicitAttribute))
+    abstract = property(lambda self: self.single_token_of_type(SuperTypeExpression) is not None and \
+        self.single_token_of_type(SuperTypeExpression).abstract)
     def init(self):
         assert self.tokens[0] == 'entity'
-        s = self.single_token_of_type(SubtypeExpression)
+        s = self.single_token_of_type(SubTypeExpression)
         self.inverse = self.single_token_of_type(AttributeList, 'type', 'inverse')
         self.derive = self.single_token_of_type(AttributeList, 'type', 'derive')
         self.supertypes = s.types if s else []
     def __repr__(self):
         builder = ""
-        builder += "Entity(%s)" % (self.name)
+        builder += "%sEntity(%s)" % ("Abstract " if self.abstract else "", self.name)
         if len(self.supertypes):
             builder += "\n  Supertypes: %s"%(",".join(self.supertypes))
         if len(self.attributes):
@@ -106,12 +108,20 @@ class SelectType(Node):
 class SubSuperTypeExpression(Node):
     type = property(lambda self: self.tokens[0])
     types = property(lambda self: self.tokens[3::2])
+    abstract = False
     def init(self):
-        assert self.type == self.class_type
+        if self.tokens[0] == 'abstract':
+            self.tokens = self.tokens[1:]
+            self.abstract = True
+        assert self.type == self.type_relationship
 
 
-class SubtypeExpression(SubSuperTypeExpression):
-    class_type = 'subtype'
+class SubTypeExpression(SubSuperTypeExpression):
+    type_relationship = 'subtype'
+
+
+class SuperTypeExpression(SubSuperTypeExpression):
+    type_relationship = 'supertype'
 
 
 class AttributeList(Node):

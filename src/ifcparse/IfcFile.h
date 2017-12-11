@@ -65,6 +65,7 @@ private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
 	bool parsing_complete_;
+	const schema_definition* schema_;
 
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
@@ -170,6 +171,7 @@ public:
 	void register_inverse(unsigned, Token);
 	void register_inverse(unsigned, IfcUtil::IfcBaseClass*);
 	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
+	const schema_definition* schema() const { return schema_; }
 };
 
 }

@@ -27,25 +27,27 @@ if tuple(map(int, platform.python_version_tuple())) < (2, 7):
     
 # According to ISO 10303-11 7.1.2: Letters: "... The case of 
 # letters is significant only within explicit string literals."
+class OrderedCaseInsensitiveDict_KeyObject(str):
+    def __eq__(self, other):
+        return self.lower() == other.lower()
+    def __hash__(self):
+        return hash(self.lower())
+
+
 class OrderedCaseInsensitiveDict(collections.OrderedDict):
-    class KeyObject(str):
-        def __eq__(self, other):
-            return self.lower() == other.lower()
-        def __hash__(self):
-            return hash(self.lower())
-            
     def __init__(self, *args, **kwargs):
         collections.OrderedDict.__init__(self)
         for key, value in collections.OrderedDict(*args, **kwargs).items():
-            self[OrderedCaseInsensitiveDict.KeyObject(key)] = value
+            self[OrderedCaseInsensitiveDict_KeyObject(key)] = value
     def __setitem__(self, key, value):
-        return collections.OrderedDict.__setitem__(self, OrderedCaseInsensitiveDict.KeyObject(key), value)
+        return collections.OrderedDict.__setitem__(self, OrderedCaseInsensitiveDict_KeyObject(key), value)
     def __getitem__(self, key):
-        return collections.OrderedDict.__getitem__(self, OrderedCaseInsensitiveDict.KeyObject(key))
+        return collections.OrderedDict.__getitem__(self, OrderedCaseInsensitiveDict_KeyObject(key))
     def get(self, key, *args, **kwargs):
-        return collections.OrderedDict.get(self, OrderedCaseInsensitiveDict.KeyObject(key), *args, **kwargs)
+        return collections.OrderedDict.get(self, OrderedCaseInsensitiveDict_KeyObject(key), *args, **kwargs)
     def __contains__(self, key):
-        return collections.OrderedDict.__contains__(self, OrderedCaseInsensitiveDict.KeyObject(key))
+        return collections.OrderedDict.__contains__(self, OrderedCaseInsensitiveDict_KeyObject(key))
+
 
 class Schema:
     def is_enumeration(self, v):
