@@ -17,6 +17,8 @@
 *                                                                              *
 ********************************************************************************/
 
+#include "../ifcparse/IfcSchema.h"
+
 #ifndef ARGUMENTTYPE_H
 #define ARGUMENTTYPE_H
 
@@ -48,6 +50,8 @@ namespace IfcUtil {
 		Argument_UNKNOWN
 	};
 
+	ArgumentType from_parameter_type(const IfcParse::parameter_type*);
+	ArgumentType make_aggregate(ArgumentType elem_type);
 }
 
 #endif

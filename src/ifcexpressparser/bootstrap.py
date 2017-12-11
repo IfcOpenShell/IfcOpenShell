@@ -199,15 +199,11 @@ else:
 import header
 import enum_header
 import implementation
-import latebound_header
-import latebound_implementation
 import schema_class
 
 header.Header(mapping).emit()
 enum_header.EnumHeader(mapping).emit()
 implementation.Implementation(mapping).emit()
-latebound_header.LateBoundHeader(mapping).emit()
-latebound_implementation.LateBoundImplementation(mapping).emit()
 schema_class.SchemaClass(mapping).emit()
 
 sys.stdout.write(schema.name)
