@@ -296,7 +296,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {
-			if (obdef->is(IfcSchema::Type::IfcElement)) {
+			if (obdef->declaration().is(IfcSchema::Type::IfcElement)) {
 				IfcSchema::IfcRelContainedInSpatialStructure::list::ptr containment = ((IfcSchema::IfcElement*)obdef)->ContainedInStructure();
 				if (!containment->size()) {
 					break;
@@ -318,7 +318,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 				}
 			}
 		}
-		if (obdef->is(IfcSchema::Type::IfcBuildingStorey)) {
+		if (obdef->declaration().is(IfcSchema::Type::IfcBuildingStorey)) {
 			storey = static_cast<IfcSchema::IfcBuildingStorey*>(obdef);
 			if (storey->hasElevation()) {
 				const IfcGeom::ElementSettings& settings = o->geometry().settings();
@@ -476,7 +476,7 @@ std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
 std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
 	if (elem == 0) { return ""; }
 	std::ostringstream oss;
-	const std::string type = elem->is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
+	const std::string type = elem->declaration().is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
     const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
 	  ? elem->GlobalId() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
 	  ? elem->Name() : IfcParse::IfcGlobalId(elem->GlobalId()).formatted()));
@@ -516,7 +516,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 						gp_Trsf trsf;
 						if (kernel.convert(product->ObjectPlacement(), trsf)) {
 							setSectionHeight(trsf.TranslationPart().Z() + 1.);
-							Logger::Warning("No building storeys encountered, used for reference:", product->entity);
+							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;
 						}
 					}

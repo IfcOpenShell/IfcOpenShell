@@ -86,15 +86,15 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 			break; }
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* e = *argument;
-			if (Type::IsSimple(e->type())) {
+			if (Type::IsSimple(e->declaration().type())) {
 				IfcUtil::IfcBaseType* f = (IfcUtil::IfcBaseType*) e;
-				value = format_attribute(f->getArgument(0), f->getArgumentType(0), argument_name);
-			} else if (e->is(IfcSchema::Type::IfcSIUnit) || e->is(IfcSchema::Type::IfcConversionBasedUnit)) {
+				value = format_attribute(f->data().getArgument(0), f->data().getArgument(0)->type(), argument_name);
+			} else if (e->declaration().is(IfcSchema::Type::IfcSIUnit) || e->declaration().is(IfcSchema::Type::IfcConversionBasedUnit)) {
 				// Some string concatenation to have a unit name as a XML attribute.
 
 				std::string unit_name;
 
-				if (e->is(IfcSchema::Type::IfcSIUnit)) {
+				if (e->declaration().is(IfcSchema::Type::IfcSIUnit)) {
 					IfcSchema::IfcSIUnit* unit = (IfcSchema::IfcSIUnit*) e;
 					unit_name = IfcSchema::IfcSIUnitName::ToString(unit->Name());
 					if (unit->hasPrefix()) {
@@ -106,7 +106,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				}
 
 				value = unit_name;
-			} else if (e->is(IfcSchema::Type::IfcLocalPlacement)) {
+			} else if (e->declaration().is(IfcSchema::Type::IfcLocalPlacement)) {
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				gp_Trsf trsf;
 				IfcGeom::Kernel kernel;
@@ -132,20 +132,20 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 
 // Appends to a node with possibly existing attributes
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
-	const unsigned n = instance->getArgumentCount();
+	const unsigned n = instance->data().getArgumentCount();
 	for (unsigned i = 0; i < n; ++i) {
-		const Argument* argument = instance->getArgument(i);
+		const Argument* argument = instance->data().getArgument(i);
 		if (argument->isNull()) continue;
 
-		std::string argument_name = instance->getArgumentName(i);
+		std::string argument_name = instance->declaration().all_attributes()[i]->name();
 		std::map<std::string, std::string>::const_iterator argument_name_it;
 		argument_name_it = argument_name_map.find(argument_name);
 		if (argument_name_it != argument_name_map.end()) {
 			argument_name = argument_name_it->second;
 		}
-		const IfcUtil::ArgumentType argument_type = instance->getArgumentType(i);
+		const IfcUtil::ArgumentType argument_type = instance->data().getArgument(i)->type();
 
-		const std::string qualified_name = IfcSchema::Type::ToString(instance->type()) + "." + argument_name;
+		const std::string qualified_name = IfcSchema::Type::ToString(instance->declaration().type()) + "." + argument_name;
 		boost::optional<std::string> value;
 		try {
 			value = format_attribute(argument, argument_type, qualified_name);
@@ -165,7 +165,7 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 			}
 		}
 	}
-	return tree.add_child(Type::ToString(instance->type()), child);
+	return tree.add_child(Type::ToString(instance->declaration().type()), child);
 }
 
 // Formats an entity instances as a ptree node, and insert into the DOM. Recurses
@@ -176,14 +176,14 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& tree, boo
 }
 
 std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
-	return IfcSchema::Type::ToString(inst->type()) + "_" + boost::lexical_cast<std::string>(inst->entity->id());
+	return IfcSchema::Type::ToString(inst->declaration().type()) + "_" + boost::lexical_cast<std::string>(inst->data().id());
 }
 
 // A function to be called recursively. Template specialization is used 
 // to descend into decomposition, containment and property relationships.
 template <typename A>
 ptree& descend(A* instance, ptree& tree) {
-	if (instance->is(IfcSchema::Type::IfcObjectDefinition)) {
+	if (instance->declaration().is(IfcSchema::Type::IfcObjectDefinition)) {
 		return descend(instance->template as<IfcSchema::IfcObjectDefinition>(), tree);
 	} else {
 		return format_entity_instance(instance, tree);
@@ -209,7 +209,7 @@ template <>
 ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 	ptree& child = format_entity_instance(product, tree);
 	
-	if (product->is(Type::IfcSpatialStructureElement)) {
+	if (product->declaration().is(Type::IfcSpatialStructureElement)) {
 		IfcSpatialStructureElement* structure = (IfcSpatialStructureElement*) product;
 
 		IfcObjectDefinition::list::ptr elements = get_related
@@ -221,7 +221,7 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 		}
 	}
 
-    if (product->is(Type::IfcElement)) {
+    if (product->declaration().is(Type::IfcElement)) {
         IfcElement* element = static_cast<IfcElement*>(product);
         IfcOpeningElement::list::ptr openings = get_related<IfcElement, IfcRelVoidsElement, IfcOpeningElement>(
             element, &IfcElement::HasOpenings, &IfcRelVoidsElement::RelatedOpeningElement);
@@ -246,7 +246,7 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 		descend(ob, child);
 	}
 
-	if (product->is(IfcSchema::Type::IfcObject)) {
+	if (product->declaration().is(IfcSchema::Type::IfcObject)) {
 		IfcSchema::IfcObject* object = product->as<IfcSchema::IfcObject>();
 
 		IfcPropertySetDefinition::list::ptr property_sets = get_related
@@ -255,7 +255,7 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 
 		for (IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
 			IfcPropertySetDefinition* pset = *it;
-			if (pset->is(Type::IfcPropertySet)) {
+			if (pset->declaration().is(Type::IfcPropertySet)) {
 				format_entity_instance(pset, child, true);
 			}
 		}
@@ -276,7 +276,7 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 		}
 	}
 
-    if (product->is(Type::IfcProduct)) {
+    if (product->declaration().is(Type::IfcProduct)) {
         std::map<std::string, IfcPresentationLayerAssignment*> layers = IfcGeom::Kernel::get_layers(product->as<IfcProduct>());
         for (std::map<std::string, IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
             // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
@@ -305,7 +305,7 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 	for (IfcProperty::list::it it = properties->begin(); it != properties->end(); ++it) {
 		IfcProperty* p = *it;
-		if (p->is(Type::IfcComplexProperty)) {
+		if (p->declaration().is(Type::IfcComplexProperty)) {
 			IfcComplexProperty* complex = (IfcComplexProperty*) p;
 			format_properties(complex->HasProperties(), node);
 		} else {
@@ -370,7 +370,7 @@ void XmlSerializer::finalize() {
 			IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
 			for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
 				IfcPropertySetDefinition* pset = *jt;
-				if (pset->is(Type::IfcPropertySet)) {
+				if (pset->declaration().is(Type::IfcPropertySet)) {
 					format_entity_instance(pset, node, true);
 				}
 			}
@@ -380,11 +380,11 @@ void XmlSerializer::finalize() {
 	// Write all assigned units as XML nodes.
 	IfcEntityList::ptr unit_assignments = project->UnitsInContext()->Units();
 	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
-		if ((*it)->is(IfcSchema::Type::IfcNamedUnit)) {
+		if ((*it)->declaration().is(IfcSchema::Type::IfcNamedUnit)) {
 			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
 			ptree& node = format_entity_instance(named_unit, units);
 			node.put("<xmlattr>.SI_equivalent", IfcParse::get_SI_equivalent(named_unit));
-		} else if ((*it)->is(IfcSchema::Type::IfcMonetaryUnit)) {
+		} else if ((*it)->declaration().is(IfcSchema::Type::IfcMonetaryUnit)) {
 			format_entity_instance((*it)->as<IfcSchema::IfcMonetaryUnit>(), units);
 		}
 	}
