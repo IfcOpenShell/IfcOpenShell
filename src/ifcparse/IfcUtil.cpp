@@ -68,7 +68,7 @@ IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>
 	for (it it = begin(); it != end(); ++it) {
 		bool contained = false;
 		for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
-			if ((*it)->is(*jt)) {
+			if ((*it)->declaration().is(*jt)) {
 				contained = true;
 				break;
 			}
@@ -171,32 +171,11 @@ void IfcUtil::unescape_xml(std::string &str)
     boost::replace_all(str, "&gt;", ">");
 }
 
-std::vector<std::string> IfcUtil::IfcBaseEntity::getAttributeNames() const {
-	std::vector<std::string> return_value;
-	return_value.reserve(getArgumentCount());
-	for (unsigned i = 0; i < getArgumentCount(); ++i) {
-		return_value.push_back(getArgumentName(i));
-	}
-	return return_value;
-}
-
-std::vector<std::string> IfcUtil::IfcBaseEntity::getInverseAttributeNames() const {
-	std::vector<std::string> return_value;
-	std::set<std::string> values = IfcSchema::Type::GetInverseAttributeNames(entity->type());
-	std::copy(values.begin(), values.end(), std::back_inserter(return_value));
-	return return_value;
-}
-
 Argument* IfcUtil::IfcBaseEntity::getArgumentByName(const std::string& name) const {
-	unsigned int i = IfcSchema::Type::GetAttributeIndex(type(), name);
-	return getArgument(i);
+	return data().getArgument(declaration().attribute_index(name));
 }
 
-IfcUtil::IfcBaseClass::~IfcBaseClass() {
-	delete data_; 
-}
-
-void IfcUtil::IfcBaseClass::data(IfcAbstractEntity* d) {
+void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
 	delete data_;
 	data_ = d; 
 }

@@ -144,11 +144,11 @@ public:
 		data << "." << i.enumeration_value << ".";
 	}
 	void operator()(const IfcUtil::IfcBaseClass* const& i) { 
-		IfcEntityInstanceData* e = i->entity;
-		if ( IfcSchema::Type::IsSimple(e->type()) ) {
-			data << e->toString(upper);
+		const IfcEntityInstanceData& e = i->data();
+		if ( IfcSchema::Type::IsSimple(e.type()) ) {
+			data << e.toString(upper);
 		} else {
-			data << "#" << e->id();
+			data << "#" << e.id();
 		}
 	}
 	void operator()(const IfcEntityList::ptr& i) { 

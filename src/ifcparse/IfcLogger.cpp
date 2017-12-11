@@ -38,19 +38,21 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
+void Logger::Message(Logger::Severity type, const std::string& message, IfcUtil::IfcBaseClass* instance) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] ";
 		if ( current_product ) {
 		    (*log2) << "{" << (*current_product)->GlobalId() << "} ";
 		}
 		(*log2) << message << std::endl;
-		if ( entity ) (*log2) << entity->toString() << std::endl;
+		if (instance) {
+			(*log2) << instance->data().toString() << std::endl;
+		}
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, IfcEntityInstanceData* entity) {
-	Message(type, exception.what(), entity);
+void Logger::Message(Logger::Severity type, const std::exception& exception, IfcUtil::IfcBaseClass* instance) {
+	Message(type, exception.what(), instance);
 }
 
 void Logger::Status(const std::string& message, bool new_line) {

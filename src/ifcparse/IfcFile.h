@@ -64,6 +64,8 @@ public:
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
+	bool parsing_complete_;
+
 	const schema_definition* schema_;
 
 	entity_by_id_t byid;
