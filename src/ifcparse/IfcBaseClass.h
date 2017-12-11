@@ -29,29 +29,24 @@
 #endif
 
 #include "../ifcparse/IfcEntityInstanceData.h"
+#include "../ifcparse/IfcSchema.h"
 
 class Argument;
-
-namespace IfcParse { // these have to be declared first in order for the virtual function below to be covariant. separate into different header file
-	class declaration;
-	class entity;
-	class type_declaration;
-}
 
 namespace IfcUtil {
 
 	class IFC_PARSE_API IfcBaseClass {
     protected:
-		IfcAbstractEntity* data_;
+		IfcEntityInstanceData* data_;
         
 	public:
         IfcBaseClass() : data_(0) {}
-		IfcBaseClass(IfcAbstractEntity* d) : data_(d) {}
+		IfcBaseClass(IfcEntityInstanceData* d) : data_(d) {}
         virtual ~IfcBaseClass() {}
         
-        const IfcAbstractEntity& data() const { return *data_; }
-		IfcAbstractEntity& data() { return *data_; }
-        void data(IfcAbstractEntity* d);
+        const IfcEntityInstanceData& data() const { return *data_; }
+		IfcEntityInstanceData& data() { return *data_; }
+        void data(IfcEntityInstanceData* d);
         
         virtual const IfcParse::declaration& declaration() const = 0;
 
@@ -73,16 +68,16 @@ namespace IfcUtil {
 	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
 	public:
 		IfcBaseEntity() : IfcBaseClass() {}
-		IfcBaseEntity(IfcAbstractEntity* d) : IfcBaseClass(d) {}
+		IfcBaseEntity(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
 
 		virtual const IfcParse::entity& declaration() const = 0;
 	};
 
 	// TODO: Investigate whether these should be template classes instead
-	class IFC_PARSE_API IfcBaseType : public IfcBaseEntity {
+	class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
 	public:
 		IfcBaseType() : IfcBaseClass() {}
-		IfcBaseType(IfcAbstractEntity* d) : IfcBaseClass(d) {}
+		IfcBaseType(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
 
 		virtual const IfcParse::type_declaration& declaration() const = 0;
 	};

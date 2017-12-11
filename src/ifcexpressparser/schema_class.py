@@ -40,9 +40,11 @@ class SchemaClass(codegen.Base):
                 return "new aggregation_type(aggregation_type::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(decl_type)s)" % locals()
             elif isinstance(type, nodes.BinaryType):
                 return "new simple_type(simple_type::binary_type)"
+            elif isinstance(type, nodes.StringType):
+                return "new simple_type(simple_type::string_type)"
             elif isinstance(type, str):
                 if mapping.schema.is_type(type) or mapping.schema.is_entity(type):
-                    if emitted_names is None or type in emitted_types:
+                    if emitted_names is None or type.lower() in emitted_types:
                         return "new named_type(%s_type)" % type
                     else:
                         raise UnmetDependenciesException(type)
@@ -63,6 +65,9 @@ class SchemaClass(codegen.Base):
                 try: return et, attrs.index(attribute_name)
                 except: pass
     
+            else:
+                raise Exception("No declared type for <%r>" % type)
+                    
         self.schema_name = mapping.schema.name.capitalize()
         
         statements = ['',
@@ -79,25 +84,27 @@ class SchemaClass(codegen.Base):
         for cpp_type, collection in collections_by_type:
             for name in collection.keys():
                 statements.append('%(cpp_type)s* %(name)s_type = 0;' % locals())
-                
-        statements.append('#ifdef _MSC_VER'          )
-        statements.append('#pragma optimize("", off)')
-        statements.append('#endif'                   )
-                          
+                      
+        statements.append("""
+#ifdef _MSC_VER
+#pragma optimize("", off)
+#endif
+        """)
         statements.append('schema_definition* populate_schema() {')
         
         emitted_types = set()
         while len(emitted_types) < len(mapping.schema.simpletypes):
             for name, type in mapping.schema.simpletypes.items():
-                if name in emitted_types: continue
+                if name.lower() in emitted_types: continue
                 
                 try:
                     declared_type = get_declared_type(type, emitted_types)
                 except UnmetDependenciesException:
+                    # print("Unmet", repr(name))
                     continue
 
                 statements.append('    %(name)s_type = new type_declaration(IfcSchema::Type::%(name)s, %(declared_type)s);' % locals())
-                emitted_types.add(name)
+                emitted_types.add(name.lower())
                 
                 declared_types.append('%(name)s_type' % locals())
                 
@@ -113,11 +120,11 @@ class SchemaClass(codegen.Base):
         emitted_entities = set()
         while len(emitted_entities) < len(mapping.schema.entities):
             for name, type in mapping.schema.entities.items():
-                if name in emitted_entities: continue
-                if len(type.supertypes) == 0 or set(type.supertypes) < emitted_entities:
+                if name.lower() in emitted_entities: continue
+                if len(type.supertypes) == 0 or set(map(lambda s: s.lower(), type.supertypes)) < emitted_entities:
                     supertype = '0' if len(type.supertypes) == 0 else '%s_type' % type.supertypes[0]
                     statements.append('    %(name)s_type = new entity(IfcSchema::Type::%(name)s, %(supertype)s);' % locals())
-                    emitted_entities.add(name)
+                    emitted_entities.add(name.lower())
                     
                     declared_types.append('%(name)s_type' % locals())
         
@@ -126,14 +133,14 @@ class SchemaClass(codegen.Base):
         emitted_selects = set()
         while len(emitted_selects) < len(mapping.schema.selects):
             for name, type in mapping.schema.selects.items():
-                if name in emitted_selects: continue
-                if set(type.values) < emmited:
+                if name.lower() in emitted_selects: continue
+                if set(map(lambda s: s.lower(),type.values)) < emmited:
                     statements.append('    {')
                     statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type.values))
                     statements.extend(map(lambda v: '        items.push_back(%s_type);' % v, sorted(type.values)))
                     statements.append('        %(name)s_type = new select_type(IfcSchema::Type::%(name)s, items);' % locals())
                     statements.append('    }')
-                    emitted_selects.add(name)
+                    emitted_selects.add(name.lower())
                     emmited.add(name)
                     
                     declared_types.append('%(name)s_type' % locals())
@@ -181,9 +188,11 @@ class SchemaClass(codegen.Base):
         
         statements.extend(('}',''))
         
-        statements.append('#ifdef _MSC_VER'         )
-        statements.append('#pragma optimize("", on)')
-        statements.append('#endif'                  )
+        statements.append("""
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
+        """)
         
         statements.extend(('const schema_definition& get_schema() {',
                            '',

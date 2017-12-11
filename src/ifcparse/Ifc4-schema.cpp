@@ -1194,6 +1194,11 @@ enumeration_type* IfcWindowTypePartitioningEnum_type = 0;
 enumeration_type* IfcWorkCalendarTypeEnum_type = 0;
 enumeration_type* IfcWorkPlanTypeEnum_type = 0;
 enumeration_type* IfcWorkScheduleTypeEnum_type = 0;
+
+#ifdef _MSC_VER
+#pragma optimize("", off)
+#endif
+        
 schema_definition* populate_schema() {
     IfcAbsorbedDoseMeasure_type = new type_declaration(IfcSchema::Type::IfcAbsorbedDoseMeasure, new simple_type(simple_type::real_type));
     IfcAccelerationMeasure_type = new type_declaration(IfcSchema::Type::IfcAccelerationMeasure, new simple_type(simple_type::real_type));
@@ -1210,14 +1215,14 @@ schema_definition* populate_schema() {
     IfcContextDependentMeasure_type = new type_declaration(IfcSchema::Type::IfcContextDependentMeasure, new simple_type(simple_type::real_type));
     IfcCountMeasure_type = new type_declaration(IfcSchema::Type::IfcCountMeasure, new simple_type(simple_type::number_type));
     IfcCurvatureMeasure_type = new type_declaration(IfcSchema::Type::IfcCurvatureMeasure, new simple_type(simple_type::real_type));
-    IfcDate_type = new type_declaration(IfcSchema::Type::IfcDate, None);
-    IfcDateTime_type = new type_declaration(IfcSchema::Type::IfcDateTime, None);
+    IfcDate_type = new type_declaration(IfcSchema::Type::IfcDate, new simple_type(simple_type::string_type));
+    IfcDateTime_type = new type_declaration(IfcSchema::Type::IfcDateTime, new simple_type(simple_type::string_type));
     IfcDayInMonthNumber_type = new type_declaration(IfcSchema::Type::IfcDayInMonthNumber, new simple_type(simple_type::integer_type));
     IfcDayInWeekNumber_type = new type_declaration(IfcSchema::Type::IfcDayInWeekNumber, new simple_type(simple_type::integer_type));
-    IfcDescriptiveMeasure_type = new type_declaration(IfcSchema::Type::IfcDescriptiveMeasure, None);
+    IfcDescriptiveMeasure_type = new type_declaration(IfcSchema::Type::IfcDescriptiveMeasure, new simple_type(simple_type::string_type));
     IfcDimensionCount_type = new type_declaration(IfcSchema::Type::IfcDimensionCount, new simple_type(simple_type::integer_type));
     IfcDoseEquivalentMeasure_type = new type_declaration(IfcSchema::Type::IfcDoseEquivalentMeasure, new simple_type(simple_type::real_type));
-    IfcDuration_type = new type_declaration(IfcSchema::Type::IfcDuration, None);
+    IfcDuration_type = new type_declaration(IfcSchema::Type::IfcDuration, new simple_type(simple_type::string_type));
     IfcDynamicViscosityMeasure_type = new type_declaration(IfcSchema::Type::IfcDynamicViscosityMeasure, new simple_type(simple_type::real_type));
     IfcElectricCapacitanceMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricCapacitanceMeasure, new simple_type(simple_type::real_type));
     IfcElectricChargeMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricChargeMeasure, new simple_type(simple_type::real_type));
@@ -1226,15 +1231,15 @@ schema_definition* populate_schema() {
     IfcElectricResistanceMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricResistanceMeasure, new simple_type(simple_type::real_type));
     IfcElectricVoltageMeasure_type = new type_declaration(IfcSchema::Type::IfcElectricVoltageMeasure, new simple_type(simple_type::real_type));
     IfcEnergyMeasure_type = new type_declaration(IfcSchema::Type::IfcEnergyMeasure, new simple_type(simple_type::real_type));
-    IfcFontStyle_type = new type_declaration(IfcSchema::Type::IfcFontStyle, None);
-    IfcFontVariant_type = new type_declaration(IfcSchema::Type::IfcFontVariant, None);
-    IfcFontWeight_type = new type_declaration(IfcSchema::Type::IfcFontWeight, None);
+    IfcFontStyle_type = new type_declaration(IfcSchema::Type::IfcFontStyle, new simple_type(simple_type::string_type));
+    IfcFontVariant_type = new type_declaration(IfcSchema::Type::IfcFontVariant, new simple_type(simple_type::string_type));
+    IfcFontWeight_type = new type_declaration(IfcSchema::Type::IfcFontWeight, new simple_type(simple_type::string_type));
     IfcForceMeasure_type = new type_declaration(IfcSchema::Type::IfcForceMeasure, new simple_type(simple_type::real_type));
     IfcFrequencyMeasure_type = new type_declaration(IfcSchema::Type::IfcFrequencyMeasure, new simple_type(simple_type::real_type));
-    IfcGloballyUniqueId_type = new type_declaration(IfcSchema::Type::IfcGloballyUniqueId, None);
+    IfcGloballyUniqueId_type = new type_declaration(IfcSchema::Type::IfcGloballyUniqueId, new simple_type(simple_type::string_type));
     IfcHeatFluxDensityMeasure_type = new type_declaration(IfcSchema::Type::IfcHeatFluxDensityMeasure, new simple_type(simple_type::real_type));
     IfcHeatingValueMeasure_type = new type_declaration(IfcSchema::Type::IfcHeatingValueMeasure, new simple_type(simple_type::real_type));
-    IfcIdentifier_type = new type_declaration(IfcSchema::Type::IfcIdentifier, None);
+    IfcIdentifier_type = new type_declaration(IfcSchema::Type::IfcIdentifier, new simple_type(simple_type::string_type));
     IfcIlluminanceMeasure_type = new type_declaration(IfcSchema::Type::IfcIlluminanceMeasure, new simple_type(simple_type::real_type));
     IfcInductanceMeasure_type = new type_declaration(IfcSchema::Type::IfcInductanceMeasure, new simple_type(simple_type::real_type));
     IfcInteger_type = new type_declaration(IfcSchema::Type::IfcInteger, new simple_type(simple_type::integer_type));
@@ -1242,7 +1247,7 @@ schema_definition* populate_schema() {
     IfcIonConcentrationMeasure_type = new type_declaration(IfcSchema::Type::IfcIonConcentrationMeasure, new simple_type(simple_type::real_type));
     IfcIsothermalMoistureCapacityMeasure_type = new type_declaration(IfcSchema::Type::IfcIsothermalMoistureCapacityMeasure, new simple_type(simple_type::real_type));
     IfcKinematicViscosityMeasure_type = new type_declaration(IfcSchema::Type::IfcKinematicViscosityMeasure, new simple_type(simple_type::real_type));
-    IfcLabel_type = new type_declaration(IfcSchema::Type::IfcLabel, None);
+    IfcLabel_type = new type_declaration(IfcSchema::Type::IfcLabel, new simple_type(simple_type::string_type));
     IfcLanguageId_type = new type_declaration(IfcSchema::Type::IfcLanguageId, new named_type(IfcIdentifier_type));
     IfcLengthMeasure_type = new type_declaration(IfcSchema::Type::IfcLengthMeasure, new simple_type(simple_type::real_type));
     IfcLineIndex_type = new type_declaration(IfcSchema::Type::IfcLineIndex, new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IfcPositiveInteger_type)));
@@ -1279,7 +1284,7 @@ schema_definition* populate_schema() {
     IfcPositiveLengthMeasure_type = new type_declaration(IfcSchema::Type::IfcPositiveLengthMeasure, new named_type(IfcLengthMeasure_type));
     IfcPositivePlaneAngleMeasure_type = new type_declaration(IfcSchema::Type::IfcPositivePlaneAngleMeasure, new named_type(IfcPlaneAngleMeasure_type));
     IfcPowerMeasure_type = new type_declaration(IfcSchema::Type::IfcPowerMeasure, new simple_type(simple_type::real_type));
-    IfcPresentableText_type = new type_declaration(IfcSchema::Type::IfcPresentableText, None);
+    IfcPresentableText_type = new type_declaration(IfcSchema::Type::IfcPresentableText, new simple_type(simple_type::string_type));
     IfcPressureMeasure_type = new type_declaration(IfcSchema::Type::IfcPressureMeasure, new simple_type(simple_type::real_type));
     IfcPropertySetDefinitionSet_type = new type_declaration(IfcSchema::Type::IfcPropertySetDefinitionSet, new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IfcPropertySetDefinition_type)));
     IfcRadioActivityMeasure_type = new type_declaration(IfcSchema::Type::IfcRadioActivityMeasure, new simple_type(simple_type::real_type));
@@ -1302,22 +1307,22 @@ schema_definition* populate_schema() {
     IfcStrippedOptional_type = new type_declaration(IfcSchema::Type::IfcStrippedOptional, new simple_type(simple_type::boolean_type));
     IfcTemperatureGradientMeasure_type = new type_declaration(IfcSchema::Type::IfcTemperatureGradientMeasure, new simple_type(simple_type::real_type));
     IfcTemperatureRateOfChangeMeasure_type = new type_declaration(IfcSchema::Type::IfcTemperatureRateOfChangeMeasure, new simple_type(simple_type::real_type));
-    IfcText_type = new type_declaration(IfcSchema::Type::IfcText, None);
-    IfcTextAlignment_type = new type_declaration(IfcSchema::Type::IfcTextAlignment, None);
-    IfcTextDecoration_type = new type_declaration(IfcSchema::Type::IfcTextDecoration, None);
-    IfcTextFontName_type = new type_declaration(IfcSchema::Type::IfcTextFontName, None);
-    IfcTextTransformation_type = new type_declaration(IfcSchema::Type::IfcTextTransformation, None);
+    IfcText_type = new type_declaration(IfcSchema::Type::IfcText, new simple_type(simple_type::string_type));
+    IfcTextAlignment_type = new type_declaration(IfcSchema::Type::IfcTextAlignment, new simple_type(simple_type::string_type));
+    IfcTextDecoration_type = new type_declaration(IfcSchema::Type::IfcTextDecoration, new simple_type(simple_type::string_type));
+    IfcTextFontName_type = new type_declaration(IfcSchema::Type::IfcTextFontName, new simple_type(simple_type::string_type));
+    IfcTextTransformation_type = new type_declaration(IfcSchema::Type::IfcTextTransformation, new simple_type(simple_type::string_type));
     IfcThermalAdmittanceMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalAdmittanceMeasure, new simple_type(simple_type::real_type));
     IfcThermalConductivityMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalConductivityMeasure, new simple_type(simple_type::real_type));
     IfcThermalExpansionCoefficientMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalExpansionCoefficientMeasure, new simple_type(simple_type::real_type));
     IfcThermalResistanceMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalResistanceMeasure, new simple_type(simple_type::real_type));
     IfcThermalTransmittanceMeasure_type = new type_declaration(IfcSchema::Type::IfcThermalTransmittanceMeasure, new simple_type(simple_type::real_type));
     IfcThermodynamicTemperatureMeasure_type = new type_declaration(IfcSchema::Type::IfcThermodynamicTemperatureMeasure, new simple_type(simple_type::real_type));
-    IfcTime_type = new type_declaration(IfcSchema::Type::IfcTime, None);
+    IfcTime_type = new type_declaration(IfcSchema::Type::IfcTime, new simple_type(simple_type::string_type));
     IfcTimeMeasure_type = new type_declaration(IfcSchema::Type::IfcTimeMeasure, new simple_type(simple_type::real_type));
     IfcTimeStamp_type = new type_declaration(IfcSchema::Type::IfcTimeStamp, new simple_type(simple_type::integer_type));
     IfcTorqueMeasure_type = new type_declaration(IfcSchema::Type::IfcTorqueMeasure, new simple_type(simple_type::real_type));
-    IfcURIReference_type = new type_declaration(IfcSchema::Type::IfcURIReference, None);
+    IfcURIReference_type = new type_declaration(IfcSchema::Type::IfcURIReference, new simple_type(simple_type::string_type));
     IfcVaporPermeabilityMeasure_type = new type_declaration(IfcSchema::Type::IfcVaporPermeabilityMeasure, new simple_type(simple_type::real_type));
     IfcVolumeMeasure_type = new type_declaration(IfcSchema::Type::IfcVolumeMeasure, new simple_type(simple_type::real_type));
     IfcVolumetricFlowRateMeasure_type = new type_declaration(IfcSchema::Type::IfcVolumetricFlowRateMeasure, new simple_type(simple_type::real_type));
@@ -12310,6 +12315,11 @@ schema_definition* populate_schema() {
     return new schema_definition("IFC4", declarations, true);
 }
 
+
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
+        
 const schema_definition& get_schema() {
 
     static const schema_definition* s = populate_schema();
