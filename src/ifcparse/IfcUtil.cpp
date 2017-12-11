@@ -92,12 +92,6 @@ IfcEntityList::ptr IfcEntityList::unique() {
 	return return_value;
 }
 
-
-unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
-Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
-const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
-
-
 //Note: some of these methods are overloaded in derived classes
 Argument::operator int() const { throw IfcParse::IfcException("Argument is not an integer"); }
 Argument::operator bool() const { throw IfcParse::IfcException("Argument is not a boolean"); }
@@ -196,4 +190,13 @@ std::vector<std::string> IfcUtil::IfcBaseEntity::getInverseAttributeNames() cons
 Argument* IfcUtil::IfcBaseEntity::getArgumentByName(const std::string& name) const {
 	unsigned int i = IfcSchema::Type::GetAttributeIndex(type(), name);
 	return getArgument(i);
+}
+
+IfcUtil::IfcBaseClass::~IfcBaseClass() {
+	delete data_; 
+}
+
+void IfcUtil::IfcBaseClass::data(IfcAbstractEntity* d) {
+	delete data_;
+	data_ = d; 
 }

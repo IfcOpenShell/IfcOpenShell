@@ -32,20 +32,28 @@
 
 class Argument;
 
+namespace IfcParse { // these have to be declared first in order for the virtual function below to be covariant. separate into different header file
+	class declaration;
+	class entity;
+	class type_declaration;
+}
+
 namespace IfcUtil {
 
 	class IFC_PARSE_API IfcBaseClass {
+    protected:
+		IfcAbstractEntity* data_;
+        
 	public:
-		virtual ~IfcBaseClass() {}
-		IfcEntityInstanceData* entity;
-		virtual bool is(IfcSchema::Type::Enum v) const = 0;
-		virtual IfcSchema::Type::Enum type() const = 0;
-
-		virtual unsigned int getArgumentCount() const = 0;
-		virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const = 0;
-		virtual IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const = 0;
-		virtual Argument* getArgument(unsigned int i) const = 0;
-		virtual const char* getArgumentName(unsigned int i) const = 0;
+        IfcBaseClass() : data_(0) {}
+		IfcBaseClass(IfcAbstractEntity* d) : data_(d) {}
+        virtual ~IfcBaseClass() {}
+        
+        const IfcAbstractEntity& data() const { return *data_; }
+		IfcAbstractEntity& data() { return *data_; }
+        void data(IfcAbstractEntity* d);
+        
+        virtual const IfcParse::declaration& declaration() const = 0;
 
 		template <class T>
 		T* as() {
@@ -64,19 +72,19 @@ namespace IfcUtil {
 
 	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
 	public:
-		Argument* getArgumentByName(const std::string& name) const;
-		std::vector<std::string> getAttributeNames() const;
-		std::vector<std::string> getInverseAttributeNames() const;
-		unsigned id() const { return entity->id(); }
+		IfcBaseEntity() : IfcBaseClass() {}
+		IfcBaseEntity(IfcAbstractEntity* d) : IfcBaseClass(d) {}
+
+		virtual const IfcParse::entity& declaration() const = 0;
 	};
 
 	// TODO: Investigate whether these should be template classes instead
 	class IFC_PARSE_API IfcBaseType : public IfcBaseEntity {
 	public:
-		unsigned int getArgumentCount() const;
-		Argument* getArgument(unsigned int i) const;
-		const char* getArgumentName(unsigned int i) const;
-		IfcSchema::Type::Enum getArgumentEntity(unsigned int /*i*/) const { return IfcSchema::Type::UNDEFINED; }
+		IfcBaseType() : IfcBaseClass() {}
+		IfcBaseType(IfcAbstractEntity* d) : IfcBaseClass(d) {}
+
+		virtual const IfcParse::type_declaration& declaration() const = 0;
 	};
 
 }
