@@ -38,7 +38,7 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, IfcUtil::IfcBaseClass* instance) {
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
 	if ( log2 && type >= verbosity ) {
 		(*log2) << "[" << severity_strings[type] << "] ";
 		if ( current_product ) {
@@ -51,7 +51,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, IfcUtil:
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, IfcUtil::IfcBaseClass* instance) {
+void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseClass* instance) {
 	Message(type, exception.what(), instance);
 }
 

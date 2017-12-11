@@ -197,7 +197,7 @@ namespace IfcGeom {
 
  			for (it = contexts->begin(); it != contexts->end(); ++it) {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
-				if (context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+				if (context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
 					// Continue, as the list of subcontexts will be considered
 					// by the parent's context inverse attributes.
 					continue;
@@ -208,7 +208,7 @@ namespace IfcGeom {
 						boost::to_lower(context_type);
 
 						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-							Logger::Message(Logger::LOG_ERROR, std::string("ContextType '") + context->ContextType() + "' not allowed:", context->entity);
+							Logger::Message(Logger::LOG_ERROR, std::string("ContextType '") + context->ContextType() + "' not allowed:", context);
 						}
 						if (context_types.find(context_type) != context_types.end()) {
 							filtered_contexts->push(context);
@@ -224,7 +224,7 @@ namespace IfcGeom {
 			if (filtered_contexts->size() == 0) {
 				for (it = contexts->begin(); it != contexts->end(); ++it) {
 					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-					if (!context->is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+					if (!context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
 						filtered_contexts->push(context);
 					}
 				}
@@ -374,7 +374,7 @@ namespace IfcGeom {
 					for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
 						IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
 						if (assoc) {
-							if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
+							if (assoc->RelatingMaterial()->declaration().is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
 								// TODO: Check whether single layer? 
 								return false;
 							}
@@ -578,19 +578,19 @@ namespace IfcGeom {
 				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
 
-				if (ifc_entity->is(IfcSchema::Type::IfcRoot)) {
+				if (ifc_entity->declaration().is(IfcSchema::Type::IfcRoot)) {
 					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();
 					product_guid = ifc_root->GlobalId();
 					product_name = ifc_root->hasName() ? ifc_root->Name() : "";
 				}
 
-				if (ifc_entity->is(IfcSchema::Type::IfcProduct)) {
+				if (ifc_entity->declaration().is(IfcSchema::Type::IfcProduct)) {
 					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
 						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
 						if (parent_object) {
-							parent_id = parent_object->entity->id();
+							parent_id = parent_object->data().id();
 						}
 					} catch (const std::exception& e) {
 						Logger::Error(e);
