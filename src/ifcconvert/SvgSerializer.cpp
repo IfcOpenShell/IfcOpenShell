@@ -44,10 +44,13 @@
 
 #include <Geom_Curve.hxx>
 #include <Geom_Line.hxx>
+#include <Geom_Plane.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
 #include <Standard_Version.hxx>
+#include <GeomAPI.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -76,10 +79,32 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 
 		double u1, u2;
 		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
+		Handle(Geom2d_Curve) curve2d;
+		if (curve.IsNull()) {
+			TopLoc_Location loc;
+			Handle_Geom_Surface surf;
+			
+			BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
+			
+			if (curve2d.IsNull()) {
+				Logger::Error("Failed to obtain 2d and 3d curve from edge");
+				continue;
+			}
 
-        Handle(Standard_Type) ty = curve->DynamicType();
+			Handle(Standard_Type) sty = surf->DynamicType();
+			if (sty != STANDARD_TYPE(Geom_Plane)) {
+				Logger::Error("Non-planar p-curves are not supported by this serializer");
+				continue;
+			}
+
+			gp_Pln pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
+			curve = GeomAPI::To3d(curve2d, pln);
+		}
+
+		Handle(Standard_Type) ty = curve->DynamicType();
         bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
         bool closed = ALMOST_THE_SAME(u1 + PI2, u2);
+
         if (conical && closed) {
             if (first) {
                 if (ty == STANDARD_TYPE(Geom_Circle)) {
