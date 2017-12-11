@@ -56,16 +56,16 @@ public:
 	static Severity Verbosity();
 	
 	/// Log a message to the output stream
-	static void Message(Severity type, const std::string& message, IfcEntityInstanceData* entity=0);
-	static void Message(Severity type, const std::exception& message, IfcEntityInstanceData* entity = 0);
+	static void Message(Severity type, const std::string& message, IfcUtil::IfcBaseClass* instance = 0);
+	static void Message(Severity type, const std::exception& message, IfcUtil::IfcBaseClass* instance = 0);
 	
-	static void Notice(const std::string& message, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, message, entity); }
-    static void Warning(const std::string& message, IfcEntityInstanceData* entity=0) { Message(LOG_WARNING, message, entity); }
-    static void Error(const std::string& message, IfcEntityInstanceData* entity=0) { Message(LOG_ERROR, message, entity); }
+	static void Notice(const std::string& message, IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_NOTICE, message, instance); }
+    static void Warning(const std::string& message, IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_WARNING, message, instance); }
+    static void Error(const std::string& message, IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_ERROR, message, instance); }
 	
-	static void Notice(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, exception, entity); }
-	static void Warning(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_WARNING, exception, entity); }
-	static void Error(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_ERROR, exception, entity); }
+	static void Notice(const std::exception& exception, IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_NOTICE, exception, instance); }
+	static void Warning(const std::exception& exception, IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_WARNING, exception, instance); }
+	static void Error(const std::exception& exception, IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_ERROR, exception, instance); }
 
 	static void Status(const std::string& message, bool new_line=true);
 

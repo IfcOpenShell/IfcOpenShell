@@ -339,7 +339,7 @@ namespace IfcParse {
 						index = std::distance(current->attributes().begin(), it);
 					}
 				}
-			} while (current = current->supertype_);
+			} while ((current = current->supertype_));
 			return index;
 		}
 

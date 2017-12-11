@@ -42,7 +42,7 @@ namespace IfcUtil {
 	public:
         IfcBaseClass() : data_(0) {}
 		IfcBaseClass(IfcEntityInstanceData* d) : data_(d) {}
-        virtual ~IfcBaseClass() {}
+		virtual ~IfcBaseClass() { delete data_; }
         
         const IfcEntityInstanceData& data() const { return *data_; }
 		IfcEntityInstanceData& data() { return *data_; }
@@ -52,14 +52,14 @@ namespace IfcUtil {
 
 		template <class T>
 		T* as() {
-			return is(T::Class())
+			return declaration().is(T::Class())
 				? static_cast<T*>(this)
 				: static_cast<T*>(0);
 		}
 
 		template <class T>
 		const T* as() const {
-			return is(T::Class())
+			return declaration().is(T::Class())
 				? static_cast<const T*>(this)
 				: static_cast<const T*>(0);
 		}
@@ -71,6 +71,8 @@ namespace IfcUtil {
 		IfcBaseEntity(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
 
 		virtual const IfcParse::entity& declaration() const = 0;
+
+		Argument* getArgumentByName(const std::string& name) const;
 	};
 
 	// TODO: Investigate whether these should be template classes instead
