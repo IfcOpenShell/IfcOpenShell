@@ -423,7 +423,7 @@ entity_implementation = """// Function implementations for %(name)s
 %(inverse)s
 const IfcParse::entity& %(name)s::declaration() const { return *%(name)s_type; }
 Type::Enum %(name)s::Class() { return Type::%(name)s; }
-%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (!e->is(Type::%(name)s)) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != Type::%(name)s) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 %(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(Class()); %(constructor_implementation)s }
 """
 
@@ -469,7 +469,7 @@ constructor_stmt_enum     = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::I
 constructor_stmt_array    = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(name)s)->generalize()"                                                                  +");data_->setArgument(%(index)d,attr);}"
 constructor_stmt_derived  = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::Derived()"                                                     +");data_->setArgument(%(index)d,attr);}"
 
-constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); entity->setArgument(%(index)d, attr); }"
+constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(%(index)d, attr); }"
 
 inverse_implementation = "    inverse_map[Type::%(type)s].insert(std::make_pair(\"%(name)s\", std::make_pair(Type::%(related_type)s, %(index)d)));"
 
