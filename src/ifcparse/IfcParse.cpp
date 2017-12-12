@@ -935,15 +935,6 @@ IfcEntityList::ptr IfcEntityInstanceData::getInverse(IfcSchema::Type::Enum type,
 	return file->getInverse(id_, type, attribute_index);
 }
 
-IfcFile::IfcFile()
-	: parsing_complete_(false)
-	, MaxId(0)
-	, tokens(0)
-	, stream(0)
-{
-	setDefaultHeaderValues();
-}
-
 void IfcEntityInstanceData::load() const {
 	file->load(*this);
 	initialized_ = true;
@@ -1125,7 +1116,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
 		
-		const IfcParse::enumeration_type* enum_type = get_schema().declaration_by_name(type())->as_entity()->
+		const IfcParse::enumeration_type* enum_type = file->schema()->declaration_by_name(type())->as_entity()->
 			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
 		
 		std::vector<std::string>::const_iterator it = std::find(
@@ -1172,7 +1163,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		break; }
 	case IfcUtil::Argument_EMPTY_AGGREGATE:
 	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
-		IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(get_schema().declaration_by_name(type())->as_entity()->all_attributes()[i]->type_of_attribute());
+		IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(file->schema()->declaration_by_name(type())->as_entity()->all_attributes()[i]->type_of_attribute());
 		delete copy;
 		copy = 0;
 		setArgument(i, a, t2);
@@ -1214,32 +1205,58 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 // Creates the maps
 //
 #ifdef USE_MMAP
-bool IfcFile::Init(const std::string& fn, bool mmap) {
+IfcFile::IfcFile(const std::string& fn, bool mmap) {
 	return IfcFile::Init(new IfcSpfStream(fn, mmap));
 }
 #else
-bool IfcFile::Init(const std::string& fn) {
-	return IfcFile::Init(new IfcSpfStream(fn));
+IfcFile::IfcFile(const std::string& fn) {
+	initialize_(new IfcSpfStream(fn));
 }
 #endif
 
-bool IfcFile::Init(std::istream& f, int len) {
-	return IfcFile::Init(new IfcSpfStream(f,len));
+IfcFile::IfcFile(std::istream& f, int len) {
+	initialize_(new IfcSpfStream(f, len));
 }
 
-bool IfcFile::Init(void* data, int len) {
-	return IfcFile::Init(new IfcSpfStream(data,len));
+IfcFile::IfcFile(void* data, int len) {
+	initialize_(new IfcSpfStream(data, len));
 }
 
-bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
+IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
+	initialize_(s);
+}
+
+IfcFile::IfcFile(const IfcParse::schema_definition* schema)
+	: schema_(schema)
+	, good_(false)
+	, parsing_complete_(false)
+	, MaxId(0)
+	, tokens(0)
+	, stream(0)
+{
+	setDefaultHeaderValues();
+}
+
+void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	// Initialize a "C" locale for locale-independent
 	// number parsing. See comment above on line 41.
 	init_locale();
 
+	good_ = false;
+
+	parsing_complete_ = false;
+	MaxId = 0;
+	tokens = 0;
+	stream = 0;
+
+	setDefaultHeaderValues();
+	
 	stream = s;
 	if (!stream->valid) {
-		return false;
+		return;
 	}
+
+	good_ = true;
 
 	tokens = new IfcSpfLexer(stream, this);
 	_header.file(this);
@@ -1252,8 +1269,19 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 		// Purposely empty catch block
 	}
 
-	if (schemas.size() != 1 || schemas[0] != IfcSchema::Identifier) {
-		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
+	schema_ = 0;
+
+	if (schemas.size() == 1) {
+		try {
+			schema_ = IfcParse::schema_by_name(schemas.front());
+		} catch (const IfcParse::IfcException& e) {
+			Logger::Error(e);
+		}
+	}
+
+	if (schema_ == 0) {
+		schema_ = IfcParse::schema_by_name(IfcSchema::Identifier);
+		Logger::Message(Logger::LOG_ERROR, "Unable to deduce schema version from header identifiers");
 	}
 
 	boost::circular_buffer<Token> token_stream(3, Token());
@@ -1278,7 +1306,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 			} catch (const IfcException& ex) {
 				Logger::Message(Logger::LOG_ERROR, ex.what());
 				goto advance;
-			}		
+			}
 				
 			data = new IfcEntityInstanceData(entity_type, this, current_id, token_stream[2].startPos);
 			instance = IfcSchema::SchemaEntity(data);
@@ -1362,7 +1390,7 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 
 	parsing_complete_ = true;
 
-	return true;
+	return;
 }
 
 class traversal_visitor {

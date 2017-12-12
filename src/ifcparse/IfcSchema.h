@@ -414,25 +414,9 @@ namespace IfcParse {
 		};
 
 	public:
-		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, const bool built_in = false)
-			: name_(name)
-			, declarations_(declarations)
-			, built_in_(built_in)
-		{
-			std::sort(declarations_.begin(), declarations_.end(), declaration_by_enum_sort());
-			for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
-				if ((**it).as_type_declaration()) type_declarations_.push_back((**it).as_type_declaration());
-				if ((**it).as_select_type()) select_types_.push_back((**it).as_select_type());
-				if ((**it).as_enumeration_type()) enumeration_types_.push_back((**it).as_enumeration_type());
-				if ((**it).as_entity()) entities_.push_back((**it).as_entity());
-			}			
-		}
+		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, const bool built_in = false);
 
-		~schema_definition() {
-			for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
-				delete *it;
-			}
-		}
+		~schema_definition();
 
 		const declaration* declaration_by_name(const std::string& name) const {
 			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), name, declaration_by_name_cmp());
@@ -457,6 +441,7 @@ namespace IfcParse {
 		const std::string& name() const { return name_; }
 	};
 
+	const schema_definition* schema_by_name(const std::string&);
 }
 
 #endif

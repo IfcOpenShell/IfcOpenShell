@@ -24,8 +24,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef USE_IFC4
-
 #include "../ifcparse/IfcSchema.h"
 
 using namespace IfcParse;
@@ -9394,6 +9392,373 @@ schema_definition* populate_schema() {
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcZone_type->set_attributes(attributes, derived);
     }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("IsActingUpon", entity::inverse_attribute::set_type, 0, -1, IfcRelAssignsToActor_type, IfcRelAssignsToActor_type->attributes()[0]));
+        IfcActor_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("OfPerson", entity::inverse_attribute::set_type, 0, -1, IfcPerson_type, IfcPerson_type->attributes()[7]));
+        attributes.push_back(new entity::inverse_attribute("OfOrganization", entity::inverse_attribute::set_type, 0, -1, IfcOrganization_type, IfcOrganization_type->attributes()[4]));
+        IfcAddress_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ContainedInStructure", entity::inverse_attribute::set_type, 0, 1, IfcRelContainedInSpatialStructure_type, IfcRelContainedInSpatialStructure_type->attributes()[0]));
+        IfcAnnotation_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("ValuesReferenced", entity::inverse_attribute::set_type, 0, -1, IfcReferencesValueDocument_type, IfcReferencesValueDocument_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ValueOfComponents", entity::inverse_attribute::set_type, 0, -1, IfcAppliedValueRelationship_type, IfcAppliedValueRelationship_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("IsComponentIn", entity::inverse_attribute::set_type, 0, -1, IfcAppliedValueRelationship_type, IfcAppliedValueRelationship_type->attributes()[1]));
+        IfcAppliedValue_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("Actors", entity::inverse_attribute::set_type, 0, -1, IfcApprovalActorRelationship_type, IfcApprovalActorRelationship_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("IsRelatedWith", entity::inverse_attribute::set_type, 0, -1, IfcApprovalRelationship_type, IfcApprovalRelationship_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("Relates", entity::inverse_attribute::set_type, 0, -1, IfcApprovalRelationship_type, IfcApprovalRelationship_type->attributes()[1]));
+        IfcApproval_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("Contains", entity::inverse_attribute::set_type, 0, -1, IfcClassificationItem_type, IfcClassificationItem_type->attributes()[1]));
+        IfcClassification_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("IsClassifiedItemIn", entity::inverse_attribute::set_type, 0, 1, IfcClassificationItemRelationship_type, IfcClassificationItemRelationship_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("IsClassifyingItemIn", entity::inverse_attribute::set_type, 0, 1, IfcClassificationItemRelationship_type, IfcClassificationItemRelationship_type->attributes()[0]));
+        IfcClassificationItem_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("UsingCurves", entity::inverse_attribute::set_type, 1, -1, IfcCompositeCurve_type, IfcCompositeCurve_type->attributes()[0]));
+        IfcCompositeCurveSegment_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new entity::inverse_attribute("ClassifiedAs", entity::inverse_attribute::set_type, 0, -1, IfcConstraintClassificationRelationship_type, IfcConstraintClassificationRelationship_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("RelatesConstraints", entity::inverse_attribute::set_type, 0, -1, IfcConstraintRelationship_type, IfcConstraintRelationship_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("IsRelatedWith", entity::inverse_attribute::set_type, 0, -1, IfcConstraintRelationship_type, IfcConstraintRelationship_type->attributes()[3]));
+        attributes.push_back(new entity::inverse_attribute("PropertiesForConstraint", entity::inverse_attribute::set_type, 0, -1, IfcPropertyConstraintRelationship_type, IfcPropertyConstraintRelationship_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("Aggregates", entity::inverse_attribute::set_type, 0, -1, IfcConstraintAggregationRelationship_type, IfcConstraintAggregationRelationship_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("IsAggregatedIn", entity::inverse_attribute::set_type, 0, -1, IfcConstraintAggregationRelationship_type, IfcConstraintAggregationRelationship_type->attributes()[3]));
+        IfcConstraint_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("Controls", entity::inverse_attribute::set_type, 0, -1, IfcRelAssignsToControl_type, IfcRelAssignsToControl_type->attributes()[0]));
+        IfcControl_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("CoversSpaces", entity::inverse_attribute::set_type, 0, 1, IfcRelCoversSpaces_type, IfcRelCoversSpaces_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("Covers", entity::inverse_attribute::set_type, 0, 1, IfcRelCoversBldgElements_type, IfcRelCoversBldgElements_type->attributes()[1]));
+        IfcCovering_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("AnnotatedBySymbols", entity::inverse_attribute::set_type, 0, 2, IfcTerminatorSymbol_type, IfcTerminatorSymbol_type->attributes()[0]));
+        IfcDimensionCurve_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("AssignedToFlowElement", entity::inverse_attribute::set_type, 0, 1, IfcRelFlowControlElements_type, IfcRelFlowControlElements_type->attributes()[0]));
+        IfcDistributionControlElement_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("HasControlElements", entity::inverse_attribute::set_type, 0, 1, IfcRelFlowControlElements_type, IfcRelFlowControlElements_type->attributes()[1]));
+        IfcDistributionFlowElement_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("IsPointedTo", entity::inverse_attribute::set_type, 0, -1, IfcDocumentInformationRelationship_type, IfcDocumentInformationRelationship_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("IsPointer", entity::inverse_attribute::set_type, 0, 1, IfcDocumentInformationRelationship_type, IfcDocumentInformationRelationship_type->attributes()[0]));
+        IfcDocumentInformation_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ReferenceToDocument", entity::inverse_attribute::set_type, 0, 1, IfcDocumentInformation_type, IfcDocumentInformation_type->attributes()[3]));
+        IfcDocumentReference_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("IsRelatedFromCallout", entity::inverse_attribute::set_type, 0, -1, IfcDraughtingCalloutRelationship_type, IfcDraughtingCalloutRelationship_type->attributes()[3]));
+        attributes.push_back(new entity::inverse_attribute("IsRelatedToCallout", entity::inverse_attribute::set_type, 0, -1, IfcDraughtingCalloutRelationship_type, IfcDraughtingCalloutRelationship_type->attributes()[2]));
+        IfcDraughtingCallout_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(12);
+        attributes.push_back(new entity::inverse_attribute("HasStructuralMember", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsStructuralElement_type, IfcRelConnectsStructuralElement_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("FillsVoids", entity::inverse_attribute::set_type, 0, 1, IfcRelFillsElement_type, IfcRelFillsElement_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ConnectedTo", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsElements_type, IfcRelConnectsElements_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("HasCoverings", entity::inverse_attribute::set_type, 0, -1, IfcRelCoversBldgElements_type, IfcRelCoversBldgElements_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("HasProjections", entity::inverse_attribute::set_type, 0, -1, IfcRelProjectsElement_type, IfcRelProjectsElement_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("ReferencedInStructures", entity::inverse_attribute::set_type, 0, -1, IfcRelReferencedInSpatialStructure_type, IfcRelReferencedInSpatialStructure_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("HasPorts", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsPortToElement_type, IfcRelConnectsPortToElement_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("HasOpenings", entity::inverse_attribute::set_type, 0, -1, IfcRelVoidsElement_type, IfcRelVoidsElement_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("IsConnectionRealization", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsWithRealizingElements_type, IfcRelConnectsWithRealizingElements_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("ProvidesBoundaries", entity::inverse_attribute::set_type, 0, -1, IfcRelSpaceBoundary_type, IfcRelSpaceBoundary_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ConnectedFrom", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsElements_type, IfcRelConnectsElements_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("ContainedInStructure", entity::inverse_attribute::set_type, 0, 1, IfcRelContainedInSpatialStructure_type, IfcRelContainedInSpatialStructure_type->attributes()[0]));
+        IfcElement_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ProjectsElements", entity::inverse_attribute::unspecified_type, -1, -1, IfcRelProjectsElement_type, IfcRelProjectsElement_type->attributes()[1]));
+        IfcFeatureElementAddition_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("VoidsElements", entity::inverse_attribute::unspecified_type, -1, -1, IfcRelVoidsElement_type, IfcRelVoidsElement_type->attributes()[1]));
+        IfcFeatureElementSubtraction_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("HasSubContexts", entity::inverse_attribute::set_type, 0, -1, IfcGeometricRepresentationSubContext_type, IfcGeometricRepresentationSubContext_type->attributes()[0]));
+        IfcGeometricRepresentationContext_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ContainedInStructure", entity::inverse_attribute::set_type, 0, 1, IfcRelContainedInSpatialStructure_type, IfcRelContainedInSpatialStructure_type->attributes()[0]));
+        IfcGrid_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new entity::inverse_attribute("PartOfW", entity::inverse_attribute::set_type, 0, 1, IfcGrid_type, IfcGrid_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("PartOfV", entity::inverse_attribute::set_type, 0, 1, IfcGrid_type, IfcGrid_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("PartOfU", entity::inverse_attribute::set_type, 0, 1, IfcGrid_type, IfcGrid_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("HasIntersections", entity::inverse_attribute::set_type, 0, -1, IfcVirtualGridIntersection_type, IfcVirtualGridIntersection_type->attributes()[0]));
+        IfcGridAxis_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("IsGroupedBy", entity::inverse_attribute::unspecified_type, -1, -1, IfcRelAssignsToGroup_type, IfcRelAssignsToGroup_type->attributes()[0]));
+        IfcGroup_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ReferenceIntoLibrary", entity::inverse_attribute::set_type, 0, 1, IfcLibraryInformation_type, IfcLibraryInformation_type->attributes()[4]));
+        IfcLibraryReference_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("HasRepresentation", entity::inverse_attribute::set_type, 0, 1, IfcMaterialDefinitionRepresentation_type, IfcMaterialDefinitionRepresentation_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("ClassifiedAs", entity::inverse_attribute::set_type, 0, 1, IfcMaterialClassificationRelationship_type, IfcMaterialClassificationRelationship_type->attributes()[1]));
+        IfcMaterial_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ToMaterialLayerSet", entity::inverse_attribute::unspecified_type, -1, -1, IfcMaterialLayerSet_type, IfcMaterialLayerSet_type->attributes()[0]));
+        IfcMaterialLayer_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("IsDefinedBy", entity::inverse_attribute::set_type, 0, -1, IfcRelDefines_type, IfcRelDefines_type->attributes()[0]));
+        IfcObject_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new entity::inverse_attribute("HasAssignments", entity::inverse_attribute::set_type, 0, -1, IfcRelAssigns_type, IfcRelAssigns_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("IsDecomposedBy", entity::inverse_attribute::set_type, 0, -1, IfcRelDecomposes_type, IfcRelDecomposes_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("Decomposes", entity::inverse_attribute::set_type, 0, 1, IfcRelDecomposes_type, IfcRelDecomposes_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("HasAssociations", entity::inverse_attribute::set_type, 0, -1, IfcRelAssociates_type, IfcRelAssociates_type->attributes()[0]));
+        IfcObjectDefinition_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("PlacesObject", entity::inverse_attribute::set_type, 1, 1, IfcProduct_type, IfcProduct_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("ReferencedByPlacements", entity::inverse_attribute::set_type, 0, -1, IfcLocalPlacement_type, IfcLocalPlacement_type->attributes()[0]));
+        IfcObjectPlacement_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("HasFillings", entity::inverse_attribute::set_type, 0, -1, IfcRelFillsElement_type, IfcRelFillsElement_type->attributes()[0]));
+        IfcOpeningElement_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("IsRelatedBy", entity::inverse_attribute::set_type, 0, -1, IfcOrganizationRelationship_type, IfcOrganizationRelationship_type->attributes()[3]));
+        attributes.push_back(new entity::inverse_attribute("Relates", entity::inverse_attribute::set_type, 0, -1, IfcOrganizationRelationship_type, IfcOrganizationRelationship_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("Engages", entity::inverse_attribute::set_type, 0, -1, IfcPersonAndOrganization_type, IfcPersonAndOrganization_type->attributes()[1]));
+        IfcOrganization_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("EngagedIn", entity::inverse_attribute::set_type, 0, -1, IfcPersonAndOrganization_type, IfcPersonAndOrganization_type->attributes()[0]));
+        IfcPerson_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("PartOfComplex", entity::inverse_attribute::set_type, 0, 1, IfcPhysicalComplexQuantity_type, IfcPhysicalComplexQuantity_type->attributes()[0]));
+        IfcPhysicalQuantity_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("ContainedIn", entity::inverse_attribute::unspecified_type, -1, -1, IfcRelConnectsPortToElement_type, IfcRelConnectsPortToElement_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("ConnectedFrom", entity::inverse_attribute::set_type, 0, 1, IfcRelConnectsPorts_type, IfcRelConnectsPorts_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ConnectedTo", entity::inverse_attribute::set_type, 0, 1, IfcRelConnectsPorts_type, IfcRelConnectsPorts_type->attributes()[0]));
+        IfcPort_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("OperatesOn", entity::inverse_attribute::set_type, 0, -1, IfcRelAssignsToProcess_type, IfcRelAssignsToProcess_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("IsSuccessorFrom", entity::inverse_attribute::set_type, 0, -1, IfcRelSequence_type, IfcRelSequence_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("IsPredecessorTo", entity::inverse_attribute::set_type, 0, -1, IfcRelSequence_type, IfcRelSequence_type->attributes()[0]));
+        IfcProcess_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ReferencedBy", entity::inverse_attribute::set_type, 0, -1, IfcRelAssignsToProduct_type, IfcRelAssignsToProduct_type->attributes()[0]));
+        IfcProduct_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("ShapeOfProduct", entity::inverse_attribute::set_type, 1, 1, IfcProduct_type, IfcProduct_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("HasShapeAspects", entity::inverse_attribute::set_type, 0, -1, IfcShapeAspect_type, IfcShapeAspect_type->attributes()[4]));
+        IfcProductDefinitionShape_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("PropertyForDependance", entity::inverse_attribute::set_type, 0, -1, IfcPropertyDependencyRelationship_type, IfcPropertyDependencyRelationship_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("PropertyDependsOn", entity::inverse_attribute::set_type, 0, -1, IfcPropertyDependencyRelationship_type, IfcPropertyDependencyRelationship_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("PartOfComplex", entity::inverse_attribute::set_type, 0, 1, IfcComplexProperty_type, IfcComplexProperty_type->attributes()[1]));
+        IfcProperty_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("HasAssociations", entity::inverse_attribute::set_type, 0, -1, IfcRelAssociates_type, IfcRelAssociates_type->attributes()[0]));
+        IfcPropertyDefinition_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("PropertyDefinitionOf", entity::inverse_attribute::set_type, 0, 1, IfcRelDefinesByProperties_type, IfcRelDefinesByProperties_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("DefinesType", entity::inverse_attribute::set_type, 0, 1, IfcTypeObject_type, IfcTypeObject_type->attributes()[1]));
+        IfcPropertySetDefinition_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("RepresentationMap", entity::inverse_attribute::set_type, 0, 1, IfcRepresentationMap_type, IfcRepresentationMap_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("LayerAssignments", entity::inverse_attribute::set_type, 0, -1, IfcPresentationLayerAssignment_type, IfcPresentationLayerAssignment_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("OfProductRepresentation", entity::inverse_attribute::set_type, 0, 1, IfcProductRepresentation_type, IfcProductRepresentation_type->attributes()[2]));
+        IfcRepresentation_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("RepresentationsInContext", entity::inverse_attribute::set_type, 0, -1, IfcRepresentation_type, IfcRepresentation_type->attributes()[0]));
+        IfcRepresentationContext_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("LayerAssignments", entity::inverse_attribute::set_type, 0, -1, IfcPresentationLayerAssignment_type, IfcPresentationLayerAssignment_type->attributes()[2]));
+        attributes.push_back(new entity::inverse_attribute("StyledByItem", entity::inverse_attribute::set_type, 0, 1, IfcStyledItem_type, IfcStyledItem_type->attributes()[0]));
+        IfcRepresentationItem_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("MapUsage", entity::inverse_attribute::set_type, 0, -1, IfcMappedItem_type, IfcMappedItem_type->attributes()[0]));
+        IfcRepresentationMap_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ResourceOf", entity::inverse_attribute::set_type, 0, -1, IfcRelAssignsToResource_type, IfcRelAssignsToResource_type->attributes()[0]));
+        IfcResource_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ScheduleTimeControlAssigned", entity::inverse_attribute::unspecified_type, -1, -1, IfcRelAssignsTasks_type, IfcRelAssignsTasks_type->attributes()[0]));
+        IfcScheduleTimeControl_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("OfShapeAspect", entity::inverse_attribute::set_type, 0, 1, IfcShapeAspect_type, IfcShapeAspect_type->attributes()[0]));
+        IfcShapeModel_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("HasCoverings", entity::inverse_attribute::set_type, 0, -1, IfcRelCoversSpaces_type, IfcRelCoversSpaces_type->attributes()[0]));
+        attributes.push_back(new entity::inverse_attribute("BoundedBy", entity::inverse_attribute::set_type, 0, -1, IfcRelSpaceBoundary_type, IfcRelSpaceBoundary_type->attributes()[0]));
+        IfcSpace_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("HasInteractionReqsFrom", entity::inverse_attribute::set_type, 0, -1, IfcRelInteractionRequirements_type, IfcRelInteractionRequirements_type->attributes()[3]));
+        attributes.push_back(new entity::inverse_attribute("HasInteractionReqsTo", entity::inverse_attribute::set_type, 0, -1, IfcRelInteractionRequirements_type, IfcRelInteractionRequirements_type->attributes()[4]));
+        IfcSpaceProgram_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new entity::inverse_attribute("ReferencesElements", entity::inverse_attribute::set_type, 0, -1, IfcRelReferencedInSpatialStructure_type, IfcRelReferencedInSpatialStructure_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ServicedBySystems", entity::inverse_attribute::set_type, 0, -1, IfcRelServicesBuildings_type, IfcRelServicesBuildings_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ContainsElements", entity::inverse_attribute::set_type, 0, -1, IfcRelContainedInSpatialStructure_type, IfcRelContainedInSpatialStructure_type->attributes()[1]));
+        IfcSpatialStructureElement_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("AssignedToStructuralItem", entity::inverse_attribute::unspecified_type, -1, -1, IfcRelConnectsStructuralActivity_type, IfcRelConnectsStructuralActivity_type->attributes()[1]));
+        IfcStructuralActivity_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ConnectsStructuralMembers", entity::inverse_attribute::set_type, 1, -1, IfcRelConnectsStructuralMember_type, IfcRelConnectsStructuralMember_type->attributes()[1]));
+        IfcStructuralConnection_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("AssignedStructuralActivity", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsStructuralActivity_type, IfcRelConnectsStructuralActivity_type->attributes()[0]));
+        IfcStructuralItem_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("SourceOfResultGroup", entity::inverse_attribute::set_type, 0, 1, IfcStructuralResultGroup_type, IfcStructuralResultGroup_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("LoadGroupFor", entity::inverse_attribute::set_type, 0, -1, IfcStructuralAnalysisModel_type, IfcStructuralAnalysisModel_type->attributes()[2]));
+        IfcStructuralLoadGroup_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new entity::inverse_attribute("ReferencesElement", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsStructuralElement_type, IfcRelConnectsStructuralElement_type->attributes()[1]));
+        attributes.push_back(new entity::inverse_attribute("ConnectedBy", entity::inverse_attribute::set_type, 0, -1, IfcRelConnectsStructuralMember_type, IfcRelConnectsStructuralMember_type->attributes()[0]));
+        IfcStructuralMember_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("Causes", entity::inverse_attribute::set_type, 0, -1, IfcStructuralAction_type, IfcStructuralAction_type->attributes()[1]));
+        IfcStructuralReaction_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ResultGroupFor", entity::inverse_attribute::set_type, 0, 1, IfcStructuralAnalysisModel_type, IfcStructuralAnalysisModel_type->attributes()[3]));
+        IfcStructuralResultGroup_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ServicesBuildings", entity::inverse_attribute::set_type, 0, 1, IfcRelServicesBuildings_type, IfcRelServicesBuildings_type->attributes()[0]));
+        IfcSystem_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("OfTable", entity::inverse_attribute::unspecified_type, -1, -1, IfcTable_type, IfcTable_type->attributes()[1]));
+        IfcTableRow_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("AnnotatedSurface", entity::inverse_attribute::set_type, 1, 1, IfcAnnotationSurface_type, IfcAnnotationSurface_type->attributes()[1]));
+        IfcTextureCoordinate_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("DocumentedBy", entity::inverse_attribute::set_type, 0, 1, IfcTimeSeriesReferenceRelationship_type, IfcTimeSeriesReferenceRelationship_type->attributes()[0]));
+        IfcTimeSeries_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new entity::inverse_attribute("ObjectTypeOf", entity::inverse_attribute::set_type, 0, 1, IfcRelDefinesByType_type, IfcRelDefinesByType_type->attributes()[0]));
+        IfcTypeObject_type->set_inverse_attributes(attributes);
+    }
 
     std::vector<const declaration*> declarations; declarations.reserve(980);
     declarations.push_back(IfcAbsorbedDoseMeasure_type);
@@ -10384,10 +10749,11 @@ schema_definition* populate_schema() {
 #pragma optimize("", on)
 #endif
         
+namespace IFC2X3 {
 const schema_definition& get_schema() {
 
     static const schema_definition* s = populate_schema();
     return *s;
 }
+}
 
-#endif
