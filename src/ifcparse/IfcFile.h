@@ -27,6 +27,7 @@
 
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcSpfHeader.h"
+#include "../ifcparse/IfcSchema.h"
 
 namespace IfcParse {
 
@@ -64,7 +65,7 @@ public:
 private:
 	typedef std::map<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-	bool parsing_complete_;
+	bool parsing_complete_, good_;
 
 	const IfcParse::schema_definition* schema_;
 
@@ -81,12 +82,25 @@ private:
 
 	void setDefaultHeaderValues();
 
+	void initialize_(IfcParse::IfcSpfStream* f);
+
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
 	
-	IfcFile();
+#ifdef USE_MMAP
+	IfcFile(const std::string& fn, bool mmap = false);
+#else
+	IfcFile(const std::string& fn);
+#endif
+	IfcFile(std::istream& fn, int len);
+	IfcFile(void* data, int len);
+	IfcFile(IfcParse::IfcSpfStream* f);
+	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name(IfcSchema::Identifier));
+
 	~IfcFile();
+
+	bool good() const { return good_; }
 	
 	/// Returns the first entity in the file, this probably is the entity
 	/// with the lowest id (EXPRESS ENTITY_INSTANCE_NAME)
@@ -140,15 +154,6 @@ public:
 	/// attributes as a flat list. NB: includes the root instance specified
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
-
-#ifdef USE_MMAP
-	bool Init(const std::string& fn, bool mmap=false);
-#else
-	bool Init(const std::string& fn);
-#endif
-	bool Init(std::istream& fn, int len);
-	bool Init(void* data, int len);
-	bool Init(IfcParse::IfcSpfStream* f);
 
 	IfcEntityList::ptr getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index);
 

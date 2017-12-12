@@ -36,11 +36,11 @@ header = """
 
 #include "../ifcparse/%(schema_name)senum.h"
 
-const IfcParse::schema_definition& get_schema();
-
 #define IfcSchema %(schema_name)s
 
 namespace %(schema_name)s {
+
+const IfcParse::schema_definition& get_schema();
 
 const char* const Identifier = "%(schema_name_upper)s";
 

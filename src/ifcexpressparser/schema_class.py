@@ -194,11 +194,13 @@ class SchemaClass(codegen.Base):
 #endif
         """)
         
+        statements.append("namespace %s {" % mapping.schema.name)
+        
         statements.extend(('const schema_definition& get_schema() {',
                            '',
                            '    static const schema_definition* s = populate_schema();',
                            '    return *s;',
-                           '}','',''))
+                           '}','}','',''))
                            
         self.str = "\n".join(statements)
         
