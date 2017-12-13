@@ -97,7 +97,7 @@ public:
 	IfcFile(std::istream& fn, int len);
 	IfcFile(void* data, int len);
 	IfcFile(IfcParse::IfcSpfStream* f);
-	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name(IfcSchema::Identifier));
+	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
 
 	~IfcFile();
 
@@ -149,7 +149,7 @@ public:
 	IfcUtil::IfcBaseClass* instance_by_id(int id);
 
 	/// Returns the entity with the specified GlobalId
-	IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
+	virtual IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
 
 	/// Performs a depth-first traversal, returning all entity instance
 	/// attributes as a flat list. NB: includes the root instance specified
@@ -170,8 +170,6 @@ public:
 
 	std::string createTimestamp() const;
 
-	std::pair<IfcSchema::IfcNamedUnit*, double> getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum);
-
 	void load(const IfcEntityInstanceData&);
 	void load(unsigned entity_instance_name, std::vector<Argument*>& attributes);
 
@@ -180,6 +178,22 @@ public:
 	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
     
 	const IfcParse::schema_definition* schema() const { return schema_; }
+
+	std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
+};
+
+template <typename Schema>
+class IFC_PARSE_API IfcFileWithSchema : public IfcFile {
+public:
+	std::pair<typename Schema::IfcNamedUnit*, double> getUnit(typename Schema::IfcUnitEnum::Value unit_type) {
+		std::pair<IfcUtil::IfcBaseClass*, double> unit_info = IfcFile::getUnit(Schema::IfcUnitEnum::ToString(unit_type));
+		return std::make_pair(unit_info.first->as<typename Schema::IfcNamedUnit>(), unit_info.second);
+	}
+	
+	/// Returns the entity with the specified GlobalId
+	virtual typename Schema::IfcRoot::list::ptr instance_by_guid(const std::string& guid) {
+		return IfcFile::instance_by_guid(guid)->as<Schema::IfcRoot>();
+	}
 };
 
 }

@@ -122,7 +122,7 @@ class Mapping:
         is_ptr = False
         
         if self.schema.is_enumeration(attr_type):
-            type_str = '%s::%s'%(attr_type, attr_type)
+            type_str = '::%s::%s::Value' % (self.schema.name.capitalize(), attr_type)
         elif isinstance(type_str, nodes.AggregationType):
             is_nested_list = isinstance(attr_type.type, nodes.AggregationType)
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type, False, allow_entities, False)
@@ -141,8 +141,10 @@ class Mapping:
                 type_str = tmpl % {
                     'instance_type': ty
                 }
-        elif allow_pointer and (self.schema.is_entity(type_str) or self.schema.is_select(type_str)):
-            type_str += '*'
+        elif (self.schema.is_entity(type_str) or self.schema.is_select(type_str)):
+            type_str = '::%s::%s' % (self.schema.name.capitalize(), attr_type)
+            if allow_pointer:
+                type_str += "*"
             is_ptr = True
         elif not allow_pointer and self.schema.is_select(type_str):
             type_str = "IfcUtil::IfcBaseClass*"
@@ -166,7 +168,13 @@ class Mapping:
     def list_instance_type(self, attr):
         attr_type = attr.type if isinstance(attr, nodes.ExplicitAttribute) else attr
         if isinstance(attr_type, str): return None
-        f = lambda v : 'IfcUtil::IfcBaseClass' if self.schema.is_select(v) else str(v)
+        def f(v):
+            v = self.flatten_type(v)
+            if self.schema.is_select(v):
+                return 'IfcUtil::IfcBaseClass'
+            elif str(v) in self.schema.types or str(v) in self.schema.entities:
+                return "::%s::%s" % (self.schema.name.capitalize(), v)
+            else: return str(v)
         if self.is_array(attr_type):
             if not isinstance(attr_type, str) and self.is_array(attr_type.type):
                 if isinstance(attr_type.type, str):

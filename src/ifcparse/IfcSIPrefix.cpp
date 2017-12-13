@@ -18,26 +18,27 @@
  ********************************************************************************/
 #include "IfcSIPrefix.h"
 
-double IfcParse::IfcSIPrefixToValue(IfcSchema::IfcSIPrefix::IfcSIPrefix v) {
-	if      ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_EXA   ) return 1.e18;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PETA  ) return 1.e15;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_TERA  ) return 1.e12;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_GIGA  ) return 1.e9;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MEGA  ) return 1.e6;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_KILO  ) return 1.e3;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_HECTO ) return 1.e2;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECA  ) return 1.;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECI  ) return 1.e-1;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_CENTI ) return 1.e-2;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MILLI ) return 1.e-3;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MICRO ) return 1.e-6;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_NANO  ) return 1.e-9;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PICO  ) return 1.e-12;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_FEMTO ) return 1.e-15;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_ATTO  ) return 1.e-18;
+double IfcParse::IfcSIPrefixToValue(const std::string& v) {
+	if      ( v == "EXA"   ) return 1.e18;
+	else if ( v == "PETA"  ) return 1.e15;
+	else if ( v == "TERA"  ) return 1.e12;
+	else if ( v == "GIGA"  ) return 1.e9;
+	else if ( v == "MEGA"  ) return 1.e6;
+	else if ( v == "KILO"  ) return 1.e3;
+	else if ( v == "HECTO" ) return 1.e2;
+	else if ( v == "DECA"  ) return 1.;
+	else if ( v == "DECI"  ) return 1.e-1;
+	else if ( v == "CENTI" ) return 1.e-2;
+	else if ( v == "MILLI" ) return 1.e-3;
+	else if ( v == "MICRO" ) return 1.e-6;
+	else if ( v == "NANO"  ) return 1.e-9;
+	else if ( v == "PICO"  ) return 1.e-12;
+	else if ( v == "FEMTO" ) return 1.e-15;
+	else if ( v == "ATTO"  ) return 1.e-18;
 	else return 1.;
 }
 
+/*
 double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
 	double scale =  1.;
 	IfcSchema::IfcSIUnit* si_unit = 0;
@@ -64,3 +65,4 @@ double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
 
 	return scale;
 }
+*/
