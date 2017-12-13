@@ -44,7 +44,7 @@ public:
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
+		const bool all = !U::Class().as_entity();
 		for (it i = begin(); i != end(); ++i) if (all || (*i)->declaration().is(U::Class())) r->push((U*)*i);
 		return r;
 	}

@@ -210,7 +210,7 @@ class Implementation(codegen.Base):
                 
             simple_type_impl.append(templates.simpletype_impl_comment % {'name': class_name})
             simple_type_impl.extend(map(compose, map(lambda x: (class_name, attr_type, superclass, "(IfcEntityInstanceData*)0")+x, (
-                ('Class',           templates.function,             'Type::Enum',            (),                            templates.simpletype_impl_class               ),
+                ('Class',           templates.function,             'const IfcParse::type_declaration&', (),                templates.simpletype_impl_class               ),
                 ('declaration',     templates.const_function,       'const IfcParse::type_declaration&', (),                templates.simpletype_impl_declaration         ),
                 ('',                          constructor,          '',                      ('IfcEntityInstanceData* e',), templates.simpletype_impl_explicit_constructor),
                 ('',                          constructor,          '',                      ("%s v" % type_str,),          simpletype_impl_constructor                   ),

@@ -51,7 +51,6 @@ const char* const Identifier = "%(schema_name_upper)s";
 
 %(class_definitions)s
 IFC_PARSE_API void InitStringMap();
-IFC_PARSE_API IfcUtil::IfcBaseClass* SchemaEntity(IfcEntityInstanceData* e = 0);
 }
 
 #endif
@@ -127,13 +126,6 @@ using namespace IfcWrite;
 
 // External definitions
 %(external_definitions)s
-
-IfcUtil::IfcBaseClass* %(schema_name)s::SchemaEntity(IfcEntityInstanceData* e) {
-    switch(e->type()) {
-%(schema_entity_statements)s
-        default: throw IfcException("Unable to find find keyword in schema"); break;
-    }
-}
 
 const std::string& Type::ToString(Enum v) {
     if (v < 0 || v >= %(max_id)d) throw IfcException("Unable to find find keyword in schema");
@@ -361,7 +353,7 @@ simpletype = """%(documentation)s
 class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit %(name)s (IfcEntityInstanceData* e);
     %(name)s (%(type)s v);
     operator %(type)s() const;
@@ -371,13 +363,13 @@ public:
 simpletype_impl_comment = "// Function implementations for %(name)s"
 simpletype_impl_argument_type = "if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcAttributeOutOfRangeException(\"Argument index out of range\"); }"
 simpletype_impl_argument = "return data_->getArgument(i);"
-simpletype_impl_is_with_supertype = "return v == Type::%(class_name)s || %(superclass)s::is(v);"
-simpletype_impl_is_without_supertype = "return v == %(class_name)s::Class();"
-simpletype_impl_type = "return Type::%(class_name)s;"
-simpletype_impl_class = "return Type::%(class_name)s;"
+simpletype_impl_is_with_supertype = "return v == %(class_name)s_type || %(superclass)s::is(v);"
+simpletype_impl_is_without_supertype = "return v == %(class_name)s_type;"
+simpletype_impl_type = "return *%(class_name)s_type;"
+simpletype_impl_class = "return *%(class_name)s_type;"
 simpletype_impl_explicit_constructor = "data_ = e;"
-simpletype_impl_constructor           = "data_ = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v"           +"); data_->setArgument(0, attr);}"
-simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(Class()); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
+simpletype_impl_constructor           = "data_ = new IfcEntityInstanceData(%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v"           +"); data_->setArgument(0, attr);}"
+simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
 simpletype_impl_cast = "return *data_->getArgument(0);"
 simpletype_impl_cast_templated = "IfcEntityList::ptr es = *data_->getArgument(0); return es->as<%(underlying_type)s>();"
 simpletype_impl_declaration = "return *%(class_name)s_type;"
@@ -398,7 +390,7 @@ entity = """%(documentation)s
 class IFC_PARSE_API %(name)s %(superclass)s{
 public:
 %(attributes)s    %(inverse)s    virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     %(name)s (IfcEntityInstanceData* e);
     %(name)s (%(constructor_arguments)s);
     typedef IfcTemplatedEntityList< %(name)s > list;
@@ -422,9 +414,9 @@ entity_implementation = """// Function implementations for %(name)s
 %(attributes)s
 %(inverse)s
 const IfcParse::entity& %(name)s::declaration() const { return *%(name)s_type; }
-Type::Enum %(name)s::Class() { return Type::%(name)s; }
-%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != Type::%(name)s) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(Class()); %(constructor_implementation)s }
+const IfcParse::entity& %(name)s::Class() { return *%(name)s_type; }
+%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(name)s_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(%(name)s_type); %(constructor_implementation)s }
 """
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"

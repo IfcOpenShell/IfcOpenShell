@@ -29,6 +29,8 @@ class SchemaClass(codegen.Base):
         class UnmetDependenciesException(Exception): pass
         
         schema_name = mapping.schema.name
+        self.schema_name = schema_name_title = schema_name.capitalize()
+
         declared_types = []
         
         def get_declared_type(type, emitted_names=None):
@@ -68,12 +70,12 @@ class SchemaClass(codegen.Base):
             else:
                 raise Exception("No declared type for <%r>" % type)
                     
-        self.schema_name = mapping.schema.name.capitalize()
-        
         statements = ['',
                       '#include "../ifcparse/IfcSchema.h"',
+                      '#include "../ifcparse/%(schema_name_title)s.h"' % locals(),
                       '',
-                      'using namespace IfcParse;'
+                      'using namespace IfcParse;',
+                      'using namespace %(schema_name_title)s;' % locals(),
                       '']
 
         collections_by_type = (('entity',           mapping.schema.entities    ),
@@ -84,13 +86,17 @@ class SchemaClass(codegen.Base):
         for cpp_type, collection in collections_by_type:
             for name in collection.keys():
                 statements.append('%(cpp_type)s* %(name)s_type = 0;' % locals())
+                
+        declarations_by_index = []
+        
+        statements.append("{factory_placeholder}")
                       
         statements.append("""
 #ifdef _MSC_VER
 #pragma optimize("", off)
 #endif
         """)
-        statements.append('schema_definition* populate_schema() {')
+        statements.append('IfcParse::schema_definition* populate_schema() {')
         
         emitted_types = set()
         while len(emitted_types) < len(mapping.schema.simpletypes):
@@ -103,19 +109,21 @@ class SchemaClass(codegen.Base):
                     # print("Unmet", repr(name))
                     continue
 
-                statements.append('    %(name)s_type = new type_declaration(IfcSchema::Type::%(name)s, %(declared_type)s);' % locals())
+                statements.append('    %(name)s_type = new type_declaration("%(name)s", %%(index_in_schema_%(name)s)d, %(declared_type)s);' % locals())
                 emitted_types.add(name.lower())
                 
                 declared_types.append('%(name)s_type' % locals())
+                declarations_by_index.append(name)
                 
         for name, enum in mapping.schema.enumerations.items():
             statements.append('    {')
             statements.append('        std::vector<std::string> items; items.reserve(%d);' % len(enum.values))
             statements.extend(map(lambda v: '        items.push_back("%s");' % v, sorted(enum.values)))
-            statements.append('        %(name)s_type = new enumeration_type(IfcSchema::Type::%(name)s, items);' % locals())
+            statements.append('        %(name)s_type = new enumeration_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
             statements.append('    }')
             
             declared_types.append('%(name)s_type' % locals())
+            declarations_by_index.append(name)
         
         emitted_entities = set()
         while len(emitted_entities) < len(mapping.schema.entities):
@@ -123,10 +131,11 @@ class SchemaClass(codegen.Base):
                 if name.lower() in emitted_entities: continue
                 if len(type.supertypes) == 0 or set(map(lambda s: s.lower(), type.supertypes)) < emitted_entities:
                     supertype = '0' if len(type.supertypes) == 0 else '%s_type' % type.supertypes[0]
-                    statements.append('    %(name)s_type = new entity(IfcSchema::Type::%(name)s, %(supertype)s);' % locals())
+                    statements.append('    %(name)s_type = new entity("%(name)s", %%(index_in_schema_%(name)s)d, %(supertype)s);' % locals())
                     emitted_entities.add(name.lower())
                     
                     declared_types.append('%(name)s_type' % locals())
+                    declarations_by_index.append(name)
         
         emmited = emitted_types | emitted_entities | set(mapping.schema.enumerations.keys())
         
@@ -138,12 +147,13 @@ class SchemaClass(codegen.Base):
                     statements.append('    {')
                     statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type.values))
                     statements.extend(map(lambda v: '        items.push_back(%s_type);' % v, sorted(type.values)))
-                    statements.append('        %(name)s_type = new select_type(IfcSchema::Type::%(name)s, items);' % locals())
+                    statements.append('        %(name)s_type = new select_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
                     statements.append('    }')
                     emitted_selects.add(name.lower())
                     emmited.add(name)
                     
                     declared_types.append('%(name)s_type' % locals())
+                    declarations_by_index.append(name)
                     
         num_declarations = len(declared_types)
                     
@@ -184,7 +194,7 @@ class SchemaClass(codegen.Base):
         for type_name in declared_types:
             statements.append('    declarations.push_back(%(type_name)s);' % locals())
             
-        statements.append('    return new schema_definition("%(schema_name)s", declarations, true);' % locals())
+        statements.append('    return new schema_definition("%(schema_name)s", declarations, new %(schema_name)s_instance_factory());' % locals())
         
         statements.extend(('}',''))
         
@@ -202,7 +212,33 @@ class SchemaClass(codegen.Base):
                            '    return *s;',
                            '}','}','',''))
                            
-        self.str = "\n".join(statements)
+        declarations_by_index.sort()
+        declarations_by_index_map = dict(("index_in_schema_%s" % j,i) for i,j in enumerate(declarations_by_index))
+        
+        def bind(s):
+            if "%" in s: return s % declarations_by_index_map
+            else: return s
+            
+        can_be_instantiated_set = set(list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys()))
+        def can_be_instantiated(idx_name):
+            name = idx_name[1]
+            return name in can_be_instantiated_set
+                           
+        instance_mapping = """switch(data->type()->index_in_schema()) {
+            %s
+            default: throw IfcParse::IfcException(data->type()->name() + " cannot be instantiated");
+        }
+""" % "\n            ".join(map(lambda tup: "case %d: return new %s(data);" % tup, filter(can_be_instantiated, enumerate(declarations_by_index))))
+
+        statements[statements.index("{factory_placeholder}")] = """
+class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
+    virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const {
+        %(instance_mapping)s
+    }
+};
+""" % locals()
+                           
+        self.str = "\n".join(map(bind, statements))
         
         self.file_name = '%s-schema.cpp'%self.schema_name
 

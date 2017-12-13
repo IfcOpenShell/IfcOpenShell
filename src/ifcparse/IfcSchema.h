@@ -35,6 +35,13 @@
 #include "../ifcparse/Ifc2x3enum.h"
 #endif
 
+// Forward declarations
+class IfcEntityInstanceData;
+
+namespace IfcUtil {
+	class IfcBaseClass;
+}
+
 namespace IfcParse {
 
 	class declaration; 
@@ -112,29 +119,29 @@ namespace IfcParse {
 
 	class declaration {
 	protected:
-		// std::string name_;
-		IfcSchema::Type::Enum name_;
+		std::string name_;
+		int index_in_schema_;
 
-	public:
-		declaration(IfcSchema::Type::Enum name)
-			: name_(name) {}
-		declaration(const std::string& name)
-			: name_(IfcSchema::Type::FromString(name)) {}
+	public:		
+		declaration(const std::string& name, int index_in_schema)
+			: name_(name)
+			, index_in_schema_(index_in_schema)
+		{}
 
-		std::string name() const { return IfcSchema::Type::ToString(name_); }
+		std::string name() const { return name_; }
 
 		virtual const type_declaration* as_type_declaration() const { return static_cast<type_declaration*>(0); }
 		virtual const select_type* as_select_type() const { return static_cast<select_type*>(0); }
 		virtual const enumeration_type* as_enumeration_type() const { return static_cast<enumeration_type*>(0); }
 		virtual const entity* as_entity() const { return static_cast<entity*>(0); }
 
-		// TODO: Type checking by Enum value
 		bool is(const std::string& name) const;
-		bool is(IfcSchema::Type::Enum name) const;
+		bool is(int index) const;
+		bool is(const IfcParse::declaration& decl) const;
 
-		IfcSchema::Type::Enum type() const {
-			return name_;
-		}
+		int index_in_schema() const { return index_in_schema_; }
+
+		int type() const { return index_in_schema_; }
 	};
 
 	class type_declaration : public declaration {
@@ -142,11 +149,8 @@ namespace IfcParse {
 		const parameter_type* declared_type_;
 
 	public:
-		type_declaration(const std::string& name, const parameter_type* declared_type)
-			: declaration(name)
-			, declared_type_(declared_type)	{}
-		type_declaration(IfcSchema::Type::Enum name, const parameter_type* declared_type)
-			: declaration(name)
+		type_declaration(const std::string& name, int index_in_schema, const parameter_type* declared_type)
+			: declaration(name, index_in_schema)
 			, declared_type_(declared_type)	{}
 
 		const parameter_type* declared_type() const { return declared_type_; }
@@ -158,11 +162,8 @@ namespace IfcParse {
 	protected:
 		std::vector<const declaration*> select_list_;
 	public:
-		select_type(const std::string& name, const std::vector<const declaration*>& select_list)
-			: declaration(name)
-			, select_list_(select_list)	{}
-		select_type(IfcSchema::Type::Enum name, const std::vector<const declaration*>& select_list)
-			: declaration(name)
+		select_type(const std::string& name, int index_in_schema, const std::vector<const declaration*>& select_list)
+			: declaration(name, index_in_schema)
 			, select_list_(select_list)	{}
 
 		const std::vector<const declaration*>& select_list() const { return select_list_; }
@@ -174,11 +175,8 @@ namespace IfcParse {
 	protected:
 		std::vector<std::string> enumeration_items_;
 	public:
-		enumeration_type(const std::string& name, const std::vector<std::string>& enumeration_items)
-			: declaration(name)
-			, enumeration_items_(enumeration_items)	{}
-		enumeration_type(IfcSchema::Type::Enum name, const std::vector<std::string>& enumeration_items)
-			: declaration(name)
+		enumeration_type(const std::string& name, int index_in_schema, const std::vector<std::string>& enumeration_items)
+			: declaration(name, index_in_schema)
 			, enumeration_items_(enumeration_items)	{}
 
 		const std::vector<std::string>& enumeration_items() const { return enumeration_items_; }
@@ -267,22 +265,26 @@ namespace IfcParse {
 		}
 
 	public:
-		entity(const std::string& name, entity* supertype)
-			: declaration(name)
-			, supertype_(supertype)
-		{}
-		entity(IfcSchema::Type::Enum name, entity* supertype)
-			: declaration(name)
+		entity(const std::string& name, int index_in_schema, entity* supertype)
+			: declaration(name, index_in_schema)
 			, supertype_(supertype)
 		{}
 
 		bool is(const std::string& name) const {
-			return is(IfcSchema::Type::FromString(name));
-		}
-
-		bool is(IfcSchema::Type::Enum name) const {
 			if (name == name_) return true;
 			else if (supertype_) return supertype_->is(name);
+			else return false;
+		}
+
+		bool is(int name) const {
+			if (name == index_in_schema_) return true;
+			else if (supertype_) return supertype_->is(name);
+			else return false;
+		}
+
+		bool is(const IfcParse::declaration& decl) const {
+			if (this == &decl) return true;
+			else if (supertype_) return supertype_->is(decl);
 			else return false;
 		}
 
@@ -378,10 +380,13 @@ namespace IfcParse {
 		virtual const entity* as_entity() const { return this; }
 	};
 
+	class instance_factory {
+	public:
+		virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const = 0;
+	};
+
 	class schema_definition {
 	private:
-		bool built_in_;
-
 		std::string name_;
 
 		std::vector<const declaration*> declarations_;
@@ -406,15 +411,18 @@ namespace IfcParse {
 			}
 		};
 
-		class declaration_by_enum_sort : public std::binary_function<const declaration*, const declaration*, bool> {
+		class declaration_by_index_sort : public std::binary_function<const declaration*, const declaration*, bool> {
 		public:
 			bool operator()(const declaration* a, const declaration* b) {
-				return a->type() < b->type();
+				return a->index_in_schema() < b->index_in_schema();
 			}
 		};
 
+		instance_factory* factory_;
+
 	public:
-		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, const bool built_in = false);
+		
+		schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory);
 
 		~schema_definition();
 
@@ -427,8 +435,7 @@ namespace IfcParse {
 			}
 		}
 
-		const declaration* declaration_by_name(IfcSchema::Type::Enum name) const {
-			if (!built_in_) throw;
+		const declaration* declaration_by_name(int name) const {
 			return declarations_[name];
 		}
 
@@ -439,6 +446,8 @@ namespace IfcParse {
 		const std::vector<const entity*>& entities() const { return entities_; }
 
 		const std::string& name() const { return name_; }
+
+		IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const { return (*factory_)(data); }
 	};
 
 	const schema_definition* schema_by_name(const std::string&);

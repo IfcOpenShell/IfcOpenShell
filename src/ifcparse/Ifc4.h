@@ -5750,7 +5750,7 @@ IFC_PARSE_API IfcWorkScheduleTypeEnum FromString(const std::string& s);
 class IFC_PARSE_API IfcAbsorbedDoseMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcAbsorbedDoseMeasure (IfcEntityInstanceData* e);
     IfcAbsorbedDoseMeasure (double v);
     operator double() const;
@@ -5763,7 +5763,7 @@ public:
 class IFC_PARSE_API IfcAccelerationMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcAccelerationMeasure (IfcEntityInstanceData* e);
     IfcAccelerationMeasure (double v);
     operator double() const;
@@ -5779,7 +5779,7 @@ public:
 class IFC_PARSE_API IfcAmountOfSubstanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcAmountOfSubstanceMeasure (IfcEntityInstanceData* e);
     IfcAmountOfSubstanceMeasure (double v);
     operator double() const;
@@ -5792,7 +5792,7 @@ public:
 class IFC_PARSE_API IfcAngularVelocityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcAngularVelocityMeasure (IfcEntityInstanceData* e);
     IfcAngularVelocityMeasure (double v);
     operator double() const;
@@ -5801,7 +5801,7 @@ public:
 class IFC_PARSE_API IfcArcIndex : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcArcIndex (IfcEntityInstanceData* e);
     IfcArcIndex (std::vector< int > /*[3:3]*/ v);
     operator std::vector< int > /*[3:3]*/() const;
@@ -5810,7 +5810,7 @@ public:
 class IFC_PARSE_API IfcAreaDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcAreaDensityMeasure (IfcEntityInstanceData* e);
     IfcAreaDensityMeasure (double v);
     operator double() const;
@@ -5825,7 +5825,7 @@ public:
 class IFC_PARSE_API IfcAreaMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcAreaMeasure (IfcEntityInstanceData* e);
     IfcAreaMeasure (double v);
     operator double() const;
@@ -5834,7 +5834,7 @@ public:
 class IFC_PARSE_API IfcBinary : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcBinary (IfcEntityInstanceData* e);
     IfcBinary (boost::dynamic_bitset<> v);
     operator boost::dynamic_bitset<>() const;
@@ -5847,7 +5847,7 @@ public:
 class IFC_PARSE_API IfcBoolean : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcBoolean (IfcEntityInstanceData* e);
     IfcBoolean (bool v);
     operator bool() const;
@@ -5898,7 +5898,7 @@ public:
 class IFC_PARSE_API IfcCardinalPointReference : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcCardinalPointReference (IfcEntityInstanceData* e);
     IfcCardinalPointReference (int v);
     operator int() const;
@@ -5917,7 +5917,7 @@ public:
 class IFC_PARSE_API IfcComplexNumber : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcComplexNumber (IfcEntityInstanceData* e);
     IfcComplexNumber (std::vector< double > /*[1:2]*/ v);
     operator std::vector< double > /*[1:2]*/() const;
@@ -5973,7 +5973,7 @@ public:
 class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcCompoundPlaneAngleMeasure (IfcEntityInstanceData* e);
     IfcCompoundPlaneAngleMeasure (std::vector< int > /*[3:4]*/ v);
     operator std::vector< int > /*[3:4]*/() const;
@@ -5987,7 +5987,7 @@ public:
 class IFC_PARSE_API IfcContextDependentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcContextDependentMeasure (IfcEntityInstanceData* e);
     IfcContextDependentMeasure (double v);
     operator double() const;
@@ -6001,7 +6001,7 @@ public:
 class IFC_PARSE_API IfcCountMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcCountMeasure (IfcEntityInstanceData* e);
     IfcCountMeasure (double v);
     operator double() const;
@@ -6016,7 +6016,7 @@ public:
 class IFC_PARSE_API IfcCurvatureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcCurvatureMeasure (IfcEntityInstanceData* e);
     IfcCurvatureMeasure (double v);
     operator double() const;
@@ -6030,7 +6030,7 @@ public:
 class IFC_PARSE_API IfcDate : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDate (IfcEntityInstanceData* e);
     IfcDate (std::string v);
     operator std::string() const;
@@ -6056,7 +6056,7 @@ public:
 class IFC_PARSE_API IfcDateTime : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDateTime (IfcEntityInstanceData* e);
     IfcDateTime (std::string v);
     operator std::string() const;
@@ -6076,7 +6076,7 @@ public:
 class IFC_PARSE_API IfcDayInMonthNumber : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDayInMonthNumber (IfcEntityInstanceData* e);
     IfcDayInMonthNumber (int v);
     operator int() const;
@@ -6118,7 +6118,7 @@ public:
 class IFC_PARSE_API IfcDayInWeekNumber : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDayInWeekNumber (IfcEntityInstanceData* e);
     IfcDayInWeekNumber (int v);
     operator int() const;
@@ -6132,7 +6132,7 @@ public:
 class IFC_PARSE_API IfcDescriptiveMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDescriptiveMeasure (IfcEntityInstanceData* e);
     IfcDescriptiveMeasure (std::string v);
     operator std::string() const;
@@ -6147,7 +6147,7 @@ public:
 class IFC_PARSE_API IfcDimensionCount : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDimensionCount (IfcEntityInstanceData* e);
     IfcDimensionCount (int v);
     operator int() const;
@@ -6160,7 +6160,7 @@ public:
 class IFC_PARSE_API IfcDoseEquivalentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDoseEquivalentMeasure (IfcEntityInstanceData* e);
     IfcDoseEquivalentMeasure (double v);
     operator double() const;
@@ -6173,7 +6173,7 @@ public:
 class IFC_PARSE_API IfcDuration : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDuration (IfcEntityInstanceData* e);
     IfcDuration (std::string v);
     operator std::string() const;
@@ -6187,7 +6187,7 @@ public:
 class IFC_PARSE_API IfcDynamicViscosityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcDynamicViscosityMeasure (IfcEntityInstanceData* e);
     IfcDynamicViscosityMeasure (double v);
     operator double() const;
@@ -6200,7 +6200,7 @@ public:
 class IFC_PARSE_API IfcElectricCapacitanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcElectricCapacitanceMeasure (IfcEntityInstanceData* e);
     IfcElectricCapacitanceMeasure (double v);
     operator double() const;
@@ -6213,7 +6213,7 @@ public:
 class IFC_PARSE_API IfcElectricChargeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcElectricChargeMeasure (IfcEntityInstanceData* e);
     IfcElectricChargeMeasure (double v);
     operator double() const;
@@ -6226,7 +6226,7 @@ public:
 class IFC_PARSE_API IfcElectricConductanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcElectricConductanceMeasure (IfcEntityInstanceData* e);
     IfcElectricConductanceMeasure (double v);
     operator double() const;
@@ -6241,7 +6241,7 @@ public:
 class IFC_PARSE_API IfcElectricCurrentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcElectricCurrentMeasure (IfcEntityInstanceData* e);
     IfcElectricCurrentMeasure (double v);
     operator double() const;
@@ -6254,7 +6254,7 @@ public:
 class IFC_PARSE_API IfcElectricResistanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcElectricResistanceMeasure (IfcEntityInstanceData* e);
     IfcElectricResistanceMeasure (double v);
     operator double() const;
@@ -6267,7 +6267,7 @@ public:
 class IFC_PARSE_API IfcElectricVoltageMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcElectricVoltageMeasure (IfcEntityInstanceData* e);
     IfcElectricVoltageMeasure (double v);
     operator double() const;
@@ -6280,7 +6280,7 @@ public:
 class IFC_PARSE_API IfcEnergyMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcEnergyMeasure (IfcEntityInstanceData* e);
     IfcEnergyMeasure (double v);
     operator double() const;
@@ -6302,7 +6302,7 @@ public:
 class IFC_PARSE_API IfcFontStyle : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcFontStyle (IfcEntityInstanceData* e);
     IfcFontStyle (std::string v);
     operator std::string() const;
@@ -6322,7 +6322,7 @@ public:
 class IFC_PARSE_API IfcFontVariant : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcFontVariant (IfcEntityInstanceData* e);
     IfcFontVariant (std::string v);
     operator std::string() const;
@@ -6353,7 +6353,7 @@ public:
 class IFC_PARSE_API IfcFontWeight : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcFontWeight (IfcEntityInstanceData* e);
     IfcFontWeight (std::string v);
     operator std::string() const;
@@ -6366,7 +6366,7 @@ public:
 class IFC_PARSE_API IfcForceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcForceMeasure (IfcEntityInstanceData* e);
     IfcForceMeasure (double v);
     operator double() const;
@@ -6379,7 +6379,7 @@ public:
 class IFC_PARSE_API IfcFrequencyMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcFrequencyMeasure (IfcEntityInstanceData* e);
     IfcFrequencyMeasure (double v);
     operator double() const;
@@ -6402,7 +6402,7 @@ public:
 class IFC_PARSE_API IfcGloballyUniqueId : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcGloballyUniqueId (IfcEntityInstanceData* e);
     IfcGloballyUniqueId (std::string v);
     operator std::string() const;
@@ -6415,7 +6415,7 @@ public:
 class IFC_PARSE_API IfcHeatFluxDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcHeatFluxDensityMeasure (IfcEntityInstanceData* e);
     IfcHeatFluxDensityMeasure (double v);
     operator double() const;
@@ -6426,7 +6426,7 @@ public:
 class IFC_PARSE_API IfcHeatingValueMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcHeatingValueMeasure (IfcEntityInstanceData* e);
     IfcHeatingValueMeasure (double v);
     operator double() const;
@@ -6448,7 +6448,7 @@ public:
 class IFC_PARSE_API IfcIdentifier : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcIdentifier (IfcEntityInstanceData* e);
     IfcIdentifier (std::string v);
     operator std::string() const;
@@ -6461,7 +6461,7 @@ public:
 class IFC_PARSE_API IfcIlluminanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcIlluminanceMeasure (IfcEntityInstanceData* e);
     IfcIlluminanceMeasure (double v);
     operator double() const;
@@ -6474,7 +6474,7 @@ public:
 class IFC_PARSE_API IfcInductanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcInductanceMeasure (IfcEntityInstanceData* e);
     IfcInductanceMeasure (double v);
     operator double() const;
@@ -6489,7 +6489,7 @@ public:
 class IFC_PARSE_API IfcInteger : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcInteger (IfcEntityInstanceData* e);
     IfcInteger (int v);
     operator int() const;
@@ -6504,7 +6504,7 @@ public:
 class IFC_PARSE_API IfcIntegerCountRateMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcIntegerCountRateMeasure (IfcEntityInstanceData* e);
     IfcIntegerCountRateMeasure (int v);
     operator int() const;
@@ -6515,7 +6515,7 @@ public:
 class IFC_PARSE_API IfcIonConcentrationMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcIonConcentrationMeasure (IfcEntityInstanceData* e);
     IfcIonConcentrationMeasure (double v);
     operator double() const;
@@ -6528,7 +6528,7 @@ public:
 class IFC_PARSE_API IfcIsothermalMoistureCapacityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcIsothermalMoistureCapacityMeasure (IfcEntityInstanceData* e);
     IfcIsothermalMoistureCapacityMeasure (double v);
     operator double() const;
@@ -6541,7 +6541,7 @@ public:
 class IFC_PARSE_API IfcKinematicViscosityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcKinematicViscosityMeasure (IfcEntityInstanceData* e);
     IfcKinematicViscosityMeasure (double v);
     operator double() const;
@@ -6563,7 +6563,7 @@ public:
 class IFC_PARSE_API IfcLabel : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLabel (IfcEntityInstanceData* e);
     IfcLabel (std::string v);
     operator std::string() const;
@@ -6581,7 +6581,7 @@ public:
 class IFC_PARSE_API IfcLanguageId : public IfcIdentifier {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLanguageId (IfcEntityInstanceData* e);
     IfcLanguageId (std::string v);
     operator std::string() const;
@@ -6596,7 +6596,7 @@ public:
 class IFC_PARSE_API IfcLengthMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLengthMeasure (IfcEntityInstanceData* e);
     IfcLengthMeasure (double v);
     operator double() const;
@@ -6605,7 +6605,7 @@ public:
 class IFC_PARSE_API IfcLineIndex : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLineIndex (IfcEntityInstanceData* e);
     IfcLineIndex (std::vector< int > /*[2:?]*/ v);
     operator std::vector< int > /*[2:?]*/() const;
@@ -6618,7 +6618,7 @@ public:
 class IFC_PARSE_API IfcLinearForceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLinearForceMeasure (IfcEntityInstanceData* e);
     IfcLinearForceMeasure (double v);
     operator double() const;
@@ -6631,7 +6631,7 @@ public:
 class IFC_PARSE_API IfcLinearMomentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLinearMomentMeasure (IfcEntityInstanceData* e);
     IfcLinearMomentMeasure (double v);
     operator double() const;
@@ -6644,7 +6644,7 @@ public:
 class IFC_PARSE_API IfcLinearStiffnessMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLinearStiffnessMeasure (IfcEntityInstanceData* e);
     IfcLinearStiffnessMeasure (double v);
     operator double() const;
@@ -6657,7 +6657,7 @@ public:
 class IFC_PARSE_API IfcLinearVelocityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLinearVelocityMeasure (IfcEntityInstanceData* e);
     IfcLinearVelocityMeasure (double v);
     operator double() const;
@@ -6670,7 +6670,7 @@ public:
 class IFC_PARSE_API IfcLogical : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLogical (IfcEntityInstanceData* e);
     IfcLogical (bool v);
     operator bool() const;
@@ -6683,7 +6683,7 @@ public:
 class IFC_PARSE_API IfcLuminousFluxMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLuminousFluxMeasure (IfcEntityInstanceData* e);
     IfcLuminousFluxMeasure (double v);
     operator double() const;
@@ -6698,7 +6698,7 @@ public:
 class IFC_PARSE_API IfcLuminousIntensityDistributionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLuminousIntensityDistributionMeasure (IfcEntityInstanceData* e);
     IfcLuminousIntensityDistributionMeasure (double v);
     operator double() const;
@@ -6713,7 +6713,7 @@ public:
 class IFC_PARSE_API IfcLuminousIntensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcLuminousIntensityMeasure (IfcEntityInstanceData* e);
     IfcLuminousIntensityMeasure (double v);
     operator double() const;
@@ -6726,7 +6726,7 @@ public:
 class IFC_PARSE_API IfcMagneticFluxDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMagneticFluxDensityMeasure (IfcEntityInstanceData* e);
     IfcMagneticFluxDensityMeasure (double v);
     operator double() const;
@@ -6739,7 +6739,7 @@ public:
 class IFC_PARSE_API IfcMagneticFluxMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMagneticFluxMeasure (IfcEntityInstanceData* e);
     IfcMagneticFluxMeasure (double v);
     operator double() const;
@@ -6752,7 +6752,7 @@ public:
 class IFC_PARSE_API IfcMassDensityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMassDensityMeasure (IfcEntityInstanceData* e);
     IfcMassDensityMeasure (double v);
     operator double() const;
@@ -6765,7 +6765,7 @@ public:
 class IFC_PARSE_API IfcMassFlowRateMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMassFlowRateMeasure (IfcEntityInstanceData* e);
     IfcMassFlowRateMeasure (double v);
     operator double() const;
@@ -6780,7 +6780,7 @@ public:
 class IFC_PARSE_API IfcMassMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMassMeasure (IfcEntityInstanceData* e);
     IfcMassMeasure (double v);
     operator double() const;
@@ -6795,7 +6795,7 @@ public:
 class IFC_PARSE_API IfcMassPerLengthMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMassPerLengthMeasure (IfcEntityInstanceData* e);
     IfcMassPerLengthMeasure (double v);
     operator double() const;
@@ -6808,7 +6808,7 @@ public:
 class IFC_PARSE_API IfcModulusOfElasticityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcModulusOfElasticityMeasure (IfcEntityInstanceData* e);
     IfcModulusOfElasticityMeasure (double v);
     operator double() const;
@@ -6821,7 +6821,7 @@ public:
 class IFC_PARSE_API IfcModulusOfLinearSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcModulusOfLinearSubgradeReactionMeasure (IfcEntityInstanceData* e);
     IfcModulusOfLinearSubgradeReactionMeasure (double v);
     operator double() const;
@@ -6834,7 +6834,7 @@ public:
 class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcModulusOfRotationalSubgradeReactionMeasure (IfcEntityInstanceData* e);
     IfcModulusOfRotationalSubgradeReactionMeasure (double v);
     operator double() const;
@@ -6851,7 +6851,7 @@ public:
 class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcModulusOfSubgradeReactionMeasure (IfcEntityInstanceData* e);
     IfcModulusOfSubgradeReactionMeasure (double v);
     operator double() const;
@@ -6864,7 +6864,7 @@ public:
 class IFC_PARSE_API IfcMoistureDiffusivityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMoistureDiffusivityMeasure (IfcEntityInstanceData* e);
     IfcMoistureDiffusivityMeasure (double v);
     operator double() const;
@@ -6877,7 +6877,7 @@ public:
 class IFC_PARSE_API IfcMolecularWeightMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMolecularWeightMeasure (IfcEntityInstanceData* e);
     IfcMolecularWeightMeasure (double v);
     operator double() const;
@@ -6890,7 +6890,7 @@ public:
 class IFC_PARSE_API IfcMomentOfInertiaMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMomentOfInertiaMeasure (IfcEntityInstanceData* e);
     IfcMomentOfInertiaMeasure (double v);
     operator double() const;
@@ -6902,7 +6902,7 @@ public:
 class IFC_PARSE_API IfcMonetaryMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMonetaryMeasure (IfcEntityInstanceData* e);
     IfcMonetaryMeasure (double v);
     operator double() const;
@@ -6966,7 +6966,7 @@ public:
 class IFC_PARSE_API IfcMonthInYearNumber : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcMonthInYearNumber (IfcEntityInstanceData* e);
     IfcMonthInYearNumber (int v);
     operator int() const;
@@ -6979,7 +6979,7 @@ public:
 class IFC_PARSE_API IfcNonNegativeLengthMeasure : public IfcLengthMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcNonNegativeLengthMeasure (IfcEntityInstanceData* e);
     IfcNonNegativeLengthMeasure (double v);
     operator double() const;
@@ -6993,7 +6993,7 @@ public:
 class IFC_PARSE_API IfcNumericMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcNumericMeasure (IfcEntityInstanceData* e);
     IfcNumericMeasure (double v);
     operator double() const;
@@ -7004,7 +7004,7 @@ public:
 class IFC_PARSE_API IfcPHMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPHMeasure (IfcEntityInstanceData* e);
     IfcPHMeasure (double v);
     operator double() const;
@@ -7019,7 +7019,7 @@ public:
 class IFC_PARSE_API IfcParameterValue : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcParameterValue (IfcEntityInstanceData* e);
     IfcParameterValue (double v);
     operator double() const;
@@ -7032,7 +7032,7 @@ public:
 class IFC_PARSE_API IfcPlanarForceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPlanarForceMeasure (IfcEntityInstanceData* e);
     IfcPlanarForceMeasure (double v);
     operator double() const;
@@ -7051,7 +7051,7 @@ public:
 class IFC_PARSE_API IfcPlaneAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPlaneAngleMeasure (IfcEntityInstanceData* e);
     IfcPlaneAngleMeasure (double v);
     operator double() const;
@@ -7060,7 +7060,7 @@ public:
 class IFC_PARSE_API IfcPositiveInteger : public IfcInteger {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPositiveInteger (IfcEntityInstanceData* e);
     IfcPositiveInteger (int v);
     operator int() const;
@@ -7074,7 +7074,7 @@ public:
 class IFC_PARSE_API IfcPositiveLengthMeasure : public IfcLengthMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPositiveLengthMeasure (IfcEntityInstanceData* e);
     IfcPositiveLengthMeasure (double v);
     operator double() const;
@@ -7088,7 +7088,7 @@ public:
 class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public IfcPlaneAngleMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPositivePlaneAngleMeasure (IfcEntityInstanceData* e);
     IfcPositivePlaneAngleMeasure (double v);
     operator double() const;
@@ -7101,7 +7101,7 @@ public:
 class IFC_PARSE_API IfcPowerMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPowerMeasure (IfcEntityInstanceData* e);
     IfcPowerMeasure (double v);
     operator double() const;
@@ -7118,7 +7118,7 @@ public:
 class IFC_PARSE_API IfcPresentableText : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPresentableText (IfcEntityInstanceData* e);
     IfcPresentableText (std::string v);
     operator std::string() const;
@@ -7131,7 +7131,7 @@ public:
 class IFC_PARSE_API IfcPressureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPressureMeasure (IfcEntityInstanceData* e);
     IfcPressureMeasure (double v);
     operator double() const;
@@ -7140,7 +7140,7 @@ public:
 class IFC_PARSE_API IfcPropertySetDefinitionSet : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPropertySetDefinitionSet (IfcEntityInstanceData* e);
     IfcPropertySetDefinitionSet (IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v);
     operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const;
@@ -7153,7 +7153,7 @@ public:
 class IFC_PARSE_API IfcRadioActivityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcRadioActivityMeasure (IfcEntityInstanceData* e);
     IfcRadioActivityMeasure (double v);
     operator double() const;
@@ -7171,7 +7171,7 @@ public:
 class IFC_PARSE_API IfcRatioMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcRatioMeasure (IfcEntityInstanceData* e);
     IfcRatioMeasure (double v);
     operator double() const;
@@ -7186,7 +7186,7 @@ public:
 class IFC_PARSE_API IfcReal : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcReal (IfcEntityInstanceData* e);
     IfcReal (double v);
     operator double() const;
@@ -7199,7 +7199,7 @@ public:
 class IFC_PARSE_API IfcRotationalFrequencyMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcRotationalFrequencyMeasure (IfcEntityInstanceData* e);
     IfcRotationalFrequencyMeasure (double v);
     operator double() const;
@@ -7213,7 +7213,7 @@ public:
 class IFC_PARSE_API IfcRotationalMassMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcRotationalMassMeasure (IfcEntityInstanceData* e);
     IfcRotationalMassMeasure (double v);
     operator double() const;
@@ -7226,7 +7226,7 @@ public:
 class IFC_PARSE_API IfcRotationalStiffnessMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcRotationalStiffnessMeasure (IfcEntityInstanceData* e);
     IfcRotationalStiffnessMeasure (double v);
     operator double() const;
@@ -7239,7 +7239,7 @@ public:
 class IFC_PARSE_API IfcSectionModulusMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSectionModulusMeasure (IfcEntityInstanceData* e);
     IfcSectionModulusMeasure (double v);
     operator double() const;
@@ -7252,7 +7252,7 @@ public:
 class IFC_PARSE_API IfcSectionalAreaIntegralMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSectionalAreaIntegralMeasure (IfcEntityInstanceData* e);
     IfcSectionalAreaIntegralMeasure (double v);
     operator double() const;
@@ -7265,7 +7265,7 @@ public:
 class IFC_PARSE_API IfcShearModulusMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcShearModulusMeasure (IfcEntityInstanceData* e);
     IfcShearModulusMeasure (double v);
     operator double() const;
@@ -7280,7 +7280,7 @@ public:
 class IFC_PARSE_API IfcSolidAngleMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSolidAngleMeasure (IfcEntityInstanceData* e);
     IfcSolidAngleMeasure (double v);
     operator double() const;
@@ -7289,7 +7289,7 @@ public:
 class IFC_PARSE_API IfcSoundPowerLevelMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSoundPowerLevelMeasure (IfcEntityInstanceData* e);
     IfcSoundPowerLevelMeasure (double v);
     operator double() const;
@@ -7302,7 +7302,7 @@ public:
 class IFC_PARSE_API IfcSoundPowerMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSoundPowerMeasure (IfcEntityInstanceData* e);
     IfcSoundPowerMeasure (double v);
     operator double() const;
@@ -7311,7 +7311,7 @@ public:
 class IFC_PARSE_API IfcSoundPressureLevelMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSoundPressureLevelMeasure (IfcEntityInstanceData* e);
     IfcSoundPressureLevelMeasure (double v);
     operator double() const;
@@ -7324,7 +7324,7 @@ public:
 class IFC_PARSE_API IfcSoundPressureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSoundPressureMeasure (IfcEntityInstanceData* e);
     IfcSoundPressureMeasure (double v);
     operator double() const;
@@ -7337,7 +7337,7 @@ public:
 class IFC_PARSE_API IfcSpecificHeatCapacityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSpecificHeatCapacityMeasure (IfcEntityInstanceData* e);
     IfcSpecificHeatCapacityMeasure (double v);
     operator double() const;
@@ -7352,7 +7352,7 @@ public:
 class IFC_PARSE_API IfcSpecularExponent : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSpecularExponent (IfcEntityInstanceData* e);
     IfcSpecularExponent (double v);
     operator double() const;
@@ -7369,7 +7369,7 @@ public:
 class IFC_PARSE_API IfcSpecularRoughness : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcSpecularRoughness (IfcEntityInstanceData* e);
     IfcSpecularRoughness (double v);
     operator double() const;
@@ -7378,7 +7378,7 @@ public:
 class IFC_PARSE_API IfcStrippedOptional : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcStrippedOptional (IfcEntityInstanceData* e);
     IfcStrippedOptional (bool v);
     operator bool() const;
@@ -7391,7 +7391,7 @@ public:
 class IFC_PARSE_API IfcTemperatureGradientMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTemperatureGradientMeasure (IfcEntityInstanceData* e);
     IfcTemperatureGradientMeasure (double v);
     operator double() const;
@@ -7404,7 +7404,7 @@ public:
 class IFC_PARSE_API IfcTemperatureRateOfChangeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTemperatureRateOfChangeMeasure (IfcEntityInstanceData* e);
     IfcTemperatureRateOfChangeMeasure (double v);
     operator double() const;
@@ -7423,7 +7423,7 @@ public:
 class IFC_PARSE_API IfcText : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcText (IfcEntityInstanceData* e);
     IfcText (std::string v);
     operator std::string() const;
@@ -7441,7 +7441,7 @@ public:
 class IFC_PARSE_API IfcTextAlignment : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTextAlignment (IfcEntityInstanceData* e);
     IfcTextAlignment (std::string v);
     operator std::string() const;
@@ -7462,7 +7462,7 @@ public:
 class IFC_PARSE_API IfcTextDecoration : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTextDecoration (IfcEntityInstanceData* e);
     IfcTextDecoration (std::string v);
     operator std::string() const;
@@ -7489,7 +7489,7 @@ public:
 class IFC_PARSE_API IfcTextFontName : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTextFontName (IfcEntityInstanceData* e);
     IfcTextFontName (std::string v);
     operator std::string() const;
@@ -7507,7 +7507,7 @@ public:
 class IFC_PARSE_API IfcTextTransformation : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTextTransformation (IfcEntityInstanceData* e);
     IfcTextTransformation (std::string v);
     operator std::string() const;
@@ -7520,7 +7520,7 @@ public:
 class IFC_PARSE_API IfcThermalAdmittanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcThermalAdmittanceMeasure (IfcEntityInstanceData* e);
     IfcThermalAdmittanceMeasure (double v);
     operator double() const;
@@ -7533,7 +7533,7 @@ public:
 class IFC_PARSE_API IfcThermalConductivityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcThermalConductivityMeasure (IfcEntityInstanceData* e);
     IfcThermalConductivityMeasure (double v);
     operator double() const;
@@ -7545,7 +7545,7 @@ public:
 class IFC_PARSE_API IfcThermalExpansionCoefficientMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcThermalExpansionCoefficientMeasure (IfcEntityInstanceData* e);
     IfcThermalExpansionCoefficientMeasure (double v);
     operator double() const;
@@ -7557,7 +7557,7 @@ public:
 class IFC_PARSE_API IfcThermalResistanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcThermalResistanceMeasure (IfcEntityInstanceData* e);
     IfcThermalResistanceMeasure (double v);
     operator double() const;
@@ -7570,7 +7570,7 @@ public:
 class IFC_PARSE_API IfcThermalTransmittanceMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcThermalTransmittanceMeasure (IfcEntityInstanceData* e);
     IfcThermalTransmittanceMeasure (double v);
     operator double() const;
@@ -7585,7 +7585,7 @@ public:
 class IFC_PARSE_API IfcThermodynamicTemperatureMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcThermodynamicTemperatureMeasure (IfcEntityInstanceData* e);
     IfcThermodynamicTemperatureMeasure (double v);
     operator double() const;
@@ -7601,7 +7601,7 @@ public:
 class IFC_PARSE_API IfcTime : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTime (IfcEntityInstanceData* e);
     IfcTime (std::string v);
     operator std::string() const;
@@ -7616,7 +7616,7 @@ public:
 class IFC_PARSE_API IfcTimeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTimeMeasure (IfcEntityInstanceData* e);
     IfcTimeMeasure (double v);
     operator double() const;
@@ -7628,7 +7628,7 @@ public:
 class IFC_PARSE_API IfcTimeStamp : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTimeStamp (IfcEntityInstanceData* e);
     IfcTimeStamp (int v);
     operator int() const;
@@ -7641,7 +7641,7 @@ public:
 class IFC_PARSE_API IfcTorqueMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcTorqueMeasure (IfcEntityInstanceData* e);
     IfcTorqueMeasure (double v);
     operator double() const;
@@ -7656,7 +7656,7 @@ public:
 class IFC_PARSE_API IfcURIReference : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcURIReference (IfcEntityInstanceData* e);
     IfcURIReference (std::string v);
     operator std::string() const;
@@ -7669,7 +7669,7 @@ public:
 class IFC_PARSE_API IfcVaporPermeabilityMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcVaporPermeabilityMeasure (IfcEntityInstanceData* e);
     IfcVaporPermeabilityMeasure (double v);
     operator double() const;
@@ -7684,7 +7684,7 @@ public:
 class IFC_PARSE_API IfcVolumeMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcVolumeMeasure (IfcEntityInstanceData* e);
     IfcVolumeMeasure (double v);
     operator double() const;
@@ -7697,7 +7697,7 @@ public:
 class IFC_PARSE_API IfcVolumetricFlowRateMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcVolumetricFlowRateMeasure (IfcEntityInstanceData* e);
     IfcVolumetricFlowRateMeasure (double v);
     operator double() const;
@@ -7710,7 +7710,7 @@ public:
 class IFC_PARSE_API IfcWarpingConstantMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcWarpingConstantMeasure (IfcEntityInstanceData* e);
     IfcWarpingConstantMeasure (double v);
     operator double() const;
@@ -7723,7 +7723,7 @@ public:
 class IFC_PARSE_API IfcWarpingMomentMeasure : public IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcWarpingMomentMeasure (IfcEntityInstanceData* e);
     IfcWarpingMomentMeasure (double v);
     operator double() const;
@@ -7756,7 +7756,7 @@ public:
 class IFC_PARSE_API IfcBoxAlignment : public IfcLabel {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcBoxAlignment (IfcEntityInstanceData* e);
     IfcBoxAlignment (std::string v);
     operator std::string() const;
@@ -7769,7 +7769,7 @@ public:
 class IFC_PARSE_API IfcNormalisedRatioMeasure : public IfcRatioMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcNormalisedRatioMeasure (IfcEntityInstanceData* e);
     IfcNormalisedRatioMeasure (double v);
     operator double() const;
@@ -7783,7 +7783,7 @@ public:
 class IFC_PARSE_API IfcPositiveRatioMeasure : public IfcRatioMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::type_declaration& Class();
     explicit IfcPositiveRatioMeasure (IfcEntityInstanceData* e);
     IfcPositiveRatioMeasure (double v);
     operator double() const;
@@ -7821,7 +7821,7 @@ public:
     void setDescription(std::string v);
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReference() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcActorRole (IfcEntityInstanceData* e);
     IfcActorRole (IfcRoleEnum::IfcRoleEnum v1_Role, boost::optional< std::string > v2_UserDefinedRole, boost::optional< std::string > v3_Description);
     typedef IfcTemplatedEntityList< IfcActorRole > list;
@@ -7854,7 +7854,7 @@ public:
         IfcTemplatedEntityList< IfcPerson >::ptr OfPerson() const; // INVERSE IfcPerson::Addresses
     IfcTemplatedEntityList< IfcOrganization >::ptr OfOrganization() const; // INVERSE IfcOrganization::Addresses
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAddress (IfcEntityInstanceData* e);
     IfcAddress (boost::optional< IfcAddressTypeEnum::IfcAddressTypeEnum > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose);
     typedef IfcTemplatedEntityList< IfcAddress > list;
@@ -7877,7 +7877,7 @@ public:
     std::string ApplicationIdentifier() const;
     void setApplicationIdentifier(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcApplication (IfcEntityInstanceData* e);
     IfcApplication (IfcOrganization* v1_ApplicationDeveloper, std::string v2_Version, std::string v3_ApplicationFullName, std::string v4_ApplicationIdentifier);
     typedef IfcTemplatedEntityList< IfcApplication > list;
@@ -7954,7 +7954,7 @@ public:
     void setComponents(IfcTemplatedEntityList< IfcAppliedValue >::ptr v);
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReference() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAppliedValue (IfcEntityInstanceData* e);
     IfcAppliedValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcAppliedValueSelect* v3_AppliedValue, IfcMeasureWithUnit* v4_UnitBasis, boost::optional< std::string > v5_ApplicableDate, boost::optional< std::string > v6_FixedUntilDate, boost::optional< std::string > v7_Category, boost::optional< std::string > v8_Condition, boost::optional< IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum > v9_ArithmeticOperator, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_Components);
     typedef IfcTemplatedEntityList< IfcAppliedValue > list;
@@ -8023,7 +8023,7 @@ public:
     IfcTemplatedEntityList< IfcApprovalRelationship >::ptr IsRelatedWith() const; // INVERSE IfcApprovalRelationship::RelatedApprovals
     IfcTemplatedEntityList< IfcApprovalRelationship >::ptr Relates() const; // INVERSE IfcApprovalRelationship::RelatingApproval
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcApproval (IfcEntityInstanceData* e);
     IfcApproval (boost::optional< std::string > v1_Identifier, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, boost::optional< std::string > v4_TimeOfApproval, boost::optional< std::string > v5_Status, boost::optional< std::string > v6_Level, boost::optional< std::string > v7_Qualifier, IfcActorSelect* v8_RequestingApproval, IfcActorSelect* v9_GivingApproval);
     typedef IfcTemplatedEntityList< IfcApproval > list;
@@ -8051,7 +8051,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundaryCondition (IfcEntityInstanceData* e);
     IfcBoundaryCondition (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcBoundaryCondition > list;
@@ -8099,7 +8099,7 @@ public:
     IfcModulusOfRotationalSubgradeReactionSelect* RotationalStiffnessByLengthZ() const;
     void setRotationalStiffnessByLengthZ(IfcModulusOfRotationalSubgradeReactionSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundaryEdgeCondition (IfcEntityInstanceData* e);
     IfcBoundaryEdgeCondition (boost::optional< std::string > v1_Name, IfcModulusOfTranslationalSubgradeReactionSelect* v2_TranslationalStiffnessByLengthX, IfcModulusOfTranslationalSubgradeReactionSelect* v3_TranslationalStiffnessByLengthY, IfcModulusOfTranslationalSubgradeReactionSelect* v4_TranslationalStiffnessByLengthZ, IfcModulusOfRotationalSubgradeReactionSelect* v5_RotationalStiffnessByLengthX, IfcModulusOfRotationalSubgradeReactionSelect* v6_RotationalStiffnessByLengthY, IfcModulusOfRotationalSubgradeReactionSelect* v7_RotationalStiffnessByLengthZ);
     typedef IfcTemplatedEntityList< IfcBoundaryEdgeCondition > list;
@@ -8132,7 +8132,7 @@ public:
     IfcModulusOfSubgradeReactionSelect* TranslationalStiffnessByAreaZ() const;
     void setTranslationalStiffnessByAreaZ(IfcModulusOfSubgradeReactionSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundaryFaceCondition (IfcEntityInstanceData* e);
     IfcBoundaryFaceCondition (boost::optional< std::string > v1_Name, IfcModulusOfSubgradeReactionSelect* v2_TranslationalStiffnessByAreaX, IfcModulusOfSubgradeReactionSelect* v3_TranslationalStiffnessByAreaY, IfcModulusOfSubgradeReactionSelect* v4_TranslationalStiffnessByAreaZ);
     typedef IfcTemplatedEntityList< IfcBoundaryFaceCondition > list;
@@ -8180,7 +8180,7 @@ public:
     IfcRotationalStiffnessSelect* RotationalStiffnessZ() const;
     void setRotationalStiffnessZ(IfcRotationalStiffnessSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundaryNodeCondition (IfcEntityInstanceData* e);
     IfcBoundaryNodeCondition (boost::optional< std::string > v1_Name, IfcTranslationalStiffnessSelect* v2_TranslationalStiffnessX, IfcTranslationalStiffnessSelect* v3_TranslationalStiffnessY, IfcTranslationalStiffnessSelect* v4_TranslationalStiffnessZ, IfcRotationalStiffnessSelect* v5_RotationalStiffnessX, IfcRotationalStiffnessSelect* v6_RotationalStiffnessY, IfcRotationalStiffnessSelect* v7_RotationalStiffnessZ);
     typedef IfcTemplatedEntityList< IfcBoundaryNodeCondition > list;
@@ -8202,7 +8202,7 @@ public:
     IfcWarpingStiffnessSelect* WarpingStiffness() const;
     void setWarpingStiffness(IfcWarpingStiffnessSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundaryNodeConditionWarping (IfcEntityInstanceData* e);
     IfcBoundaryNodeConditionWarping (boost::optional< std::string > v1_Name, IfcTranslationalStiffnessSelect* v2_TranslationalStiffnessX, IfcTranslationalStiffnessSelect* v3_TranslationalStiffnessY, IfcTranslationalStiffnessSelect* v4_TranslationalStiffnessZ, IfcRotationalStiffnessSelect* v5_RotationalStiffnessX, IfcRotationalStiffnessSelect* v6_RotationalStiffnessY, IfcRotationalStiffnessSelect* v7_RotationalStiffnessZ, IfcWarpingStiffnessSelect* v8_WarpingStiffness);
     typedef IfcTemplatedEntityList< IfcBoundaryNodeConditionWarping > list;
@@ -8224,7 +8224,7 @@ public:
 class IFC_PARSE_API IfcConnectionGeometry : public IfcUtil::IfcBaseEntity {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectionGeometry (IfcEntityInstanceData* e);
     IfcConnectionGeometry ();
     typedef IfcTemplatedEntityList< IfcConnectionGeometry > list;
@@ -8256,7 +8256,7 @@ public:
     IfcPointOrVertexPoint* PointOnRelatedElement() const;
     void setPointOnRelatedElement(IfcPointOrVertexPoint* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectionPointGeometry (IfcEntityInstanceData* e);
     IfcConnectionPointGeometry (IfcPointOrVertexPoint* v1_PointOnRelatingElement, IfcPointOrVertexPoint* v2_PointOnRelatedElement);
     typedef IfcTemplatedEntityList< IfcConnectionPointGeometry > list;
@@ -8280,7 +8280,7 @@ public:
     IfcSurfaceOrFaceSurface* SurfaceOnRelatedElement() const;
     void setSurfaceOnRelatedElement(IfcSurfaceOrFaceSurface* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectionSurfaceGeometry (IfcEntityInstanceData* e);
     IfcConnectionSurfaceGeometry (IfcSurfaceOrFaceSurface* v1_SurfaceOnRelatingElement, IfcSurfaceOrFaceSurface* v2_SurfaceOnRelatedElement);
     typedef IfcTemplatedEntityList< IfcConnectionSurfaceGeometry > list;
@@ -8302,7 +8302,7 @@ public:
     IfcSolidOrShell* VolumeOnRelatedElement() const;
     void setVolumeOnRelatedElement(IfcSolidOrShell* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectionVolumeGeometry (IfcEntityInstanceData* e);
     IfcConnectionVolumeGeometry (IfcSolidOrShell* v1_VolumeOnRelatingElement, IfcSolidOrShell* v2_VolumeOnRelatedElement);
     typedef IfcTemplatedEntityList< IfcConnectionVolumeGeometry > list;
@@ -8358,7 +8358,7 @@ public:
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     IfcTemplatedEntityList< IfcResourceConstraintRelationship >::ptr PropertiesForConstraint() const; // INVERSE IfcResourceConstraintRelationship::RelatingConstraint
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstraint (IfcEntityInstanceData* e);
     IfcConstraint (std::string v1_Name, boost::optional< std::string > v2_Description, IfcConstraintEnum::IfcConstraintEnum v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, IfcActorSelect* v5_CreatingActor, boost::optional< std::string > v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade);
     typedef IfcTemplatedEntityList< IfcConstraint > list;
@@ -8418,7 +8418,7 @@ public:
     IfcCoordinateReferenceSystem* TargetCRS() const;
     void setTargetCRS(IfcCoordinateReferenceSystem* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoordinateOperation (IfcEntityInstanceData* e);
     IfcCoordinateOperation (IfcCoordinateReferenceSystemSelect* v1_SourceCRS, IfcCoordinateReferenceSystem* v2_TargetCRS);
     typedef IfcTemplatedEntityList< IfcCoordinateOperation > list;
@@ -8475,7 +8475,7 @@ public:
     void setVerticalDatum(std::string v);
         IfcTemplatedEntityList< IfcCoordinateOperation >::ptr HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoordinateReferenceSystem (IfcEntityInstanceData* e);
     IfcCoordinateReferenceSystem (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum);
     typedef IfcTemplatedEntityList< IfcCoordinateReferenceSystem > list;
@@ -8525,7 +8525,7 @@ public:
 class IFC_PARSE_API IfcCostValue : public IfcAppliedValue {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCostValue (IfcEntityInstanceData* e);
     IfcCostValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcAppliedValueSelect* v3_AppliedValue, IfcMeasureWithUnit* v4_UnitBasis, boost::optional< std::string > v5_ApplicableDate, boost::optional< std::string > v6_FixedUntilDate, boost::optional< std::string > v7_Category, boost::optional< std::string > v8_Condition, boost::optional< IfcArithmeticOperatorEnum::IfcArithmeticOperatorEnum > v9_ArithmeticOperator, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_Components);
     typedef IfcTemplatedEntityList< IfcCostValue > list;
@@ -8550,7 +8550,7 @@ public:
     std::string UserDefinedType() const;
     void setUserDefinedType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDerivedUnit (IfcEntityInstanceData* e);
     IfcDerivedUnit (IfcTemplatedEntityList< IfcDerivedUnitElement >::ptr v1_Elements, IfcDerivedUnitEnum::IfcDerivedUnitEnum v2_UnitType, boost::optional< std::string > v3_UserDefinedType);
     typedef IfcTemplatedEntityList< IfcDerivedUnit > list;
@@ -8573,7 +8573,7 @@ public:
     int Exponent() const;
     void setExponent(int v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDerivedUnitElement (IfcEntityInstanceData* e);
     IfcDerivedUnitElement (IfcNamedUnit* v1_Unit, int v2_Exponent);
     typedef IfcTemplatedEntityList< IfcDerivedUnitElement > list;
@@ -8619,7 +8619,7 @@ public:
     int LuminousIntensityExponent() const;
     void setLuminousIntensityExponent(int v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDimensionalExponents (IfcEntityInstanceData* e);
     IfcDimensionalExponents (int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent);
     typedef IfcTemplatedEntityList< IfcDimensionalExponents > list;
@@ -8633,7 +8633,7 @@ public:
 class IFC_PARSE_API IfcExternalInformation : public IfcUtil::IfcBaseEntity {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternalInformation (IfcEntityInstanceData* e);
     IfcExternalInformation ();
     typedef IfcTemplatedEntityList< IfcExternalInformation > list;
@@ -8676,7 +8676,7 @@ public:
     void setName(std::string v);
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr ExternalReferenceForResources() const; // INVERSE IfcExternalReferenceRelationship::RelatingReference
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternalReference (IfcEntityInstanceData* e);
     IfcExternalReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name);
     typedef IfcTemplatedEntityList< IfcExternalReference > list;
@@ -8692,7 +8692,7 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedHatchStyle : public IfcExternalReference {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternallyDefinedHatchStyle (IfcEntityInstanceData* e);
     IfcExternallyDefinedHatchStyle (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name);
     typedef IfcTemplatedEntityList< IfcExternallyDefinedHatchStyle > list;
@@ -8707,7 +8707,7 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternallyDefinedSurfaceStyle (IfcEntityInstanceData* e);
     IfcExternallyDefinedSurfaceStyle (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name);
     typedef IfcTemplatedEntityList< IfcExternallyDefinedSurfaceStyle > list;
@@ -8722,7 +8722,7 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternallyDefinedTextFont (IfcEntityInstanceData* e);
     IfcExternallyDefinedTextFont (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name);
     typedef IfcTemplatedEntityList< IfcExternallyDefinedTextFont > list;
@@ -8768,7 +8768,7 @@ public:
     IfcTemplatedEntityList< IfcGrid >::ptr PartOfU() const; // INVERSE IfcGrid::UAxes
     IfcTemplatedEntityList< IfcVirtualGridIntersection >::ptr HasIntersections() const; // INVERSE IfcVirtualGridIntersection::IntersectingAxes
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGridAxis (IfcEntityInstanceData* e);
     IfcGridAxis (boost::optional< std::string > v1_AxisTag, IfcCurve* v2_AxisCurve, bool v3_SameSense);
     typedef IfcTemplatedEntityList< IfcGridAxis > list;
@@ -8785,7 +8785,7 @@ public:
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIrregularTimeSeriesValue (IfcEntityInstanceData* e);
     IfcIrregularTimeSeriesValue (std::string v1_TimeStamp, IfcEntityList::ptr v2_ListValues);
     typedef IfcTemplatedEntityList< IfcIrregularTimeSeriesValue > list;
@@ -8834,7 +8834,7 @@ public:
         IfcTemplatedEntityList< IfcRelAssociatesLibrary >::ptr LibraryInfoForObjects() const; // INVERSE IfcRelAssociatesLibrary::RelatingLibrary
     IfcTemplatedEntityList< IfcLibraryReference >::ptr HasLibraryReferences() const; // INVERSE IfcLibraryReference::ReferencedLibrary
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLibraryInformation (IfcEntityInstanceData* e);
     IfcLibraryInformation (std::string v1_Name, boost::optional< std::string > v2_Version, IfcActorSelect* v3_Publisher, boost::optional< std::string > v4_VersionDate, boost::optional< std::string > v5_Location, boost::optional< std::string > v6_Description);
     typedef IfcTemplatedEntityList< IfcLibraryInformation > list;
@@ -8869,7 +8869,7 @@ public:
     void setReferencedLibrary(IfcLibraryInformation* v);
         IfcTemplatedEntityList< IfcRelAssociatesLibrary >::ptr LibraryRefForObjects() const; // INVERSE IfcRelAssociatesLibrary::RelatingLibrary
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLibraryReference (IfcEntityInstanceData* e);
     IfcLibraryReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_Language, IfcLibraryInformation* v6_ReferencedLibrary);
     typedef IfcTemplatedEntityList< IfcLibraryReference > list;
@@ -8903,7 +8903,7 @@ public:
     std::vector< double > /*[1:?]*/ LuminousIntensity() const;
     void setLuminousIntensity(std::vector< double > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightDistributionData (IfcEntityInstanceData* e);
     IfcLightDistributionData (double v1_MainPlaneAngle, std::vector< double > /*[1:?]*/ v2_SecondaryPlaneAngle, std::vector< double > /*[1:?]*/ v3_LuminousIntensity);
     typedef IfcTemplatedEntityList< IfcLightDistributionData > list;
@@ -8920,7 +8920,7 @@ public:
     IfcTemplatedEntityList< IfcLightDistributionData >::ptr DistributionData() const;
     void setDistributionData(IfcTemplatedEntityList< IfcLightDistributionData >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightIntensityDistribution (IfcEntityInstanceData* e);
     IfcLightIntensityDistribution (IfcLightDistributionCurveEnum::IfcLightDistributionCurveEnum v1_LightDistributionCurve, IfcTemplatedEntityList< IfcLightDistributionData >::ptr v2_DistributionData);
     typedef IfcTemplatedEntityList< IfcLightIntensityDistribution > list;
@@ -8970,7 +8970,7 @@ public:
     double Scale() const;
     void setScale(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMapConversion (IfcEntityInstanceData* e);
     IfcMapConversion (IfcCoordinateReferenceSystemSelect* v1_SourceCRS, IfcCoordinateReferenceSystem* v2_TargetCRS, double v3_Eastings, double v4_Northings, double v5_OrthogonalHeight, boost::optional< double > v6_XAxisAbscissa, boost::optional< double > v7_XAxisOrdinate, boost::optional< double > v8_Scale);
     typedef IfcTemplatedEntityList< IfcMapConversion > list;
@@ -8989,7 +8989,7 @@ public:
     IfcMaterial* ClassifiedMaterial() const;
     void setClassifiedMaterial(IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialClassificationRelationship (IfcEntityInstanceData* e);
     IfcMaterialClassificationRelationship (IfcEntityList::ptr v1_MaterialClassifications, IfcMaterial* v2_ClassifiedMaterial);
     typedef IfcTemplatedEntityList< IfcMaterialClassificationRelationship > list;
@@ -9024,7 +9024,7 @@ public:
     IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     IfcTemplatedEntityList< IfcMaterialProperties >::ptr HasProperties() const; // INVERSE IfcMaterialProperties::Material
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialDefinition (IfcEntityInstanceData* e);
     IfcMaterialDefinition ();
     typedef IfcTemplatedEntityList< IfcMaterialDefinition > list;
@@ -9097,7 +9097,7 @@ public:
     void setPriority(int v);
         IfcTemplatedEntityList< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialLayer (IfcEntityInstanceData* e);
     IfcMaterialLayer (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Category, boost::optional< int > v7_Priority);
     typedef IfcTemplatedEntityList< IfcMaterialLayer > list;
@@ -9153,7 +9153,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialLayerSet (IfcEntityInstanceData* e);
     IfcMaterialLayerSet (IfcTemplatedEntityList< IfcMaterialLayer >::ptr v1_MaterialLayers, boost::optional< std::string > v2_LayerSetName, boost::optional< std::string > v3_Description);
     typedef IfcTemplatedEntityList< IfcMaterialLayerSet > list;
@@ -9210,7 +9210,7 @@ public:
     std::vector< double > /*[1:2]*/ OffsetValues() const;
     void setOffsetValues(std::vector< double > /*[1:2]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialLayerWithOffsets (IfcEntityInstanceData* e);
     IfcMaterialLayerWithOffsets (IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Category, boost::optional< int > v7_Priority, IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum v8_OffsetDirection, std::vector< double > /*[1:2]*/ v9_OffsetValues);
     typedef IfcTemplatedEntityList< IfcMaterialLayerWithOffsets > list;
@@ -9238,7 +9238,7 @@ public:
     IfcTemplatedEntityList< IfcMaterial >::ptr Materials() const;
     void setMaterials(IfcTemplatedEntityList< IfcMaterial >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialList (IfcEntityInstanceData* e);
     IfcMaterialList (IfcTemplatedEntityList< IfcMaterial >::ptr v1_Materials);
     typedef IfcTemplatedEntityList< IfcMaterialList > list;
@@ -9280,7 +9280,7 @@ public:
     void setCategory(std::string v);
         IfcTemplatedEntityList< IfcMaterialProfileSet >::ptr ToMaterialProfileSet() const; // INVERSE IfcMaterialProfileSet::MaterialProfiles
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialProfile (IfcEntityInstanceData* e);
     IfcMaterialProfile (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, IfcProfileDef* v4_Profile, boost::optional< int > v5_Priority, boost::optional< std::string > v6_Category);
     typedef IfcTemplatedEntityList< IfcMaterialProfile > list;
@@ -9314,7 +9314,7 @@ public:
     IfcCompositeProfileDef* CompositeProfile() const;
     void setCompositeProfile(IfcCompositeProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialProfileSet (IfcEntityInstanceData* e);
     IfcMaterialProfileSet (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcMaterialProfile >::ptr v3_MaterialProfiles, IfcCompositeProfileDef* v4_CompositeProfile);
     typedef IfcTemplatedEntityList< IfcMaterialProfileSet > list;
@@ -9330,7 +9330,7 @@ public:
     std::vector< double > /*[1:2]*/ OffsetValues() const;
     void setOffsetValues(std::vector< double > /*[1:2]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialProfileWithOffsets (IfcEntityInstanceData* e);
     IfcMaterialProfileWithOffsets (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, IfcProfileDef* v4_Profile, boost::optional< int > v5_Priority, boost::optional< std::string > v6_Category, std::vector< double > /*[1:2]*/ v7_OffsetValues);
     typedef IfcTemplatedEntityList< IfcMaterialProfileWithOffsets > list;
@@ -9370,7 +9370,7 @@ class IFC_PARSE_API IfcMaterialUsageDefinition : public IfcUtil::IfcBaseEntity {
 public:
         IfcTemplatedEntityList< IfcRelAssociatesMaterial >::ptr AssociatedTo() const; // INVERSE IfcRelAssociatesMaterial::RelatingMaterial
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialUsageDefinition (IfcEntityInstanceData* e);
     IfcMaterialUsageDefinition ();
     typedef IfcTemplatedEntityList< IfcMaterialUsageDefinition > list;
@@ -9394,7 +9394,7 @@ public:
     IfcUnit* UnitComponent() const;
     void setUnitComponent(IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMeasureWithUnit (IfcEntityInstanceData* e);
     IfcMeasureWithUnit (IfcValue* v1_ValueComponent, IfcUnit* v2_UnitComponent);
     typedef IfcTemplatedEntityList< IfcMeasureWithUnit > list;
@@ -9471,7 +9471,7 @@ public:
     IfcReference* ReferencePath() const;
     void setReferencePath(IfcReference* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMetric (IfcEntityInstanceData* e);
     IfcMetric (std::string v1_Name, boost::optional< std::string > v2_Description, IfcConstraintEnum::IfcConstraintEnum v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, IfcActorSelect* v5_CreatingActor, boost::optional< std::string > v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade, IfcBenchmarkEnum::IfcBenchmarkEnum v8_Benchmark, boost::optional< std::string > v9_ValueSource, IfcMetricValueSelect* v10_DataValue, IfcReference* v11_ReferencePath);
     typedef IfcTemplatedEntityList< IfcMetric > list;
@@ -9487,7 +9487,7 @@ public:
     std::string Currency() const;
     void setCurrency(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMonetaryUnit (IfcEntityInstanceData* e);
     IfcMonetaryUnit (std::string v1_Currency);
     typedef IfcTemplatedEntityList< IfcMonetaryUnit > list;
@@ -9506,7 +9506,7 @@ public:
     IfcUnitEnum::IfcUnitEnum UnitType() const;
     void setUnitType(IfcUnitEnum::IfcUnitEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcNamedUnit (IfcEntityInstanceData* e);
     IfcNamedUnit (IfcDimensionalExponents* v1_Dimensions, IfcUnitEnum::IfcUnitEnum v2_UnitType);
     typedef IfcTemplatedEntityList< IfcNamedUnit > list;
@@ -9527,7 +9527,7 @@ public:
         IfcTemplatedEntityList< IfcProduct >::ptr PlacesObject() const; // INVERSE IfcProduct::ObjectPlacement
     IfcTemplatedEntityList< IfcLocalPlacement >::ptr ReferencedByPlacements() const; // INVERSE IfcLocalPlacement::PlacementRelTo
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcObjectPlacement (IfcEntityInstanceData* e);
     IfcObjectPlacement ();
     typedef IfcTemplatedEntityList< IfcObjectPlacement > list;
@@ -9561,7 +9561,7 @@ public:
     std::string UserDefinedQualifier() const;
     void setUserDefinedQualifier(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcObjective (IfcEntityInstanceData* e);
     IfcObjective (std::string v1_Name, boost::optional< std::string > v2_Description, IfcConstraintEnum::IfcConstraintEnum v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, IfcActorSelect* v5_CreatingActor, boost::optional< std::string > v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade, boost::optional< IfcTemplatedEntityList< IfcConstraint >::ptr > v8_BenchmarkValues, boost::optional< IfcLogicalOperatorEnum::IfcLogicalOperatorEnum > v9_LogicalAggregator, IfcObjectiveEnum::IfcObjectiveEnum v10_ObjectiveQualifier, boost::optional< std::string > v11_UserDefinedQualifier);
     typedef IfcTemplatedEntityList< IfcObjective > list;
@@ -9604,7 +9604,7 @@ public:
     IfcTemplatedEntityList< IfcOrganizationRelationship >::ptr Relates() const; // INVERSE IfcOrganizationRelationship::RelatingOrganization
     IfcTemplatedEntityList< IfcPersonAndOrganization >::ptr Engages() const; // INVERSE IfcPersonAndOrganization::TheOrganization
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOrganization (IfcEntityInstanceData* e);
     IfcOrganization (boost::optional< std::string > v1_Identification, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< IfcTemplatedEntityList< IfcActorRole >::ptr > v4_Roles, boost::optional< IfcTemplatedEntityList< IfcAddress >::ptr > v5_Addresses);
     typedef IfcTemplatedEntityList< IfcOrganization > list;
@@ -9656,7 +9656,7 @@ public:
     int CreationDate() const;
     void setCreationDate(int v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOwnerHistory (IfcEntityInstanceData* e);
     IfcOwnerHistory (IfcPersonAndOrganization* v1_OwningUser, IfcApplication* v2_OwningApplication, boost::optional< IfcStateEnum::IfcStateEnum > v3_State, boost::optional< IfcChangeActionEnum::IfcChangeActionEnum > v4_ChangeAction, boost::optional< int > v5_LastModifiedDate, IfcPersonAndOrganization* v6_LastModifyingUser, IfcApplication* v7_LastModifyingApplication, int v8_CreationDate);
     typedef IfcTemplatedEntityList< IfcOwnerHistory > list;
@@ -9720,7 +9720,7 @@ public:
     void setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v);
         IfcTemplatedEntityList< IfcPersonAndOrganization >::ptr EngagedIn() const; // INVERSE IfcPersonAndOrganization::ThePerson
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPerson (IfcEntityInstanceData* e);
     IfcPerson (boost::optional< std::string > v1_Identification, boost::optional< std::string > v2_FamilyName, boost::optional< std::string > v3_GivenName, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_MiddleNames, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_PrefixTitles, boost::optional< std::vector< std::string > /*[1:?]*/ > v6_SuffixTitles, boost::optional< IfcTemplatedEntityList< IfcActorRole >::ptr > v7_Roles, boost::optional< IfcTemplatedEntityList< IfcAddress >::ptr > v8_Addresses);
     typedef IfcTemplatedEntityList< IfcPerson > list;
@@ -9744,7 +9744,7 @@ public:
     IfcTemplatedEntityList< IfcActorRole >::ptr Roles() const;
     void setRoles(IfcTemplatedEntityList< IfcActorRole >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPersonAndOrganization (IfcEntityInstanceData* e);
     IfcPersonAndOrganization (IfcPerson* v1_ThePerson, IfcOrganization* v2_TheOrganization, boost::optional< IfcTemplatedEntityList< IfcActorRole >::ptr > v3_Roles);
     typedef IfcTemplatedEntityList< IfcPersonAndOrganization > list;
@@ -9767,7 +9767,7 @@ public:
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     IfcTemplatedEntityList< IfcPhysicalComplexQuantity >::ptr PartOfComplex() const; // INVERSE IfcPhysicalComplexQuantity::HasQuantities
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPhysicalQuantity (IfcEntityInstanceData* e);
     IfcPhysicalQuantity (std::string v1_Name, boost::optional< std::string > v2_Description);
     typedef IfcTemplatedEntityList< IfcPhysicalQuantity > list;
@@ -9789,7 +9789,7 @@ public:
     IfcNamedUnit* Unit() const;
     void setUnit(IfcNamedUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPhysicalSimpleQuantity (IfcEntityInstanceData* e);
     IfcPhysicalSimpleQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit);
     typedef IfcTemplatedEntityList< IfcPhysicalSimpleQuantity > list;
@@ -9841,7 +9841,7 @@ public:
     std::string Country() const;
     void setCountry(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPostalAddress (IfcEntityInstanceData* e);
     IfcPostalAddress (boost::optional< IfcAddressTypeEnum::IfcAddressTypeEnum > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose, boost::optional< std::string > v4_InternalLocation, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_AddressLines, boost::optional< std::string > v6_PostalBox, boost::optional< std::string > v7_Town, boost::optional< std::string > v8_Region, boost::optional< std::string > v9_PostalCode, boost::optional< std::string > v10_Country);
     typedef IfcTemplatedEntityList< IfcPostalAddress > list;
@@ -9850,7 +9850,7 @@ public:
 class IFC_PARSE_API IfcPresentationItem : public IfcUtil::IfcBaseEntity {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPresentationItem (IfcEntityInstanceData* e);
     IfcPresentationItem ();
     typedef IfcTemplatedEntityList< IfcPresentationItem > list;
@@ -9889,7 +9889,7 @@ public:
     std::string Identifier() const;
     void setIdentifier(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPresentationLayerAssignment (IfcEntityInstanceData* e);
     IfcPresentationLayerAssignment (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier);
     typedef IfcTemplatedEntityList< IfcPresentationLayerAssignment > list;
@@ -9926,7 +9926,7 @@ public:
     IfcTemplatedEntityList< IfcPresentationStyle >::ptr LayerStyles() const;
     void setLayerStyles(IfcTemplatedEntityList< IfcPresentationStyle >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPresentationLayerWithStyle (IfcEntityInstanceData* e);
     IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, bool v5_LayerOn, bool v6_LayerFrozen, bool v7_LayerBlocked, IfcTemplatedEntityList< IfcPresentationStyle >::ptr v8_LayerStyles);
     typedef IfcTemplatedEntityList< IfcPresentationLayerWithStyle > list;
@@ -9944,7 +9944,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPresentationStyle (IfcEntityInstanceData* e);
     IfcPresentationStyle (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcPresentationStyle > list;
@@ -9960,7 +9960,7 @@ public:
     IfcEntityList::ptr Styles() const;
     void setStyles(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPresentationStyleAssignment (IfcEntityInstanceData* e);
     IfcPresentationStyleAssignment (IfcEntityList::ptr v1_Styles);
     typedef IfcTemplatedEntityList< IfcPresentationStyleAssignment > list;
@@ -9998,7 +9998,7 @@ public:
     IfcTemplatedEntityList< IfcRepresentation >::ptr Representations() const;
     void setRepresentations(IfcTemplatedEntityList< IfcRepresentation >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProductRepresentation (IfcEntityInstanceData* e);
     IfcProductRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcRepresentation >::ptr v3_Representations);
     typedef IfcTemplatedEntityList< IfcProductRepresentation > list;
@@ -10186,7 +10186,7 @@ public:
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReference() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     IfcTemplatedEntityList< IfcProfileProperties >::ptr HasProperties() const; // INVERSE IfcProfileProperties::ProfileDefinition
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProfileDef (IfcEntityInstanceData* e);
     IfcProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName);
     typedef IfcTemplatedEntityList< IfcProfileDef > list;
@@ -10239,7 +10239,7 @@ public:
     IfcNamedUnit* MapUnit() const;
     void setMapUnit(IfcNamedUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProjectedCRS (IfcEntityInstanceData* e);
     IfcProjectedCRS (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_GeodeticDatum, boost::optional< std::string > v4_VerticalDatum, boost::optional< std::string > v5_MapProjection, boost::optional< std::string > v6_MapZone, IfcNamedUnit* v7_MapUnit);
     typedef IfcTemplatedEntityList< IfcProjectedCRS > list;
@@ -10249,7 +10249,7 @@ class IFC_PARSE_API IfcPropertyAbstraction : public IfcUtil::IfcBaseEntity {
 public:
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyAbstraction (IfcEntityInstanceData* e);
     IfcPropertyAbstraction ();
     typedef IfcTemplatedEntityList< IfcPropertyAbstraction > list;
@@ -10314,7 +10314,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyEnumeration (IfcEntityInstanceData* e);
     IfcPropertyEnumeration (std::string v1_Name, IfcEntityList::ptr v2_EnumerationValues, IfcUnit* v3_Unit);
     typedef IfcTemplatedEntityList< IfcPropertyEnumeration > list;
@@ -10337,7 +10337,7 @@ public:
     std::string Formula() const;
     void setFormula(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantityArea (IfcEntityInstanceData* e);
     IfcQuantityArea (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit, double v4_AreaValue, boost::optional< std::string > v5_Formula);
     typedef IfcTemplatedEntityList< IfcQuantityArea > list;
@@ -10360,7 +10360,7 @@ public:
     std::string Formula() const;
     void setFormula(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantityCount (IfcEntityInstanceData* e);
     IfcQuantityCount (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit, double v4_CountValue, boost::optional< std::string > v5_Formula);
     typedef IfcTemplatedEntityList< IfcQuantityCount > list;
@@ -10383,7 +10383,7 @@ public:
     std::string Formula() const;
     void setFormula(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantityLength (IfcEntityInstanceData* e);
     IfcQuantityLength (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit, double v4_LengthValue, boost::optional< std::string > v5_Formula);
     typedef IfcTemplatedEntityList< IfcQuantityLength > list;
@@ -10406,7 +10406,7 @@ public:
     std::string Formula() const;
     void setFormula(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantityTime (IfcEntityInstanceData* e);
     IfcQuantityTime (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit, double v4_TimeValue, boost::optional< std::string > v5_Formula);
     typedef IfcTemplatedEntityList< IfcQuantityTime > list;
@@ -10429,7 +10429,7 @@ public:
     std::string Formula() const;
     void setFormula(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantityVolume (IfcEntityInstanceData* e);
     IfcQuantityVolume (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit, double v4_VolumeValue, boost::optional< std::string > v5_Formula);
     typedef IfcTemplatedEntityList< IfcQuantityVolume > list;
@@ -10452,7 +10452,7 @@ public:
     std::string Formula() const;
     void setFormula(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantityWeight (IfcEntityInstanceData* e);
     IfcQuantityWeight (std::string v1_Name, boost::optional< std::string > v2_Description, IfcNamedUnit* v3_Unit, double v4_WeightValue, boost::optional< std::string > v5_Formula);
     typedef IfcTemplatedEntityList< IfcQuantityWeight > list;
@@ -10517,7 +10517,7 @@ public:
     IfcTemplatedEntityList< IfcTimePeriod >::ptr TimePeriods() const;
     void setTimePeriods(IfcTemplatedEntityList< IfcTimePeriod >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRecurrencePattern (IfcEntityInstanceData* e);
     IfcRecurrencePattern (IfcRecurrenceTypeEnum::IfcRecurrenceTypeEnum v1_RecurrenceType, boost::optional< std::vector< int > /*[1:?]*/ > v2_DayComponent, boost::optional< std::vector< int > /*[1:?]*/ > v3_WeekdayComponent, boost::optional< std::vector< int > /*[1:?]*/ > v4_MonthComponent, boost::optional< int > v5_Position, boost::optional< int > v6_Interval, boost::optional< int > v7_Occurrences, boost::optional< IfcTemplatedEntityList< IfcTimePeriod >::ptr > v8_TimePeriods);
     typedef IfcTemplatedEntityList< IfcRecurrencePattern > list;
@@ -10546,7 +10546,7 @@ public:
     IfcReference* InnerReference() const;
     void setInnerReference(IfcReference* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReference (IfcEntityInstanceData* e);
     IfcReference (boost::optional< std::string > v1_TypeIdentifier, boost::optional< std::string > v2_AttributeIdentifier, boost::optional< std::string > v3_InstanceName, boost::optional< std::vector< int > /*[1:?]*/ > v4_ListPositions, IfcReference* v5_InnerReference);
     typedef IfcTemplatedEntityList< IfcReference > list;
@@ -10620,7 +10620,7 @@ public:
     IfcTemplatedEntityList< IfcPresentationLayerAssignment >::ptr LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
     IfcTemplatedEntityList< IfcProductRepresentation >::ptr OfProductRepresentation() const; // INVERSE IfcProductRepresentation::Representations
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRepresentation (IfcEntityInstanceData* e);
     IfcRepresentation (IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< IfcRepresentationItem >::ptr v4_Items);
     typedef IfcTemplatedEntityList< IfcRepresentation > list;
@@ -10649,7 +10649,7 @@ public:
     void setContextType(std::string v);
         IfcTemplatedEntityList< IfcRepresentation >::ptr RepresentationsInContext() const; // INVERSE IfcRepresentation::ContextOfItems
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRepresentationContext (IfcEntityInstanceData* e);
     IfcRepresentationContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType);
     typedef IfcTemplatedEntityList< IfcRepresentationContext > list;
@@ -10691,7 +10691,7 @@ public:
         IfcTemplatedEntityList< IfcPresentationLayerAssignment >::ptr LayerAssignment() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
     IfcTemplatedEntityList< IfcStyledItem >::ptr StyledByItem() const; // INVERSE IfcStyledItem::Item
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRepresentationItem (IfcEntityInstanceData* e);
     IfcRepresentationItem ();
     typedef IfcTemplatedEntityList< IfcRepresentationItem > list;
@@ -10719,7 +10719,7 @@ public:
         IfcTemplatedEntityList< IfcShapeAspect >::ptr HasShapeAspects() const; // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
     IfcTemplatedEntityList< IfcMappedItem >::ptr MapUsage() const; // INVERSE IfcMappedItem::MappingSource
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRepresentationMap (IfcEntityInstanceData* e);
     IfcRepresentationMap (IfcAxis2Placement* v1_MappingOrigin, IfcRepresentation* v2_MappedRepresentation);
     typedef IfcTemplatedEntityList< IfcRepresentationMap > list;
@@ -10740,7 +10740,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcResourceLevelRelationship (IfcEntityInstanceData* e);
     IfcResourceLevelRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description);
     typedef IfcTemplatedEntityList< IfcResourceLevelRelationship > list;
@@ -10779,7 +10779,7 @@ public:
     std::string Description() const;
     void setDescription(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRoot (IfcEntityInstanceData* e);
     IfcRoot (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcRoot > list;
@@ -10804,7 +10804,7 @@ public:
     IfcSIUnitName::IfcSIUnitName Name() const;
     void setName(IfcSIUnitName::IfcSIUnitName v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSIUnit (IfcEntityInstanceData* e);
     IfcSIUnit (IfcUnitEnum::IfcUnitEnum v2_UnitType, boost::optional< IfcSIPrefix::IfcSIPrefix > v3_Prefix, IfcSIUnitName::IfcSIUnitName v4_Name);
     typedef IfcTemplatedEntityList< IfcSIUnit > list;
@@ -10831,7 +10831,7 @@ public:
     std::string UserDefinedDataOrigin() const;
     void setUserDefinedDataOrigin(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSchedulingTime (IfcEntityInstanceData* e);
     IfcSchedulingTime (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin);
     typedef IfcTemplatedEntityList< IfcSchedulingTime > list;
@@ -10901,7 +10901,7 @@ public:
     IfcProductRepresentationSelect* PartOfProductDefinitionShape() const;
     void setPartOfProductDefinitionShape(IfcProductRepresentationSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcShapeAspect (IfcEntityInstanceData* e);
     IfcShapeAspect (IfcTemplatedEntityList< IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, bool v4_ProductDefinitional, IfcProductRepresentationSelect* v5_PartOfProductDefinitionShape);
     typedef IfcTemplatedEntityList< IfcShapeAspect > list;
@@ -10928,7 +10928,7 @@ class IFC_PARSE_API IfcShapeModel : public IfcRepresentation {
 public:
         IfcTemplatedEntityList< IfcShapeAspect >::ptr OfShapeAspect() const; // INVERSE IfcShapeAspect::ShapeRepresentations
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcShapeModel (IfcEntityInstanceData* e);
     IfcShapeModel (IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< IfcRepresentationItem >::ptr v4_Items);
     typedef IfcTemplatedEntityList< IfcShapeModel > list;
@@ -11071,7 +11071,7 @@ public:
 class IFC_PARSE_API IfcShapeRepresentation : public IfcShapeModel {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcShapeRepresentation (IfcEntityInstanceData* e);
     IfcShapeRepresentation (IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< IfcRepresentationItem >::ptr v4_Items);
     typedef IfcTemplatedEntityList< IfcShapeRepresentation > list;
@@ -11087,7 +11087,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralConnectionCondition (IfcEntityInstanceData* e);
     IfcStructuralConnectionCondition (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcStructuralConnectionCondition > list;
@@ -11103,7 +11103,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoad (IfcEntityInstanceData* e);
     IfcStructuralLoad (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcStructuralLoad > list;
@@ -11130,7 +11130,7 @@ public:
     std::vector< std::vector< double > > Locations() const;
     void setLocations(std::vector< std::vector< double > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadConfiguration (IfcEntityInstanceData* e);
     IfcStructuralLoadConfiguration (boost::optional< std::string > v1_Name, IfcTemplatedEntityList< IfcStructuralLoadOrResult >::ptr v2_Values, boost::optional< std::vector< std::vector< double > > > v3_Locations);
     typedef IfcTemplatedEntityList< IfcStructuralLoadConfiguration > list;
@@ -11141,7 +11141,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadOrResult : public IfcStructuralLoad {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadOrResult (IfcEntityInstanceData* e);
     IfcStructuralLoadOrResult (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcStructuralLoadOrResult > list;
@@ -11152,7 +11152,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadStatic : public IfcStructuralLoadOrResult {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadStatic (IfcEntityInstanceData* e);
     IfcStructuralLoadStatic (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcStructuralLoadStatic > list;
@@ -11186,7 +11186,7 @@ public:
     double DeltaTZ() const;
     void setDeltaTZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadTemperature (IfcEntityInstanceData* e);
     IfcStructuralLoadTemperature (boost::optional< std::string > v1_Name, boost::optional< double > v2_DeltaTConstant, boost::optional< double > v3_DeltaTY, boost::optional< double > v4_DeltaTZ);
     typedef IfcTemplatedEntityList< IfcStructuralLoadTemperature > list;
@@ -11199,7 +11199,7 @@ public:
 class IFC_PARSE_API IfcStyleModel : public IfcRepresentation {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStyleModel (IfcEntityInstanceData* e);
     IfcStyleModel (IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< IfcRepresentationItem >::ptr v4_Items);
     typedef IfcTemplatedEntityList< IfcStyleModel > list;
@@ -11255,7 +11255,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStyledItem (IfcEntityInstanceData* e);
     IfcStyledItem (IfcRepresentationItem* v1_Item, IfcEntityList::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef IfcTemplatedEntityList< IfcStyledItem > list;
@@ -11270,7 +11270,7 @@ public:
 class IFC_PARSE_API IfcStyledRepresentation : public IfcStyleModel {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStyledRepresentation (IfcEntityInstanceData* e);
     IfcStyledRepresentation (IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< IfcRepresentationItem >::ptr v4_Items);
     typedef IfcTemplatedEntityList< IfcStyledRepresentation > list;
@@ -11298,7 +11298,7 @@ public:
     double ShearReinforcement() const;
     void setShearReinforcement(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceReinforcementArea (IfcEntityInstanceData* e);
     IfcSurfaceReinforcementArea (boost::optional< std::string > v1_Name, boost::optional< std::vector< double > /*[2:3]*/ > v2_SurfaceReinforcement1, boost::optional< std::vector< double > /*[2:3]*/ > v3_SurfaceReinforcement2, boost::optional< double > v4_ShearReinforcement);
     typedef IfcTemplatedEntityList< IfcSurfaceReinforcementArea > list;
@@ -11319,7 +11319,7 @@ public:
     IfcEntityList::ptr Styles() const;
     void setStyles(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceStyle (IfcEntityInstanceData* e);
     IfcSurfaceStyle (boost::optional< std::string > v1_Name, IfcSurfaceSide::IfcSurfaceSide v2_Side, IfcEntityList::ptr v3_Styles);
     typedef IfcTemplatedEntityList< IfcSurfaceStyle > list;
@@ -11354,7 +11354,7 @@ public:
     IfcColourRgb* ReflectanceColour() const;
     void setReflectanceColour(IfcColourRgb* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceStyleLighting (IfcEntityInstanceData* e);
     IfcSurfaceStyleLighting (IfcColourRgb* v1_DiffuseTransmissionColour, IfcColourRgb* v2_DiffuseReflectionColour, IfcColourRgb* v3_TransmissionColour, IfcColourRgb* v4_ReflectanceColour);
     typedef IfcTemplatedEntityList< IfcSurfaceStyleLighting > list;
@@ -11377,7 +11377,7 @@ public:
     double DispersionFactor() const;
     void setDispersionFactor(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceStyleRefraction (IfcEntityInstanceData* e);
     IfcSurfaceStyleRefraction (boost::optional< double > v1_RefractionIndex, boost::optional< double > v2_DispersionFactor);
     typedef IfcTemplatedEntityList< IfcSurfaceStyleRefraction > list;
@@ -11399,7 +11399,7 @@ public:
     double Transparency() const;
     void setTransparency(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceStyleShading (IfcEntityInstanceData* e);
     IfcSurfaceStyleShading (IfcColourRgb* v1_SurfaceColour, boost::optional< double > v2_Transparency);
     typedef IfcTemplatedEntityList< IfcSurfaceStyleShading > list;
@@ -11428,7 +11428,7 @@ public:
     IfcTemplatedEntityList< IfcSurfaceTexture >::ptr Textures() const;
     void setTextures(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceStyleWithTextures (IfcEntityInstanceData* e);
     IfcSurfaceStyleWithTextures (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Textures);
     typedef IfcTemplatedEntityList< IfcSurfaceStyleWithTextures > list;
@@ -11562,7 +11562,7 @@ public:
         IfcTemplatedEntityList< IfcTextureCoordinate >::ptr IsMappedBy() const; // INVERSE IfcTextureCoordinate::Maps
     IfcTemplatedEntityList< IfcSurfaceStyleWithTextures >::ptr UsedInStyles() const; // INVERSE IfcSurfaceStyleWithTextures::Textures
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceTexture (IfcEntityInstanceData* e);
     IfcSurfaceTexture (bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter);
     typedef IfcTemplatedEntityList< IfcSurfaceTexture > list;
@@ -11600,7 +11600,7 @@ public:
     IfcTemplatedEntityList< IfcTableColumn >::ptr Columns() const;
     void setColumns(IfcTemplatedEntityList< IfcTableColumn >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTable (IfcEntityInstanceData* e);
     IfcTable (boost::optional< std::string > v1_Name, boost::optional< IfcTemplatedEntityList< IfcTableRow >::ptr > v2_Rows, boost::optional< IfcTemplatedEntityList< IfcTableColumn >::ptr > v3_Columns);
     typedef IfcTemplatedEntityList< IfcTable > list;
@@ -11637,7 +11637,7 @@ public:
     IfcReference* ReferencePath() const;
     void setReferencePath(IfcReference* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTableColumn (IfcEntityInstanceData* e);
     IfcTableColumn (boost::optional< std::string > v1_Identifier, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, IfcUnit* v4_Unit, IfcReference* v5_ReferencePath);
     typedef IfcTemplatedEntityList< IfcTableColumn > list;
@@ -11668,7 +11668,7 @@ public:
     bool IsHeading() const;
     void setIsHeading(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTableRow (IfcEntityInstanceData* e);
     IfcTableRow (boost::optional< IfcEntityList::ptr > v1_RowCells, boost::optional< bool > v2_IsHeading);
     typedef IfcTemplatedEntityList< IfcTableRow > list;
@@ -11823,7 +11823,7 @@ public:
     double Completion() const;
     void setCompletion(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTaskTime (IfcEntityInstanceData* e);
     IfcTaskTime (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< IfcTaskDurationEnum::IfcTaskDurationEnum > v4_DurationType, boost::optional< std::string > v5_ScheduleDuration, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_EarlyStart, boost::optional< std::string > v9_EarlyFinish, boost::optional< std::string > v10_LateStart, boost::optional< std::string > v11_LateFinish, boost::optional< std::string > v12_FreeFloat, boost::optional< std::string > v13_TotalFloat, boost::optional< bool > v14_IsCritical, boost::optional< std::string > v15_StatusTime, boost::optional< std::string > v16_ActualDuration, boost::optional< std::string > v17_ActualStart, boost::optional< std::string > v18_ActualFinish, boost::optional< std::string > v19_RemainingTime, boost::optional< double > v20_Completion);
     typedef IfcTemplatedEntityList< IfcTaskTime > list;
@@ -11836,7 +11836,7 @@ public:
     IfcRecurrencePattern* Recurrence() const;
     void setRecurrence(IfcRecurrencePattern* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTaskTimeRecurring (IfcEntityInstanceData* e);
     IfcTaskTimeRecurring (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< IfcTaskDurationEnum::IfcTaskDurationEnum > v4_DurationType, boost::optional< std::string > v5_ScheduleDuration, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_EarlyStart, boost::optional< std::string > v9_EarlyFinish, boost::optional< std::string > v10_LateStart, boost::optional< std::string > v11_LateFinish, boost::optional< std::string > v12_FreeFloat, boost::optional< std::string > v13_TotalFloat, boost::optional< bool > v14_IsCritical, boost::optional< std::string > v15_StatusTime, boost::optional< std::string > v16_ActualDuration, boost::optional< std::string > v17_ActualStart, boost::optional< std::string > v18_ActualFinish, boost::optional< std::string > v19_RemainingTime, boost::optional< double > v20_Completion, IfcRecurrencePattern* v21_Recurrence);
     typedef IfcTemplatedEntityList< IfcTaskTimeRecurring > list;
@@ -11883,7 +11883,7 @@ public:
     std::vector< std::string > /*[1:?]*/ MessagingIDs() const;
     void setMessagingIDs(std::vector< std::string > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTelecomAddress (IfcEntityInstanceData* e);
     IfcTelecomAddress (boost::optional< IfcAddressTypeEnum::IfcAddressTypeEnum > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_TelephoneNumbers, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_FacsimileNumbers, boost::optional< std::string > v6_PagerNumber, boost::optional< std::vector< std::string > /*[1:?]*/ > v7_ElectronicMailAddresses, boost::optional< std::string > v8_WWWHomePageURL, boost::optional< std::vector< std::string > /*[1:?]*/ > v9_MessagingIDs);
     typedef IfcTemplatedEntityList< IfcTelecomAddress > list;
@@ -11942,7 +11942,7 @@ public:
     bool ModelOrDraughting() const;
     void setModelOrDraughting(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextStyle (IfcEntityInstanceData* e);
     IfcTextStyle (boost::optional< std::string > v1_Name, IfcTextStyleForDefinedFont* v2_TextCharacterAppearance, IfcTextStyleTextModel* v3_TextStyle, IfcTextFontSelect* v4_TextFontStyle, boost::optional< bool > v5_ModelOrDraughting);
     typedef IfcTemplatedEntityList< IfcTextStyle > list;
@@ -11975,7 +11975,7 @@ public:
     IfcColour* BackgroundColour() const;
     void setBackgroundColour(IfcColour* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextStyleForDefinedFont (IfcEntityInstanceData* e);
     IfcTextStyleForDefinedFont (IfcColour* v1_Colour, IfcColour* v2_BackgroundColour);
     typedef IfcTemplatedEntityList< IfcTextStyleForDefinedFont > list;
@@ -12032,7 +12032,7 @@ public:
     IfcSizeSelect* LineHeight() const;
     void setLineHeight(IfcSizeSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextStyleTextModel (IfcEntityInstanceData* e);
     IfcTextStyleTextModel (IfcSizeSelect* v1_TextIndent, boost::optional< std::string > v2_TextAlign, boost::optional< std::string > v3_TextDecoration, IfcSizeSelect* v4_LetterSpacing, IfcSizeSelect* v5_WordSpacing, boost::optional< std::string > v6_TextTransform, IfcSizeSelect* v7_LineHeight);
     typedef IfcTemplatedEntityList< IfcTextStyleTextModel > list;
@@ -12053,7 +12053,7 @@ public:
     IfcTemplatedEntityList< IfcSurfaceTexture >::ptr Maps() const;
     void setMaps(IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextureCoordinate (IfcEntityInstanceData* e);
     IfcTextureCoordinate (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps);
     typedef IfcTemplatedEntityList< IfcTextureCoordinate > list;
@@ -12099,7 +12099,7 @@ public:
     std::vector< double > /*[1:?]*/ Parameter() const;
     void setParameter(std::vector< double > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextureCoordinateGenerator (IfcEntityInstanceData* e);
     IfcTextureCoordinateGenerator (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, std::string v2_Mode, boost::optional< std::vector< double > /*[1:?]*/ > v3_Parameter);
     typedef IfcTemplatedEntityList< IfcTextureCoordinateGenerator > list;
@@ -12165,7 +12165,7 @@ public:
     IfcFace* MappedTo() const;
     void setMappedTo(IfcFace* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextureMap (IfcEntityInstanceData* e);
     IfcTextureMap (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTemplatedEntityList< IfcTextureVertex >::ptr v2_Vertices, IfcFace* v3_MappedTo);
     typedef IfcTemplatedEntityList< IfcTextureMap > list;
@@ -12203,7 +12203,7 @@ public:
     std::vector< double > /*[2:2]*/ Coordinates() const;
     void setCoordinates(std::vector< double > /*[2:2]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextureVertex (IfcEntityInstanceData* e);
     IfcTextureVertex (std::vector< double > /*[2:2]*/ v1_Coordinates);
     typedef IfcTemplatedEntityList< IfcTextureVertex > list;
@@ -12214,7 +12214,7 @@ public:
     std::vector< std::vector< double > > TexCoordsList() const;
     void setTexCoordsList(std::vector< std::vector< double > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextureVertexList (IfcEntityInstanceData* e);
     IfcTextureVertexList (std::vector< std::vector< double > > v1_TexCoordsList);
     typedef IfcTemplatedEntityList< IfcTextureVertexList > list;
@@ -12234,7 +12234,7 @@ public:
     std::string EndTime() const;
     void setEndTime(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTimePeriod (IfcEntityInstanceData* e);
     IfcTimePeriod (std::string v1_StartTime, std::string v2_EndTime);
     typedef IfcTemplatedEntityList< IfcTimePeriod > list;
@@ -12278,7 +12278,7 @@ public:
     void setUnit(IfcUnit* v);
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReference() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTimeSeries (IfcEntityInstanceData* e);
     IfcTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_StartTime, std::string v4_EndTime, IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum v5_TimeSeriesDataType, IfcDataOriginEnum::IfcDataOriginEnum v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, IfcUnit* v8_Unit);
     typedef IfcTemplatedEntityList< IfcTimeSeries > list;
@@ -12298,7 +12298,7 @@ public:
     IfcEntityList::ptr ListValues() const;
     void setListValues(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTimeSeriesValue (IfcEntityInstanceData* e);
     IfcTimeSeriesValue (IfcEntityList::ptr v1_ListValues);
     typedef IfcTemplatedEntityList< IfcTimeSeriesValue > list;
@@ -12311,7 +12311,7 @@ public:
 class IFC_PARSE_API IfcTopologicalRepresentationItem : public IfcRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTopologicalRepresentationItem (IfcEntityInstanceData* e);
     IfcTopologicalRepresentationItem ();
     typedef IfcTemplatedEntityList< IfcTopologicalRepresentationItem > list;
@@ -12353,7 +12353,7 @@ public:
 class IFC_PARSE_API IfcTopologyRepresentation : public IfcShapeModel {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTopologyRepresentation (IfcEntityInstanceData* e);
     IfcTopologyRepresentation (IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< IfcRepresentationItem >::ptr v4_Items);
     typedef IfcTemplatedEntityList< IfcTopologyRepresentation > list;
@@ -12369,7 +12369,7 @@ public:
     IfcEntityList::ptr Units() const;
     void setUnits(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcUnitAssignment (IfcEntityInstanceData* e);
     IfcUnitAssignment (IfcEntityList::ptr v1_Units);
     typedef IfcTemplatedEntityList< IfcUnitAssignment > list;
@@ -12387,7 +12387,7 @@ public:
 class IFC_PARSE_API IfcVertex : public IfcTopologicalRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVertex (IfcEntityInstanceData* e);
     IfcVertex ();
     typedef IfcTemplatedEntityList< IfcVertex > list;
@@ -12407,7 +12407,7 @@ public:
     IfcPoint* VertexGeometry() const;
     void setVertexGeometry(IfcPoint* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVertexPoint (IfcEntityInstanceData* e);
     IfcVertexPoint (IfcPoint* v1_VertexGeometry);
     typedef IfcTemplatedEntityList< IfcVertexPoint > list;
@@ -12480,7 +12480,7 @@ public:
     std::vector< double > /*[2:3]*/ OffsetDistances() const;
     void setOffsetDistances(std::vector< double > /*[2:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVirtualGridIntersection (IfcEntityInstanceData* e);
     IfcVirtualGridIntersection (IfcTemplatedEntityList< IfcGridAxis >::ptr v1_IntersectingAxes, std::vector< double > /*[2:3]*/ v2_OffsetDistances);
     typedef IfcTemplatedEntityList< IfcVirtualGridIntersection > list;
@@ -12515,7 +12515,7 @@ public:
     std::string Finish() const;
     void setFinish(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWorkTime (IfcEntityInstanceData* e);
     IfcWorkTime (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, IfcRecurrencePattern* v4_RecurrencePattern, boost::optional< std::string > v5_Start, boost::optional< std::string > v6_Finish);
     typedef IfcTemplatedEntityList< IfcWorkTime > list;
@@ -12536,7 +12536,7 @@ public:
     IfcTemplatedEntityList< IfcApproval >::ptr RelatedApprovals() const;
     void setRelatedApprovals(IfcTemplatedEntityList< IfcApproval >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcApprovalRelationship (IfcEntityInstanceData* e);
     IfcApprovalRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcApproval* v3_RelatingApproval, IfcTemplatedEntityList< IfcApproval >::ptr v4_RelatedApprovals);
     typedef IfcTemplatedEntityList< IfcApprovalRelationship > list;
@@ -12565,7 +12565,7 @@ public:
     IfcCurve* OuterCurve() const;
     void setOuterCurve(IfcCurve* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcArbitraryClosedProfileDef (IfcEntityInstanceData* e);
     IfcArbitraryClosedProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcCurve* v3_OuterCurve);
     typedef IfcTemplatedEntityList< IfcArbitraryClosedProfileDef > list;
@@ -12591,7 +12591,7 @@ public:
     IfcBoundedCurve* Curve() const;
     void setCurve(IfcBoundedCurve* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcArbitraryOpenProfileDef (IfcEntityInstanceData* e);
     IfcArbitraryOpenProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcBoundedCurve* v3_Curve);
     typedef IfcTemplatedEntityList< IfcArbitraryOpenProfileDef > list;
@@ -12621,7 +12621,7 @@ public:
     IfcTemplatedEntityList< IfcCurve >::ptr InnerCurves() const;
     void setInnerCurves(IfcTemplatedEntityList< IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcArbitraryProfileDefWithVoids (IfcEntityInstanceData* e);
     IfcArbitraryProfileDefWithVoids (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcCurve* v3_OuterCurve, IfcTemplatedEntityList< IfcCurve >::ptr v4_InnerCurves);
     typedef IfcTemplatedEntityList< IfcArbitraryProfileDefWithVoids > list;
@@ -12644,7 +12644,7 @@ public:
     boost::dynamic_bitset<> RasterCode() const;
     void setRasterCode(boost::dynamic_bitset<> v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBlobTexture (IfcEntityInstanceData* e);
     IfcBlobTexture (bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, std::string v6_RasterFormat, boost::dynamic_bitset<> v7_RasterCode);
     typedef IfcTemplatedEntityList< IfcBlobTexture > list;
@@ -12684,7 +12684,7 @@ public:
     double Thickness() const;
     void setThickness(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCenterLineProfileDef (IfcEntityInstanceData* e);
     IfcCenterLineProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcBoundedCurve* v3_Curve, double v4_Thickness);
     typedef IfcTemplatedEntityList< IfcCenterLineProfileDef > list;
@@ -12769,7 +12769,7 @@ public:
         IfcTemplatedEntityList< IfcRelAssociatesClassification >::ptr ClassificationForObjects() const; // INVERSE IfcRelAssociatesClassification::RelatingClassification
     IfcTemplatedEntityList< IfcClassificationReference >::ptr HasReferences() const; // INVERSE IfcClassificationReference::ReferencedSource
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcClassification (IfcEntityInstanceData* e);
     IfcClassification (boost::optional< std::string > v1_Source, boost::optional< std::string > v2_Edition, boost::optional< std::string > v3_EditionDate, std::string v4_Name, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Location, boost::optional< std::vector< std::string > /*[1:?]*/ > v7_ReferenceTokens);
     typedef IfcTemplatedEntityList< IfcClassification > list;
@@ -12816,7 +12816,7 @@ public:
         IfcTemplatedEntityList< IfcRelAssociatesClassification >::ptr ClassificationRefForObjects() const; // INVERSE IfcRelAssociatesClassification::RelatingClassification
     IfcTemplatedEntityList< IfcClassificationReference >::ptr HasReferences() const; // INVERSE IfcClassificationReference::ReferencedSource
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcClassificationReference (IfcEntityInstanceData* e);
     IfcClassificationReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name, IfcClassificationReferenceSelect* v4_ReferencedSource, boost::optional< std::string > v5_Description, boost::optional< std::string > v6_Sort);
     typedef IfcTemplatedEntityList< IfcClassificationReference > list;
@@ -12827,7 +12827,7 @@ public:
     std::vector< std::vector< double > > ColourList() const;
     void setColourList(std::vector< std::vector< double > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcColourRgbList (IfcEntityInstanceData* e);
     IfcColourRgbList (std::vector< std::vector< double > > v1_ColourList);
     typedef IfcTemplatedEntityList< IfcColourRgbList > list;
@@ -12848,7 +12848,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcColourSpecification (IfcEntityInstanceData* e);
     IfcColourSpecification (boost::optional< std::string > v1_Name);
     typedef IfcTemplatedEntityList< IfcColourSpecification > list;
@@ -12900,7 +12900,7 @@ public:
     std::string Label() const;
     void setLabel(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCompositeProfileDef (IfcEntityInstanceData* e);
     IfcCompositeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcTemplatedEntityList< IfcProfileDef >::ptr v3_Profiles, boost::optional< std::string > v4_Label);
     typedef IfcTemplatedEntityList< IfcCompositeProfileDef > list;
@@ -12920,7 +12920,7 @@ public:
     IfcTemplatedEntityList< IfcFace >::ptr CfsFaces() const;
     void setCfsFaces(IfcTemplatedEntityList< IfcFace >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectedFaceSet (IfcEntityInstanceData* e);
     IfcConnectedFaceSet (IfcTemplatedEntityList< IfcFace >::ptr v1_CfsFaces);
     typedef IfcTemplatedEntityList< IfcConnectedFaceSet > list;
@@ -12949,7 +12949,7 @@ public:
     IfcCurveOrEdgeCurve* CurveOnRelatedElement() const;
     void setCurveOnRelatedElement(IfcCurveOrEdgeCurve* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectionCurveGeometry (IfcEntityInstanceData* e);
     IfcConnectionCurveGeometry (IfcCurveOrEdgeCurve* v1_CurveOnRelatingElement, IfcCurveOrEdgeCurve* v2_CurveOnRelatedElement);
     typedef IfcTemplatedEntityList< IfcConnectionCurveGeometry > list;
@@ -12991,7 +12991,7 @@ public:
     double EccentricityInZ() const;
     void setEccentricityInZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConnectionPointEccentricity (IfcEntityInstanceData* e);
     IfcConnectionPointEccentricity (IfcPointOrVertexPoint* v1_PointOnRelatingElement, IfcPointOrVertexPoint* v2_PointOnRelatedElement, boost::optional< double > v3_EccentricityInX, boost::optional< double > v4_EccentricityInY, boost::optional< double > v5_EccentricityInZ);
     typedef IfcTemplatedEntityList< IfcConnectionPointEccentricity > list;
@@ -13010,7 +13010,7 @@ public:
     void setName(std::string v);
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReference() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcContextDependentUnit (IfcEntityInstanceData* e);
     IfcContextDependentUnit (IfcDimensionalExponents* v1_Dimensions, IfcUnitEnum::IfcUnitEnum v2_UnitType, std::string v3_Name);
     typedef IfcTemplatedEntityList< IfcContextDependentUnit > list;
@@ -13072,7 +13072,7 @@ public:
     void setConversionFactor(IfcMeasureWithUnit* v);
         IfcTemplatedEntityList< IfcExternalReferenceRelationship >::ptr HasExternalReference() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConversionBasedUnit (IfcEntityInstanceData* e);
     IfcConversionBasedUnit (IfcDimensionalExponents* v1_Dimensions, IfcUnitEnum::IfcUnitEnum v2_UnitType, std::string v3_Name, IfcMeasureWithUnit* v4_ConversionFactor);
     typedef IfcTemplatedEntityList< IfcConversionBasedUnit > list;
@@ -13101,7 +13101,7 @@ public:
     double ConversionOffset() const;
     void setConversionOffset(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConversionBasedUnitWithOffset (IfcEntityInstanceData* e);
     IfcConversionBasedUnitWithOffset (IfcDimensionalExponents* v1_Dimensions, IfcUnitEnum::IfcUnitEnum v2_UnitType, std::string v3_Name, IfcMeasureWithUnit* v4_ConversionFactor, double v5_ConversionOffset);
     typedef IfcTemplatedEntityList< IfcConversionBasedUnitWithOffset > list;
@@ -13141,7 +13141,7 @@ public:
     IfcLibraryInformation* RateSource() const;
     void setRateSource(IfcLibraryInformation* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurrencyRelationship (IfcEntityInstanceData* e);
     IfcCurrencyRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMonetaryUnit* v3_RelatingMonetaryUnit, IfcMonetaryUnit* v4_RelatedMonetaryUnit, double v5_ExchangeRate, boost::optional< std::string > v6_RateDateTime, IfcLibraryInformation* v7_RateSource);
     typedef IfcTemplatedEntityList< IfcCurrencyRelationship > list;
@@ -13185,7 +13185,7 @@ public:
     bool ModelOrDraughting() const;
     void setModelOrDraughting(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurveStyle (IfcEntityInstanceData* e);
     IfcCurveStyle (boost::optional< std::string > v1_Name, IfcCurveFontOrScaledCurveFontSelect* v2_CurveFont, IfcSizeSelect* v3_CurveWidth, IfcColour* v4_CurveColour, boost::optional< bool > v5_ModelOrDraughting);
     typedef IfcTemplatedEntityList< IfcCurveStyle > list;
@@ -13206,7 +13206,7 @@ public:
     IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr PatternList() const;
     void setPatternList(IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurveStyleFont (IfcEntityInstanceData* e);
     IfcCurveStyleFont (boost::optional< std::string > v1_Name, IfcTemplatedEntityList< IfcCurveStyleFontPattern >::ptr v2_PatternList);
     typedef IfcTemplatedEntityList< IfcCurveStyleFont > list;
@@ -13236,7 +13236,7 @@ public:
     double CurveFontScaling() const;
     void setCurveFontScaling(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurveStyleFontAndScaling (IfcEntityInstanceData* e);
     IfcCurveStyleFontAndScaling (boost::optional< std::string > v1_Name, IfcCurveStyleFontSelect* v2_CurveFont, double v3_CurveFontScaling);
     typedef IfcTemplatedEntityList< IfcCurveStyleFontAndScaling > list;
@@ -13259,7 +13259,7 @@ public:
     double InvisibleSegmentLength() const;
     void setInvisibleSegmentLength(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurveStyleFontPattern (IfcEntityInstanceData* e);
     IfcCurveStyleFontPattern (double v1_VisibleSegmentLength, double v2_InvisibleSegmentLength);
     typedef IfcTemplatedEntityList< IfcCurveStyleFontPattern > list;
@@ -13362,7 +13362,7 @@ public:
     std::string Label() const;
     void setLabel(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDerivedProfileDef (IfcEntityInstanceData* e);
     IfcDerivedProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcProfileDef* v3_ParentProfile, IfcCartesianTransformationOperator2D* v4_Operator, boost::optional< std::string > v5_Label);
     typedef IfcTemplatedEntityList< IfcDerivedProfileDef > list;
@@ -13471,7 +13471,7 @@ public:
     IfcTemplatedEntityList< IfcDocumentInformationRelationship >::ptr IsPointedTo() const; // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
     IfcTemplatedEntityList< IfcDocumentInformationRelationship >::ptr IsPointer() const; // INVERSE IfcDocumentInformationRelationship::RelatingDocument
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDocumentInformation (IfcEntityInstanceData* e);
     IfcDocumentInformation (std::string v1_Identification, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< std::string > v4_Location, boost::optional< std::string > v5_Purpose, boost::optional< std::string > v6_IntendedUse, boost::optional< std::string > v7_Scope, boost::optional< std::string > v8_Revision, IfcActorSelect* v9_DocumentOwner, boost::optional< IfcEntityList::ptr > v10_Editors, boost::optional< std::string > v11_CreationTime, boost::optional< std::string > v12_LastRevisionTime, boost::optional< std::string > v13_ElectronicFormat, boost::optional< std::string > v14_ValidFrom, boost::optional< std::string > v15_ValidUntil, boost::optional< IfcDocumentConfidentialityEnum::IfcDocumentConfidentialityEnum > v16_Confidentiality, boost::optional< IfcDocumentStatusEnum::IfcDocumentStatusEnum > v17_Status);
     typedef IfcTemplatedEntityList< IfcDocumentInformation > list;
@@ -13498,7 +13498,7 @@ public:
     std::string RelationshipType() const;
     void setRelationshipType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDocumentInformationRelationship (IfcEntityInstanceData* e);
     IfcDocumentInformationRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcDocumentInformation* v3_RelatingDocument, IfcTemplatedEntityList< IfcDocumentInformation >::ptr v4_RelatedDocuments, boost::optional< std::string > v5_RelationshipType);
     typedef IfcTemplatedEntityList< IfcDocumentInformationRelationship > list;
@@ -13530,7 +13530,7 @@ public:
     void setReferencedDocument(IfcDocumentInformation* v);
         IfcTemplatedEntityList< IfcRelAssociatesDocument >::ptr DocumentRefForObjects() const; // INVERSE IfcRelAssociatesDocument::RelatingDocument
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDocumentReference (IfcEntityInstanceData* e);
     IfcDocumentReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_Identification, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcDocumentInformation* v5_ReferencedDocument);
     typedef IfcTemplatedEntityList< IfcDocumentReference > list;
@@ -13593,7 +13593,7 @@ public:
     IfcVertex* EdgeEnd() const;
     void setEdgeEnd(IfcVertex* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEdge (IfcEntityInstanceData* e);
     IfcEdge (IfcVertex* v1_EdgeStart, IfcVertex* v2_EdgeEnd);
     typedef IfcTemplatedEntityList< IfcEdge > list;
@@ -13640,7 +13640,7 @@ public:
     bool SameSense() const;
     void setSameSense(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEdgeCurve (IfcEntityInstanceData* e);
     IfcEdgeCurve (IfcVertex* v1_EdgeStart, IfcVertex* v2_EdgeEnd, IfcCurve* v3_EdgeGeometry, bool v4_SameSense);
     typedef IfcTemplatedEntityList< IfcEdgeCurve > list;
@@ -13693,7 +13693,7 @@ public:
     std::string ScheduleDate() const;
     void setScheduleDate(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEventTime (IfcEntityInstanceData* e);
     IfcEventTime (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< std::string > v4_ActualDate, boost::optional< std::string > v5_EarlyDate, boost::optional< std::string > v6_LateDate, boost::optional< std::string > v7_ScheduleDate);
     typedef IfcTemplatedEntityList< IfcEventTime > list;
@@ -13712,7 +13712,7 @@ public:
     IfcTemplatedEntityList< IfcProperty >::ptr Properties() const;
     void setProperties(IfcTemplatedEntityList< IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExtendedProperties (IfcEntityInstanceData* e);
     IfcExtendedProperties (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcProperty >::ptr v3_Properties);
     typedef IfcTemplatedEntityList< IfcExtendedProperties > list;
@@ -13735,7 +13735,7 @@ public:
     IfcEntityList::ptr RelatedResourceObjects() const;
     void setRelatedResourceObjects(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternalReferenceRelationship (IfcEntityInstanceData* e);
     IfcExternalReferenceRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcExternalReference* v3_RelatingReference, IfcEntityList::ptr v4_RelatedResourceObjects);
     typedef IfcTemplatedEntityList< IfcExternalReferenceRelationship > list;
@@ -13791,7 +13791,7 @@ public:
     void setBounds(IfcTemplatedEntityList< IfcFaceBound >::ptr v);
         IfcTemplatedEntityList< IfcTextureMap >::ptr HasTextureMaps() const; // INVERSE IfcTextureMap::MappedTo
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFace (IfcEntityInstanceData* e);
     IfcFace (IfcTemplatedEntityList< IfcFaceBound >::ptr v1_Bounds);
     typedef IfcTemplatedEntityList< IfcFace > list;
@@ -13810,7 +13810,7 @@ public:
     bool Orientation() const;
     void setOrientation(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFaceBound (IfcEntityInstanceData* e);
     IfcFaceBound (IfcLoop* v1_Bound, bool v2_Orientation);
     typedef IfcTemplatedEntityList< IfcFaceBound > list;
@@ -13823,7 +13823,7 @@ public:
 class IFC_PARSE_API IfcFaceOuterBound : public IfcFaceBound {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFaceOuterBound (IfcEntityInstanceData* e);
     IfcFaceOuterBound (IfcLoop* v1_Bound, bool v2_Orientation);
     typedef IfcTemplatedEntityList< IfcFaceOuterBound > list;
@@ -13873,7 +13873,7 @@ public:
     bool SameSense() const;
     void setSameSense(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFaceSurface (IfcEntityInstanceData* e);
     IfcFaceSurface (IfcTemplatedEntityList< IfcFaceBound >::ptr v1_Bounds, IfcSurface* v2_FaceSurface, bool v3_SameSense);
     typedef IfcTemplatedEntityList< IfcFaceSurface > list;
@@ -13918,7 +13918,7 @@ public:
     double CompressionFailureZ() const;
     void setCompressionFailureZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFailureConnectionCondition (IfcEntityInstanceData* e);
     IfcFailureConnectionCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_TensionFailureX, boost::optional< double > v3_TensionFailureY, boost::optional< double > v4_TensionFailureZ, boost::optional< double > v5_CompressionFailureX, boost::optional< double > v6_CompressionFailureY, boost::optional< double > v7_CompressionFailureZ);
     typedef IfcTemplatedEntityList< IfcFailureConnectionCondition > list;
@@ -13967,7 +13967,7 @@ public:
     bool ModelorDraughting() const;
     void setModelorDraughting(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFillAreaStyle (IfcEntityInstanceData* e);
     IfcFillAreaStyle (boost::optional< std::string > v1_Name, IfcEntityList::ptr v2_FillStyles, boost::optional< bool > v3_ModelorDraughting);
     typedef IfcTemplatedEntityList< IfcFillAreaStyle > list;
@@ -14042,7 +14042,7 @@ public:
         IfcTemplatedEntityList< IfcGeometricRepresentationSubContext >::ptr HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
     IfcTemplatedEntityList< IfcCoordinateOperation >::ptr HasCoordinateOperation() const; // INVERSE IfcCoordinateOperation::SourceCRS
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeometricRepresentationContext (IfcEntityInstanceData* e);
     IfcGeometricRepresentationContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, boost::optional< double > v4_Precision, IfcAxis2Placement* v5_WorldCoordinateSystem, IfcDirection* v6_TrueNorth);
     typedef IfcTemplatedEntityList< IfcGeometricRepresentationContext > list;
@@ -14069,7 +14069,7 @@ public:
 class IFC_PARSE_API IfcGeometricRepresentationItem : public IfcRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeometricRepresentationItem (IfcEntityInstanceData* e);
     IfcGeometricRepresentationItem ();
     typedef IfcTemplatedEntityList< IfcGeometricRepresentationItem > list;
@@ -14116,7 +14116,7 @@ public:
     std::string UserDefinedTargetView() const;
     void setUserDefinedTargetView(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeometricRepresentationSubContext (IfcEntityInstanceData* e);
     IfcGeometricRepresentationSubContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType, IfcGeometricRepresentationContext* v7_ParentContext, boost::optional< double > v8_TargetScale, IfcGeometricProjectionEnum::IfcGeometricProjectionEnum v9_TargetView, boost::optional< std::string > v10_UserDefinedTargetView);
     typedef IfcTemplatedEntityList< IfcGeometricRepresentationSubContext > list;
@@ -14134,7 +14134,7 @@ public:
     IfcEntityList::ptr Elements() const;
     void setElements(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeometricSet (IfcEntityInstanceData* e);
     IfcGeometricSet (IfcEntityList::ptr v1_Elements);
     typedef IfcTemplatedEntityList< IfcGeometricSet > list;
@@ -14197,7 +14197,7 @@ public:
     IfcGridPlacementDirectionSelect* PlacementRefDirection() const;
     void setPlacementRefDirection(IfcGridPlacementDirectionSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGridPlacement (IfcEntityInstanceData* e);
     IfcGridPlacement (IfcVirtualGridIntersection* v1_PlacementLocation, IfcGridPlacementDirectionSelect* v2_PlacementRefDirection);
     typedef IfcTemplatedEntityList< IfcGridPlacement > list;
@@ -14226,7 +14226,7 @@ public:
     bool AgreementFlag() const;
     void setAgreementFlag(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcHalfSpaceSolid (IfcEntityInstanceData* e);
     IfcHalfSpaceSolid (IfcSurface* v1_BaseSurface, bool v2_AgreementFlag);
     typedef IfcTemplatedEntityList< IfcHalfSpaceSolid > list;
@@ -14272,7 +14272,7 @@ public:
     std::string URLReference() const;
     void setURLReference(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcImageTexture (IfcEntityInstanceData* e);
     IfcImageTexture (bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, std::string v6_URLReference);
     typedef IfcTemplatedEntityList< IfcImageTexture > list;
@@ -14291,7 +14291,7 @@ public:
     std::vector< int > /*[1:?]*/ ColourIndex() const;
     void setColourIndex(std::vector< int > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIndexedColourMap (IfcEntityInstanceData* e);
     IfcIndexedColourMap (IfcTessellatedFaceSet* v1_MappedTo, boost::optional< double > v2_Opacity, IfcColourRgbList* v3_Colours, std::vector< int > /*[1:?]*/ v4_ColourIndex);
     typedef IfcTemplatedEntityList< IfcIndexedColourMap > list;
@@ -14304,7 +14304,7 @@ public:
     IfcTextureVertexList* TexCoords() const;
     void setTexCoords(IfcTextureVertexList* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIndexedTextureMap (IfcEntityInstanceData* e);
     IfcIndexedTextureMap (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords);
     typedef IfcTemplatedEntityList< IfcIndexedTextureMap > list;
@@ -14317,7 +14317,7 @@ public:
     std::vector< std::vector< int > > TexCoordIndex() const;
     void setTexCoordIndex(std::vector< std::vector< int > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIndexedTriangleTextureMap (IfcEntityInstanceData* e);
     IfcIndexedTriangleTextureMap (IfcTemplatedEntityList< IfcSurfaceTexture >::ptr v1_Maps, IfcTessellatedFaceSet* v2_MappedTo, IfcTextureVertexList* v3_TexCoords, boost::optional< std::vector< std::vector< int > > > v4_TexCoordIndex);
     typedef IfcTemplatedEntityList< IfcIndexedTriangleTextureMap > list;
@@ -14333,7 +14333,7 @@ public:
     IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::ptr Values() const;
     void setValues(IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIrregularTimeSeries (IfcEntityInstanceData* e);
     IfcIrregularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_StartTime, std::string v4_EndTime, IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum v5_TimeSeriesDataType, IfcDataOriginEnum::IfcDataOriginEnum v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, IfcUnit* v8_Unit, IfcTemplatedEntityList< IfcIrregularTimeSeriesValue >::ptr v9_Values);
     typedef IfcTemplatedEntityList< IfcIrregularTimeSeries > list;
@@ -14386,7 +14386,7 @@ public:
     IfcTaskDurationEnum::IfcTaskDurationEnum DurationType() const;
     void setDurationType(IfcTaskDurationEnum::IfcTaskDurationEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLagTime (IfcEntityInstanceData* e);
     IfcLagTime (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, IfcTimeOrRatioSelect* v4_LagValue, IfcTaskDurationEnum::IfcTaskDurationEnum v5_DurationType);
     typedef IfcTemplatedEntityList< IfcLagTime > list;
@@ -14420,7 +14420,7 @@ public:
     double Intensity() const;
     void setIntensity(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightSource (IfcEntityInstanceData* e);
     IfcLightSource (boost::optional< std::string > v1_Name, IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity);
     typedef IfcTemplatedEntityList< IfcLightSource > list;
@@ -14435,7 +14435,7 @@ public:
 class IFC_PARSE_API IfcLightSourceAmbient : public IfcLightSource {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightSourceAmbient (IfcEntityInstanceData* e);
     IfcLightSourceAmbient (boost::optional< std::string > v1_Name, IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity);
     typedef IfcTemplatedEntityList< IfcLightSourceAmbient > list;
@@ -14456,7 +14456,7 @@ public:
     IfcDirection* Orientation() const;
     void setOrientation(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightSourceDirectional (IfcEntityInstanceData* e);
     IfcLightSourceDirectional (boost::optional< std::string > v1_Name, IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, IfcDirection* v5_Orientation);
     typedef IfcTemplatedEntityList< IfcLightSourceDirectional > list;
@@ -14491,7 +14491,7 @@ public:
     IfcLightDistributionDataSourceSelect* LightDistributionDataSource() const;
     void setLightDistributionDataSource(IfcLightDistributionDataSourceSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightSourceGoniometric (IfcEntityInstanceData* e);
     IfcLightSourceGoniometric (boost::optional< std::string > v1_Name, IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, IfcAxis2Placement3D* v5_Position, IfcColourRgb* v6_ColourAppearance, double v7_ColourTemperature, double v8_LuminousFlux, IfcLightEmissionSourceEnum::IfcLightEmissionSourceEnum v9_LightEmissionSource, IfcLightDistributionDataSourceSelect* v10_LightDistributionDataSource);
     typedef IfcTemplatedEntityList< IfcLightSourceGoniometric > list;
@@ -14531,7 +14531,7 @@ public:
     double QuadricAttenuation() const;
     void setQuadricAttenuation(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightSourcePositional (IfcEntityInstanceData* e);
     IfcLightSourcePositional (boost::optional< std::string > v1_Name, IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, IfcCartesianPoint* v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation);
     typedef IfcTemplatedEntityList< IfcLightSourcePositional > list;
@@ -14571,7 +14571,7 @@ public:
     double BeamWidthAngle() const;
     void setBeamWidthAngle(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightSourceSpot (IfcEntityInstanceData* e);
     IfcLightSourceSpot (boost::optional< std::string > v1_Name, IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, IfcCartesianPoint* v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation, IfcDirection* v10_Orientation, boost::optional< double > v11_ConcentrationExponent, double v12_SpreadAngle, double v13_BeamWidthAngle);
     typedef IfcTemplatedEntityList< IfcLightSourceSpot > list;
@@ -14639,7 +14639,7 @@ public:
     IfcAxis2Placement* RelativePlacement() const;
     void setRelativePlacement(IfcAxis2Placement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLocalPlacement (IfcEntityInstanceData* e);
     IfcLocalPlacement (IfcObjectPlacement* v1_PlacementRelTo, IfcAxis2Placement* v2_RelativePlacement);
     typedef IfcTemplatedEntityList< IfcLocalPlacement > list;
@@ -14673,7 +14673,7 @@ public:
 class IFC_PARSE_API IfcLoop : public IfcTopologicalRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLoop (IfcEntityInstanceData* e);
     IfcLoop ();
     typedef IfcTemplatedEntityList< IfcLoop > list;
@@ -14706,7 +14706,7 @@ public:
     IfcCartesianTransformationOperator* MappingTarget() const;
     void setMappingTarget(IfcCartesianTransformationOperator* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMappedItem (IfcEntityInstanceData* e);
     IfcMappedItem (IfcRepresentationMap* v1_MappingSource, IfcCartesianTransformationOperator* v2_MappingTarget);
     typedef IfcTemplatedEntityList< IfcMappedItem > list;
@@ -14767,7 +14767,7 @@ public:
     IfcTemplatedEntityList< IfcMaterialRelationship >::ptr IsRelatedWith() const; // INVERSE IfcMaterialRelationship::RelatedMaterials
     IfcTemplatedEntityList< IfcMaterialRelationship >::ptr RelatesTo() const; // INVERSE IfcMaterialRelationship::RelatingMaterial
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterial (IfcEntityInstanceData* e);
     IfcMaterial (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_Category);
     typedef IfcTemplatedEntityList< IfcMaterial > list;
@@ -14804,7 +14804,7 @@ public:
     void setCategory(std::string v);
         IfcTemplatedEntityList< IfcMaterialConstituentSet >::ptr ToMaterialConstituentSet() const; // INVERSE IfcMaterialConstituentSet::MaterialConstituents
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialConstituent (IfcEntityInstanceData* e);
     IfcMaterialConstituent (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_Material, boost::optional< double > v4_Fraction, boost::optional< std::string > v5_Category);
     typedef IfcTemplatedEntityList< IfcMaterialConstituent > list;
@@ -14841,7 +14841,7 @@ public:
     IfcTemplatedEntityList< IfcMaterialConstituent >::ptr MaterialConstituents() const;
     void setMaterialConstituents(IfcTemplatedEntityList< IfcMaterialConstituent >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialConstituentSet (IfcEntityInstanceData* e);
     IfcMaterialConstituentSet (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, boost::optional< IfcTemplatedEntityList< IfcMaterialConstituent >::ptr > v3_MaterialConstituents);
     typedef IfcTemplatedEntityList< IfcMaterialConstituentSet > list;
@@ -14882,7 +14882,7 @@ public:
     IfcMaterial* RepresentedMaterial() const;
     void setRepresentedMaterial(IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialDefinitionRepresentation (IfcEntityInstanceData* e);
     IfcMaterialDefinitionRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcRepresentation >::ptr v3_Representations, IfcMaterial* v4_RepresentedMaterial);
     typedef IfcTemplatedEntityList< IfcMaterialDefinitionRepresentation > list;
@@ -15019,7 +15019,7 @@ public:
     double ReferenceExtent() const;
     void setReferenceExtent(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialLayerSetUsage (IfcEntityInstanceData* e);
     IfcMaterialLayerSetUsage (IfcMaterialLayerSet* v1_ForLayerSet, IfcLayerSetDirectionEnum::IfcLayerSetDirectionEnum v2_LayerSetDirection, IfcDirectionSenseEnum::IfcDirectionSenseEnum v3_DirectionSense, double v4_OffsetFromReferenceLine, boost::optional< double > v5_ReferenceExtent);
     typedef IfcTemplatedEntityList< IfcMaterialLayerSetUsage > list;
@@ -15052,7 +15052,7 @@ public:
     double ReferenceExtent() const;
     void setReferenceExtent(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialProfileSetUsage (IfcEntityInstanceData* e);
     IfcMaterialProfileSetUsage (IfcMaterialProfileSet* v1_ForProfileSet, boost::optional< int > v2_CardinalPoint, boost::optional< double > v3_ReferenceExtent);
     typedef IfcTemplatedEntityList< IfcMaterialProfileSetUsage > list;
@@ -15093,7 +15093,7 @@ public:
     int CardinalEndPoint() const;
     void setCardinalEndPoint(int v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialProfileSetUsageTapering (IfcEntityInstanceData* e);
     IfcMaterialProfileSetUsageTapering (IfcMaterialProfileSet* v1_ForProfileSet, boost::optional< int > v2_CardinalPoint, boost::optional< double > v3_ReferenceExtent, IfcMaterialProfileSet* v4_ForProfileEndSet, boost::optional< int > v5_CardinalEndPoint);
     typedef IfcTemplatedEntityList< IfcMaterialProfileSetUsageTapering > list;
@@ -15128,7 +15128,7 @@ public:
     IfcMaterialDefinition* Material() const;
     void setMaterial(IfcMaterialDefinition* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialProperties (IfcEntityInstanceData* e);
     IfcMaterialProperties (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcProperty >::ptr v3_Properties, IfcMaterialDefinition* v4_Material);
     typedef IfcTemplatedEntityList< IfcMaterialProperties > list;
@@ -15150,7 +15150,7 @@ public:
     std::string Expression() const;
     void setExpression(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMaterialRelationship (IfcEntityInstanceData* e);
     IfcMaterialRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcMaterial* v3_RelatingMaterial, IfcTemplatedEntityList< IfcMaterial >::ptr v4_RelatedMaterials, boost::optional< std::string > v5_Expression);
     typedef IfcTemplatedEntityList< IfcMaterialRelationship > list;
@@ -15185,7 +15185,7 @@ public:
 class IFC_PARSE_API IfcMirroredProfileDef : public IfcDerivedProfileDef {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMirroredProfileDef (IfcEntityInstanceData* e);
     IfcMirroredProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcProfileDef* v3_ParentProfile, boost::optional< std::string > v5_Label);
     typedef IfcTemplatedEntityList< IfcMirroredProfileDef > list;
@@ -15250,7 +15250,7 @@ public:
     IfcTemplatedEntityList< IfcRelAggregates >::ptr Decomposes() const; // INVERSE IfcRelAggregates::RelatedObjects
     IfcTemplatedEntityList< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcObjectDefinition (IfcEntityInstanceData* e);
     IfcObjectDefinition (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcObjectDefinition > list;
@@ -15317,7 +15317,7 @@ public:
 class IFC_PARSE_API IfcOpenShell : public IfcConnectedFaceSet {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOpenShell (IfcEntityInstanceData* e);
     IfcOpenShell (IfcTemplatedEntityList< IfcFace >::ptr v1_CfsFaces);
     typedef IfcTemplatedEntityList< IfcOpenShell > list;
@@ -15337,7 +15337,7 @@ public:
     IfcTemplatedEntityList< IfcOrganization >::ptr RelatedOrganizations() const;
     void setRelatedOrganizations(IfcTemplatedEntityList< IfcOrganization >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOrganizationRelationship (IfcEntityInstanceData* e);
     IfcOrganizationRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcOrganization* v3_RelatingOrganization, IfcTemplatedEntityList< IfcOrganization >::ptr v4_RelatedOrganizations);
     typedef IfcTemplatedEntityList< IfcOrganizationRelationship > list;
@@ -15358,7 +15358,7 @@ public:
     bool Orientation() const;
     void setOrientation(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOrientedEdge (IfcEntityInstanceData* e);
     IfcOrientedEdge (IfcEdge* v3_EdgeElement, bool v4_Orientation);
     typedef IfcTemplatedEntityList< IfcOrientedEdge > list;
@@ -15413,7 +15413,7 @@ public:
     IfcAxis2Placement2D* Position() const;
     void setPosition(IfcAxis2Placement2D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcParameterizedProfileDef (IfcEntityInstanceData* e);
     IfcParameterizedProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position);
     typedef IfcTemplatedEntityList< IfcParameterizedProfileDef > list;
@@ -15438,7 +15438,7 @@ public:
     IfcTemplatedEntityList< IfcOrientedEdge >::ptr EdgeList() const;
     void setEdgeList(IfcTemplatedEntityList< IfcOrientedEdge >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPath (IfcEntityInstanceData* e);
     IfcPath (IfcTemplatedEntityList< IfcOrientedEdge >::ptr v1_EdgeList);
     typedef IfcTemplatedEntityList< IfcPath > list;
@@ -15471,7 +15471,7 @@ public:
     std::string Usage() const;
     void setUsage(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPhysicalComplexQuantity (IfcEntityInstanceData* e);
     IfcPhysicalComplexQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr v3_HasQuantities, std::string v4_Discrimination, boost::optional< std::string > v5_Quality, boost::optional< std::string > v6_Usage);
     typedef IfcTemplatedEntityList< IfcPhysicalComplexQuantity > list;
@@ -15511,7 +15511,7 @@ public:
     std::vector< boost::dynamic_bitset<> > /*[1:?]*/ Pixel() const;
     void setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPixelTexture (IfcEntityInstanceData* e);
     IfcPixelTexture (bool v1_RepeatS, bool v2_RepeatT, boost::optional< std::string > v3_Mode, IfcCartesianTransformationOperator2D* v4_TextureTransform, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_Parameter, int v6_Width, int v7_Height, int v8_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v9_Pixel);
     typedef IfcTemplatedEntityList< IfcPixelTexture > list;
@@ -15531,7 +15531,7 @@ public:
     IfcCartesianPoint* Location() const;
     void setLocation(IfcCartesianPoint* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlacement (IfcEntityInstanceData* e);
     IfcPlacement (IfcCartesianPoint* v1_Location);
     typedef IfcTemplatedEntityList< IfcPlacement > list;
@@ -15550,7 +15550,7 @@ public:
     double SizeInY() const;
     void setSizeInY(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlanarExtent (IfcEntityInstanceData* e);
     IfcPlanarExtent (double v1_SizeInX, double v2_SizeInY);
     typedef IfcTemplatedEntityList< IfcPlanarExtent > list;
@@ -15563,7 +15563,7 @@ public:
 class IFC_PARSE_API IfcPoint : public IfcGeometricRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPoint (IfcEntityInstanceData* e);
     IfcPoint ();
     typedef IfcTemplatedEntityList< IfcPoint > list;
@@ -15586,7 +15586,7 @@ public:
     double PointParameter() const;
     void setPointParameter(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPointOnCurve (IfcEntityInstanceData* e);
     IfcPointOnCurve (IfcCurve* v1_BasisCurve, double v2_PointParameter);
     typedef IfcTemplatedEntityList< IfcPointOnCurve > list;
@@ -15612,7 +15612,7 @@ public:
     double PointParameterV() const;
     void setPointParameterV(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPointOnSurface (IfcEntityInstanceData* e);
     IfcPointOnSurface (IfcSurface* v1_BasisSurface, double v2_PointParameterU, double v3_PointParameterV);
     typedef IfcTemplatedEntityList< IfcPointOnSurface > list;
@@ -15662,7 +15662,7 @@ public:
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr Polygon() const;
     void setPolygon(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPolyLoop (IfcEntityInstanceData* e);
     IfcPolyLoop (IfcTemplatedEntityList< IfcCartesianPoint >::ptr v1_Polygon);
     typedef IfcTemplatedEntityList< IfcPolyLoop > list;
@@ -15734,7 +15734,7 @@ public:
     IfcBoundedCurve* PolygonalBoundary() const;
     void setPolygonalBoundary(IfcBoundedCurve* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPolygonalBoundedHalfSpace (IfcEntityInstanceData* e);
     IfcPolygonalBoundedHalfSpace (IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, IfcAxis2Placement3D* v3_Position, IfcBoundedCurve* v4_PolygonalBoundary);
     typedef IfcTemplatedEntityList< IfcPolygonalBoundedHalfSpace > list;
@@ -15752,7 +15752,7 @@ public:
     std::string Name() const;
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPreDefinedItem (IfcEntityInstanceData* e);
     IfcPreDefinedItem (std::string v1_Name);
     typedef IfcTemplatedEntityList< IfcPreDefinedItem > list;
@@ -15761,7 +15761,7 @@ public:
 class IFC_PARSE_API IfcPreDefinedProperties : public IfcPropertyAbstraction {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPreDefinedProperties (IfcEntityInstanceData* e);
     IfcPreDefinedProperties ();
     typedef IfcTemplatedEntityList< IfcPreDefinedProperties > list;
@@ -15780,7 +15780,7 @@ public:
 class IFC_PARSE_API IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPreDefinedTextFont (IfcEntityInstanceData* e);
     IfcPreDefinedTextFont (std::string v1_Name);
     typedef IfcTemplatedEntityList< IfcPreDefinedTextFont > list;
@@ -15802,7 +15802,7 @@ public:
         IfcTemplatedEntityList< IfcProduct >::ptr ShapeOfProduct() const; // INVERSE IfcProduct::Representation
     IfcTemplatedEntityList< IfcShapeAspect >::ptr HasShapeAspects() const; // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProductDefinitionShape (IfcEntityInstanceData* e);
     IfcProductDefinitionShape (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcRepresentation >::ptr v3_Representations);
     typedef IfcTemplatedEntityList< IfcProductDefinitionShape > list;
@@ -15824,7 +15824,7 @@ public:
     IfcProfileDef* ProfileDefinition() const;
     void setProfileDefinition(IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProfileProperties (IfcEntityInstanceData* e);
     IfcProfileProperties (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcTemplatedEntityList< IfcProperty >::ptr v3_Properties, IfcProfileDef* v4_ProfileDefinition);
     typedef IfcTemplatedEntityList< IfcProfileProperties > list;
@@ -15849,7 +15849,7 @@ public:
     IfcTemplatedEntityList< IfcResourceConstraintRelationship >::ptr HasConstraints() const; // INVERSE IfcResourceConstraintRelationship::RelatedResourceObjects
     IfcTemplatedEntityList< IfcResourceApprovalRelationship >::ptr HasApprovals() const; // INVERSE IfcResourceApprovalRelationship::RelatedResourceObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProperty (IfcEntityInstanceData* e);
     IfcProperty (std::string v1_Name, boost::optional< std::string > v2_Description);
     typedef IfcTemplatedEntityList< IfcProperty > list;
@@ -15909,7 +15909,7 @@ public:
         IfcTemplatedEntityList< IfcRelDeclares >::ptr HasContext() const; // INVERSE IfcRelDeclares::RelatedDefinitions
     IfcTemplatedEntityList< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyDefinition (IfcEntityInstanceData* e);
     IfcPropertyDefinition (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcPropertyDefinition > list;
@@ -15936,7 +15936,7 @@ public:
     std::string Expression() const;
     void setExpression(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyDependencyRelationship (IfcEntityInstanceData* e);
     IfcPropertyDependencyRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcProperty* v3_DependingProperty, IfcProperty* v4_DependantProperty, boost::optional< std::string > v5_Expression);
     typedef IfcTemplatedEntityList< IfcPropertyDependencyRelationship > list;
@@ -15989,7 +15989,7 @@ public:
     IfcTemplatedEntityList< IfcRelDefinesByTemplate >::ptr IsDefinedBy() const; // INVERSE IfcRelDefinesByTemplate::RelatedPropertySets
     IfcTemplatedEntityList< IfcRelDefinesByProperties >::ptr DefinesOccurrence() const; // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertySetDefinition (IfcEntityInstanceData* e);
     IfcPropertySetDefinition (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcPropertySetDefinition > list;
@@ -16022,7 +16022,7 @@ public:
 class IFC_PARSE_API IfcPropertyTemplateDefinition : public IfcPropertyDefinition {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyTemplateDefinition (IfcEntityInstanceData* e);
     IfcPropertyTemplateDefinition (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcPropertyTemplateDefinition > list;
@@ -16031,7 +16031,7 @@ public:
 class IFC_PARSE_API IfcQuantitySet : public IfcPropertySetDefinition {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcQuantitySet (IfcEntityInstanceData* e);
     IfcQuantitySet (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcQuantitySet > list;
@@ -16079,7 +16079,7 @@ public:
     double YDim() const;
     void setYDim(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRectangleProfileDef (IfcEntityInstanceData* e);
     IfcRectangleProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim);
     typedef IfcTemplatedEntityList< IfcRectangleProfileDef > list;
@@ -16098,7 +16098,7 @@ public:
     IfcTemplatedEntityList< IfcTimeSeriesValue >::ptr Values() const;
     void setValues(IfcTemplatedEntityList< IfcTimeSeriesValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRegularTimeSeries (IfcEntityInstanceData* e);
     IfcRegularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_StartTime, std::string v4_EndTime, IfcTimeSeriesDataTypeEnum::IfcTimeSeriesDataTypeEnum v5_TimeSeriesDataType, IfcDataOriginEnum::IfcDataOriginEnum v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, IfcUnit* v8_Unit, double v9_TimeStep, IfcTemplatedEntityList< IfcTimeSeriesValue >::ptr v10_Values);
     typedef IfcTemplatedEntityList< IfcRegularTimeSeries > list;
@@ -16137,7 +16137,7 @@ public:
     double BarCount() const;
     void setBarCount(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcementBarProperties (IfcEntityInstanceData* e);
     IfcReinforcementBarProperties (double v1_TotalCrossSectionArea, std::string v2_SteelGrade, boost::optional< IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum > v3_BarSurface, boost::optional< double > v4_EffectiveDepth, boost::optional< double > v5_NominalBarDiameter, boost::optional< double > v6_BarCount);
     typedef IfcTemplatedEntityList< IfcReinforcementBarProperties > list;
@@ -16153,7 +16153,7 @@ public:
 class IFC_PARSE_API IfcRelationship : public IfcRoot {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelationship (IfcEntityInstanceData* e);
     IfcRelationship (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcRelationship > list;
@@ -16173,7 +16173,7 @@ public:
     IfcApproval* RelatingApproval() const;
     void setRelatingApproval(IfcApproval* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcResourceApprovalRelationship (IfcEntityInstanceData* e);
     IfcResourceApprovalRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcEntityList::ptr v3_RelatedResourceObjects, IfcApproval* v4_RelatingApproval);
     typedef IfcTemplatedEntityList< IfcResourceApprovalRelationship > list;
@@ -16207,7 +16207,7 @@ public:
     IfcEntityList::ptr RelatedResourceObjects() const;
     void setRelatedResourceObjects(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcResourceConstraintRelationship (IfcEntityInstanceData* e);
     IfcResourceConstraintRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, IfcConstraint* v3_RelatingConstraint, IfcEntityList::ptr v4_RelatedResourceObjects);
     typedef IfcTemplatedEntityList< IfcResourceConstraintRelationship > list;
@@ -16292,7 +16292,7 @@ public:
     double Completion() const;
     void setCompletion(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcResourceTime (IfcEntityInstanceData* e);
     IfcResourceTime (boost::optional< std::string > v1_Name, boost::optional< IfcDataOriginEnum::IfcDataOriginEnum > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin, boost::optional< std::string > v4_ScheduleWork, boost::optional< double > v5_ScheduleUsage, boost::optional< std::string > v6_ScheduleStart, boost::optional< std::string > v7_ScheduleFinish, boost::optional< std::string > v8_ScheduleContour, boost::optional< std::string > v9_LevelingDelay, boost::optional< bool > v10_IsOverAllocated, boost::optional< std::string > v11_StatusTime, boost::optional< std::string > v12_ActualWork, boost::optional< double > v13_ActualUsage, boost::optional< std::string > v14_ActualStart, boost::optional< std::string > v15_ActualFinish, boost::optional< std::string > v16_RemainingWork, boost::optional< double > v17_RemainingUsage, boost::optional< double > v18_Completion);
     typedef IfcTemplatedEntityList< IfcResourceTime > list;
@@ -16340,7 +16340,7 @@ public:
     double RoundingRadius() const;
     void setRoundingRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRoundedRectangleProfileDef (IfcEntityInstanceData* e);
     IfcRoundedRectangleProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim, double v6_RoundingRadius);
     typedef IfcTemplatedEntityList< IfcRoundedRectangleProfileDef > list;
@@ -16364,7 +16364,7 @@ public:
     IfcProfileDef* EndProfile() const;
     void setEndProfile(IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSectionProperties (IfcEntityInstanceData* e);
     IfcSectionProperties (IfcSectionTypeEnum::IfcSectionTypeEnum v1_SectionType, IfcProfileDef* v2_StartProfile, IfcProfileDef* v3_EndProfile);
     typedef IfcTemplatedEntityList< IfcSectionProperties > list;
@@ -16399,7 +16399,7 @@ public:
     IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr CrossSectionReinforcementDefinitions() const;
     void setCrossSectionReinforcementDefinitions(IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSectionReinforcementProperties (IfcEntityInstanceData* e);
     IfcSectionReinforcementProperties (double v1_LongitudinalStartPosition, double v2_LongitudinalEndPosition, boost::optional< double > v3_TransversePosition, IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum v4_ReinforcementRole, IfcSectionProperties* v5_SectionDefinition, IfcTemplatedEntityList< IfcReinforcementBarProperties >::ptr v6_CrossSectionReinforcementDefinitions);
     typedef IfcTemplatedEntityList< IfcSectionReinforcementProperties > list;
@@ -16469,7 +16469,7 @@ public:
     IfcTemplatedEntityList< IfcAxis2Placement3D >::ptr CrossSectionPositions() const;
     void setCrossSectionPositions(IfcTemplatedEntityList< IfcAxis2Placement3D >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSectionedSpine (IfcEntityInstanceData* e);
     IfcSectionedSpine (IfcCompositeCurve* v1_SpineCurve, IfcTemplatedEntityList< IfcProfileDef >::ptr v2_CrossSections, IfcTemplatedEntityList< IfcAxis2Placement3D >::ptr v3_CrossSectionPositions);
     typedef IfcTemplatedEntityList< IfcSectionedSpine > list;
@@ -16491,7 +16491,7 @@ public:
     IfcEntityList::ptr SbsmBoundary() const;
     void setSbsmBoundary(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcShellBasedSurfaceModel (IfcEntityInstanceData* e);
     IfcShellBasedSurfaceModel (IfcEntityList::ptr v1_SbsmBoundary);
     typedef IfcTemplatedEntityList< IfcShellBasedSurfaceModel > list;
@@ -16502,7 +16502,7 @@ public:
 class IFC_PARSE_API IfcSimpleProperty : public IfcProperty {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSimpleProperty (IfcEntityInstanceData* e);
     IfcSimpleProperty (std::string v1_Name, boost::optional< std::string > v2_Description);
     typedef IfcTemplatedEntityList< IfcSimpleProperty > list;
@@ -16534,7 +16534,7 @@ public:
     double SlippageZ() const;
     void setSlippageZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSlippageConnectionCondition (IfcEntityInstanceData* e);
     IfcSlippageConnectionCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_SlippageX, boost::optional< double > v3_SlippageY, boost::optional< double > v4_SlippageZ);
     typedef IfcTemplatedEntityList< IfcSlippageConnectionCondition > list;
@@ -16547,7 +16547,7 @@ public:
 class IFC_PARSE_API IfcSolidModel : public IfcGeometricRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSolidModel (IfcEntityInstanceData* e);
     IfcSolidModel ();
     typedef IfcTemplatedEntityList< IfcSolidModel > list;
@@ -16590,7 +16590,7 @@ public:
     double LinearMomentZ() const;
     void setLinearMomentZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadLinearForce (IfcEntityInstanceData* e);
     IfcStructuralLoadLinearForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearForceX, boost::optional< double > v3_LinearForceY, boost::optional< double > v4_LinearForceZ, boost::optional< double > v5_LinearMomentX, boost::optional< double > v6_LinearMomentY, boost::optional< double > v7_LinearMomentZ);
     typedef IfcTemplatedEntityList< IfcStructuralLoadLinearForce > list;
@@ -16618,7 +16618,7 @@ public:
     double PlanarForceZ() const;
     void setPlanarForceZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadPlanarForce (IfcEntityInstanceData* e);
     IfcStructuralLoadPlanarForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_PlanarForceX, boost::optional< double > v3_PlanarForceY, boost::optional< double > v4_PlanarForceZ);
     typedef IfcTemplatedEntityList< IfcStructuralLoadPlanarForce > list;
@@ -16661,7 +16661,7 @@ public:
     double RotationalDisplacementRZ() const;
     void setRotationalDisplacementRZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadSingleDisplacement (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleDisplacement (boost::optional< std::string > v1_Name, boost::optional< double > v2_DisplacementX, boost::optional< double > v3_DisplacementY, boost::optional< double > v4_DisplacementZ, boost::optional< double > v5_RotationalDisplacementRX, boost::optional< double > v6_RotationalDisplacementRY, boost::optional< double > v7_RotationalDisplacementRZ);
     typedef IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacement > list;
@@ -16677,7 +16677,7 @@ public:
     double Distortion() const;
     void setDistortion(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadSingleDisplacementDistortion (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleDisplacementDistortion (boost::optional< std::string > v1_Name, boost::optional< double > v2_DisplacementX, boost::optional< double > v3_DisplacementY, boost::optional< double > v4_DisplacementZ, boost::optional< double > v5_RotationalDisplacementRX, boost::optional< double > v6_RotationalDisplacementRY, boost::optional< double > v7_RotationalDisplacementRZ, boost::optional< double > v8_Distortion);
     typedef IfcTemplatedEntityList< IfcStructuralLoadSingleDisplacementDistortion > list;
@@ -16721,7 +16721,7 @@ public:
     double MomentZ() const;
     void setMomentZ(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadSingleForce (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_ForceX, boost::optional< double > v3_ForceY, boost::optional< double > v4_ForceZ, boost::optional< double > v5_MomentX, boost::optional< double > v6_MomentY, boost::optional< double > v7_MomentZ);
     typedef IfcTemplatedEntityList< IfcStructuralLoadSingleForce > list;
@@ -16742,7 +16742,7 @@ public:
     double WarpingMoment() const;
     void setWarpingMoment(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadSingleForceWarping (IfcEntityInstanceData* e);
     IfcStructuralLoadSingleForceWarping (boost::optional< std::string > v1_Name, boost::optional< double > v2_ForceX, boost::optional< double > v3_ForceY, boost::optional< double > v4_ForceZ, boost::optional< double > v5_MomentX, boost::optional< double > v6_MomentY, boost::optional< double > v7_MomentZ, boost::optional< double > v8_WarpingMoment);
     typedef IfcTemplatedEntityList< IfcStructuralLoadSingleForceWarping > list;
@@ -16763,7 +16763,7 @@ public:
     IfcEdge* ParentEdge() const;
     void setParentEdge(IfcEdge* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSubedge (IfcEntityInstanceData* e);
     IfcSubedge (IfcVertex* v1_EdgeStart, IfcVertex* v2_EdgeEnd, IfcEdge* v3_ParentEdge);
     typedef IfcTemplatedEntityList< IfcSubedge > list;
@@ -16781,7 +16781,7 @@ public:
 class IFC_PARSE_API IfcSurface : public IfcGeometricRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurface (IfcEntityInstanceData* e);
     IfcSurface ();
     typedef IfcTemplatedEntityList< IfcSurface > list;
@@ -16877,7 +16877,7 @@ public:
     IfcReflectanceMethodEnum::IfcReflectanceMethodEnum ReflectanceMethod() const;
     void setReflectanceMethod(IfcReflectanceMethodEnum::IfcReflectanceMethodEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceStyleRendering (IfcEntityInstanceData* e);
     IfcSurfaceStyleRendering (IfcColourRgb* v1_SurfaceColour, boost::optional< double > v2_Transparency, IfcColourOrFactor* v3_DiffuseColour, IfcColourOrFactor* v4_TransmissionColour, IfcColourOrFactor* v5_DiffuseTransmissionColour, IfcColourOrFactor* v6_ReflectionColour, IfcColourOrFactor* v7_SpecularColour, IfcSpecularHighlightSelect* v8_SpecularHighlight, IfcReflectanceMethodEnum::IfcReflectanceMethodEnum v9_ReflectanceMethod);
     typedef IfcTemplatedEntityList< IfcSurfaceStyleRendering > list;
@@ -16911,7 +16911,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSweptAreaSolid (IfcEntityInstanceData* e);
     IfcSweptAreaSolid (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position);
     typedef IfcTemplatedEntityList< IfcSweptAreaSolid > list;
@@ -16997,7 +16997,7 @@ public:
     double EndParam() const;
     void setEndParam(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSweptDiskSolid (IfcEntityInstanceData* e);
     IfcSweptDiskSolid (IfcCurve* v1_Directrix, double v2_Radius, boost::optional< double > v3_InnerRadius, boost::optional< double > v4_StartParam, boost::optional< double > v5_EndParam);
     typedef IfcTemplatedEntityList< IfcSweptDiskSolid > list;
@@ -17020,7 +17020,7 @@ public:
     double FilletRadius() const;
     void setFilletRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSweptDiskSolidPolygonal (IfcEntityInstanceData* e);
     IfcSweptDiskSolidPolygonal (IfcCurve* v1_Directrix, double v2_Radius, boost::optional< double > v3_InnerRadius, boost::optional< double > v4_StartParam, boost::optional< double > v5_EndParam, boost::optional< double > v6_FilletRadius);
     typedef IfcTemplatedEntityList< IfcSweptDiskSolidPolygonal > list;
@@ -17041,7 +17041,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSweptSurface (IfcEntityInstanceData* e);
     IfcSweptSurface (IfcProfileDef* v1_SweptCurve, IfcAxis2Placement3D* v2_Position);
     typedef IfcTemplatedEntityList< IfcSweptSurface > list;
@@ -17114,7 +17114,7 @@ public:
     double FlangeSlope() const;
     void setFlangeSlope(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTShapeProfileDef (IfcEntityInstanceData* e);
     IfcTShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_FlangeEdgeRadius, boost::optional< double > v10_WebEdgeRadius, boost::optional< double > v11_WebSlope, boost::optional< double > v12_FlangeSlope);
     typedef IfcTemplatedEntityList< IfcTShapeProfileDef > list;
@@ -17123,7 +17123,7 @@ public:
 class IFC_PARSE_API IfcTessellatedItem : public IfcGeometricRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTessellatedItem (IfcEntityInstanceData* e);
     IfcTessellatedItem ();
     typedef IfcTemplatedEntityList< IfcTessellatedItem > list;
@@ -17151,7 +17151,7 @@ public:
     IfcTextPath::IfcTextPath Path() const;
     void setPath(IfcTextPath::IfcTextPath v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextLiteral (IfcEntityInstanceData* e);
     IfcTextLiteral (std::string v1_Literal, IfcAxis2Placement* v2_Placement, IfcTextPath::IfcTextPath v3_Path);
     typedef IfcTemplatedEntityList< IfcTextLiteral > list;
@@ -17174,7 +17174,7 @@ public:
     std::string BoxAlignment() const;
     void setBoxAlignment(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextLiteralWithExtent (IfcEntityInstanceData* e);
     IfcTextLiteralWithExtent (std::string v1_Literal, IfcAxis2Placement* v2_Placement, IfcTextPath::IfcTextPath v3_Path, IfcPlanarExtent* v4_Extent, std::string v5_BoxAlignment);
     typedef IfcTemplatedEntityList< IfcTextLiteralWithExtent > list;
@@ -17271,7 +17271,7 @@ public:
     IfcSizeSelect* FontSize() const;
     void setFontSize(IfcSizeSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTextStyleFontModel (IfcEntityInstanceData* e);
     IfcTextStyleFontModel (std::string v1_Name, std::vector< std::string > /*[1:?]*/ v2_FontFamily, boost::optional< std::string > v3_FontStyle, boost::optional< std::string > v4_FontVariant, boost::optional< std::string > v5_FontWeight, IfcSizeSelect* v6_FontSize);
     typedef IfcTemplatedEntityList< IfcTextStyleFontModel > list;
@@ -17329,7 +17329,7 @@ public:
     double TopXOffset() const;
     void setTopXOffset(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTrapeziumProfileDef (IfcEntityInstanceData* e);
     IfcTrapeziumProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_BottomXDim, double v5_TopXDim, double v6_YDim, double v7_TopXOffset);
     typedef IfcTemplatedEntityList< IfcTrapeziumProfileDef > list;
@@ -17387,7 +17387,7 @@ public:
     void setHasPropertySets(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v);
         IfcTemplatedEntityList< IfcRelDefinesByType >::ptr Types() const; // INVERSE IfcRelDefinesByType::RelatingType
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTypeObject (IfcEntityInstanceData* e);
     IfcTypeObject (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets);
     typedef IfcTemplatedEntityList< IfcTypeObject > list;
@@ -17441,7 +17441,7 @@ public:
     void setProcessType(std::string v);
         IfcTemplatedEntityList< IfcRelAssignsToProcess >::ptr OperatesOn() const; // INVERSE IfcRelAssignsToProcess::RelatingProcess
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTypeProcess (IfcEntityInstanceData* e);
     IfcTypeProcess (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ProcessType);
     typedef IfcTemplatedEntityList< IfcTypeProcess > list;
@@ -17526,7 +17526,7 @@ public:
     void setTag(std::string v);
         IfcTemplatedEntityList< IfcRelAssignsToProduct >::ptr ReferencedBy() const; // INVERSE IfcRelAssignsToProduct::RelatingProduct
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTypeProduct (IfcEntityInstanceData* e);
     IfcTypeProduct (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcTypeProduct > list;
@@ -17564,7 +17564,7 @@ public:
     void setResourceType(std::string v);
         IfcTemplatedEntityList< IfcRelAssignsToResource >::ptr ResourceOf() const; // INVERSE IfcRelAssignsToResource::RelatingResource
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTypeResource (IfcEntityInstanceData* e);
     IfcTypeResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType);
     typedef IfcTemplatedEntityList< IfcTypeResource > list;
@@ -17627,7 +17627,7 @@ public:
     double FlangeSlope() const;
     void setFlangeSlope(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcUShapeProfileDef (IfcEntityInstanceData* e);
     IfcUShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_EdgeRadius, boost::optional< double > v10_FlangeSlope);
     typedef IfcTemplatedEntityList< IfcUShapeProfileDef > list;
@@ -17648,7 +17648,7 @@ public:
     double Magnitude() const;
     void setMagnitude(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVector (IfcEntityInstanceData* e);
     IfcVector (IfcDirection* v1_Orientation, double v2_Magnitude);
     typedef IfcTemplatedEntityList< IfcVector > list;
@@ -17671,7 +17671,7 @@ public:
     IfcVertex* LoopVertex() const;
     void setLoopVertex(IfcVertex* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVertexLoop (IfcEntityInstanceData* e);
     IfcVertexLoop (IfcVertex* v1_LoopVertex);
     typedef IfcTemplatedEntityList< IfcVertexLoop > list;
@@ -17709,7 +17709,7 @@ public:
     bool Sizeable() const;
     void setSizeable(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWindowStyle (IfcEntityInstanceData* e);
     IfcWindowStyle (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, IfcWindowStyleConstructionEnum::IfcWindowStyleConstructionEnum v9_ConstructionType, IfcWindowStyleOperationEnum::IfcWindowStyleOperationEnum v10_OperationType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
     typedef IfcTemplatedEntityList< IfcWindowStyle > list;
@@ -17764,7 +17764,7 @@ public:
     double EdgeRadius() const;
     void setEdgeRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcZShapeProfileDef (IfcEntityInstanceData* e);
     IfcZShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_EdgeRadius);
     typedef IfcTemplatedEntityList< IfcZShapeProfileDef > list;
@@ -17785,7 +17785,7 @@ public:
 class IFC_PARSE_API IfcAdvancedFace : public IfcFaceSurface {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAdvancedFace (IfcEntityInstanceData* e);
     IfcAdvancedFace (IfcTemplatedEntityList< IfcFaceBound >::ptr v1_Bounds, IfcSurface* v2_FaceSurface, bool v3_SameSense);
     typedef IfcTemplatedEntityList< IfcAdvancedFace > list;
@@ -17825,7 +17825,7 @@ public:
     IfcTemplatedEntityList< IfcCurve >::ptr InnerBoundaries() const;
     void setInnerBoundaries(IfcTemplatedEntityList< IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAnnotationFillArea (IfcEntityInstanceData* e);
     IfcAnnotationFillArea (IfcCurve* v1_OuterBoundary, boost::optional< IfcTemplatedEntityList< IfcCurve >::ptr > v2_InnerBoundaries);
     typedef IfcTemplatedEntityList< IfcAnnotationFillArea > list;
@@ -17911,7 +17911,7 @@ public:
     double TopFlangeSlope() const;
     void setTopFlangeSlope(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAsymmetricIShapeProfileDef (IfcEntityInstanceData* e);
     IfcAsymmetricIShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_BottomFlangeWidth, double v5_OverallDepth, double v6_WebThickness, double v7_BottomFlangeThickness, boost::optional< double > v8_BottomFlangeFilletRadius, double v9_TopFlangeWidth, boost::optional< double > v10_TopFlangeThickness, boost::optional< double > v11_TopFlangeFilletRadius, boost::optional< double > v12_BottomFlangeEdgeRadius, boost::optional< double > v13_BottomFlangeSlope, boost::optional< double > v14_TopFlangeEdgeRadius, boost::optional< double > v15_TopFlangeSlope);
     typedef IfcTemplatedEntityList< IfcAsymmetricIShapeProfileDef > list;
@@ -17933,7 +17933,7 @@ public:
     IfcDirection* Axis() const;
     void setAxis(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAxis1Placement (IfcEntityInstanceData* e);
     IfcAxis1Placement (IfcCartesianPoint* v1_Location, IfcDirection* v2_Axis);
     typedef IfcTemplatedEntityList< IfcAxis1Placement > list;
@@ -17957,7 +17957,7 @@ public:
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAxis2Placement2D (IfcEntityInstanceData* e);
     IfcAxis2Placement2D (IfcCartesianPoint* v1_Location, IfcDirection* v2_RefDirection);
     typedef IfcTemplatedEntityList< IfcAxis2Placement2D > list;
@@ -17988,7 +17988,7 @@ public:
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAxis2Placement3D (IfcEntityInstanceData* e);
     IfcAxis2Placement3D (IfcCartesianPoint* v1_Location, IfcDirection* v2_Axis, IfcDirection* v3_RefDirection);
     typedef IfcTemplatedEntityList< IfcAxis2Placement3D > list;
@@ -18031,7 +18031,7 @@ public:
     IfcBooleanOperand* SecondOperand() const;
     void setSecondOperand(IfcBooleanOperand* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBooleanResult (IfcEntityInstanceData* e);
     IfcBooleanResult (IfcBooleanOperator::IfcBooleanOperator v1_Operator, IfcBooleanOperand* v2_FirstOperand, IfcBooleanOperand* v3_SecondOperand);
     typedef IfcTemplatedEntityList< IfcBooleanResult > list;
@@ -18051,7 +18051,7 @@ public:
 class IFC_PARSE_API IfcBoundedSurface : public IfcSurface {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundedSurface (IfcEntityInstanceData* e);
     IfcBoundedSurface ();
     typedef IfcTemplatedEntityList< IfcBoundedSurface > list;
@@ -18093,7 +18093,7 @@ public:
     double ZDim() const;
     void setZDim(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundingBox (IfcEntityInstanceData* e);
     IfcBoundingBox (IfcCartesianPoint* v1_Corner, double v2_XDim, double v3_YDim, double v4_ZDim);
     typedef IfcTemplatedEntityList< IfcBoundingBox > list;
@@ -18134,7 +18134,7 @@ public:
     IfcBoundingBox* Enclosure() const;
     void setEnclosure(IfcBoundingBox* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoxedHalfSpace (IfcEntityInstanceData* e);
     IfcBoxedHalfSpace (IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, IfcBoundingBox* v3_Enclosure);
     typedef IfcTemplatedEntityList< IfcBoxedHalfSpace > list;
@@ -18181,7 +18181,7 @@ public:
     double InternalFilletRadius() const;
     void setInternalFilletRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCShapeProfileDef (IfcEntityInstanceData* e);
     IfcCShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_Width, double v6_WallThickness, double v7_Girth, boost::optional< double > v8_InternalFilletRadius);
     typedef IfcTemplatedEntityList< IfcCShapeProfileDef > list;
@@ -18199,7 +18199,7 @@ public:
     std::vector< double > /*[1:3]*/ Coordinates() const;
     void setCoordinates(std::vector< double > /*[1:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianPoint (IfcEntityInstanceData* e);
     IfcCartesianPoint (std::vector< double > /*[1:3]*/ v1_Coordinates);
     typedef IfcTemplatedEntityList< IfcCartesianPoint > list;
@@ -18208,7 +18208,7 @@ public:
 class IFC_PARSE_API IfcCartesianPointList : public IfcGeometricRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianPointList (IfcEntityInstanceData* e);
     IfcCartesianPointList ();
     typedef IfcTemplatedEntityList< IfcCartesianPointList > list;
@@ -18219,7 +18219,7 @@ public:
     std::vector< std::vector< double > > CoordList() const;
     void setCoordList(std::vector< std::vector< double > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianPointList2D (IfcEntityInstanceData* e);
     IfcCartesianPointList2D (std::vector< std::vector< double > > v1_CoordList);
     typedef IfcTemplatedEntityList< IfcCartesianPointList2D > list;
@@ -18230,7 +18230,7 @@ public:
     std::vector< std::vector< double > > CoordList() const;
     void setCoordList(std::vector< std::vector< double > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianPointList3D (IfcEntityInstanceData* e);
     IfcCartesianPointList3D (std::vector< std::vector< double > > v1_CoordList);
     typedef IfcTemplatedEntityList< IfcCartesianPointList3D > list;
@@ -18286,7 +18286,7 @@ public:
     double Scale() const;
     void setScale(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator (IfcDirection* v1_Axis1, IfcDirection* v2_Axis2, IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale);
     typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator > list;
@@ -18299,7 +18299,7 @@ public:
 class IFC_PARSE_API IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator2D (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator2D (IfcDirection* v1_Axis1, IfcDirection* v2_Axis2, IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale);
     typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator2D > list;
@@ -18322,7 +18322,7 @@ public:
     double Scale2() const;
     void setScale2(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator2DnonUniform (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator2DnonUniform (IfcDirection* v1_Axis1, IfcDirection* v2_Axis2, IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, boost::optional< double > v5_Scale2);
     typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator2DnonUniform > list;
@@ -18340,7 +18340,7 @@ public:
     IfcDirection* Axis3() const;
     void setAxis3(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator3D (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator3D (IfcDirection* v1_Axis1, IfcDirection* v2_Axis2, IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, IfcDirection* v5_Axis3);
     typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator3D > list;
@@ -18369,7 +18369,7 @@ public:
     double Scale3() const;
     void setScale3(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCartesianTransformationOperator3DnonUniform (IfcEntityInstanceData* e);
     IfcCartesianTransformationOperator3DnonUniform (IfcDirection* v1_Axis1, IfcDirection* v2_Axis2, IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, IfcDirection* v5_Axis3, boost::optional< double > v6_Scale2, boost::optional< double > v7_Scale3);
     typedef IfcTemplatedEntityList< IfcCartesianTransformationOperator3DnonUniform > list;
@@ -18392,7 +18392,7 @@ public:
     double Radius() const;
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCircleProfileDef (IfcEntityInstanceData* e);
     IfcCircleProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Radius);
     typedef IfcTemplatedEntityList< IfcCircleProfileDef > list;
@@ -18449,7 +18449,7 @@ public:
 class IFC_PARSE_API IfcClosedShell : public IfcConnectedFaceSet {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcClosedShell (IfcEntityInstanceData* e);
     IfcClosedShell (IfcTemplatedEntityList< IfcFace >::ptr v1_CfsFaces);
     typedef IfcTemplatedEntityList< IfcClosedShell > list;
@@ -18480,7 +18480,7 @@ public:
     double Blue() const;
     void setBlue(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcColourRgb (IfcEntityInstanceData* e);
     IfcColourRgb (boost::optional< std::string > v1_Name, double v2_Red, double v3_Green, double v4_Blue);
     typedef IfcTemplatedEntityList< IfcColourRgb > list;
@@ -18500,7 +18500,7 @@ public:
     IfcTemplatedEntityList< IfcProperty >::ptr HasProperties() const;
     void setHasProperties(IfcTemplatedEntityList< IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcComplexProperty (IfcEntityInstanceData* e);
     IfcComplexProperty (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_UsageName, IfcTemplatedEntityList< IfcProperty >::ptr v4_HasProperties);
     typedef IfcTemplatedEntityList< IfcComplexProperty > list;
@@ -18527,7 +18527,7 @@ public:
     void setParentCurve(IfcCurve* v);
         IfcTemplatedEntityList< IfcCompositeCurve >::ptr UsingCurves() const; // INVERSE IfcCompositeCurve::Segments
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCompositeCurveSegment (IfcEntityInstanceData* e);
     IfcCompositeCurveSegment (IfcTransitionCode::IfcTransitionCode v1_Transition, bool v2_SameSense, IfcCurve* v3_ParentCurve);
     typedef IfcTemplatedEntityList< IfcCompositeCurveSegment > list;
@@ -18558,7 +18558,7 @@ public:
     IfcPhysicalQuantity* BaseQuantity() const;
     void setBaseQuantity(IfcPhysicalQuantity* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionResourceType (IfcEntityInstanceData* e);
     IfcConstructionResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity);
     typedef IfcTemplatedEntityList< IfcConstructionResourceType > list;
@@ -18610,7 +18610,7 @@ public:
         IfcTemplatedEntityList< IfcRelDefinesByProperties >::ptr IsDefinedBy() const; // INVERSE IfcRelDefinesByProperties::RelatedObjects
     IfcTemplatedEntityList< IfcRelDeclares >::ptr Declares() const; // INVERSE IfcRelDeclares::RelatingContext
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcContext (IfcEntityInstanceData* e);
     IfcContext (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< std::string > v7_Phase, boost::optional< IfcTemplatedEntityList< IfcRepresentationContext >::ptr > v8_RepresentationContexts, IfcUnitAssignment* v9_UnitsInContext);
     typedef IfcTemplatedEntityList< IfcContext > list;
@@ -18631,7 +18631,7 @@ public:
     IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCrewResourceType (IfcEntityInstanceData* e);
     IfcCrewResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity, IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCrewResourceType > list;
@@ -18647,7 +18647,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCsgPrimitive3D (IfcEntityInstanceData* e);
     IfcCsgPrimitive3D (IfcAxis2Placement3D* v1_Position);
     typedef IfcTemplatedEntityList< IfcCsgPrimitive3D > list;
@@ -18699,7 +18699,7 @@ public:
     IfcCsgSelect* TreeRootExpression() const;
     void setTreeRootExpression(IfcCsgSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCsgSolid (IfcEntityInstanceData* e);
     IfcCsgSolid (IfcCsgSelect* v1_TreeRootExpression);
     typedef IfcTemplatedEntityList< IfcCsgSolid > list;
@@ -18717,7 +18717,7 @@ public:
 class IFC_PARSE_API IfcCurve : public IfcGeometricRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurve (IfcEntityInstanceData* e);
     IfcCurve ();
     typedef IfcTemplatedEntityList< IfcCurve > list;
@@ -18747,7 +18747,7 @@ public:
     IfcTemplatedEntityList< IfcCurve >::ptr InnerBoundaries() const;
     void setInnerBoundaries(IfcTemplatedEntityList< IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurveBoundedPlane (IfcEntityInstanceData* e);
     IfcCurveBoundedPlane (IfcPlane* v1_BasisSurface, IfcCurve* v2_OuterBoundary, IfcTemplatedEntityList< IfcCurve >::ptr v3_InnerBoundaries);
     typedef IfcTemplatedEntityList< IfcCurveBoundedPlane > list;
@@ -18784,7 +18784,7 @@ public:
     bool ImplicitOuter() const;
     void setImplicitOuter(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurveBoundedSurface (IfcEntityInstanceData* e);
     IfcCurveBoundedSurface (IfcSurface* v1_BasisSurface, IfcTemplatedEntityList< IfcBoundaryCurve >::ptr v2_Boundaries, bool v3_ImplicitOuter);
     typedef IfcTemplatedEntityList< IfcCurveBoundedSurface > list;
@@ -18802,7 +18802,7 @@ public:
     std::vector< double > /*[2:3]*/ DirectionRatios() const;
     void setDirectionRatios(std::vector< double > /*[2:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDirection (IfcEntityInstanceData* e);
     IfcDirection (std::vector< double > /*[2:3]*/ v1_DirectionRatios);
     typedef IfcTemplatedEntityList< IfcDirection > list;
@@ -18848,7 +18848,7 @@ public:
     bool Sizeable() const;
     void setSizeable(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDoorStyle (IfcEntityInstanceData* e);
     IfcDoorStyle (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, IfcDoorStyleOperationEnum::IfcDoorStyleOperationEnum v9_OperationType, IfcDoorStyleConstructionEnum::IfcDoorStyleConstructionEnum v10_ConstructionType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
     typedef IfcTemplatedEntityList< IfcDoorStyle > list;
@@ -18870,7 +18870,7 @@ public:
     IfcTemplatedEntityList< IfcOrientedEdge >::ptr EdgeList() const;
     void setEdgeList(IfcTemplatedEntityList< IfcOrientedEdge >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEdgeLoop (IfcEntityInstanceData* e);
     IfcEdgeLoop (IfcTemplatedEntityList< IfcOrientedEdge >::ptr v1_EdgeList);
     typedef IfcTemplatedEntityList< IfcEdgeLoop > list;
@@ -18965,7 +18965,7 @@ public:
     IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr Quantities() const;
     void setQuantities(IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementQuantity (IfcEntityInstanceData* e);
     IfcElementQuantity (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_MethodOfMeasurement, IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr v6_Quantities);
     typedef IfcTemplatedEntityList< IfcElementQuantity > list;
@@ -19000,7 +19000,7 @@ public:
     std::string ElementType() const;
     void setElementType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementType (IfcEntityInstanceData* e);
     IfcElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcElementType > list;
@@ -19016,7 +19016,7 @@ public:
     IfcAxis2Placement3D* Position() const;
     void setPosition(IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementarySurface (IfcEntityInstanceData* e);
     IfcElementarySurface (IfcAxis2Placement3D* v1_Position);
     typedef IfcTemplatedEntityList< IfcElementarySurface > list;
@@ -19046,7 +19046,7 @@ public:
     double SemiAxis2() const;
     void setSemiAxis2(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEllipseProfileDef (IfcEntityInstanceData* e);
     IfcEllipseProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_SemiAxis1, double v5_SemiAxis2);
     typedef IfcTemplatedEntityList< IfcEllipseProfileDef > list;
@@ -19075,7 +19075,7 @@ public:
     std::string UserDefinedEventTriggerType() const;
     void setUserDefinedEventTriggerType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEventType (IfcEntityInstanceData* e);
     IfcEventType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ProcessType, IfcEventTypeEnum::IfcEventTypeEnum v10_PredefinedType, IfcEventTriggerTypeEnum::IfcEventTriggerTypeEnum v11_EventTriggerType, boost::optional< std::string > v12_UserDefinedEventTriggerType);
     typedef IfcTemplatedEntityList< IfcEventType > list;
@@ -19158,7 +19158,7 @@ public:
     double Depth() const;
     void setDepth(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExtrudedAreaSolid (IfcEntityInstanceData* e);
     IfcExtrudedAreaSolid (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position, IfcDirection* v3_ExtrudedDirection, double v4_Depth);
     typedef IfcTemplatedEntityList< IfcExtrudedAreaSolid > list;
@@ -19267,7 +19267,7 @@ public:
     IfcProfileDef* EndSweptArea() const;
     void setEndSweptArea(IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExtrudedAreaSolidTapered (IfcEntityInstanceData* e);
     IfcExtrudedAreaSolidTapered (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position, IfcDirection* v3_ExtrudedDirection, double v4_Depth, IfcProfileDef* v5_EndSweptArea);
     typedef IfcTemplatedEntityList< IfcExtrudedAreaSolidTapered > list;
@@ -19290,7 +19290,7 @@ public:
     IfcTemplatedEntityList< IfcConnectedFaceSet >::ptr FbsmFaces() const;
     void setFbsmFaces(IfcTemplatedEntityList< IfcConnectedFaceSet >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFaceBasedSurfaceModel (IfcEntityInstanceData* e);
     IfcFaceBasedSurfaceModel (IfcTemplatedEntityList< IfcConnectedFaceSet >::ptr v1_FbsmFaces);
     typedef IfcTemplatedEntityList< IfcFaceBasedSurfaceModel > list;
@@ -19372,7 +19372,7 @@ public:
     double HatchLineAngle() const;
     void setHatchLineAngle(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFillAreaStyleHatching (IfcEntityInstanceData* e);
     IfcFillAreaStyleHatching (IfcCurveStyle* v1_HatchLineAppearance, IfcHatchLineDistanceSelect* v2_StartOfNextHatchLine, IfcCartesianPoint* v3_PointOfReferenceHatchLine, IfcCartesianPoint* v4_PatternStart, double v5_HatchLineAngle);
     typedef IfcTemplatedEntityList< IfcFillAreaStyleHatching > list;
@@ -19394,7 +19394,7 @@ public:
     double TilingScale() const;
     void setTilingScale(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFillAreaStyleTiles (IfcEntityInstanceData* e);
     IfcFillAreaStyleTiles (IfcTemplatedEntityList< IfcVector >::ptr v1_TilingPattern, IfcTemplatedEntityList< IfcStyledItem >::ptr v2_Tiles, double v3_TilingScale);
     typedef IfcTemplatedEntityList< IfcFillAreaStyleTiles > list;
@@ -19476,7 +19476,7 @@ public:
     IfcDirection* FixedReference() const;
     void setFixedReference(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFixedReferenceSweptAreaSolid (IfcEntityInstanceData* e);
     IfcFixedReferenceSweptAreaSolid (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position, IfcCurve* v3_Directrix, boost::optional< double > v4_StartParam, boost::optional< double > v5_EndParam, IfcDirection* v6_FixedReference);
     typedef IfcTemplatedEntityList< IfcFixedReferenceSweptAreaSolid > list;
@@ -19512,7 +19512,7 @@ public:
 class IFC_PARSE_API IfcFurnishingElementType : public IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFurnishingElementType (IfcEntityInstanceData* e);
     IfcFurnishingElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFurnishingElementType > list;
@@ -19564,7 +19564,7 @@ public:
     IfcFurnitureTypeEnum::IfcFurnitureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFurnitureTypeEnum::IfcFurnitureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFurnitureType (IfcEntityInstanceData* e);
     IfcFurnitureType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum v10_AssemblyPlace, boost::optional< IfcFurnitureTypeEnum::IfcFurnitureTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFurnitureType > list;
@@ -19636,7 +19636,7 @@ public:
     IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeographicElementType (IfcEntityInstanceData* e);
     IfcGeographicElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcGeographicElementType > list;
@@ -19651,7 +19651,7 @@ public:
 class IFC_PARSE_API IfcGeometricCurveSet : public IfcGeometricSet {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeometricCurveSet (IfcEntityInstanceData* e);
     IfcGeometricCurveSet (IfcEntityList::ptr v1_Elements);
     typedef IfcTemplatedEntityList< IfcGeometricCurveSet > list;
@@ -19747,7 +19747,7 @@ public:
     double FlangeSlope() const;
     void setFlangeSlope(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIShapeProfileDef (IfcEntityInstanceData* e);
     IfcIShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_FlangeEdgeRadius, boost::optional< double > v10_FlangeSlope);
     typedef IfcTemplatedEntityList< IfcIShapeProfileDef > list;
@@ -19832,7 +19832,7 @@ public:
     double LegSlope() const;
     void setLegSlope(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLShapeProfileDef (IfcEntityInstanceData* e);
     IfcLShapeProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Depth, boost::optional< double > v5_Width, double v6_Thickness, boost::optional< double > v7_FilletRadius, boost::optional< double > v8_EdgeRadius, boost::optional< double > v9_LegSlope);
     typedef IfcTemplatedEntityList< IfcLShapeProfileDef > list;
@@ -19854,7 +19854,7 @@ public:
     IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLaborResourceType (IfcEntityInstanceData* e);
     IfcLaborResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity, IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcLaborResourceType > list;
@@ -19881,7 +19881,7 @@ public:
     IfcVector* Dir() const;
     void setDir(IfcVector* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLine (IfcEntityInstanceData* e);
     IfcLine (IfcCartesianPoint* v1_Pnt, IfcVector* v2_Dir);
     typedef IfcTemplatedEntityList< IfcLine > list;
@@ -19955,7 +19955,7 @@ public:
     IfcClosedShell* Outer() const;
     void setOuter(IfcClosedShell* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcManifoldSolidBrep (IfcEntityInstanceData* e);
     IfcManifoldSolidBrep (IfcClosedShell* v1_Outer);
     typedef IfcTemplatedEntityList< IfcManifoldSolidBrep > list;
@@ -20054,7 +20054,7 @@ public:
     IfcTemplatedEntityList< IfcRelDefinesByType >::ptr IsTypedBy() const; // INVERSE IfcRelDefinesByType::RelatedObjects
     IfcTemplatedEntityList< IfcRelDefinesByProperties >::ptr IsDefinedBy() const; // INVERSE IfcRelDefinesByProperties::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcObject (IfcEntityInstanceData* e);
     IfcObject (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef IfcTemplatedEntityList< IfcObject > list;
@@ -20082,7 +20082,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOffsetCurve2D (IfcEntityInstanceData* e);
     IfcOffsetCurve2D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcOffsetCurve2D > list;
@@ -20117,7 +20117,7 @@ public:
     IfcDirection* RefDirection() const;
     void setRefDirection(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOffsetCurve3D (IfcEntityInstanceData* e);
     IfcOffsetCurve3D (IfcCurve* v1_BasisCurve, double v2_Distance, bool v3_SelfIntersect, IfcDirection* v4_RefDirection);
     typedef IfcTemplatedEntityList< IfcOffsetCurve3D > list;
@@ -20136,7 +20136,7 @@ public:
     IfcCurve* ReferenceCurve() const;
     void setReferenceCurve(IfcCurve* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPcurve (IfcEntityInstanceData* e);
     IfcPcurve (IfcSurface* v1_BasisSurface, IfcCurve* v2_ReferenceCurve);
     typedef IfcTemplatedEntityList< IfcPcurve > list;
@@ -20154,7 +20154,7 @@ public:
     IfcAxis2Placement* Placement() const;
     void setPlacement(IfcAxis2Placement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlanarBox (IfcEntityInstanceData* e);
     IfcPlanarBox (double v1_SizeInX, double v2_SizeInY, IfcAxis2Placement* v3_Placement);
     typedef IfcTemplatedEntityList< IfcPlanarBox > list;
@@ -20198,7 +20198,7 @@ public:
 class IFC_PARSE_API IfcPlane : public IfcElementarySurface {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlane (IfcEntityInstanceData* e);
     IfcPlane (IfcAxis2Placement3D* v1_Position);
     typedef IfcTemplatedEntityList< IfcPlane > list;
@@ -20211,7 +20211,7 @@ public:
 class IFC_PARSE_API IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPreDefinedColour (IfcEntityInstanceData* e);
     IfcPreDefinedColour (std::string v1_Name);
     typedef IfcTemplatedEntityList< IfcPreDefinedColour > list;
@@ -20226,7 +20226,7 @@ public:
 class IFC_PARSE_API IfcPreDefinedCurveFont : public IfcPreDefinedItem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPreDefinedCurveFont (IfcEntityInstanceData* e);
     IfcPreDefinedCurveFont (std::string v1_Name);
     typedef IfcTemplatedEntityList< IfcPreDefinedCurveFont > list;
@@ -20254,7 +20254,7 @@ public:
 class IFC_PARSE_API IfcPreDefinedPropertySet : public IfcPropertySetDefinition {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPreDefinedPropertySet (IfcEntityInstanceData* e);
     IfcPreDefinedPropertySet (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcPreDefinedPropertySet > list;
@@ -20279,7 +20279,7 @@ public:
     IfcProcedureTypeEnum::IfcProcedureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProcedureTypeEnum::IfcProcedureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProcedureType (IfcEntityInstanceData* e);
     IfcProcedureType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ProcessType, IfcProcedureTypeEnum::IfcProcedureTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProcedureType > list;
@@ -20345,7 +20345,7 @@ public:
     IfcTemplatedEntityList< IfcRelSequence >::ptr IsSuccessorFrom() const; // INVERSE IfcRelSequence::RelatedProcess
     IfcTemplatedEntityList< IfcRelAssignsToProcess >::ptr OperatesOn() const; // INVERSE IfcRelAssignsToProcess::RelatingProcess
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProcess (IfcEntityInstanceData* e);
     IfcProcess (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription);
     typedef IfcTemplatedEntityList< IfcProcess > list;
@@ -20455,7 +20455,7 @@ public:
     void setRepresentation(IfcProductRepresentation* v);
         IfcTemplatedEntityList< IfcRelAssignsToProduct >::ptr ReferencedBy() const; // INVERSE IfcRelAssignsToProduct::RelatingProduct
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProduct (IfcEntityInstanceData* e);
     IfcProduct (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation);
     typedef IfcTemplatedEntityList< IfcProduct > list;
@@ -20507,7 +20507,7 @@ public:
 class IFC_PARSE_API IfcProject : public IfcContext {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProject (IfcEntityInstanceData* e);
     IfcProject (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< std::string > v7_Phase, boost::optional< IfcTemplatedEntityList< IfcRepresentationContext >::ptr > v8_RepresentationContexts, IfcUnitAssignment* v9_UnitsInContext);
     typedef IfcTemplatedEntityList< IfcProject > list;
@@ -20539,7 +20539,7 @@ public:
 class IFC_PARSE_API IfcProjectLibrary : public IfcContext {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProjectLibrary (IfcEntityInstanceData* e);
     IfcProjectLibrary (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< std::string > v7_Phase, boost::optional< IfcTemplatedEntityList< IfcRepresentationContext >::ptr > v8_RepresentationContexts, IfcUnitAssignment* v9_UnitsInContext);
     typedef IfcTemplatedEntityList< IfcProjectLibrary > list;
@@ -20673,7 +20673,7 @@ public:
     IfcValue* SetPointValue() const;
     void setSetPointValue(IfcValue* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyBoundedValue (IfcEntityInstanceData* e);
     IfcPropertyBoundedValue (std::string v1_Name, boost::optional< std::string > v2_Description, IfcValue* v3_UpperBoundValue, IfcValue* v4_LowerBoundValue, IfcUnit* v5_Unit, IfcValue* v6_SetPointValue);
     typedef IfcTemplatedEntityList< IfcPropertyBoundedValue > list;
@@ -20770,7 +20770,7 @@ public:
     IfcPropertyEnumeration* EnumerationReference() const;
     void setEnumerationReference(IfcPropertyEnumeration* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyEnumeratedValue (IfcEntityInstanceData* e);
     IfcPropertyEnumeratedValue (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< IfcEntityList::ptr > v3_EnumerationValues, IfcPropertyEnumeration* v4_EnumerationReference);
     typedef IfcTemplatedEntityList< IfcPropertyEnumeratedValue > list;
@@ -20855,7 +20855,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyListValue (IfcEntityInstanceData* e);
     IfcPropertyListValue (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< IfcEntityList::ptr > v3_ListValues, IfcUnit* v4_Unit);
     typedef IfcTemplatedEntityList< IfcPropertyListValue > list;
@@ -20890,7 +20890,7 @@ public:
     IfcObjectReferenceSelect* PropertyReference() const;
     void setPropertyReference(IfcObjectReferenceSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyReferenceValue (IfcEntityInstanceData* e);
     IfcPropertyReferenceValue (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UsageName, IfcObjectReferenceSelect* v4_PropertyReference);
     typedef IfcTemplatedEntityList< IfcPropertyReferenceValue > list;
@@ -20954,7 +20954,7 @@ public:
     IfcTemplatedEntityList< IfcProperty >::ptr HasProperties() const;
     void setHasProperties(IfcTemplatedEntityList< IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertySet (IfcEntityInstanceData* e);
     IfcPropertySet (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcProperty >::ptr v5_HasProperties);
     typedef IfcTemplatedEntityList< IfcPropertySet > list;
@@ -21017,7 +21017,7 @@ public:
     void setHasPropertyTemplates(IfcTemplatedEntityList< IfcPropertyTemplate >::ptr v);
         IfcTemplatedEntityList< IfcRelDefinesByTemplate >::ptr Defines() const; // INVERSE IfcRelDefinesByTemplate::RelatingTemplate
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertySetTemplate (IfcEntityInstanceData* e);
     IfcPropertySetTemplate (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< IfcPropertySetTemplateTypeEnum::IfcPropertySetTemplateTypeEnum > v5_TemplateType, boost::optional< std::string > v6_ApplicableEntity, IfcTemplatedEntityList< IfcPropertyTemplate >::ptr v7_HasPropertyTemplates);
     typedef IfcTemplatedEntityList< IfcPropertySetTemplate > list;
@@ -21083,7 +21083,7 @@ public:
     IfcUnit* Unit() const;
     void setUnit(IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertySingleValue (IfcEntityInstanceData* e);
     IfcPropertySingleValue (std::string v1_Name, boost::optional< std::string > v2_Description, IfcValue* v3_NominalValue, IfcUnit* v4_Unit);
     typedef IfcTemplatedEntityList< IfcPropertySingleValue > list;
@@ -21273,7 +21273,7 @@ public:
     IfcCurveInterpolationEnum::IfcCurveInterpolationEnum CurveInterpolation() const;
     void setCurveInterpolation(IfcCurveInterpolationEnum::IfcCurveInterpolationEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyTableValue (IfcEntityInstanceData* e);
     IfcPropertyTableValue (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< IfcEntityList::ptr > v3_DefiningValues, boost::optional< IfcEntityList::ptr > v4_DefinedValues, boost::optional< std::string > v5_Expression, IfcUnit* v6_DefiningUnit, IfcUnit* v7_DefinedUnit, boost::optional< IfcCurveInterpolationEnum::IfcCurveInterpolationEnum > v8_CurveInterpolation);
     typedef IfcTemplatedEntityList< IfcPropertyTableValue > list;
@@ -21307,7 +21307,7 @@ public:
         IfcTemplatedEntityList< IfcComplexPropertyTemplate >::ptr PartOfComplexTemplate() const; // INVERSE IfcComplexPropertyTemplate::HasPropertyTemplates
     IfcTemplatedEntityList< IfcPropertySetTemplate >::ptr PartOfPsetTemplate() const; // INVERSE IfcPropertySetTemplate::HasPropertyTemplates
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPropertyTemplate (IfcEntityInstanceData* e);
     IfcPropertyTemplate (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcPropertyTemplate > list;
@@ -21339,7 +21339,7 @@ public:
     std::string Tag() const;
     void setTag(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProxy (IfcEntityInstanceData* e);
     IfcProxy (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcObjectTypeEnum::IfcObjectTypeEnum v8_ProxyType, boost::optional< std::string > v9_Tag);
     typedef IfcTemplatedEntityList< IfcProxy > list;
@@ -21380,7 +21380,7 @@ public:
     double OuterFilletRadius() const;
     void setOuterFilletRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRectangleHollowProfileDef (IfcEntityInstanceData* e);
     IfcRectangleHollowProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim, double v6_WallThickness, boost::optional< double > v7_InnerFilletRadius, boost::optional< double > v8_OuterFilletRadius);
     typedef IfcTemplatedEntityList< IfcRectangleHollowProfileDef > list;
@@ -21485,7 +21485,7 @@ public:
     double Height() const;
     void setHeight(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRectangularPyramid (IfcEntityInstanceData* e);
     IfcRectangularPyramid (IfcAxis2Placement3D* v1_Position, double v2_XLength, double v3_YLength, double v4_Height);
     typedef IfcTemplatedEntityList< IfcRectangularPyramid > list;
@@ -21529,7 +21529,7 @@ public:
     bool Vsense() const;
     void setVsense(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRectangularTrimmedSurface (IfcEntityInstanceData* e);
     IfcRectangularTrimmedSurface (IfcSurface* v1_BasisSurface, double v2_U1, double v3_V1, double v4_U2, double v5_V2, bool v6_Usense, bool v7_Vsense);
     typedef IfcTemplatedEntityList< IfcRectangularTrimmedSurface > list;
@@ -21571,7 +21571,7 @@ public:
     IfcTemplatedEntityList< IfcSectionReinforcementProperties >::ptr ReinforcementSectionDefinitions() const;
     void setReinforcementSectionDefinitions(IfcTemplatedEntityList< IfcSectionReinforcementProperties >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcementDefinitionProperties (IfcEntityInstanceData* e);
     IfcReinforcementDefinitionProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_DefinitionType, IfcTemplatedEntityList< IfcSectionReinforcementProperties >::ptr v6_ReinforcementSectionDefinitions);
     typedef IfcTemplatedEntityList< IfcReinforcementDefinitionProperties > list;
@@ -21599,7 +21599,7 @@ public:
     IfcObjectTypeEnum::IfcObjectTypeEnum RelatedObjectsType() const;
     void setRelatedObjectsType(IfcObjectTypeEnum::IfcObjectTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssigns (IfcEntityInstanceData* e);
     IfcRelAssigns (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType);
     typedef IfcTemplatedEntityList< IfcRelAssigns > list;
@@ -21624,7 +21624,7 @@ public:
     IfcActorRole* ActingRole() const;
     void setActingRole(IfcActorRole* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToActor (IfcEntityInstanceData* e);
     IfcRelAssignsToActor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcActor* v7_RelatingActor, IfcActorRole* v8_ActingRole);
     typedef IfcTemplatedEntityList< IfcRelAssignsToActor > list;
@@ -21640,7 +21640,7 @@ public:
     IfcControl* RelatingControl() const;
     void setRelatingControl(IfcControl* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToControl (IfcEntityInstanceData* e);
     IfcRelAssignsToControl (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcControl* v7_RelatingControl);
     typedef IfcTemplatedEntityList< IfcRelAssignsToControl > list;
@@ -21664,7 +21664,7 @@ public:
     IfcGroup* RelatingGroup() const;
     void setRelatingGroup(IfcGroup* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToGroup (IfcEntityInstanceData* e);
     IfcRelAssignsToGroup (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcGroup* v7_RelatingGroup);
     typedef IfcTemplatedEntityList< IfcRelAssignsToGroup > list;
@@ -21684,7 +21684,7 @@ public:
     double Factor() const;
     void setFactor(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToGroupByFactor (IfcEntityInstanceData* e);
     IfcRelAssignsToGroupByFactor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcGroup* v7_RelatingGroup, double v8_Factor);
     typedef IfcTemplatedEntityList< IfcRelAssignsToGroupByFactor > list;
@@ -21724,7 +21724,7 @@ public:
     IfcMeasureWithUnit* QuantityInProcess() const;
     void setQuantityInProcess(IfcMeasureWithUnit* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToProcess (IfcEntityInstanceData* e);
     IfcRelAssignsToProcess (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcProcessSelect* v7_RelatingProcess, IfcMeasureWithUnit* v8_QuantityInProcess);
     typedef IfcTemplatedEntityList< IfcRelAssignsToProcess > list;
@@ -21745,7 +21745,7 @@ public:
     IfcProductSelect* RelatingProduct() const;
     void setRelatingProduct(IfcProductSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToProduct (IfcEntityInstanceData* e);
     IfcRelAssignsToProduct (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcProductSelect* v7_RelatingProduct);
     typedef IfcTemplatedEntityList< IfcRelAssignsToProduct > list;
@@ -21764,7 +21764,7 @@ public:
     IfcResourceSelect* RelatingResource() const;
     void setRelatingResource(IfcResourceSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssignsToResource (IfcEntityInstanceData* e);
     IfcRelAssignsToResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< IfcObjectTypeEnum::IfcObjectTypeEnum > v6_RelatedObjectsType, IfcResourceSelect* v7_RelatingResource);
     typedef IfcTemplatedEntityList< IfcRelAssignsToResource > list;
@@ -21818,7 +21818,7 @@ public:
     IfcEntityList::ptr RelatedObjects() const;
     void setRelatedObjects(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociates (IfcEntityInstanceData* e);
     IfcRelAssociates (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects);
     typedef IfcTemplatedEntityList< IfcRelAssociates > list;
@@ -21832,7 +21832,7 @@ public:
     IfcApproval* RelatingApproval() const;
     void setRelatingApproval(IfcApproval* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociatesApproval (IfcEntityInstanceData* e);
     IfcRelAssociatesApproval (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects, IfcApproval* v6_RelatingApproval);
     typedef IfcTemplatedEntityList< IfcRelAssociatesApproval > list;
@@ -21873,7 +21873,7 @@ public:
     IfcClassificationSelect* RelatingClassification() const;
     void setRelatingClassification(IfcClassificationSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociatesClassification (IfcEntityInstanceData* e);
     IfcRelAssociatesClassification (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects, IfcClassificationSelect* v6_RelatingClassification);
     typedef IfcTemplatedEntityList< IfcRelAssociatesClassification > list;
@@ -21892,7 +21892,7 @@ public:
     IfcConstraint* RelatingConstraint() const;
     void setRelatingConstraint(IfcConstraint* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociatesConstraint (IfcEntityInstanceData* e);
     IfcRelAssociatesConstraint (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects, boost::optional< std::string > v6_Intent, IfcConstraint* v7_RelatingConstraint);
     typedef IfcTemplatedEntityList< IfcRelAssociatesConstraint > list;
@@ -21910,7 +21910,7 @@ public:
     IfcDocumentSelect* RelatingDocument() const;
     void setRelatingDocument(IfcDocumentSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociatesDocument (IfcEntityInstanceData* e);
     IfcRelAssociatesDocument (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects, IfcDocumentSelect* v6_RelatingDocument);
     typedef IfcTemplatedEntityList< IfcRelAssociatesDocument > list;
@@ -21928,7 +21928,7 @@ public:
     IfcLibrarySelect* RelatingLibrary() const;
     void setRelatingLibrary(IfcLibrarySelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociatesLibrary (IfcEntityInstanceData* e);
     IfcRelAssociatesLibrary (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects, IfcLibrarySelect* v6_RelatingLibrary);
     typedef IfcTemplatedEntityList< IfcRelAssociatesLibrary > list;
@@ -22033,7 +22033,7 @@ public:
     IfcMaterialSelect* RelatingMaterial() const;
     void setRelatingMaterial(IfcMaterialSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAssociatesMaterial (IfcEntityInstanceData* e);
     IfcRelAssociatesMaterial (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcEntityList::ptr v5_RelatedObjects, IfcMaterialSelect* v6_RelatingMaterial);
     typedef IfcTemplatedEntityList< IfcRelAssociatesMaterial > list;
@@ -22044,7 +22044,7 @@ public:
 class IFC_PARSE_API IfcRelConnects : public IfcRelationship {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnects (IfcEntityInstanceData* e);
     IfcRelConnects (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcRelConnects > list;
@@ -22085,7 +22085,7 @@ public:
     IfcElement* RelatedElement() const;
     void setRelatedElement(IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsElements (IfcEntityInstanceData* e);
     IfcRelConnectsElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement);
     typedef IfcTemplatedEntityList< IfcRelConnectsElements > list;
@@ -22137,7 +22137,7 @@ public:
     IfcConnectionTypeEnum::IfcConnectionTypeEnum RelatingConnectionType() const;
     void setRelatingConnectionType(IfcConnectionTypeEnum::IfcConnectionTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsPathElements (IfcEntityInstanceData* e);
     IfcRelConnectsPathElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, IfcConnectionTypeEnum::IfcConnectionTypeEnum v10_RelatedConnectionType, IfcConnectionTypeEnum::IfcConnectionTypeEnum v11_RelatingConnectionType);
     typedef IfcTemplatedEntityList< IfcRelConnectsPathElements > list;
@@ -22178,7 +22178,7 @@ public:
     IfcDistributionElement* RelatedElement() const;
     void setRelatedElement(IfcDistributionElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsPortToElement (IfcEntityInstanceData* e);
     IfcRelConnectsPortToElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcPort* v5_RelatingPort, IfcDistributionElement* v6_RelatedElement);
     typedef IfcTemplatedEntityList< IfcRelConnectsPortToElement > list;
@@ -22210,7 +22210,7 @@ public:
     IfcElement* RealizingElement() const;
     void setRealizingElement(IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsPorts (IfcEntityInstanceData* e);
     IfcRelConnectsPorts (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcPort* v5_RelatingPort, IfcPort* v6_RelatedPort, IfcElement* v7_RealizingElement);
     typedef IfcTemplatedEntityList< IfcRelConnectsPorts > list;
@@ -22227,7 +22227,7 @@ public:
     IfcStructuralActivity* RelatedStructuralActivity() const;
     void setRelatedStructuralActivity(IfcStructuralActivity* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsStructuralActivity (IfcEntityInstanceData* e);
     IfcRelConnectsStructuralActivity (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcStructuralActivityAssignmentSelect* v5_RelatingElement, IfcStructuralActivity* v6_RelatedStructuralActivity);
     typedef IfcTemplatedEntityList< IfcRelConnectsStructuralActivity > list;
@@ -22285,7 +22285,7 @@ public:
     IfcAxis2Placement3D* ConditionCoordinateSystem() const;
     void setConditionCoordinateSystem(IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsStructuralMember (IfcEntityInstanceData* e);
     IfcRelConnectsStructuralMember (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcStructuralMember* v5_RelatingStructuralMember, IfcStructuralConnection* v6_RelatedStructuralConnection, IfcBoundaryCondition* v7_AppliedCondition, IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, IfcAxis2Placement3D* v10_ConditionCoordinateSystem);
     typedef IfcTemplatedEntityList< IfcRelConnectsStructuralMember > list;
@@ -22313,7 +22313,7 @@ public:
     IfcConnectionGeometry* ConnectionConstraint() const;
     void setConnectionConstraint(IfcConnectionGeometry* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsWithEccentricity (IfcEntityInstanceData* e);
     IfcRelConnectsWithEccentricity (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcStructuralMember* v5_RelatingStructuralMember, IfcStructuralConnection* v6_RelatedStructuralConnection, IfcBoundaryCondition* v7_AppliedCondition, IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, IfcAxis2Placement3D* v10_ConditionCoordinateSystem, IfcConnectionGeometry* v11_ConnectionConstraint);
     typedef IfcTemplatedEntityList< IfcRelConnectsWithEccentricity > list;
@@ -22352,7 +22352,7 @@ public:
     std::string ConnectionType() const;
     void setConnectionType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelConnectsWithRealizingElements (IfcEntityInstanceData* e);
     IfcRelConnectsWithRealizingElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcConnectionGeometry* v5_ConnectionGeometry, IfcElement* v6_RelatingElement, IfcElement* v7_RelatedElement, IfcTemplatedEntityList< IfcElement >::ptr v8_RealizingElements, boost::optional< std::string > v9_ConnectionType);
     typedef IfcTemplatedEntityList< IfcRelConnectsWithRealizingElements > list;
@@ -22430,7 +22430,7 @@ public:
     IfcSpatialElement* RelatingStructure() const;
     void setRelatingStructure(IfcSpatialElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelContainedInSpatialStructure (IfcEntityInstanceData* e);
     IfcRelContainedInSpatialStructure (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcProduct >::ptr v5_RelatedElements, IfcSpatialElement* v6_RelatingStructure);
     typedef IfcTemplatedEntityList< IfcRelContainedInSpatialStructure > list;
@@ -22462,7 +22462,7 @@ public:
     IfcTemplatedEntityList< IfcCovering >::ptr RelatedCoverings() const;
     void setRelatedCoverings(IfcTemplatedEntityList< IfcCovering >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelCoversBldgElements (IfcEntityInstanceData* e);
     IfcRelCoversBldgElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcElement* v5_RelatingBuildingElement, IfcTemplatedEntityList< IfcCovering >::ptr v6_RelatedCoverings);
     typedef IfcTemplatedEntityList< IfcRelCoversBldgElements > list;
@@ -22504,7 +22504,7 @@ public:
     IfcTemplatedEntityList< IfcCovering >::ptr RelatedCoverings() const;
     void setRelatedCoverings(IfcTemplatedEntityList< IfcCovering >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelCoversSpaces (IfcEntityInstanceData* e);
     IfcRelCoversSpaces (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcSpace* v5_RelatingSpace, IfcTemplatedEntityList< IfcCovering >::ptr v6_RelatedCoverings);
     typedef IfcTemplatedEntityList< IfcRelCoversSpaces > list;
@@ -22529,7 +22529,7 @@ public:
     IfcEntityList::ptr RelatedDefinitions() const;
     void setRelatedDefinitions(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDeclares (IfcEntityInstanceData* e);
     IfcRelDeclares (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcContext* v5_RelatingContext, IfcEntityList::ptr v6_RelatedDefinitions);
     typedef IfcTemplatedEntityList< IfcRelDeclares > list;
@@ -22567,7 +22567,7 @@ public:
 class IFC_PARSE_API IfcRelDecomposes : public IfcRelationship {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDecomposes (IfcEntityInstanceData* e);
     IfcRelDecomposes (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcRelDecomposes > list;
@@ -22602,7 +22602,7 @@ public:
 class IFC_PARSE_API IfcRelDefines : public IfcRelationship {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDefines (IfcEntityInstanceData* e);
     IfcRelDefines (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef IfcTemplatedEntityList< IfcRelDefines > list;
@@ -22631,7 +22631,7 @@ public:
     IfcObject* RelatingObject() const;
     void setRelatingObject(IfcObject* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDefinesByObject (IfcEntityInstanceData* e);
     IfcRelDefinesByObject (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObject >::ptr v5_RelatedObjects, IfcObject* v6_RelatingObject);
     typedef IfcTemplatedEntityList< IfcRelDefinesByObject > list;
@@ -22660,7 +22660,7 @@ public:
     IfcPropertySetDefinitionSelect* RelatingPropertyDefinition() const;
     void setRelatingPropertyDefinition(IfcPropertySetDefinitionSelect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDefinesByProperties (IfcEntityInstanceData* e);
     IfcRelDefinesByProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v5_RelatedObjects, IfcPropertySetDefinitionSelect* v6_RelatingPropertyDefinition);
     typedef IfcTemplatedEntityList< IfcRelDefinesByProperties > list;
@@ -22686,7 +22686,7 @@ public:
     IfcPropertySetTemplate* RelatingTemplate() const;
     void setRelatingTemplate(IfcPropertySetTemplate* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDefinesByTemplate (IfcEntityInstanceData* e);
     IfcRelDefinesByTemplate (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v5_RelatedPropertySets, IfcPropertySetTemplate* v6_RelatingTemplate);
     typedef IfcTemplatedEntityList< IfcRelDefinesByTemplate > list;
@@ -22770,7 +22770,7 @@ public:
     IfcTypeObject* RelatingType() const;
     void setRelatingType(IfcTypeObject* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelDefinesByType (IfcEntityInstanceData* e);
     IfcRelDefinesByType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcObject >::ptr v5_RelatedObjects, IfcTypeObject* v6_RelatingType);
     typedef IfcTemplatedEntityList< IfcRelDefinesByType > list;
@@ -22795,7 +22795,7 @@ public:
     IfcElement* RelatedBuildingElement() const;
     void setRelatedBuildingElement(IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelFillsElement (IfcEntityInstanceData* e);
     IfcRelFillsElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcOpeningElement* v5_RelatingOpeningElement, IfcElement* v6_RelatedBuildingElement);
     typedef IfcTemplatedEntityList< IfcRelFillsElement > list;
@@ -22816,7 +22816,7 @@ public:
     IfcDistributionFlowElement* RelatingFlowElement() const;
     void setRelatingFlowElement(IfcDistributionFlowElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelFlowControlElements (IfcEntityInstanceData* e);
     IfcRelFlowControlElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcDistributionControlElement >::ptr v5_RelatedControlElements, IfcDistributionFlowElement* v6_RelatingFlowElement);
     typedef IfcTemplatedEntityList< IfcRelFlowControlElements > list;
@@ -22890,7 +22890,7 @@ public:
     bool ImpliedOrder() const;
     void setImpliedOrder(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelInterferesElements (IfcEntityInstanceData* e);
     IfcRelInterferesElements (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcElement* v5_RelatingElement, IfcElement* v6_RelatedElement, IfcConnectionGeometry* v7_InterferenceGeometry, boost::optional< std::string > v8_InterferenceType, bool v9_ImpliedOrder);
     typedef IfcTemplatedEntityList< IfcRelInterferesElements > list;
@@ -22933,7 +22933,7 @@ public:
     IfcTemplatedEntityList< IfcObjectDefinition >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcObjectDefinition >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelNests (IfcEntityInstanceData* e);
     IfcRelNests (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v6_RelatedObjects);
     typedef IfcTemplatedEntityList< IfcRelNests > list;
@@ -22979,7 +22979,7 @@ public:
     IfcFeatureElementAddition* RelatedFeatureElement() const;
     void setRelatedFeatureElement(IfcFeatureElementAddition* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelProjectsElement (IfcEntityInstanceData* e);
     IfcRelProjectsElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcElement* v5_RelatingElement, IfcFeatureElementAddition* v6_RelatedFeatureElement);
     typedef IfcTemplatedEntityList< IfcRelProjectsElement > list;
@@ -23045,7 +23045,7 @@ public:
     IfcSpatialElement* RelatingStructure() const;
     void setRelatingStructure(IfcSpatialElement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelReferencedInSpatialStructure (IfcEntityInstanceData* e);
     IfcRelReferencedInSpatialStructure (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< IfcProduct >::ptr v5_RelatedElements, IfcSpatialElement* v6_RelatingStructure);
     typedef IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure > list;
@@ -23138,7 +23138,7 @@ public:
     std::string UserDefinedSequenceType() const;
     void setUserDefinedSequenceType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelSequence (IfcEntityInstanceData* e);
     IfcRelSequence (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcProcess* v5_RelatingProcess, IfcProcess* v6_RelatedProcess, IfcLagTime* v7_TimeLag, boost::optional< IfcSequenceEnum::IfcSequenceEnum > v8_SequenceType, boost::optional< std::string > v9_UserDefinedSequenceType);
     typedef IfcTemplatedEntityList< IfcRelSequence > list;
@@ -23177,7 +23177,7 @@ public:
     IfcTemplatedEntityList< IfcSpatialElement >::ptr RelatedBuildings() const;
     void setRelatedBuildings(IfcTemplatedEntityList< IfcSpatialElement >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelServicesBuildings (IfcEntityInstanceData* e);
     IfcRelServicesBuildings (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcSystem* v5_RelatingSystem, IfcTemplatedEntityList< IfcSpatialElement >::ptr v6_RelatedBuildings);
     typedef IfcTemplatedEntityList< IfcRelServicesBuildings > list;
@@ -23370,7 +23370,7 @@ public:
     IfcInternalOrExternalEnum::IfcInternalOrExternalEnum InternalOrExternalBoundary() const;
     void setInternalOrExternalBoundary(IfcInternalOrExternalEnum::IfcInternalOrExternalEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelSpaceBoundary (IfcEntityInstanceData* e);
     IfcRelSpaceBoundary (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcSpaceBoundarySelect* v5_RelatingSpace, IfcElement* v6_RelatedBuildingElement, IfcConnectionGeometry* v7_ConnectionGeometry, IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum v8_PhysicalOrVirtualBoundary, IfcInternalOrExternalEnum::IfcInternalOrExternalEnum v9_InternalOrExternalBoundary);
     typedef IfcTemplatedEntityList< IfcRelSpaceBoundary > list;
@@ -23431,7 +23431,7 @@ public:
     void setParentBoundary(IfcRelSpaceBoundary1stLevel* v);
         IfcTemplatedEntityList< IfcRelSpaceBoundary1stLevel >::ptr InnerBoundaries() const; // INVERSE IfcRelSpaceBoundary1stLevel::ParentBoundary
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelSpaceBoundary1stLevel (IfcEntityInstanceData* e);
     IfcRelSpaceBoundary1stLevel (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcSpaceBoundarySelect* v5_RelatingSpace, IfcElement* v6_RelatedBuildingElement, IfcConnectionGeometry* v7_ConnectionGeometry, IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum v8_PhysicalOrVirtualBoundary, IfcInternalOrExternalEnum::IfcInternalOrExternalEnum v9_InternalOrExternalBoundary, IfcRelSpaceBoundary1stLevel* v10_ParentBoundary);
     typedef IfcTemplatedEntityList< IfcRelSpaceBoundary1stLevel > list;
@@ -23477,7 +23477,7 @@ public:
     void setCorrespondingBoundary(IfcRelSpaceBoundary2ndLevel* v);
         IfcTemplatedEntityList< IfcRelSpaceBoundary2ndLevel >::ptr Corresponds() const; // INVERSE IfcRelSpaceBoundary2ndLevel::CorrespondingBoundary
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelSpaceBoundary2ndLevel (IfcEntityInstanceData* e);
     IfcRelSpaceBoundary2ndLevel (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcSpaceBoundarySelect* v5_RelatingSpace, IfcElement* v6_RelatedBuildingElement, IfcConnectionGeometry* v7_ConnectionGeometry, IfcPhysicalOrVirtualEnum::IfcPhysicalOrVirtualEnum v8_PhysicalOrVirtualBoundary, IfcInternalOrExternalEnum::IfcInternalOrExternalEnum v9_InternalOrExternalBoundary, IfcRelSpaceBoundary1stLevel* v10_ParentBoundary, IfcRelSpaceBoundary2ndLevel* v11_CorrespondingBoundary);
     typedef IfcTemplatedEntityList< IfcRelSpaceBoundary2ndLevel > list;
@@ -23496,7 +23496,7 @@ public:
     IfcFeatureElementSubtraction* RelatedOpeningElement() const;
     void setRelatedOpeningElement(IfcFeatureElementSubtraction* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelVoidsElement (IfcEntityInstanceData* e);
     IfcRelVoidsElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcElement* v5_RelatingBuildingElement, IfcFeatureElementSubtraction* v6_RelatedOpeningElement);
     typedef IfcTemplatedEntityList< IfcRelVoidsElement > list;
@@ -23529,7 +23529,7 @@ public:
     double ParamLength() const;
     void setParamLength(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReparametrisedCompositeCurveSegment (IfcEntityInstanceData* e);
     IfcReparametrisedCompositeCurveSegment (IfcTransitionCode::IfcTransitionCode v1_Transition, bool v2_SameSense, IfcCurve* v3_ParentCurve, double v4_ParamLength);
     typedef IfcTemplatedEntityList< IfcReparametrisedCompositeCurveSegment > list;
@@ -23566,7 +23566,7 @@ public:
     void setLongDescription(std::string v);
         IfcTemplatedEntityList< IfcRelAssignsToResource >::ptr ResourceOf() const; // INVERSE IfcRelAssignsToResource::RelatingResource
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcResource (IfcEntityInstanceData* e);
     IfcResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription);
     typedef IfcTemplatedEntityList< IfcResource > list;
@@ -23656,7 +23656,7 @@ public:
     double Angle() const;
     void setAngle(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRevolvedAreaSolid (IfcEntityInstanceData* e);
     IfcRevolvedAreaSolid (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position, IfcAxis1Placement* v3_Axis, double v4_Angle);
     typedef IfcTemplatedEntityList< IfcRevolvedAreaSolid > list;
@@ -23724,7 +23724,7 @@ public:
     IfcProfileDef* EndSweptArea() const;
     void setEndSweptArea(IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRevolvedAreaSolidTapered (IfcEntityInstanceData* e);
     IfcRevolvedAreaSolidTapered (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position, IfcAxis1Placement* v3_Axis, double v4_Angle, IfcProfileDef* v5_EndSweptArea);
     typedef IfcTemplatedEntityList< IfcRevolvedAreaSolidTapered > list;
@@ -23803,7 +23803,7 @@ public:
     double BottomRadius() const;
     void setBottomRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRightCircularCone (IfcEntityInstanceData* e);
     IfcRightCircularCone (IfcAxis2Placement3D* v1_Position, double v2_Height, double v3_BottomRadius);
     typedef IfcTemplatedEntityList< IfcRightCircularCone > list;
@@ -23898,7 +23898,7 @@ public:
     double Radius() const;
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRightCircularCylinder (IfcEntityInstanceData* e);
     IfcRightCircularCylinder (IfcAxis2Placement3D* v1_Position, double v2_Height, double v3_Radius);
     typedef IfcTemplatedEntityList< IfcRightCircularCylinder > list;
@@ -24014,7 +24014,7 @@ public:
     IfcStateEnum::IfcStateEnum AccessState() const;
     void setAccessState(IfcStateEnum::IfcStateEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSimplePropertyTemplate (IfcEntityInstanceData* e);
     IfcSimplePropertyTemplate (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< IfcSimplePropertyTemplateTypeEnum::IfcSimplePropertyTemplateTypeEnum > v5_TemplateType, boost::optional< std::string > v6_PrimaryMeasureType, boost::optional< std::string > v7_SecondaryMeasureType, IfcPropertyEnumeration* v8_Enumerators, IfcUnit* v9_PrimaryUnit, IfcUnit* v10_SecondaryUnit, boost::optional< std::string > v11_Expression, boost::optional< IfcStateEnum::IfcStateEnum > v12_AccessState);
     typedef IfcTemplatedEntityList< IfcSimplePropertyTemplate > list;
@@ -24063,7 +24063,7 @@ public:
     IfcTemplatedEntityList< IfcRelServicesBuildings >::ptr ServicedBySystems() const; // INVERSE IfcRelServicesBuildings::RelatedBuildings
     IfcTemplatedEntityList< IfcRelReferencedInSpatialStructure >::ptr ReferencesElements() const; // INVERSE IfcRelReferencedInSpatialStructure::RelatingStructure
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpatialElement (IfcEntityInstanceData* e);
     IfcSpatialElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName);
     typedef IfcTemplatedEntityList< IfcSpatialElement > list;
@@ -24107,7 +24107,7 @@ public:
     std::string ElementType() const;
     void setElementType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpatialElementType (IfcEntityInstanceData* e);
     IfcSpatialElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcSpatialElementType > list;
@@ -24197,7 +24197,7 @@ public:
     IfcElementCompositionEnum::IfcElementCompositionEnum CompositionType() const;
     void setCompositionType(IfcElementCompositionEnum::IfcElementCompositionEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpatialStructureElement (IfcEntityInstanceData* e);
     IfcSpatialStructureElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcElementCompositionEnum::IfcElementCompositionEnum > v9_CompositionType);
     typedef IfcTemplatedEntityList< IfcSpatialStructureElement > list;
@@ -24239,7 +24239,7 @@ public:
 class IFC_PARSE_API IfcSpatialStructureElementType : public IfcSpatialElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpatialStructureElementType (IfcEntityInstanceData* e);
     IfcSpatialStructureElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcSpatialStructureElementType > list;
@@ -24301,7 +24301,7 @@ public:
     IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpatialZone (IfcEntityInstanceData* e);
     IfcSpatialZone (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSpatialZone > list;
@@ -24346,7 +24346,7 @@ public:
     std::string LongName() const;
     void setLongName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpatialZoneType (IfcEntityInstanceData* e);
     IfcSpatialZoneType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSpatialZoneTypeEnum::IfcSpatialZoneTypeEnum v10_PredefinedType, boost::optional< std::string > v11_LongName);
     typedef IfcTemplatedEntityList< IfcSpatialZoneType > list;
@@ -24407,7 +24407,7 @@ public:
     double Radius() const;
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSphere (IfcEntityInstanceData* e);
     IfcSphere (IfcAxis2Placement3D* v1_Position, double v2_Radius);
     typedef IfcTemplatedEntityList< IfcSphere > list;
@@ -24533,7 +24533,7 @@ public:
     void setGlobalOrLocal(IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v);
         IfcTemplatedEntityList< IfcRelConnectsStructuralActivity >::ptr AssignedToStructuralItem() const; // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralActivity (IfcEntityInstanceData* e);
     IfcStructuralActivity (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal);
     typedef IfcTemplatedEntityList< IfcStructuralActivity > list;
@@ -24629,7 +24629,7 @@ class IFC_PARSE_API IfcStructuralItem : public IfcProduct {
 public:
         IfcTemplatedEntityList< IfcRelConnectsStructuralActivity >::ptr AssignedStructuralActivity() const; // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralItem (IfcEntityInstanceData* e);
     IfcStructuralItem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation);
     typedef IfcTemplatedEntityList< IfcStructuralItem > list;
@@ -24642,7 +24642,7 @@ class IFC_PARSE_API IfcStructuralMember : public IfcStructuralItem {
 public:
         IfcTemplatedEntityList< IfcRelConnectsStructuralMember >::ptr ConnectedBy() const; // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralMember (IfcEntityInstanceData* e);
     IfcStructuralMember (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation);
     typedef IfcTemplatedEntityList< IfcStructuralMember > list;
@@ -24670,7 +24670,7 @@ public:
 class IFC_PARSE_API IfcStructuralReaction : public IfcStructuralActivity {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralReaction (IfcEntityInstanceData* e);
     IfcStructuralReaction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal);
     typedef IfcTemplatedEntityList< IfcStructuralReaction > list;
@@ -24706,7 +24706,7 @@ public:
     double Thickness() const;
     void setThickness(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralSurfaceMember (IfcEntityInstanceData* e);
     IfcStructuralSurfaceMember (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralSurfaceMemberTypeEnum::IfcStructuralSurfaceMemberTypeEnum v8_PredefinedType, boost::optional< double > v9_Thickness);
     typedef IfcTemplatedEntityList< IfcStructuralSurfaceMember > list;
@@ -24732,7 +24732,7 @@ public:
 class IFC_PARSE_API IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralSurfaceMemberVarying (IfcEntityInstanceData* e);
     IfcStructuralSurfaceMemberVarying (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralSurfaceMemberTypeEnum::IfcStructuralSurfaceMemberTypeEnum v8_PredefinedType, boost::optional< double > v9_Thickness);
     typedef IfcTemplatedEntityList< IfcStructuralSurfaceMemberVarying > list;
@@ -24765,7 +24765,7 @@ public:
     IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralSurfaceReaction (IfcEntityInstanceData* e);
     IfcStructuralSurfaceReaction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStructuralSurfaceReaction > list;
@@ -24787,7 +24787,7 @@ public:
     IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSubContractResourceType (IfcEntityInstanceData* e);
     IfcSubContractResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity, IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSubContractResourceType > list;
@@ -24877,7 +24877,7 @@ public:
     IfcSurface* ReferenceSurface() const;
     void setReferenceSurface(IfcSurface* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceCurveSweptAreaSolid (IfcEntityInstanceData* e);
     IfcSurfaceCurveSweptAreaSolid (IfcProfileDef* v1_SweptArea, IfcAxis2Placement3D* v2_Position, IfcCurve* v3_Directrix, boost::optional< double > v4_StartParam, boost::optional< double > v5_EndParam, IfcSurface* v6_ReferenceSurface);
     typedef IfcTemplatedEntityList< IfcSurfaceCurveSweptAreaSolid > list;
@@ -24904,7 +24904,7 @@ public:
     double Depth() const;
     void setDepth(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceOfLinearExtrusion (IfcEntityInstanceData* e);
     IfcSurfaceOfLinearExtrusion (IfcProfileDef* v1_SweptCurve, IfcAxis2Placement3D* v2_Position, IfcDirection* v3_ExtrudedDirection, double v4_Depth);
     typedef IfcTemplatedEntityList< IfcSurfaceOfLinearExtrusion > list;
@@ -24932,7 +24932,7 @@ public:
     IfcAxis1Placement* AxisPosition() const;
     void setAxisPosition(IfcAxis1Placement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceOfRevolution (IfcEntityInstanceData* e);
     IfcSurfaceOfRevolution (IfcProfileDef* v1_SweptCurve, IfcAxis2Placement3D* v2_Position, IfcAxis1Placement* v3_AxisPosition);
     typedef IfcTemplatedEntityList< IfcSurfaceOfRevolution > list;
@@ -24974,7 +24974,7 @@ public:
     IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSystemFurnitureElementType (IfcEntityInstanceData* e);
     IfcSystemFurnitureElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, boost::optional< IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum > v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSystemFurnitureElementType > list;
@@ -25276,7 +25276,7 @@ public:
     IfcTaskTypeEnum::IfcTaskTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTaskTypeEnum::IfcTaskTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTask (IfcEntityInstanceData* e);
     IfcTask (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, boost::optional< std::string > v8_Status, boost::optional< std::string > v9_WorkMethod, bool v10_IsMilestone, boost::optional< int > v11_Priority, IfcTaskTime* v12_TaskTime, boost::optional< IfcTaskTypeEnum::IfcTaskTypeEnum > v13_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTask > list;
@@ -25333,7 +25333,7 @@ public:
     std::string WorkMethod() const;
     void setWorkMethod(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTaskType (IfcEntityInstanceData* e);
     IfcTaskType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ProcessType, IfcTaskTypeEnum::IfcTaskTypeEnum v10_PredefinedType, boost::optional< std::string > v11_WorkMethod);
     typedef IfcTemplatedEntityList< IfcTaskType > list;
@@ -25354,7 +25354,7 @@ public:
         IfcTemplatedEntityList< IfcIndexedColourMap >::ptr HasColours() const; // INVERSE IfcIndexedColourMap::MappedTo
     IfcTemplatedEntityList< IfcIndexedTextureMap >::ptr HasTextures() const; // INVERSE IfcIndexedTextureMap::MappedTo
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTessellatedFaceSet (IfcEntityInstanceData* e);
     IfcTessellatedFaceSet (IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed);
     typedef IfcTemplatedEntityList< IfcTessellatedFaceSet > list;
@@ -25428,7 +25428,7 @@ public:
     IfcTransportElementTypeEnum::IfcTransportElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTransportElementTypeEnum::IfcTransportElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTransportElementType (IfcEntityInstanceData* e);
     IfcTransportElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcTransportElementTypeEnum::IfcTransportElementTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTransportElementType > list;
@@ -25443,7 +25443,7 @@ public:
     std::vector< std::vector< int > > NormalIndex() const;
     void setNormalIndex(std::vector< std::vector< int > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTriangulatedFaceSet (IfcEntityInstanceData* e);
     IfcTriangulatedFaceSet (IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, boost::optional< std::vector< std::vector< int > > > v5_NormalIndex);
     typedef IfcTemplatedEntityList< IfcTriangulatedFaceSet > list;
@@ -25617,7 +25617,7 @@ public:
     double LiningToPanelOffsetY() const;
     void setLiningToPanelOffsetY(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWindowLiningProperties (IfcEntityInstanceData* e);
     IfcWindowLiningProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_LiningDepth, boost::optional< double > v6_LiningThickness, boost::optional< double > v7_TransomThickness, boost::optional< double > v8_MullionThickness, boost::optional< double > v9_FirstTransomOffset, boost::optional< double > v10_SecondTransomOffset, boost::optional< double > v11_FirstMullionOffset, boost::optional< double > v12_SecondMullionOffset, IfcShapeAspect* v13_ShapeAspectStyle, boost::optional< double > v14_LiningOffset, boost::optional< double > v15_LiningToPanelOffsetX, boost::optional< double > v16_LiningToPanelOffsetY);
     typedef IfcTemplatedEntityList< IfcWindowLiningProperties > list;
@@ -25693,7 +25693,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWindowPanelProperties (IfcEntityInstanceData* e);
     IfcWindowPanelProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcWindowPanelOperationEnum::IfcWindowPanelOperationEnum v5_OperationType, IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum v6_PanelPosition, boost::optional< double > v7_FrameDepth, boost::optional< double > v8_FrameThickness, IfcShapeAspect* v9_ShapeAspectStyle);
     typedef IfcTemplatedEntityList< IfcWindowPanelProperties > list;
@@ -25720,7 +25720,7 @@ public:
     void setTheActor(IfcActorSelect* v);
         IfcTemplatedEntityList< IfcRelAssignsToActor >::ptr IsActingUpon() const; // INVERSE IfcRelAssignsToActor::RelatingActor
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcActor (IfcEntityInstanceData* e);
     IfcActor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcActorSelect* v6_TheActor);
     typedef IfcTemplatedEntityList< IfcActor > list;
@@ -25761,7 +25761,7 @@ public:
 class IFC_PARSE_API IfcAdvancedBrep : public IfcManifoldSolidBrep {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAdvancedBrep (IfcEntityInstanceData* e);
     IfcAdvancedBrep (IfcClosedShell* v1_Outer);
     typedef IfcTemplatedEntityList< IfcAdvancedBrep > list;
@@ -25792,7 +25792,7 @@ public:
     IfcTemplatedEntityList< IfcClosedShell >::ptr Voids() const;
     void setVoids(IfcTemplatedEntityList< IfcClosedShell >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAdvancedBrepWithVoids (IfcEntityInstanceData* e);
     IfcAdvancedBrepWithVoids (IfcClosedShell* v1_Outer, IfcTemplatedEntityList< IfcClosedShell >::ptr v2_Voids);
     typedef IfcTemplatedEntityList< IfcAdvancedBrepWithVoids > list;
@@ -25974,7 +25974,7 @@ class IFC_PARSE_API IfcAnnotation : public IfcProduct {
 public:
         IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAnnotation (IfcEntityInstanceData* e);
     IfcAnnotation (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation);
     typedef IfcTemplatedEntityList< IfcAnnotation > list;
@@ -26072,7 +26072,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBSplineSurface (IfcEntityInstanceData* e);
     IfcBSplineSurface (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBSplineSurface > list;
@@ -26102,7 +26102,7 @@ public:
     IfcKnotType::IfcKnotType KnotSpec() const;
     void setKnotSpec(IfcKnotType::IfcKnotType v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBSplineSurfaceWithKnots (IfcEntityInstanceData* e);
     IfcBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec);
     typedef IfcTemplatedEntityList< IfcBSplineSurfaceWithKnots > list;
@@ -26216,7 +26216,7 @@ public:
     double ZLength() const;
     void setZLength(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBlock (IfcEntityInstanceData* e);
     IfcBlock (IfcAxis2Placement3D* v1_Position, double v2_XLength, double v3_YLength, double v4_ZLength);
     typedef IfcTemplatedEntityList< IfcBlock > list;
@@ -26231,7 +26231,7 @@ public:
 class IFC_PARSE_API IfcBooleanClippingResult : public IfcBooleanResult {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBooleanClippingResult (IfcEntityInstanceData* e);
     IfcBooleanClippingResult (IfcBooleanOperator::IfcBooleanOperator v1_Operator, IfcBooleanOperand* v2_FirstOperand, IfcBooleanOperand* v3_SecondOperand);
     typedef IfcTemplatedEntityList< IfcBooleanClippingResult > list;
@@ -26249,7 +26249,7 @@ public:
 class IFC_PARSE_API IfcBoundedCurve : public IfcCurve {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundedCurve (IfcEntityInstanceData* e);
     IfcBoundedCurve ();
     typedef IfcTemplatedEntityList< IfcBoundedCurve > list;
@@ -26447,7 +26447,7 @@ public:
     IfcPostalAddress* BuildingAddress() const;
     void setBuildingAddress(IfcPostalAddress* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuilding (IfcEntityInstanceData* e);
     IfcBuilding (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcElementCompositionEnum::IfcElementCompositionEnum > v9_CompositionType, boost::optional< double > v10_ElevationOfRefHeight, boost::optional< double > v11_ElevationOfTerrain, IfcPostalAddress* v12_BuildingAddress);
     typedef IfcTemplatedEntityList< IfcBuilding > list;
@@ -26484,7 +26484,7 @@ public:
 class IFC_PARSE_API IfcBuildingElementType : public IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingElementType (IfcEntityInstanceData* e);
     IfcBuildingElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcBuildingElementType > list;
@@ -26674,7 +26674,7 @@ public:
     double Elevation() const;
     void setElevation(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingStorey (IfcEntityInstanceData* e);
     IfcBuildingStorey (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcElementCompositionEnum::IfcElementCompositionEnum > v9_CompositionType, boost::optional< double > v10_Elevation);
     typedef IfcTemplatedEntityList< IfcBuildingStorey > list;
@@ -26710,7 +26710,7 @@ public:
     IfcChimneyTypeEnum::IfcChimneyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcChimneyTypeEnum::IfcChimneyTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcChimneyType (IfcEntityInstanceData* e);
     IfcChimneyType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcChimneyTypeEnum::IfcChimneyTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcChimneyType > list;
@@ -26739,7 +26739,7 @@ public:
     double WallThickness() const;
     void setWallThickness(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCircleHollowProfileDef (IfcEntityInstanceData* e);
     IfcCircleHollowProfileDef (IfcProfileTypeEnum::IfcProfileTypeEnum v1_ProfileType, boost::optional< std::string > v2_ProfileName, IfcAxis2Placement2D* v3_Position, double v4_Radius, double v5_WallThickness);
     typedef IfcTemplatedEntityList< IfcCircleHollowProfileDef > list;
@@ -26748,7 +26748,7 @@ public:
 class IFC_PARSE_API IfcCivilElementType : public IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCivilElementType (IfcEntityInstanceData* e);
     IfcCivilElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcCivilElementType > list;
@@ -26857,7 +26857,7 @@ public:
     IfcColumnTypeEnum::IfcColumnTypeEnum PredefinedType() const;
     void setPredefinedType(IfcColumnTypeEnum::IfcColumnTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcColumnType (IfcEntityInstanceData* e);
     IfcColumnType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcColumnTypeEnum::IfcColumnTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcColumnType > list;
@@ -26886,7 +26886,7 @@ public:
     IfcTemplatedEntityList< IfcPropertyTemplate >::ptr HasPropertyTemplates() const;
     void setHasPropertyTemplates(IfcTemplatedEntityList< IfcPropertyTemplate >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcComplexPropertyTemplate (IfcEntityInstanceData* e);
     IfcComplexPropertyTemplate (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_UsageName, boost::optional< IfcComplexPropertyTemplateTypeEnum::IfcComplexPropertyTemplateTypeEnum > v6_TemplateType, boost::optional< IfcTemplatedEntityList< IfcPropertyTemplate >::ptr > v7_HasPropertyTemplates);
     typedef IfcTemplatedEntityList< IfcComplexPropertyTemplate > list;
@@ -26966,7 +26966,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCompositeCurve (IfcEntityInstanceData* e);
     IfcCompositeCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcCompositeCurve > list;
@@ -26985,7 +26985,7 @@ public:
 class IFC_PARSE_API IfcCompositeCurveOnSurface : public IfcCompositeCurve {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCompositeCurveOnSurface (IfcEntityInstanceData* e);
     IfcCompositeCurveOnSurface (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcCompositeCurveOnSurface > list;
@@ -27001,7 +27001,7 @@ public:
     IfcAxis2Placement* Position() const;
     void setPosition(IfcAxis2Placement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConic (IfcEntityInstanceData* e);
     IfcConic (IfcAxis2Placement* v1_Position);
     typedef IfcTemplatedEntityList< IfcConic > list;
@@ -27025,7 +27025,7 @@ public:
     IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionEquipmentResourceType (IfcEntityInstanceData* e);
     IfcConstructionEquipmentResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity, IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcConstructionEquipmentResourceType > list;
@@ -27049,7 +27049,7 @@ public:
     IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionMaterialResourceType (IfcEntityInstanceData* e);
     IfcConstructionMaterialResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity, IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcConstructionMaterialResourceType > list;
@@ -27073,7 +27073,7 @@ public:
     IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionProductResourceType (IfcEntityInstanceData* e);
     IfcConstructionProductResourceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< std::string > v7_Identification, boost::optional< std::string > v8_LongDescription, boost::optional< std::string > v9_ResourceType, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v10_BaseCosts, IfcPhysicalQuantity* v11_BaseQuantity, IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcConstructionProductResourceType > list;
@@ -27165,7 +27165,7 @@ public:
     IfcPhysicalQuantity* BaseQuantity() const;
     void setBaseQuantity(IfcPhysicalQuantity* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionResource (IfcEntityInstanceData* e);
     IfcConstructionResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity);
     typedef IfcTemplatedEntityList< IfcConstructionResource > list;
@@ -27192,7 +27192,7 @@ public:
     void setIdentification(std::string v);
         IfcTemplatedEntityList< IfcRelAssignsToControl >::ptr Controls() const; // INVERSE IfcRelAssignsToControl::RelatingControl
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcControl (IfcEntityInstanceData* e);
     IfcControl (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification);
     typedef IfcTemplatedEntityList< IfcControl > list;
@@ -27261,7 +27261,7 @@ public:
     IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr CostQuantities() const;
     void setCostQuantities(IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCostItem (IfcEntityInstanceData* e);
     IfcCostItem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< IfcCostItemTypeEnum::IfcCostItemTypeEnum > v7_PredefinedType, boost::optional< IfcTemplatedEntityList< IfcCostValue >::ptr > v8_CostValues, boost::optional< IfcTemplatedEntityList< IfcPhysicalQuantity >::ptr > v9_CostQuantities);
     typedef IfcTemplatedEntityList< IfcCostItem > list;
@@ -27324,7 +27324,7 @@ public:
     std::string UpdateDate() const;
     void setUpdateDate(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCostSchedule (IfcEntityInstanceData* e);
     IfcCostSchedule (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< IfcCostScheduleTypeEnum::IfcCostScheduleTypeEnum > v7_PredefinedType, boost::optional< std::string > v8_Status, boost::optional< std::string > v9_SubmittedOn, boost::optional< std::string > v10_UpdateDate);
     typedef IfcTemplatedEntityList< IfcCostSchedule > list;
@@ -27414,7 +27414,7 @@ public:
     IfcCoveringTypeEnum::IfcCoveringTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCoveringTypeEnum::IfcCoveringTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoveringType (IfcEntityInstanceData* e);
     IfcCoveringType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCoveringTypeEnum::IfcCoveringTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCoveringType > list;
@@ -27438,7 +27438,7 @@ public:
     IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCrewResource (IfcEntityInstanceData* e);
     IfcCrewResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity, boost::optional< IfcCrewResourceTypeEnum::IfcCrewResourceTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCrewResource > list;
@@ -27470,7 +27470,7 @@ public:
     IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurtainWallType (IfcEntityInstanceData* e);
     IfcCurtainWallType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCurtainWallType > list;
@@ -27535,7 +27535,7 @@ public:
     double Radius() const;
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCylindricalSurface (IfcEntityInstanceData* e);
     IfcCylindricalSurface (IfcAxis2Placement3D* v1_Position, double v2_Radius);
     typedef IfcTemplatedEntityList< IfcCylindricalSurface > list;
@@ -27571,7 +27571,7 @@ public:
 class IFC_PARSE_API IfcDistributionElementType : public IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionElementType (IfcEntityInstanceData* e);
     IfcDistributionElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcDistributionElementType > list;
@@ -27644,7 +27644,7 @@ public:
 class IFC_PARSE_API IfcDistributionFlowElementType : public IfcDistributionElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionFlowElementType (IfcEntityInstanceData* e);
     IfcDistributionFlowElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcDistributionFlowElementType > list;
@@ -27818,7 +27818,7 @@ public:
     double LiningToPanelOffsetY() const;
     void setLiningToPanelOffsetY(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDoorLiningProperties (IfcEntityInstanceData* e);
     IfcDoorLiningProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_LiningDepth, boost::optional< double > v6_LiningThickness, boost::optional< double > v7_ThresholdDepth, boost::optional< double > v8_ThresholdThickness, boost::optional< double > v9_TransomThickness, boost::optional< double > v10_TransomOffset, boost::optional< double > v11_LiningOffset, boost::optional< double > v12_ThresholdOffset, boost::optional< double > v13_CasingThickness, boost::optional< double > v14_CasingDepth, IfcShapeAspect* v15_ShapeAspectStyle, boost::optional< double > v16_LiningToPanelOffsetX, boost::optional< double > v17_LiningToPanelOffsetY);
     typedef IfcTemplatedEntityList< IfcDoorLiningProperties > list;
@@ -27894,7 +27894,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDoorPanelProperties (IfcEntityInstanceData* e);
     IfcDoorPanelProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_PanelDepth, IfcDoorPanelOperationEnum::IfcDoorPanelOperationEnum v6_PanelOperation, boost::optional< double > v7_PanelWidth, IfcDoorPanelPositionEnum::IfcDoorPanelPositionEnum v8_PanelPosition, IfcShapeAspect* v9_ShapeAspectStyle);
     typedef IfcTemplatedEntityList< IfcDoorPanelProperties > list;
@@ -28044,7 +28044,7 @@ public:
     std::string UserDefinedOperationType() const;
     void setUserDefinedOperationType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDoorType (IfcEntityInstanceData* e);
     IfcDoorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDoorTypeEnum::IfcDoorTypeEnum v10_PredefinedType, IfcDoorTypeOperationEnum::IfcDoorTypeOperationEnum v11_OperationType, boost::optional< bool > v12_ParameterTakesPrecedence, boost::optional< std::string > v13_UserDefinedOperationType);
     typedef IfcTemplatedEntityList< IfcDoorType > list;
@@ -28124,7 +28124,7 @@ public:
 class IFC_PARSE_API IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDraughtingPreDefinedColour (IfcEntityInstanceData* e);
     IfcDraughtingPreDefinedColour (std::string v1_Name);
     typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedColour > list;
@@ -28145,7 +28145,7 @@ public:
 class IFC_PARSE_API IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDraughtingPreDefinedCurveFont (IfcEntityInstanceData* e);
     IfcDraughtingPreDefinedCurveFont (std::string v1_Name);
     typedef IfcTemplatedEntityList< IfcDraughtingPreDefinedCurveFont > list;
@@ -28223,7 +28223,7 @@ public:
     IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr HasCoverings() const; // INVERSE IfcRelCoversBldgElements::RelatingBuildingElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElement (IfcEntityInstanceData* e);
     IfcElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcElement > list;
@@ -28337,7 +28337,7 @@ public:
     IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementAssembly (IfcEntityInstanceData* e);
     IfcElementAssembly (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcAssemblyPlaceEnum::IfcAssemblyPlaceEnum > v9_AssemblyPlace, boost::optional< IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum > v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElementAssembly > list;
@@ -28370,7 +28370,7 @@ public:
     IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementAssemblyType (IfcEntityInstanceData* e);
     IfcElementAssemblyType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElementAssemblyTypeEnum::IfcElementAssemblyTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElementAssemblyType > list;
@@ -28455,7 +28455,7 @@ public:
 class IFC_PARSE_API IfcElementComponent : public IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementComponent (IfcEntityInstanceData* e);
     IfcElementComponent (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcElementComponent > list;
@@ -28472,7 +28472,7 @@ public:
 class IFC_PARSE_API IfcElementComponentType : public IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElementComponentType (IfcEntityInstanceData* e);
     IfcElementComponentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcElementComponentType > list;
@@ -28513,7 +28513,7 @@ public:
     double SemiAxis2() const;
     void setSemiAxis2(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEllipse (IfcEntityInstanceData* e);
     IfcEllipse (IfcAxis2Placement* v1_Position, double v2_SemiAxis1, double v3_SemiAxis2);
     typedef IfcTemplatedEntityList< IfcEllipse > list;
@@ -28546,7 +28546,7 @@ public:
 class IFC_PARSE_API IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEnergyConversionDeviceType (IfcEntityInstanceData* e);
     IfcEnergyConversionDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcEnergyConversionDeviceType > list;
@@ -28582,7 +28582,7 @@ public:
     IfcEngineTypeEnum::IfcEngineTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEngineTypeEnum::IfcEngineTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEngineType (IfcEntityInstanceData* e);
     IfcEngineType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcEngineTypeEnum::IfcEngineTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcEngineType > list;
@@ -28619,7 +28619,7 @@ public:
     IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEvaporativeCoolerType (IfcEntityInstanceData* e);
     IfcEvaporativeCoolerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcEvaporativeCoolerType > list;
@@ -28656,7 +28656,7 @@ public:
     IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEvaporatorType (IfcEntityInstanceData* e);
     IfcEvaporatorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcEvaporatorType > list;
@@ -28765,7 +28765,7 @@ public:
     IfcEventTime* EventOccurenceTime() const;
     void setEventOccurenceTime(IfcEventTime* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEvent (IfcEntityInstanceData* e);
     IfcEvent (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, boost::optional< IfcEventTypeEnum::IfcEventTypeEnum > v8_PredefinedType, boost::optional< IfcEventTriggerTypeEnum::IfcEventTriggerTypeEnum > v9_EventTriggerType, boost::optional< std::string > v10_UserDefinedEventTriggerType, IfcEventTime* v11_EventOccurenceTime);
     typedef IfcTemplatedEntityList< IfcEvent > list;
@@ -28778,7 +28778,7 @@ public:
 class IFC_PARSE_API IfcExternalSpatialStructureElement : public IfcSpatialElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternalSpatialStructureElement (IfcEntityInstanceData* e);
     IfcExternalSpatialStructureElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName);
     typedef IfcTemplatedEntityList< IfcExternalSpatialStructureElement > list;
@@ -28810,7 +28810,7 @@ public:
 class IFC_PARSE_API IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFacetedBrep (IfcEntityInstanceData* e);
     IfcFacetedBrep (IfcClosedShell* v1_Outer);
     typedef IfcTemplatedEntityList< IfcFacetedBrep > list;
@@ -28845,7 +28845,7 @@ public:
     IfcTemplatedEntityList< IfcClosedShell >::ptr Voids() const;
     void setVoids(IfcTemplatedEntityList< IfcClosedShell >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFacetedBrepWithVoids (IfcEntityInstanceData* e);
     IfcFacetedBrepWithVoids (IfcClosedShell* v1_Outer, IfcTemplatedEntityList< IfcClosedShell >::ptr v2_Voids);
     typedef IfcTemplatedEntityList< IfcFacetedBrepWithVoids > list;
@@ -28866,7 +28866,7 @@ public:
     IfcFastenerTypeEnum::IfcFastenerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFastenerTypeEnum::IfcFastenerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFastener (IfcEntityInstanceData* e);
     IfcFastener (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFastenerTypeEnum::IfcFastenerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFastener > list;
@@ -28900,7 +28900,7 @@ public:
     IfcFastenerTypeEnum::IfcFastenerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFastenerTypeEnum::IfcFastenerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFastenerType (IfcEntityInstanceData* e);
     IfcFastenerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFastenerTypeEnum::IfcFastenerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFastenerType > list;
@@ -29002,7 +29002,7 @@ public:
 class IFC_PARSE_API IfcFeatureElement : public IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFeatureElement (IfcEntityInstanceData* e);
     IfcFeatureElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFeatureElement > list;
@@ -29066,7 +29066,7 @@ class IFC_PARSE_API IfcFeatureElementAddition : public IfcFeatureElement {
 public:
         IfcTemplatedEntityList< IfcRelProjectsElement >::ptr ProjectsElements() const; // INVERSE IfcRelProjectsElement::RelatedFeatureElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFeatureElementAddition (IfcEntityInstanceData* e);
     IfcFeatureElementAddition (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFeatureElementAddition > list;
@@ -29125,7 +29125,7 @@ class IFC_PARSE_API IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
         IfcTemplatedEntityList< IfcRelVoidsElement >::ptr VoidsElements() const; // INVERSE IfcRelVoidsElement::RelatedOpeningElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFeatureElementSubtraction (IfcEntityInstanceData* e);
     IfcFeatureElementSubtraction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFeatureElementSubtraction > list;
@@ -29157,7 +29157,7 @@ public:
 class IFC_PARSE_API IfcFlowControllerType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowControllerType (IfcEntityInstanceData* e);
     IfcFlowControllerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowControllerType > list;
@@ -29190,7 +29190,7 @@ public:
 class IFC_PARSE_API IfcFlowFittingType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowFittingType (IfcEntityInstanceData* e);
     IfcFlowFittingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowFittingType > list;
@@ -29233,7 +29233,7 @@ public:
     IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowMeterType (IfcEntityInstanceData* e);
     IfcFlowMeterType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFlowMeterType > list;
@@ -29264,7 +29264,7 @@ public:
 class IFC_PARSE_API IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowMovingDeviceType (IfcEntityInstanceData* e);
     IfcFlowMovingDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowMovingDeviceType > list;
@@ -29304,7 +29304,7 @@ public:
 class IFC_PARSE_API IfcFlowSegmentType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowSegmentType (IfcEntityInstanceData* e);
     IfcFlowSegmentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowSegmentType > list;
@@ -29319,7 +29319,7 @@ public:
 class IFC_PARSE_API IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowStorageDeviceType (IfcEntityInstanceData* e);
     IfcFlowStorageDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowStorageDeviceType > list;
@@ -29334,7 +29334,7 @@ public:
 class IFC_PARSE_API IfcFlowTerminalType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowTerminalType (IfcEntityInstanceData* e);
     IfcFlowTerminalType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowTerminalType > list;
@@ -29351,7 +29351,7 @@ public:
 class IFC_PARSE_API IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowTreatmentDeviceType (IfcEntityInstanceData* e);
     IfcFlowTreatmentDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcFlowTreatmentDeviceType > list;
@@ -29371,7 +29371,7 @@ public:
     IfcFootingTypeEnum::IfcFootingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFootingTypeEnum::IfcFootingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFootingType (IfcEntityInstanceData* e);
     IfcFootingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFootingTypeEnum::IfcFootingTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFootingType > list;
@@ -29483,7 +29483,7 @@ public:
 class IFC_PARSE_API IfcFurnishingElement : public IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFurnishingElement (IfcEntityInstanceData* e);
     IfcFurnishingElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFurnishingElement > list;
@@ -29526,7 +29526,7 @@ public:
     IfcFurnitureTypeEnum::IfcFurnitureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFurnitureTypeEnum::IfcFurnitureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFurniture (IfcEntityInstanceData* e);
     IfcFurniture (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFurnitureTypeEnum::IfcFurnitureTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFurniture > list;
@@ -29679,7 +29679,7 @@ public:
     IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGeographicElement (IfcEntityInstanceData* e);
     IfcGeographicElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcGeographicElementTypeEnum::IfcGeographicElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcGeographicElement > list;
@@ -29799,7 +29799,7 @@ public:
     void setPredefinedType(IfcGridTypeEnum::IfcGridTypeEnum v);
         IfcTemplatedEntityList< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGrid (IfcEntityInstanceData* e);
     IfcGrid (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcTemplatedEntityList< IfcGridAxis >::ptr v8_UAxes, IfcTemplatedEntityList< IfcGridAxis >::ptr v9_VAxes, boost::optional< IfcTemplatedEntityList< IfcGridAxis >::ptr > v10_WAxes, boost::optional< IfcGridTypeEnum::IfcGridTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcGrid > list;
@@ -29838,7 +29838,7 @@ class IFC_PARSE_API IfcGroup : public IfcObject {
 public:
         IfcTemplatedEntityList< IfcRelAssignsToGroup >::ptr IsGroupedBy() const; // INVERSE IfcRelAssignsToGroup::RelatingGroup
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcGroup (IfcEntityInstanceData* e);
     IfcGroup (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef IfcTemplatedEntityList< IfcGroup > list;
@@ -29878,7 +29878,7 @@ public:
     IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcHeatExchangerType (IfcEntityInstanceData* e);
     IfcHeatExchangerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcHeatExchangerType > list;
@@ -29915,7 +29915,7 @@ public:
     IfcHumidifierTypeEnum::IfcHumidifierTypeEnum PredefinedType() const;
     void setPredefinedType(IfcHumidifierTypeEnum::IfcHumidifierTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcHumidifierType (IfcEntityInstanceData* e);
     IfcHumidifierType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcHumidifierTypeEnum::IfcHumidifierTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcHumidifierType > list;
@@ -29934,7 +29934,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcIndexedPolyCurve (IfcEntityInstanceData* e);
     IfcIndexedPolyCurve (IfcCartesianPointList* v1_Points, boost::optional< IfcEntityList::ptr > v2_Segments, boost::optional< bool > v3_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcIndexedPolyCurve > list;
@@ -29977,7 +29977,7 @@ public:
     IfcInterceptorTypeEnum::IfcInterceptorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcInterceptorTypeEnum::IfcInterceptorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcInterceptorType (IfcEntityInstanceData* e);
     IfcInterceptorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcInterceptorTypeEnum::IfcInterceptorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcInterceptorType > list;
@@ -30030,7 +30030,7 @@ public:
     IfcCostValue* OriginalValue() const;
     void setOriginalValue(IfcCostValue* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcInventory (IfcEntityInstanceData* e);
     IfcInventory (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcInventoryTypeEnum::IfcInventoryTypeEnum > v6_PredefinedType, IfcActorSelect* v7_Jurisdiction, boost::optional< IfcTemplatedEntityList< IfcPerson >::ptr > v8_ResponsiblePersons, boost::optional< std::string > v9_LastUpdateDate, IfcCostValue* v10_CurrentValue, IfcCostValue* v11_OriginalValue);
     typedef IfcTemplatedEntityList< IfcInventory > list;
@@ -30068,7 +30068,7 @@ public:
     IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum PredefinedType() const;
     void setPredefinedType(IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcJunctionBoxType (IfcEntityInstanceData* e);
     IfcJunctionBoxType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcJunctionBoxType > list;
@@ -30106,7 +30106,7 @@ public:
     IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLaborResource (IfcEntityInstanceData* e);
     IfcLaborResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity, boost::optional< IfcLaborResourceTypeEnum::IfcLaborResourceTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcLaborResource > list;
@@ -30146,7 +30146,7 @@ public:
     IfcLampTypeEnum::IfcLampTypeEnum PredefinedType() const;
     void setPredefinedType(IfcLampTypeEnum::IfcLampTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLampType (IfcEntityInstanceData* e);
     IfcLampType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcLampTypeEnum::IfcLampTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcLampType > list;
@@ -30188,7 +30188,7 @@ public:
     IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightFixtureType (IfcEntityInstanceData* e);
     IfcLightFixtureType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcLightFixtureType > list;
@@ -30238,7 +30238,7 @@ public:
     IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMechanicalFastener (IfcEntityInstanceData* e);
     IfcMechanicalFastener (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_NominalDiameter, boost::optional< double > v10_NominalLength, boost::optional< IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMechanicalFastener > list;
@@ -30294,7 +30294,7 @@ public:
     double NominalLength() const;
     void setNominalLength(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMechanicalFastenerType (IfcEntityInstanceData* e);
     IfcMechanicalFastenerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcMechanicalFastenerTypeEnum::IfcMechanicalFastenerTypeEnum v10_PredefinedType, boost::optional< double > v11_NominalDiameter, boost::optional< double > v12_NominalLength);
     typedef IfcTemplatedEntityList< IfcMechanicalFastenerType > list;
@@ -30330,7 +30330,7 @@ public:
     IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMedicalDeviceType (IfcEntityInstanceData* e);
     IfcMedicalDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMedicalDeviceType > list;
@@ -30442,7 +30442,7 @@ public:
     IfcMemberTypeEnum::IfcMemberTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMemberTypeEnum::IfcMemberTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMemberType (IfcEntityInstanceData* e);
     IfcMemberType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcMemberTypeEnum::IfcMemberTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMemberType > list;
@@ -30480,7 +30480,7 @@ public:
     IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMotorConnectionType (IfcEntityInstanceData* e);
     IfcMotorConnectionType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMotorConnectionType > list;
@@ -30502,7 +30502,7 @@ public:
     IfcOccupantTypeEnum::IfcOccupantTypeEnum PredefinedType() const;
     void setPredefinedType(IfcOccupantTypeEnum::IfcOccupantTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOccupant (IfcEntityInstanceData* e);
     IfcOccupant (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcActorSelect* v6_TheActor, boost::optional< IfcOccupantTypeEnum::IfcOccupantTypeEnum > v7_PredefinedType);
     typedef IfcTemplatedEntityList< IfcOccupant > list;
@@ -30720,7 +30720,7 @@ public:
     void setPredefinedType(IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum v);
         IfcTemplatedEntityList< IfcRelFillsElement >::ptr HasFillings() const; // INVERSE IfcRelFillsElement::RelatingOpeningElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOpeningElement (IfcEntityInstanceData* e);
     IfcOpeningElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcOpeningElement > list;
@@ -30821,7 +30821,7 @@ public:
 class IFC_PARSE_API IfcOpeningStandardCase : public IfcOpeningElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOpeningStandardCase (IfcEntityInstanceData* e);
     IfcOpeningStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcOpeningElementTypeEnum::IfcOpeningElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcOpeningStandardCase > list;
@@ -30861,7 +30861,7 @@ public:
     IfcOutletTypeEnum::IfcOutletTypeEnum PredefinedType() const;
     void setPredefinedType(IfcOutletTypeEnum::IfcOutletTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOutletType (IfcEntityInstanceData* e);
     IfcOutletType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcOutletTypeEnum::IfcOutletTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcOutletType > list;
@@ -30884,7 +30884,7 @@ public:
     IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPerformanceHistory (IfcEntityInstanceData* e);
     IfcPerformanceHistory (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, std::string v7_LifeCyclePhase, boost::optional< IfcPerformanceHistoryTypeEnum::IfcPerformanceHistoryTypeEnum > v8_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPerformanceHistory > list;
@@ -30944,7 +30944,7 @@ public:
     IfcShapeAspect* ShapeAspectStyle() const;
     void setShapeAspectStyle(IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPermeableCoveringProperties (IfcEntityInstanceData* e);
     IfcPermeableCoveringProperties (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcPermeableCoveringOperationEnum::IfcPermeableCoveringOperationEnum v5_OperationType, IfcWindowPanelPositionEnum::IfcWindowPanelPositionEnum v6_PanelPosition, boost::optional< double > v7_FrameDepth, boost::optional< double > v8_FrameThickness, IfcShapeAspect* v9_ShapeAspectStyle);
     typedef IfcTemplatedEntityList< IfcPermeableCoveringProperties > list;
@@ -31010,7 +31010,7 @@ public:
     std::string LongDescription() const;
     void setLongDescription(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPermit (IfcEntityInstanceData* e);
     IfcPermit (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< IfcPermitTypeEnum::IfcPermitTypeEnum > v7_PredefinedType, boost::optional< std::string > v8_Status, boost::optional< std::string > v9_LongDescription);
     typedef IfcTemplatedEntityList< IfcPermit > list;
@@ -31028,7 +31028,7 @@ public:
     IfcPileTypeEnum::IfcPileTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPileTypeEnum::IfcPileTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPileType (IfcEntityInstanceData* e);
     IfcPileType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcPileTypeEnum::IfcPileTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPileType > list;
@@ -31068,7 +31068,7 @@ public:
     IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPipeFittingType (IfcEntityInstanceData* e);
     IfcPipeFittingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPipeFittingType > list;
@@ -31112,7 +31112,7 @@ public:
     IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPipeSegmentType (IfcEntityInstanceData* e);
     IfcPipeSegmentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPipeSegmentType > list;
@@ -31200,7 +31200,7 @@ public:
     IfcPlateTypeEnum::IfcPlateTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPlateTypeEnum::IfcPlateTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlateType (IfcEntityInstanceData* e);
     IfcPlateType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcPlateTypeEnum::IfcPlateTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPlateType > list;
@@ -31225,7 +31225,7 @@ public:
     IfcTemplatedEntityList< IfcCartesianPoint >::ptr Points() const;
     void setPoints(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPolyline (IfcEntityInstanceData* e);
     IfcPolyline (IfcTemplatedEntityList< IfcCartesianPoint >::ptr v1_Points);
     typedef IfcTemplatedEntityList< IfcPolyline > list;
@@ -31289,7 +31289,7 @@ public:
     IfcTemplatedEntityList< IfcRelConnectsPorts >::ptr ConnectedFrom() const; // INVERSE IfcRelConnectsPorts::RelatedPort
     IfcTemplatedEntityList< IfcRelConnectsPorts >::ptr ConnectedTo() const; // INVERSE IfcRelConnectsPorts::RelatingPort
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPort (IfcEntityInstanceData* e);
     IfcPort (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation);
     typedef IfcTemplatedEntityList< IfcPort > list;
@@ -31407,7 +31407,7 @@ public:
     IfcProcedureTypeEnum::IfcProcedureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProcedureTypeEnum::IfcProcedureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProcedure (IfcEntityInstanceData* e);
     IfcProcedure (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, boost::optional< IfcProcedureTypeEnum::IfcProcedureTypeEnum > v8_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProcedure > list;
@@ -31483,7 +31483,7 @@ public:
     std::string LongDescription() const;
     void setLongDescription(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProjectOrder (IfcEntityInstanceData* e);
     IfcProjectOrder (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< IfcProjectOrderTypeEnum::IfcProjectOrderTypeEnum > v7_PredefinedType, boost::optional< std::string > v8_Status, boost::optional< std::string > v9_LongDescription);
     typedef IfcTemplatedEntityList< IfcProjectOrder > list;
@@ -31605,7 +31605,7 @@ public:
     IfcProjectionElementTypeEnum::IfcProjectionElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProjectionElementTypeEnum::IfcProjectionElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProjectionElement (IfcEntityInstanceData* e);
     IfcProjectionElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcProjectionElementTypeEnum::IfcProjectionElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProjectionElement > list;
@@ -31651,7 +31651,7 @@ public:
     IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProtectiveDeviceType (IfcEntityInstanceData* e);
     IfcProtectiveDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProtectiveDeviceType > list;
@@ -31690,7 +31690,7 @@ public:
     IfcPumpTypeEnum::IfcPumpTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPumpTypeEnum::IfcPumpTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPumpType (IfcEntityInstanceData* e);
     IfcPumpType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcPumpTypeEnum::IfcPumpTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPumpType > list;
@@ -31721,7 +31721,7 @@ public:
     IfcRailingTypeEnum::IfcRailingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRailingTypeEnum::IfcRailingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRailingType (IfcEntityInstanceData* e);
     IfcRailingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcRailingTypeEnum::IfcRailingTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRailingType > list;
@@ -31752,7 +31752,7 @@ public:
     IfcRampFlightTypeEnum::IfcRampFlightTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRampFlightTypeEnum::IfcRampFlightTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRampFlightType (IfcEntityInstanceData* e);
     IfcRampFlightType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcRampFlightTypeEnum::IfcRampFlightTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRampFlightType > list;
@@ -31796,7 +31796,7 @@ public:
     IfcRampTypeEnum::IfcRampTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRampTypeEnum::IfcRampTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRampType (IfcEntityInstanceData* e);
     IfcRampType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcRampTypeEnum::IfcRampTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRampType > list;
@@ -31820,7 +31820,7 @@ public:
     std::vector< std::vector< double > > WeightsData() const;
     void setWeightsData(std::vector< std::vector< double > > v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRationalBSplineSurfaceWithKnots (IfcEntityInstanceData* e);
     IfcRationalBSplineSurfaceWithKnots (int v1_UDegree, int v2_VDegree, IfcTemplatedEntityListList< IfcCartesianPoint >::ptr v3_ControlPointsList, IfcBSplineSurfaceForm::IfcBSplineSurfaceForm v4_SurfaceForm, bool v5_UClosed, bool v6_VClosed, bool v7_SelfIntersect, std::vector< int > /*[2:?]*/ v8_UMultiplicities, std::vector< int > /*[2:?]*/ v9_VMultiplicities, std::vector< double > /*[2:?]*/ v10_UKnots, std::vector< double > /*[2:?]*/ v11_VKnots, IfcKnotType::IfcKnotType v12_KnotSpec, std::vector< std::vector< double > > v13_WeightsData);
     typedef IfcTemplatedEntityList< IfcRationalBSplineSurfaceWithKnots > list;
@@ -31840,7 +31840,7 @@ public:
     std::string SteelGrade() const;
     void setSteelGrade(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcingElement (IfcEntityInstanceData* e);
     IfcReinforcingElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade);
     typedef IfcTemplatedEntityList< IfcReinforcingElement > list;
@@ -31851,7 +31851,7 @@ public:
 class IFC_PARSE_API IfcReinforcingElementType : public IfcElementComponentType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcingElementType (IfcEntityInstanceData* e);
     IfcReinforcingElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcReinforcingElementType > list;
@@ -31920,7 +31920,7 @@ public:
     IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum PredefinedType() const;
     void setPredefinedType(IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcingMesh (IfcEntityInstanceData* e);
     IfcReinforcingMesh (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, boost::optional< double > v10_MeshLength, boost::optional< double > v11_MeshWidth, boost::optional< double > v12_LongitudinalBarNominalDiameter, boost::optional< double > v13_TransverseBarNominalDiameter, boost::optional< double > v14_LongitudinalBarCrossSectionArea, boost::optional< double > v15_TransverseBarCrossSectionArea, boost::optional< double > v16_LongitudinalBarSpacing, boost::optional< double > v17_TransverseBarSpacing, boost::optional< IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum > v18_PredefinedType);
     typedef IfcTemplatedEntityList< IfcReinforcingMesh > list;
@@ -31990,7 +31990,7 @@ public:
     IfcEntityList::ptr BendingParameters() const;
     void setBendingParameters(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcingMeshType (IfcEntityInstanceData* e);
     IfcReinforcingMeshType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcReinforcingMeshTypeEnum::IfcReinforcingMeshTypeEnum v10_PredefinedType, boost::optional< double > v11_MeshLength, boost::optional< double > v12_MeshWidth, boost::optional< double > v13_LongitudinalBarNominalDiameter, boost::optional< double > v14_TransverseBarNominalDiameter, boost::optional< double > v15_LongitudinalBarCrossSectionArea, boost::optional< double > v16_TransverseBarCrossSectionArea, boost::optional< double > v17_LongitudinalBarSpacing, boost::optional< double > v18_TransverseBarSpacing, boost::optional< std::string > v19_BendingShapeCode, boost::optional< IfcEntityList::ptr > v20_BendingParameters);
     typedef IfcTemplatedEntityList< IfcReinforcingMeshType > list;
@@ -32030,7 +32030,7 @@ public:
     IfcTemplatedEntityList< IfcObjectDefinition >::ptr RelatedObjects() const;
     void setRelatedObjects(IfcTemplatedEntityList< IfcObjectDefinition >::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRelAggregates (IfcEntityInstanceData* e);
     IfcRelAggregates (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< IfcObjectDefinition >::ptr v6_RelatedObjects);
     typedef IfcTemplatedEntityList< IfcRelAggregates > list;
@@ -32073,7 +32073,7 @@ public:
     IfcRoofTypeEnum::IfcRoofTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRoofTypeEnum::IfcRoofTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRoofType (IfcEntityInstanceData* e);
     IfcRoofType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcRoofTypeEnum::IfcRoofTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRoofType > list;
@@ -32121,7 +32121,7 @@ public:
     IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSanitaryTerminalType (IfcEntityInstanceData* e);
     IfcSanitaryTerminalType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSanitaryTerminalType > list;
@@ -32153,7 +32153,7 @@ public:
     IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcShadingDeviceType (IfcEntityInstanceData* e);
     IfcShadingDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcShadingDeviceType > list;
@@ -32378,7 +32378,7 @@ public:
     IfcPostalAddress* SiteAddress() const;
     void setSiteAddress(IfcPostalAddress* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSite (IfcEntityInstanceData* e);
     IfcSite (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcElementCompositionEnum::IfcElementCompositionEnum > v9_CompositionType, boost::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, boost::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, boost::optional< double > v12_RefElevation, boost::optional< std::string > v13_LandTitleNumber, IfcPostalAddress* v14_SiteAddress);
     typedef IfcTemplatedEntityList< IfcSite > list;
@@ -32466,7 +32466,7 @@ public:
     IfcSlabTypeEnum::IfcSlabTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSlabTypeEnum::IfcSlabTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSlabType (IfcEntityInstanceData* e);
     IfcSlabType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSlabTypeEnum::IfcSlabTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSlabType > list;
@@ -32502,7 +32502,7 @@ public:
     IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSolarDeviceType (IfcEntityInstanceData* e);
     IfcSolarDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSolarDeviceType > list;
@@ -32776,7 +32776,7 @@ public:
         IfcTemplatedEntityList< IfcRelCoversSpaces >::ptr HasCoverings() const; // INVERSE IfcRelCoversSpaces::RelatingSpace
     IfcTemplatedEntityList< IfcRelSpaceBoundary >::ptr BoundedBy() const; // INVERSE IfcRelSpaceBoundary::RelatingSpace
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpace (IfcEntityInstanceData* e);
     IfcSpace (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcElementCompositionEnum::IfcElementCompositionEnum > v9_CompositionType, boost::optional< IfcSpaceTypeEnum::IfcSpaceTypeEnum > v10_PredefinedType, boost::optional< double > v11_ElevationWithFlooring);
     typedef IfcTemplatedEntityList< IfcSpace > list;
@@ -32817,7 +32817,7 @@ public:
     IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpaceHeaterType (IfcEntityInstanceData* e);
     IfcSpaceHeaterType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSpaceHeaterType > list;
@@ -32913,7 +32913,7 @@ public:
     std::string LongName() const;
     void setLongName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpaceType (IfcEntityInstanceData* e);
     IfcSpaceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSpaceTypeEnum::IfcSpaceTypeEnum v10_PredefinedType, boost::optional< std::string > v11_LongName);
     typedef IfcTemplatedEntityList< IfcSpaceType > list;
@@ -32950,7 +32950,7 @@ public:
     IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStackTerminalType (IfcEntityInstanceData* e);
     IfcStackTerminalType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStackTerminalType > list;
@@ -32981,7 +32981,7 @@ public:
     IfcStairFlightTypeEnum::IfcStairFlightTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStairFlightTypeEnum::IfcStairFlightTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStairFlightType (IfcEntityInstanceData* e);
     IfcStairFlightType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcStairFlightTypeEnum::IfcStairFlightTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStairFlightType > list;
@@ -33025,7 +33025,7 @@ public:
     IfcStairTypeEnum::IfcStairTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStairTypeEnum::IfcStairTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStairType (IfcEntityInstanceData* e);
     IfcStairType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcStairTypeEnum::IfcStairTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStairType > list;
@@ -33057,7 +33057,7 @@ public:
     bool DestabilizingLoad() const;
     void setDestabilizingLoad(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralAction (IfcEntityInstanceData* e);
     IfcStructuralAction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, boost::optional< bool > v10_DestabilizingLoad);
     typedef IfcTemplatedEntityList< IfcStructuralAction > list;
@@ -33074,7 +33074,7 @@ public:
     void setAppliedCondition(IfcBoundaryCondition* v);
         IfcTemplatedEntityList< IfcRelConnectsStructuralMember >::ptr ConnectsStructuralMembers() const; // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralConnection (IfcEntityInstanceData* e);
     IfcStructuralConnection (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcBoundaryCondition* v8_AppliedCondition);
     typedef IfcTemplatedEntityList< IfcStructuralConnection > list;
@@ -33146,7 +33146,7 @@ public:
     IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralCurveAction (IfcEntityInstanceData* e);
     IfcStructuralCurveAction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, boost::optional< bool > v10_DestabilizingLoad, boost::optional< IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum > v11_ProjectedOrTrue, IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStructuralCurveAction > list;
@@ -33176,7 +33176,7 @@ public:
     IfcDirection* Axis() const;
     void setAxis(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralCurveConnection (IfcEntityInstanceData* e);
     IfcStructuralCurveConnection (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcBoundaryCondition* v8_AppliedCondition, IfcDirection* v9_Axis);
     typedef IfcTemplatedEntityList< IfcStructuralCurveConnection > list;
@@ -33229,7 +33229,7 @@ public:
     IfcDirection* Axis() const;
     void setAxis(IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralCurveMember (IfcEntityInstanceData* e);
     IfcStructuralCurveMember (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberTypeEnum v8_PredefinedType, IfcDirection* v9_Axis);
     typedef IfcTemplatedEntityList< IfcStructuralCurveMember > list;
@@ -33257,7 +33257,7 @@ public:
 class IFC_PARSE_API IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralCurveMemberVarying (IfcEntityInstanceData* e);
     IfcStructuralCurveMemberVarying (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralCurveMemberTypeEnum::IfcStructuralCurveMemberTypeEnum v8_PredefinedType, IfcDirection* v9_Axis);
     typedef IfcTemplatedEntityList< IfcStructuralCurveMemberVarying > list;
@@ -33318,7 +33318,7 @@ public:
     IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralCurveReaction (IfcEntityInstanceData* e);
     IfcStructuralCurveReaction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStructuralCurveReaction > list;
@@ -33333,7 +33333,7 @@ public:
 class IFC_PARSE_API IfcStructuralLinearAction : public IfcStructuralCurveAction {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLinearAction (IfcEntityInstanceData* e);
     IfcStructuralLinearAction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, boost::optional< bool > v10_DestabilizingLoad, boost::optional< IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum > v11_ProjectedOrTrue, IfcStructuralCurveActivityTypeEnum::IfcStructuralCurveActivityTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStructuralLinearAction > list;
@@ -33395,7 +33395,7 @@ public:
         IfcTemplatedEntityList< IfcStructuralResultGroup >::ptr SourceOfResultGroup() const; // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
     IfcTemplatedEntityList< IfcStructuralAnalysisModel >::ptr LoadGroupFor() const; // INVERSE IfcStructuralAnalysisModel::LoadedBy
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadGroup (IfcEntityInstanceData* e);
     IfcStructuralLoadGroup (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum v6_PredefinedType, IfcActionTypeEnum::IfcActionTypeEnum v7_ActionType, IfcActionSourceTypeEnum::IfcActionSourceTypeEnum v8_ActionSource, boost::optional< double > v9_Coefficient, boost::optional< std::string > v10_Purpose);
     typedef IfcTemplatedEntityList< IfcStructuralLoadGroup > list;
@@ -33448,7 +33448,7 @@ public:
 class IFC_PARSE_API IfcStructuralPointAction : public IfcStructuralAction {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralPointAction (IfcEntityInstanceData* e);
     IfcStructuralPointAction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, boost::optional< bool > v10_DestabilizingLoad);
     typedef IfcTemplatedEntityList< IfcStructuralPointAction > list;
@@ -33474,7 +33474,7 @@ public:
     IfcAxis2Placement3D* ConditionCoordinateSystem() const;
     void setConditionCoordinateSystem(IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralPointConnection (IfcEntityInstanceData* e);
     IfcStructuralPointConnection (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcBoundaryCondition* v8_AppliedCondition, IfcAxis2Placement3D* v9_ConditionCoordinateSystem);
     typedef IfcTemplatedEntityList< IfcStructuralPointConnection > list;
@@ -33525,7 +33525,7 @@ public:
 class IFC_PARSE_API IfcStructuralPointReaction : public IfcStructuralReaction {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralPointReaction (IfcEntityInstanceData* e);
     IfcStructuralPointReaction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal);
     typedef IfcTemplatedEntityList< IfcStructuralPointReaction > list;
@@ -33549,7 +33549,7 @@ public:
     void setIsLinear(bool v);
         IfcTemplatedEntityList< IfcStructuralAnalysisModel >::ptr ResultGroupFor() const; // INVERSE IfcStructuralAnalysisModel::HasResults
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralResultGroup (IfcEntityInstanceData* e);
     IfcStructuralResultGroup (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcAnalysisTheoryTypeEnum::IfcAnalysisTheoryTypeEnum v6_TheoryType, IfcStructuralLoadGroup* v7_ResultForLoadGroup, bool v8_IsLinear);
     typedef IfcTemplatedEntityList< IfcStructuralResultGroup > list;
@@ -33617,7 +33617,7 @@ public:
     IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralSurfaceAction (IfcEntityInstanceData* e);
     IfcStructuralSurfaceAction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, boost::optional< bool > v10_DestabilizingLoad, boost::optional< IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum > v11_ProjectedOrTrue, IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStructuralSurfaceAction > list;
@@ -33637,7 +33637,7 @@ public:
 class IFC_PARSE_API IfcStructuralSurfaceConnection : public IfcStructuralConnection {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralSurfaceConnection (IfcEntityInstanceData* e);
     IfcStructuralSurfaceConnection (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcBoundaryCondition* v8_AppliedCondition);
     typedef IfcTemplatedEntityList< IfcStructuralSurfaceConnection > list;
@@ -33675,7 +33675,7 @@ public:
     IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSubContractResource (IfcEntityInstanceData* e);
     IfcSubContractResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity, boost::optional< IfcSubContractResourceTypeEnum::IfcSubContractResourceTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSubContractResource > list;
@@ -33720,7 +33720,7 @@ public:
     IfcSurfaceFeatureTypeEnum::IfcSurfaceFeatureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSurfaceFeatureTypeEnum::IfcSurfaceFeatureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSurfaceFeature (IfcEntityInstanceData* e);
     IfcSurfaceFeature (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSurfaceFeatureTypeEnum::IfcSurfaceFeatureTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSurfaceFeature > list;
@@ -33771,7 +33771,7 @@ public:
     IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSwitchingDeviceType (IfcEntityInstanceData* e);
     IfcSwitchingDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSwitchingDeviceType > list;
@@ -33797,7 +33797,7 @@ class IFC_PARSE_API IfcSystem : public IfcGroup {
 public:
         IfcTemplatedEntityList< IfcRelServicesBuildings >::ptr ServicesBuildings() const; // INVERSE IfcRelServicesBuildings::RelatingSystem
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSystem (IfcEntityInstanceData* e);
     IfcSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef IfcTemplatedEntityList< IfcSystem > list;
@@ -33833,7 +33833,7 @@ public:
     IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSystemFurnitureElement (IfcEntityInstanceData* e);
     IfcSystemFurnitureElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSystemFurnitureElementTypeEnum::IfcSystemFurnitureElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSystemFurnitureElement > list;
@@ -33876,7 +33876,7 @@ public:
     IfcTankTypeEnum::IfcTankTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTankTypeEnum::IfcTankTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTankType (IfcEntityInstanceData* e);
     IfcTankType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcTankTypeEnum::IfcTankTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTankType > list;
@@ -33917,7 +33917,7 @@ public:
     double MinCurvatureRadius() const;
     void setMinCurvatureRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTendon (IfcEntityInstanceData* e);
     IfcTendon (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, boost::optional< IfcTendonTypeEnum::IfcTendonTypeEnum > v10_PredefinedType, boost::optional< double > v11_NominalDiameter, boost::optional< double > v12_CrossSectionArea, boost::optional< double > v13_TensionForce, boost::optional< double > v14_PreStress, boost::optional< double > v15_FrictionCoefficient, boost::optional< double > v16_AnchorageSlip, boost::optional< double > v17_MinCurvatureRadius);
     typedef IfcTemplatedEntityList< IfcTendon > list;
@@ -33930,7 +33930,7 @@ public:
     IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTendonAnchor (IfcEntityInstanceData* e);
     IfcTendonAnchor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, boost::optional< IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum > v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTendonAnchor > list;
@@ -33941,7 +33941,7 @@ public:
     IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTendonAnchorType (IfcEntityInstanceData* e);
     IfcTendonAnchorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcTendonAnchorTypeEnum::IfcTendonAnchorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTendonAnchorType > list;
@@ -33964,7 +33964,7 @@ public:
     double SheethDiameter() const;
     void setSheethDiameter(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTendonType (IfcEntityInstanceData* e);
     IfcTendonType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcTendonTypeEnum::IfcTendonTypeEnum v10_PredefinedType, boost::optional< double > v11_NominalDiameter, boost::optional< double > v12_CrossSectionArea, boost::optional< double > v13_SheethDiameter);
     typedef IfcTemplatedEntityList< IfcTendonType > list;
@@ -34002,7 +34002,7 @@ public:
     IfcTransformerTypeEnum::IfcTransformerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTransformerTypeEnum::IfcTransformerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTransformerType (IfcEntityInstanceData* e);
     IfcTransformerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcTransformerTypeEnum::IfcTransformerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTransformerType > list;
@@ -34133,7 +34133,7 @@ public:
     IfcTransportElementTypeEnum::IfcTransportElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTransportElementTypeEnum::IfcTransportElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTransportElement (IfcEntityInstanceData* e);
     IfcTransportElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcTransportElementTypeEnum::IfcTransportElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTransportElement > list;
@@ -34234,7 +34234,7 @@ public:
     IfcTrimmingPreference::IfcTrimmingPreference MasterRepresentation() const;
     void setMasterRepresentation(IfcTrimmingPreference::IfcTrimmingPreference v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTrimmedCurve (IfcEntityInstanceData* e);
     IfcTrimmedCurve (IfcCurve* v1_BasisCurve, IfcEntityList::ptr v2_Trim1, IfcEntityList::ptr v3_Trim2, bool v4_SenseAgreement, IfcTrimmingPreference::IfcTrimmingPreference v5_MasterRepresentation);
     typedef IfcTemplatedEntityList< IfcTrimmedCurve > list;
@@ -34274,7 +34274,7 @@ public:
     IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTubeBundleType (IfcEntityInstanceData* e);
     IfcTubeBundleType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTubeBundleType > list;
@@ -34313,7 +34313,7 @@ public:
     IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcUnitaryEquipmentType (IfcEntityInstanceData* e);
     IfcUnitaryEquipmentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcUnitaryEquipmentType > list;
@@ -34362,7 +34362,7 @@ public:
     IfcValveTypeEnum::IfcValveTypeEnum PredefinedType() const;
     void setPredefinedType(IfcValveTypeEnum::IfcValveTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcValveType (IfcEntityInstanceData* e);
     IfcValveType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcValveTypeEnum::IfcValveTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcValveType > list;
@@ -34408,7 +34408,7 @@ public:
     IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVibrationIsolator (IfcEntityInstanceData* e);
     IfcVibrationIsolator (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcVibrationIsolator > list;
@@ -34441,7 +34441,7 @@ public:
     IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVibrationIsolatorType (IfcEntityInstanceData* e);
     IfcVibrationIsolatorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcVibrationIsolatorTypeEnum::IfcVibrationIsolatorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcVibrationIsolatorType > list;
@@ -34535,7 +34535,7 @@ public:
 class IFC_PARSE_API IfcVirtualElement : public IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVirtualElement (IfcEntityInstanceData* e);
     IfcVirtualElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcVirtualElement > list;
@@ -34580,7 +34580,7 @@ public:
     IfcVoidingFeatureTypeEnum::IfcVoidingFeatureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcVoidingFeatureTypeEnum::IfcVoidingFeatureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcVoidingFeature (IfcEntityInstanceData* e);
     IfcVoidingFeature (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcVoidingFeatureTypeEnum::IfcVoidingFeatureTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcVoidingFeature > list;
@@ -34675,7 +34675,7 @@ public:
     IfcWallTypeEnum::IfcWallTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWallTypeEnum::IfcWallTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWallType (IfcEntityInstanceData* e);
     IfcWallType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcWallTypeEnum::IfcWallTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWallType > list;
@@ -34722,7 +34722,7 @@ public:
     IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWasteTerminalType (IfcEntityInstanceData* e);
     IfcWasteTerminalType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWasteTerminalType > list;
@@ -34865,7 +34865,7 @@ public:
     std::string UserDefinedPartitioningType() const;
     void setUserDefinedPartitioningType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWindowType (IfcEntityInstanceData* e);
     IfcWindowType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcWindowTypeEnum::IfcWindowTypeEnum v10_PredefinedType, IfcWindowTypePartitioningEnum::IfcWindowTypePartitioningEnum v11_PartitioningType, boost::optional< bool > v12_ParameterTakesPrecedence, boost::optional< std::string > v13_UserDefinedPartitioningType);
     typedef IfcTemplatedEntityList< IfcWindowType > list;
@@ -34908,7 +34908,7 @@ public:
     IfcWorkCalendarTypeEnum::IfcWorkCalendarTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWorkCalendarTypeEnum::IfcWorkCalendarTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWorkCalendar (IfcEntityInstanceData* e);
     IfcWorkCalendar (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< IfcTemplatedEntityList< IfcWorkTime >::ptr > v7_WorkingTimes, boost::optional< IfcTemplatedEntityList< IfcWorkTime >::ptr > v8_ExceptionTimes, boost::optional< IfcWorkCalendarTypeEnum::IfcWorkCalendarTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWorkCalendar > list;
@@ -34991,7 +34991,7 @@ public:
     std::string FinishTime() const;
     void setFinishTime(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWorkControl (IfcEntityInstanceData* e);
     IfcWorkControl (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, std::string v7_CreationDate, boost::optional< IfcTemplatedEntityList< IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< std::string > v10_Duration, boost::optional< std::string > v11_TotalFloat, std::string v12_StartTime, boost::optional< std::string > v13_FinishTime);
     typedef IfcTemplatedEntityList< IfcWorkControl > list;
@@ -35030,7 +35030,7 @@ public:
     IfcWorkPlanTypeEnum::IfcWorkPlanTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWorkPlanTypeEnum::IfcWorkPlanTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWorkPlan (IfcEntityInstanceData* e);
     IfcWorkPlan (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, std::string v7_CreationDate, boost::optional< IfcTemplatedEntityList< IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< std::string > v10_Duration, boost::optional< std::string > v11_TotalFloat, std::string v12_StartTime, boost::optional< std::string > v13_FinishTime, boost::optional< IfcWorkPlanTypeEnum::IfcWorkPlanTypeEnum > v14_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWorkPlan > list;
@@ -35084,7 +35084,7 @@ public:
     IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWorkSchedule (IfcEntityInstanceData* e);
     IfcWorkSchedule (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, std::string v7_CreationDate, boost::optional< IfcTemplatedEntityList< IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< std::string > v10_Duration, boost::optional< std::string > v11_TotalFloat, std::string v12_StartTime, boost::optional< std::string > v13_FinishTime, boost::optional< IfcWorkScheduleTypeEnum::IfcWorkScheduleTypeEnum > v14_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWorkSchedule > list;
@@ -35186,7 +35186,7 @@ public:
     std::string LongName() const;
     void setLongName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcZone (IfcEntityInstanceData* e);
     IfcZone (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName);
     typedef IfcTemplatedEntityList< IfcZone > list;
@@ -35257,7 +35257,7 @@ public:
     std::string LongDescription() const;
     void setLongDescription(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcActionRequest (IfcEntityInstanceData* e);
     IfcActionRequest (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< IfcActionRequestTypeEnum::IfcActionRequestTypeEnum > v7_PredefinedType, boost::optional< std::string > v8_Status, boost::optional< std::string > v9_LongDescription);
     typedef IfcTemplatedEntityList< IfcActionRequest > list;
@@ -35294,7 +35294,7 @@ public:
     IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAirTerminalBoxType (IfcEntityInstanceData* e);
     IfcAirTerminalBoxType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAirTerminalBoxType > list;
@@ -35330,7 +35330,7 @@ public:
     IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAirTerminalType (IfcEntityInstanceData* e);
     IfcAirTerminalType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAirTerminalType > list;
@@ -35367,7 +35367,7 @@ public:
     IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAirToAirHeatRecoveryType (IfcEntityInstanceData* e);
     IfcAirToAirHeatRecoveryType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAirToAirHeatRecoveryType > list;
@@ -35449,7 +35449,7 @@ public:
     IfcCostValue* DepreciatedValue() const;
     void setDepreciatedValue(IfcCostValue* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAsset (IfcEntityInstanceData* e);
     IfcAsset (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, IfcCostValue* v7_OriginalValue, IfcCostValue* v8_CurrentValue, IfcCostValue* v9_TotalReplacementCost, IfcActorSelect* v10_Owner, IfcActorSelect* v11_User, IfcPerson* v12_ResponsiblePerson, boost::optional< std::string > v13_IncorporationDate, IfcCostValue* v14_DepreciatedValue);
     typedef IfcTemplatedEntityList< IfcAsset > list;
@@ -35502,7 +35502,7 @@ public:
     IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAudioVisualApplianceType (IfcEntityInstanceData* e);
     IfcAudioVisualApplianceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAudioVisualApplianceType > list;
@@ -35574,7 +35574,7 @@ public:
     bool SelfIntersect() const;
     void setSelfIntersect(bool v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBSplineCurve (IfcEntityInstanceData* e);
     IfcBSplineCurve (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBSplineCurve > list;
@@ -35608,7 +35608,7 @@ public:
     IfcKnotType::IfcKnotType KnotSpec() const;
     void setKnotSpec(IfcKnotType::IfcKnotType v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBSplineCurveWithKnots (IfcEntityInstanceData* e);
     IfcBSplineCurveWithKnots (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec);
     typedef IfcTemplatedEntityList< IfcBSplineCurveWithKnots > list;
@@ -35717,7 +35717,7 @@ public:
     IfcBeamTypeEnum::IfcBeamTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBeamTypeEnum::IfcBeamTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBeamType (IfcEntityInstanceData* e);
     IfcBeamType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcBeamTypeEnum::IfcBeamTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBeamType > list;
@@ -35757,7 +35757,7 @@ public:
     IfcBoilerTypeEnum::IfcBoilerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBoilerTypeEnum::IfcBoilerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoilerType (IfcEntityInstanceData* e);
     IfcBoilerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcBoilerTypeEnum::IfcBoilerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBoilerType > list;
@@ -35772,7 +35772,7 @@ public:
 class IFC_PARSE_API IfcBoundaryCurve : public IfcCompositeCurveOnSurface {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoundaryCurve (IfcEntityInstanceData* e);
     IfcBoundaryCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcBoundaryCurve > list;
@@ -36143,7 +36143,7 @@ public:
 class IFC_PARSE_API IfcBuildingElement : public IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingElement (IfcEntityInstanceData* e);
     IfcBuildingElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcBuildingElement > list;
@@ -36173,7 +36173,7 @@ public:
     IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingElementPart (IfcEntityInstanceData* e);
     IfcBuildingElementPart (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBuildingElementPart > list;
@@ -36188,7 +36188,7 @@ public:
     IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingElementPartType (IfcEntityInstanceData* e);
     IfcBuildingElementPartType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcBuildingElementPartTypeEnum::IfcBuildingElementPartTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBuildingElementPartType > list;
@@ -36390,7 +36390,7 @@ public:
     IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingElementProxy (IfcEntityInstanceData* e);
     IfcBuildingElementProxy (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBuildingElementProxy > list;
@@ -36435,7 +36435,7 @@ public:
     IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingElementProxyType (IfcEntityInstanceData* e);
     IfcBuildingElementProxyType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBuildingElementProxyType > list;
@@ -36488,7 +36488,7 @@ public:
     std::string LongName() const;
     void setLongName(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBuildingSystem (IfcEntityInstanceData* e);
     IfcBuildingSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< IfcBuildingSystemTypeEnum::IfcBuildingSystemTypeEnum > v6_PredefinedType, boost::optional< std::string > v7_LongName);
     typedef IfcTemplatedEntityList< IfcBuildingSystem > list;
@@ -36525,7 +36525,7 @@ public:
     IfcBurnerTypeEnum::IfcBurnerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBurnerTypeEnum::IfcBurnerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBurnerType (IfcEntityInstanceData* e);
     IfcBurnerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcBurnerTypeEnum::IfcBurnerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBurnerType > list;
@@ -36562,7 +36562,7 @@ public:
     IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableCarrierFittingType (IfcEntityInstanceData* e);
     IfcCableCarrierFittingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableCarrierFittingType > list;
@@ -36605,7 +36605,7 @@ public:
     IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableCarrierSegmentType (IfcEntityInstanceData* e);
     IfcCableCarrierSegmentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableCarrierSegmentType > list;
@@ -36644,7 +36644,7 @@ public:
     IfcCableFittingTypeEnum::IfcCableFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableFittingTypeEnum::IfcCableFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableFittingType (IfcEntityInstanceData* e);
     IfcCableFittingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCableFittingTypeEnum::IfcCableFittingTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableFittingType > list;
@@ -36696,7 +36696,7 @@ public:
     IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableSegmentType (IfcEntityInstanceData* e);
     IfcCableSegmentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableSegmentType > list;
@@ -36739,7 +36739,7 @@ public:
     IfcChillerTypeEnum::IfcChillerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcChillerTypeEnum::IfcChillerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcChillerType (IfcEntityInstanceData* e);
     IfcChillerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcChillerTypeEnum::IfcChillerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcChillerType > list;
@@ -36794,7 +36794,7 @@ public:
     IfcChimneyTypeEnum::IfcChimneyTypeEnum PredefinedType() const;
     void setPredefinedType(IfcChimneyTypeEnum::IfcChimneyTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcChimney (IfcEntityInstanceData* e);
     IfcChimney (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcChimneyTypeEnum::IfcChimneyTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcChimney > list;
@@ -36832,7 +36832,7 @@ public:
     double Radius() const;
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCircle (IfcEntityInstanceData* e);
     IfcCircle (IfcAxis2Placement* v1_Position, double v2_Radius);
     typedef IfcTemplatedEntityList< IfcCircle > list;
@@ -36841,7 +36841,7 @@ public:
 class IFC_PARSE_API IfcCivilElement : public IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCivilElement (IfcEntityInstanceData* e);
     IfcCivilElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcCivilElement > list;
@@ -36879,7 +36879,7 @@ public:
     IfcCoilTypeEnum::IfcCoilTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCoilTypeEnum::IfcCoilTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoilType (IfcEntityInstanceData* e);
     IfcCoilType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCoilTypeEnum::IfcCoilTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCoilType > list;
@@ -37166,7 +37166,7 @@ public:
     IfcColumnTypeEnum::IfcColumnTypeEnum PredefinedType() const;
     void setPredefinedType(IfcColumnTypeEnum::IfcColumnTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcColumn (IfcEntityInstanceData* e);
     IfcColumn (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcColumnTypeEnum::IfcColumnTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcColumn > list;
@@ -37419,7 +37419,7 @@ public:
 class IFC_PARSE_API IfcColumnStandardCase : public IfcColumn {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcColumnStandardCase (IfcEntityInstanceData* e);
     IfcColumnStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcColumnTypeEnum::IfcColumnTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcColumnStandardCase > list;
@@ -37462,7 +37462,7 @@ public:
     IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCommunicationsApplianceType (IfcEntityInstanceData* e);
     IfcCommunicationsApplianceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCommunicationsApplianceType > list;
@@ -37500,7 +37500,7 @@ public:
     IfcCompressorTypeEnum::IfcCompressorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCompressorTypeEnum::IfcCompressorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCompressorType (IfcEntityInstanceData* e);
     IfcCompressorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCompressorTypeEnum::IfcCompressorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCompressorType > list;
@@ -37538,7 +37538,7 @@ public:
     IfcCondenserTypeEnum::IfcCondenserTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCondenserTypeEnum::IfcCondenserTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCondenserType (IfcEntityInstanceData* e);
     IfcCondenserType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCondenserTypeEnum::IfcCondenserTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCondenserType > list;
@@ -37574,7 +37574,7 @@ public:
     IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionEquipmentResource (IfcEntityInstanceData* e);
     IfcConstructionEquipmentResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity, boost::optional< IfcConstructionEquipmentResourceTypeEnum::IfcConstructionEquipmentResourceTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcConstructionEquipmentResource > list;
@@ -37614,7 +37614,7 @@ public:
     IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionMaterialResource (IfcEntityInstanceData* e);
     IfcConstructionMaterialResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity, boost::optional< IfcConstructionMaterialResourceTypeEnum::IfcConstructionMaterialResourceTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcConstructionMaterialResource > list;
@@ -37643,7 +37643,7 @@ public:
     IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcConstructionProductResource (IfcEntityInstanceData* e);
     IfcConstructionProductResource (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_Identification, boost::optional< std::string > v7_LongDescription, IfcResourceTime* v8_Usage, boost::optional< IfcTemplatedEntityList< IfcAppliedValue >::ptr > v9_BaseCosts, IfcPhysicalQuantity* v10_BaseQuantity, boost::optional< IfcConstructionProductResourceTypeEnum::IfcConstructionProductResourceTypeEnum > v11_PredefinedType);
     typedef IfcTemplatedEntityList< IfcConstructionProductResource > list;
@@ -37683,7 +37683,7 @@ public:
     IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCooledBeamType (IfcEntityInstanceData* e);
     IfcCooledBeamType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCooledBeamType > list;
@@ -37727,7 +37727,7 @@ public:
     IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoolingTowerType (IfcEntityInstanceData* e);
     IfcCoolingTowerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCoolingTowerType > list;
@@ -37966,7 +37966,7 @@ public:
         IfcTemplatedEntityList< IfcRelCoversSpaces >::ptr CoversSpaces() const; // INVERSE IfcRelCoversSpaces::RelatedCoverings
     IfcTemplatedEntityList< IfcRelCoversBldgElements >::ptr CoversElements() const; // INVERSE IfcRelCoversBldgElements::RelatedCoverings
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCovering (IfcEntityInstanceData* e);
     IfcCovering (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCoveringTypeEnum::IfcCoveringTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCovering > list;
@@ -38120,7 +38120,7 @@ public:
     IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCurtainWall (IfcEntityInstanceData* e);
     IfcCurtainWall (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCurtainWallTypeEnum::IfcCurtainWallTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCurtainWall > list;
@@ -38165,7 +38165,7 @@ public:
     IfcDamperTypeEnum::IfcDamperTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDamperTypeEnum::IfcDamperTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDamperType (IfcEntityInstanceData* e);
     IfcDamperType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDamperTypeEnum::IfcDamperTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDamperType > list;
@@ -38351,7 +38351,7 @@ public:
     IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDiscreteAccessory (IfcEntityInstanceData* e);
     IfcDiscreteAccessory (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDiscreteAccessory > list;
@@ -38550,7 +38550,7 @@ public:
     IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDiscreteAccessoryType (IfcEntityInstanceData* e);
     IfcDiscreteAccessoryType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDiscreteAccessoryTypeEnum::IfcDiscreteAccessoryTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDiscreteAccessoryType > list;
@@ -38598,7 +38598,7 @@ public:
     IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionChamberElementType (IfcEntityInstanceData* e);
     IfcDistributionChamberElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDistributionChamberElementType > list;
@@ -38660,7 +38660,7 @@ public:
 class IFC_PARSE_API IfcDistributionControlElementType : public IfcDistributionElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionControlElementType (IfcEntityInstanceData* e);
     IfcDistributionControlElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef IfcTemplatedEntityList< IfcDistributionControlElementType > list;
@@ -38831,7 +38831,7 @@ class IFC_PARSE_API IfcDistributionElement : public IfcElement {
 public:
         IfcTemplatedEntityList< IfcRelConnectsPortToElement >::ptr HasPorts() const; // INVERSE IfcRelConnectsPortToElement::RelatedElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionElement (IfcEntityInstanceData* e);
     IfcDistributionElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcDistributionElement > list;
@@ -38908,7 +38908,7 @@ class IFC_PARSE_API IfcDistributionFlowElement : public IfcDistributionElement {
 public:
         IfcTemplatedEntityList< IfcRelFlowControlElements >::ptr HasControlElements() const; // INVERSE IfcRelFlowControlElements::RelatingFlowElement
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionFlowElement (IfcEntityInstanceData* e);
     IfcDistributionFlowElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcDistributionFlowElement > list;
@@ -39012,7 +39012,7 @@ public:
     IfcDistributionSystemEnum::IfcDistributionSystemEnum SystemType() const;
     void setSystemType(IfcDistributionSystemEnum::IfcDistributionSystemEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionPort (IfcEntityInstanceData* e);
     IfcDistributionPort (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< IfcFlowDirectionEnum::IfcFlowDirectionEnum > v8_FlowDirection, boost::optional< IfcDistributionPortTypeEnum::IfcDistributionPortTypeEnum > v9_PredefinedType, boost::optional< IfcDistributionSystemEnum::IfcDistributionSystemEnum > v10_SystemType);
     typedef IfcTemplatedEntityList< IfcDistributionPort > list;
@@ -39072,7 +39072,7 @@ public:
     IfcDistributionSystemEnum::IfcDistributionSystemEnum PredefinedType() const;
     void setPredefinedType(IfcDistributionSystemEnum::IfcDistributionSystemEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionSystem (IfcEntityInstanceData* e);
     IfcDistributionSystem (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< IfcDistributionSystemEnum::IfcDistributionSystemEnum > v7_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDistributionSystem > list;
@@ -39471,7 +39471,7 @@ public:
     std::string UserDefinedOperationType() const;
     void setUserDefinedOperationType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDoor (IfcEntityInstanceData* e);
     IfcDoor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth, boost::optional< IfcDoorTypeEnum::IfcDoorTypeEnum > v11_PredefinedType, boost::optional< IfcDoorTypeOperationEnum::IfcDoorTypeOperationEnum > v12_OperationType, boost::optional< std::string > v13_UserDefinedOperationType);
     typedef IfcTemplatedEntityList< IfcDoor > list;
@@ -39583,7 +39583,7 @@ public:
 class IFC_PARSE_API IfcDoorStandardCase : public IfcDoor {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDoorStandardCase (IfcEntityInstanceData* e);
     IfcDoorStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth, boost::optional< IfcDoorTypeEnum::IfcDoorTypeEnum > v11_PredefinedType, boost::optional< IfcDoorTypeOperationEnum::IfcDoorTypeOperationEnum > v12_OperationType, boost::optional< std::string > v13_UserDefinedOperationType);
     typedef IfcTemplatedEntityList< IfcDoorStandardCase > list;
@@ -39623,7 +39623,7 @@ public:
     IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDuctFittingType (IfcEntityInstanceData* e);
     IfcDuctFittingType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDuctFittingType > list;
@@ -39663,7 +39663,7 @@ public:
     IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDuctSegmentType (IfcEntityInstanceData* e);
     IfcDuctSegmentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDuctSegmentType > list;
@@ -39700,7 +39700,7 @@ public:
     IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDuctSilencerType (IfcEntityInstanceData* e);
     IfcDuctSilencerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDuctSilencerType > list;
@@ -39740,7 +39740,7 @@ public:
     IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricApplianceType (IfcEntityInstanceData* e);
     IfcElectricApplianceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricApplianceType > list;
@@ -39778,7 +39778,7 @@ public:
     IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricDistributionBoardType (IfcEntityInstanceData* e);
     IfcElectricDistributionBoardType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricDistributionBoardType > list;
@@ -39816,7 +39816,7 @@ public:
     IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricFlowStorageDeviceType (IfcEntityInstanceData* e);
     IfcElectricFlowStorageDeviceType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricFlowStorageDeviceType > list;
@@ -39859,7 +39859,7 @@ public:
     IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricGeneratorType (IfcEntityInstanceData* e);
     IfcElectricGeneratorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricGeneratorType > list;
@@ -39897,7 +39897,7 @@ public:
     IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricMotorType (IfcEntityInstanceData* e);
     IfcElectricMotorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricMotorType > list;
@@ -39935,7 +39935,7 @@ public:
     IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricTimeControlType (IfcEntityInstanceData* e);
     IfcElectricTimeControlType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricTimeControlType > list;
@@ -39952,7 +39952,7 @@ public:
 class IFC_PARSE_API IfcEnergyConversionDevice : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEnergyConversionDevice (IfcEntityInstanceData* e);
     IfcEnergyConversionDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcEnergyConversionDevice > list;
@@ -40005,7 +40005,7 @@ public:
     IfcEngineTypeEnum::IfcEngineTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEngineTypeEnum::IfcEngineTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEngine (IfcEntityInstanceData* e);
     IfcEngine (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcEngineTypeEnum::IfcEngineTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcEngine > list;
@@ -40061,7 +40061,7 @@ public:
     IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEvaporativeCooler (IfcEntityInstanceData* e);
     IfcEvaporativeCooler (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcEvaporativeCoolerTypeEnum::IfcEvaporativeCoolerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcEvaporativeCooler > list;
@@ -40137,7 +40137,7 @@ public:
     IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcEvaporator (IfcEntityInstanceData* e);
     IfcEvaporator (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcEvaporatorTypeEnum::IfcEvaporatorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcEvaporator > list;
@@ -40166,7 +40166,7 @@ public:
     void setPredefinedType(IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum v);
         IfcTemplatedEntityList< IfcRelSpaceBoundary >::ptr BoundedBy() const; // INVERSE IfcRelSpaceBoundary::RelatingSpace
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcExternalSpatialElement (IfcEntityInstanceData* e);
     IfcExternalSpatialElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, boost::optional< IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcExternalSpatialElement > list;
@@ -40205,7 +40205,7 @@ public:
     IfcFanTypeEnum::IfcFanTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFanTypeEnum::IfcFanTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFanType (IfcEntityInstanceData* e);
     IfcFanType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFanTypeEnum::IfcFanTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFanType > list;
@@ -40245,7 +40245,7 @@ public:
     IfcFilterTypeEnum::IfcFilterTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFilterTypeEnum::IfcFilterTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFilterType (IfcEntityInstanceData* e);
     IfcFilterType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFilterTypeEnum::IfcFilterTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFilterType > list;
@@ -40289,7 +40289,7 @@ public:
     IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFireSuppressionTerminalType (IfcEntityInstanceData* e);
     IfcFireSuppressionTerminalType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFireSuppressionTerminalType > list;
@@ -40306,7 +40306,7 @@ public:
 class IFC_PARSE_API IfcFlowController : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowController (IfcEntityInstanceData* e);
     IfcFlowController (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowController > list;
@@ -40319,7 +40319,7 @@ public:
 class IFC_PARSE_API IfcFlowFitting : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowFitting (IfcEntityInstanceData* e);
     IfcFlowFitting (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowFitting > list;
@@ -40360,7 +40360,7 @@ public:
     IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowInstrumentType (IfcEntityInstanceData* e);
     IfcFlowInstrumentType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFlowInstrumentType > list;
@@ -40452,7 +40452,7 @@ public:
     IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowMeter (IfcEntityInstanceData* e);
     IfcFlowMeter (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFlowMeterTypeEnum::IfcFlowMeterTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFlowMeter > list;
@@ -40465,7 +40465,7 @@ public:
 class IFC_PARSE_API IfcFlowMovingDevice : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowMovingDevice (IfcEntityInstanceData* e);
     IfcFlowMovingDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowMovingDevice > list;
@@ -40496,7 +40496,7 @@ public:
 class IFC_PARSE_API IfcFlowSegment : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowSegment (IfcEntityInstanceData* e);
     IfcFlowSegment (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowSegment > list;
@@ -40514,7 +40514,7 @@ public:
 class IFC_PARSE_API IfcFlowStorageDevice : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowStorageDevice (IfcEntityInstanceData* e);
     IfcFlowStorageDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowStorageDevice > list;
@@ -40533,7 +40533,7 @@ public:
 class IFC_PARSE_API IfcFlowTerminal : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowTerminal (IfcEntityInstanceData* e);
     IfcFlowTerminal (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowTerminal > list;
@@ -40546,7 +40546,7 @@ public:
 class IFC_PARSE_API IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowTreatmentDevice (IfcEntityInstanceData* e);
     IfcFlowTreatmentDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcFlowTreatmentDevice > list;
@@ -40583,7 +40583,7 @@ public:
     IfcFootingTypeEnum::IfcFootingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFootingTypeEnum::IfcFootingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFooting (IfcEntityInstanceData* e);
     IfcFooting (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFootingTypeEnum::IfcFootingTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFooting > list;
@@ -40645,7 +40645,7 @@ public:
     IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcHeatExchanger (IfcEntityInstanceData* e);
     IfcHeatExchanger (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcHeatExchangerTypeEnum::IfcHeatExchangerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcHeatExchanger > list;
@@ -40700,7 +40700,7 @@ public:
     IfcHumidifierTypeEnum::IfcHumidifierTypeEnum PredefinedType() const;
     void setPredefinedType(IfcHumidifierTypeEnum::IfcHumidifierTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcHumidifier (IfcEntityInstanceData* e);
     IfcHumidifier (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcHumidifierTypeEnum::IfcHumidifierTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcHumidifier > list;
@@ -40769,7 +40769,7 @@ public:
     IfcInterceptorTypeEnum::IfcInterceptorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcInterceptorTypeEnum::IfcInterceptorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcInterceptor (IfcEntityInstanceData* e);
     IfcInterceptor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcInterceptorTypeEnum::IfcInterceptorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcInterceptor > list;
@@ -40847,7 +40847,7 @@ public:
     IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum PredefinedType() const;
     void setPredefinedType(IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcJunctionBox (IfcEntityInstanceData* e);
     IfcJunctionBox (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcJunctionBoxTypeEnum::IfcJunctionBoxTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcJunctionBox > list;
@@ -40906,7 +40906,7 @@ public:
     IfcLampTypeEnum::IfcLampTypeEnum PredefinedType() const;
     void setPredefinedType(IfcLampTypeEnum::IfcLampTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLamp (IfcEntityInstanceData* e);
     IfcLamp (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcLampTypeEnum::IfcLampTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcLamp > list;
@@ -40984,7 +40984,7 @@ public:
     IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum PredefinedType() const;
     void setPredefinedType(IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcLightFixture (IfcEntityInstanceData* e);
     IfcLightFixture (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcLightFixtureTypeEnum::IfcLightFixtureTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcLightFixture > list;
@@ -41040,7 +41040,7 @@ public:
     IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMedicalDevice (IfcEntityInstanceData* e);
     IfcMedicalDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcMedicalDeviceTypeEnum::IfcMedicalDeviceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMedicalDevice > list;
@@ -41306,7 +41306,7 @@ public:
     IfcMemberTypeEnum::IfcMemberTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMemberTypeEnum::IfcMemberTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMember (IfcEntityInstanceData* e);
     IfcMember (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcMemberTypeEnum::IfcMemberTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMember > list;
@@ -41553,7 +41553,7 @@ public:
 class IFC_PARSE_API IfcMemberStandardCase : public IfcMember {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMemberStandardCase (IfcEntityInstanceData* e);
     IfcMemberStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcMemberTypeEnum::IfcMemberTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMemberStandardCase > list;
@@ -41606,7 +41606,7 @@ public:
     IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum PredefinedType() const;
     void setPredefinedType(IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcMotorConnection (IfcEntityInstanceData* e);
     IfcMotorConnection (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcMotorConnectionTypeEnum::IfcMotorConnectionTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcMotorConnection > list;
@@ -41619,7 +41619,7 @@ public:
 class IFC_PARSE_API IfcOuterBoundaryCurve : public IfcBoundaryCurve {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOuterBoundaryCurve (IfcEntityInstanceData* e);
     IfcOuterBoundaryCurve (IfcTemplatedEntityList< IfcCompositeCurveSegment >::ptr v1_Segments, bool v2_SelfIntersect);
     typedef IfcTemplatedEntityList< IfcOuterBoundaryCurve > list;
@@ -41697,7 +41697,7 @@ public:
     IfcOutletTypeEnum::IfcOutletTypeEnum PredefinedType() const;
     void setPredefinedType(IfcOutletTypeEnum::IfcOutletTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcOutlet (IfcEntityInstanceData* e);
     IfcOutlet (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcOutletTypeEnum::IfcOutletTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcOutlet > list;
@@ -41737,7 +41737,7 @@ public:
     IfcPileConstructionEnum::IfcPileConstructionEnum ConstructionType() const;
     void setConstructionType(IfcPileConstructionEnum::IfcPileConstructionEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPile (IfcEntityInstanceData* e);
     IfcPile (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcPileTypeEnum::IfcPileTypeEnum > v9_PredefinedType, boost::optional< IfcPileConstructionEnum::IfcPileConstructionEnum > v10_ConstructionType);
     typedef IfcTemplatedEntityList< IfcPile > list;
@@ -41834,7 +41834,7 @@ public:
     IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPipeFitting (IfcEntityInstanceData* e);
     IfcPipeFitting (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcPipeFittingTypeEnum::IfcPipeFittingTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPipeFitting > list;
@@ -41906,7 +41906,7 @@ public:
     IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPipeSegment (IfcEntityInstanceData* e);
     IfcPipeSegment (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcPipeSegmentTypeEnum::IfcPipeSegmentTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPipeSegment > list;
@@ -42150,7 +42150,7 @@ public:
     IfcPlateTypeEnum::IfcPlateTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPlateTypeEnum::IfcPlateTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlate (IfcEntityInstanceData* e);
     IfcPlate (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcPlateTypeEnum::IfcPlateTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPlate > list;
@@ -42311,7 +42311,7 @@ public:
 class IFC_PARSE_API IfcPlateStandardCase : public IfcPlate {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPlateStandardCase (IfcEntityInstanceData* e);
     IfcPlateStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcPlateTypeEnum::IfcPlateTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPlateStandardCase > list;
@@ -42399,7 +42399,7 @@ public:
     IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProtectiveDevice (IfcEntityInstanceData* e);
     IfcProtectiveDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcProtectiveDeviceTypeEnum::IfcProtectiveDeviceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProtectiveDevice > list;
@@ -42450,7 +42450,7 @@ public:
     IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProtectiveDeviceTrippingUnitType (IfcEntityInstanceData* e);
     IfcProtectiveDeviceTrippingUnitType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProtectiveDeviceTrippingUnitType > list;
@@ -42511,7 +42511,7 @@ public:
     IfcPumpTypeEnum::IfcPumpTypeEnum PredefinedType() const;
     void setPredefinedType(IfcPumpTypeEnum::IfcPumpTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcPump (IfcEntityInstanceData* e);
     IfcPump (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcPumpTypeEnum::IfcPumpTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcPump > list;
@@ -42658,7 +42658,7 @@ public:
     IfcRailingTypeEnum::IfcRailingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRailingTypeEnum::IfcRailingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRailing (IfcEntityInstanceData* e);
     IfcRailing (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcRailingTypeEnum::IfcRailingTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRailing > list;
@@ -42808,7 +42808,7 @@ public:
     IfcRampTypeEnum::IfcRampTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRampTypeEnum::IfcRampTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRamp (IfcEntityInstanceData* e);
     IfcRamp (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcRampTypeEnum::IfcRampTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRamp > list;
@@ -43012,7 +43012,7 @@ public:
     IfcRampFlightTypeEnum::IfcRampFlightTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRampFlightTypeEnum::IfcRampFlightTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRampFlight (IfcEntityInstanceData* e);
     IfcRampFlight (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcRampFlightTypeEnum::IfcRampFlightTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRampFlight > list;
@@ -43059,7 +43059,7 @@ public:
     std::vector< double > /*[2:?]*/ WeightsData() const;
     void setWeightsData(std::vector< double > /*[2:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRationalBSplineCurveWithKnots (IfcEntityInstanceData* e);
     IfcRationalBSplineCurveWithKnots (int v1_Degree, IfcTemplatedEntityList< IfcCartesianPoint >::ptr v2_ControlPointsList, IfcBSplineCurveForm::IfcBSplineCurveForm v3_CurveForm, bool v4_ClosedCurve, bool v5_SelfIntersect, std::vector< int > /*[2:?]*/ v6_KnotMultiplicities, std::vector< double > /*[2:?]*/ v7_Knots, IfcKnotType::IfcKnotType v8_KnotSpec, std::vector< double > /*[2:?]*/ v9_WeightsData);
     typedef IfcTemplatedEntityList< IfcRationalBSplineCurveWithKnots > list;
@@ -43116,7 +43116,7 @@ public:
     IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum BarSurface() const;
     void setBarSurface(IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcingBar (IfcEntityInstanceData* e);
     IfcReinforcingBar (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, boost::optional< double > v10_NominalDiameter, boost::optional< double > v11_CrossSectionArea, boost::optional< double > v12_BarLength, boost::optional< IfcReinforcingBarTypeEnum::IfcReinforcingBarTypeEnum > v13_PredefinedType, boost::optional< IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum > v14_BarSurface);
     typedef IfcTemplatedEntityList< IfcReinforcingBar > list;
@@ -43171,7 +43171,7 @@ public:
     IfcEntityList::ptr BendingParameters() const;
     void setBendingParameters(IfcEntityList::ptr v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcReinforcingBarType (IfcEntityInstanceData* e);
     IfcReinforcingBarType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcReinforcingBarTypeEnum::IfcReinforcingBarTypeEnum v10_PredefinedType, boost::optional< double > v11_NominalDiameter, boost::optional< double > v12_CrossSectionArea, boost::optional< double > v13_BarLength, boost::optional< IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum > v14_BarSurface, boost::optional< std::string > v15_BendingShapeCode, boost::optional< IfcEntityList::ptr > v16_BendingParameters);
     typedef IfcTemplatedEntityList< IfcReinforcingBarType > list;
@@ -43331,7 +43331,7 @@ public:
     IfcRoofTypeEnum::IfcRoofTypeEnum PredefinedType() const;
     void setPredefinedType(IfcRoofTypeEnum::IfcRoofTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcRoof (IfcEntityInstanceData* e);
     IfcRoof (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcRoofTypeEnum::IfcRoofTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcRoof > list;
@@ -43469,7 +43469,7 @@ public:
     IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSanitaryTerminal (IfcEntityInstanceData* e);
     IfcSanitaryTerminal (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSanitaryTerminalTypeEnum::IfcSanitaryTerminalTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSanitaryTerminal > list;
@@ -43528,7 +43528,7 @@ public:
     IfcSensorTypeEnum::IfcSensorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSensorTypeEnum::IfcSensorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSensorType (IfcEntityInstanceData* e);
     IfcSensorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcSensorTypeEnum::IfcSensorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSensorType > list;
@@ -43556,7 +43556,7 @@ public:
     IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcShadingDevice (IfcEntityInstanceData* e);
     IfcShadingDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcShadingDeviceTypeEnum::IfcShadingDeviceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcShadingDevice > list;
@@ -43832,7 +43832,7 @@ public:
     IfcSlabTypeEnum::IfcSlabTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSlabTypeEnum::IfcSlabTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSlab (IfcEntityInstanceData* e);
     IfcSlab (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSlabTypeEnum::IfcSlabTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSlab > list;
@@ -43923,7 +43923,7 @@ public:
 class IFC_PARSE_API IfcSlabElementedCase : public IfcSlab {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSlabElementedCase (IfcEntityInstanceData* e);
     IfcSlabElementedCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSlabTypeEnum::IfcSlabTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSlabElementedCase > list;
@@ -44090,7 +44090,7 @@ public:
 class IFC_PARSE_API IfcSlabStandardCase : public IfcSlab {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSlabStandardCase (IfcEntityInstanceData* e);
     IfcSlabStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSlabTypeEnum::IfcSlabTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSlabStandardCase > list;
@@ -44149,7 +44149,7 @@ public:
     IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSolarDevice (IfcEntityInstanceData* e);
     IfcSolarDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSolarDeviceTypeEnum::IfcSolarDeviceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSolarDevice > list;
@@ -44223,7 +44223,7 @@ public:
     IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSpaceHeater (IfcEntityInstanceData* e);
     IfcSpaceHeater (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSpaceHeaterTypeEnum::IfcSpaceHeaterTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSpaceHeater > list;
@@ -44285,7 +44285,7 @@ public:
     IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStackTerminal (IfcEntityInstanceData* e);
     IfcStackTerminal (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcStackTerminalTypeEnum::IfcStackTerminalTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStackTerminal > list;
@@ -44465,7 +44465,7 @@ public:
     IfcStairTypeEnum::IfcStairTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStairTypeEnum::IfcStairTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStair (IfcEntityInstanceData* e);
     IfcStair (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcStairTypeEnum::IfcStairTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStair > list;
@@ -44673,7 +44673,7 @@ public:
     IfcStairFlightTypeEnum::IfcStairFlightTypeEnum PredefinedType() const;
     void setPredefinedType(IfcStairFlightTypeEnum::IfcStairFlightTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStairFlight (IfcEntityInstanceData* e);
     IfcStairFlight (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRisers, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength, boost::optional< IfcStairFlightTypeEnum::IfcStairFlightTypeEnum > v13_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStairFlight > list;
@@ -44740,7 +44740,7 @@ public:
     IfcObjectPlacement* SharedPlacement() const;
     void setSharedPlacement(IfcObjectPlacement* v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralAnalysisModel (IfcEntityInstanceData* e);
     IfcStructuralAnalysisModel (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcAnalysisModelTypeEnum::IfcAnalysisModelTypeEnum v6_PredefinedType, IfcAxis2Placement3D* v7_OrientationOf2DPlane, boost::optional< IfcTemplatedEntityList< IfcStructuralLoadGroup >::ptr > v8_LoadedBy, boost::optional< IfcTemplatedEntityList< IfcStructuralResultGroup >::ptr > v9_HasResults, IfcObjectPlacement* v10_SharedPlacement);
     typedef IfcTemplatedEntityList< IfcStructuralAnalysisModel > list;
@@ -44760,7 +44760,7 @@ public:
     std::vector< double > /*[3:3]*/ SelfWeightCoefficients() const;
     void setSelfWeightCoefficients(std::vector< double > /*[3:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralLoadCase (IfcEntityInstanceData* e);
     IfcStructuralLoadCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcLoadGroupTypeEnum::IfcLoadGroupTypeEnum v6_PredefinedType, IfcActionTypeEnum::IfcActionTypeEnum v7_ActionType, IfcActionSourceTypeEnum::IfcActionSourceTypeEnum v8_ActionSource, boost::optional< double > v9_Coefficient, boost::optional< std::string > v10_Purpose, boost::optional< std::vector< double > /*[3:3]*/ > v11_SelfWeightCoefficients);
     typedef IfcTemplatedEntityList< IfcStructuralLoadCase > list;
@@ -44775,7 +44775,7 @@ public:
 class IFC_PARSE_API IfcStructuralPlanarAction : public IfcStructuralSurfaceAction {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcStructuralPlanarAction (IfcEntityInstanceData* e);
     IfcStructuralPlanarAction (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, IfcStructuralLoad* v8_AppliedLoad, IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v9_GlobalOrLocal, boost::optional< bool > v10_DestabilizingLoad, boost::optional< IfcProjectedOrTrueLengthEnum::IfcProjectedOrTrueLengthEnum > v11_ProjectedOrTrue, IfcStructuralSurfaceActivityTypeEnum::IfcStructuralSurfaceActivityTypeEnum v12_PredefinedType);
     typedef IfcTemplatedEntityList< IfcStructuralPlanarAction > list;
@@ -44875,7 +44875,7 @@ public:
     IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSwitchingDevice (IfcEntityInstanceData* e);
     IfcSwitchingDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSwitchingDeviceTypeEnum::IfcSwitchingDeviceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSwitchingDevice > list;
@@ -44947,7 +44947,7 @@ public:
     IfcTankTypeEnum::IfcTankTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTankTypeEnum::IfcTankTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTank (IfcEntityInstanceData* e);
     IfcTank (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcTankTypeEnum::IfcTankTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTank > list;
@@ -45001,7 +45001,7 @@ public:
     IfcTransformerTypeEnum::IfcTransformerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTransformerTypeEnum::IfcTransformerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTransformer (IfcEntityInstanceData* e);
     IfcTransformer (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcTransformerTypeEnum::IfcTransformerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTransformer > list;
@@ -45060,7 +45060,7 @@ public:
     IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum PredefinedType() const;
     void setPredefinedType(IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcTubeBundle (IfcEntityInstanceData* e);
     IfcTubeBundle (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcTubeBundleTypeEnum::IfcTubeBundleTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcTubeBundle > list;
@@ -45097,7 +45097,7 @@ public:
     IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcUnitaryControlElementType (IfcEntityInstanceData* e);
     IfcUnitaryControlElementType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcUnitaryControlElementType > list;
@@ -45181,7 +45181,7 @@ public:
     IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcUnitaryEquipment (IfcEntityInstanceData* e);
     IfcUnitaryEquipment (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcUnitaryEquipmentTypeEnum::IfcUnitaryEquipmentTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcUnitaryEquipment > list;
@@ -45379,7 +45379,7 @@ public:
     IfcValveTypeEnum::IfcValveTypeEnum PredefinedType() const;
     void setPredefinedType(IfcValveTypeEnum::IfcValveTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcValve (IfcEntityInstanceData* e);
     IfcValve (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcValveTypeEnum::IfcValveTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcValve > list;
@@ -45637,7 +45637,7 @@ public:
     IfcWallTypeEnum::IfcWallTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWallTypeEnum::IfcWallTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWall (IfcEntityInstanceData* e);
     IfcWall (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcWallTypeEnum::IfcWallTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWall > list;
@@ -45743,7 +45743,7 @@ public:
 class IFC_PARSE_API IfcWallElementedCase : public IfcWall {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWallElementedCase (IfcEntityInstanceData* e);
     IfcWallElementedCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcWallTypeEnum::IfcWallTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWallElementedCase > list;
@@ -45953,7 +45953,7 @@ public:
 class IFC_PARSE_API IfcWallStandardCase : public IfcWall {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWallStandardCase (IfcEntityInstanceData* e);
     IfcWallStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcWallTypeEnum::IfcWallTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWallStandardCase > list;
@@ -46069,7 +46069,7 @@ public:
     IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWasteTerminal (IfcEntityInstanceData* e);
     IfcWasteTerminal (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcWasteTerminalTypeEnum::IfcWasteTerminalTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcWasteTerminal > list;
@@ -46470,7 +46470,7 @@ public:
     std::string UserDefinedPartitioningType() const;
     void setUserDefinedPartitioningType(std::string v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWindow (IfcEntityInstanceData* e);
     IfcWindow (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth, boost::optional< IfcWindowTypeEnum::IfcWindowTypeEnum > v11_PredefinedType, boost::optional< IfcWindowTypePartitioningEnum::IfcWindowTypePartitioningEnum > v12_PartitioningType, boost::optional< std::string > v13_UserDefinedPartitioningType);
     typedef IfcTemplatedEntityList< IfcWindow > list;
@@ -46592,7 +46592,7 @@ public:
 class IFC_PARSE_API IfcWindowStandardCase : public IfcWindow {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcWindowStandardCase (IfcEntityInstanceData* e);
     IfcWindowStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth, boost::optional< IfcWindowTypeEnum::IfcWindowTypeEnum > v11_PredefinedType, boost::optional< IfcWindowTypePartitioningEnum::IfcWindowTypePartitioningEnum > v12_PartitioningType, boost::optional< std::string > v13_UserDefinedPartitioningType);
     typedef IfcTemplatedEntityList< IfcWindowStandardCase > list;
@@ -46634,7 +46634,7 @@ public:
     IfcActuatorTypeEnum::IfcActuatorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcActuatorTypeEnum::IfcActuatorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcActuatorType (IfcEntityInstanceData* e);
     IfcActuatorType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcActuatorTypeEnum::IfcActuatorTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcActuatorType > list;
@@ -46703,7 +46703,7 @@ public:
     IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAirTerminal (IfcEntityInstanceData* e);
     IfcAirTerminal (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcAirTerminalTypeEnum::IfcAirTerminalTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAirTerminal > list;
@@ -46757,7 +46757,7 @@ public:
     IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAirTerminalBox (IfcEntityInstanceData* e);
     IfcAirTerminalBox (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcAirTerminalBoxTypeEnum::IfcAirTerminalBoxTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAirTerminalBox > list;
@@ -46814,7 +46814,7 @@ public:
     IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAirToAirHeatRecovery (IfcEntityInstanceData* e);
     IfcAirToAirHeatRecovery (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcAirToAirHeatRecoveryTypeEnum::IfcAirToAirHeatRecoveryTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAirToAirHeatRecovery > list;
@@ -46851,7 +46851,7 @@ public:
     IfcAlarmTypeEnum::IfcAlarmTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAlarmTypeEnum::IfcAlarmTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAlarmType (IfcEntityInstanceData* e);
     IfcAlarmType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcAlarmTypeEnum::IfcAlarmTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAlarmType > list;
@@ -47041,7 +47041,7 @@ public:
     IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAudioVisualAppliance (IfcEntityInstanceData* e);
     IfcAudioVisualAppliance (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcAudioVisualApplianceTypeEnum::IfcAudioVisualApplianceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAudioVisualAppliance > list;
@@ -47294,7 +47294,7 @@ public:
     IfcBeamTypeEnum::IfcBeamTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBeamTypeEnum::IfcBeamTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBeam (IfcEntityInstanceData* e);
     IfcBeam (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcBeamTypeEnum::IfcBeamTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBeam > list;
@@ -47553,7 +47553,7 @@ public:
 class IFC_PARSE_API IfcBeamStandardCase : public IfcBeam {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBeamStandardCase (IfcEntityInstanceData* e);
     IfcBeamStandardCase (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcBeamTypeEnum::IfcBeamTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBeamStandardCase > list;
@@ -47634,7 +47634,7 @@ public:
     IfcBoilerTypeEnum::IfcBoilerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBoilerTypeEnum::IfcBoilerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBoiler (IfcEntityInstanceData* e);
     IfcBoiler (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcBoilerTypeEnum::IfcBoilerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBoiler > list;
@@ -47687,7 +47687,7 @@ public:
     IfcBurnerTypeEnum::IfcBurnerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcBurnerTypeEnum::IfcBurnerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcBurner (IfcEntityInstanceData* e);
     IfcBurner (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcBurnerTypeEnum::IfcBurnerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcBurner > list;
@@ -47761,7 +47761,7 @@ public:
     IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableCarrierFitting (IfcEntityInstanceData* e);
     IfcCableCarrierFitting (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCableCarrierFittingTypeEnum::IfcCableCarrierFittingTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableCarrierFitting > list;
@@ -47833,7 +47833,7 @@ public:
     IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableCarrierSegment (IfcEntityInstanceData* e);
     IfcCableCarrierSegment (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCableCarrierSegmentTypeEnum::IfcCableCarrierSegmentTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableCarrierSegment > list;
@@ -47920,7 +47920,7 @@ public:
     IfcCableFittingTypeEnum::IfcCableFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableFittingTypeEnum::IfcCableFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableFitting (IfcEntityInstanceData* e);
     IfcCableFitting (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCableFittingTypeEnum::IfcCableFittingTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableFitting > list;
@@ -48020,7 +48020,7 @@ public:
     IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCableSegment (IfcEntityInstanceData* e);
     IfcCableSegment (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCableSegmentTypeEnum::IfcCableSegmentTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCableSegment > list;
@@ -48101,7 +48101,7 @@ public:
     IfcChillerTypeEnum::IfcChillerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcChillerTypeEnum::IfcChillerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcChiller (IfcEntityInstanceData* e);
     IfcChiller (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcChillerTypeEnum::IfcChillerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcChiller > list;
@@ -48179,7 +48179,7 @@ public:
     IfcCoilTypeEnum::IfcCoilTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCoilTypeEnum::IfcCoilTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoil (IfcEntityInstanceData* e);
     IfcCoil (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCoilTypeEnum::IfcCoilTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCoil > list;
@@ -48293,7 +48293,7 @@ public:
     IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCommunicationsAppliance (IfcEntityInstanceData* e);
     IfcCommunicationsAppliance (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCommunicationsApplianceTypeEnum::IfcCommunicationsApplianceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCommunicationsAppliance > list;
@@ -48351,7 +48351,7 @@ public:
     IfcCompressorTypeEnum::IfcCompressorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCompressorTypeEnum::IfcCompressorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCompressor (IfcEntityInstanceData* e);
     IfcCompressor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCompressorTypeEnum::IfcCompressorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCompressor > list;
@@ -48429,7 +48429,7 @@ public:
     IfcCondenserTypeEnum::IfcCondenserTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCondenserTypeEnum::IfcCondenserTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCondenser (IfcEntityInstanceData* e);
     IfcCondenser (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCondenserTypeEnum::IfcCondenserTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCondenser > list;
@@ -48476,7 +48476,7 @@ public:
     IfcControllerTypeEnum::IfcControllerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcControllerTypeEnum::IfcControllerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcControllerType (IfcEntityInstanceData* e);
     IfcControllerType (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, IfcControllerTypeEnum::IfcControllerTypeEnum v10_PredefinedType);
     typedef IfcTemplatedEntityList< IfcControllerType > list;
@@ -48537,7 +48537,7 @@ public:
     IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCooledBeam (IfcEntityInstanceData* e);
     IfcCooledBeam (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCooledBeamTypeEnum::IfcCooledBeamTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCooledBeam > list;
@@ -48606,7 +48606,7 @@ public:
     IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcCoolingTower (IfcEntityInstanceData* e);
     IfcCoolingTower (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcCoolingTowerTypeEnum::IfcCoolingTowerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcCoolingTower > list;
@@ -48689,7 +48689,7 @@ public:
     IfcDamperTypeEnum::IfcDamperTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDamperTypeEnum::IfcDamperTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDamper (IfcEntityInstanceData* e);
     IfcDamper (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcDamperTypeEnum::IfcDamperTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDamper > list;
@@ -48732,7 +48732,7 @@ public:
     IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionChamberElement (IfcEntityInstanceData* e);
     IfcDistributionChamberElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcDistributionChamberElementTypeEnum::IfcDistributionChamberElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDistributionChamberElement > list;
@@ -48741,7 +48741,7 @@ public:
 class IFC_PARSE_API IfcDistributionCircuit : public IfcDistributionSystem {
 public:
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionCircuit (IfcEntityInstanceData* e);
     IfcDistributionCircuit (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< IfcDistributionSystemEnum::IfcDistributionSystemEnum > v7_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDistributionCircuit > list;
@@ -48828,7 +48828,7 @@ class IFC_PARSE_API IfcDistributionControlElement : public IfcDistributionElemen
 public:
         IfcTemplatedEntityList< IfcRelFlowControlElements >::ptr AssignedToFlowElement() const; // INVERSE IfcRelFlowControlElements::RelatedControlElements
     virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDistributionControlElement (IfcEntityInstanceData* e);
     IfcDistributionControlElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef IfcTemplatedEntityList< IfcDistributionControlElement > list;
@@ -48915,7 +48915,7 @@ public:
     IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDuctFitting (IfcEntityInstanceData* e);
     IfcDuctFitting (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcDuctFittingTypeEnum::IfcDuctFittingTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDuctFitting > list;
@@ -48976,7 +48976,7 @@ public:
     IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDuctSegment (IfcEntityInstanceData* e);
     IfcDuctSegment (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcDuctSegmentTypeEnum::IfcDuctSegmentTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDuctSegment > list;
@@ -49030,7 +49030,7 @@ public:
     IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcDuctSilencer (IfcEntityInstanceData* e);
     IfcDuctSilencer (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcDuctSilencerTypeEnum::IfcDuctSilencerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcDuctSilencer > list;
@@ -49140,7 +49140,7 @@ public:
     IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricAppliance (IfcEntityInstanceData* e);
     IfcElectricAppliance (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcElectricApplianceTypeEnum::IfcElectricApplianceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricAppliance > list;
@@ -49209,7 +49209,7 @@ public:
     IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricDistributionBoard (IfcEntityInstanceData* e);
     IfcElectricDistributionBoard (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcElectricDistributionBoardTypeEnum::IfcElectricDistributionBoardTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricDistributionBoard > list;
@@ -49262,7 +49262,7 @@ public:
     IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricFlowStorageDevice (IfcEntityInstanceData* e);
     IfcElectricFlowStorageDevice (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcElectricFlowStorageDeviceTypeEnum::IfcElectricFlowStorageDeviceTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricFlowStorageDevice > list;
@@ -49321,7 +49321,7 @@ public:
     IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricGenerator (IfcEntityInstanceData* e);
     IfcElectricGenerator (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcElectricGeneratorTypeEnum::IfcElectricGeneratorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricGenerator > list;
@@ -49374,7 +49374,7 @@ public:
     IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricMotor (IfcEntityInstanceData* e);
     IfcElectricMotor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcElectricMotorTypeEnum::IfcElectricMotorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricMotor > list;
@@ -49427,7 +49427,7 @@ public:
     IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum PredefinedType() const;
     void setPredefinedType(IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcElectricTimeControl (IfcEntityInstanceData* e);
     IfcElectricTimeControl (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcElectricTimeControlTypeEnum::IfcElectricTimeControlTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcElectricTimeControl > list;
@@ -49493,7 +49493,7 @@ public:
     IfcFanTypeEnum::IfcFanTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFanTypeEnum::IfcFanTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFan (IfcEntityInstanceData* e);
     IfcFan (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFanTypeEnum::IfcFanTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFan > list;
@@ -49592,7 +49592,7 @@ public:
     IfcFilterTypeEnum::IfcFilterTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFilterTypeEnum::IfcFilterTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFilter (IfcEntityInstanceData* e);
     IfcFilter (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFilterTypeEnum::IfcFilterTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFilter > list;
@@ -49670,7 +49670,7 @@ public:
     IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFireSuppressionTerminal (IfcEntityInstanceData* e);
     IfcFireSuppressionTerminal (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFireSuppressionTerminalTypeEnum::IfcFireSuppressionTerminalTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFireSuppressionTerminal > list;
@@ -49734,7 +49734,7 @@ public:
     IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum PredefinedType() const;
     void setPredefinedType(IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcFlowInstrument (IfcEntityInstanceData* e);
     IfcFlowInstrument (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcFlowInstrumentTypeEnum::IfcFlowInstrumentTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcFlowInstrument > list;
@@ -49798,7 +49798,7 @@ public:
     IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum PredefinedType() const;
     void setPredefinedType(IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcProtectiveDeviceTrippingUnit (IfcEntityInstanceData* e);
     IfcProtectiveDeviceTrippingUnit (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcProtectiveDeviceTrippingUnitTypeEnum::IfcProtectiveDeviceTrippingUnitTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcProtectiveDeviceTrippingUnit > list;
@@ -49944,7 +49944,7 @@ public:
     IfcSensorTypeEnum::IfcSensorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcSensorTypeEnum::IfcSensorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcSensor (IfcEntityInstanceData* e);
     IfcSensor (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcSensorTypeEnum::IfcSensorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcSensor > list;
@@ -50011,7 +50011,7 @@ public:
     IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum PredefinedType() const;
     void setPredefinedType(IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcUnitaryControlElement (IfcEntityInstanceData* e);
     IfcUnitaryControlElement (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcUnitaryControlElementTypeEnum::IfcUnitaryControlElementTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcUnitaryControlElement > list;
@@ -50085,7 +50085,7 @@ public:
     IfcActuatorTypeEnum::IfcActuatorTypeEnum PredefinedType() const;
     void setPredefinedType(IfcActuatorTypeEnum::IfcActuatorTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcActuator (IfcEntityInstanceData* e);
     IfcActuator (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcActuatorTypeEnum::IfcActuatorTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcActuator > list;
@@ -50139,7 +50139,7 @@ public:
     IfcAlarmTypeEnum::IfcAlarmTypeEnum PredefinedType() const;
     void setPredefinedType(IfcAlarmTypeEnum::IfcAlarmTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcAlarm (IfcEntityInstanceData* e);
     IfcAlarm (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcAlarmTypeEnum::IfcAlarmTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcAlarm > list;
@@ -50257,14 +50257,13 @@ public:
     IfcControllerTypeEnum::IfcControllerTypeEnum PredefinedType() const;
     void setPredefinedType(IfcControllerTypeEnum::IfcControllerTypeEnum v);
         virtual const IfcParse::entity& declaration() const;
-    static Type::Enum Class();
+    static const IfcParse::entity& Class();
     IfcController (IfcEntityInstanceData* e);
     IfcController (std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, IfcObjectPlacement* v6_ObjectPlacement, IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< IfcControllerTypeEnum::IfcControllerTypeEnum > v9_PredefinedType);
     typedef IfcTemplatedEntityList< IfcController > list;
 };
 
 IFC_PARSE_API void InitStringMap();
-IFC_PARSE_API IfcUtil::IfcBaseClass* SchemaEntity(IfcEntityInstanceData* e = 0);
 }
 
 #endif
