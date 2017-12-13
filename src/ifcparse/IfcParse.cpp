@@ -1281,8 +1281,8 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	}
 
 	if (schema_ == 0) {
-		schema_ = IfcParse::schema_by_name(IfcSchema::Identifier);
-		Logger::Message(Logger::LOG_ERROR, "Unable to deduce schema version from header identifiers");
+		schema_ = IfcParse::schema_by_name("IFC4");
+		Logger::Message(Logger::LOG_ERROR, "Unable to deduce schema version from header identifiers, defaulting to IFC4");
 	}
 
 	ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
@@ -1538,8 +1538,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				we->setArgument(i, copy);
 			} else if (decl && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
 				if (boost::math::isnan(conversion_factor)) {
-					const std::pair<IfcSchema::IfcNamedUnit*, double> this_file_unit = getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
-					const std::pair<IfcSchema::IfcNamedUnit*, double> other_file_unit = other_file->getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
+					const std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = getUnit("LENGTHUNIT");
+					const std::pair<IfcUtil::IfcBaseClass*, double> other_file_unit = other_file->getUnit("LENGTHUNIT");
 					std::cerr << other_file_unit.second << " " << this_file_unit.second << std::endl;
 					if (this_file_unit.first && other_file_unit.first) {
 						conversion_factor = other_file_unit.second / this_file_unit.second;
@@ -1938,7 +1938,7 @@ void IfcFile::setDefaultHeaderValues() {
 	std::vector<std::string> file_description, schema_identifiers, empty_vector;
 
 	file_description.push_back("ViewDefinition [CoordinationView]");
-	schema_identifiers.push_back(IfcSchema::Identifier);
+	schema_identifiers.push_back(schema()->name());
 
 	header().file_description().description(file_description);
 	header().file_description().implementation_level("2;1");
@@ -1954,38 +1954,69 @@ void IfcFile::setDefaultHeaderValues() {
 	header().file_schema().schema_identifiers(schema_identifiers);
 }
 
-std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum type) {
-	std::pair<IfcSchema::IfcNamedUnit*, double> return_value((IfcSchema::IfcNamedUnit*)0, 1.);
-	IfcSchema::IfcProject::list::ptr projects = instances_by_type<IfcSchema::IfcProject>();
+std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& unit_type) {
+	std::pair<IfcUtil::IfcBaseClass*, double> return_value(0, 1.);
+	IfcEntityList::ptr projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
+
 	if (projects->size() == 1) {
-		IfcSchema::IfcProject* project = *projects->begin();
-		IfcEntityList::ptr units = project->UnitsInContext()->Units();
+		IfcUtil::IfcBaseClass* project = *projects->begin();
+		
+		IfcUtil::IfcBaseClass* unit_assignment = *project->data().getArgument(
+			project->declaration().as_entity()->attribute_index("UnitsInContext")
+		);
+		
+		IfcEntityList::ptr units = *unit_assignment->data().getArgument(
+			unit_assignment->declaration().as_entity()->attribute_index("Units")
+		);
+
 		for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
 			IfcSchema::IfcUnit* unit = *it;
-			if (unit->declaration().is(IfcSchema::Type::IfcNamedUnit)) {
-				IfcSchema::IfcNamedUnit* named_unit = (IfcSchema::IfcNamedUnit*) unit;
-				if (named_unit->UnitType() != type) {
+			if (unit->declaration().is("IfcNamedUnit")) {
+				const std::string file_unit_type = *unit->data().getArgument(
+					unit->declaration().as_entity()->attribute_index("UnitType")
+				);
+
+				if (file_unit_type != unit_type) {
 					continue;
 				}
-				IfcSchema::IfcSIUnit* siunit = 0;
-				if (named_unit->declaration().is(IfcSchema::Type::IfcConversionBasedUnit)) {
-					IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)named_unit;
-					IfcSchema::IfcMeasureWithUnit* mu = u->ConversionFactor();
-					return_value.second *= static_cast<double>(*mu->ValueComponent()->data().getArgument(0));
-					return_value.first = named_unit;
-					if (mu->UnitComponent()->declaration().is(IfcSchema::Type::IfcSIUnit)) {
-						siunit = (IfcSchema::IfcSIUnit*) mu->UnitComponent();
+
+				IfcUtil::IfcBaseClass* siunit = 0;
+				if (unit->declaration().is("IfcConversionBasedUnit")) {
+					IfcUtil::IfcBaseClass* mu = *unit->data().getArgument(
+						unit->declaration().as_entity()->attribute_index("ConversionFactor")
+					);
+
+					IfcUtil::IfcBaseClass* vlc = *mu->data().getArgument(
+						mu->declaration().as_entity()->attribute_index("ValueComponent")
+					);
+
+					IfcUtil::IfcBaseClass* unc = *mu->data().getArgument(
+						mu->declaration().as_entity()->attribute_index("ValueComponent")
+					);
+
+					return_value.second *= static_cast<double>(*vlc->data().getArgument(0));
+					return_value.first = unit;
+
+					if (unc->declaration().is("IfcSIUnit")) {
+						siunit = unc;
 					}
-				} else if (named_unit->declaration().is(IfcSchema::Type::IfcSIUnit)) {
-					return_value.first = siunit = (IfcSchema::IfcSIUnit*) named_unit;
+
+				} else if (unit->declaration().is("IfcSIUnit")) {
+					return_value.first = siunit = unit;
 				}
+
 				if (siunit) {
-					if (siunit->hasPrefix()) {
-						return_value.second *= IfcSIPrefixToValue(siunit->Prefix());
+					Argument* prefix = siunit->data().getArgument(
+						siunit->declaration().as_entity()->attribute_index("Prefix")
+					);
+
+					if (!prefix->isNull()) {
+						return_value.second *= IfcSIPrefixToValue(*prefix);
 					}
 				}
 			}
 		}
 	}
+
 	return return_value;
 }

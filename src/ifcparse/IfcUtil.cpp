@@ -57,12 +57,12 @@ void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
 	}
 }
 
-IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>& entities) {
+IfcEntityList::ptr IfcEntityList::filtered(const std::set<const IfcParse::declaration*>& entities) {
 	IfcEntityList::ptr return_value(new IfcEntityList);
 	for (it it = begin(); it != end(); ++it) {
 		bool contained = false;
-		for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
-			if ((*it)->declaration().is(*jt)) {
+		for (std::set<const IfcParse::declaration*>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
+			if ((*it)->declaration().is(**jt)) {
 				contained = true;
 				break;
 			}

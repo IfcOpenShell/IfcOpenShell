@@ -47,7 +47,7 @@ class SchemaClass(codegen.Base):
             elif isinstance(type, str):
                 if mapping.schema.is_type(type) or mapping.schema.is_entity(type):
                     if emitted_names is None or type.lower() in emitted_types:
-                        return "new named_type(%s_type)" % type
+                        return "new named_type(%s_%s_type)" % (schema_name, type)
                     else:
                         raise UnmetDependenciesException(type)
                 else:
@@ -75,7 +75,6 @@ class SchemaClass(codegen.Base):
                       '#include "../ifcparse/%(schema_name_title)s.h"' % locals(),
                       '',
                       'using namespace IfcParse;',
-                      'using namespace %(schema_name_title)s;' % locals(),
                       '']
 
         collections_by_type = (('entity',           mapping.schema.entities    ),
@@ -85,7 +84,7 @@ class SchemaClass(codegen.Base):
 
         for cpp_type, collection in collections_by_type:
             for name in collection.keys():
-                statements.append('%(cpp_type)s* %(name)s_type = 0;' % locals())
+                statements.append('%(cpp_type)s* %(schema_name)s_%(name)s_type = 0;' % locals())
                 
         declarations_by_index = []
         
@@ -96,7 +95,7 @@ class SchemaClass(codegen.Base):
 #pragma optimize("", off)
 #endif
         """)
-        statements.append('IfcParse::schema_definition* populate_schema() {')
+        statements.append('IfcParse::schema_definition* %(schema_name)s_populate_schema() {' % locals())
         
         emitted_types = set()
         while len(emitted_types) < len(mapping.schema.simpletypes):
@@ -109,20 +108,20 @@ class SchemaClass(codegen.Base):
                     # print("Unmet", repr(name))
                     continue
 
-                statements.append('    %(name)s_type = new type_declaration("%(name)s", %%(index_in_schema_%(name)s)d, %(declared_type)s);' % locals())
+                statements.append('    %(schema_name)s_%(name)s_type = new type_declaration("%(name)s", %%(index_in_schema_%(name)s)d, %(declared_type)s);' % locals())
                 emitted_types.add(name.lower())
                 
-                declared_types.append('%(name)s_type' % locals())
+                declared_types.append('%(schema_name)s_%(name)s_type' % locals())
                 declarations_by_index.append(name)
                 
         for name, enum in mapping.schema.enumerations.items():
             statements.append('    {')
             statements.append('        std::vector<std::string> items; items.reserve(%d);' % len(enum.values))
             statements.extend(map(lambda v: '        items.push_back("%s");' % v, sorted(enum.values)))
-            statements.append('        %(name)s_type = new enumeration_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
+            statements.append('        %(schema_name)s_%(name)s_type = new enumeration_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
             statements.append('    }')
             
-            declared_types.append('%(name)s_type' % locals())
+            declared_types.append('%(schema_name)s_%(name)s_type' % locals())
             declarations_by_index.append(name)
         
         emitted_entities = set()
@@ -130,11 +129,11 @@ class SchemaClass(codegen.Base):
             for name, type in mapping.schema.entities.items():
                 if name.lower() in emitted_entities: continue
                 if len(type.supertypes) == 0 or set(map(lambda s: s.lower(), type.supertypes)) < emitted_entities:
-                    supertype = '0' if len(type.supertypes) == 0 else '%s_type' % type.supertypes[0]
-                    statements.append('    %(name)s_type = new entity("%(name)s", %%(index_in_schema_%(name)s)d, %(supertype)s);' % locals())
+                    supertype = '0' if len(type.supertypes) == 0 else '%s_%s_type' % (schema_name, type.supertypes[0])
+                    statements.append('    %(schema_name)s_%(name)s_type = new entity("%(name)s", %%(index_in_schema_%(name)s)d, %(supertype)s);' % locals())
                     emitted_entities.add(name.lower())
                     
-                    declared_types.append('%(name)s_type' % locals())
+                    declared_types.append('%(schema_name)s_%(name)s_type' % locals())
                     declarations_by_index.append(name)
         
         emmited = emitted_types | emitted_entities | set(mapping.schema.enumerations.keys())
@@ -146,13 +145,13 @@ class SchemaClass(codegen.Base):
                 if set(map(lambda s: s.lower(),type.values)) < emmited:
                     statements.append('    {')
                     statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type.values))
-                    statements.extend(map(lambda v: '        items.push_back(%s_type);' % v, sorted(type.values)))
-                    statements.append('        %(name)s_type = new select_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
+                    statements.extend(map(lambda v: '        items.push_back(%s_%s_type);' % (schema_name, v), sorted(type.values)))
+                    statements.append('        %(schema_name)s_%(name)s_type = new select_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
                     statements.append('    }')
                     emitted_selects.add(name.lower())
                     emmited.add(name)
                     
-                    declared_types.append('%(name)s_type' % locals())
+                    declared_types.append('%(schema_name)s_%(name)s_type' % locals())
                     declarations_by_index.append(name)
                     
         num_declarations = len(declared_types)
@@ -169,7 +168,7 @@ class SchemaClass(codegen.Base):
                 statements.append('        attributes.push_back(new entity::attribute("%(attr_name)s", %(decl_type)s, %(optional)s));' % locals())
             statements.append('        std::vector<bool> derived; derived.reserve(%d);' % len(attribute_names))
             statements.append('        ' + " ".join(map(lambda b: 'derived.push_back(%s);' % str(b in derived).lower(), attribute_names)))
-            statements.append('        %(name)s_type->set_attributes(attributes, derived);' % locals())
+            statements.append('        %(schema_name)s_%(name)s_type->set_attributes(attributes, derived);' % locals())
             statements.append('    }')
             
         for name, type in mapping.schema.entities.items():
@@ -185,8 +184,8 @@ class SchemaClass(codegen.Base):
                     attr_name, aggr_type, entity_ref = attr.name, attr.type, attr.entity
                     if aggr_type is None: aggr_type = 'unspecified'
                     attribute_entity, attribute_entity_index = find_inverse_name_and_index(entity_ref, attr.attribute)
-                    statements.append('        attributes.push_back(new entity::inverse_attribute("%(attr_name)s", entity::inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(entity_ref)s_type, %(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));' % locals())
-                statements.append('        %(name)s_type->set_inverse_attributes(attributes);' % locals())
+                    statements.append('        attributes.push_back(new entity::inverse_attribute("%(attr_name)s", entity::inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(schema_name)s_%(entity_ref)s_type, %(schema_name)s_%(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));' % locals())
+                statements.append('        %(schema_name)s_%(name)s_type->set_inverse_attributes(attributes);' % locals())
                 statements.append('    }')
             
         statements.append('')
@@ -208,7 +207,7 @@ class SchemaClass(codegen.Base):
         
         statements.extend(('const schema_definition& get_schema() {',
                            '',
-                           '    static const schema_definition* s = populate_schema();',
+                           '    static const schema_definition* s = %(schema_name)s_populate_schema();' % locals(),
                            '    return *s;',
                            '}','}','',''))
                            
@@ -228,7 +227,7 @@ class SchemaClass(codegen.Base):
             %s
             default: throw IfcParse::IfcException(data->type()->name() + " cannot be instantiated");
         }
-""" % "\n            ".join(map(lambda tup: "case %d: return new %s(data);" % tup, filter(can_be_instantiated, enumerate(declarations_by_index))))
+""" % "\n            ".join(map(lambda tup: ("case %%d: return new ::%s::%%s(data);" % schema_name_title) % tup, filter(can_be_instantiated, enumerate(declarations_by_index))))
 
         statements[statements.index("{factory_placeholder}")] = """
 class %(schema_name)s_instance_factory : public IfcParse::instance_factory {

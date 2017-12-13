@@ -36,7 +36,7 @@ static const char * const DATA				= "DATA";
 using namespace IfcParse;
 
 HeaderEntity::HeaderEntity(const char * const datatype, IfcFile* file)
-	: IfcEntityInstanceData(IfcSchema::Type::UNDEFINED, file), _datatype(datatype)
+	: IfcEntityInstanceData(0, file), _datatype(datatype)
 {
 	if (file) {
 		offset_in_file_ = file->stream->Tell();
