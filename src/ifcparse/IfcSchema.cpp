@@ -3,31 +3,44 @@
 #include <map>
 
 bool IfcParse::declaration::is(const std::string& name) const {
-	return is(IfcSchema::Type::FromString(name));
-}
+	if (name_ == name) return true;
 
-bool IfcParse::declaration::is(IfcSchema::Type::Enum name) const {
 	if (this->as_entity()) {
 		return this->as_entity()->is(name);
-	} else {
-		return this->name() == IfcSchema::Type::ToString(name);
+	} else if (this->as_type_declaration()) {
+		const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
+		if (nt) return nt->is(name);
 	}
+
+	return false;
+}
+
+bool IfcParse::declaration::is(const IfcParse::declaration& decl) const {
+	if (this == &decl) return true;
+
+	if (this->as_entity()) {
+		return this->as_entity()->is(decl);
+	} else if (this->as_type_declaration()) {
+		const IfcParse::named_type* nt = this->as_type_declaration()->declared_type()->as_named_type();
+		if (nt) return nt->is(decl);
+	}
+
+	return false;
 }
 
 bool IfcParse::named_type::is(const std::string& name) const {
 	return declared_type()->is(name);
 }
 
-bool IfcParse::named_type::is(IfcSchema::Type::Enum name) const {
-	return declared_type()->is(name);
+bool IfcParse::named_type::is(const IfcParse::declaration& decl) const {
+	return declared_type()->is(decl);
 }
 
 static std::map<std::string, const IfcParse::schema_definition*> schemas;
 
-IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory, bool built_in)
+IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory)
 	: name_(name)
 	, declarations_(declarations)
-	, built_in_(built_in)
 	, factory_(factory)
 {
 	std::sort(declarations_.begin(), declarations_.end(), declaration_by_index_sort());

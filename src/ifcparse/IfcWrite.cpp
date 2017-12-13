@@ -139,7 +139,7 @@ public:
 	}
 	void operator()(const IfcUtil::IfcBaseClass* const& i) { 
 		const IfcEntityInstanceData& e = i->data();
-		if ( IfcSchema::Type::IsSimple(e.type()) ) {
+		if (!e.type()->as_entity()) {
 			data << e.toString(upper);
 		} else {
 			data << "#" << e.id();

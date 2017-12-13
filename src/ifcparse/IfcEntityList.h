@@ -49,7 +49,7 @@ public:
 		return r;
 	}
 	void remove(IfcUtil::IfcBaseClass*);
-	IfcEntityList::ptr filtered(const std::set<IfcSchema::Type::Enum>& entities);
+	IfcEntityList::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
 	IfcEntityList::ptr unique();
 };
 
