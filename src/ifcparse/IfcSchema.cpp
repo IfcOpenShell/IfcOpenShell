@@ -24,12 +24,13 @@ bool IfcParse::named_type::is(IfcSchema::Type::Enum name) const {
 
 static std::map<std::string, const IfcParse::schema_definition*> schemas;
 
-IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, const bool built_in = false)
+IfcParse::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations, instance_factory* factory, bool built_in)
 	: name_(name)
 	, declarations_(declarations)
 	, built_in_(built_in)
+	, factory_(factory)
 {
-	std::sort(declarations_.begin(), declarations_.end(), declaration_by_enum_sort());
+	std::sort(declarations_.begin(), declarations_.end(), declaration_by_index_sort());
 	for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
 		if ((**it).as_type_declaration()) type_declarations_.push_back((**it).as_type_declaration());
 		if ((**it).as_select_type()) select_types_.push_back((**it).as_select_type());
@@ -47,7 +48,7 @@ IfcParse::schema_definition::~schema_definition() {
 }
 
 const IfcParse::schema_definition* schema_by_name(const std::string& name) {
-	std::map<std::string, IfcParse::schema_definition*>::const_iterator it = schemas.find(name);
+	std::map<std::string, const IfcParse::schema_definition*>::const_iterator it = schemas.find(name);
 	if (it == schemas.end()) {
 		throw IfcParse::IfcException("No schema named " + name);
 	}

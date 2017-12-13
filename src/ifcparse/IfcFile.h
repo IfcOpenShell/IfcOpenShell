@@ -35,7 +35,7 @@ namespace IfcParse {
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
 public:
-	typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> entities_by_type_t;
+	typedef std::map<const IfcParse::declaration*, IfcEntityList::ptr> entities_by_type_t;
 	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
@@ -58,7 +58,7 @@ public:
 		}
 
 		const std::string& as_string() const {
-			return IfcSchema::Type::ToString(**this);
+			return (**this)->name();
 		}
 	};
 
@@ -119,8 +119,8 @@ public:
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
 	template <class T>
-	typename T::list::ptr entitiesByType() {
-		IfcEntityList::ptr untyped_list = entitiesByType(T::Class());
+	typename T::list::ptr instances_by_type() {
+		IfcEntityList::ptr untyped_list = instances_by_type(&T::Class());
 		if (untyped_list) {
 			return untyped_list->as<T>();
 		} else {
@@ -131,24 +131,24 @@ public:
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr entitiesByType(IfcSchema::Type::Enum t);
+	IfcEntityList::ptr instances_by_type(const IfcParse::declaration*);
 
 	/// Returns all entities in the file that match the positional argument.
-	IfcEntityList::ptr entitiesByTypeExclSubtypes(IfcSchema::Type::Enum t);
+	IfcEntityList::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
 
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
-	IfcEntityList::ptr entitiesByType(const std::string& t);
+	IfcEntityList::ptr instances_by_type(const std::string& t);
 
 	/// Returns all entities in the file that reference the id
-	IfcEntityList::ptr entitiesByReference(int id);
+	IfcEntityList::ptr instances_by_reference(int id);
 
 	/// Returns the entity with the specified id
-	IfcUtil::IfcBaseClass* entityById(int id);
+	IfcUtil::IfcBaseClass* instance_by_id(int id);
 
 	/// Returns the entity with the specified GlobalId
-	IfcSchema::IfcRoot* entityByGuid(const std::string& guid);
+	IfcSchema::IfcRoot* instance_by_guid(const std::string& guid);
 
 	/// Performs a depth-first traversal, returning all entity instance
 	/// attributes as a flat list. NB: includes the root instance specified

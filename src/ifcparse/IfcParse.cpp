@@ -601,7 +601,7 @@ EntityArgument::EntityArgument(const Token& t) {
 	// Data needs to be loaded, for the tokens
 	// to be consumed and parsing to continue.
 	data->load();
-	entity = IfcSchema::SchemaEntity(data);
+	entity = file->schema()->instantiate(data);
 }
 
 // 
@@ -800,7 +800,7 @@ TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
 TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
 TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
 TokenArgument::operator boost::dynamic_bitset<>() const { return TokenFunc::asBinary(token); }
-TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.lexer->file->entityById(TokenFunc::asIdentifier(token)); }
+TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.lexer->file->instance_by_id(TokenFunc::asIdentifier(token)); }
 unsigned int TokenArgument::size() const { return 1; }
 Argument* TokenArgument::operator [] (unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
 std::string TokenArgument::toString(bool upper) const { 
@@ -838,7 +838,7 @@ IfcEntityInstanceData* IfcParse::read(unsigned int i, IfcFile* f, boost::optiona
 	}
 	Token datatype = f->tokens->Next();
 	if (!TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity");
-	IfcSchema::Type::Enum ty = IfcSchema::Type::FromString(TokenFunc::asStringRef(datatype));
+	const IfcParse::declaration* ty = f->schema()->declaration_by_name(TokenFunc::asStringRef(datatype));
 	IfcEntityInstanceData* e = new IfcEntityInstanceData(ty, f, i, offset.get_value_or(0));
 	return e;
 }
@@ -849,8 +849,8 @@ void IfcParse::IfcFile::load(const IfcEntityInstanceData& data) {
 		Token datatype = tokens->Next();
 		if (!TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity instance");
 	}
-
 	tokens->Next();
+	// TODO: reserve based on number of schema attrs
 	load(data.id(), data.attributes());
 	unsigned int old_offset = tokens->stream->Tell();
 	Token semilocon = tokens->Next();
@@ -891,12 +891,12 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
 	std::stringstream ss;
 	ss.imbue(std::locale::classic());
 	
-	std::string dt = IfcSchema::Type::ToString(type());
+	std::string dt = type()->name();
 	if (upper) {
 		boost::to_upper(dt);
 	}
 
-	if (!IfcSchema::Type::IsSimple(type()) || id_ != 0) {
+	if (type()->as_entity() || id_ != 0) {
 		ss << "#" << id_ << "=";
 	}
 
@@ -1116,7 +1116,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		// Remove leading and trailing '.'
 		enum_literal = enum_literal.substr(1, enum_literal.size() - 2);
 		
-		const IfcParse::enumeration_type* enum_type = file->schema()->declaration_by_name(type())->as_entity()->
+		const IfcParse::enumeration_type* enum_type = type()->as_entity()->
 			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
 		
 		std::vector<std::string>::const_iterator it = std::find(
@@ -1163,7 +1163,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		break; }
 	case IfcUtil::Argument_EMPTY_AGGREGATE:
 	case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE: {
-		IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(file->schema()->declaration_by_name(type())->as_entity()->all_attributes()[i]->type_of_attribute());
+		IfcUtil::ArgumentType t2 = IfcUtil::from_parameter_type(type()->as_entity()->attribute_by_index(i)->type_of_attribute());
 		delete copy;
 		copy = 0;
 		setArgument(i, a, t2);
@@ -1300,16 +1300,16 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 			token_stream[2].type == IfcParse::Token_KEYWORD)
 		{
 			current_id = (unsigned) TokenFunc::asIdentifier(token_stream[0]);
-			IfcSchema::Type::Enum entity_type;
+			const IfcParse::declaration* entity_type;
 			try {
-				entity_type = IfcSchema::Type::FromString(TokenFunc::asStringRef(token_stream[2]));
+				entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream[2]));
 			} catch (const IfcException& ex) {
 				Logger::Message(Logger::LOG_ERROR, ex.what());
 				goto advance;
 			}
 				
 			data = new IfcEntityInstanceData(entity_type, this, current_id, token_stream[2].startPos);
-			instance = IfcSchema::SchemaEntity(data);
+			instance = schema()->instantiate(data);
 
             /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
 			// Update the status after every 1000 instances parsed
@@ -1333,27 +1333,27 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 				}
 			}
 
-			IfcSchema::Type::Enum ty = instance->declaration().type();
+			const IfcParse::declaration* ty = &instance->declaration();
 
 			{
-				IfcEntityList::ptr instances_by_type = entitiesByTypeExclSubtypes(ty);
-				if (!instances_by_type) {
-					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
-					bytype_excl[ty] = instances_by_type;
+				IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
+				if (!insts) {
+					insts = IfcEntityList::ptr(new IfcEntityList());
+					bytype_excl[ty] = insts;
 				}
-				instances_by_type->push(instance);
+				insts->push(instance);
 			}
 
 			for (;;) {
-				IfcEntityList::ptr instances_by_type = entitiesByType(ty);
-				if (!instances_by_type) {
-					instances_by_type = IfcEntityList::ptr(new IfcEntityList());
-					bytype[ty] = instances_by_type;
+				IfcEntityList::ptr insts = instances_by_type(ty);
+				if (!insts) {
+					insts = IfcEntityList::ptr(new IfcEntityList());
+					bytype[ty] = insts;
 				}
-				instances_by_type->push(instance);
-				boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+				insts->push(instance);
+				const IfcParse::declaration* pt = ty->as_entity()->supertype();
 				if (pt) {
-					ty = *pt;
+					ty = pt;
 				} else {
 					break;
 				}
@@ -1485,7 +1485,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// need to be updated to point to instances in this file.
 		IfcFile* other_file = entity->data().file;
 		IfcEntityInstanceData* we = new IfcEntityInstanceData(entity->data());
-		new_entity = IfcSchema::SchemaEntity(we);
+		new_entity = schema()->instantiate(we);
 		
 		// In case an entity is added that contains geometry, the unit
 		// information needs to be accounted for for IfcLengthMeasures.
@@ -1498,10 +1498,6 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 			IfcUtil::ArgumentType attr_type = attr->type();
 
 			IfcParse::declaration* decl = attribute_types[i]->type_of_attribute()->as_named_type()->declared_type();
-			IfcSchema::Type::Enum decl_type = IfcSchema::Type::UNDEFINED;
-			if (decl) {
-				decl_type = decl->type();
-			}
 			
 			if (attr_type == IfcUtil::Argument_ENTITY_INSTANCE) {
 				entity_entity_map_t::const_iterator eit = entity_file_map.find(*attr);
@@ -1538,10 +1534,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
 				copy->set(new_instances);
 				we->setArgument(i, copy);
-
-			} else if (decl_type == IfcSchema::Type::IfcLengthMeasure ||
-				decl_type == IfcSchema::Type::IfcPositiveLengthMeasure)
-			{
+			} else if (decl && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
 				if (boost::math::isnan(conversion_factor)) {
 					const std::pair<IfcSchema::IfcNamedUnit*, double> this_file_unit = getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
 					const std::pair<IfcSchema::IfcNamedUnit*, double> other_file_unit = other_file->getUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT);
@@ -1575,7 +1568,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// A new entity instance name is generated and
 		// the instance is pointed to this file.
 		we->file = this;
-		if (!IfcSchema::Type::IsSimple(we->type())) {
+		if (we->type()->as_entity()) {
 			we->set_id(FreshId());
 		}
 
@@ -1599,29 +1592,29 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 
 	// The mapping by entity type is updated.
-	IfcSchema::Type::Enum ty = new_entity->declaration().type();
+	const IfcParse::declaration* ty = &new_entity->declaration();
 
 	{
-		IfcEntityList::ptr instances_by_type = entitiesByTypeExclSubtypes(ty);
-		if (!instances_by_type) {
-			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
-			bytype_excl[ty] = instances_by_type;
+		IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
+		if (!insts) {
+			insts = IfcEntityList::ptr(new IfcEntityList());
+			bytype_excl[ty] = insts;
 		}
-		instances_by_type->push(new_entity);
+		insts->push(new_entity);
 	}
 
 	for (;;) {
-		IfcEntityList::ptr instances_by_type = entitiesByType(ty);
-		if (!instances_by_type) {
-			instances_by_type = IfcEntityList::ptr(new IfcEntityList());
-			bytype[ty] = instances_by_type;
+		IfcEntityList::ptr insts = instances_by_type(ty);
+		if (!insts) {
+			insts = IfcEntityList::ptr(new IfcEntityList());
+			bytype[ty] = insts;
 		}
-		instances_by_type->push(new_entity);
-		boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+		insts->push(new_entity);
+
+		const IfcParse::declaration* pt = ty->as_entity()->supertype();
 		if (pt) {
-			ty = *pt;
-		}
-		else {
+			ty = pt;
+		} else {
 			break;
 		}
 	}
@@ -1659,7 +1652,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		if (*it == new_entity) continue;
 		try {
-			if (!IfcSchema::Type::IsSimple(entity_attribute->declaration().type())) {
+			if (entity_attribute->declaration().as_entity()) {
 				unsigned entity_attribute_id = entity_attribute->data().id();
 				byref[entity_attribute_id].push_back(new_entity->data().id());
 			}
@@ -1673,7 +1666,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	const unsigned id = entity->data().id();
-	IfcUtil::IfcBaseClass* file_entity = entityById(id);
+	IfcUtil::IfcBaseClass* file_entity = instance_by_id(id);
 
 	// TODO: Create a set of weak relations. Inverse relations that do not dictate an 
 	// instance to be retained. For example: when deleting an IfcRepresentation, the 
@@ -1686,7 +1679,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 		throw IfcParse::IfcException("Instance not part of this file");
 	}
 
-	IfcEntityList::ptr references = entitiesByReference(id);
+	IfcEntityList::ptr references = instances_by_reference(id);
 
 	// Alter entity instances with INVERSE relations to the entity being 
 	// deleted. This is necessary to maintain a valid IFC file, because 
@@ -1769,10 +1762,10 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	
 	byid.erase(byid.find(id));
 
-	IfcSchema::Type::Enum ty = entity->declaration().type();
+	const IfcParse::declaration* ty = &entity->declaration();
 
 	{
-		IfcEntityList::ptr instances_of_same_type = entitiesByTypeExclSubtypes(ty);
+		IfcEntityList::ptr instances_of_same_type = instances_by_type_excl_subtypes(ty);
 		instances_of_same_type->remove(entity);
 		if (instances_of_same_type->size() == 0) {
 			bytype_excl.erase(ty);
@@ -1780,16 +1773,17 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 
 	for (;;) {
-		IfcEntityList::ptr instances_of_same_type = entitiesByType(ty);
+		IfcEntityList::ptr instances_of_same_type = instances_by_type(ty);
 		if (instances_of_same_type) {
 			instances_of_same_type->remove(entity);
 		}
 		if (instances_of_same_type->size() == 0) {
 			bytype.erase(ty);
 		}
-		boost::optional<IfcSchema::Type::Enum> pt = IfcSchema::Type::Parent(ty);
+
+		const IfcParse::declaration* pt = ty->as_entity()->supertype();
 		if (pt) {
-			ty = *pt;
+			ty = pt;
 		} else {
 			break;
 		}
@@ -1798,21 +1792,21 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	delete entity;
 }
 
-IfcEntityList::ptr IfcFile::entitiesByType(IfcSchema::Type::Enum t) {
+IfcEntityList::ptr IfcFile::instances_by_type(const IfcParse::declaration* t) {
 	entities_by_type_t::const_iterator it = bytype.find(t);
 	return (it == bytype.end()) ? IfcEntityList::ptr() : it->second;
 }
 
-IfcEntityList::ptr IfcFile::entitiesByTypeExclSubtypes(IfcSchema::Type::Enum t) {
+IfcEntityList::ptr IfcFile::instances_by_type_excl_subtypes(const IfcParse::declaration* t) {
 	entities_by_type_t::const_iterator it = bytype_excl.find(t);
 	return (it == bytype_excl.end()) ? IfcEntityList::ptr() : it->second;
 }
 
-IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
-	return entitiesByType(IfcSchema::Type::FromString(boost::to_upper_copy(t)));
+IfcEntityList::ptr IfcFile::instances_by_type(const std::string& t) {
+	return instances_by_type(schema()->declaration_by_name(t));
 }
 
-IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
+IfcEntityList::ptr IfcFile::instances_by_reference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
 	IfcEntityList::ptr return_value;
 	if (it != byref.end()) {
@@ -1821,13 +1815,13 @@ IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 			if (!return_value) {
 				return_value.reset(new IfcEntityList);
 			}
-			return_value->push(entityById(*jt));
+			return_value->push(instance_by_id(*jt));
 		}
 	}
 	return return_value;
 }
 
-IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
+IfcUtil::IfcBaseClass* IfcFile::instance_by_id(int id) {
 	entity_by_id_t::const_iterator it = byid.find(id);
 	if (it == byid.end()) {
 		throw IfcException("Entity not found");
@@ -1835,7 +1829,7 @@ IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
 	return it->second;
 }
 
-IfcSchema::IfcRoot* IfcFile::entityByGuid(const std::string& guid) {
+IfcSchema::IfcRoot* IfcFile::instance_by_guid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
 		throw IfcException("Entity not found");
@@ -1910,10 +1904,10 @@ std::string IfcFile::createTimestamp() const {
 }
 
 IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index) {
-	IfcUtil::IfcBaseClass* instance = entityById(instance_id);
+	IfcUtil::IfcBaseClass* instance = instance_by_id(instance_id);
 
 	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList);
-	IfcEntityList::ptr all = entitiesByReference(instance_id);
+	IfcEntityList::ptr all = instances_by_reference(instance_id);
 	if (!all) return l;
 
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
@@ -1961,7 +1955,7 @@ void IfcFile::setDefaultHeaderValues() {
 
 std::pair<IfcSchema::IfcNamedUnit*, double> IfcFile::getUnit(IfcSchema::IfcUnitEnum::IfcUnitEnum type) {
 	std::pair<IfcSchema::IfcNamedUnit*, double> return_value((IfcSchema::IfcNamedUnit*)0, 1.);
-	IfcSchema::IfcProject::list::ptr projects = entitiesByType<IfcSchema::IfcProject>();
+	IfcSchema::IfcProject::list::ptr projects = instances_by_type<IfcSchema::IfcProject>();
 	if (projects->size() == 1) {
 		IfcSchema::IfcProject* project = *projects->begin();
 		IfcEntityList::ptr units = project->UnitsInContext()->Units();
