@@ -931,7 +931,7 @@ unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
 //
 // Returns the entities of Entity type that have this entity in their ArgumentList
 //
-IfcEntityList::ptr IfcEntityInstanceData::getInverse(IfcSchema::Type::Enum type, int attribute_index) {
+IfcEntityList::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration* type, int attribute_index) {
 	return file->getInverse(id_, type, attribute_index);
 }
 
@@ -1228,6 +1228,7 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema)
 	: schema_(schema)
+	, ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
 	, good_(false)
 	, parsing_complete_(false)
 	, MaxId(0)
@@ -1284,6 +1285,8 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 		Logger::Message(Logger::LOG_ERROR, "Unable to deduce schema version from header identifiers");
 	}
 
+	ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
+
 	boost::circular_buffer<Token> token_stream(3, Token());
 
 	IfcEntityInstanceData* data;
@@ -1318,16 +1321,15 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 				Logger::Status(ss.str(), false);
 			}
 
-			if (instance->declaration().is(IfcSchema::Type::IfcRoot)) {
-				IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) instance;
+			if (instance->declaration().is(*ifcroot_type_)) {
 				try {
-					const std::string guid = ifc_root->GlobalId();
+					const std::string guid = *instance->data().getArgument(0);
 					if ( byguid.find(guid) != byguid.end() ) {
 						std::stringstream ss;
 						ss << "Instance encountered with non-unique GlobalId " << guid;
 						Logger::Message(Logger::LOG_WARNING,ss.str());
 					}
-					byguid[guid] = ifc_root;
+					byguid[guid] = instance;
 				} catch (const IfcException& ex) {
 					Logger::Message(Logger::LOG_ERROR,ex.what());
 				}
@@ -1576,16 +1578,15 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	}
 
 	// For subtypes of IfcRoot, the GUID mapping needs to be updated.
-	if (new_entity->declaration().is(IfcSchema::Type::IfcRoot)) {
-		IfcSchema::IfcRoot* ifc_root = (IfcSchema::IfcRoot*) new_entity;
+	if (new_entity->declaration().is(*ifcroot_type_)) {
 		try {
-			const std::string guid = ifc_root->GlobalId();
+			const std::string guid = *new_entity->data().getArgument(0);
 			if ( byguid.find(guid) != byguid.end() ) {
 				std::stringstream ss;
 				ss << "Overwriting entity with guid " << guid;
 				Logger::Message(Logger::LOG_WARNING,ss.str());
 			}
-			byguid[guid] = ifc_root;
+			byguid[guid] = new_entity;
 		} catch (const IfcException& ex) {
 			Logger::Message(Logger::LOG_ERROR,ex.what());
 		}
@@ -1673,7 +1674,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	// individual IfcRepresentationItems can not be deleted if an IfcStyledItem is 
 	// related. Hence, the IfcRepresentationItem::StyledByItem relation could be 
 	// characterized as weak. 
-	std::set<IfcSchema::Type::Enum> weak_roots;
+	// std::set<IfcSchema::Type::Enum> weak_roots;
 
 	if (entity != file_entity) {
 		throw IfcParse::IfcException("Instance not part of this file");
@@ -1755,8 +1756,8 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 		}
 	}
 
-	if (entity->declaration().is(IfcSchema::Type::IfcRoot)) {
-		const std::string global_id = ((IfcSchema::IfcRoot*) entity)->GlobalId();
+	if (entity->declaration().is(*ifcroot_type_)) {
+		const std::string global_id = *entity->data().getArgument(0);
 		byguid.erase(byguid.find(global_id));
 	}
 	
@@ -1829,7 +1830,7 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_id(int id) {
 	return it->second;
 }
 
-IfcSchema::IfcRoot* IfcFile::instance_by_guid(const std::string& guid) {
+IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
 		throw IfcException("Entity not found");
@@ -1903,7 +1904,7 @@ std::string IfcFile::createTimestamp() const {
 	return result;
 }
 
-IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index) {
+IfcEntityList::ptr IfcFile::getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index) {
 	IfcUtil::IfcBaseClass* instance = instance_by_id(instance_id);
 
 	IfcEntityList::ptr l = IfcEntityList::ptr(new IfcEntityList);
@@ -1911,7 +1912,7 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 	if (!all) return l;
 
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
-		bool valid = type == IfcSchema::Type::UNDEFINED || (*it)->declaration().is(type);
+		bool valid = type == 0 || (*it)->declaration().is(*type);
 		if (valid && attribute_index >= 0) {
 			Argument* arg = (*it)->data().getArgument(attribute_index);
 			if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {

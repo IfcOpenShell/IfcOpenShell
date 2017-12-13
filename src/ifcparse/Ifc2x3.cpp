@@ -5614,7 +5614,7 @@ IfcActionRequest::IfcActionRequest(std::string v1_GlobalId, IfcOwnerHistory* v2_
 IfcActorSelect* IfcActor::TheActor() const { return (IfcActorSelect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(5))); }
 void IfcActor::setTheActor(IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 
-IfcRelAssignsToActor::list::ptr IfcActor::IsActingUpon() const { return data_->getInverse(Type::IfcRelAssignsToActor, 6)->as<IfcRelAssignsToActor>(); }
+IfcRelAssignsToActor::list::ptr IfcActor::IsActingUpon() const { return data_->getInverse(IfcRelAssignsToActor_type, 6)->as<IfcRelAssignsToActor>(); }
 
 const IfcParse::entity& IfcActor::declaration() const { return *IfcActor_type; }
 const IfcParse::entity& IfcActor::Class() { return *IfcActor_type; }
@@ -5658,8 +5658,8 @@ bool IfcAddress::hasUserDefinedPurpose() const { return !data_->getArgument(2)->
 std::string IfcAddress::UserDefinedPurpose() const { return *data_->getArgument(2); }
 void IfcAddress::setUserDefinedPurpose(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 
-IfcPerson::list::ptr IfcAddress::OfPerson() const { return data_->getInverse(Type::IfcPerson, 7)->as<IfcPerson>(); }
-IfcOrganization::list::ptr IfcAddress::OfOrganization() const { return data_->getInverse(Type::IfcOrganization, 4)->as<IfcOrganization>(); }
+IfcPerson::list::ptr IfcAddress::OfPerson() const { return data_->getInverse(IfcPerson_type, 7)->as<IfcPerson>(); }
+IfcOrganization::list::ptr IfcAddress::OfOrganization() const { return data_->getInverse(IfcOrganization_type, 4)->as<IfcOrganization>(); }
 
 const IfcParse::entity& IfcAddress::declaration() const { return *IfcAddress_type; }
 const IfcParse::entity& IfcAddress::Class() { return *IfcAddress_type; }
@@ -5716,7 +5716,7 @@ IfcAngularDimension::IfcAngularDimension(IfcEntityList::ptr v1_Contents) : IfcDi
 
 // Function implementations for IfcAnnotation
 
-IfcRelContainedInSpatialStructure::list::ptr IfcAnnotation::ContainedInStructure() const { return data_->getInverse(Type::IfcRelContainedInSpatialStructure, 4)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcAnnotation::ContainedInStructure() const { return data_->getInverse(IfcRelContainedInSpatialStructure_type, 4)->as<IfcRelContainedInSpatialStructure>(); }
 
 const IfcParse::entity& IfcAnnotation::declaration() const { return *IfcAnnotation_type; }
 const IfcParse::entity& IfcAnnotation::Class() { return *IfcAnnotation_type; }
@@ -5839,9 +5839,9 @@ bool IfcAppliedValue::hasFixedUntilDate() const { return !data_->getArgument(5)-
 IfcDateTimeSelect* IfcAppliedValue::FixedUntilDate() const { return (IfcDateTimeSelect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(5))); }
 void IfcAppliedValue::setFixedUntilDate(IfcDateTimeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 
-IfcReferencesValueDocument::list::ptr IfcAppliedValue::ValuesReferenced() const { return data_->getInverse(Type::IfcReferencesValueDocument, 1)->as<IfcReferencesValueDocument>(); }
-IfcAppliedValueRelationship::list::ptr IfcAppliedValue::ValueOfComponents() const { return data_->getInverse(Type::IfcAppliedValueRelationship, 0)->as<IfcAppliedValueRelationship>(); }
-IfcAppliedValueRelationship::list::ptr IfcAppliedValue::IsComponentIn() const { return data_->getInverse(Type::IfcAppliedValueRelationship, 1)->as<IfcAppliedValueRelationship>(); }
+IfcReferencesValueDocument::list::ptr IfcAppliedValue::ValuesReferenced() const { return data_->getInverse(IfcReferencesValueDocument_type, 1)->as<IfcReferencesValueDocument>(); }
+IfcAppliedValueRelationship::list::ptr IfcAppliedValue::ValueOfComponents() const { return data_->getInverse(IfcAppliedValueRelationship_type, 0)->as<IfcAppliedValueRelationship>(); }
+IfcAppliedValueRelationship::list::ptr IfcAppliedValue::IsComponentIn() const { return data_->getInverse(IfcAppliedValueRelationship_type, 1)->as<IfcAppliedValueRelationship>(); }
 
 const IfcParse::entity& IfcAppliedValue::declaration() const { return *IfcAppliedValue_type; }
 const IfcParse::entity& IfcAppliedValue::Class() { return *IfcAppliedValue_type; }
@@ -5888,9 +5888,9 @@ void IfcApproval::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = n
 std::string IfcApproval::Identifier() const { return *data_->getArgument(6); }
 void IfcApproval::setIdentifier(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
-IfcApprovalActorRelationship::list::ptr IfcApproval::Actors() const { return data_->getInverse(Type::IfcApprovalActorRelationship, 1)->as<IfcApprovalActorRelationship>(); }
-IfcApprovalRelationship::list::ptr IfcApproval::IsRelatedWith() const { return data_->getInverse(Type::IfcApprovalRelationship, 0)->as<IfcApprovalRelationship>(); }
-IfcApprovalRelationship::list::ptr IfcApproval::Relates() const { return data_->getInverse(Type::IfcApprovalRelationship, 1)->as<IfcApprovalRelationship>(); }
+IfcApprovalActorRelationship::list::ptr IfcApproval::Actors() const { return data_->getInverse(IfcApprovalActorRelationship_type, 1)->as<IfcApprovalActorRelationship>(); }
+IfcApprovalRelationship::list::ptr IfcApproval::IsRelatedWith() const { return data_->getInverse(IfcApprovalRelationship_type, 0)->as<IfcApprovalRelationship>(); }
+IfcApprovalRelationship::list::ptr IfcApproval::Relates() const { return data_->getInverse(IfcApprovalRelationship_type, 1)->as<IfcApprovalRelationship>(); }
 
 const IfcParse::entity& IfcApproval::declaration() const { return *IfcApproval_type; }
 const IfcParse::entity& IfcApproval::Class() { return *IfcApproval_type; }
@@ -6581,7 +6581,7 @@ void IfcClassification::setEditionDate(IfcCalendarDate* v) { {IfcWrite::IfcWrite
 std::string IfcClassification::Name() const { return *data_->getArgument(3); }
 void IfcClassification::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 
-IfcClassificationItem::list::ptr IfcClassification::Contains() const { return data_->getInverse(Type::IfcClassificationItem, 1)->as<IfcClassificationItem>(); }
+IfcClassificationItem::list::ptr IfcClassification::Contains() const { return data_->getInverse(IfcClassificationItem_type, 1)->as<IfcClassificationItem>(); }
 
 const IfcParse::entity& IfcClassification::declaration() const { return *IfcClassification_type; }
 const IfcParse::entity& IfcClassification::Class() { return *IfcClassification_type; }
@@ -6597,8 +6597,8 @@ void IfcClassificationItem::setItemOf(IfcClassification* v) { {IfcWrite::IfcWrit
 std::string IfcClassificationItem::Title() const { return *data_->getArgument(2); }
 void IfcClassificationItem::setTitle(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 
-IfcClassificationItemRelationship::list::ptr IfcClassificationItem::IsClassifiedItemIn() const { return data_->getInverse(Type::IfcClassificationItemRelationship, 1)->as<IfcClassificationItemRelationship>(); }
-IfcClassificationItemRelationship::list::ptr IfcClassificationItem::IsClassifyingItemIn() const { return data_->getInverse(Type::IfcClassificationItemRelationship, 0)->as<IfcClassificationItemRelationship>(); }
+IfcClassificationItemRelationship::list::ptr IfcClassificationItem::IsClassifiedItemIn() const { return data_->getInverse(IfcClassificationItemRelationship_type, 1)->as<IfcClassificationItemRelationship>(); }
+IfcClassificationItemRelationship::list::ptr IfcClassificationItem::IsClassifyingItemIn() const { return data_->getInverse(IfcClassificationItemRelationship_type, 0)->as<IfcClassificationItemRelationship>(); }
 
 const IfcParse::entity& IfcClassificationItem::declaration() const { return *IfcClassificationItem_type; }
 const IfcParse::entity& IfcClassificationItem::Class() { return *IfcClassificationItem_type; }
@@ -6741,7 +6741,7 @@ void IfcCompositeCurveSegment::setSameSense(bool v) { {IfcWrite::IfcWriteArgumen
 IfcCurve* IfcCompositeCurveSegment::ParentCurve() const { return (IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(2))); }
 void IfcCompositeCurveSegment::setParentCurve(IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 
-IfcCompositeCurve::list::ptr IfcCompositeCurveSegment::UsingCurves() const { return data_->getInverse(Type::IfcCompositeCurve, 0)->as<IfcCompositeCurve>(); }
+IfcCompositeCurve::list::ptr IfcCompositeCurveSegment::UsingCurves() const { return data_->getInverse(IfcCompositeCurve_type, 0)->as<IfcCompositeCurve>(); }
 
 const IfcParse::entity& IfcCompositeCurveSegment::declaration() const { return *IfcCompositeCurveSegment_type; }
 const IfcParse::entity& IfcCompositeCurveSegment::Class() { return *IfcCompositeCurveSegment_type; }
@@ -6921,12 +6921,12 @@ bool IfcConstraint::hasUserDefinedGrade() const { return !data_->getArgument(6)-
 std::string IfcConstraint::UserDefinedGrade() const { return *data_->getArgument(6); }
 void IfcConstraint::setUserDefinedGrade(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
-IfcConstraintClassificationRelationship::list::ptr IfcConstraint::ClassifiedAs() const { return data_->getInverse(Type::IfcConstraintClassificationRelationship, 0)->as<IfcConstraintClassificationRelationship>(); }
-IfcConstraintRelationship::list::ptr IfcConstraint::RelatesConstraints() const { return data_->getInverse(Type::IfcConstraintRelationship, 2)->as<IfcConstraintRelationship>(); }
-IfcConstraintRelationship::list::ptr IfcConstraint::IsRelatedWith() const { return data_->getInverse(Type::IfcConstraintRelationship, 3)->as<IfcConstraintRelationship>(); }
-IfcPropertyConstraintRelationship::list::ptr IfcConstraint::PropertiesForConstraint() const { return data_->getInverse(Type::IfcPropertyConstraintRelationship, 0)->as<IfcPropertyConstraintRelationship>(); }
-IfcConstraintAggregationRelationship::list::ptr IfcConstraint::Aggregates() const { return data_->getInverse(Type::IfcConstraintAggregationRelationship, 2)->as<IfcConstraintAggregationRelationship>(); }
-IfcConstraintAggregationRelationship::list::ptr IfcConstraint::IsAggregatedIn() const { return data_->getInverse(Type::IfcConstraintAggregationRelationship, 3)->as<IfcConstraintAggregationRelationship>(); }
+IfcConstraintClassificationRelationship::list::ptr IfcConstraint::ClassifiedAs() const { return data_->getInverse(IfcConstraintClassificationRelationship_type, 0)->as<IfcConstraintClassificationRelationship>(); }
+IfcConstraintRelationship::list::ptr IfcConstraint::RelatesConstraints() const { return data_->getInverse(IfcConstraintRelationship_type, 2)->as<IfcConstraintRelationship>(); }
+IfcConstraintRelationship::list::ptr IfcConstraint::IsRelatedWith() const { return data_->getInverse(IfcConstraintRelationship_type, 3)->as<IfcConstraintRelationship>(); }
+IfcPropertyConstraintRelationship::list::ptr IfcConstraint::PropertiesForConstraint() const { return data_->getInverse(IfcPropertyConstraintRelationship_type, 0)->as<IfcPropertyConstraintRelationship>(); }
+IfcConstraintAggregationRelationship::list::ptr IfcConstraint::Aggregates() const { return data_->getInverse(IfcConstraintAggregationRelationship_type, 2)->as<IfcConstraintAggregationRelationship>(); }
+IfcConstraintAggregationRelationship::list::ptr IfcConstraint::IsAggregatedIn() const { return data_->getInverse(IfcConstraintAggregationRelationship_type, 3)->as<IfcConstraintAggregationRelationship>(); }
 
 const IfcParse::entity& IfcConstraint::declaration() const { return *IfcConstraint_type; }
 const IfcParse::entity& IfcConstraint::Class() { return *IfcConstraint_type; }
@@ -7045,7 +7045,7 @@ IfcContextDependentUnit::IfcContextDependentUnit(IfcDimensionalExponents* v1_Dim
 
 // Function implementations for IfcControl
 
-IfcRelAssignsToControl::list::ptr IfcControl::Controls() const { return data_->getInverse(Type::IfcRelAssignsToControl, 6)->as<IfcRelAssignsToControl>(); }
+IfcRelAssignsToControl::list::ptr IfcControl::Controls() const { return data_->getInverse(IfcRelAssignsToControl_type, 6)->as<IfcRelAssignsToControl>(); }
 
 const IfcParse::entity& IfcControl::declaration() const { return *IfcControl_type; }
 const IfcParse::entity& IfcControl::Class() { return *IfcControl_type; }
@@ -7165,8 +7165,8 @@ bool IfcCovering::hasPredefinedType() const { return !data_->getArgument(8)->isN
 IfcCoveringTypeEnum::IfcCoveringTypeEnum IfcCovering::PredefinedType() const { return IfcCoveringTypeEnum::FromString(*data_->getArgument(8)); }
 void IfcCovering::setPredefinedType(IfcCoveringTypeEnum::IfcCoveringTypeEnum v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,IfcCoveringTypeEnum::ToString(v)));data_->setArgument(8,attr);} }
 
-IfcRelCoversSpaces::list::ptr IfcCovering::CoversSpaces() const { return data_->getInverse(Type::IfcRelCoversSpaces, 5)->as<IfcRelCoversSpaces>(); }
-IfcRelCoversBldgElements::list::ptr IfcCovering::Covers() const { return data_->getInverse(Type::IfcRelCoversBldgElements, 5)->as<IfcRelCoversBldgElements>(); }
+IfcRelCoversSpaces::list::ptr IfcCovering::CoversSpaces() const { return data_->getInverse(IfcRelCoversSpaces_type, 5)->as<IfcRelCoversSpaces>(); }
+IfcRelCoversBldgElements::list::ptr IfcCovering::Covers() const { return data_->getInverse(IfcRelCoversBldgElements_type, 5)->as<IfcRelCoversBldgElements>(); }
 
 const IfcParse::entity& IfcCovering::declaration() const { return *IfcCovering_type; }
 const IfcParse::entity& IfcCovering::Class() { return *IfcCovering_type; }
@@ -7483,7 +7483,7 @@ IfcDimensionCalloutRelationship::IfcDimensionCalloutRelationship(boost::optional
 
 // Function implementations for IfcDimensionCurve
 
-IfcTerminatorSymbol::list::ptr IfcDimensionCurve::AnnotatedBySymbols() const { return data_->getInverse(Type::IfcTerminatorSymbol, 3)->as<IfcTerminatorSymbol>(); }
+IfcTerminatorSymbol::list::ptr IfcDimensionCurve::AnnotatedBySymbols() const { return data_->getInverse(IfcTerminatorSymbol_type, 3)->as<IfcTerminatorSymbol>(); }
 
 const IfcParse::entity& IfcDimensionCurve::declaration() const { return *IfcDimensionCurve_type; }
 const IfcParse::entity& IfcDimensionCurve::Class() { return *IfcDimensionCurve_type; }
@@ -7587,7 +7587,7 @@ bool IfcDistributionControlElement::hasControlElementId() const { return !data_-
 std::string IfcDistributionControlElement::ControlElementId() const { return *data_->getArgument(8); }
 void IfcDistributionControlElement::setControlElementId(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
 
-IfcRelFlowControlElements::list::ptr IfcDistributionControlElement::AssignedToFlowElement() const { return data_->getInverse(Type::IfcRelFlowControlElements, 4)->as<IfcRelFlowControlElements>(); }
+IfcRelFlowControlElements::list::ptr IfcDistributionControlElement::AssignedToFlowElement() const { return data_->getInverse(IfcRelFlowControlElements_type, 4)->as<IfcRelFlowControlElements>(); }
 
 const IfcParse::entity& IfcDistributionControlElement::declaration() const { return *IfcDistributionControlElement_type; }
 const IfcParse::entity& IfcDistributionControlElement::Class() { return *IfcDistributionControlElement_type; }
@@ -7620,7 +7620,7 @@ IfcDistributionElementType::IfcDistributionElementType(std::string v1_GlobalId, 
 
 // Function implementations for IfcDistributionFlowElement
 
-IfcRelFlowControlElements::list::ptr IfcDistributionFlowElement::HasControlElements() const { return data_->getInverse(Type::IfcRelFlowControlElements, 5)->as<IfcRelFlowControlElements>(); }
+IfcRelFlowControlElements::list::ptr IfcDistributionFlowElement::HasControlElements() const { return data_->getInverse(IfcRelFlowControlElements_type, 5)->as<IfcRelFlowControlElements>(); }
 
 const IfcParse::entity& IfcDistributionFlowElement::declaration() const { return *IfcDistributionFlowElement_type; }
 const IfcParse::entity& IfcDistributionFlowElement::Class() { return *IfcDistributionFlowElement_type; }
@@ -7714,8 +7714,8 @@ bool IfcDocumentInformation::hasStatus() const { return !data_->getArgument(16)-
 IfcDocumentStatusEnum::IfcDocumentStatusEnum IfcDocumentInformation::Status() const { return IfcDocumentStatusEnum::FromString(*data_->getArgument(16)); }
 void IfcDocumentInformation::setStatus(IfcDocumentStatusEnum::IfcDocumentStatusEnum v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,IfcDocumentStatusEnum::ToString(v)));data_->setArgument(16,attr);} }
 
-IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointedTo() const { return data_->getInverse(Type::IfcDocumentInformationRelationship, 1)->as<IfcDocumentInformationRelationship>(); }
-IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointer() const { return data_->getInverse(Type::IfcDocumentInformationRelationship, 0)->as<IfcDocumentInformationRelationship>(); }
+IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointedTo() const { return data_->getInverse(IfcDocumentInformationRelationship_type, 1)->as<IfcDocumentInformationRelationship>(); }
+IfcDocumentInformationRelationship::list::ptr IfcDocumentInformation::IsPointer() const { return data_->getInverse(IfcDocumentInformationRelationship_type, 0)->as<IfcDocumentInformationRelationship>(); }
 
 const IfcParse::entity& IfcDocumentInformation::declaration() const { return *IfcDocumentInformation_type; }
 const IfcParse::entity& IfcDocumentInformation::Class() { return *IfcDocumentInformation_type; }
@@ -7739,7 +7739,7 @@ IfcDocumentInformationRelationship::IfcDocumentInformationRelationship(IfcDocume
 
 // Function implementations for IfcDocumentReference
 
-IfcDocumentInformation::list::ptr IfcDocumentReference::ReferenceToDocument() const { return data_->getInverse(Type::IfcDocumentInformation, 3)->as<IfcDocumentInformation>(); }
+IfcDocumentInformation::list::ptr IfcDocumentReference::ReferenceToDocument() const { return data_->getInverse(IfcDocumentInformation_type, 3)->as<IfcDocumentInformation>(); }
 
 const IfcParse::entity& IfcDocumentReference::declaration() const { return *IfcDocumentReference_type; }
 const IfcParse::entity& IfcDocumentReference::Class() { return *IfcDocumentReference_type; }
@@ -7842,8 +7842,8 @@ IfcDoorStyle::IfcDoorStyle(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHis
 IfcEntityList::ptr IfcDraughtingCallout::Contents() const { return *data_->getArgument(0); }
 void IfcDraughtingCallout::setContents(IfcEntityList::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 
-IfcDraughtingCalloutRelationship::list::ptr IfcDraughtingCallout::IsRelatedFromCallout() const { return data_->getInverse(Type::IfcDraughtingCalloutRelationship, 3)->as<IfcDraughtingCalloutRelationship>(); }
-IfcDraughtingCalloutRelationship::list::ptr IfcDraughtingCallout::IsRelatedToCallout() const { return data_->getInverse(Type::IfcDraughtingCalloutRelationship, 2)->as<IfcDraughtingCalloutRelationship>(); }
+IfcDraughtingCalloutRelationship::list::ptr IfcDraughtingCallout::IsRelatedFromCallout() const { return data_->getInverse(IfcDraughtingCalloutRelationship_type, 3)->as<IfcDraughtingCalloutRelationship>(); }
+IfcDraughtingCalloutRelationship::list::ptr IfcDraughtingCallout::IsRelatedToCallout() const { return data_->getInverse(IfcDraughtingCalloutRelationship_type, 2)->as<IfcDraughtingCalloutRelationship>(); }
 
 const IfcParse::entity& IfcDraughtingCallout::declaration() const { return *IfcDraughtingCallout_type; }
 const IfcParse::entity& IfcDraughtingCallout::Class() { return *IfcDraughtingCallout_type; }
@@ -8090,18 +8090,18 @@ bool IfcElement::hasTag() const { return !data_->getArgument(7)->isNull(); }
 std::string IfcElement::Tag() const { return *data_->getArgument(7); }
 void IfcElement::setTag(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 
-IfcRelConnectsStructuralElement::list::ptr IfcElement::HasStructuralMember() const { return data_->getInverse(Type::IfcRelConnectsStructuralElement, 4)->as<IfcRelConnectsStructuralElement>(); }
-IfcRelFillsElement::list::ptr IfcElement::FillsVoids() const { return data_->getInverse(Type::IfcRelFillsElement, 5)->as<IfcRelFillsElement>(); }
-IfcRelConnectsElements::list::ptr IfcElement::ConnectedTo() const { return data_->getInverse(Type::IfcRelConnectsElements, 5)->as<IfcRelConnectsElements>(); }
-IfcRelCoversBldgElements::list::ptr IfcElement::HasCoverings() const { return data_->getInverse(Type::IfcRelCoversBldgElements, 4)->as<IfcRelCoversBldgElements>(); }
-IfcRelProjectsElement::list::ptr IfcElement::HasProjections() const { return data_->getInverse(Type::IfcRelProjectsElement, 4)->as<IfcRelProjectsElement>(); }
-IfcRelReferencedInSpatialStructure::list::ptr IfcElement::ReferencedInStructures() const { return data_->getInverse(Type::IfcRelReferencedInSpatialStructure, 4)->as<IfcRelReferencedInSpatialStructure>(); }
-IfcRelConnectsPortToElement::list::ptr IfcElement::HasPorts() const { return data_->getInverse(Type::IfcRelConnectsPortToElement, 5)->as<IfcRelConnectsPortToElement>(); }
-IfcRelVoidsElement::list::ptr IfcElement::HasOpenings() const { return data_->getInverse(Type::IfcRelVoidsElement, 4)->as<IfcRelVoidsElement>(); }
-IfcRelConnectsWithRealizingElements::list::ptr IfcElement::IsConnectionRealization() const { return data_->getInverse(Type::IfcRelConnectsWithRealizingElements, 7)->as<IfcRelConnectsWithRealizingElements>(); }
-IfcRelSpaceBoundary::list::ptr IfcElement::ProvidesBoundaries() const { return data_->getInverse(Type::IfcRelSpaceBoundary, 5)->as<IfcRelSpaceBoundary>(); }
-IfcRelConnectsElements::list::ptr IfcElement::ConnectedFrom() const { return data_->getInverse(Type::IfcRelConnectsElements, 6)->as<IfcRelConnectsElements>(); }
-IfcRelContainedInSpatialStructure::list::ptr IfcElement::ContainedInStructure() const { return data_->getInverse(Type::IfcRelContainedInSpatialStructure, 4)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelConnectsStructuralElement::list::ptr IfcElement::HasStructuralMember() const { return data_->getInverse(IfcRelConnectsStructuralElement_type, 4)->as<IfcRelConnectsStructuralElement>(); }
+IfcRelFillsElement::list::ptr IfcElement::FillsVoids() const { return data_->getInverse(IfcRelFillsElement_type, 5)->as<IfcRelFillsElement>(); }
+IfcRelConnectsElements::list::ptr IfcElement::ConnectedTo() const { return data_->getInverse(IfcRelConnectsElements_type, 5)->as<IfcRelConnectsElements>(); }
+IfcRelCoversBldgElements::list::ptr IfcElement::HasCoverings() const { return data_->getInverse(IfcRelCoversBldgElements_type, 4)->as<IfcRelCoversBldgElements>(); }
+IfcRelProjectsElement::list::ptr IfcElement::HasProjections() const { return data_->getInverse(IfcRelProjectsElement_type, 4)->as<IfcRelProjectsElement>(); }
+IfcRelReferencedInSpatialStructure::list::ptr IfcElement::ReferencedInStructures() const { return data_->getInverse(IfcRelReferencedInSpatialStructure_type, 4)->as<IfcRelReferencedInSpatialStructure>(); }
+IfcRelConnectsPortToElement::list::ptr IfcElement::HasPorts() const { return data_->getInverse(IfcRelConnectsPortToElement_type, 5)->as<IfcRelConnectsPortToElement>(); }
+IfcRelVoidsElement::list::ptr IfcElement::HasOpenings() const { return data_->getInverse(IfcRelVoidsElement_type, 4)->as<IfcRelVoidsElement>(); }
+IfcRelConnectsWithRealizingElements::list::ptr IfcElement::IsConnectionRealization() const { return data_->getInverse(IfcRelConnectsWithRealizingElements_type, 7)->as<IfcRelConnectsWithRealizingElements>(); }
+IfcRelSpaceBoundary::list::ptr IfcElement::ProvidesBoundaries() const { return data_->getInverse(IfcRelSpaceBoundary_type, 5)->as<IfcRelSpaceBoundary>(); }
+IfcRelConnectsElements::list::ptr IfcElement::ConnectedFrom() const { return data_->getInverse(IfcRelConnectsElements_type, 6)->as<IfcRelConnectsElements>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcElement::ContainedInStructure() const { return data_->getInverse(IfcRelContainedInSpatialStructure_type, 4)->as<IfcRelContainedInSpatialStructure>(); }
 
 const IfcParse::entity& IfcElement::declaration() const { return *IfcElement_type; }
 const IfcParse::entity& IfcElement::Class() { return *IfcElement_type; }
@@ -8484,7 +8484,7 @@ IfcFeatureElement::IfcFeatureElement(std::string v1_GlobalId, IfcOwnerHistory* v
 
 // Function implementations for IfcFeatureElementAddition
 
-IfcRelProjectsElement::list::ptr IfcFeatureElementAddition::ProjectsElements() const { return data_->getInverse(Type::IfcRelProjectsElement, 5)->as<IfcRelProjectsElement>(); }
+IfcRelProjectsElement::list::ptr IfcFeatureElementAddition::ProjectsElements() const { return data_->getInverse(IfcRelProjectsElement_type, 5)->as<IfcRelProjectsElement>(); }
 
 const IfcParse::entity& IfcFeatureElementAddition::declaration() const { return *IfcFeatureElementAddition_type; }
 const IfcParse::entity& IfcFeatureElementAddition::Class() { return *IfcFeatureElementAddition_type; }
@@ -8493,7 +8493,7 @@ IfcFeatureElementAddition::IfcFeatureElementAddition(std::string v1_GlobalId, If
 
 // Function implementations for IfcFeatureElementSubtraction
 
-IfcRelVoidsElement::list::ptr IfcFeatureElementSubtraction::VoidsElements() const { return data_->getInverse(Type::IfcRelVoidsElement, 5)->as<IfcRelVoidsElement>(); }
+IfcRelVoidsElement::list::ptr IfcFeatureElementSubtraction::VoidsElements() const { return data_->getInverse(IfcRelVoidsElement_type, 5)->as<IfcRelVoidsElement>(); }
 
 const IfcParse::entity& IfcFeatureElementSubtraction::declaration() const { return *IfcFeatureElementSubtraction_type; }
 const IfcParse::entity& IfcFeatureElementSubtraction::Class() { return *IfcFeatureElementSubtraction_type; }
@@ -8891,7 +8891,7 @@ bool IfcGeometricRepresentationContext::hasTrueNorth() const { return !data_->ge
 IfcDirection* IfcGeometricRepresentationContext::TrueNorth() const { return (IfcDirection*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(5))); }
 void IfcGeometricRepresentationContext::setTrueNorth(IfcDirection* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 
-IfcGeometricRepresentationSubContext::list::ptr IfcGeometricRepresentationContext::HasSubContexts() const { return data_->getInverse(Type::IfcGeometricRepresentationSubContext, 6)->as<IfcGeometricRepresentationSubContext>(); }
+IfcGeometricRepresentationSubContext::list::ptr IfcGeometricRepresentationContext::HasSubContexts() const { return data_->getInverse(IfcGeometricRepresentationSubContext_type, 6)->as<IfcGeometricRepresentationSubContext>(); }
 
 const IfcParse::entity& IfcGeometricRepresentationContext::declaration() const { return *IfcGeometricRepresentationContext_type; }
 const IfcParse::entity& IfcGeometricRepresentationContext::Class() { return *IfcGeometricRepresentationContext_type; }
@@ -8943,7 +8943,7 @@ bool IfcGrid::hasWAxes() const { return !data_->getArgument(9)->isNull(); }
 IfcTemplatedEntityList< IfcGridAxis >::ptr IfcGrid::WAxes() const { IfcEntityList::ptr es = *data_->getArgument(9); return es->as<IfcGridAxis>(); }
 void IfcGrid::setWAxes(IfcTemplatedEntityList< IfcGridAxis >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(9,attr);} }
 
-IfcRelContainedInSpatialStructure::list::ptr IfcGrid::ContainedInStructure() const { return data_->getInverse(Type::IfcRelContainedInSpatialStructure, 4)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcGrid::ContainedInStructure() const { return data_->getInverse(IfcRelContainedInSpatialStructure_type, 4)->as<IfcRelContainedInSpatialStructure>(); }
 
 const IfcParse::entity& IfcGrid::declaration() const { return *IfcGrid_type; }
 const IfcParse::entity& IfcGrid::Class() { return *IfcGrid_type; }
@@ -8959,10 +8959,10 @@ void IfcGridAxis::setAxisCurve(IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr 
 bool IfcGridAxis::SameSense() const { return *data_->getArgument(2); }
 void IfcGridAxis::setSameSense(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 
-IfcGrid::list::ptr IfcGridAxis::PartOfW() const { return data_->getInverse(Type::IfcGrid, 9)->as<IfcGrid>(); }
-IfcGrid::list::ptr IfcGridAxis::PartOfV() const { return data_->getInverse(Type::IfcGrid, 8)->as<IfcGrid>(); }
-IfcGrid::list::ptr IfcGridAxis::PartOfU() const { return data_->getInverse(Type::IfcGrid, 7)->as<IfcGrid>(); }
-IfcVirtualGridIntersection::list::ptr IfcGridAxis::HasIntersections() const { return data_->getInverse(Type::IfcVirtualGridIntersection, 0)->as<IfcVirtualGridIntersection>(); }
+IfcGrid::list::ptr IfcGridAxis::PartOfW() const { return data_->getInverse(IfcGrid_type, 9)->as<IfcGrid>(); }
+IfcGrid::list::ptr IfcGridAxis::PartOfV() const { return data_->getInverse(IfcGrid_type, 8)->as<IfcGrid>(); }
+IfcGrid::list::ptr IfcGridAxis::PartOfU() const { return data_->getInverse(IfcGrid_type, 7)->as<IfcGrid>(); }
+IfcVirtualGridIntersection::list::ptr IfcGridAxis::HasIntersections() const { return data_->getInverse(IfcVirtualGridIntersection_type, 0)->as<IfcVirtualGridIntersection>(); }
 
 const IfcParse::entity& IfcGridAxis::declaration() const { return *IfcGridAxis_type; }
 const IfcParse::entity& IfcGridAxis::Class() { return *IfcGridAxis_type; }
@@ -8984,7 +8984,7 @@ IfcGridPlacement::IfcGridPlacement(IfcVirtualGridIntersection* v1_PlacementLocat
 
 // Function implementations for IfcGroup
 
-IfcRelAssignsToGroup::list::ptr IfcGroup::IsGroupedBy() const { return data_->getInverse(Type::IfcRelAssignsToGroup, 6)->as<IfcRelAssignsToGroup>(); }
+IfcRelAssignsToGroup::list::ptr IfcGroup::IsGroupedBy() const { return data_->getInverse(IfcRelAssignsToGroup_type, 6)->as<IfcRelAssignsToGroup>(); }
 
 const IfcParse::entity& IfcGroup::declaration() const { return *IfcGroup_type; }
 const IfcParse::entity& IfcGroup::Class() { return *IfcGroup_type; }
@@ -9204,7 +9204,7 @@ IfcLibraryInformation::IfcLibraryInformation(std::string v1_Name, boost::optiona
 
 // Function implementations for IfcLibraryReference
 
-IfcLibraryInformation::list::ptr IfcLibraryReference::ReferenceIntoLibrary() const { return data_->getInverse(Type::IfcLibraryInformation, 4)->as<IfcLibraryInformation>(); }
+IfcLibraryInformation::list::ptr IfcLibraryReference::ReferenceIntoLibrary() const { return data_->getInverse(IfcLibraryInformation_type, 4)->as<IfcLibraryInformation>(); }
 
 const IfcParse::entity& IfcLibraryReference::declaration() const { return *IfcLibraryReference_type; }
 const IfcParse::entity& IfcLibraryReference::Class() { return *IfcLibraryReference_type; }
@@ -9429,8 +9429,8 @@ IfcMappedItem::IfcMappedItem(IfcRepresentationMap* v1_MappingSource, IfcCartesia
 std::string IfcMaterial::Name() const { return *data_->getArgument(0); }
 void IfcMaterial::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 
-IfcMaterialDefinitionRepresentation::list::ptr IfcMaterial::HasRepresentation() const { return data_->getInverse(Type::IfcMaterialDefinitionRepresentation, 3)->as<IfcMaterialDefinitionRepresentation>(); }
-IfcMaterialClassificationRelationship::list::ptr IfcMaterial::ClassifiedAs() const { return data_->getInverse(Type::IfcMaterialClassificationRelationship, 1)->as<IfcMaterialClassificationRelationship>(); }
+IfcMaterialDefinitionRepresentation::list::ptr IfcMaterial::HasRepresentation() const { return data_->getInverse(IfcMaterialDefinitionRepresentation_type, 3)->as<IfcMaterialDefinitionRepresentation>(); }
+IfcMaterialClassificationRelationship::list::ptr IfcMaterial::ClassifiedAs() const { return data_->getInverse(IfcMaterialClassificationRelationship_type, 1)->as<IfcMaterialClassificationRelationship>(); }
 
 const IfcParse::entity& IfcMaterial::declaration() const { return *IfcMaterial_type; }
 const IfcParse::entity& IfcMaterial::Class() { return *IfcMaterial_type; }
@@ -9469,7 +9469,7 @@ bool IfcMaterialLayer::hasIsVentilated() const { return !data_->getArgument(2)->
 bool IfcMaterialLayer::IsVentilated() const { return *data_->getArgument(2); }
 void IfcMaterialLayer::setIsVentilated(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 
-IfcMaterialLayerSet::list::ptr IfcMaterialLayer::ToMaterialLayerSet() const { return data_->getInverse(Type::IfcMaterialLayerSet, 0)->as<IfcMaterialLayerSet>(); }
+IfcMaterialLayerSet::list::ptr IfcMaterialLayer::ToMaterialLayerSet() const { return data_->getInverse(IfcMaterialLayerSet_type, 0)->as<IfcMaterialLayerSet>(); }
 
 const IfcParse::entity& IfcMaterialLayer::declaration() const { return *IfcMaterialLayer_type; }
 const IfcParse::entity& IfcMaterialLayer::Class() { return *IfcMaterialLayer_type; }
@@ -9722,7 +9722,7 @@ bool IfcObject::hasObjectType() const { return !data_->getArgument(4)->isNull();
 std::string IfcObject::ObjectType() const { return *data_->getArgument(4); }
 void IfcObject::setObjectType(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 
-IfcRelDefines::list::ptr IfcObject::IsDefinedBy() const { return data_->getInverse(Type::IfcRelDefines, 4)->as<IfcRelDefines>(); }
+IfcRelDefines::list::ptr IfcObject::IsDefinedBy() const { return data_->getInverse(IfcRelDefines_type, 4)->as<IfcRelDefines>(); }
 
 const IfcParse::entity& IfcObject::declaration() const { return *IfcObject_type; }
 const IfcParse::entity& IfcObject::Class() { return *IfcObject_type; }
@@ -9731,10 +9731,10 @@ IfcObject::IfcObject(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory, 
 
 // Function implementations for IfcObjectDefinition
 
-IfcRelAssigns::list::ptr IfcObjectDefinition::HasAssignments() const { return data_->getInverse(Type::IfcRelAssigns, 4)->as<IfcRelAssigns>(); }
-IfcRelDecomposes::list::ptr IfcObjectDefinition::IsDecomposedBy() const { return data_->getInverse(Type::IfcRelDecomposes, 4)->as<IfcRelDecomposes>(); }
-IfcRelDecomposes::list::ptr IfcObjectDefinition::Decomposes() const { return data_->getInverse(Type::IfcRelDecomposes, 5)->as<IfcRelDecomposes>(); }
-IfcRelAssociates::list::ptr IfcObjectDefinition::HasAssociations() const { return data_->getInverse(Type::IfcRelAssociates, 4)->as<IfcRelAssociates>(); }
+IfcRelAssigns::list::ptr IfcObjectDefinition::HasAssignments() const { return data_->getInverse(IfcRelAssigns_type, 4)->as<IfcRelAssigns>(); }
+IfcRelDecomposes::list::ptr IfcObjectDefinition::IsDecomposedBy() const { return data_->getInverse(IfcRelDecomposes_type, 4)->as<IfcRelDecomposes>(); }
+IfcRelDecomposes::list::ptr IfcObjectDefinition::Decomposes() const { return data_->getInverse(IfcRelDecomposes_type, 5)->as<IfcRelDecomposes>(); }
+IfcRelAssociates::list::ptr IfcObjectDefinition::HasAssociations() const { return data_->getInverse(IfcRelAssociates_type, 4)->as<IfcRelAssociates>(); }
 
 const IfcParse::entity& IfcObjectDefinition::declaration() const { return *IfcObjectDefinition_type; }
 const IfcParse::entity& IfcObjectDefinition::Class() { return *IfcObjectDefinition_type; }
@@ -9743,8 +9743,8 @@ IfcObjectDefinition::IfcObjectDefinition(std::string v1_GlobalId, IfcOwnerHistor
 
 // Function implementations for IfcObjectPlacement
 
-IfcProduct::list::ptr IfcObjectPlacement::PlacesObject() const { return data_->getInverse(Type::IfcProduct, 5)->as<IfcProduct>(); }
-IfcLocalPlacement::list::ptr IfcObjectPlacement::ReferencedByPlacements() const { return data_->getInverse(Type::IfcLocalPlacement, 0)->as<IfcLocalPlacement>(); }
+IfcProduct::list::ptr IfcObjectPlacement::PlacesObject() const { return data_->getInverse(IfcProduct_type, 5)->as<IfcProduct>(); }
+IfcLocalPlacement::list::ptr IfcObjectPlacement::ReferencedByPlacements() const { return data_->getInverse(IfcLocalPlacement_type, 0)->as<IfcLocalPlacement>(); }
 
 const IfcParse::entity& IfcObjectPlacement::declaration() const { return *IfcObjectPlacement_type; }
 const IfcParse::entity& IfcObjectPlacement::Class() { return *IfcObjectPlacement_type; }
@@ -9830,7 +9830,7 @@ IfcOpenShell::IfcOpenShell(IfcTemplatedEntityList< IfcFace >::ptr v1_CfsFaces) :
 
 // Function implementations for IfcOpeningElement
 
-IfcRelFillsElement::list::ptr IfcOpeningElement::HasFillings() const { return data_->getInverse(Type::IfcRelFillsElement, 4)->as<IfcRelFillsElement>(); }
+IfcRelFillsElement::list::ptr IfcOpeningElement::HasFillings() const { return data_->getInverse(IfcRelFillsElement_type, 4)->as<IfcRelFillsElement>(); }
 
 const IfcParse::entity& IfcOpeningElement::declaration() const { return *IfcOpeningElement_type; }
 const IfcParse::entity& IfcOpeningElement::Class() { return *IfcOpeningElement_type; }
@@ -9898,9 +9898,9 @@ bool IfcOrganization::hasAddresses() const { return !data_->getArgument(4)->isNu
 IfcTemplatedEntityList< IfcAddress >::ptr IfcOrganization::Addresses() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<IfcAddress>(); }
 void IfcOrganization::setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 
-IfcOrganizationRelationship::list::ptr IfcOrganization::IsRelatedBy() const { return data_->getInverse(Type::IfcOrganizationRelationship, 3)->as<IfcOrganizationRelationship>(); }
-IfcOrganizationRelationship::list::ptr IfcOrganization::Relates() const { return data_->getInverse(Type::IfcOrganizationRelationship, 2)->as<IfcOrganizationRelationship>(); }
-IfcPersonAndOrganization::list::ptr IfcOrganization::Engages() const { return data_->getInverse(Type::IfcPersonAndOrganization, 1)->as<IfcPersonAndOrganization>(); }
+IfcOrganizationRelationship::list::ptr IfcOrganization::IsRelatedBy() const { return data_->getInverse(IfcOrganizationRelationship_type, 3)->as<IfcOrganizationRelationship>(); }
+IfcOrganizationRelationship::list::ptr IfcOrganization::Relates() const { return data_->getInverse(IfcOrganizationRelationship_type, 2)->as<IfcOrganizationRelationship>(); }
+IfcPersonAndOrganization::list::ptr IfcOrganization::Engages() const { return data_->getInverse(IfcPersonAndOrganization_type, 1)->as<IfcPersonAndOrganization>(); }
 
 const IfcParse::entity& IfcOrganization::declaration() const { return *IfcOrganization_type; }
 const IfcParse::entity& IfcOrganization::Class() { return *IfcOrganization_type; }
@@ -10061,7 +10061,7 @@ bool IfcPerson::hasAddresses() const { return !data_->getArgument(7)->isNull(); 
 IfcTemplatedEntityList< IfcAddress >::ptr IfcPerson::Addresses() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<IfcAddress>(); }
 void IfcPerson::setAddresses(IfcTemplatedEntityList< IfcAddress >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 
-IfcPersonAndOrganization::list::ptr IfcPerson::EngagedIn() const { return data_->getInverse(Type::IfcPersonAndOrganization, 0)->as<IfcPersonAndOrganization>(); }
+IfcPersonAndOrganization::list::ptr IfcPerson::EngagedIn() const { return data_->getInverse(IfcPersonAndOrganization_type, 0)->as<IfcPersonAndOrganization>(); }
 
 const IfcParse::entity& IfcPerson::declaration() const { return *IfcPerson_type; }
 const IfcParse::entity& IfcPerson::Class() { return *IfcPerson_type; }
@@ -10108,7 +10108,7 @@ bool IfcPhysicalQuantity::hasDescription() const { return !data_->getArgument(1)
 std::string IfcPhysicalQuantity::Description() const { return *data_->getArgument(1); }
 void IfcPhysicalQuantity::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 
-IfcPhysicalComplexQuantity::list::ptr IfcPhysicalQuantity::PartOfComplex() const { return data_->getInverse(Type::IfcPhysicalComplexQuantity, 2)->as<IfcPhysicalComplexQuantity>(); }
+IfcPhysicalComplexQuantity::list::ptr IfcPhysicalQuantity::PartOfComplex() const { return data_->getInverse(IfcPhysicalComplexQuantity_type, 2)->as<IfcPhysicalComplexQuantity>(); }
 
 const IfcParse::entity& IfcPhysicalQuantity::declaration() const { return *IfcPhysicalQuantity_type; }
 const IfcParse::entity& IfcPhysicalQuantity::Class() { return *IfcPhysicalQuantity_type; }
@@ -10301,9 +10301,9 @@ IfcPolyline::IfcPolyline(IfcTemplatedEntityList< IfcCartesianPoint >::ptr v1_Poi
 
 // Function implementations for IfcPort
 
-IfcRelConnectsPortToElement::list::ptr IfcPort::ContainedIn() const { return data_->getInverse(Type::IfcRelConnectsPortToElement, 4)->as<IfcRelConnectsPortToElement>(); }
-IfcRelConnectsPorts::list::ptr IfcPort::ConnectedFrom() const { return data_->getInverse(Type::IfcRelConnectsPorts, 5)->as<IfcRelConnectsPorts>(); }
-IfcRelConnectsPorts::list::ptr IfcPort::ConnectedTo() const { return data_->getInverse(Type::IfcRelConnectsPorts, 4)->as<IfcRelConnectsPorts>(); }
+IfcRelConnectsPortToElement::list::ptr IfcPort::ContainedIn() const { return data_->getInverse(IfcRelConnectsPortToElement_type, 4)->as<IfcRelConnectsPortToElement>(); }
+IfcRelConnectsPorts::list::ptr IfcPort::ConnectedFrom() const { return data_->getInverse(IfcRelConnectsPorts_type, 5)->as<IfcRelConnectsPorts>(); }
+IfcRelConnectsPorts::list::ptr IfcPort::ConnectedTo() const { return data_->getInverse(IfcRelConnectsPorts_type, 4)->as<IfcRelConnectsPorts>(); }
 
 const IfcParse::entity& IfcPort::declaration() const { return *IfcPort_type; }
 const IfcParse::entity& IfcPort::Class() { return *IfcPort_type; }
@@ -10477,9 +10477,9 @@ IfcProcedure::IfcProcedure(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHis
 
 // Function implementations for IfcProcess
 
-IfcRelAssignsToProcess::list::ptr IfcProcess::OperatesOn() const { return data_->getInverse(Type::IfcRelAssignsToProcess, 6)->as<IfcRelAssignsToProcess>(); }
-IfcRelSequence::list::ptr IfcProcess::IsSuccessorFrom() const { return data_->getInverse(Type::IfcRelSequence, 5)->as<IfcRelSequence>(); }
-IfcRelSequence::list::ptr IfcProcess::IsPredecessorTo() const { return data_->getInverse(Type::IfcRelSequence, 4)->as<IfcRelSequence>(); }
+IfcRelAssignsToProcess::list::ptr IfcProcess::OperatesOn() const { return data_->getInverse(IfcRelAssignsToProcess_type, 6)->as<IfcRelAssignsToProcess>(); }
+IfcRelSequence::list::ptr IfcProcess::IsSuccessorFrom() const { return data_->getInverse(IfcRelSequence_type, 5)->as<IfcRelSequence>(); }
+IfcRelSequence::list::ptr IfcProcess::IsPredecessorTo() const { return data_->getInverse(IfcRelSequence_type, 4)->as<IfcRelSequence>(); }
 
 const IfcParse::entity& IfcProcess::declaration() const { return *IfcProcess_type; }
 const IfcParse::entity& IfcProcess::Class() { return *IfcProcess_type; }
@@ -10494,7 +10494,7 @@ bool IfcProduct::hasRepresentation() const { return !data_->getArgument(6)->isNu
 IfcProductRepresentation* IfcProduct::Representation() const { return (IfcProductRepresentation*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(6))); }
 void IfcProduct::setRepresentation(IfcProductRepresentation* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 
-IfcRelAssignsToProduct::list::ptr IfcProduct::ReferencedBy() const { return data_->getInverse(Type::IfcRelAssignsToProduct, 6)->as<IfcRelAssignsToProduct>(); }
+IfcRelAssignsToProduct::list::ptr IfcProduct::ReferencedBy() const { return data_->getInverse(IfcRelAssignsToProduct_type, 6)->as<IfcRelAssignsToProduct>(); }
 
 const IfcParse::entity& IfcProduct::declaration() const { return *IfcProduct_type; }
 const IfcParse::entity& IfcProduct::Class() { return *IfcProduct_type; }
@@ -10503,8 +10503,8 @@ IfcProduct::IfcProduct(std::string v1_GlobalId, IfcOwnerHistory* v2_OwnerHistory
 
 // Function implementations for IfcProductDefinitionShape
 
-IfcProduct::list::ptr IfcProductDefinitionShape::ShapeOfProduct() const { return data_->getInverse(Type::IfcProduct, 6)->as<IfcProduct>(); }
-IfcShapeAspect::list::ptr IfcProductDefinitionShape::HasShapeAspects() const { return data_->getInverse(Type::IfcShapeAspect, 4)->as<IfcShapeAspect>(); }
+IfcProduct::list::ptr IfcProductDefinitionShape::ShapeOfProduct() const { return data_->getInverse(IfcProduct_type, 6)->as<IfcProduct>(); }
+IfcShapeAspect::list::ptr IfcProductDefinitionShape::HasShapeAspects() const { return data_->getInverse(IfcShapeAspect_type, 4)->as<IfcShapeAspect>(); }
 
 const IfcParse::entity& IfcProductDefinitionShape::declaration() const { return *IfcProductDefinitionShape_type; }
 const IfcParse::entity& IfcProductDefinitionShape::Class() { return *IfcProductDefinitionShape_type; }
@@ -10642,9 +10642,9 @@ bool IfcProperty::hasDescription() const { return !data_->getArgument(1)->isNull
 std::string IfcProperty::Description() const { return *data_->getArgument(1); }
 void IfcProperty::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 
-IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyForDependance() const { return data_->getInverse(Type::IfcPropertyDependencyRelationship, 0)->as<IfcPropertyDependencyRelationship>(); }
-IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyDependsOn() const { return data_->getInverse(Type::IfcPropertyDependencyRelationship, 1)->as<IfcPropertyDependencyRelationship>(); }
-IfcComplexProperty::list::ptr IfcProperty::PartOfComplex() const { return data_->getInverse(Type::IfcComplexProperty, 3)->as<IfcComplexProperty>(); }
+IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyForDependance() const { return data_->getInverse(IfcPropertyDependencyRelationship_type, 0)->as<IfcPropertyDependencyRelationship>(); }
+IfcPropertyDependencyRelationship::list::ptr IfcProperty::PropertyDependsOn() const { return data_->getInverse(IfcPropertyDependencyRelationship_type, 1)->as<IfcPropertyDependencyRelationship>(); }
+IfcComplexProperty::list::ptr IfcProperty::PartOfComplex() const { return data_->getInverse(IfcComplexProperty_type, 3)->as<IfcComplexProperty>(); }
 
 const IfcParse::entity& IfcProperty::declaration() const { return *IfcProperty_type; }
 const IfcParse::entity& IfcProperty::Class() { return *IfcProperty_type; }
@@ -10688,7 +10688,7 @@ IfcPropertyConstraintRelationship::IfcPropertyConstraintRelationship(IfcConstrai
 
 // Function implementations for IfcPropertyDefinition
 
-IfcRelAssociates::list::ptr IfcPropertyDefinition::HasAssociations() const { return data_->getInverse(Type::IfcRelAssociates, 4)->as<IfcRelAssociates>(); }
+IfcRelAssociates::list::ptr IfcPropertyDefinition::HasAssociations() const { return data_->getInverse(IfcRelAssociates_type, 4)->as<IfcRelAssociates>(); }
 
 const IfcParse::entity& IfcPropertyDefinition::declaration() const { return *IfcPropertyDefinition_type; }
 const IfcParse::entity& IfcPropertyDefinition::Class() { return *IfcPropertyDefinition_type; }
@@ -10782,8 +10782,8 @@ IfcPropertySet::IfcPropertySet(std::string v1_GlobalId, IfcOwnerHistory* v2_Owne
 
 // Function implementations for IfcPropertySetDefinition
 
-IfcRelDefinesByProperties::list::ptr IfcPropertySetDefinition::PropertyDefinitionOf() const { return data_->getInverse(Type::IfcRelDefinesByProperties, 5)->as<IfcRelDefinesByProperties>(); }
-IfcTypeObject::list::ptr IfcPropertySetDefinition::DefinesType() const { return data_->getInverse(Type::IfcTypeObject, 5)->as<IfcTypeObject>(); }
+IfcRelDefinesByProperties::list::ptr IfcPropertySetDefinition::PropertyDefinitionOf() const { return data_->getInverse(IfcRelDefinesByProperties_type, 5)->as<IfcRelDefinesByProperties>(); }
+IfcTypeObject::list::ptr IfcPropertySetDefinition::DefinesType() const { return data_->getInverse(IfcTypeObject_type, 5)->as<IfcTypeObject>(); }
 
 const IfcParse::entity& IfcPropertySetDefinition::declaration() const { return *IfcPropertySetDefinition_type; }
 const IfcParse::entity& IfcPropertySetDefinition::Class() { return *IfcPropertySetDefinition_type; }
@@ -11787,9 +11787,9 @@ void IfcRepresentation::setRepresentationType(std::string v) { {IfcWrite::IfcWri
 IfcTemplatedEntityList< IfcRepresentationItem >::ptr IfcRepresentation::Items() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<IfcRepresentationItem>(); }
 void IfcRepresentation::setItems(IfcTemplatedEntityList< IfcRepresentationItem >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 
-IfcRepresentationMap::list::ptr IfcRepresentation::RepresentationMap() const { return data_->getInverse(Type::IfcRepresentationMap, 1)->as<IfcRepresentationMap>(); }
-IfcPresentationLayerAssignment::list::ptr IfcRepresentation::LayerAssignments() const { return data_->getInverse(Type::IfcPresentationLayerAssignment, 2)->as<IfcPresentationLayerAssignment>(); }
-IfcProductRepresentation::list::ptr IfcRepresentation::OfProductRepresentation() const { return data_->getInverse(Type::IfcProductRepresentation, 2)->as<IfcProductRepresentation>(); }
+IfcRepresentationMap::list::ptr IfcRepresentation::RepresentationMap() const { return data_->getInverse(IfcRepresentationMap_type, 1)->as<IfcRepresentationMap>(); }
+IfcPresentationLayerAssignment::list::ptr IfcRepresentation::LayerAssignments() const { return data_->getInverse(IfcPresentationLayerAssignment_type, 2)->as<IfcPresentationLayerAssignment>(); }
+IfcProductRepresentation::list::ptr IfcRepresentation::OfProductRepresentation() const { return data_->getInverse(IfcProductRepresentation_type, 2)->as<IfcProductRepresentation>(); }
 
 const IfcParse::entity& IfcRepresentation::declaration() const { return *IfcRepresentation_type; }
 const IfcParse::entity& IfcRepresentation::Class() { return *IfcRepresentation_type; }
@@ -11804,7 +11804,7 @@ bool IfcRepresentationContext::hasContextType() const { return !data_->getArgume
 std::string IfcRepresentationContext::ContextType() const { return *data_->getArgument(1); }
 void IfcRepresentationContext::setContextType(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 
-IfcRepresentation::list::ptr IfcRepresentationContext::RepresentationsInContext() const { return data_->getInverse(Type::IfcRepresentation, 0)->as<IfcRepresentation>(); }
+IfcRepresentation::list::ptr IfcRepresentationContext::RepresentationsInContext() const { return data_->getInverse(IfcRepresentation_type, 0)->as<IfcRepresentation>(); }
 
 const IfcParse::entity& IfcRepresentationContext::declaration() const { return *IfcRepresentationContext_type; }
 const IfcParse::entity& IfcRepresentationContext::Class() { return *IfcRepresentationContext_type; }
@@ -11813,8 +11813,8 @@ IfcRepresentationContext::IfcRepresentationContext(boost::optional< std::string 
 
 // Function implementations for IfcRepresentationItem
 
-IfcPresentationLayerAssignment::list::ptr IfcRepresentationItem::LayerAssignments() const { return data_->getInverse(Type::IfcPresentationLayerAssignment, 2)->as<IfcPresentationLayerAssignment>(); }
-IfcStyledItem::list::ptr IfcRepresentationItem::StyledByItem() const { return data_->getInverse(Type::IfcStyledItem, 0)->as<IfcStyledItem>(); }
+IfcPresentationLayerAssignment::list::ptr IfcRepresentationItem::LayerAssignments() const { return data_->getInverse(IfcPresentationLayerAssignment_type, 2)->as<IfcPresentationLayerAssignment>(); }
+IfcStyledItem::list::ptr IfcRepresentationItem::StyledByItem() const { return data_->getInverse(IfcStyledItem_type, 0)->as<IfcStyledItem>(); }
 
 const IfcParse::entity& IfcRepresentationItem::declaration() const { return *IfcRepresentationItem_type; }
 const IfcParse::entity& IfcRepresentationItem::Class() { return *IfcRepresentationItem_type; }
@@ -11827,7 +11827,7 @@ void IfcRepresentationMap::setMappingOrigin(IfcAxis2Placement* v) { {IfcWrite::I
 IfcRepresentation* IfcRepresentationMap::MappedRepresentation() const { return (IfcRepresentation*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(1))); }
 void IfcRepresentationMap::setMappedRepresentation(IfcRepresentation* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 
-IfcMappedItem::list::ptr IfcRepresentationMap::MapUsage() const { return data_->getInverse(Type::IfcMappedItem, 0)->as<IfcMappedItem>(); }
+IfcMappedItem::list::ptr IfcRepresentationMap::MapUsage() const { return data_->getInverse(IfcMappedItem_type, 0)->as<IfcMappedItem>(); }
 
 const IfcParse::entity& IfcRepresentationMap::declaration() const { return *IfcRepresentationMap_type; }
 const IfcParse::entity& IfcRepresentationMap::Class() { return *IfcRepresentationMap_type; }
@@ -11836,7 +11836,7 @@ IfcRepresentationMap::IfcRepresentationMap(IfcAxis2Placement* v1_MappingOrigin, 
 
 // Function implementations for IfcResource
 
-IfcRelAssignsToResource::list::ptr IfcResource::ResourceOf() const { return data_->getInverse(Type::IfcRelAssignsToResource, 6)->as<IfcRelAssignsToResource>(); }
+IfcRelAssignsToResource::list::ptr IfcResource::ResourceOf() const { return data_->getInverse(IfcRelAssignsToResource_type, 6)->as<IfcRelAssignsToResource>(); }
 
 const IfcParse::entity& IfcResource::declaration() const { return *IfcResource_type; }
 const IfcParse::entity& IfcResource::Class() { return *IfcResource_type; }
@@ -12029,7 +12029,7 @@ bool IfcScheduleTimeControl::hasCompletion() const { return !data_->getArgument(
 double IfcScheduleTimeControl::Completion() const { return *data_->getArgument(22); }
 void IfcScheduleTimeControl::setCompletion(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(22,attr);} }
 
-IfcRelAssignsTasks::list::ptr IfcScheduleTimeControl::ScheduleTimeControlAssigned() const { return data_->getInverse(Type::IfcRelAssignsTasks, 7)->as<IfcRelAssignsTasks>(); }
+IfcRelAssignsTasks::list::ptr IfcScheduleTimeControl::ScheduleTimeControlAssigned() const { return data_->getInverse(IfcRelAssignsTasks_type, 7)->as<IfcRelAssignsTasks>(); }
 
 const IfcParse::entity& IfcScheduleTimeControl::declaration() const { return *IfcScheduleTimeControl_type; }
 const IfcParse::entity& IfcScheduleTimeControl::Class() { return *IfcScheduleTimeControl_type; }
@@ -12148,7 +12148,7 @@ IfcShapeAspect::IfcShapeAspect(IfcTemplatedEntityList< IfcShapeModel >::ptr v1_S
 
 // Function implementations for IfcShapeModel
 
-IfcShapeAspect::list::ptr IfcShapeModel::OfShapeAspect() const { return data_->getInverse(Type::IfcShapeAspect, 0)->as<IfcShapeAspect>(); }
+IfcShapeAspect::list::ptr IfcShapeModel::OfShapeAspect() const { return data_->getInverse(IfcShapeAspect_type, 0)->as<IfcShapeAspect>(); }
 
 const IfcParse::entity& IfcShapeModel::declaration() const { return *IfcShapeModel_type; }
 const IfcParse::entity& IfcShapeModel::Class() { return *IfcShapeModel_type; }
@@ -12288,8 +12288,8 @@ bool IfcSpace::hasElevationWithFlooring() const { return !data_->getArgument(10)
 double IfcSpace::ElevationWithFlooring() const { return *data_->getArgument(10); }
 void IfcSpace::setElevationWithFlooring(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(10,attr);} }
 
-IfcRelCoversSpaces::list::ptr IfcSpace::HasCoverings() const { return data_->getInverse(Type::IfcRelCoversSpaces, 4)->as<IfcRelCoversSpaces>(); }
-IfcRelSpaceBoundary::list::ptr IfcSpace::BoundedBy() const { return data_->getInverse(Type::IfcRelSpaceBoundary, 4)->as<IfcRelSpaceBoundary>(); }
+IfcRelCoversSpaces::list::ptr IfcSpace::HasCoverings() const { return data_->getInverse(IfcRelCoversSpaces_type, 4)->as<IfcRelCoversSpaces>(); }
+IfcRelSpaceBoundary::list::ptr IfcSpace::BoundedBy() const { return data_->getInverse(IfcRelSpaceBoundary_type, 4)->as<IfcRelSpaceBoundary>(); }
 
 const IfcParse::entity& IfcSpace::declaration() const { return *IfcSpace_type; }
 const IfcParse::entity& IfcSpace::Class() { return *IfcSpace_type; }
@@ -12321,8 +12321,8 @@ void IfcSpaceProgram::setRequestedLocation(IfcSpatialStructureElement* v) { {Ifc
 double IfcSpaceProgram::StandardRequiredArea() const { return *data_->getArgument(9); }
 void IfcSpaceProgram::setStandardRequiredArea(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 
-IfcRelInteractionRequirements::list::ptr IfcSpaceProgram::HasInteractionReqsFrom() const { return data_->getInverse(Type::IfcRelInteractionRequirements, 7)->as<IfcRelInteractionRequirements>(); }
-IfcRelInteractionRequirements::list::ptr IfcSpaceProgram::HasInteractionReqsTo() const { return data_->getInverse(Type::IfcRelInteractionRequirements, 8)->as<IfcRelInteractionRequirements>(); }
+IfcRelInteractionRequirements::list::ptr IfcSpaceProgram::HasInteractionReqsFrom() const { return data_->getInverse(IfcRelInteractionRequirements_type, 7)->as<IfcRelInteractionRequirements>(); }
+IfcRelInteractionRequirements::list::ptr IfcSpaceProgram::HasInteractionReqsTo() const { return data_->getInverse(IfcRelInteractionRequirements_type, 8)->as<IfcRelInteractionRequirements>(); }
 
 const IfcParse::entity& IfcSpaceProgram::declaration() const { return *IfcSpaceProgram_type; }
 const IfcParse::entity& IfcSpaceProgram::Class() { return *IfcSpaceProgram_type; }
@@ -12380,9 +12380,9 @@ void IfcSpatialStructureElement::setLongName(std::string v) { {IfcWrite::IfcWrit
 IfcElementCompositionEnum::IfcElementCompositionEnum IfcSpatialStructureElement::CompositionType() const { return IfcElementCompositionEnum::FromString(*data_->getArgument(8)); }
 void IfcSpatialStructureElement::setCompositionType(IfcElementCompositionEnum::IfcElementCompositionEnum v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,IfcElementCompositionEnum::ToString(v)));data_->setArgument(8,attr);} }
 
-IfcRelReferencedInSpatialStructure::list::ptr IfcSpatialStructureElement::ReferencesElements() const { return data_->getInverse(Type::IfcRelReferencedInSpatialStructure, 5)->as<IfcRelReferencedInSpatialStructure>(); }
-IfcRelServicesBuildings::list::ptr IfcSpatialStructureElement::ServicedBySystems() const { return data_->getInverse(Type::IfcRelServicesBuildings, 5)->as<IfcRelServicesBuildings>(); }
-IfcRelContainedInSpatialStructure::list::ptr IfcSpatialStructureElement::ContainsElements() const { return data_->getInverse(Type::IfcRelContainedInSpatialStructure, 5)->as<IfcRelContainedInSpatialStructure>(); }
+IfcRelReferencedInSpatialStructure::list::ptr IfcSpatialStructureElement::ReferencesElements() const { return data_->getInverse(IfcRelReferencedInSpatialStructure_type, 5)->as<IfcRelReferencedInSpatialStructure>(); }
+IfcRelServicesBuildings::list::ptr IfcSpatialStructureElement::ServicedBySystems() const { return data_->getInverse(IfcRelServicesBuildings_type, 5)->as<IfcRelServicesBuildings>(); }
+IfcRelContainedInSpatialStructure::list::ptr IfcSpatialStructureElement::ContainsElements() const { return data_->getInverse(IfcRelContainedInSpatialStructure_type, 5)->as<IfcRelContainedInSpatialStructure>(); }
 
 const IfcParse::entity& IfcSpatialStructureElement::declaration() const { return *IfcSpatialStructureElement_type; }
 const IfcParse::entity& IfcSpatialStructureElement::Class() { return *IfcSpatialStructureElement_type; }
@@ -12476,7 +12476,7 @@ void IfcStructuralActivity::setAppliedLoad(IfcStructuralLoad* v) { {IfcWrite::If
 IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum IfcStructuralActivity::GlobalOrLocal() const { return IfcGlobalOrLocalEnum::FromString(*data_->getArgument(8)); }
 void IfcStructuralActivity::setGlobalOrLocal(IfcGlobalOrLocalEnum::IfcGlobalOrLocalEnum v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,IfcGlobalOrLocalEnum::ToString(v)));data_->setArgument(8,attr);} }
 
-IfcRelConnectsStructuralActivity::list::ptr IfcStructuralActivity::AssignedToStructuralItem() const { return data_->getInverse(Type::IfcRelConnectsStructuralActivity, 5)->as<IfcRelConnectsStructuralActivity>(); }
+IfcRelConnectsStructuralActivity::list::ptr IfcStructuralActivity::AssignedToStructuralItem() const { return data_->getInverse(IfcRelConnectsStructuralActivity_type, 5)->as<IfcRelConnectsStructuralActivity>(); }
 
 const IfcParse::entity& IfcStructuralActivity::declaration() const { return *IfcStructuralActivity_type; }
 const IfcParse::entity& IfcStructuralActivity::Class() { return *IfcStructuralActivity_type; }
@@ -12507,7 +12507,7 @@ bool IfcStructuralConnection::hasAppliedCondition() const { return !data_->getAr
 IfcBoundaryCondition* IfcStructuralConnection::AppliedCondition() const { return (IfcBoundaryCondition*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(7))); }
 void IfcStructuralConnection::setAppliedCondition(IfcBoundaryCondition* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 
-IfcRelConnectsStructuralMember::list::ptr IfcStructuralConnection::ConnectsStructuralMembers() const { return data_->getInverse(Type::IfcRelConnectsStructuralMember, 5)->as<IfcRelConnectsStructuralMember>(); }
+IfcRelConnectsStructuralMember::list::ptr IfcStructuralConnection::ConnectsStructuralMembers() const { return data_->getInverse(IfcRelConnectsStructuralMember_type, 5)->as<IfcRelConnectsStructuralMember>(); }
 
 const IfcParse::entity& IfcStructuralConnection::declaration() const { return *IfcStructuralConnection_type; }
 const IfcParse::entity& IfcStructuralConnection::Class() { return *IfcStructuralConnection_type; }
@@ -12553,7 +12553,7 @@ IfcStructuralCurveMemberVarying::IfcStructuralCurveMemberVarying(std::string v1_
 
 // Function implementations for IfcStructuralItem
 
-IfcRelConnectsStructuralActivity::list::ptr IfcStructuralItem::AssignedStructuralActivity() const { return data_->getInverse(Type::IfcRelConnectsStructuralActivity, 4)->as<IfcRelConnectsStructuralActivity>(); }
+IfcRelConnectsStructuralActivity::list::ptr IfcStructuralItem::AssignedStructuralActivity() const { return data_->getInverse(IfcRelConnectsStructuralActivity_type, 4)->as<IfcRelConnectsStructuralActivity>(); }
 
 const IfcParse::entity& IfcStructuralItem::declaration() const { return *IfcStructuralItem_type; }
 const IfcParse::entity& IfcStructuralItem::Class() { return *IfcStructuralItem_type; }
@@ -12607,8 +12607,8 @@ bool IfcStructuralLoadGroup::hasPurpose() const { return !data_->getArgument(9)-
 std::string IfcStructuralLoadGroup::Purpose() const { return *data_->getArgument(9); }
 void IfcStructuralLoadGroup::setPurpose(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(9,attr);} }
 
-IfcStructuralResultGroup::list::ptr IfcStructuralLoadGroup::SourceOfResultGroup() const { return data_->getInverse(Type::IfcStructuralResultGroup, 6)->as<IfcStructuralResultGroup>(); }
-IfcStructuralAnalysisModel::list::ptr IfcStructuralLoadGroup::LoadGroupFor() const { return data_->getInverse(Type::IfcStructuralAnalysisModel, 7)->as<IfcStructuralAnalysisModel>(); }
+IfcStructuralResultGroup::list::ptr IfcStructuralLoadGroup::SourceOfResultGroup() const { return data_->getInverse(IfcStructuralResultGroup_type, 6)->as<IfcStructuralResultGroup>(); }
+IfcStructuralAnalysisModel::list::ptr IfcStructuralLoadGroup::LoadGroupFor() const { return data_->getInverse(IfcStructuralAnalysisModel_type, 7)->as<IfcStructuralAnalysisModel>(); }
 
 const IfcParse::entity& IfcStructuralLoadGroup::declaration() const { return *IfcStructuralLoadGroup_type; }
 const IfcParse::entity& IfcStructuralLoadGroup::Class() { return *IfcStructuralLoadGroup_type; }
@@ -12759,8 +12759,8 @@ IfcStructuralLoadTemperature::IfcStructuralLoadTemperature(boost::optional< std:
 
 // Function implementations for IfcStructuralMember
 
-IfcRelConnectsStructuralElement::list::ptr IfcStructuralMember::ReferencesElement() const { return data_->getInverse(Type::IfcRelConnectsStructuralElement, 5)->as<IfcRelConnectsStructuralElement>(); }
-IfcRelConnectsStructuralMember::list::ptr IfcStructuralMember::ConnectedBy() const { return data_->getInverse(Type::IfcRelConnectsStructuralMember, 4)->as<IfcRelConnectsStructuralMember>(); }
+IfcRelConnectsStructuralElement::list::ptr IfcStructuralMember::ReferencesElement() const { return data_->getInverse(IfcRelConnectsStructuralElement_type, 5)->as<IfcRelConnectsStructuralElement>(); }
+IfcRelConnectsStructuralMember::list::ptr IfcStructuralMember::ConnectedBy() const { return data_->getInverse(IfcRelConnectsStructuralMember_type, 4)->as<IfcRelConnectsStructuralMember>(); }
 
 const IfcParse::entity& IfcStructuralMember::declaration() const { return *IfcStructuralMember_type; }
 const IfcParse::entity& IfcStructuralMember::Class() { return *IfcStructuralMember_type; }
@@ -12871,7 +12871,7 @@ IfcStructuralProfileProperties::IfcStructuralProfileProperties(boost::optional< 
 
 // Function implementations for IfcStructuralReaction
 
-IfcStructuralAction::list::ptr IfcStructuralReaction::Causes() const { return data_->getInverse(Type::IfcStructuralAction, 10)->as<IfcStructuralAction>(); }
+IfcStructuralAction::list::ptr IfcStructuralReaction::Causes() const { return data_->getInverse(IfcStructuralAction_type, 10)->as<IfcStructuralAction>(); }
 
 const IfcParse::entity& IfcStructuralReaction::declaration() const { return *IfcStructuralReaction_type; }
 const IfcParse::entity& IfcStructuralReaction::Class() { return *IfcStructuralReaction_type; }
@@ -12887,7 +12887,7 @@ void IfcStructuralResultGroup::setResultForLoadGroup(IfcStructuralLoadGroup* v) 
 bool IfcStructuralResultGroup::IsLinear() const { return *data_->getArgument(7); }
 void IfcStructuralResultGroup::setIsLinear(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 
-IfcStructuralAnalysisModel::list::ptr IfcStructuralResultGroup::ResultGroupFor() const { return data_->getInverse(Type::IfcStructuralAnalysisModel, 8)->as<IfcStructuralAnalysisModel>(); }
+IfcStructuralAnalysisModel::list::ptr IfcStructuralResultGroup::ResultGroupFor() const { return data_->getInverse(IfcStructuralAnalysisModel_type, 8)->as<IfcStructuralAnalysisModel>(); }
 
 const IfcParse::entity& IfcStructuralResultGroup::declaration() const { return *IfcStructuralResultGroup_type; }
 const IfcParse::entity& IfcStructuralResultGroup::Class() { return *IfcStructuralResultGroup_type; }
@@ -13232,7 +13232,7 @@ IfcSymbolStyle::IfcSymbolStyle(boost::optional< std::string > v1_Name, IfcSymbol
 
 // Function implementations for IfcSystem
 
-IfcRelServicesBuildings::list::ptr IfcSystem::ServicesBuildings() const { return data_->getInverse(Type::IfcRelServicesBuildings, 4)->as<IfcRelServicesBuildings>(); }
+IfcRelServicesBuildings::list::ptr IfcSystem::ServicesBuildings() const { return data_->getInverse(IfcRelServicesBuildings_type, 4)->as<IfcRelServicesBuildings>(); }
 
 const IfcParse::entity& IfcSystem::declaration() const { return *IfcSystem_type; }
 const IfcParse::entity& IfcSystem::Class() { return *IfcSystem_type; }
@@ -13299,7 +13299,7 @@ void IfcTableRow::setRowCells(IfcEntityList::ptr v) { {IfcWrite::IfcWriteArgumen
 bool IfcTableRow::IsHeading() const { return *data_->getArgument(1); }
 void IfcTableRow::setIsHeading(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 
-IfcTable::list::ptr IfcTableRow::OfTable() const { return data_->getInverse(Type::IfcTable, 1)->as<IfcTable>(); }
+IfcTable::list::ptr IfcTableRow::OfTable() const { return data_->getInverse(IfcTable_type, 1)->as<IfcTable>(); }
 
 const IfcParse::entity& IfcTableRow::declaration() const { return *IfcTableRow_type; }
 const IfcParse::entity& IfcTableRow::Class() { return *IfcTableRow_type; }
@@ -13538,7 +13538,7 @@ IfcTextStyleWithBoxCharacteristics::IfcTextStyleWithBoxCharacteristics(boost::op
 
 // Function implementations for IfcTextureCoordinate
 
-IfcAnnotationSurface::list::ptr IfcTextureCoordinate::AnnotatedSurface() const { return data_->getInverse(Type::IfcAnnotationSurface, 1)->as<IfcAnnotationSurface>(); }
+IfcAnnotationSurface::list::ptr IfcTextureCoordinate::AnnotatedSurface() const { return data_->getInverse(IfcAnnotationSurface_type, 1)->as<IfcAnnotationSurface>(); }
 
 const IfcParse::entity& IfcTextureCoordinate::declaration() const { return *IfcTextureCoordinate_type; }
 const IfcParse::entity& IfcTextureCoordinate::Class() { return *IfcTextureCoordinate_type; }
@@ -13618,7 +13618,7 @@ bool IfcTimeSeries::hasUnit() const { return !data_->getArgument(7)->isNull(); }
 IfcUnit* IfcTimeSeries::Unit() const { return (IfcUnit*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(7))); }
 void IfcTimeSeries::setUnit(IfcUnit* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(7,attr);} }
 
-IfcTimeSeriesReferenceRelationship::list::ptr IfcTimeSeries::DocumentedBy() const { return data_->getInverse(Type::IfcTimeSeriesReferenceRelationship, 0)->as<IfcTimeSeriesReferenceRelationship>(); }
+IfcTimeSeriesReferenceRelationship::list::ptr IfcTimeSeries::DocumentedBy() const { return data_->getInverse(IfcTimeSeriesReferenceRelationship_type, 0)->as<IfcTimeSeriesReferenceRelationship>(); }
 
 const IfcParse::entity& IfcTimeSeries::declaration() const { return *IfcTimeSeries_type; }
 const IfcParse::entity& IfcTimeSeries::Class() { return *IfcTimeSeries_type; }
@@ -13777,7 +13777,7 @@ bool IfcTypeObject::hasHasPropertySets() const { return !data_->getArgument(5)->
 IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr IfcTypeObject::HasPropertySets() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<IfcPropertySetDefinition>(); }
 void IfcTypeObject::setHasPropertySets(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
-IfcRelDefinesByType::list::ptr IfcTypeObject::ObjectTypeOf() const { return data_->getInverse(Type::IfcRelDefinesByType, 5)->as<IfcRelDefinesByType>(); }
+IfcRelDefinesByType::list::ptr IfcTypeObject::ObjectTypeOf() const { return data_->getInverse(IfcRelDefinesByType_type, 5)->as<IfcRelDefinesByType>(); }
 
 const IfcParse::entity& IfcTypeObject::declaration() const { return *IfcTypeObject_type; }
 const IfcParse::entity& IfcTypeObject::Class() { return *IfcTypeObject_type; }

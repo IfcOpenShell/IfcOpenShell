@@ -75,7 +75,7 @@ public:
 
 	~IfcEntityInstanceData();
 
-	boost::shared_ptr<IfcEntityList> getInverse(IfcSchema::Type::Enum type, int attribute_index);
+	boost::shared_ptr<IfcEntityList> getInverse(const IfcParse::declaration* type, int attribute_index);
 
 	Argument* getArgument(unsigned int i) const;
 

@@ -62,7 +62,7 @@ public:
 
 	template <class T>
 	T* getSingle() {
-		typename T::list::ptr ts = entitiesByType<T>();
+		typename T::list::ptr ts = instances_by_type<T>();
 		if (ts->size() != 1) return 0;
 		return *ts->begin();
 	}
@@ -83,7 +83,7 @@ public:
 	void addRelatedObject(IfcSchema::IfcObjectDefinition* relating_object, 
 		IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist = 0)
 	{
-		typename T::list::ptr li = entitiesByType<T>();
+		typename T::list::ptr li = instances_by_type<T>();
 		bool found = false;
 		for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;

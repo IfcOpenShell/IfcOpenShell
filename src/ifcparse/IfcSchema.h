@@ -62,7 +62,7 @@ namespace IfcParse {
 		virtual const aggregation_type* as_aggregation_type() const { return static_cast<aggregation_type*>(0); }
 
 		virtual bool is(const std::string& /*name*/) const { return false; }
-		virtual bool is(IfcSchema::Type::Enum /*name*/) const { return false; }
+		virtual bool is(const IfcParse::declaration& /*decl*/) const { return false; }
 	};
 
 	class named_type : public parameter_type {
@@ -77,7 +77,7 @@ namespace IfcParse {
 		virtual const named_type* as_named_type() const { return this; }
 
 		virtual bool is(const std::string& name) const;
-		virtual bool is(IfcSchema::Type::Enum name) const;
+		virtual bool is(const IfcParse::declaration& decl) const;
 	};
 
 	class simple_type : public parameter_type {
@@ -136,7 +136,6 @@ namespace IfcParse {
 		virtual const entity* as_entity() const { return static_cast<entity*>(0); }
 
 		bool is(const std::string& name) const;
-		bool is(int index) const;
 		bool is(const IfcParse::declaration& decl) const;
 
 		int index_in_schema() const { return index_in_schema_; }
@@ -276,12 +275,6 @@ namespace IfcParse {
 			else return false;
 		}
 
-		bool is(int name) const {
-			if (name == index_in_schema_) return true;
-			else if (supertype_) return supertype_->is(name);
-			else return false;
-		}
-
 		bool is(const IfcParse::declaration& decl) const {
 			if (this == &decl) return true;
 			else if (supertype_) return supertype_->is(decl);
@@ -401,13 +394,6 @@ namespace IfcParse {
 			bool operator()(const declaration* decl, const std::string& name) {
 				// TODO: Efficiency?
 				return boost::to_lower_copy(decl->name()) < boost::to_lower_copy(name);
-			}
-		};
-
-		class declaration_by_enum_cmp : public std::binary_function<const declaration*, IfcSchema::Type::Enum, bool> {
-		public:
-			bool operator()(const declaration* decl, IfcSchema::Type::Enum name) {
-				return decl->type() < name;
 			}
 		};
 

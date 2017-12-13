@@ -124,7 +124,7 @@ IfcSchema::IfcProject* IfcHierarchyHelper::addProject(IfcSchema::IfcOwnerHistory
 
 void IfcHierarchyHelper::relatePlacements(IfcSchema::IfcProduct* parent, IfcSchema::IfcProduct* product) {
 	IfcSchema::IfcObjectPlacement* place = product->hasObjectPlacement() ? product->ObjectPlacement() : 0;
-	if (place && place->declaration().is(IfcSchema::Type::IfcLocalPlacement)) {
+	if (place && place->declaration().is(IfcSchema::IfcLocalPlacement::Class())) {
 		IfcSchema::IfcLocalPlacement* local_place = (IfcSchema::IfcLocalPlacement*) place;
 		if (parent->hasObjectPlacement()) {
 			local_place->setPlacementRelTo(parent->ObjectPlacement());

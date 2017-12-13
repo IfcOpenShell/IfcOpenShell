@@ -37,7 +37,7 @@ class IFC_PARSE_API IfcFile {
 public:
 	typedef std::map<const IfcParse::declaration*, IfcEntityList::ptr> entities_by_type_t;
 	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
-	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
+	typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
@@ -68,6 +68,7 @@ private:
 	bool parsing_complete_, good_;
 
 	const IfcParse::schema_definition* schema_;
+	const IfcParse::declaration* ifcroot_type_;
 
 	entity_by_id_t byid;
 	entities_by_type_t bytype;
@@ -148,14 +149,14 @@ public:
 	IfcUtil::IfcBaseClass* instance_by_id(int id);
 
 	/// Returns the entity with the specified GlobalId
-	IfcSchema::IfcRoot* instance_by_guid(const std::string& guid);
+	IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
 
 	/// Performs a depth-first traversal, returning all entity instance
 	/// attributes as a flat list. NB: includes the root instance specified
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
-	IfcEntityList::ptr getInverse(int instance_id, IfcSchema::Type::Enum type, int attribute_index);
+	IfcEntityList::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
 	unsigned int FreshId() { return ++MaxId; }
 
