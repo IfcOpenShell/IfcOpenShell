@@ -106,7 +106,7 @@
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	if (height < getValue(GV_PRECISION)) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
 		return false;
 	}
 
@@ -166,7 +166,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, TopoDS_Shape& shape) {
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	if (height < getValue(GV_PRECISION)) {
-		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
 		return false;
 	}
 
@@ -229,8 +229,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 		if (shell.IsNull()) {
 			shell = result;
-		} else if (l->SweptArea()->is(IfcSchema::Type::IfcCircleHollowProfileDef) ||
-			l->SweptArea()->is(IfcSchema::Type::IfcRectangleHollowProfileDef))
+		} else if (l->SweptArea()->declaration().is(IfcSchema::Type::IfcCircleHollowProfileDef) ||
+			l->SweptArea()->declaration().is(IfcSchema::Type::IfcRectangleHollowProfileDef))
 		{
 			/// @todo a bit of of a hack, should be sufficient
 			shell = BRepAlgoAPI_Cut(shell, result).Shape();
@@ -251,7 +251,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 	shape = shell;
 
 	if (exp1.More() != exp2.More()) {
-		Logger::Message(Logger::LOG_ERROR, "Inconsistent profiles encountered for:", l->entity);
+		Logger::Message(Logger::LOG_ERROR, "Inconsistent profiles encountered for:", l);
 	}
 
 	if (has_position && !shape.IsNull()) {
@@ -369,11 +369,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 		const SurfaceStyle* indiv_style = get_style(l->Outer());
 
 		IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
-		if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+		if (l->declaration().is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
 			voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
 		}
 #ifdef USE_IFC4
-		if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+		if (l->declaration().is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
 			voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
 		}
 #endif
@@ -410,8 +410,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcR
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcSurface* surface = l->BaseSurface();
-	if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface->entity);
+	if ( ! surface->declaration().is(IfcSchema::Type::IfcPlane) ) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
 		return false;
 	}
 	gp_Pln pln;
@@ -439,7 +439,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 		remove_duplicate_points_from_loop(points, wire.Closed() != 0, t); // Note: wire always closed, as per if statement above
 		remove_collinear_points_from_loop(points, wire.Closed() != 0, t);
 		if (points.Length() < 3) {
-			Logger::Message(Logger::LOG_ERROR, "Not enough points retained from:", l->PolygonalBoundary()->entity);
+			Logger::Message(Logger::LOG_ERROR, "Not enough points retained from:", l->PolygonalBoundary());
 			return false;
 		}
 		sequence_of_point_to_wire(points, wire, wire.Closed() != 0);
@@ -461,7 +461,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 	for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = 0;
-		if ((*it)->is(IfcSchema::Type::IfcRepresentationItem)) {
+		if ((*it)->declaration().is(IfcSchema::Type::IfcRepresentationItem)) {
 			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
 		}
 		if (convert_shape(*it,s)) {
@@ -478,7 +478,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
-	bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
+	bool is_halfspace = operand2->declaration().is(IfcSchema::Type::IfcHalfSpaceSolid);
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
 		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
@@ -491,13 +491,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		{ TopoDS_Solid temp_solid;
 		s1 = ensure_fit_for_subtraction(s1, temp_solid); }
 	} else {
-		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand1->entity);
+		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand1);
 		return false;
 	}
 
 	const double first_operand_volume = shape_volume(s1);
 	if ( first_operand_volume <= ALMOST_ZERO )
-		Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand()->entity);
+		Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand());
 
 	bool shape2_processed = false;
 	if ( shape_type(operand2) == ST_SHAPELIST ) {
@@ -509,19 +509,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			s2 = ensure_fit_for_subtraction(s2, temp_solid);
 		}
 	} else {
-		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2->entity);
+		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2);
 	}
 
 	if (!shape2_processed) {
 		shape = s1;
-		Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l->entity);
+		Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l);
 		return true;
 	}
 
 	if (!is_halfspace) {
 		const double second_operand_volume = shape_volume(s2);
 		if ( second_operand_volume <= ALMOST_ZERO )
-			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
+			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2);
 	}
 
 	const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
@@ -556,9 +556,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		if (valid_result) {
 			const double volume_after_subtraction = shape_volume(shape);
 			if ( ALMOST_THE_SAME(first_operand_volume,volume_after_subtraction) )
-				Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l->entity);
+				Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",l);
 		} else {
-			Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",l->entity);
+			Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",l);
 			shape = s1;
 		}
 		// NB: After issuing error the first operand is returned!
@@ -592,7 +592,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		}
 
 		if (!success) {
-			Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
+			Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it));
 			continue;
 		}
 
@@ -605,7 +605,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 					if (face_area(triangle) > getValue(GV_MINIMAL_FACE_AREA)) {
 						face_list.Append(triangle);
 					} else {
-						Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+						Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it));
 					}
 				}
 			}
@@ -613,7 +613,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 			if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
 				face_list.Append(face);
 			} else {
-				Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+				Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it));
 			}
 		}
 	}
@@ -640,16 +640,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentationShapeItems& shapes) {
 	gp_GTrsf gtrsf;
 	IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
-	if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+	if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
-	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform->entity);
+	} else if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform);
 		return false;
-	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
+	} else if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
 		gp_Trsf trsf;
 		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
 		gtrsf = trsf;
-	} else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
+	} else if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
 		gp_Trsf2d trsf_2d;
 		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,trsf_2d);
 		gtrsf = (gp_Trsf) trsf_2d;
@@ -657,7 +657,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	IfcSchema::IfcRepresentationMap* map = l->MappingSource();
 	IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
 	gp_Trsf trsf;
-	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+	if (placement->declaration().is(IfcSchema::Type::IfcAxis2Placement3D)) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf_2d;
@@ -715,11 +715,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 		if (convert_shape(element, s)) {
 			part_succes = true;
 			const IfcGeom::SurfaceStyle* style = 0;
-			if (element->is(IfcSchema::Type::IfcPoint)) {
+			if (element->declaration().is(IfcSchema::Type::IfcPoint)) {
 				style = get_style((IfcSchema::IfcPoint*) element);
-			} else if (element->is(IfcSchema::Type::IfcCurve)) {
+			} else if (element->declaration().is(IfcSchema::Type::IfcCurve)) {
 				style = get_style((IfcSchema::IfcCurve*) element);
-			} else if (element->is(IfcSchema::Type::IfcSurface)) {
+			} else if (element->declaration().is(IfcSchema::Type::IfcSurface)) {
 				style = get_style((IfcSchema::IfcSurface*) element);
 			}
 			shapes.push_back(IfcRepresentationShapeItem(s, style ? style : parent_style));
@@ -842,8 +842,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, TopoDS_Shape& face) {
-	if (!l->BasisSurface()->is(IfcSchema::Type::IfcPlane)) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", l->BasisSurface()->entity);
+	if (!l->BasisSurface()->declaration().is(IfcSchema::Type::IfcPlane)) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", l->BasisSurface());
 		return false;
 	}
 	gp_Pln pln;
@@ -861,8 +861,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
 
-	if (!l->ReferenceSurface()->is(IfcSchema::Type::IfcPlane)) {
-		Logger::Message(Logger::LOG_WARNING, "Reference surface not supported", l->ReferenceSurface()->entity);
+	if (!l->ReferenceSurface()->declaration().is(IfcSchema::Type::IfcPlane)) {
+		Logger::Message(Logger::LOG_WARNING, "Reference surface not supported", l->ReferenceSurface());
 		return false;
 	}
 	
@@ -895,7 +895,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 		for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 			if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 				directrix_on_plane = false;
-				Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l->entity);
+				Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
 				break;
 			}
 		}
@@ -1015,7 +1015,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		}
 
 		if (!is_valid) {
-			Logger::Message(Logger::LOG_WARNING, "Failed to subtract inner radius void for:", l->entity);
+			Logger::Message(Logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
 		}
 	}
 
@@ -1049,7 +1049,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
 		const std::vector<double>& coords = *it;
 		if (coords.size() != 3) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l->entity);
+			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l);
 			return false;
 		}
 		points.push_back(gp_Pnt(coords[0] * getValue(GV_LENGTH_UNIT),
@@ -1065,7 +1065,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	for(std::vector< std::vector<int> >::const_iterator it = indices.begin(); it != indices.end(); ++ it) {
 		const std::vector<int>& tri = *it;
 		if (tri.size() != 3) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on CoordIndex", l->entity);
+			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on CoordIndex", l);
 			return false;
 		}
 
@@ -1073,7 +1073,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 		const int max_index = *std::max_element(tri.begin(), tri.end());
 
 		if (min_index < 1 || max_index > (int) points.size()) {
-			Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l->entity);
+			Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l);
 			return false;
 		}
 
@@ -1129,7 +1129,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 				}
 			} catch(...) {}
 		} else {
-			Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", l->entity);
+			Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", l);
 		}
 	}
 

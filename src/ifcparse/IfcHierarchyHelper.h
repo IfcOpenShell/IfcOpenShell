@@ -62,7 +62,7 @@ public:
 
 	template <class T>
 	T* getSingle() {
-		typename T::list::ptr ts = entitiesByType<T>();
+		typename T::list::ptr ts = instances_by_type<T>();
 		if (ts->size() != 1) return 0;
 		return *ts->begin();
 	}
@@ -83,7 +83,7 @@ public:
 	void addRelatedObject(IfcSchema::IfcObjectDefinition* relating_object, 
 		IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist = 0)
 	{
-		typename T::list::ptr li = entitiesByType<T>();
+		typename T::list::ptr li = instances_by_type<T>();
 		bool found = false;
 		for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;
@@ -179,7 +179,7 @@ template <>
 inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelContainedInSpatialStructure> (IfcSchema::IfcObjectDefinition* relating_structure, 
 	IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist)
 {
-	IfcSchema::IfcRelContainedInSpatialStructure::list::ptr li = entitiesByType<IfcSchema::IfcRelContainedInSpatialStructure>();
+	IfcSchema::IfcRelContainedInSpatialStructure::list::ptr li = instances_by_type<IfcSchema::IfcRelContainedInSpatialStructure>();
 	bool found = false;
 	for (IfcSchema::IfcRelContainedInSpatialStructure::list::it i = li->begin(); i != li->end(); ++i) {
 		IfcSchema::IfcRelContainedInSpatialStructure* rel = *i;
@@ -211,7 +211,7 @@ template <>
 inline void IfcHierarchyHelper::addRelatedObject <IfcSchema::IfcRelDefinesByType> (IfcSchema::IfcObjectDefinition* relating_type, 
 	IfcSchema::IfcObjectDefinition* related_object, IfcSchema::IfcOwnerHistory* owner_hist)
 {
-	IfcSchema::IfcRelDefinesByType::list::ptr li = entitiesByType<IfcSchema::IfcRelDefinesByType>();
+	IfcSchema::IfcRelDefinesByType::list::ptr li = instances_by_type<IfcSchema::IfcRelDefinesByType>();
 	bool found = false;
 	for (IfcSchema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
 		IfcSchema::IfcRelDefinesByType* rel = *i;

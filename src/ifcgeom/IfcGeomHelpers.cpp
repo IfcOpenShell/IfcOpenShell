@@ -363,15 +363,15 @@ void IfcGeom::Kernel::set_conversion_placement_rel_to(IfcSchema::Type::Enum type
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf) {
 	IN_CACHE(IfcObjectPlacement,l,gp_Trsf,trsf)
-	if ( ! l->is(IfcSchema::Type::IfcLocalPlacement) ) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l->entity);
+	if ( ! l->declaration().is(IfcSchema::Type::IfcLocalPlacement) ) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported IfcObjectPlacement:", l);
 		return false; 		
 	}
 	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)l;
 	for (;;) {
 		gp_Trsf trsf2;
 		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
-		if ( relplacement->is(IfcSchema::Type::IfcAxis2Placement3D) ) {
+		if ( relplacement->declaration().is(IfcSchema::Type::IfcAxis2Placement3D) ) {
 			IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)relplacement,trsf2);
 			trsf.PreMultiply(trsf2);
 		}
@@ -381,11 +381,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 			bool parentPlacesType = false;
 			for ( IfcSchema::IfcProduct::list::it iter = parentPlaces->begin();
 				  iter != parentPlaces->end(); ++iter) {
-				if ( (*iter)->is(placement_rel_to) ) parentPlacesType = true;
+				if ( (*iter)->declaration().is(placement_rel_to) ) parentPlacesType = true;
 			}
 
 			if ( parentPlacesType ) break;
-			else if ( parent->is(IfcSchema::Type::IfcLocalPlacement) )
+			else if ( parent->declaration().is(IfcSchema::Type::IfcLocalPlacement) )
 				current = (IfcSchema::IfcLocalPlacement*)current->PlacementRelTo();
 			else break;
 		} else break;

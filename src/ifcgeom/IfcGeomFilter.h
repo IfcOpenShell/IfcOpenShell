@@ -155,9 +155,9 @@ namespace IfcGeom
         std::string value(IfcSchema::IfcProduct* prod) const
         {
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                if (prod->is(it->first) && it->second < prod->entity->getArgumentCount() &&
-                    prod->getArgumentType(it->second) == IfcUtil::Argument_STRING) {
-                    Argument *arg = prod->entity->getArgument(it->second);
+                if (prod->declaration().is(it->first) && it->second < prod->data().getArgumentCount() &&
+                    prod->data().getArgument(it->second)->type() == IfcUtil::Argument_STRING) {
+                    Argument *arg = prod->data().getArgument(it->second);
                     if (!arg->isNull()) {
                         return *arg;
                     }
@@ -188,7 +188,7 @@ namespace IfcGeom
                 IfcEntityInstanceData dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 try {
-                    ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->getArgumentName(it->second);
+                    ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->declaration().as_entity()->all_attributes()[it->second]->name();
                 } catch (const std::exception& e) {
 					Logger::Error(e);
 				}
@@ -275,7 +275,7 @@ namespace IfcGeom
         {
             // The set is iterated over to able to filter on subtypes.
             foreach(IfcSchema::Type::Enum type, values) {
-                if (prod->is(type)) {
+                if (prod->declaration().is(type)) {
                     return true;
                 }
             }

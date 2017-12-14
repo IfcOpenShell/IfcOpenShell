@@ -38,7 +38,7 @@ public:
 	IfcParse::IfcFile* file;
 protected:
 	unsigned id_;
-	IfcSchema::Type::Enum type_;
+	const IfcParse::declaration* type_;
 	mutable std::vector<Argument*> attributes_;
 
 	// To reduce memory footprint, these two could potentially be combined,
@@ -49,11 +49,11 @@ protected:
 	unsigned offset_in_file_;
 
 public:
-	IfcEntityInstanceData(IfcSchema::Type::Enum type, IfcParse::IfcFile* file_, unsigned id = 0, unsigned offset_in_file = 0)
+	IfcEntityInstanceData(const IfcParse::declaration* type, IfcParse::IfcFile* file_, unsigned id = 0, unsigned offset_in_file = 0)
 		: file(file_), id_(id), type_(type), initialized_(false), offset_in_file_(offset_in_file)
 	{}
 
-	IfcEntityInstanceData(IfcSchema::Type::Enum type)
+	IfcEntityInstanceData(const IfcParse::declaration* type)
 		: file(0), id_(0), type_(type), initialized_(true)
 	{}
 
@@ -75,7 +75,7 @@ public:
 
 	~IfcEntityInstanceData();
 
-	boost::shared_ptr<IfcEntityList> getInverse(IfcSchema::Type::Enum type, int attribute_index);
+	boost::shared_ptr<IfcEntityList> getInverse(const IfcParse::declaration* type, int attribute_index);
 
 	Argument* getArgument(unsigned int i) const;
 
@@ -89,7 +89,7 @@ public:
 		return (unsigned int)attributes_.size();
 	}
 
-	IfcSchema::Type::Enum type() const {
+	const IfcParse::declaration* type() const {
 		return type_;
 	}
 
