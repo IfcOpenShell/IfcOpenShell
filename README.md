@@ -214,4 +214,4 @@ Usage examples
 [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
 [MSYS2]: https://msys2.github.io/ "MSYS2"
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
-[nix/build-all.sh]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.sh "nix/build-all.sh"
+[nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"
