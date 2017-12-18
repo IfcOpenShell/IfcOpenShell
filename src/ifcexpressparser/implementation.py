@@ -29,6 +29,7 @@ class Implementation(codegen.Base):
         schema_entity_statements = []
 
         schema_name = mapping.schema.name.capitalize()
+        schema_name_upper = mapping.schema.name.upper()
 
         stringify = lambda s: '"%s"'%s
         cat = lambda vs: "".join(vs)
@@ -47,6 +48,7 @@ class Implementation(codegen.Base):
                 max_id = len(enum.values),
                 name = name,
                 schema_name = schema_name,
+                schema_name_upper = schema_name_upper,
                 values = catc(map(stringify, enum.values)),
                 from_string_statements = catnl(templates.enum_from_string_stmt%dict(context,**locals()) for value in enum.values)
             )
@@ -73,6 +75,7 @@ class Implementation(codegen.Base):
                             templates.const_function,
                             class_name  = name,
                             schema_name = schema_name,
+                            schema_name_upper = schema_name_upper,
                             name        = 'has%s'%arg['name'],
                             arguments   = '',
                             return_type = 'bool',
@@ -96,6 +99,7 @@ class Implementation(codegen.Base):
                         name        = arg['name'],
                         arguments   = '',
                         schema_name = schema_name,
+                        schema_name_upper = schema_name_upper,
                         return_type = arg['non_optional_type'],
                         body        = tmpl % {'index': arg['index']-1,
                                               'type' : arg['non_optional_type'].replace('::Value', ''),
@@ -118,6 +122,7 @@ class Implementation(codegen.Base):
                         arguments   = '%s v'%arg['non_optional_type'],
                         return_type = 'void',
                         schema_name = schema_name,
+                        schema_name_upper = schema_name_upper,
                         body        = tmpl % {'index': arg['index']-1,
                                               'type' : arg['non_optional_type'].replace('::Value', '')}
                     )
@@ -148,10 +153,11 @@ class Implementation(codegen.Base):
             inverse = [templates.const_function % {
                 'class_name'  : name,
                 'schema_name' : schema_name,
+                'schema_name_upper' : schema_name_upper,
                 'name'        : i.name,
                 'arguments'   : '',
                 'return_type' : '::%s::%s::list::ptr' % (schema_name, i.entity),
-                'body'        : templates.get_inverse % {'type': i.entity, 'index':get_attribute_index(i.entity, i.attribute), 'schema_name' : schema_name}
+                'body'        : templates.get_inverse % {'type': i.entity, 'index':get_attribute_index(i.entity, i.attribute), 'schema_name' : schema_name, 'schema_name_upper': schema_name_upper}
             } for i in (type.inverse.elements if type.inverse else [])]
 
             superclass = "%s((IfcEntityInstanceData*)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'
@@ -165,7 +171,8 @@ class Implementation(codegen.Base):
                 attributes                 = nl(catnl(attributes)),
                 inverse                    = nl(catnl(inverse)),
                 superclass                 = superclass,
-                schema_name                = schema_name
+                schema_name                = schema_name,
+                schema_name_upper          = schema_name_upper
             )
 
         selectable_simple_types = sorted(set(sum([b.values for a,b in mapping.schema.selects.items()], [])) & set(map(str, mapping.schema.types.keys())))
@@ -212,7 +219,7 @@ class Implementation(codegen.Base):
             simpletype_impl_constructor = templates.simpletype_impl_constructor_templated if mapping.is_templated_list(type) \
                 else templates.simpletype_impl_constructor
                 
-            def compose(params, schema_name=schema_name):
+            def compose(params, schema_name=schema_name, schema_name_upper=schema_name_upper):
                 class_name, attr_type, superclass, superclass_init, name, tmpl, return_type, args, body = params
                 underlying_type = mapping.list_instance_type(type)
                 arguments = ",".join(args)
@@ -229,12 +236,12 @@ class Implementation(codegen.Base):
             ))))
             simple_type_impl.append('')
             
-        external_definitions = [("extern entity* %s_%%s_type;"           % mapping.schema.name.capitalize()) % n for n in mapping.schema.entities.keys()   ] + \
-                               [("extern type_declaration* %s_%%s_type;" % mapping.schema.name.capitalize()) % n for n in mapping.schema.simpletypes.keys()]
+        external_definitions = [("extern entity* %s_%%s_type;"           % schema_name_upper) % n for n in mapping.schema.entities.keys()   ] + \
+                               [("extern type_declaration* %s_%%s_type;" % schema_name_upper) % n for n in mapping.schema.simpletypes.keys()]
 
         self.str = templates.implementation % {
-            'schema_name_upper'        : mapping.schema.name.upper(),
-            'schema_name'              : mapping.schema.name.capitalize(),
+            'schema_name_upper'        : schema_name_upper,
+            'schema_name'              : schema_name,
             'max_id'                   : max_id,
             'enumeration_functions'    : cat(enumeration_functions),
             'schema_entity_statements' : catnl(schema_entity_statements),

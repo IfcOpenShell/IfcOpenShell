@@ -28,57 +28,61 @@
 #include <time.h>
 
 #include "../ifcparse/IfcHierarchyHelper.h"
-	
-IfcSchema::IfcAxis2Placement3D* IfcHierarchyHelper::addPlacement3d(
+
+template <typename Schema>
+typename Schema::IfcAxis2Placement3D* IfcHierarchyHelper<Schema>::addPlacement3d(
 	double ox, double oy, double oz,
 	double zx, double zy, double zz,
 	double xx, double xy, double xz) 
 {
-		IfcSchema::IfcDirection* x = addTriplet<IfcSchema::IfcDirection>(xx, xy, xz);
-		IfcSchema::IfcDirection* z = addTriplet<IfcSchema::IfcDirection>(zx, zy, zz);
-		IfcSchema::IfcCartesianPoint* o = addTriplet<IfcSchema::IfcCartesianPoint>(ox, oy, oz);
-		IfcSchema::IfcAxis2Placement3D* p3d = new IfcSchema::IfcAxis2Placement3D(o, z, x);
+		typename Schema::IfcDirection* x = addTriplet<typename Schema::IfcDirection>(xx, xy, xz);
+		typename Schema::IfcDirection* z = addTriplet<typename Schema::IfcDirection>(zx, zy, zz);
+		typename Schema::IfcCartesianPoint* o = addTriplet<typename Schema::IfcCartesianPoint>(ox, oy, oz);
+		typename Schema::IfcAxis2Placement3D* p3d = new typename Schema::IfcAxis2Placement3D(o, z, x);
 		addEntity(p3d);
 		return p3d;
 }
 
-IfcSchema::IfcAxis2Placement2D* IfcHierarchyHelper::addPlacement2d(
+template <typename Schema>
+typename Schema::IfcAxis2Placement2D* IfcHierarchyHelper<Schema>::addPlacement2d(
 	double ox, double oy,
 	double xx, double xy) 
 {
-		IfcSchema::IfcDirection* x = addDoublet<IfcSchema::IfcDirection>(xx, xy);
-		IfcSchema::IfcCartesianPoint* o = addDoublet<IfcSchema::IfcCartesianPoint>(ox, oy);
-		IfcSchema::IfcAxis2Placement2D* p2d = new IfcSchema::IfcAxis2Placement2D(o, x);
+		typename Schema::IfcDirection* x = addDoublet<typename Schema::IfcDirection>(xx, xy);
+		typename Schema::IfcCartesianPoint* o = addDoublet<typename Schema::IfcCartesianPoint>(ox, oy);
+		typename Schema::IfcAxis2Placement2D* p2d = new typename Schema::IfcAxis2Placement2D(o, x);
 		addEntity(p2d);
 		return p2d;
 }
 
-IfcSchema::IfcLocalPlacement* IfcHierarchyHelper::addLocalPlacement(IfcSchema::IfcObjectPlacement* parent,
+template <typename Schema>
+typename Schema::IfcLocalPlacement* IfcHierarchyHelper<Schema>::addLocalPlacement(typename Schema::IfcObjectPlacement* parent,
 	double ox, double oy, double oz,
 	double zx, double zy, double zz,
 	double xx, double xy, double xz) 
 {
-		IfcSchema::IfcLocalPlacement* lp = new IfcSchema::IfcLocalPlacement(parent, 
+		typename Schema::IfcLocalPlacement* lp = new typename Schema::IfcLocalPlacement(parent, 
 			addPlacement3d(ox, oy, oz, zx, zy, zz, xx, xy, xz));
 
 		addEntity(lp);
 		return lp;
 }
 
-IfcSchema::IfcOwnerHistory* IfcHierarchyHelper::addOwnerHistory() {
-	IfcSchema::IfcPerson* person = new IfcSchema::IfcPerson(boost::none, boost::none, std::string(""), 
+template <typename Schema>
+typename Schema::IfcOwnerHistory* IfcHierarchyHelper<Schema>::addOwnerHistory() {
+	typename Schema::IfcPerson* person = new typename Schema::IfcPerson(boost::none, boost::none, std::string(""), 
 		boost::none, boost::none, boost::none, boost::none, boost::none);
 
-	IfcSchema::IfcOrganization* organization = new IfcSchema::IfcOrganization(boost::none, 
+	typename Schema::IfcOrganization* organization = new typename Schema::IfcOrganization(boost::none, 
 		"IfcOpenShell", boost::none, boost::none, boost::none);
 
-	IfcSchema::IfcPersonAndOrganization* person_and_org = new IfcSchema::IfcPersonAndOrganization(person, organization, boost::none);
-	IfcSchema::IfcApplication* application = new IfcSchema::IfcApplication(organization, 
+	typename Schema::IfcPersonAndOrganization* person_and_org = new typename Schema::IfcPersonAndOrganization(person, organization, boost::none);
+	typename Schema::IfcApplication* application = new typename Schema::IfcApplication(organization, 
 		IFCOPENSHELL_VERSION, "IfcOpenShell", "IfcOpenShell");
 
 	int timestamp = (int) time(0);
-	IfcSchema::IfcOwnerHistory* owner_hist = new IfcSchema::IfcOwnerHistory(person_and_org, application, 
-		boost::none, IfcSchema::IfcChangeActionEnum::IfcChangeAction_ADDED, timestamp, person_and_org, application, timestamp);
+	typename Schema::IfcOwnerHistory* owner_hist = new typename Schema::IfcOwnerHistory(person_and_org, application, 
+		boost::none, typename Schema::IfcChangeActionEnum::IfcChangeAction_ADDED, timestamp, person_and_org, application, timestamp);
 
 	addEntity(person);
 	addEntity(organization);
@@ -88,27 +92,28 @@ IfcSchema::IfcOwnerHistory* IfcHierarchyHelper::addOwnerHistory() {
 
 	return owner_hist;
 }
-	
-IfcSchema::IfcProject* IfcHierarchyHelper::addProject(IfcSchema::IfcOwnerHistory* owner_hist) {
-	IfcSchema::IfcRepresentationContext::list::ptr rep_contexts (new IfcSchema::IfcRepresentationContext::list);
+
+template <typename Schema>
+typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Schema::IfcOwnerHistory* owner_hist) {
+	typename Schema::IfcRepresentationContext::list::ptr rep_contexts (new typename Schema::IfcRepresentationContext::list);
 
 	IfcEntityList::ptr units (new IfcEntityList);
-	IfcSchema::IfcDimensionalExponents* dimexp = new IfcSchema::IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0);
-	IfcSchema::IfcSIUnit* unit1 = new IfcSchema::IfcSIUnit(IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
-		IfcSchema::IfcSIPrefix::IfcSIPrefix_MILLI, IfcSchema::IfcSIUnitName::IfcSIUnitName_METRE);
-	IfcSchema::IfcSIUnit* unit2a = new IfcSchema::IfcSIUnit(IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
-		boost::none, IfcSchema::IfcSIUnitName::IfcSIUnitName_RADIAN);
-	IfcSchema::IfcMeasureWithUnit* unit2b = new IfcSchema::IfcMeasureWithUnit(
-		new IfcSchema::IfcPlaneAngleMeasure(0.017453293), unit2a);
-	IfcSchema::IfcConversionBasedUnit* unit2 = new IfcSchema::IfcConversionBasedUnit(dimexp, 
-		IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, "Degrees", unit2b);
+	typename Schema::IfcDimensionalExponents* dimexp = new typename Schema::IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0);
+	typename Schema::IfcSIUnit* unit1 = new typename Schema::IfcSIUnit(typename Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
+		typename Schema::IfcSIPrefix::IfcSIPrefix_MILLI, typename Schema::IfcSIUnitName::IfcSIUnitName_METRE);
+	typename Schema::IfcSIUnit* unit2a = new typename Schema::IfcSIUnit(typename Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
+		boost::none, typename Schema::IfcSIUnitName::IfcSIUnitName_RADIAN);
+	typename Schema::IfcMeasureWithUnit* unit2b = new typename Schema::IfcMeasureWithUnit(
+		new typename Schema::IfcPlaneAngleMeasure(0.017453293), unit2a);
+	typename Schema::IfcConversionBasedUnit* unit2 = new typename Schema::IfcConversionBasedUnit(dimexp, 
+		typename Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, "Degrees", unit2b);
 
 	units->push(unit1);
 	units->push(unit2);
 
-	IfcSchema::IfcUnitAssignment* unit_assignment = new IfcSchema::IfcUnitAssignment(units);
+	typename Schema::IfcUnitAssignment* unit_assignment = new typename Schema::IfcUnitAssignment(units);
 
-	IfcSchema::IfcProject* project = new IfcSchema::IfcProject(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, 
+	typename Schema::IfcProject* project = new typename Schema::IfcProject(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, 
 		boost::none, boost::none, boost::none, rep_contexts, unit_assignment);
 
 	addEntity(dimexp);
@@ -122,144 +127,140 @@ IfcSchema::IfcProject* IfcHierarchyHelper::addProject(IfcSchema::IfcOwnerHistory
 	return project;
 }
 
-void IfcHierarchyHelper::relatePlacements(IfcSchema::IfcProduct* parent, IfcSchema::IfcProduct* product) {
-	IfcSchema::IfcObjectPlacement* place = product->hasObjectPlacement() ? product->ObjectPlacement() : 0;
-	if (place && place->declaration().is(IfcSchema::IfcLocalPlacement::Class())) {
-		IfcSchema::IfcLocalPlacement* local_place = (IfcSchema::IfcLocalPlacement*) place;
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::relatePlacements(typename Schema::IfcProduct* parent, typename Schema::IfcProduct* product) {
+	typename Schema::IfcObjectPlacement* place = product->hasObjectPlacement() ? product->ObjectPlacement() : 0;
+	if (place && place->declaration().is(typename Schema::IfcLocalPlacement::Class())) {
+		typename Schema::IfcLocalPlacement* local_place = (typename Schema::IfcLocalPlacement*) place;
 		if (parent->hasObjectPlacement()) {
 			local_place->setPlacementRelTo(parent->ObjectPlacement());
 		}
 	}
 }
-	
-IfcSchema::IfcSite* IfcHierarchyHelper::addSite(IfcSchema::IfcProject* proj, IfcSchema::IfcOwnerHistory* owner_hist) {
+
+template <typename Schema>
+typename Schema::IfcSite* IfcHierarchyHelper<Schema>::addSite(typename Schema::IfcProject* proj, typename Schema::IfcOwnerHistory* owner_hist) {
 	if (! owner_hist) {
-		owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
+		owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
 	}
 	if (! owner_hist) {
 		owner_hist = addOwnerHistory();
 	}
 	if (! proj) {
-		proj = getSingle<IfcSchema::IfcProject>();
+		proj = getSingle<typename Schema::IfcProject>();
 	}
 	if (! proj) {
 		proj = addProject(owner_hist);
 	}
 
-	IfcSchema::IfcSite* site = new IfcSchema::IfcSite(IfcParse::IfcGlobalId(), owner_hist, boost::none, 
+	typename Schema::IfcSite* site = new typename Schema::IfcSite(IfcParse::IfcGlobalId(), owner_hist, boost::none, 
 		boost::none, boost::none, addLocalPlacement(), 0, boost::none, 
-		IfcSchema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
+		typename Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
 		boost::none, boost::none, boost::none, boost::none, 0);
 
 	addEntity(site);
-	addRelatedObject<IfcSchema::IfcRelAggregates>(proj, site);
+	addRelatedObject<typename Schema::IfcRelAggregates>(proj, site);
 	return site;
 }
-	
-IfcSchema::IfcBuilding* IfcHierarchyHelper::addBuilding(IfcSchema::IfcSite* site, IfcSchema::IfcOwnerHistory* owner_hist) {
+
+template <typename Schema>
+typename Schema::IfcBuilding* IfcHierarchyHelper<Schema>::addBuilding(typename Schema::IfcSite* site, typename Schema::IfcOwnerHistory* owner_hist) {
 	if (! owner_hist) {
-		owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
+		owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
 	}
 	if (! owner_hist) {
 		owner_hist = addOwnerHistory();
 	}
 	if (! site) {
-		site = getSingle<IfcSchema::IfcSite>();
+		site = getSingle<typename Schema::IfcSite>();
 	}
 	if (! site) {
 		site = addSite(0, owner_hist);
 	}
-	IfcSchema::IfcBuilding* building = new IfcSchema::IfcBuilding(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, boost::none, 
-		addLocalPlacement(), 0, boost::none, IfcSchema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
+	typename Schema::IfcBuilding* building = new typename Schema::IfcBuilding(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, boost::none, 
+		addLocalPlacement(), 0, boost::none, typename Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
 		boost::none, boost::none, 0);
 
 	addEntity(building);
-	addRelatedObject<IfcSchema::IfcRelAggregates>(site, building);
+	addRelatedObject<typename Schema::IfcRelAggregates>(site, building);
 	relatePlacements(site, building);
 
 	return building;
 }
 
-IfcSchema::IfcBuildingStorey* IfcHierarchyHelper::addBuildingStorey(IfcSchema::IfcBuilding* building, 
-	IfcSchema::IfcOwnerHistory* owner_hist) 
+template <typename Schema>
+typename Schema::IfcBuildingStorey* IfcHierarchyHelper<Schema>::addBuildingStorey(typename Schema::IfcBuilding* building, 
+	typename Schema::IfcOwnerHistory* owner_hist) 
 {
 	if (! owner_hist) {
-		owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
+		owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
 	}
 	if (! owner_hist) {
 		owner_hist = addOwnerHistory();
 	}
 	if (! building) {
-		building = getSingle<IfcSchema::IfcBuilding>();
+		building = getSingle<typename Schema::IfcBuilding>();
 	}
 	if (! building) {
 		building = addBuilding(0, owner_hist);
 	}
-	IfcSchema::IfcBuildingStorey* storey = new IfcSchema::IfcBuildingStorey(IfcParse::IfcGlobalId(), 
+	typename Schema::IfcBuildingStorey* storey = new typename Schema::IfcBuildingStorey(IfcParse::IfcGlobalId(), 
 		owner_hist, boost::none, boost::none, boost::none, addLocalPlacement(), 0, boost::none, 
-		IfcSchema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, boost::none);
+		typename Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, boost::none);
 
 	addEntity(storey);
-	addRelatedObject<IfcSchema::IfcRelAggregates>(building, storey);
+	addRelatedObject<typename Schema::IfcRelAggregates>(building, storey);
 	relatePlacements(building, storey);
 
 	return storey;
 }
 
-IfcSchema::IfcBuildingStorey* IfcHierarchyHelper::addBuildingProduct(IfcSchema::IfcProduct* product, 
-	IfcSchema::IfcBuildingStorey* storey, IfcSchema::IfcOwnerHistory* owner_hist) 
+template <typename Schema>
+typename Schema::IfcBuildingStorey* IfcHierarchyHelper<Schema>::addBuildingProduct(typename Schema::IfcProduct* product, 
+	typename Schema::IfcBuildingStorey* storey, typename Schema::IfcOwnerHistory* owner_hist) 
 {
 	if (! owner_hist) {
-		owner_hist = getSingle<IfcSchema::IfcOwnerHistory>();
+		owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
 	}
 	if (! owner_hist) {
 		owner_hist = addOwnerHistory();
 	}
 	if (! storey) {
-		storey = getSingle<IfcSchema::IfcBuildingStorey>();
+		storey = getSingle<typename Schema::IfcBuildingStorey>();
 	}
 	if (! storey) {
 		storey = addBuildingStorey(0, owner_hist);
 	}
 	addEntity(product);
+
 	// CV-2x3-158: Don't add decompositions directly to a building storey
-	bool is_decomposition = false;
-#ifdef USE_IFC4
-	IfcSchema::IfcRelAggregates::list::ptr decomposes = product->Decomposes();
-	for (IfcSchema::IfcRelAggregates::list::it it = decomposes->begin(); it != decomposes->end(); ++it) {
-#else
-	IfcSchema::IfcRelDecomposes::list::ptr decomposes = product->Decomposes();
-	for (IfcSchema::IfcRelDecomposes::list::it it = decomposes->begin(); it != decomposes->end(); ++it) {
-#endif
-		if ((*it)->RelatingObject() != product) {
-			is_decomposition = true;
-			break;
-		}
-	}
+	const bool is_decomposition = product->Decomposes()->size() > 0;
+
 	if (!is_decomposition) {
-		addRelatedObject<IfcSchema::IfcRelContainedInSpatialStructure>(storey, product);
+		addRelatedObject<typename Schema::IfcRelContainedInSpatialStructure>(storey, product);
 		relatePlacements(storey, product);
 	}
 	return storey;
 }
 
-void IfcHierarchyHelper::addExtrudedPolyline(IfcSchema::IfcShapeRepresentation* rep, const std::vector<std::pair<double, double> >& points, double h, 
-	IfcSchema::IfcAxis2Placement2D* /*place*/, IfcSchema::IfcAxis2Placement3D* place2, 
-	IfcSchema::IfcDirection* dir, IfcSchema::IfcRepresentationContext* /*context*/) 
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::addExtrudedPolyline(typename Schema::IfcShapeRepresentation* rep, const std::vector<std::pair<double, double> >& points, double h, 
+	typename Schema::IfcAxis2Placement2D* /*place*/, typename Schema::IfcAxis2Placement3D* place2, 
+	typename Schema::IfcDirection* dir, typename Schema::IfcRepresentationContext* /*context*/) 
 {
-	IfcSchema::IfcCartesianPoint::list::ptr cartesian_points (new IfcSchema::IfcCartesianPoint::list);
+	typename Schema::IfcCartesianPoint::list::ptr cartesian_points (new typename Schema::IfcCartesianPoint::list);
 	for (std::vector<std::pair<double, double> >::const_iterator i = points.begin(); i != points.end(); ++i) {
-		cartesian_points->push(addDoublet<IfcSchema::IfcCartesianPoint>(i->first, i->second));
+		cartesian_points->push(addDoublet<typename Schema::IfcCartesianPoint>(i->first, i->second));
 	}
 	if (cartesian_points->size()) cartesian_points->push(*cartesian_points->begin());
-	IfcSchema::IfcPolyline* line = new IfcSchema::IfcPolyline(cartesian_points);
-	IfcSchema::IfcArbitraryClosedProfileDef* profile = new IfcSchema::IfcArbitraryClosedProfileDef(
-		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, line);
+	typename Schema::IfcPolyline* line = new typename Schema::IfcPolyline(cartesian_points);
+	typename Schema::IfcArbitraryClosedProfileDef* profile = new typename Schema::IfcArbitraryClosedProfileDef(
+		typename Schema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, line);
 
-	IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(
-		profile, place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<IfcSchema::IfcDirection>(0, 0, 1), h);
+	typename Schema::IfcExtrudedAreaSolid* solid = new typename Schema::IfcExtrudedAreaSolid(
+		profile, place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1), h);
 
-	IfcSchema::IfcRepresentationItem::list::ptr items = rep->Items();
+	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
 	items->push(solid);
 	rep->setItems(items);
 
@@ -268,17 +269,18 @@ void IfcHierarchyHelper::addExtrudedPolyline(IfcSchema::IfcShapeRepresentation* 
 	addEntity(solid);
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addExtrudedPolyline(const std::vector<std::pair<double, double> >& points, double h, 
-	IfcSchema::IfcAxis2Placement2D* place, IfcSchema::IfcAxis2Placement3D* place2, IfcSchema::IfcDirection* dir, 
-	IfcSchema::IfcRepresentationContext* context) 
+template <typename Schema>
+typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addExtrudedPolyline(const std::vector<std::pair<double, double> >& points, double h, 
+	typename Schema::IfcAxis2Placement2D* place, typename Schema::IfcAxis2Placement3D* place2, typename Schema::IfcDirection* dir, 
+	typename Schema::IfcRepresentationContext* context) 
 {
-	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
-	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);
-	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(context 
+	typename Schema::IfcRepresentation::list::ptr reps (new typename Schema::IfcRepresentation::list);
+	typename Schema::IfcRepresentationItem::list::ptr items (new typename Schema::IfcRepresentationItem::list);
+	typename Schema::IfcShapeRepresentation* rep = new typename Schema::IfcShapeRepresentation(context 
 		? context 
 		: getRepresentationContext("Model"), std::string("Body"), std::string("SweptSolid"), items);
 	reps->push(rep);
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
+	typename Schema::IfcProductDefinitionShape* shape = new typename Schema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	addEntity(rep);
 	addEntity(shape);
 	addExtrudedPolyline(rep, points, h, place, place2, dir, context);
@@ -286,19 +288,20 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addExtrudedPolyline(co
 	return shape;
 }
 
-void IfcHierarchyHelper::addBox(IfcSchema::IfcShapeRepresentation* rep, double w, double d, double h, 
-	IfcSchema::IfcAxis2Placement2D* place, IfcSchema::IfcAxis2Placement3D* place2, 
-	IfcSchema::IfcDirection* dir, IfcSchema::IfcRepresentationContext* context) 
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::addBox(typename Schema::IfcShapeRepresentation* rep, double w, double d, double h, 
+	typename Schema::IfcAxis2Placement2D* place, typename Schema::IfcAxis2Placement3D* place2, 
+	typename Schema::IfcDirection* dir, typename Schema::IfcRepresentationContext* context) 
 {
 	if (false) { // TODO What's this?
-		IfcSchema::IfcRectangleProfileDef* profile = new IfcSchema::IfcRectangleProfileDef(
-			IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, place ? place : addPlacement2d(), w, d);
-		IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile, 
-			place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<IfcSchema::IfcDirection>(0, 0, 1), h);
+		typename Schema::IfcRectangleProfileDef* profile = new typename Schema::IfcRectangleProfileDef(
+			typename Schema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, place ? place : addPlacement2d(), w, d);
+		typename Schema::IfcExtrudedAreaSolid* solid = new typename Schema::IfcExtrudedAreaSolid(profile, 
+			place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1), h);
 
 		addEntity(profile);
 		addEntity(solid);
-		IfcSchema::IfcRepresentationItem::list::ptr items = rep->Items();
+		typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
 		items->push(solid);
 		rep->setItems(items);
 	} else {
@@ -312,49 +315,52 @@ void IfcHierarchyHelper::addBox(IfcSchema::IfcShapeRepresentation* rep, double w
 	}
 }
 
-void IfcHierarchyHelper::addAxis(IfcSchema::IfcShapeRepresentation* rep, double l, IfcSchema::IfcRepresentationContext* /*context*/) {
-	IfcSchema::IfcCartesianPoint* p1 = addDoublet<IfcSchema::IfcCartesianPoint>(-l / 2., 0.);
-	IfcSchema::IfcCartesianPoint* p2 = addDoublet<IfcSchema::IfcCartesianPoint>(+l / 2., 0.);
-	IfcSchema::IfcCartesianPoint::list::ptr pts(new IfcSchema::IfcCartesianPoint::list);
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::addAxis(typename Schema::IfcShapeRepresentation* rep, double l, typename Schema::IfcRepresentationContext* /*context*/) {
+	typename Schema::IfcCartesianPoint* p1 = addDoublet<typename Schema::IfcCartesianPoint>(-l / 2., 0.);
+	typename Schema::IfcCartesianPoint* p2 = addDoublet<typename Schema::IfcCartesianPoint>(+l / 2., 0.);
+	typename Schema::IfcCartesianPoint::list::ptr pts(new typename Schema::IfcCartesianPoint::list);
 	pts->push(p1); pts->push(p2);
-	IfcSchema::IfcPolyline* poly = new IfcSchema::IfcPolyline(pts);
+	typename Schema::IfcPolyline* poly = new typename Schema::IfcPolyline(pts);
 	addEntity(poly);
 	
-	IfcSchema::IfcRepresentationItem::list::ptr items = rep->Items();
+	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
 	items->push(poly);
 	rep->setItems(items);
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addBox(double w, double d, double h, IfcSchema::IfcAxis2Placement2D* place, 
-	IfcSchema::IfcAxis2Placement3D* place2, IfcSchema::IfcDirection* dir, IfcSchema::IfcRepresentationContext* context) 
+template <typename Schema>
+typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addBox(double w, double d, double h, typename Schema::IfcAxis2Placement2D* place, 
+	typename Schema::IfcAxis2Placement3D* place2, typename Schema::IfcDirection* dir, typename Schema::IfcRepresentationContext* context) 
 {
-	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
-	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);		
-	IfcSchema::IfcShapeRepresentation* rep = new IfcSchema::IfcShapeRepresentation(
+	typename Schema::IfcRepresentation::list::ptr reps (new typename Schema::IfcRepresentation::list);
+	typename Schema::IfcRepresentationItem::list::ptr items (new typename Schema::IfcRepresentationItem::list);		
+	typename Schema::IfcShapeRepresentation* rep = new typename Schema::IfcShapeRepresentation(
 		context ? context : getRepresentationContext("Model"), std::string("Body"), std::string("SweptSolid"), items);
 	reps->push(rep);
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
+	typename Schema::IfcProductDefinitionShape* shape = new typename Schema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	addEntity(rep);
 	addEntity(shape);
 	addBox(rep, w, d, h, place, place2, dir, context);
 	return shape;
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addAxisBox(double w, double d, double h, IfcSchema::IfcRepresentationContext* context) 
+template <typename Schema>
+typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addAxisBox(double w, double d, double h, typename Schema::IfcRepresentationContext* context) 
 {
-	IfcSchema::IfcRepresentation::list::ptr reps(new IfcSchema::IfcRepresentation::list);
-	IfcSchema::IfcRepresentationItem::list::ptr body_items(new IfcSchema::IfcRepresentationItem::list);
-	IfcSchema::IfcRepresentationItem::list::ptr axis_items(new IfcSchema::IfcRepresentationItem::list);
-	IfcSchema::IfcShapeRepresentation* body_rep = new IfcSchema::IfcShapeRepresentation(
+	typename Schema::IfcRepresentation::list::ptr reps(new typename Schema::IfcRepresentation::list);
+	typename Schema::IfcRepresentationItem::list::ptr body_items(new typename Schema::IfcRepresentationItem::list);
+	typename Schema::IfcRepresentationItem::list::ptr axis_items(new typename Schema::IfcRepresentationItem::list);
+	typename Schema::IfcShapeRepresentation* body_rep = new typename Schema::IfcShapeRepresentation(
 		context ? context : getRepresentationContext("Model"), std::string("Body"), std::string("SweptSolid"), body_items);
 
-	IfcSchema::IfcShapeRepresentation* axis_rep = new IfcSchema::IfcShapeRepresentation(
+	typename Schema::IfcShapeRepresentation* axis_rep = new typename Schema::IfcShapeRepresentation(
 		context ? context : getRepresentationContext("Plan"), std::string("Axis"), std::string("Curve2D"), axis_items);
 
 	reps->push(axis_rep);
 	reps->push(body_rep);
 
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
+	typename Schema::IfcProductDefinitionShape* shape = new typename Schema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	addEntity(shape);
 	addEntity(body_rep);
 	addBox(body_rep, w, d, h, 0, 0, 0, context);
@@ -364,52 +370,55 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addAxisBox(double w, d
 	return shape;
 }
 
-void IfcHierarchyHelper::clipRepresentation(IfcSchema::IfcProductRepresentation* shape, 
-	IfcSchema::IfcAxis2Placement3D* place, bool agree) 
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcProductRepresentation* shape, 
+	typename Schema::IfcAxis2Placement3D* place, bool agree) 
 {
-	IfcSchema::IfcRepresentation::list::ptr reps = shape->Representations();
-	for (IfcSchema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
+	typename Schema::IfcRepresentation::list::ptr reps = shape->Representations();
+	for (typename Schema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
 		clipRepresentation(*j, place, agree);
 	}
 }
 
-void IfcHierarchyHelper::clipRepresentation(IfcSchema::IfcRepresentation* rep, 
-	IfcSchema::IfcAxis2Placement3D* place, bool agree) 
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresentation* rep, 
+	typename Schema::IfcAxis2Placement3D* place, bool agree) 
 {
 	if (rep->RepresentationIdentifier() != "Body") return;
-	IfcSchema::IfcPlane* plane = new IfcSchema::IfcPlane(place);
-	IfcSchema::IfcHalfSpaceSolid* half_space = new IfcSchema::IfcHalfSpaceSolid(plane, agree);
+	typename Schema::IfcPlane* plane = new typename Schema::IfcPlane(place);
+	typename Schema::IfcHalfSpaceSolid* half_space = new typename Schema::IfcHalfSpaceSolid(plane, agree);
 	addEntity(plane);
 	addEntity(half_space);
 	rep->setRepresentationType("Clipping");		
-	IfcSchema::IfcRepresentationItem::list::ptr items = rep->Items();
-	IfcSchema::IfcRepresentationItem::list::ptr new_items (new IfcSchema::IfcRepresentationItem::list);
-	for (IfcSchema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
-		IfcSchema::IfcRepresentationItem* item = *i;
-		IfcSchema::IfcBooleanClippingResult* clip = new IfcSchema::IfcBooleanClippingResult(
-			IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
+	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
+	typename Schema::IfcRepresentationItem::list::ptr new_items (new typename Schema::IfcRepresentationItem::list);
+	for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
+		typename Schema::IfcRepresentationItem* item = *i;
+		typename Schema::IfcBooleanClippingResult* clip = new typename Schema::IfcBooleanClippingResult(
+			typename Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
 		addEntity(clip);
 		new_items->push(clip);
 	}
 	rep->setItems(new_items);
 }
 
-IfcSchema::IfcPresentationStyleAssignment* IfcHierarchyHelper::addStyleAssignment(double r, double g, double b, double a) {
-	IfcSchema::IfcColourRgb* colour = new IfcSchema::IfcColourRgb(boost::none, r, g, b);
-	IfcSchema::IfcSurfaceStyleRendering* rendering = a == 1.0
-		? new IfcSchema::IfcSurfaceStyleRendering(colour, boost::none, 0, 0, 0, 0, 
-			0, 0, IfcSchema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
-		: new IfcSchema::IfcSurfaceStyleRendering(colour, 1.0-a, 0, 0, 0, 0, 
-			0, 0, IfcSchema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
+template <typename Schema>
+typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::addStyleAssignment(double r, double g, double b, double a) {
+	typename Schema::IfcColourRgb* colour = new typename Schema::IfcColourRgb(boost::none, r, g, b);
+	typename Schema::IfcSurfaceStyleRendering* rendering = a == 1.0
+		? new typename Schema::IfcSurfaceStyleRendering(colour, boost::none, 0, 0, 0, 0, 
+			0, 0, typename Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
+		: new typename Schema::IfcSurfaceStyleRendering(colour, 1.0-a, 0, 0, 0, 0, 
+			0, 0, typename Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
 	IfcEntityList::ptr styles(new IfcEntityList());
 	styles->push(rendering);
-	IfcSchema::IfcSurfaceStyle* surface_style = new IfcSchema::IfcSurfaceStyle(
-		boost::none, IfcSchema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
+	typename Schema::IfcSurfaceStyle* surface_style = new typename Schema::IfcSurfaceStyle(
+		boost::none, typename Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
 	IfcEntityList::ptr surface_styles(new IfcEntityList());
 	surface_styles->push(surface_style);
-	IfcSchema::IfcPresentationStyleAssignment* style_assignment = 
-		new IfcSchema::IfcPresentationStyleAssignment(surface_styles);
+	typename Schema::IfcPresentationStyleAssignment* style_assignment = 
+		new typename Schema::IfcPresentationStyleAssignment(surface_styles);
 	addEntity(colour);
 	addEntity(rendering);
 	addEntity(surface_style);
@@ -417,73 +426,84 @@ IfcSchema::IfcPresentationStyleAssignment* IfcHierarchyHelper::addStyleAssignmen
 	return style_assignment;
 }
 
-IfcSchema::IfcPresentationStyleAssignment* IfcHierarchyHelper::setSurfaceColour(
-	IfcSchema::IfcProductRepresentation* shape, double r, double g, double b, double a) 
+template <typename Schema>
+typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::setSurfaceColour(
+	typename Schema::IfcProductRepresentation* shape, double r, double g, double b, double a) 
 {
-	IfcSchema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment(r, g, b, a);
+	typename Schema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment(r, g, b, a);
 	setSurfaceColour(shape, style_assignment);
 	return style_assignment;
 }
 
-IfcSchema::IfcPresentationStyleAssignment* IfcHierarchyHelper::setSurfaceColour(
-	IfcSchema::IfcRepresentation* shape, double r, double g, double b, double a) 
+template <typename Schema>
+typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::setSurfaceColour(
+	typename Schema::IfcRepresentation* shape, double r, double g, double b, double a) 
 {
-	IfcSchema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment(r, g, b, a);
+	typename Schema::IfcPresentationStyleAssignment* style_assignment = addStyleAssignment(r, g, b, a);
 	setSurfaceColour(shape, style_assignment);
 	return style_assignment;
 }
 
-void IfcHierarchyHelper::setSurfaceColour(IfcSchema::IfcProductRepresentation* shape, 
-	IfcSchema::IfcPresentationStyleAssignment* style_assignment) 
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::setSurfaceColour(typename Schema::IfcProductRepresentation* shape, 
+	typename Schema::IfcPresentationStyleAssignment* style_assignment) 
 {
-	IfcSchema::IfcRepresentation::list::ptr reps = shape->Representations();
-	for (IfcSchema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
+	typename Schema::IfcRepresentation::list::ptr reps = shape->Representations();
+	for (typename Schema::IfcRepresentation::list::it j = reps->begin(); j != reps->end(); ++j) {
 		setSurfaceColour(*j, style_assignment);
 	}
 }
 
-void IfcHierarchyHelper::setSurfaceColour(IfcSchema::IfcRepresentation* rep, 
-	IfcSchema::IfcPresentationStyleAssignment* style_assignment) 
-{
-#ifdef USE_IFC4 
-	IfcEntityList::ptr style_assignments (new IfcEntityList);
-#else
-	IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments (new IfcSchema::IfcPresentationStyleAssignment::list);
-#endif
+Ifc2x3::IfcStyledItem* create_styled_item(Ifc2x3::IfcRepresentationItem* item, Ifc2x3::IfcPresentationStyleAssignment* style_assignment) {
+	Ifc2x3::IfcPresentationStyleAssignment::list::ptr style_assignments(new Ifc2x3::IfcPresentationStyleAssignment::list);
 	style_assignments->push(style_assignment);
-	IfcSchema::IfcRepresentationItem::list::ptr items = rep->Items();
-	for (IfcSchema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
-		IfcSchema::IfcRepresentationItem* item = *i;
-		IfcSchema::IfcStyledItem* styled_item = new IfcSchema::IfcStyledItem(item, style_assignments, boost::none);
+	return new Ifc2x3::IfcStyledItem(item, style_assignments, boost::none);
+}
+
+Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4::IfcPresentationStyleAssignment* style_assignment) {
+	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	style_assignments->push(style_assignment);
+	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
+}
+
+template <typename Schema>
+void IfcHierarchyHelper<Schema>::setSurfaceColour(typename Schema::IfcRepresentation* rep, 
+	typename Schema::IfcPresentationStyleAssignment* style_assignment) 
+{
+	typename Schema::IfcRepresentationItem::list::ptr items = rep->Items();
+	for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
+		typename Schema::IfcRepresentationItem* item = *i;
+		typename Schema::IfcStyledItem* styled_item = create_styled_item(item, style_assignment);
 		addEntity(styled_item);
 	}
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addMappedItem(
-	IfcSchema::IfcShapeRepresentation* rep, 
-	IfcSchema::IfcCartesianTransformationOperator3D* transform,
-	IfcSchema::IfcProductDefinitionShape* def)
+template <typename Schema>
+typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addMappedItem(
+	typename Schema::IfcShapeRepresentation* rep, 
+	typename Schema::IfcCartesianTransformationOperator3D* transform,
+	typename Schema::IfcProductDefinitionShape* def)
 {
-	IfcSchema::IfcRepresentationMap::list::ptr maps = rep->RepresentationMap();
-	IfcSchema::IfcRepresentationMap* map;
+	typename Schema::IfcRepresentationMap::list::ptr maps = rep->RepresentationMap();
+	typename Schema::IfcRepresentationMap* map;
 	if (maps->size() == 1) {
 		map = *maps->begin();
 	} else {
-		map = new IfcSchema::IfcRepresentationMap(addPlacement3d(), rep);
+		map = new typename Schema::IfcRepresentationMap(addPlacement3d(), rep);
 		addEntity(map);
 	}
 
-	IfcSchema::IfcRepresentation::list::ptr representations(new IfcSchema::IfcRepresentation::list);
+	typename Schema::IfcRepresentation::list::ptr representations(new typename Schema::IfcRepresentation::list);
 	if (def) representations = def->Representations();
 
 	if (!transform) {
-		transform = new IfcSchema::IfcCartesianTransformationOperator3D(0, 0, addTriplet<IfcSchema::IfcCartesianPoint>(0,0,0), boost::none, 0);
+		transform = new typename Schema::IfcCartesianTransformationOperator3D(0, 0, addTriplet<typename Schema::IfcCartesianPoint>(0,0,0), boost::none, 0);
 		addEntity(transform);
 	}
-	IfcSchema::IfcMappedItem* item = new IfcSchema::IfcMappedItem(map, transform);
-	IfcSchema::IfcRepresentationItem::list::ptr items(new IfcSchema::IfcRepresentationItem::list);
+	typename Schema::IfcMappedItem* item = new typename Schema::IfcMappedItem(map, transform);
+	typename Schema::IfcRepresentationItem::list::ptr items(new typename Schema::IfcRepresentationItem::list);
 	items->push(item);
-	IfcSchema::IfcRepresentation* new_rep = new IfcSchema::IfcShapeRepresentation(rep->ContextOfItems(), boost::none, std::string("MappedRepresentation"), items);
+	typename Schema::IfcRepresentation* new_rep = new typename Schema::IfcShapeRepresentation(rep->ContextOfItems(), boost::none, std::string("MappedRepresentation"), items);
 	if (rep->hasRepresentationIdentifier()) {
 		new_rep->setRepresentationIdentifier(rep->RepresentationIdentifier());
 	}	
@@ -491,7 +511,7 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addMappedItem(
 	addEntity(new_rep);
 	representations->push(new_rep);
 	if (!def) {
-		def = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, representations);
+		def = new typename Schema::IfcProductDefinitionShape(boost::none, boost::none, representations);
 		addEntity(def);
 	} else {
 		def->setRepresentations(representations);
@@ -499,38 +519,44 @@ IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addMappedItem(
 	return def;
 }
 
-IfcSchema::IfcProductDefinitionShape* IfcHierarchyHelper::addMappedItem(
-	IfcSchema::IfcShapeRepresentation::list::ptr reps, 
-	IfcSchema::IfcCartesianTransformationOperator3D* transform)
+template <typename Schema>
+typename Schema::IfcProductDefinitionShape* IfcHierarchyHelper<Schema>::addMappedItem(
+	typename Schema::IfcShapeRepresentation::list::ptr reps, 
+	typename Schema::IfcCartesianTransformationOperator3D* transform)
 {
-	IfcSchema::IfcProductDefinitionShape* def = 0;
-	for (IfcSchema::IfcShapeRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+	typename Schema::IfcProductDefinitionShape* def = 0;
+	for (typename Schema::IfcShapeRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 		def = addMappedItem(*it, transform, def);
 	}
 	return def;
 }
 
-IfcSchema::IfcShapeRepresentation* IfcHierarchyHelper::addEmptyRepresentation(const std::string& repid, const std::string& reptype) {
-	IfcSchema::IfcRepresentationItem::list::ptr items(new IfcSchema::IfcRepresentationItem::list);
-	IfcSchema::IfcShapeRepresentation* shape_rep = new IfcSchema::IfcShapeRepresentation(getRepresentationContext(reptype == "Curve2D" ? "Plan" : "Model"), repid, reptype, items);
+template <typename Schema>
+typename Schema::IfcShapeRepresentation* IfcHierarchyHelper<Schema>::addEmptyRepresentation(const std::string& repid, const std::string& reptype) {
+	typename Schema::IfcRepresentationItem::list::ptr items(new typename Schema::IfcRepresentationItem::list);
+	typename Schema::IfcShapeRepresentation* shape_rep = new typename Schema::IfcShapeRepresentation(getRepresentationContext(reptype == "Curve2D" ? "Plan" : "Model"), repid, reptype, items);
 	addEntity(shape_rep);
 	return shape_rep;
 }
 
-IfcSchema::IfcGeometricRepresentationContext* IfcHierarchyHelper::getRepresentationContext(const std::string& s) {
-	std::map<std::string, IfcSchema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
+template <typename Schema>
+typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::getRepresentationContext(const std::string& s) {
+	std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
 	if (it != contexts.end()) return it->second;
 	else {
-		IfcSchema::IfcProject* project = getSingle<IfcSchema::IfcProject>();
+		typename Schema::IfcProject* project = getSingle<typename Schema::IfcProject>();
 		if (!project) {
 			project = addProject();
 		}
-		IfcSchema::IfcRepresentationContext::list::ptr project_contexts = project->RepresentationContexts();
-		IfcSchema::IfcGeometricRepresentationContext* context = new IfcSchema::IfcGeometricRepresentationContext(
-			boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<IfcSchema::IfcDirection>(0, 1));
+		typename Schema::IfcRepresentationContext::list::ptr project_contexts = project->RepresentationContexts();
+		typename Schema::IfcGeometricRepresentationContext* context = new typename Schema::IfcGeometricRepresentationContext(
+			boost::none, s, 3, 1e-5, addPlacement3d(), addDoublet<typename Schema::IfcDirection>(0, 1));
 		addEntity(context);
 		project_contexts->push(context);
 		project->setRepresentationContexts(project_contexts);
 		return contexts[s] = context;
 	}
 }
+
+template IFC_PARSE_API IfcHierarchyHelper<Ifc2x3>;
+template IFC_PARSE_API IfcHierarchyHelper<Ifc4>;

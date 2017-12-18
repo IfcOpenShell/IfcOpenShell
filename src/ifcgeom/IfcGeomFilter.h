@@ -123,15 +123,15 @@ namespace IfcGeom
     struct string_arg_filter : public wildcard_filter
     {
         // Using this for now in order to overcome the fact that different classes have the argument at different indices.
-        typedef std::map<IfcSchema::Type::Enum, unsigned short> arg_map_t;
+        typedef std::map<IfcSchema::Enum::Class(), unsigned short> arg_map_t;
         arg_map_t args;
 
         /// @todo Take only attribute name when IfcBaseClass and IfcLateBoundEntity are merged.
         string_arg_filter(arg_map_t args) : args(args) { assert_arguments(); }
-        string_arg_filter(IfcSchema::Type::Enum type, unsigned short index) { args[type] = index;  assert_arguments(); }
+        string_arg_filter(IfcSchema::Enum::Class() type, unsigned short index) { args[type] = index;  assert_arguments(); }
         string_arg_filter(
-            IfcSchema::Type::Enum type1, unsigned short index1,
-            IfcSchema::Type::Enum type2, unsigned short index2)
+            IfcSchema::Enum::Class() type1, unsigned short index1,
+            IfcSchema::Enum::Class() type2, unsigned short index2)
         {
             args[type1] = index1;
             args[type2] = index2;
@@ -188,7 +188,7 @@ namespace IfcGeom
                 IfcEntityInstanceData dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 try {
-                    ss << " " << IfcSchema::Type::ToString(it->first) << "." << base->declaration().as_entity()->all_attributes()[it->second]->name();
+                    ss << " " << IfcSchema::ToString::Class()(it->first) << "." << base->declaration().as_entity()->all_attributes()[it->second]->name();
                 } catch (const std::exception& e) {
 					Logger::Error(e);
 				}
@@ -254,15 +254,15 @@ namespace IfcGeom
             //populate(types);
         }
 
-        std::set<IfcSchema::Type::Enum> values;
+        std::set<IfcSchema::Enum::Class()> values;
 
         void populate(const std::set<std::string>& types)
         {
             values.clear();
             foreach(const std::string& type, types) {
-                IfcSchema::Type::Enum ty;
+                IfcSchema::Enum::Class() ty;
                 try {
-                    ty = IfcSchema::Type::FromString(boost::to_upper_copy(type));
+                    ty = IfcSchema::FromString::Class()(boost::to_upper_copy(type));
                 } catch (const IfcParse::IfcException&) {
                     throw IfcParse::IfcException("'" +  type + "' does not name a valid IFC entity");
                 }
@@ -274,7 +274,7 @@ namespace IfcGeom
         bool match(IfcSchema::IfcProduct* prod) const
         {
             // The set is iterated over to able to filter on subtypes.
-            foreach(IfcSchema::Type::Enum type, values) {
+            foreach(IfcSchema::Enum::Class() type, values) {
                 if (prod->declaration().is(type)) {
                     return true;
                 }
@@ -291,8 +291,8 @@ namespace IfcGeom
         {
             std::stringstream ss;
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " entities";
-            foreach(IfcSchema::Type::Enum type, values) {
-                ss << " " << IfcSchema::Type::ToString(type);
+            foreach(IfcSchema::Enum::Class() type, values) {
+                ss << " " << IfcSchema::ToString::Class()(type);
             }
             description = ss.str();
         }

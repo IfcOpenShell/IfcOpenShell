@@ -1970,7 +1970,7 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 		);
 
 		for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
-			IfcSchema::IfcUnit* unit = *it;
+			IfcUtil::IfcBaseClass* unit = *it;
 			if (unit->declaration().is("IfcNamedUnit")) {
 				const std::string file_unit_type = *unit->data().getArgument(
 					unit->declaration().as_entity()->attribute_index("UnitType")

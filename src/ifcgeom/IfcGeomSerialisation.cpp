@@ -72,8 +72,8 @@ void opencascade_array_to_vector2(T& t, std::vector< std::vector<U> >& u) {
 }
 
 #ifdef USE_IFC4
-IfcSchema::IfcKnotType::IfcKnotType opencascade_knotspec_to_ifc(GeomAbs_BSplKnotDistribution bspline_knot_spec) {
-	IfcSchema::IfcKnotType::IfcKnotType knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;
+IfcSchema::IfcKnotType::Value opencascade_knotspec_to_ifc(GeomAbs_BSplKnotDistribution bspline_knot_spec) {
+	IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;
 	if (bspline_knot_spec == GeomAbs_Uniform) {
 		knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNIFORM_KNOTS;
 	} else if (bspline_knot_spec == GeomAbs_QuasiUniform) {
@@ -137,7 +137,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 			}
 			points->push(p);
 		}
-		IfcSchema::IfcKnotType::IfcKnotType knot_spec = opencascade_knotspec_to_ifc(bspline->KnotDistribution());
+		IfcSchema::IfcKnotType::Value knot_spec = opencascade_knotspec_to_ifc(bspline->KnotDistribution());
 
 		std::vector<int> mults;
 		std::vector<double> knots;
@@ -237,8 +237,8 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 			points->push(ps);
 		}
 
-		IfcSchema::IfcKnotType::IfcKnotType knot_spec_u = opencascade_knotspec_to_ifc(bspline->UKnotDistribution());
-		IfcSchema::IfcKnotType::IfcKnotType knot_spec_v = opencascade_knotspec_to_ifc(bspline->VKnotDistribution());
+		IfcSchema::IfcKnotType::Value knot_spec_u = opencascade_knotspec_to_ifc(bspline->UKnotDistribution());
+		IfcSchema::IfcKnotType::Value knot_spec_v = opencascade_knotspec_to_ifc(bspline->VKnotDistribution());
 
 		if (knot_spec_u != knot_spec_v) {
 			knot_spec_u = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;

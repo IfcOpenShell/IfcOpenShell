@@ -91,7 +91,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)&
 	}
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->declaration().is(IfcSchema::Type::IfcAxis2Placement3D)) {
+	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
@@ -116,7 +116,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	const bool rotated = y > x;
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->declaration().is(IfcSchema::Type::IfcAxis2Placement3D)) {
+	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
 		convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
@@ -144,7 +144,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& c
 #ifdef USE_IFC4
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
 
-	const bool is_rational = l->declaration().is(IfcSchema::Type::IfcRationalBSplineCurveWithKnots);
+	const bool is_rational = l->declaration().is(IfcSchema::IfcRationalBSplineCurveWithKnots::Class());
 
 	const IfcSchema::IfcCartesianPoint::list::ptr cps = l->ControlPointsList();
 	const std::vector<int> mults = l->KnotMultiplicities();

@@ -38,8 +38,8 @@ double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	else return 1.;
 }
 
-/*
-double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
+template <typename Schema>
+double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
 	double scale =  1.;
 	IfcSchema::IfcSIUnit* si_unit = 0;
 
@@ -65,4 +65,3 @@ double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
 
 	return scale;
 }
-*/

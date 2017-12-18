@@ -42,11 +42,9 @@
 
 #include "../ifcparse/Ifc4enum.h"
 
-#define IfcSchema Ifc4
-
 struct Ifc4 {
 
-const IfcParse::schema_definition& get_schema();
+static const IfcParse::schema_definition& get_schema();
 
 const char* const Identifier = "IFC4";
 

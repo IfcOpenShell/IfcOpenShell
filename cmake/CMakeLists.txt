@@ -551,7 +551,7 @@ if(NOT MSVC)
     endif()
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -579,10 +579,18 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom ${IFCGEOM_FILES})
-set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+add_library(IfcGeom_ifc2x3 ${IFCGEOM_FILES})
+add_library(IfcGeom_ifc4 ${IFCGEOM_FILES})
 
-TARGET_LINK_LIBRARIES(IfcGeom IfcParse ${OPENCASCADE_LIBRARIES})
+set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+
+set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS -DIfcSchema=Ifc2x3)
+# TODO: Detect based on IfcSchema
+set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS "-DIfcSchema=Ifc4 -DUSE_IFC4")
+
+TARGET_LINK_LIBRARIES(IfcGeom_ifc2x3 IfcParse ${OPENCASCADE_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcGeom_ifc4 IfcParse ${OPENCASCADE_LIBRARIES})
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -632,7 +640,7 @@ INSTALL(FILES ${IFCGEOM_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom
 )
 
-INSTALL(TARGETS IfcParse IfcGeom IfcConvert IfcGeomServer
+INSTALL(TARGETS IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcConvert IfcGeomServer
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}

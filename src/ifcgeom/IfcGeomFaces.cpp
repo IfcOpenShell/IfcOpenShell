@@ -107,7 +107,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
 	Handle(Geom_Surface) face_surface;
-	const bool is_face_surface = l->declaration().is(IfcSchema::Type::IfcFaceSurface);
+	const bool is_face_surface = l->declaration().is(IfcSchema::IfcFaceSurface::Class());
 
 	if (is_face_surface) {
 		IfcSchema::IfcFaceSurface* fs = (IfcSchema::IfcFaceSurface*) l;
@@ -129,7 +129,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 	for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
 		IfcSchema::IfcFaceBound* bound = *it;
-		if (bound->declaration().is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+		if (bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class())) num_outer_bounds ++;
 	}
 
 	// The number of outer bounds should be one according to the schema. Also Open Cascade
@@ -163,7 +163,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		
 			bool same_sense = bound->Orientation();
 			const bool is_interior = 
-				!bound->declaration().is(IfcSchema::Type::IfcFaceOuterBound) &&
+				!bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class()) &&
 				(num_bounds > 1) &&
 				(num_outer_bounds < num_bounds);
 
@@ -179,7 +179,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 			/*
 			The approach below does not result in a significant speed-up
-			if (loop->declaration().is(IfcSchema::Type::IfcPolyLoop) && processed == 0 && face_surface.IsNull()) {
+			if (loop->declaration().is(IfcSchema::IfcPolyLoop::Class()) && processed == 0 && face_surface.IsNull()) {
 				IfcSchema::IfcPolyLoop* polyloop = (IfcSchema::IfcPolyLoop*) loop;
 				IfcSchema::IfcCartesianPoint::list::ptr points = polyloop->Polygon();
 
@@ -536,7 +536,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	bool doFillet2 = doFillet1;
 	double x2 = x1, dy2 = dy1, f2 = f1;
 
-	if (l->declaration().is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
+	if (l->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
 		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
 		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
 		doFillet2 = assym->hasTopFlangeFilletRadius();
