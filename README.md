@@ -77,7 +77,7 @@ or Clang 3.5 has been confirmed to work.
 
 ### Compiling on *nix
 
-The following instructions are for Ubuntu, modify as required for other operating systems. [nix/build-all.sh] script
+The following instructions are for Ubuntu, modify as required for other operating systems. [nix/build-all.py] script
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
 
