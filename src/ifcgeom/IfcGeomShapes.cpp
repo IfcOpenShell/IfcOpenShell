@@ -229,8 +229,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 		if (shell.IsNull()) {
 			shell = result;
-		} else if (l->SweptArea()->declaration().is(IfcSchema::Type::IfcCircleHollowProfileDef) ||
-			l->SweptArea()->declaration().is(IfcSchema::Type::IfcRectangleHollowProfileDef))
+		} else if (l->SweptArea()->declaration().is(IfcSchema::IfcCircleHollowProfileDef::Class()) ||
+			l->SweptArea()->declaration().is(IfcSchema::IfcRectangleHollowProfileDef::Class()))
 		{
 			/// @todo a bit of of a hack, should be sufficient
 			shell = BRepAlgoAPI_Cut(shell, result).Shape();
@@ -369,11 +369,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 		const SurfaceStyle* indiv_style = get_style(l->Outer());
 
 		IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
-		if (l->declaration().is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+		if (l->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
 			voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
 		}
 #ifdef USE_IFC4
-		if (l->declaration().is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+		if (l->declaration().is(IfcSchema::IfcAdvancedBrepWithVoids::Class())) {
 			voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
 		}
 #endif
@@ -410,7 +410,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcR
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcSurface* surface = l->BaseSurface();
-	if ( ! surface->declaration().is(IfcSchema::Type::IfcPlane) ) {
+	if ( ! surface->declaration().is(IfcSchema::IfcPlane::Class()) ) {
 		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
 		return false;
 	}
@@ -461,7 +461,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 	for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = 0;
-		if ((*it)->declaration().is(IfcSchema::Type::IfcRepresentationItem)) {
+		if ((*it)->declaration().is(IfcSchema::IfcRepresentationItem::Class())) {
 			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
 		}
 		if (convert_shape(*it,s)) {
@@ -478,7 +478,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
-	bool is_halfspace = operand2->declaration().is(IfcSchema::Type::IfcHalfSpaceSolid);
+	bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
 		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
@@ -524,7 +524,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2);
 	}
 
-	const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
+	const IfcSchema::IfcBooleanOperator::Value op = l->Operator();
 
 	/*
 	// TK: A little debugging trick to output both operands for visual inspection
@@ -640,16 +640,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentationShapeItems& shapes) {
 	gp_GTrsf gtrsf;
 	IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
-	if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+	if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator3DnonUniform::Class()) ) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
-	} else if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+	} else if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator2DnonUniform::Class()) ) {
 		Logger::Message(Logger::LOG_ERROR, "Unsupported MappingTarget:", transform);
 		return false;
-	} else if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
+	} else if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator3D::Class()) ) {
 		gp_Trsf trsf;
 		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,trsf);
 		gtrsf = trsf;
-	} else if ( transform->declaration().is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
+	} else if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator2D::Class()) ) {
 		gp_Trsf2d trsf_2d;
 		IfcGeom::Kernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,trsf_2d);
 		gtrsf = (gp_Trsf) trsf_2d;
@@ -657,7 +657,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	IfcSchema::IfcRepresentationMap* map = l->MappingSource();
 	IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
 	gp_Trsf trsf;
-	if (placement->declaration().is(IfcSchema::Type::IfcAxis2Placement3D)) {
+	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf_2d;
@@ -715,11 +715,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 		if (convert_shape(element, s)) {
 			part_succes = true;
 			const IfcGeom::SurfaceStyle* style = 0;
-			if (element->declaration().is(IfcSchema::Type::IfcPoint)) {
+			if (element->declaration().is(IfcSchema::IfcPoint::Class())) {
 				style = get_style((IfcSchema::IfcPoint*) element);
-			} else if (element->declaration().is(IfcSchema::Type::IfcCurve)) {
+			} else if (element->declaration().is(IfcSchema::IfcCurve::Class())) {
 				style = get_style((IfcSchema::IfcCurve*) element);
-			} else if (element->declaration().is(IfcSchema::Type::IfcSurface)) {
+			} else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
 				style = get_style((IfcSchema::IfcSurface*) element);
 			}
 			shapes.push_back(IfcRepresentationShapeItem(s, style ? style : parent_style));
@@ -842,7 +842,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_S
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, TopoDS_Shape& face) {
-	if (!l->BasisSurface()->declaration().is(IfcSchema::Type::IfcPlane)) {
+	if (!l->BasisSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
 		Logger::Message(Logger::LOG_ERROR, "Unsupported BasisSurface:", l->BasisSurface());
 		return false;
 	}
@@ -861,7 +861,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
 
-	if (!l->ReferenceSurface()->declaration().is(IfcSchema::Type::IfcPlane)) {
+	if (!l->ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
 		Logger::Message(Logger::LOG_WARNING, "Reference surface not supported", l->ReferenceSurface());
 		return false;
 	}

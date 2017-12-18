@@ -11531,11 +11531,9 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
 #pragma optimize("", on)
 #endif
         
-namespace IFC2X3 {
-const schema_definition& get_schema() {
+const schema_definition& Ifc2x3::get_schema() {
 
     static const schema_definition* s = IFC2X3_populate_schema();
     return *s;
-}
 }
 

@@ -13705,11 +13705,9 @@ IfcParse::schema_definition* IFC4_populate_schema() {
 #pragma optimize("", on)
 #endif
         
-namespace IFC4 {
-const schema_definition& get_schema() {
+const schema_definition& Ifc4::get_schema() {
 
     static const schema_definition* s = IFC4_populate_schema();
     return *s;
-}
 }
 

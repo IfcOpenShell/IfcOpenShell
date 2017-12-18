@@ -101,7 +101,7 @@ private:
 	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
 
 	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	IfcSchema::Type::Enum placement_rel_to;
+	const IfcParse::declaration* placement_rel_to;
 
 public:
 	Kernel()
@@ -113,7 +113,7 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
-		, placement_rel_to(IfcSchema::Type::UNDEFINED)
+		, placement_rel_to(0)
 	{}
 
 	Kernel(const Kernel& other) {
@@ -268,7 +268,7 @@ public:
 #ifdef USE_IFC4
 		IfcEntityList::ptr style_assignments = si->Styles();
 		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			if (!(*kt)->declaration().is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
+			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
 				continue;
 			}
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
@@ -280,7 +280,7 @@ public:
 			IfcEntityList::ptr styles = style_assignment->Styles();
 			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
 				IfcUtil::IfcBaseClass* style = *lt;
-				if (style->declaration().is(IfcSchema::Type::IfcSurfaceStyle)) {
+				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
 					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
 						IfcEntityList::ptr styles_elements = surface_style->Styles();
@@ -322,7 +322,7 @@ public:
 #endif
 	}
 
-	void set_conversion_placement_rel_to(IfcSchema::Type::Enum type);
+	void set_conversion_placement_rel_to(const IfcParse::declaration* type);
 
 #include "IfcRegisterGeomHeader.h"
 

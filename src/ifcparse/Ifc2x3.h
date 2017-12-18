@@ -42,11 +42,9 @@
 
 #include "../ifcparse/Ifc2x3enum.h"
 
-#define IfcSchema Ifc2x3
-
 struct Ifc2x3 {
 
-const IfcParse::schema_definition& get_schema();
+static const IfcParse::schema_definition& get_schema();
 
 const char* const Identifier = "IFC2X3";
 

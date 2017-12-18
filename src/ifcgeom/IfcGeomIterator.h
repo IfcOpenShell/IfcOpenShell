@@ -197,7 +197,7 @@ namespace IfcGeom {
 
  			for (it = contexts->begin(); it != contexts->end(); ++it) {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
-				if (context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+				if (context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
 					// Continue, as the list of subcontexts will be considered
 					// by the parent's context inverse attributes.
 					continue;
@@ -224,7 +224,7 @@ namespace IfcGeom {
 			if (filtered_contexts->size() == 0) {
 				for (it = contexts->begin(); it != contexts->end(); ++it) {
 					IfcSchema::IfcGeometricRepresentationContext* context = *it;
-					if (!context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
+					if (!context->declaration().is(IfcSchema::IfcGeometricRepresentationSubContext::Class())) {
 						filtered_contexts->push(context);
 					}
 				}
@@ -374,7 +374,7 @@ namespace IfcGeom {
 					for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
 						IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
 						if (assoc) {
-							if (assoc->RelatingMaterial()->declaration().is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
+							if (assoc->RelatingMaterial()->declaration().is(IfcSchema::IfcMaterialLayerSetUsage::Class())) {
 								// TODO: Check whether single layer? 
 								return false;
 							}
@@ -576,15 +576,15 @@ namespace IfcGeom {
 
 			try {
 				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
-				instance_type = IfcSchema::Type::ToString(ifc_entity->declaration().type());
+				instance_type = IfcSchema::ToString::Class()(ifc_entity->declaration().type());
 
-				if (ifc_entity->declaration().is(IfcSchema::Type::IfcRoot)) {
+				if (ifc_entity->declaration().is(IfcSchema::IfcRoot::Class())) {
 					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();
 					product_guid = ifc_root->GlobalId();
 					product_name = ifc_root->hasName() ? ifc_root->Name() : "";
 				}
 
-				if (ifc_entity->declaration().is(IfcSchema::Type::IfcProduct)) {
+				if (ifc_entity->declaration().is(IfcSchema::IfcProduct::Class())) {
 					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
@@ -684,7 +684,7 @@ namespace IfcGeom {
             kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 			if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-				kernel.set_conversion_placement_rel_to(IfcSchema::Type::IfcSite);
+				kernel.set_conversion_placement_rel_to(IfcSchema::IfcSite::Class());
 			}
 		}
 

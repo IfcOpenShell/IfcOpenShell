@@ -285,7 +285,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
+		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
@@ -458,7 +458,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
+		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
@@ -537,7 +537,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
+		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
@@ -1098,7 +1098,7 @@ void IfcGeom::Kernel::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, T
 IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
 	
 	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
-	if ( product->declaration().is(IfcSchema::Type::IfcElement) && !product->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
+	if ( product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		openings = element->HasOpenings();
 	}
@@ -1113,7 +1113,7 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 #endif
 		if (decomposes->size() != 1) break;
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
-		if ( rel_obdef->declaration().is(IfcSchema::Type::IfcElement) && !rel_obdef->declaration().is(IfcSchema::Type::IfcOpeningElement) ) {
+		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
 			openings->push(element->HasOpenings());
 		}
@@ -1236,7 +1236,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 	// Note that openings for IfcOpeningElements are not processed
 	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product);
 
-	const std::string product_type = IfcSchema::Type::ToString(product->declaration().type());
+	const std::string product_type = product->declaration().name();
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
 
     if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
@@ -1312,7 +1312,7 @@ IfcSchema::IfcRepresentation* IfcGeom::Kernel::representation_mapped_to(const If
 	IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
 	if (items->size() == 1) {
 		IfcSchema::IfcRepresentationItem* item = *items->begin();
-		if (item->declaration().is(IfcSchema::Type::IfcMappedItem)) {
+		if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
 			if (item->StyledByItem()->size() == 0) {
 				IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
 				if (is_identity_transform(mapped_item->MappingTarget())) {
@@ -1339,7 +1339,7 @@ IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const 
 
 		// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
 		// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-		products->push((*it)->data().getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
+		products->push((*it)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>());
 	}
 	
 	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
@@ -1355,13 +1355,13 @@ IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const 
 					continue;
 				}
 
-				IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse(IfcSchema::Type::IfcRepresentation, -1)->as<IfcSchema::IfcRepresentation>();
+				IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
 				for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
 					IfcSchema::IfcRepresentation* rep = *jt;
 					if (rep->Items()->size() != 1) continue;
 					IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
 					for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
-						IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
+						IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
 						products->push(ps);
 					}
 				}
@@ -1406,7 +1406,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 		context_string = representation->ContextOfItems()->ContextType();
 	}
 
-	const std::string product_type = IfcSchema::Type::ToString(product->declaration().type());
+	const std::string product_type = product->declaration().name();
 
 	return new BRepElement<P>(
 		product->data().id(),
@@ -1425,14 +1425,14 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	IfcSchema::IfcObjectDefinition* parent = 0;
 
 	// In case of an opening element, parent to the RelatingBuildingElement
-	if ( product->declaration().is(IfcSchema::Type::IfcOpeningElement ) ) {
+	if ( product->declaration().is(IfcSchema::IfcOpeningElement::Class() ) ) {
 		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;
 		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();
 		if ( voids->size() ) {
 			IfcSchema::IfcRelVoidsElement* ifc_void = *voids->begin();
 			parent = ifc_void->RelatingBuildingElement();
 		}
-	} else if ( product->declaration().is(IfcSchema::Type::IfcElement ) ) {
+	} else if ( product->declaration().is(IfcSchema::IfcElement::Class() ) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
 		// In case of a RelatedBuildingElement parent to the opening element
@@ -1455,13 +1455,13 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 	}
 	// Parent decompositions to the RelatingObject
 	if (!parent) {
-		IfcEntityList::ptr parents = product->data().getInverse(IfcSchema::Type::IfcRelAggregates, -1);
-		parents->push(product->data().getInverse(IfcSchema::Type::IfcRelNests, -1));
+		IfcEntityList::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);
+		parents->push(product->data().getInverse((&IfcSchema::IfcRelNests::Class()), -1));
 		for ( IfcEntityList::it it = parents->begin(); it != parents->end(); ++ it ) {
 			IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;
 			IfcSchema::IfcObjectDefinition* ifc_objectdef;
 #ifdef USE_IFC4
-			if (decompose->declaration().is(IfcSchema::Type::IfcRelAggregates)) {
+			if (decompose->declaration().is(IfcSchema::IfcRelAggregates::Class())) {
 				ifc_objectdef = ((IfcSchema::IfcRelAggregates*)decompose)->RelatingObject();
 			} else {
 				continue;
@@ -1478,28 +1478,27 @@ IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchem
 
 std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> IfcGeom::Kernel::get_layers(IfcSchema::IfcProduct* prod)
 {
-    using namespace IfcSchema;
-    std::map<std::string, IfcPresentationLayerAssignment*> layers;
+	std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> layers;
     if (prod->hasRepresentation()) {
         IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
-        IfcRepresentation::list::ptr representations = r->as<IfcRepresentation>();
-        for (IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
-            IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-            for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+		IfcSchema::IfcRepresentation::list::ptr representations = r->as<IfcSchema::IfcRepresentation>();
+        for (IfcSchema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+			IfcSchema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+            for (IfcSchema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
                 layers[(*jt)->Name()] = *jt;
             }
         }
 
-        IfcRepresentationItem::list::ptr items = r->as<IfcRepresentationItem>();
-        for (IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-            IfcPresentationLayerAssignment::list::ptr a = (*it)->
+		IfcSchema::IfcRepresentationItem::list::ptr items = r->as<IfcSchema::IfcRepresentationItem>();
+        for (IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+			IfcSchema::IfcPresentationLayerAssignment::list::ptr a = (*it)->
                 // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
 #ifdef USE_IFC4
                 LayerAssignment();
 #else
                 LayerAssignments();
 #endif
-            for (IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+            for (IfcSchema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
                 layers[(*jt)->Name()] = *jt;
             }
         }
@@ -1532,18 +1531,18 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 		} else {
 			for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
 				IfcUtil::IfcBaseClass* base = *it;
-				if (base->declaration().is(IfcSchema::Type::IfcNamedUnit)) {
+				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
 					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
 						named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT)
 					{
 						std::string current_unit_name;
-						const double current_unit_magnitude = IfcParse::get_SI_equivalent(named_unit);
+						const double current_unit_magnitude = IfcParse::get_SI_equivalent<IfcSchema>(named_unit);
 						if (current_unit_magnitude != 0.) {
-							if (named_unit->declaration().is(IfcSchema::Type::IfcConversionBasedUnit)) {
+							if (named_unit->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 								IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
 								current_unit_name = u->Name();
-							} else if (named_unit->declaration().is(IfcSchema::Type::IfcSIUnit)) {
+							} else if (named_unit->declaration().is(IfcSchema::IfcSIUnit::Class())) {
 								IfcSchema::IfcSIUnit* si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
 								if (si_unit->hasPrefix()) {
 									current_unit_name = IfcSchema::IfcSIPrefix::ToString(si_unit->Prefix()) + unit_name;
@@ -1591,7 +1590,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 	IfcSchema::IfcRepresentation* body_representation = find_representation(product, "Body");
 	IfcSchema::IfcRepresentation* axis_representation = find_representation(product, "Axis");
 
-	if (product->declaration().is(IfcSchema::Type::IfcWall)) {
+	if (product->declaration().is(IfcSchema::IfcWall::Class())) {
 		if (!axis_representation) {
 			Logger::Message(Logger::LOG_WARNING, "No axis representation for:", product);
 			return false;
@@ -1833,16 +1832,16 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	typedef std::vector<Handle_Geom_Surface> surfaces_t;
 	typedef std::pair<Handle_Geom_Surface, Handle_Geom_Curve> curve_on_surface;
 	typedef std::vector<curve_on_surface> curves_on_surfaces_t;
-	typedef std::vector< std::pair< std::pair<IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum, IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum>, const IfcSchema::IfcProduct*> > endpoint_connections_t;
+	typedef std::vector< std::pair< std::pair<IfcSchema::IfcConnectionTypeEnum::Value, IfcSchema::IfcConnectionTypeEnum::Value>, const IfcSchema::IfcProduct*> > endpoint_connections_t;
 	typedef std::vector< std::vector<Handle_Geom_Surface> > result_t;
 	endpoint_connections_t endpoint_connections;
 
 	for (IfcSchema::IfcRelConnectsPathElements::list::it it = connections->begin(); it != connections->end(); ++it) {
 		IfcSchema::IfcRelConnectsPathElements* connection = *it;
-		IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum own_type = connection->RelatedElement() == wall
+		IfcSchema::IfcConnectionTypeEnum::Value own_type = connection->RelatedElement() == wall
 			? connection->RelatedConnectionType()
 			: connection->RelatingConnectionType();
-		IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum other_type = connection->RelatedElement() == wall
+		IfcSchema::IfcConnectionTypeEnum::Value other_type = connection->RelatedElement() == wall
 			? connection->RelatingConnectionType()
 			: connection->RelatedConnectionType();
 		if (other_type != IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATPATH && 
@@ -1893,7 +1892,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		}
 		
 		/*
-		IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum connection_type = idx == 1
+		IfcSchema::IfcConnectionTypeEnum::Value connection_type = idx == 1
 			? IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
 			: IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND;
 		*/
@@ -1914,8 +1913,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		/*
 		Additionally one could check whether the end points are of the wall are really ~1 LayerThickness away from each other
 		for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
-			IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum relating_connection_type = it->first.first;
-			IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum related_connection_type = it->first.second;
+			IfcSchema::IfcConnectionTypeEnum::Value relating_connection_type = it->first.first;
+			IfcSchema::IfcConnectionTypeEnum::Value related_connection_type = it->first.second;
 
 			if (connection_type != relating_connection_type) {
 				continue;
@@ -1948,7 +1947,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	}
 
 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
-		IfcSchema::IfcConnectionTypeEnum::IfcConnectionTypeEnum connection_type = it->first.first;
+		IfcSchema::IfcConnectionTypeEnum::Value connection_type = it->first.first;
 
 		// If more than one wall connects to this start/end -point assume layers do not need to be folded
 		const int idx = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
@@ -2513,7 +2512,7 @@ const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_styl
 		return item;
 	}
 
-	while (item->declaration().is(IfcSchema::Type::IfcBooleanClippingResult)) {
+	while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
 		// All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
 		// IfcGeometricRepresentationItem
 		item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();

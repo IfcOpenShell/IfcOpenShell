@@ -25,7 +25,9 @@
 
 namespace IfcParse {
     IFC_PARSE_API double IfcSIPrefixToValue(const std::string& prefix);
-    // IFC_PARSE_API double get_SI_equivalent(IfcSchema::IfcNamedUnit*);
+
+	template <typename Schema>
+    IFC_PARSE_API double get_SI_equivalent(typename Schema::IfcNamedUnit*);
 }
 
 #endif

@@ -203,13 +203,11 @@ class SchemaClass(codegen.Base):
 #endif
         """)
         
-        statements.append("namespace %s {" % mapping.schema.name)
-        
-        statements.extend(('const schema_definition& get_schema() {',
+        statements.extend(('const schema_definition& %s::get_schema() {' % schema_name_title,
                            '',
                            '    static const schema_definition* s = %(schema_name)s_populate_schema();' % locals(),
                            '    return *s;',
-                           '}','}','',''))
+                           '}','',''))
                            
         declarations_by_index.sort()
         declarations_by_index_map = dict(("index_in_schema_%s" % j,i) for i,j in enumerate(declarations_by_index))
