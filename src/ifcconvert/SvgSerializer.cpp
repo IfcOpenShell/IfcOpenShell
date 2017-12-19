@@ -366,11 +366,14 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		double cut_z;
 		if (section_height) {
 			cut_z = section_height.get();
-		} else if (storey_elevation) {
+		} else if (storey_elevation && !(zmin > *storey_elevation || zmax < *storey_elevation)) {
 			cut_z = storey_elevation.get() + 1.;
 		} else {
 			cut_z = zmin + 1.;
 		}
+
+		if (zmin > cut_z || zmax < cut_z) continue;
+
 
 		// Create a horizontal cross section 1 meter above the bottom point of the shape		
 		TopoDS_Shape result = BRepAlgoAPI_Section(moved_shape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
