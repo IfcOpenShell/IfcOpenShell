@@ -82,6 +82,8 @@
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 
+#include "../iterator/IteratorImplementation.h"
+
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
 #undef min
@@ -90,13 +92,18 @@
 #undef max
 #endif
 
+#define MAKE_TYPE_NAME__(a, b) a ## b
+#define MAKE_TYPE_NAME_(a, b) MAKE_TYPE_NAME__(a, b)
+#define MAKE_TYPE_NAME(t) MAKE_TYPE_NAME_(t, IfcSchema)
+
 namespace IfcGeom {
 	
 	template <typename P>
-	class Iterator {
+	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation<P> {
 	private:
-		Iterator(const Iterator&); // N/I
-		Iterator& operator=(const Iterator&); // N/I
+
+		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
+		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
 		Kernel kernel;
 		IteratorSettings settings;
@@ -136,7 +143,7 @@ namespace IfcGeom {
         };
 
 		void initUnits() {
-			IfcSchema::IfcProject::list::ptr projects = ifc_file->entitiesByType<IfcSchema::IfcProject>();
+			IfcSchema::IfcProject::list::ptr projects = ifc_file->instances_by_type<IfcSchema::IfcProject>();
 			if (projects->size() == 1) {
 				IfcSchema::IfcProject* project = *projects->begin();
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
@@ -147,7 +154,9 @@ namespace IfcGeom {
 
         /// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
-        Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file, std::vector<IfcGeom::filter_t>& filters)
+		typedef P Precision;
+
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, std::vector<IfcGeom::filter_t>& filters)
             : settings(settings)
             , ifc_file(file)
             , owns_ifc_file(false)
@@ -191,7 +200,7 @@ namespace IfcGeom {
 			IfcSchema::IfcGeometricRepresentationContext::list::it it;
 			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
 			IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts = 
-				ifc_file->entitiesByType<IfcSchema::IfcGeometricRepresentationContext>();
+				ifc_file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
 
 			IfcSchema::IfcGeometricRepresentationContext::list::ptr filtered_contexts (new IfcSchema::IfcGeometricRepresentationContext::list);
 
@@ -286,7 +295,7 @@ namespace IfcGeom {
                 bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
             }
 
-            IfcSchema::IfcProduct::list::ptr products = ifc_file->entitiesByType<IfcSchema::IfcProduct>();
+            IfcSchema::IfcProduct::list::ptr products = ifc_file->instances_by_type<IfcSchema::IfcProduct>();
             for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
                 IfcSchema::IfcProduct* product = *iter;
                 if (product->hasObjectPlacement()) {
@@ -493,7 +502,7 @@ namespace IfcGeom {
 
         /// Moves to the next shape representation, create its geometry, and returns the associated product.
         /// Use get() to retrieve the created geometry.
-		IfcSchema::IfcProduct* next() {
+		IfcUtil::IfcBaseClass* next() {
 			// Increment the iterator over the list of products using the current
 			// shape representation
 			if (ifcproducts) {
@@ -575,8 +584,8 @@ namespace IfcGeom {
             IfcSchema::IfcProduct* ifc_product = 0;
 
 			try {
-				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
-				instance_type = IfcSchema::ToString::Class()(ifc_entity->declaration().type());
+				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->instance_by_id(id);
+				instance_type = ifc_entity->declaration().name();
 
 				if (ifc_entity->declaration().is(IfcSchema::IfcRoot::Class())) {
 					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();
@@ -624,7 +633,7 @@ namespace IfcGeom {
 			return ifc_object;
 		}
 
-		IfcSchema::IfcProduct* create() {
+		IfcUtil::IfcBaseClass* create() {
 			IfcGeom::BRepElement<P>* next_shape_model = 0;
 			IfcGeom::SerializedElement<P>* next_serialization = 0;
 			IfcGeom::TriangulationElement<P>* next_triangulation = 0;
@@ -684,45 +693,42 @@ namespace IfcGeom {
             kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 			if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-				kernel.set_conversion_placement_rel_to(IfcSchema::IfcSite::Class());
+				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
 			}
 		}
 
 		bool owns_ifc_file;
 	public:
-		Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file)
 			: settings(settings)
 			, ifc_file(file)
 			, owns_ifc_file(false)
 		{
 			_initialize();
 		}
-		Iterator(const IteratorSettings& settings, const std::string& filename)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, const std::string& filename)
 			: settings(settings)
-			, ifc_file(new IfcParse::IfcFile)
+			, ifc_file(new IfcParse::IfcFile(filename))
 			, owns_ifc_file(true)
 		{
-			ifc_file->Init(filename);
 			_initialize();
 		}
-		Iterator(const IteratorSettings& settings, void* data, int length)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, void* data, int length)
 			: settings(settings)
-			, ifc_file(new IfcParse::IfcFile)
+			, ifc_file(new IfcParse::IfcFile(data, length))
 			, owns_ifc_file(true)
 		{
-			ifc_file->Init(data, length);
 			_initialize();
 		}
-		Iterator(const IteratorSettings& settings, std::istream& filestream, int length)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, std::istream& filestream, int length)
 			: settings(settings)
-			, ifc_file(new IfcParse::IfcFile)
+			, ifc_file(new IfcParse::IfcFile(filestream, length))
 			, owns_ifc_file(true)
 		{
-			ifc_file->Init(filestream, length);
 			_initialize();
 		}
 
-		~Iterator() {
+		~MAKE_TYPE_NAME(IteratorImplementation_)() {
 			if (owns_ifc_file) {
 				delete ifc_file;
 			}

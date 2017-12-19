@@ -123,15 +123,15 @@ namespace IfcGeom
     struct string_arg_filter : public wildcard_filter
     {
         // Using this for now in order to overcome the fact that different classes have the argument at different indices.
-        typedef std::map<IfcSchema::Enum::Class(), unsigned short> arg_map_t;
+        typedef std::map<const IfcParse::declaration*, unsigned short> arg_map_t;
         arg_map_t args;
 
         /// @todo Take only attribute name when IfcBaseClass and IfcLateBoundEntity are merged.
         string_arg_filter(arg_map_t args) : args(args) { assert_arguments(); }
-        string_arg_filter(IfcSchema::Enum::Class() type, unsigned short index) { args[type] = index;  assert_arguments(); }
+        string_arg_filter(const IfcParse::declaration* type, unsigned short index) { args[type] = index;  assert_arguments(); }
         string_arg_filter(
-            IfcSchema::Enum::Class() type1, unsigned short index1,
-            IfcSchema::Enum::Class() type2, unsigned short index2)
+			const IfcParse::declaration* type1, unsigned short index1,
+			const IfcParse::declaration* type2, unsigned short index2)
         {
             args[type1] = index1;
             args[type2] = index2;
@@ -141,7 +141,8 @@ namespace IfcGeom
         /// @todo this won't be needed when we have the generic argument name access
         void assert_arguments()
         {
-#ifndef NDEBUG
+			// TODO
+#if 0
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
                 IfcEntityInstanceData dummy(it->first);
                 IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
@@ -155,7 +156,7 @@ namespace IfcGeom
         std::string value(IfcSchema::IfcProduct* prod) const
         {
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                if (prod->declaration().is(it->first) && it->second < prod->data().getArgumentCount() &&
+                if (prod->declaration().is(*it->first) && it->second < prod->data().getArgumentCount() &&
                     prod->data().getArgument(it->second)->type() == IfcUtil::Argument_STRING) {
                     Argument *arg = prod->data().getArgument(it->second);
                     if (!arg->isNull()) {
@@ -184,9 +185,11 @@ namespace IfcGeom
                 patterns.push_back("\"" + r.str() + "\"");
             }
 
+			// TODO
+#if 0
             for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
                 IfcEntityInstanceData dummy(it->first);
-                IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
+				IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
                 try {
                     ss << " " << IfcSchema::ToString::Class()(it->first) << "." << base->declaration().as_entity()->all_attributes()[it->second]->name();
                 } catch (const std::exception& e) {
@@ -194,6 +197,7 @@ namespace IfcGeom
 				}
                 delete base;
             }
+#endif
 
             ss << " values " << boost::algorithm::join(patterns, " ");
             description = ss.str();
@@ -254,13 +258,15 @@ namespace IfcGeom
             //populate(types);
         }
 
-        std::set<IfcSchema::Enum::Class()> values;
+        std::set<const IfcParse::declaration*> values;
 
-        void populate(const std::set<std::string>& types)
+        void populate(const std::set<std::string>&)
         {
+			// TODO
+#if 0
             values.clear();
             foreach(const std::string& type, types) {
-                IfcSchema::Enum::Class() ty;
+				const IfcParse::declaration* ty;
                 try {
                     ty = IfcSchema::FromString::Class()(boost::to_upper_copy(type));
                 } catch (const IfcParse::IfcException&) {
@@ -269,13 +275,14 @@ namespace IfcGeom
                 values.insert(ty);
                 /// @todo Add child classes so that containment in set can be in O(log n)
             }
+#endif
         }
 
         bool match(IfcSchema::IfcProduct* prod) const
         {
             // The set is iterated over to able to filter on subtypes.
-            foreach(IfcSchema::Enum::Class() type, values) {
-                if (prod->declaration().is(type)) {
+            foreach(const IfcParse::declaration* type, values) {
+                if (prod->declaration().is(*type)) {
                     return true;
                 }
             }
@@ -289,12 +296,15 @@ namespace IfcGeom
 
         void update_description()
         {
+			// TODO
+#if 0
             std::stringstream ss;
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " entities";
             foreach(IfcSchema::Enum::Class() type, values) {
                 ss << " " << IfcSchema::ToString::Class()(type);
             }
             description = ss.str();
+#endif
         }
     };
 }

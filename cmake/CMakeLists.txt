@@ -551,20 +551,11 @@ if(NOT MSVC)
     endif()
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 Iterator)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
 file(GLOB IFCPARSE_CPP_FILES ../src/ifcparse/*.cpp)
-
-foreach(IFC_RELEASE ${IFC_RELEASE_NOT_USED})
-    files_for_ifc_version(${IFC_RELEASE} SOURCE_FILES_NOT_USED)
-    foreach(SOURCE_FILE ${SOURCE_FILES_NOT_USED})
-        list(REMOVE_ITEM IFCPARSE_CPP_FILES ${SOURCE_FILE})
-        list(REMOVE_ITEM IFCPARSE_H_FILES ${SOURCE_FILE})
-    endforeach()
-endforeach()
-
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
@@ -582,15 +573,21 @@ set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 add_library(IfcGeom_ifc2x3 ${IFCGEOM_FILES})
 add_library(IfcGeom_ifc4 ${IFCGEOM_FILES})
 
-set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
-set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
-
-set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS -DIfcSchema=Ifc2x3)
+set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3")
 # TODO: Detect based on IfcSchema
-set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS "-DIfcSchema=Ifc4 -DUSE_IFC4")
+set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4")
 
 TARGET_LINK_LIBRARIES(IfcGeom_ifc2x3 IfcParse ${OPENCASCADE_LIBRARIES})
 TARGET_LINK_LIBRARIES(IfcGeom_ifc4 IfcParse ${OPENCASCADE_LIBRARIES})
+
+# Iterator
+file(GLOB ITERATOR_H_FILES ../src/iterator/*.h)
+file(GLOB ITERATOR_CPP_FILES ../src/iterator/*.cpp)
+set(ITERATOR_FILES ${ITERATOR_H_FILES} ${ITERATOR_CPP_FILES})
+
+add_library(Iterator ${ITERATOR_FILES})
+set_target_properties(Iterator PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+TARGET_LINK_LIBRARIES(Iterator IfcGeom_ifc2x3 IfcGeom_ifc4)
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
