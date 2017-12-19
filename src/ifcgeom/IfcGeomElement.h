@@ -124,7 +124,7 @@ namespace IfcGeom {
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation<P>& transformation() const { return _transformation; }
-        IfcSchema::IfcProduct* product() const { return product_; }
+        IfcUtil::IfcBaseClass* product() const { return product_; }
 		const std::vector<const IfcGeom::Element<P>*> parents() const { return _parents; }
 		void SetParents(std::vector<const IfcGeom::Element<P>*> newparents) { _parents = newparents; }
 

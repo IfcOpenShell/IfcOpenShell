@@ -48,8 +48,8 @@ private:
 	static const char* severity_strings[];
 	static boost::optional<IfcUtil::IfcBaseClass*> current_product;
 public:
-	template <typename Schema>
-	static void SetProduct(boost::optional<typename Schema::IfcProduct*> product) {
+
+	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
 		current_product = product;
 	}
 
