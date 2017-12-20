@@ -145,6 +145,8 @@
 #endif
 #endif
 
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	TopTools_ListOfShape face_list;
 	TopExp_Explorer exp(compound, TopAbs_FACE);
@@ -833,29 +835,33 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 	return 0;
 }
 
-// Returns the vertex part of an TopoDS_Edge edge that is not TopoDS_Vertex vertex
-TopoDS_Vertex find_other(const TopoDS_Edge& edge, const TopoDS_Vertex& vertex) {
-	TopExp_Explorer exp(edge, TopAbs_VERTEX);
-	while (exp.More()) {
-		if (!exp.Current().IsSame(vertex)) {
-			return TopoDS::Vertex(exp.Current());
-		}
-		exp.Next();
-	}
-	return TopoDS_Vertex();
-}
+namespace {
 
-TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools_IndexedDataMapOfShapeListOfShape& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
-	const TopTools_ListOfShape& edges = vertex_to_edges.FindFromKey(current);
-	TopTools_ListIteratorOfListOfShape eit;
-	for (eit.Initialize(edges); eit.More(); eit.Next()) {
-		const TopoDS_Edge& edge = TopoDS::Edge(eit.Value());
-		if (edge.IsSame(previous_edge)) continue;
-		if (edge_set.Contains(edge)) {
-			return edge;
+	// Returns the vertex part of an TopoDS_Edge edge that is not TopoDS_Vertex vertex
+	TopoDS_Vertex find_other(const TopoDS_Edge& edge, const TopoDS_Vertex& vertex) {
+		TopExp_Explorer exp(edge, TopAbs_VERTEX);
+		while (exp.More()) {
+			if (!exp.Current().IsSame(vertex)) {
+				return TopoDS::Vertex(exp.Current());
+			}
+			exp.Next();
 		}
+		return TopoDS_Vertex();
 	}
-	return TopoDS_Edge();
+
+	TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools_IndexedDataMapOfShapeListOfShape& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
+		const TopTools_ListOfShape& edges = vertex_to_edges.FindFromKey(current);
+		TopTools_ListIteratorOfListOfShape eit;
+		for (eit.Initialize(edges); eit.More(); eit.Next()) {
+			const TopoDS_Edge& edge = TopoDS::Edge(eit.Value());
+			if (edge.IsSame(previous_edge)) continue;
+			if (edge_set.Contains(edge)) {
+				return edge;
+			}
+		}
+		return TopoDS_Edge();
+	}
+
 }
 
 bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape) {

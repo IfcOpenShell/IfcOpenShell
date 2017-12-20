@@ -133,7 +133,7 @@ public:
 			const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
 			typename std::vector<U*> to;
 			for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
-				if (all || (*inner)->is(U::Class())) to.push_back((U*)*inner);
+				if (all || (*inner)->declaration().is(U::Class())) to.push_back((U*)*inner);
 			}
 			r->push(to);
 		}

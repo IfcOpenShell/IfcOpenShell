@@ -20,6 +20,8 @@
 #include "IfcGeom.h"
 #include "IfcGeomShapeType.h"
 
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
 using namespace IfcUtil;
 
 bool IfcGeom::Kernel::convert_shapes(const IfcBaseClass* l, IfcRepresentationShapeItems& r) {

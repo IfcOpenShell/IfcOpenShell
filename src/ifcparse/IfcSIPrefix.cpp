@@ -16,7 +16,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
+
 #include "IfcSIPrefix.h"
+
+#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/Ifc4.h"
 
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	if      ( v == "EXA"   ) return 1.e18;
@@ -41,23 +45,23 @@ double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 template <typename Schema>
 double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
 	double scale =  1.;
-	IfcSchema::IfcSIUnit* si_unit = 0;
+	typename Schema::IfcSIUnit* si_unit = 0;
 
-	if (named_unit->declaration().is(IfcSchema::Type::IfcConversionBasedUnit)) {
-		IfcSchema::IfcConversionBasedUnit* conv_unit = named_unit->as<IfcSchema::IfcConversionBasedUnit>();
-		IfcSchema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
-		IfcSchema::IfcUnit* component = factor->UnitComponent();
-		if (component->declaration().is(IfcSchema::Type::IfcSIUnit)) {
-			si_unit = component->as<IfcSchema::IfcSIUnit>();
-			IfcSchema::IfcValue* v = factor->ValueComponent();
+	if (named_unit->declaration().is(Schema::IfcConversionBasedUnit::Class())) {
+		typename Schema::IfcConversionBasedUnit* conv_unit = named_unit->as<typename Schema::IfcConversionBasedUnit>();
+		typename Schema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
+		typename Schema::IfcUnit* component = factor->UnitComponent();
+		if (component->declaration().is(Schema::IfcSIUnit::Class())) {
+			si_unit = component->as<typename Schema::IfcSIUnit>();
+			typename Schema::IfcValue* v = factor->ValueComponent();
 			scale = *v->data().getArgument(0);
 		}		
-	} else if (named_unit->declaration().is(IfcSchema::Type::IfcSIUnit)) {
-		si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
+	} else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
+		si_unit = named_unit->as<typename Schema::IfcSIUnit>();
 	}
 	if (si_unit) {
 		if (si_unit->hasPrefix()) {
-			scale *= IfcSIPrefixToValue(si_unit->Prefix());
+			scale *= IfcSIPrefixToValue(Schema::IfcSIPrefix::ToString(si_unit->Prefix()));
 		}
 	} else {
 		scale = 0.;
@@ -65,3 +69,6 @@ double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
 
 	return scale;
 }
+
+template double IfcParse::get_SI_equivalent<Ifc2x3>(typename Ifc2x3::IfcNamedUnit* named_unit);
+template double IfcParse::get_SI_equivalent<Ifc4>(typename Ifc4::IfcNamedUnit* named_unit);

@@ -35,7 +35,7 @@
 #include <Geom_SphericalSurface.hxx>
 
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcGeomMaterial.h"
+#include "../iterator/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
 #include <TopoDS_Compound.hxx>

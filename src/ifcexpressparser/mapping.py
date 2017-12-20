@@ -58,7 +58,7 @@ class Mapping:
 
     def make_type_string(self, type):
         if isinstance(type, (str, nodes.BinaryType, nodes.StringType)):
-            return self.express_to_cpp_typemapping.get(str(type), type)
+            return self.express_to_cpp_typemapping.get(str(type), "::%s::%s" % (self.schema.name.capitalize(), type))
         else:
             is_list = self.schema.is_entity(type.type)
             is_nested_list = isinstance(type.type, nodes.AggregationType)

@@ -62,6 +62,8 @@ namespace IfcGeom
 
         static bool traverse_match(IfcSchema::IfcProduct* prod, const filter_t& pred)
         {
+			throw std::runtime_error("todo");
+			/*
             IfcSchema::IfcProduct* parent, *current = prod;
             while ((parent = dynamic_cast<IfcSchema::IfcProduct*>(IfcGeom::Kernel::get_decomposing_entity(current))) != 0) {
                 if (pred(parent)) {
@@ -69,6 +71,7 @@ namespace IfcGeom
                 }
                 current = parent;
             }
+			*/
             return false;
         }
     };
@@ -216,8 +219,11 @@ namespace IfcGeom
 
         bool match(IfcSchema::IfcProduct* prod) const
         {
+			throw std::runtime_error("todo");
+			/*
             layer_map_t layers = IfcGeom::Kernel::get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
+			*/
         }
 
         bool operator()(IfcSchema::IfcProduct* prod) const

@@ -77,7 +77,7 @@
 
 #include "../ifcgeom/IfcGeom.h"
 #include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcgeom/IfcGeomMaterial.h"
+#include "../iterator/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomFilter.h"
@@ -92,10 +92,6 @@
 #undef max
 #endif
 
-#define MAKE_TYPE_NAME__(a, b) a ## b
-#define MAKE_TYPE_NAME_(a, b) MAKE_TYPE_NAME__(a, b)
-#define MAKE_TYPE_NAME(t) MAKE_TYPE_NAME_(t, IfcSchema)
-
 namespace IfcGeom {
 	
 	template <typename P>
@@ -105,7 +101,7 @@ namespace IfcGeom {
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
-		Kernel kernel;
+		MAKE_TYPE_NAME(Kernel) kernel;
 		IteratorSettings settings;
 
 		IfcParse::IfcFile* ifc_file;

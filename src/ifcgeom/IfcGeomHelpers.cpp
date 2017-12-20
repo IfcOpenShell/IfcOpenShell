@@ -77,51 +77,56 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
-// Helper functions (re)set gp_(G)Trsf(2d) forms explicitly to 'Identity'
-// so that it can be easily identified in the IfcMappedItem processing
+#define Kernel MAKE_TYPE_NAME(Kernel)
 
-// For axis placements detect equality early in order for the
-// relatively computionaly expensive gp_Trsf calculation to be skipped
-template <typename T>
-bool axis_equal(const T& a, const T& b, double tolerance);
-template <>
-bool axis_equal(const gp_Ax3& a, const gp_Ax3& b, double tolerance) {
-	if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
-	// Note that the tolerance below is angular, above is linear. Since architectural
-	// objects are about 1m'ish in scale, it should be somewhat equivalent. Besides,
-	// this is mostly a filter for NULL or default values in the placements.
-	if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
-	if (!a.XDirection().IsEqual(b.XDirection(), tolerance)) return false;
-	if (!a.YDirection().IsEqual(b.YDirection(), tolerance)) return false;
-	return true;
-}
+namespace {
 
-bool axis_equal(const gp_Ax2d& a, const gp_Ax2d& b, double tolerance) {
-	if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
-	if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
-	return true;
-}
+	// Helper functions (re)set gp_(G)Trsf(2d) forms explicitly to 'Identity'
+	// so that it can be easily identified in the IfcMappedItem processing
 
-template <typename T> struct dimension_count {};
-template <>           struct dimension_count <gp_Trsf2d > { static const int n = 2; };
-template <>           struct dimension_count <gp_GTrsf2d> { static const int n = 2; };
-template <>           struct dimension_count < gp_Trsf  > { static const int n = 3; };
-template <>           struct dimension_count < gp_GTrsf > { static const int n = 3; };
+	// For axis placements detect equality early in order for the
+	// relatively computionaly expensive gp_Trsf calculation to be skipped
+	template <typename T>
+	bool axis_equal(const T& a, const T& b, double tolerance);
+	template <>
+	bool axis_equal(const gp_Ax3& a, const gp_Ax3& b, double tolerance) {
+		if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
+		// Note that the tolerance below is angular, above is linear. Since architectural
+		// objects are about 1m'ish in scale, it should be somewhat equivalent. Besides,
+		// this is mostly a filter for NULL or default values in the placements.
+		if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
+		if (!a.XDirection().IsEqual(b.XDirection(), tolerance)) return false;
+		if (!a.YDirection().IsEqual(b.YDirection(), tolerance)) return false;
+		return true;
+	}
 
-template <typename T>
-bool is_identity(const T& t, double tolerance) {
-	// Note the {1, n+1} range due to Open Cascade's 1-based indexing
-	// Note the {1, n+2} range due to the translation part of the matrix
-	for (int i = 1; i < dimension_count<T>::n + 2; ++i) {
-		for (int j = 1; j < dimension_count<T>::n + 1; ++j) {
-			const double iden_value = i == j ? 1. : 0.;
-			const double trsf_value = t.Value(j, i);
-			if (fabs(trsf_value - iden_value) > tolerance) {
-				return false;
+	bool axis_equal(const gp_Ax2d& a, const gp_Ax2d& b, double tolerance) {
+		if (!a.Location().IsEqual(b.Location(), tolerance)) return false;
+		if (!a.Direction().IsEqual(b.Direction(), tolerance)) return false;
+		return true;
+	}
+
+	template <typename T> struct dimension_count {};
+	template <>           struct dimension_count <gp_Trsf2d > { static const int n = 2; };
+	template <>           struct dimension_count <gp_GTrsf2d> { static const int n = 2; };
+	template <>           struct dimension_count < gp_Trsf  > { static const int n = 3; };
+	template <>           struct dimension_count < gp_GTrsf > { static const int n = 3; };
+
+	template <typename T>
+	bool is_identity(const T& t, double tolerance) {
+		// Note the {1, n+1} range due to Open Cascade's 1-based indexing
+		// Note the {1, n+2} range due to the translation part of the matrix
+		for (int i = 1; i < dimension_count<T>::n + 2; ++i) {
+			for (int j = 1; j < dimension_count<T>::n + 1; ++j) {
+				const double iden_value = i == j ? 1. : 0.;
+				const double trsf_value = t.Value(j, i);
+				if (fabs(trsf_value - iden_value) > tolerance) {
+					return false;
+				}
 			}
 		}
+		return true;
 	}
-	return true;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCartesianPoint* l, gp_Pnt& point) {
