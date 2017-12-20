@@ -551,7 +551,7 @@ if(NOT MSVC)
     endif()
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 Iterator)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -580,14 +580,14 @@ set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS 
 TARGET_LINK_LIBRARIES(IfcGeom_ifc2x3 IfcParse ${OPENCASCADE_LIBRARIES})
 TARGET_LINK_LIBRARIES(IfcGeom_ifc4 IfcParse ${OPENCASCADE_LIBRARIES})
 
-# Iterator
-file(GLOB ITERATOR_H_FILES ../src/iterator/*.h)
-file(GLOB ITERATOR_CPP_FILES ../src/iterator/*.cpp)
-set(ITERATOR_FILES ${ITERATOR_H_FILES} ${ITERATOR_CPP_FILES})
+# IfcGeom (schema agnostic)
+file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom_schema_agnostic/*.h)
+file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom_schema_agnostic/*.cpp)
+set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
-add_library(Iterator ${ITERATOR_FILES})
-set_target_properties(Iterator PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
-TARGET_LINK_LIBRARIES(Iterator IfcGeom_ifc2x3 IfcGeom_ifc4)
+add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
+set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+TARGET_LINK_LIBRARIES(IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4)
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
