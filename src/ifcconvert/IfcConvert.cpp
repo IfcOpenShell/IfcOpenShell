@@ -33,7 +33,7 @@
 #include "../ifcconvert/XmlSerializer.h"
 #include "../ifcconvert/SvgSerializer.h"
 
-#include "../ifcgeom/IfcGeomIterator.h"
+#include "../iterator/IfcGeomIterator.h"
 
 #include <IGESControl_Controller.hxx>
 #include <Standard_Version.hxx>

@@ -27,7 +27,8 @@ typedef float real_t;
 #endif
 
 #include "../ifcconvert/Serializer.h"
-#include "../ifcgeom/IfcGeomIterator.h"
+#include "../iterator/IfcGeomIterator.h"
+#include "../ifcgeom/IfcGeomElement.h"
 
 class SerializerSettings : public IfcGeom::IteratorSettings
 {

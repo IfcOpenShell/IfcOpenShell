@@ -9,11 +9,19 @@
 #include <map>
 #include <string>
 
-template <typename P>
-class IteratorImplementation;
+namespace IfcGeom {
+	template <typename P>
+	class IteratorImplementation;
 
-typedef boost::function2<IteratorImplementation<float>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_float_fn;
-typedef boost::function2<IteratorImplementation<double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_double_fn;
+	template <typename P>
+	class Element;
+
+	template <typename P>
+	class BRepElement;
+}
+
+typedef boost::function2<IfcGeom::IteratorImplementation<float>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_float_fn;
+typedef boost::function2<IfcGeom::IteratorImplementation<double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_double_fn;
 
 template <typename P>
 struct get_factory_type {};
@@ -33,6 +41,7 @@ class IteratorFactoryImplementation : public std::map<std::string, typename get_
 public:
 	IteratorFactoryImplementation();
 	void bind(const std::string& schema_name, typename get_factory_type<P>::type fn);
+	IfcGeom::IteratorImplementation<P>* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*);
 };
 
 template <typename P>
@@ -46,9 +55,23 @@ public:
 	}
 };
 
-template <typename T>
-class IteratorImplementation {
+namespace IfcGeom {
 
-};
+	template <typename P>
+	class IteratorImplementation {
+	public:
+		virtual bool initialize() = 0;
+		virtual int progress() const = 0;
+		virtual const std::string& getUnitName() const = 0;
+		virtual double getUnitMagnitude() const = 0;
+		virtual IfcParse::IfcFile* file() const = 0;
+		virtual IfcUtil::IfcBaseClass* next() = 0;
+		virtual Element<P>* get() = 0;
+		virtual BRepElement<P>* get_native() = 0;
+		virtual const Element<P>* get_object(int id) = 0;
+		virtual IfcUtil::IfcBaseClass* create() = 0;
+	};
+
+}
 
 #endif

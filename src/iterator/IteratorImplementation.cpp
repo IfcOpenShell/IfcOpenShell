@@ -22,5 +22,16 @@ void IteratorFactoryImplementation<P>::bind(const std::string& schema_name, type
 	this->insert(std::make_pair(schema_name, fn));
 }
 
+template <class P>
+IfcGeom::IteratorImplementation<P>* IteratorFactoryImplementation<P>::construct(const std::string& schema_name, const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) {
+	std::map<std::string, typename get_factory_type<P>::type>::const_iterator it;
+	it = this->find(schema_name);
+	if (it == end()) {
+		throw IfcParse::IfcException("No geometry iterator registered for " + schema_name);
+	}
+	return it->second(settings, file);
+}
+
+
 template IteratorFactoryImplementation<float>;
 template IteratorFactoryImplementation<double>;

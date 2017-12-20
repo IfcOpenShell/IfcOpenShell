@@ -17,13 +17,13 @@ void MAKE_INIT_FN(IteratorImplementation_)() {
 	static const std::string schema_name = TOSTRING(IfcSchema);
 	
 	struct {
-		IteratorImplementation<float>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
+		IfcGeom::IteratorImplementation<float>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
 			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<float>(settings, file);
 		}
 	} factory_float;
 
 	struct {
-		IteratorImplementation<double>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
+		IfcGeom::IteratorImplementation<double>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
 			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<double>(settings, file);
 		}
 	} factory_double;
