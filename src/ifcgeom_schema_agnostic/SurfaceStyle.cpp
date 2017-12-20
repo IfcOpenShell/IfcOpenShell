@@ -1,4 +1,4 @@
-#include "../iterator/IfcGeomRenderStyles.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
 
 #include <map>
 

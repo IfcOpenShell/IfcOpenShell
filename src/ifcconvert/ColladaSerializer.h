@@ -41,7 +41,7 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "../iterator/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 #include "../ifcconvert/GeometrySerializer.h"
 

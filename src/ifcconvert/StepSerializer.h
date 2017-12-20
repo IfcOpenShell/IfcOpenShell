@@ -23,7 +23,7 @@
 #include <STEPControl_Writer.hxx>
 #include <Interface_Static.hxx>
 
-#include "../iterator/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 #include "../ifcconvert/OpenCascadeBasedSerializer.h"
 

@@ -77,12 +77,12 @@
 
 #include "../ifcgeom/IfcGeom.h"
 #include "../ifcgeom/IfcGeomElement.h"
-#include "../iterator/IfcGeomMaterial.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 
-#include "../iterator/IteratorImplementation.h"
+#include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min

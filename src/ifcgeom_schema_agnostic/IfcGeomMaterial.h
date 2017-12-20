@@ -22,7 +22,7 @@
 
 #include <string>
 
-#include "../iterator/IfcGeomRenderStyles.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
 
 namespace IfcGeom {	
 

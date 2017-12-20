@@ -32,7 +32,7 @@
 #include "../ifcconvert/WavefrontObjSerializer.h"
 #include "../ifcconvert/SvgSerializer.h"
 
-#include "../iterator/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 #include <IGESControl_Controller.hxx>
 #include <Standard_Version.hxx>

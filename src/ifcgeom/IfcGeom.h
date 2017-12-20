@@ -54,7 +54,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
-#include "../iterator/Kernel.h"
+#include "../ifcgeom_schema_agnostic/Kernel.h"
 
 #include "ifc_geom_api.h"
 
