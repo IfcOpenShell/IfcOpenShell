@@ -337,7 +337,7 @@ namespace IfcGeom {
 	
 		std::string getLog() const { return Logger::GetLog(); }
 
-		IfcParse::IfcFile* getFile() const { return ifc_file; }
+		IfcParse::IfcFile* file() const { return ifc_file; }
 
         const std::vector<IfcGeom::filter_t>& filters() const { return filters_; }
         std::vector<IfcGeom::filter_t>& filters() { return filters_; }
@@ -536,7 +536,7 @@ namespace IfcGeom {
 
 					// get the parent 
 					try {
-						parent_object = getObject(ret->parent_id());
+						parent_object = get_object(ret->parent_id());
 					} catch (const std::exception& e) {
 						Logger::Error(e);
 						hasParent = false;
@@ -550,7 +550,7 @@ namespace IfcGeom {
 					{
 						// Find the next parent
 						try {
-							parent_object = getObject(parent_object->parent_id());
+							parent_object = get_object(parent_object->parent_id());
 						} catch (const std::exception& e) {
 							Logger::Error(e);
 							hasParent = false;
@@ -577,7 +577,7 @@ namespace IfcGeom {
 			return current_shape_model;
 		}
 
-		const Element<P>* getObject(int id) {
+		const Element<P>* get_object(int id) {
 			gp_Trsf trsf;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
