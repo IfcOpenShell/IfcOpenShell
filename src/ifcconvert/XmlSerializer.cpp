@@ -28,10 +28,11 @@
 #include <algorithm>
 
 #include "../ifcparse/IfcSIPrefix.h"
-#include "../ifcgeom/IfcGeom.h"
+// #include "../ifcgeom/IfcGeom.h"
 
 using boost::property_tree::ptree;
-using namespace IfcSchema;
+
+// using namespace IfcSchema;
 
 namespace {
 

@@ -72,7 +72,7 @@ namespace IfcUtil {
 
 		virtual const IfcParse::entity& declaration() const = 0;
 
-		Argument* getArgumentByName(const std::string& name) const;
+		Argument* get(const std::string& name) const;
 	};
 
 	// TODO: Investigate whether these should be template classes instead

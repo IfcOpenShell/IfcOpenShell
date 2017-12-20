@@ -78,14 +78,14 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* file_;
 		IfcGeom::IteratorSettings settings_;
-		IteratorImplementation* implementation_;
+		IteratorImplementation<P>* implementation_;
 
 	public:
 		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file)
 			: file_(file)
 			, settings_(settings)
 		{
-			implementation_ = iterator_implementations().construct(file_->schema()->name());
+			implementation_ = iterator_implementations<P>().construct(file_->schema()->name(), settings, file);
 		}
 
 		bool initialize() {
@@ -94,11 +94,11 @@ namespace IfcGeom {
 
 		int progress() const { return implementation_->progress(); }
 
-		std::string& unit_name() const { return implementation_->getUnitName(); }
+		const std::string& unit_name() const { return implementation_->getUnitName(); }
 
 		double unit_magnitude() const { return implementation_->getUnitMagnitude(); }
 
-		IfcParse::IfcFile* file() const { return implementation_->getFile(); }
+		IfcParse::IfcFile* file() const { return implementation_->file(); }
 
 		IfcUtil::IfcBaseClass* next() const { return implementation_->next(); }
 

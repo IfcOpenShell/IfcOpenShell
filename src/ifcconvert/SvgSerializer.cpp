@@ -50,6 +50,7 @@
 #include <gp_Ax22d.hxx>
 #include <Standard_Version.hxx>
 #include <GeomAPI.hxx>
+#include <TopoDS_Wire.hxx>
 
 #include "../ifcparse/IfcGlobalId.h"
 
@@ -103,7 +104,9 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 
 		Handle(Standard_Type) ty = curve->DynamicType();
         bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
-        bool closed = ALMOST_THE_SAME(u1 + PI2, u2);
+
+		// TODO: ALMOST_THE_SAME utilities in separate header
+		bool closed = fabs((u1 + PI2) - u2) < 1.e-9;
 
         if (conical && closed) {
             if (first) {
@@ -274,7 +277,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 	p.second.push_back(path);
 }
 
-SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStorey* storey, const std::string& id) {
+SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id) {
 	SvgSerializer::path_object& p = paths.insert(std::make_pair(storey, path_object()))->second;
 	p.first = id;
 	return p;
@@ -282,8 +285,13 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
-	IfcSchema::IfcBuildingStorey* storey = storey_;
+	IfcUtil::IfcBaseEntity* storey = storey_;
 	boost::optional<double> storey_elevation = boost::none;
+
+	/*
+
+	TODO: based on BRepElement::parent()
+	
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
 #ifndef USE_IFC4
@@ -327,25 +335,25 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			break;
 		}
 	}
+	*/
 
 	// With a global section height, building storeys are not a requirement.
 	if (!storey && !section_height) return;
 
 	path_object& p = start_path(storey, nameElement(o));
 
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
-		gp_GTrsf gtrsf = it->Placement();
-		
-		const gp_Trsf& o_trsf = o->transformation().data();
-		gtrsf.PreMultiply(o_trsf);
+	TopoDS_Shape compound = o->geometry().as_compound();
+	TopoDS_Iterator it(compound);
 
-		const TopoDS_Shape& s = it->Shape();			
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
-			
+	// Iterate over components of compound to have better chance of matching section edges to closed wires
+	for (; it.More(); it.Next()) {
+		
+		const TopoDS_Shape& subshape = it.Value();
+
 		const double inf = std::numeric_limits<double>::infinity();
 		double zmin = inf;
 		double zmax = -inf;
-		{TopExp_Explorer exp(moved_shape, TopAbs_VERTEX);
+		{TopExp_Explorer exp(subshape, TopAbs_VERTEX);
 		for (; exp.More(); exp.Next()) {
 			const TopoDS_Vertex& vertex = TopoDS::Vertex(exp.Current());
 			gp_Pnt pnt = BRep_Tool::Pnt(vertex);
@@ -373,13 +381,13 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}
 
 		// Create a horizontal cross section 1 meter above the bottom point of the shape		
-		TopoDS_Shape result = BRepAlgoAPI_Section(moved_shape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
+		TopoDS_Shape result = BRepAlgoAPI_Section(subshape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
 
 		Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
 		Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
 		{TopExp_Explorer exp(result, TopAbs_EDGE);
 		for (; exp.More(); exp.Next()) {
-			 edges->Append(exp.Current());
+			edges->Append(exp.Current());
 		}}
 		ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-5, false, wires);
 
@@ -389,7 +397,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
 			write(p, wire);
 		}
-	}	
+	}
 }
 
 void SvgSerializer::setBoundingRectangle(double width, double height) {
@@ -430,9 +438,9 @@ void SvgSerializer::finalize() {
 		}}
 	}
 
-	std::multimap<IfcSchema::IfcBuildingStorey*, path_object>::const_iterator it;
+	std::multimap<IfcUtil::IfcBaseEntity*, path_object>::const_iterator it;
 
-	IfcSchema::IfcBuildingStorey* previous = 0;
+	IfcUtil::IfcBaseEntity* previous = 0;
 	bool first = true;
 	for (it = paths.begin(); it != paths.end(); ++it) {
 		if (it->first != previous || first) {
@@ -473,19 +481,27 @@ std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
 	return oss.str();
 }
 
-std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
+std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	if (elem == 0) { return ""; }
 	std::ostringstream oss;
-	const std::string type = elem->declaration().is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
-    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
-	  ? elem->GlobalId() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
-	  ? elem->Name() : IfcParse::IfcGlobalId(elem->GlobalId()).formatted()));
+	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
+
+    const std::string name = 
+		(settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+			? static_cast<std::string>(*elem->get("GlobalId"))
+			: ((settings().get(SerializerSettings::USE_ELEMENT_NAMES) && !elem->get("Name")->isNull()))
+				? static_cast<std::string>(*elem->get("Name"))
+				: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
 
 	oss << "id=\"" << type << "-" << name << "\"";
 	return oss.str();
 }
 
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
+
+	throw std::runtime_error("todo");
+
+	/*
 	file = f;
 	IfcSchema::IfcBuildingStorey::list::ptr storeys = f->entitiesByType<IfcSchema::IfcBuildingStorey>();
 	if (!storeys || storeys->size() == 0) {
@@ -526,4 +542,5 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 		Logger::Error("No building storeys encountered, output might be invalid or missing");
 	}
+	*/
 }

@@ -32,8 +32,6 @@
 #include <string>
 #include <cmath>
 
-using namespace IfcSchema;
-
 static std::string& collada_id(std::string& s)
 {
     IfcUtil::sanitate_material_name(s);
@@ -431,31 +429,22 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 }
 
 std::string ColladaSerializer::ColladaExporter::differentiateSlabTypes(const IfcGeom::TriangulationElement<real_t>* o) {
-	IfcSlab* slab = (IfcSlab*)o->product();
 	std::string result;
-	switch (slab->PredefinedType())
-	{
-		case (IfcSlabTypeEnum::IfcSlabType_FLOOR):
-			result = "_Floor";
-			break;
-		case (IfcSlabTypeEnum::IfcSlabType_ROOF):
-			result = "_Roof";
-			break;
-		case (IfcSlabTypeEnum::IfcSlabType_LANDING):
-			result = "_Landing";
-			break;
-		case (IfcSlabTypeEnum::IfcSlabType_BASESLAB):
-			result = "_BaseSlab";
-			break;
-		case (IfcSlabTypeEnum::IfcSlabType_NOTDEFINED):
-			result = "_NotDefined";
-			break;
-		default:
-			if (slab->hasObjectType()) { result = "_" + slab->ObjectType(); }
-			else { result = "_Unknown"; }
-			break;
+
+	if (!o->product()->get("ObjectType")->isNull()) {
+		const std::string object_type = *o->product()->get("ObjectType");
+		result = "_" + object_type;
+	} else {
+		result = "_Unknown"; 
 	}
+
+	const std::string slabtype = *o->product()->get("PredefinedType");
+	if (slabtype != "NOTDEFINED" && slabtype != "USERDEFINED") {
+		result = "_" + slabtype;
+	}
+
 	collada_id(result);
+
 	return result;
 }
 

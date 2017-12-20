@@ -37,12 +37,12 @@ protected:
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<double> section_height;
 	bool rescale;
-	std::multimap<IfcSchema::IfcBuildingStorey*, path_object> paths;
+	std::multimap<IfcUtil::IfcBaseEntity*, path_object> paths;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
 	IfcParse::IfcFile* file;
-	IfcSchema::IfcBuildingStorey* storey_;
+	IfcUtil::IfcBaseEntity* storey_;
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -64,15 +64,15 @@ public:
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
     void write(const IfcGeom::BRepElement<real_t>* o);
     void write(path_object& p, const TopoDS_Wire& wire);
-    path_object& start_path(IfcSchema::IfcBuildingStorey* storey, const std::string& id);
+    path_object& start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id);
     bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
-	void setSectionHeight(double h, IfcSchema::IfcBuildingStorey* storey = 0) { section_height = h; storey_ = storey; }
+	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0) { section_height = h; storey_ = storey; }
     std::string nameElement(const IfcGeom::Element<real_t>* elem);
-    std::string nameElement(const IfcSchema::IfcProduct* elem);
+    std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 };
 
 #endif

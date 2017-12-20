@@ -22,6 +22,7 @@
 #include <cstdio>
 
 #include <Standard_Version.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 
 #include "OpenCascadeBasedSerializer.h"
 
@@ -34,23 +35,16 @@ bool OpenCascadeBasedSerializer::ready() {
 }
 
 void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = o->geometry().begin(); it != o->geometry().end(); ++ it) {
-		gp_GTrsf gtrsf = it->Placement();
+	TopoDS_Shape compound = o->geometry().as_compound();
 
-		const gp_Trsf& o_trsf = o->transformation().data();
-		gtrsf.PreMultiply(o_trsf);
-
-        if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
-			gp_Trsf scale;
-			scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
-			gtrsf.PreMultiply(scale);
-		}
+	if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
+		gp_Trsf scale;
+		scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
 		
-		const TopoDS_Shape& s = it->Shape();
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, gtrsf);
-			
-		writeShape(moved_shape);
+		compound = BRepBuilderAPI_Transform(compound, scale, true).Shape();
 	}
+
+	writeShape(compound);
 }
 
 #define RATHER_SMALL (1e-3)
