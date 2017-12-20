@@ -7140,8 +7140,8 @@ public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
     explicit IfcPropertySetDefinitionSet (IfcEntityInstanceData* e);
-    IfcPropertySetDefinitionSet (IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v);
-    operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const;
+    IfcPropertySetDefinitionSet (IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr v);
+    operator IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr() const;
 };
 /// IfcRadioActivityMeasure is a measure of activity of radionuclide.
 /// Usually measured in Becquerel (Bq, 1/s).

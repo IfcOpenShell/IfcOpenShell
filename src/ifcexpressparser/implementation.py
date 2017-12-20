@@ -203,6 +203,11 @@ class Implementation(codegen.Base):
         
         simple_type_impl = []
         for class_name, type in mapping.schema.simpletypes.items():
+            if class_name == "IfcPropertySetDefinitionSet":
+                print(repr(type), type)
+                print(mapping.flatten_type_string(type))
+                print(mapping.make_type_string(mapping.flatten_type_string(type)))
+                
             type_str = mapping.make_type_string(mapping.flatten_type_string(type))
             attr_type = mapping.make_argument_type(type)
             superclass = mapping.simple_type_parent(class_name)

@@ -24,8 +24,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifdef USE_IFC4
-
 #include "../ifcparse/Ifc4.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
@@ -5253,8 +5251,8 @@ Ifc4::IfcPressureMeasure::operator double() const { return *data_->getArgument(0
 const IfcParse::type_declaration& Ifc4::IfcPropertySetDefinitionSet::Class() { return *IFC4_IfcPropertySetDefinitionSet_type; }
 const IfcParse::type_declaration& Ifc4::IfcPropertySetDefinitionSet::declaration() const { return *IFC4_IfcPropertySetDefinitionSet_type; }
 Ifc4::IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcEntityInstanceData* e) { data_ = e; }
-Ifc4::IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr v) { data_ = new IfcEntityInstanceData(IFC4_IfcPropertySetDefinitionSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);} }
-Ifc4::IfcPropertySetDefinitionSet::operator IfcTemplatedEntityList< IfcPropertySetDefinition >::ptr() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc4::IfcPropertySetDefinition>(); }
+Ifc4::IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr v) { data_ = new IfcEntityInstanceData(IFC4_IfcPropertySetDefinitionSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);} }
+Ifc4::IfcPropertySetDefinitionSet::operator IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc4::IfcPropertySetDefinition>(); }
 
 // Function implementations for IfcRadioActivityMeasure
 const IfcParse::type_declaration& Ifc4::IfcRadioActivityMeasure::Class() { return *IFC4_IfcRadioActivityMeasure_type; }
@@ -15616,4 +15614,3 @@ const IfcParse::entity& Ifc4::IfcZone::Class() { return *IFC4_IfcZone_type; }
 Ifc4::IfcZone::IfcZone(IfcEntityInstanceData* e) : IfcSystem((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcZone_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcZone::IfcZone(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName) : IfcSystem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcZone_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ObjectType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ObjectType));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } if (v6_LongName) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v6_LongName));data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); } }
 
-#endif

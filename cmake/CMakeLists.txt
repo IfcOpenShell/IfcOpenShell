@@ -551,7 +551,7 @@ if(NOT MSVC)
     endif()
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 Iterator)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 Iterator)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)

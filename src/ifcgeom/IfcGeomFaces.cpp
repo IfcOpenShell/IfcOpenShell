@@ -103,6 +103,8 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 

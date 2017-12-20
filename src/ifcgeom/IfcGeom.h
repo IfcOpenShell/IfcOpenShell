@@ -53,6 +53,9 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcgeom/IfcGeomRepresentation.h" 
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
+
+#include "../iterator/Kernel.h"
+
 #include "ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
@@ -72,15 +75,19 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #endif
 
+#define MAKE_TYPE_NAME__(a, b) a ## b
+#define MAKE_TYPE_NAME_(a, b) MAKE_TYPE_NAME__(a, b)
+#define MAKE_TYPE_NAME(t) MAKE_TYPE_NAME_(t, IfcSchema)
+
 namespace IfcGeom {
 
-class IFC_GEOM_API Cache {
+class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
 public:
 #include "IfcRegisterCreateCache.h"
 	std::map<int, TopoDS_Shape> Shape;
 };
 
-class IFC_GEOM_API Kernel {
+class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::Kernel {
 private:
 
 	double deflection_tolerance;
@@ -93,7 +100,7 @@ private:
 	double dimensionality;
 
 #ifndef NO_CACHE
-	Cache cache;
+	MAKE_TYPE_NAME(Cache) cache;
 #endif
 
 	std::map<int, SurfaceStyle> style_cache;
@@ -104,7 +111,7 @@ private:
 	const IfcParse::declaration* placement_rel_to;
 
 public:
-	Kernel()
+	MAKE_TYPE_NAME(Kernel)()
 		: deflection_tolerance(0.001)
 		, wire_creation_tolerance(0.0001)
 		, point_equality_tolerance(0.00001)
@@ -116,11 +123,11 @@ public:
 		, placement_rel_to(0)
 	{}
 
-	Kernel(const Kernel& other) {
+	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) {
 		*this = other;
 	}
 
-	Kernel& operator=(const Kernel& other) {
+	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
 		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
@@ -132,40 +139,6 @@ public:
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		return *this;
 	}
-
-	// Tolerances and settings for various geometrical operations:
-	enum GeomValue {
-		// Specifies the deflection of the mesher
-		// Default: 0.001m / 1mm
-		GV_DEFLECTION_TOLERANCE, 
-		// Specifies the tolerance of the wire builder, most notably for trimmed curves
-		// Defailt: 0.0001m / 0.1mm
-		GV_WIRE_CREATION_TOLERANCE,
-		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
-		// Read-only
-		GV_MINIMAL_FACE_AREA,
-		// Specifies the treshold distance under which cartesian points are deemed equal
-		// Default: 0.00001m / 0.01mm
-		GV_POINT_EQUALITY_TOLERANCE,
-		// Specifies maximum number of faces for a shell to be sewed. Sewing shells
-		// that consist of many faces is really detrimental for the performance.
-		// Default: 1000
-		GV_MAX_FACES_TO_SEW,
-		// The length unit used the creation of TopoDS_Shapes, primarily affects the
-		// interpretation of IfcCartesianPoints and IfcVector magnitudes
-		// DefaultL 1.0
-		GV_LENGTH_UNIT,
-		// The plane angle unit used for the creation of TopoDS_Shapes, primarily affects
-		// the interpretation of IfcParamaterValues of IfcTrimmedCurves
-		// Default: -1.0 (= not set, fist try degrees, then radians)
-		GV_PLANEANGLE_UNIT,
-		// The precision used in boolean operations, setting this value too low results
-		// in artefacts and potentially modelling failures
-		// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
-		GV_PRECISION,
-		// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
-		GV_DIMENSIONALITY
-	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
@@ -318,7 +291,7 @@ public:
 		// for large files. SurfaceStyles need to be kept at all costs, as they
 		// are read later on when serializing Collada files.
 #ifndef NO_CACHE
-		cache = Cache(); 
+		cache = MAKE_TYPE_NAME(Cache)();
 #endif
 	}
 

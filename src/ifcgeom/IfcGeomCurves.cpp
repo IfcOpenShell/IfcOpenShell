@@ -83,6 +83,8 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
 	if ( r < ALMOST_ZERO ) { 

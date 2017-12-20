@@ -24,8 +24,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef USE_IFC4
-
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
@@ -13158,4 +13156,3 @@ const IfcParse::entity& Ifc2x3::IfcZone::Class() { return *IFC2X3_IfcZone_type; 
 Ifc2x3::IfcZone::IfcZone(IfcEntityInstanceData* e) : IfcGroup((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC2X3_IfcZone_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc2x3::IfcZone::IfcZone(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType) : IfcGroup((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcZone_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ObjectType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ObjectType));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } }
 
-#endif

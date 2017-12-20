@@ -20,15 +20,13 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
-#include "ifc_geom_api.h"
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4.h"
-#else
-#include "../ifcparse/Ifc2x3.h"
-#endif
+#include "../ifcgeom/ifc_geom_api.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/optional.hpp>
+
+#include <sstream>
 
 namespace IfcGeom {
 	class IFC_GEOM_API SurfaceStyle {

@@ -165,7 +165,7 @@ void IfcUtil::unescape_xml(std::string &str)
     boost::replace_all(str, "&gt;", ">");
 }
 
-Argument* IfcUtil::IfcBaseEntity::getArgumentByName(const std::string& name) const {
+Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
 	return data().getArgument(declaration().attribute_index(name));
 }
 

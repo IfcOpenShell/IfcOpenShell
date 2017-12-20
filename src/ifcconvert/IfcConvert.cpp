@@ -148,7 +148,7 @@ void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 */
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile& ifc_file, bool no_progress, bool mmap);
+bool init_input_file(const std::string& filename, IfcParse::IfcFile* ifc_file, bool no_progress, bool mmap);
 
 int main(int argc, char** argv)
 {
@@ -440,7 +440,7 @@ int main(int argc, char** argv)
     Logger::SetOutput(&std::cout, &log_stream);
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
-    IfcParse::IfcFile ifc_file;
+	IfcParse::IfcFile* ifc_file = 0;
 
 	/*
     if (!filter_filename.empty()) {
@@ -576,7 +576,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, &ifc_file);
+    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
