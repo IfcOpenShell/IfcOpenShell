@@ -119,16 +119,18 @@ namespace IfcParse {
 
 	class declaration {
 	protected:
-		std::string name_;
+		std::string name_, name_lower_;
 		int index_in_schema_;
 
 	public:		
 		declaration(const std::string& name, int index_in_schema)
 			: name_(name)
+			, name_lower_(boost::to_lower_copy(name))
 			, index_in_schema_(index_in_schema)
 		{}
 
 		std::string name() const { return name_; }
+		std::string name_lc() const { return name_lower_; }
 
 		virtual const type_declaration* as_type_declaration() const { return static_cast<type_declaration*>(0); }
 		virtual const select_type* as_select_type() const { return static_cast<select_type*>(0); }
@@ -392,8 +394,7 @@ namespace IfcParse {
 		class declaration_by_name_cmp : public std::binary_function<const declaration*, const std::string&, bool> {
 		public:
 			bool operator()(const declaration* decl, const std::string& name) {
-				// TODO: Efficiency?
-				return boost::to_lower_copy(decl->name()) < boost::to_lower_copy(name);
+				return decl->name_lc() < name;
 			}
 		};
 
@@ -413,8 +414,9 @@ namespace IfcParse {
 		~schema_definition();
 
 		const declaration* declaration_by_name(const std::string& name) const {
-			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), name, declaration_by_name_cmp());
-			if (it == declarations_.end() || boost::to_lower_copy((**it).name()) != boost::to_lower_copy(name)) {
+			const std::string name_lower = boost::to_lower_copy(name);
+			std::vector<const declaration*>::const_iterator it = std::lower_bound(declarations_.begin(), declarations_.end(), name_lower, declaration_by_name_cmp());
+			if (it == declarations_.end() || (**it).name_lc() != name_lower) {
 				throw IfcParse::IfcException("Entity with '" + name + "' not found");
 			} else {
 				return *it;

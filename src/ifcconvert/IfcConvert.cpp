@@ -55,7 +55,7 @@ namespace po = boost::program_options;
 
 void print_version()
 {
-    std::cout << "IfcOpenShell " << " IfcConvert " << IFCOPENSHELL_VERSION << " (OCC " << OCC_VERSION_STRING_EXT << ")\n";
+    std::cout << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION << " (OCC " << OCC_VERSION_STRING_EXT << ")\n";
 }
 
 void print_usage(bool suggest_help = true)
@@ -148,7 +148,7 @@ void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 */
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile* ifc_file, bool no_progress, bool mmap);
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
 
 int main(int argc, char** argv)
 {
@@ -707,7 +707,7 @@ void write_log() {
 	}
 }
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile* ifc_file, bool no_progress, bool mmap) {
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
     if (no_progress) { Logger::SetOutput(NULL, &log_stream); }

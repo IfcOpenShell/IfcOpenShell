@@ -60,10 +60,6 @@ class Implementation(codegen.Base):
                 else templates.parent_type_test%(type.supertypes[0])
                 
             constructor_arguments = mapping.get_assignable_arguments(type, include_derived = True)
-            # if name == "IfcCartesianPoint":
-            #     import pprint
-            #     pprint.pprint(constructor_arguments)
-            #     exit()
             constructor_arguments_str = catc("%(full_type)s v%(index)d_%(name)s"%a for a in constructor_arguments if not a['is_derived'])
             attributes = []
             constructor_implementations = []
@@ -203,11 +199,6 @@ class Implementation(codegen.Base):
         
         simple_type_impl = []
         for class_name, type in mapping.schema.simpletypes.items():
-            if class_name == "IfcPropertySetDefinitionSet":
-                print(repr(type), type)
-                print(mapping.flatten_type_string(type))
-                print(mapping.make_type_string(mapping.flatten_type_string(type)))
-                
             type_str = mapping.make_type_string(mapping.flatten_type_string(type))
             attr_type = mapping.make_argument_type(type)
             superclass = mapping.simple_type_parent(class_name)

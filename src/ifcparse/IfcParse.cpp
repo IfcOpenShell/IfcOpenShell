@@ -1938,7 +1938,9 @@ void IfcFile::setDefaultHeaderValues() {
 	std::vector<std::string> file_description, schema_identifiers, empty_vector;
 
 	file_description.push_back("ViewDefinition [CoordinationView]");
-	schema_identifiers.push_back(schema()->name());
+	if (schema()) {
+		schema_identifiers.push_back(schema()->name());
+	}
 
 	header().file_description().description(file_description);
 	header().file_description().implementation_level("2;1");

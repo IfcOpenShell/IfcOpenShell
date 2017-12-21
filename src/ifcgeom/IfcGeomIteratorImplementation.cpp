@@ -13,21 +13,18 @@ namespace IfcGeom {
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-void MAKE_INIT_FN(IteratorImplementation_)() {
+template <typename P>
+void MAKE_INIT_FN(IteratorImplementation_)(IteratorFactoryImplementation<P>* mapping) {
 	static const std::string schema_name = TOSTRING(IfcSchema);
 	
 	struct {
-		IfcGeom::IteratorImplementation<float>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
-			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<float>(settings, file);
+		IfcGeom::IteratorImplementation<P>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
+			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P>(settings, file);
 		}
-	} factory_float;
+	} factory;
 
-	struct {
-		IfcGeom::IteratorImplementation<double>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
-			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<double>(settings, file);
-		}
-	} factory_double;
-
-	static Registrar< IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<float> > float_registration(schema_name, factory_float);
-	static Registrar< IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<double> > double_registration(schema_name, factory_double);
+	mapping->bind(schema_name, factory);
 }
+
+template void MAKE_INIT_FN(IteratorImplementation_)<float>(IteratorFactoryImplementation<float>*);
+template void MAKE_INIT_FN(IteratorImplementation_)<double>(IteratorFactoryImplementation<double>*);

@@ -209,7 +209,7 @@ class SchemaClass(codegen.Base):
                            '    return *s;',
                            '}','',''))
                            
-        declarations_by_index.sort()
+        declarations_by_index.sort(key=str.lower)
         declarations_by_index_map = dict(("index_in_schema_%s" % j,i) for i,j in enumerate(declarations_by_index))
         
         def bind(s):
