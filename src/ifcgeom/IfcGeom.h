@@ -322,8 +322,8 @@ public:
 
 };
 
-IFC_GEOM_API IfcSchema::IfcProductDefinitionShape* tesselate(const TopoDS_Shape& shape, double deflection);
-IFC_GEOM_API IfcSchema::IfcProductDefinitionShape* serialise(const TopoDS_Shape& shape, bool advanced);
+IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection);
+IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

@@ -439,27 +439,25 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
-/*
 %inline %{
-	IfcUtil::IfcBaseClass* serialise(const std::string& s, bool advanced=true) {
-		std::stringstream stream(s);
+	IfcUtil::IfcBaseClass* serialise(const std::string& schema_name, const std::string& shape_str, bool advanced=true) {
+		std::stringstream stream(shape_str);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		return IfcGeom::serialise(shp, advanced);
+		return IfcGeom::serialise(schema_name, shp, advanced);
 	}
 
-	IfcUtil::IfcBaseClass* tesselate(const std::string& s, double d) {
-		std::stringstream stream(s);
+	IfcUtil::IfcBaseClass* tesselate(const std::string& schema_name, const std::string& shape_str, double d) {
+		std::stringstream stream(shape_str);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		return IfcGeom::tesselate(shp, d);
+		return IfcGeom::tesselate(schema_name, shp, d);
 	}
 %}
-*/
 
 namespace IfcGeom {
 	%template(iterator_single_precision) Iterator<float>;
