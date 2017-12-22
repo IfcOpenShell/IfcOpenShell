@@ -150,7 +150,7 @@
 #define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
 #define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
 
-void MAKE_INIT_FN(Kernel)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
+void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
 
 	struct {

@@ -40,7 +40,7 @@ struct %(schema_name)s {
 
 static const IfcParse::schema_definition& get_schema();
 
-const char* const Identifier = "%(schema_name_upper)s";
+static const char* const Identifier = "%(schema_name_upper)s";
 
 // Forward definitions
 %(forward_definitions)s
@@ -128,7 +128,7 @@ simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor           = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v"           +"); data_->setArgument(0, attr);}"
 simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
 simpletype_impl_cast = "return *data_->getArgument(0);"
-simpletype_impl_cast_templated = "IfcEntityList::ptr es = *data_->getArgument(0); return es->as<%(underlying_type)s>();"
+simpletype_impl_cast_templated = "IfcEntityList::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
 simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
     
 select = """%(documentation)s
@@ -204,8 +204,8 @@ optional_attr_stmt = "return !data_->getArgument(%(index)d)->isNull();"
 get_attr_stmt = "return *data_->getArgument(%(index)d);"
 get_attr_stmt_enum = "return %(type)s::FromString(*data_->getArgument(%(index)d));"
 get_attr_stmt_entity = "return (%(type)s)((IfcUtil::IfcBaseClass*)(*data_->getArgument(%(index)d)));"
-get_attr_stmt_array = "IfcEntityList::ptr es = *data_->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
-get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *data_->getArgument(%(index)d); return es->as<%(list_instance_type)s>();"
+get_attr_stmt_array = "IfcEntityList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt_nested_array = "IfcEntityListList::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
 

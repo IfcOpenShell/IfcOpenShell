@@ -192,7 +192,7 @@ public:
 	
 	/// Returns the entity with the specified GlobalId
 	virtual typename Schema::IfcRoot::list::ptr instance_by_guid(const std::string& guid) {
-		return IfcFile::instance_by_guid(guid)->as<Schema::IfcRoot>();
+		return IfcFile::instance_by_guid(guid)->as<typename Schema::IfcRoot>();
 	}
 };
 

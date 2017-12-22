@@ -111,7 +111,7 @@ namespace IfcParse {
 			, type_of_element_(type_of_element)
 		{}
 
-		aggregate_type type_of_aggregation() const { type_of_aggregation_; }
+		aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
 		int bound1() const { return bound1_; }
 		int bound2() const { return bound2_; }
 		parameter_type* type_of_element() const { return type_of_element_; }
@@ -352,12 +352,13 @@ namespace IfcParse {
 				if (index > -1) {
 					index += current->attributes().size();
 				} else {
-					auto it = std::find(current->attributes().begin(), current->attributes().end(), attr);
+					std::vector<const attribute*>::const_iterator it;
+					it = std::find(current->attributes().begin(), current->attributes().end(), attr);
 					if (it != current->attributes().end()) {
 						index = std::distance(current->attributes().begin(), it);
 					}
 				}
-			} while (current = current->supertype_);
+			} while ((current = current->supertype_));
 			return index;
 		}
 
@@ -369,7 +370,8 @@ namespace IfcParse {
 				if (index > -1) {
 					index += current->attributes().size();
 				} else {
-					auto it = std::find_if(current->attributes().begin(), current->attributes().end(), cmp);
+					std::vector<const attribute*>::const_iterator it;
+					it = std::find_if(current->attributes().begin(), current->attributes().end(), cmp);
 					if (it != current->attributes().end()) {
 						index = std::distance(current->attributes().begin(), it);
 					}
