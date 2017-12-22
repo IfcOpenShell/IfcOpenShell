@@ -31,6 +31,8 @@
 
 #include <map>
 
+const char* const Ifc4::Identifier = "IFC4";
+
 using namespace IfcParse;
 using namespace IfcWrite;
 

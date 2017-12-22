@@ -40,7 +40,7 @@ struct %(schema_name)s {
 
 static const IfcParse::schema_definition& get_schema();
 
-static const char* const Identifier = "%(schema_name_upper)s";
+static const char* const Identifier;
 
 // Forward definitions
 %(forward_definitions)s
@@ -74,6 +74,8 @@ implementation= """
 #include "../ifcparse/IfcWrite.h"
 
 #include <map>
+
+const char* const %(schema_name)s::Identifier = "%(schema_name_upper)s";
 
 using namespace IfcParse;
 using namespace IfcWrite;

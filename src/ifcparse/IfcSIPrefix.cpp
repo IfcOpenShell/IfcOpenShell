@@ -48,16 +48,16 @@ double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
 	typename Schema::IfcSIUnit* si_unit = 0;
 
 	if (named_unit->declaration().is(Schema::IfcConversionBasedUnit::Class())) {
-		typename Schema::IfcConversionBasedUnit* conv_unit = named_unit->as<typename Schema::IfcConversionBasedUnit>();
+		typename Schema::IfcConversionBasedUnit* conv_unit = named_unit->template as<typename Schema::IfcConversionBasedUnit>();
 		typename Schema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
 		typename Schema::IfcUnit* component = factor->UnitComponent();
 		if (component->declaration().is(Schema::IfcSIUnit::Class())) {
-			si_unit = component->as<typename Schema::IfcSIUnit>();
+			si_unit = component->template as<typename Schema::IfcSIUnit>();
 			typename Schema::IfcValue* v = factor->ValueComponent();
 			scale = *v->data().getArgument(0);
 		}		
 	} else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
-		si_unit = named_unit->as<typename Schema::IfcSIUnit>();
+		si_unit = named_unit->template as<typename Schema::IfcSIUnit>();
 	}
 	if (si_unit) {
 		if (si_unit->hasPrefix()) {
