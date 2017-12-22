@@ -258,6 +258,9 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 			if (pset->is(Type::IfcPropertySet)) {
 				format_entity_instance(pset, child, true);
 			}
+			if (pset->is(Type::IfcElementQuantity)) {
+				format_entity_instance(pset, child, true);
+			}
 		}
 
 #ifdef USE_IFC4
@@ -314,6 +317,14 @@ void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 	}
 }
 
+// Format IfcElementQuantity instances and insert into the DOM.
+void format_quantities(IfcPhysicalQuantity::list::ptr quantities, ptree& node) {
+	for (IfcPhysicalQuantity::list::it it = quantities->begin(); it != quantities->end(); ++it) {
+		IfcPhysicalQuantity* p = *it;
+		format_entity_instance(p, node);
+	}
+}
+
 } // ~unnamed namespace
 
 void XmlSerializer::finalize() {
@@ -326,7 +337,7 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, types, layers, materials;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
 	
 	// Write the SPF header as XML nodes.
 	foreach(const std::string& s, file->header().file_description().description()) {
@@ -358,6 +369,15 @@ void XmlSerializer::finalize() {
 		ptree& node = format_entity_instance(pset, properties);
 		format_properties(pset->HasProperties(), node);
 	}
+	
+	// Write all quantities and values as XML nodes.
+	IfcElementQuantity::list::ptr qtosets = file->entitiesByType<IfcElementQuantity>();
+	for (IfcElementQuantity::list::it it = qtosets->begin(); it != qtosets->end(); ++it) {
+		IfcElementQuantity* qto = *it;
+		ptree& node = format_entity_instance(qto, quantities);
+		format_quantities(qto->Quantities(), node);
+	}
+
 
 	// Write all type objects as XML nodes.
 	IfcTypeObject::list::ptr type_objects = file->entitiesByType<IfcTypeObject>();
@@ -439,8 +459,9 @@ void XmlSerializer::finalize() {
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
+	root.add_child("ifc.quantities",    quantities);
 	root.add_child("ifc.types",         types);
-    root.add_child("ifc.layers",        layers);
+    	root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 
