@@ -55,6 +55,8 @@ namespace IfcParse {
 	class simple_type;
 	class aggregation_type;
 
+	class schema_definition;
+
 	class parameter_type {
 	public:
 		virtual const named_type* as_named_type() const { return static_cast<named_type*>(0); }
@@ -118,19 +120,23 @@ namespace IfcParse {
 	};
 
 	class declaration {
+		friend class schema_definition;
+
 	protected:
 		std::string name_, name_lower_;
 		int index_in_schema_;
+		mutable const schema_definition* schema_;
 
 	public:		
 		declaration(const std::string& name, int index_in_schema)
 			: name_(name)
 			, name_lower_(boost::to_lower_copy(name))
 			, index_in_schema_(index_in_schema)
+			, schema_(0)
 		{}
 
-		std::string name() const { return name_; }
-		std::string name_lc() const { return name_lower_; }
+		const std::string& name() const { return name_; }
+		const std::string& name_lc() const { return name_lower_; }
 
 		virtual const type_declaration* as_type_declaration() const { return static_cast<type_declaration*>(0); }
 		virtual const select_type* as_select_type() const { return static_cast<select_type*>(0); }
@@ -143,6 +149,8 @@ namespace IfcParse {
 		int index_in_schema() const { return index_in_schema_; }
 
 		int type() const { return index_in_schema_; }
+
+		const schema_definition* schema() const { return schema_; }
 	};
 
 	class type_declaration : public declaration {

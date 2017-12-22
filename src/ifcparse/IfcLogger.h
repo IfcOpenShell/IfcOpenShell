@@ -20,18 +20,14 @@
 #ifndef IFCLOGGER_H
 #define IFCLOGGER_H
 
+#include "../ifcparse/IfcBaseClass.h"
+
 #include <set>
 #include <string>
 #include <vector>
 #include <sstream>
 #include <algorithm>
 #include <exception>
-
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4.h"
-#else
-#include "../ifcparse/Ifc2x3.h"
-#endif
 
 #include <boost/optional.hpp>
 

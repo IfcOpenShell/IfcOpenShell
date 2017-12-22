@@ -43,7 +43,7 @@
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomMaterial.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
-%include "../ifcgeom/IfcGeomIterator.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
@@ -51,42 +51,42 @@
 
 %extend IfcGeom::tree {
 
-	static IfcEntityList::ptr vector_to_list(const std::vector<IfcSchema::IfcProduct*>& ps) const {
+	static IfcEntityList::ptr vector_to_list(const std::vector<IfcUtil::IfcBaseEntity*>& ps) const {
 		IfcEntityList::ptr r(new IfcEntityList);
-		for (std::vector<IfcSchema::IfcProduct*>::const_iterator it = ps.begin(); it != ps.end(); ++it) {
+		for (std::vector<IfcUtil::IfcBaseEntity*>::const_iterator it = ps.begin(); it != ps.end(); ++it) {
 			r->push(*it);
 		}
 		return r;
 	}
 
 	IfcEntityList::ptr select_box(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend=-1.e-5) const {
-		if (!e->declaration().is(IfcSchema::Type::IfcProduct)) {
+		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
-		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box((IfcSchema::IfcProduct*)e, completely_within, extend);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box((IfcUtil::IfcBaseEntity*)e, completely_within, extend);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
 	IfcEntityList::ptr select_box(const gp_Pnt& p) const {
-		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box(p);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(p);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
 	IfcEntityList::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
-		std::vector<IfcSchema::IfcProduct*> ps = $self->select_box(b, completely_within);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(b, completely_within);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
 	IfcEntityList::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false) const {
-		if (!e->declaration().is(IfcSchema::Type::IfcProduct)) {
+		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
-		std::vector<IfcSchema::IfcProduct*> ps = $self->select((IfcSchema::IfcProduct*)e, completely_within);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select((IfcUtil::IfcBaseEntity*)e, completely_within);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
 	IfcEntityList::ptr select(const gp_Pnt& p) const {
-		std::vector<IfcSchema::IfcProduct*> ps = $self->select(p);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(p);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
@@ -96,7 +96,7 @@
 		shapes.Read(stream);
 		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
 
-		std::vector<IfcSchema::IfcProduct*> ps = $self->select(shp);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select(shp);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
@@ -299,41 +299,36 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	%}
 };
 
-%inline %{
-	boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+%{
+	template <typename Schema>
+	static boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> helper_fn_create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
-		IfcSchema::IfcProject::list::ptr projects = file->entitiesByType<IfcSchema::IfcProject>();
-		if (projects->size() != 1) {
-			throw IfcParse::IfcException("Not a single IfcProject instance");
-		}
-		IfcSchema::IfcProject* project = *projects->begin();
 			
-		IfcGeom::Kernel kernel;
+		IfcGeom::Kernel kernel(file);
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? 1000 : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
-		std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			
-		if (instance->declaration().is(IfcSchema::Type::IfcProduct)) {
+		if (instance->declaration().is(Schema::IfcProduct::Class())) {
 			if (representation) {
-				if (!representation->declaration().is(IfcSchema::Type::IfcRepresentation)) {
+				if (!representation->declaration().is(Schema::IfcRepresentation::Class())) {
 					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
 				}
 			}
 		
-			IfcSchema::IfcProduct* product = (IfcSchema::IfcProduct*) instance;
+			typename Schema::IfcProduct* product = (typename Schema::IfcProduct*) instance;
 
 			if (!representation && !product->hasRepresentation()) {
 				throw IfcParse::IfcException("Representation is NULL");
 			}
 			
-			IfcSchema::IfcProductRepresentation* prodrep = product->Representation();
-			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
-			IfcSchema::IfcRepresentation* ifc_representation = (IfcSchema::IfcRepresentation*) representation;
+			typename Schema::IfcProductRepresentation* prodrep = product->Representation();
+			typename Schema::IfcRepresentation::list::ptr reps = prodrep->Representations();
+			typename Schema::IfcRepresentation* ifc_representation = (typename Schema::IfcRepresentation*) representation;
 			
 			if (!ifc_representation) {
 				// First, try to find a representation based on the settings
-				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
-					IfcSchema::IfcRepresentation* rep = *it;
+				for (typename Schema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+					typename Schema::IfcRepresentation* rep = *it;
 					if (!rep->hasRepresentationIdentifier()) {
 						continue;
 					}
@@ -354,9 +349,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 			// Otherwise, find a representation within the 'Model' or 'Plan' context
 			if (!ifc_representation) {
-				for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
-					IfcSchema::IfcRepresentation* rep = *it;
-					IfcSchema::IfcRepresentationContext* context = rep->ContextOfItems();
+				for (typename Schema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+					typename Schema::IfcRepresentation* rep = *it;
+					typename Schema::IfcRepresentationContext* context = rep->ContextOfItems();
 					
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->hasContextType()) {
@@ -391,28 +386,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
-			IfcSchema::IfcRepresentationContext* ctx = ifc_representation->ContextOfItems();
-			if (!ctx->declaration().is(IfcSchema::Type::IfcGeometricRepresentationContext)) {
-				throw IfcParse::IfcException("Context not of type IfcGeometricRepresentationContext");
-			}
-			IfcSchema::IfcGeometricRepresentationContext* context = (IfcSchema::IfcGeometricRepresentationContext*) ctx;
-			if (context->declaration().is(IfcSchema::Type::IfcGeometricRepresentationSubContext)) {
-				IfcSchema::IfcGeometricRepresentationSubContext* subcontext = (IfcSchema::IfcGeometricRepresentationSubContext*) context;
-				context = subcontext->ParentContext();
-			}
-
-			double precision = 1.e-6;
-			if (context->hasPrecision()) {
-				precision = context->Precision();
-			}
-			precision *= length_unit.second;
-
-			// Some arbitrary factor that has proven to work better for the models in the set of test files.
-			precision *= 10.;
-
-			kernel.setValue(IfcGeom::Kernel::GV_PRECISION, precision);
-			
-			IfcGeom::BRepElement<double>* brep = kernel.create_brep_for_representation_and_product<double>(settings, ifc_representation, product);
+			IfcGeom::BRepElement<double>* brep = kernel.convert(settings, ifc_representation, product);
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
 			}
@@ -429,22 +403,19 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			}
 		} else {
 			if (!representation) {
-				if (instance->declaration().is(IfcSchema::Type::IfcRepresentationItem) || instance->declaration().is(IfcSchema::Type::IfcRepresentation)) {
-					IfcGeom::IfcRepresentationShapeItems shapes;
-					if (kernel.convert_shapes(instance, shapes)) {
-						IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), IfcSchema::Type::ToString(instance->declaration().type()));
-						IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->data().id()), shapes);
-						try {
-							if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
-								return new IfcGeom::Representation::Serialization(brep);
-							} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
-								return new IfcGeom::Representation::Triangulation<double>(brep);
-							}
-						} catch (...) {
-							throw IfcParse::IfcException("Error during shape serialization");
+				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || instance->declaration().is(Schema::IfcRepresentation::Class())) {
+					IfcGeom::IfcRepresentationShapeItems shapes = kernel.convert(instance);
+
+					IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), instance->declaration().name());
+					IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->data().id()), shapes);
+					try {
+						if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+							return new IfcGeom::Representation::Serialization(brep);
+						} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+							return new IfcGeom::Representation::Triangulation<double>(brep);
 						}
-					} else {
-						throw IfcParse::IfcException("Geometrical element not understood");
+					} catch (...) {
+						throw IfcParse::IfcException("Error during shape serialization");
 					}
 				}
 			} else {
@@ -453,7 +424,23 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		}
 		return boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*>();
 	}
+%}
 
+%inline %{
+	static boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+		const std::string& schema_name = instance->declaration().schema()->name();
+		if (schema_name == "IFC2X3") {
+			return helper_fn_create_shape<Ifc2x3>(settings, instance, representation);
+		} else if (schema_name == "IFC4") {
+			return helper_fn_create_shape<Ifc4>(settings, instance, representation);
+		} else {
+			throw IfcParse::IfcException("No geometry support for " + schema_name);
+		}
+	}
+%}
+
+/*
+%inline %{
 	IfcUtil::IfcBaseClass* serialise(const std::string& s, bool advanced=true) {
 		std::stringstream stream(s);
 		BRepTools_ShapeSet shapes;
@@ -472,6 +459,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return IfcGeom::tesselate(shp, d);
 	}
 %}
+*/
 
 namespace IfcGeom {
 	%template(iterator_single_precision) Iterator<float>;

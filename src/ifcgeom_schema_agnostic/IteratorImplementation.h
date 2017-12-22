@@ -47,14 +47,6 @@ public:
 template <typename P>
 IteratorFactoryImplementation<P>& iterator_implementations();
 
-template <class T>
-class Registrar {
-public:
-	Registrar(const std::string& schema_name, const typename get_factory_type<typename T::Precision>::type& fn) {
-		iterator_implementations<typename T::Precision>().bind(schema_name, fn);
-	}
-};
-
 namespace IfcGeom {
 
 	template <typename P>

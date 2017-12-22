@@ -27,8 +27,9 @@
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 
-#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
 #include <BRepTools.hxx>
+#include <TopExp_Explorer.hxx>
 
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
@@ -203,13 +204,13 @@ namespace IfcGeom {
 									gp_Vec normal_direction;
 									prop.Normal(uv.X(),uv.Y(),p,normal_direction);
 									gp_Vec normal(0., 0., 0.);
-									if (normal_direction.Magnitude() > ALMOST_ZERO) {
+									if (normal_direction.Magnitude() > 1.e-9) {
 										normal = gp_Dir(normal_direction.XYZ() * rotation_matrix);
 									} else {
 										Handle_Geom_Surface surf = BRep_Tool::Surface(face);
 										// Special case the normal at the poles of a spherical surface
 										if (surf->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface)) {
-											if (ALMOST_THE_SAME(fabs(uv.Y()), M_PI / 2.)) {
+											if (fabs(fabs(uv.Y()) - M_PI / 2.) < 1.e-9) {
 												const bool is_top = uv.Y() > 0;
 												const bool is_forward = face.Orientation() == TopAbs_FORWARD;
 												const double z = (is_top == is_forward) ? 1. : -1.;

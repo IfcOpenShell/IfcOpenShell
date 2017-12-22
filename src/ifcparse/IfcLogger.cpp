@@ -18,7 +18,9 @@
  ********************************************************************************/
 
 #include "IfcLogger.h"
+
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/Argument.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>

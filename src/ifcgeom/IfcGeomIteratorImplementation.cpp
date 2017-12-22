@@ -10,12 +10,9 @@ namespace IfcGeom {
 #define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
 #define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 template <typename P>
 void MAKE_INIT_FN(IteratorImplementation_)(IteratorFactoryImplementation<P>* mapping) {
-	static const std::string schema_name = TOSTRING(IfcSchema);
+	static const std::string schema_name = STRINGIFY(IfcSchema);
 	
 	struct {
 		IfcGeom::IteratorImplementation<P>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
