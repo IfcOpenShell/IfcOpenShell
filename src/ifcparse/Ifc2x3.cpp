@@ -4721,7 +4721,7 @@ Ifc2x3::IfcAnnotationCurveOccurrence::IfcAnnotationCurveOccurrence(::Ifc2x3::Ifc
 ::Ifc2x3::IfcCurve* Ifc2x3::IfcAnnotationFillArea::OuterBoundary() const { return (::Ifc2x3::IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcAnnotationFillArea::setOuterBoundary(::Ifc2x3::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 bool Ifc2x3::IfcAnnotationFillArea::hasInnerBoundaries() const { return !data_->getArgument(1)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr Ifc2x3::IfcAnnotationFillArea::InnerBoundaries() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcCurve>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr Ifc2x3::IfcAnnotationFillArea::InnerBoundaries() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcCurve >(); }
 void Ifc2x3::IfcAnnotationFillArea::setInnerBoundaries(IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -4837,7 +4837,7 @@ Ifc2x3::IfcAppliedValue::IfcAppliedValue(boost::optional< std::string > v1_Name,
 // Function implementations for IfcAppliedValueRelationship
 ::Ifc2x3::IfcAppliedValue* Ifc2x3::IfcAppliedValueRelationship::ComponentOfTotal() const { return (::Ifc2x3::IfcAppliedValue*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcAppliedValueRelationship::setComponentOfTotal(::Ifc2x3::IfcAppliedValue* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr Ifc2x3::IfcAppliedValueRelationship::Components() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcAppliedValue>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr Ifc2x3::IfcAppliedValueRelationship::Components() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcAppliedValue >(); }
 void Ifc2x3::IfcAppliedValueRelationship::setComponents(IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 ::Ifc2x3::IfcArithmeticOperatorEnum::Value Ifc2x3::IfcAppliedValueRelationship::ArithmeticOperator() const { return ::Ifc2x3::IfcArithmeticOperatorEnum::FromString(*data_->getArgument(2)); }
 void Ifc2x3::IfcAppliedValueRelationship::setArithmeticOperator(::Ifc2x3::IfcArithmeticOperatorEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcArithmeticOperatorEnum::ToString(v)));data_->setArgument(2,attr);} }
@@ -4898,7 +4898,7 @@ Ifc2x3::IfcApprovalActorRelationship::IfcApprovalActorRelationship(IfcEntityInst
 Ifc2x3::IfcApprovalActorRelationship::IfcApprovalActorRelationship(::Ifc2x3::IfcActorSelect* v1_Actor, ::Ifc2x3::IfcApproval* v2_Approval, ::Ifc2x3::IfcActorRole* v3_Role) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC2X3_IfcApprovalActorRelationship_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Actor));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_Approval));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Role));data_->setArgument(2,attr);} }
 
 // Function implementations for IfcApprovalPropertyRelationship
-IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcApprovalPropertyRelationship::ApprovedProperties() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcProperty>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcApprovalPropertyRelationship::ApprovedProperties() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcProperty >(); }
 void Ifc2x3::IfcApprovalPropertyRelationship::setApprovedProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 ::Ifc2x3::IfcApproval* Ifc2x3::IfcApprovalPropertyRelationship::Approval() const { return (::Ifc2x3::IfcApproval*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(1))); }
 void Ifc2x3::IfcApprovalPropertyRelationship::setApproval(::Ifc2x3::IfcApproval* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
@@ -4947,7 +4947,7 @@ Ifc2x3::IfcArbitraryOpenProfileDef::IfcArbitraryOpenProfileDef(IfcEntityInstance
 Ifc2x3::IfcArbitraryOpenProfileDef::IfcArbitraryOpenProfileDef(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve* v3_Curve) : IfcProfileDef((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcArbitraryOpenProfileDef_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v1_ProfileType,::Ifc2x3::IfcProfileTypeEnum::ToString(v1_ProfileType))));data_->setArgument(0,attr);} if (v2_ProfileName) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_ProfileName));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Curve));data_->setArgument(2,attr);} }
 
 // Function implementations for IfcArbitraryProfileDefWithVoids
-IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr Ifc2x3::IfcArbitraryProfileDefWithVoids::InnerCurves() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcCurve>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr Ifc2x3::IfcArbitraryProfileDefWithVoids::InnerCurves() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcCurve >(); }
 void Ifc2x3::IfcArbitraryProfileDefWithVoids::setInnerCurves(IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 
 
@@ -5040,7 +5040,7 @@ Ifc2x3::IfcAxis2Placement3D::IfcAxis2Placement3D(::Ifc2x3::IfcCartesianPoint* v1
 // Function implementations for IfcBSplineCurve
 int Ifc2x3::IfcBSplineCurve::Degree() const { return *data_->getArgument(0); }
 void Ifc2x3::IfcBSplineCurve::setDegree(int v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcBSplineCurve::ControlPointsList() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcCartesianPoint>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcBSplineCurve::ControlPointsList() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcCartesianPoint >(); }
 void Ifc2x3::IfcBSplineCurve::setControlPointsList(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 ::Ifc2x3::IfcBSplineCurveForm::Value Ifc2x3::IfcBSplineCurve::CurveForm() const { return ::Ifc2x3::IfcBSplineCurveForm::FromString(*data_->getArgument(2)); }
 void Ifc2x3::IfcBSplineCurve::setCurveForm(::Ifc2x3::IfcBSplineCurveForm::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcBSplineCurveForm::ToString(v)));data_->setArgument(2,attr);} }
@@ -5594,7 +5594,7 @@ Ifc2x3::IfcClassificationItem::IfcClassificationItem(::Ifc2x3::IfcClassification
 // Function implementations for IfcClassificationItemRelationship
 ::Ifc2x3::IfcClassificationItem* Ifc2x3::IfcClassificationItemRelationship::RelatingItem() const { return (::Ifc2x3::IfcClassificationItem*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcClassificationItemRelationship::setRelatingItem(::Ifc2x3::IfcClassificationItem* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr Ifc2x3::IfcClassificationItemRelationship::RelatedItems() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcClassificationItem>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr Ifc2x3::IfcClassificationItemRelationship::RelatedItems() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcClassificationItem >(); }
 void Ifc2x3::IfcClassificationItemRelationship::setRelatedItems(IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -5604,7 +5604,7 @@ Ifc2x3::IfcClassificationItemRelationship::IfcClassificationItemRelationship(Ifc
 Ifc2x3::IfcClassificationItemRelationship::IfcClassificationItemRelationship(::Ifc2x3::IfcClassificationItem* v1_RelatingItem, IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationItem >::ptr v2_RelatedItems) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC2X3_IfcClassificationItemRelationship_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_RelatingItem));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_RelatedItems)->generalize());data_->setArgument(1,attr);} }
 
 // Function implementations for IfcClassificationNotation
-IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationNotationFacet >::ptr Ifc2x3::IfcClassificationNotation::NotationFacets() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcClassificationNotationFacet>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationNotationFacet >::ptr Ifc2x3::IfcClassificationNotation::NotationFacets() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcClassificationNotationFacet >(); }
 void Ifc2x3::IfcClassificationNotation::setNotationFacets(IfcTemplatedEntityList< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -5698,7 +5698,7 @@ Ifc2x3::IfcColumnType::IfcColumnType(std::string v1_GlobalId, ::Ifc2x3::IfcOwner
 // Function implementations for IfcComplexProperty
 std::string Ifc2x3::IfcComplexProperty::UsageName() const { return *data_->getArgument(2); }
 void Ifc2x3::IfcComplexProperty::setUsageName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcComplexProperty::HasProperties() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcProperty>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcComplexProperty::HasProperties() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcProperty >(); }
 void Ifc2x3::IfcComplexProperty::setHasProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 
 
@@ -5708,7 +5708,7 @@ Ifc2x3::IfcComplexProperty::IfcComplexProperty(IfcEntityInstanceData* e) : IfcPr
 Ifc2x3::IfcComplexProperty::IfcComplexProperty(std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_UsageName, IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v4_HasProperties) : IfcProperty((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcComplexProperty_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Name));data_->setArgument(0,attr);} if (v2_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Description));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_UsageName));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_HasProperties)->generalize());data_->setArgument(3,attr);} }
 
 // Function implementations for IfcCompositeCurve
-IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr Ifc2x3::IfcCompositeCurve::Segments() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcCompositeCurveSegment>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr Ifc2x3::IfcCompositeCurve::Segments() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcCompositeCurveSegment >(); }
 void Ifc2x3::IfcCompositeCurve::setSegments(IfcTemplatedEntityList< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 bool Ifc2x3::IfcCompositeCurve::SelfIntersect() const { return *data_->getArgument(1); }
 void Ifc2x3::IfcCompositeCurve::setSelfIntersect(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
@@ -5735,7 +5735,7 @@ Ifc2x3::IfcCompositeCurveSegment::IfcCompositeCurveSegment(IfcEntityInstanceData
 Ifc2x3::IfcCompositeCurveSegment::IfcCompositeCurveSegment(::Ifc2x3::IfcTransitionCode::Value v1_Transition, bool v2_SameSense, ::Ifc2x3::IfcCurve* v3_ParentCurve) : IfcGeometricRepresentationItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcCompositeCurveSegment_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v1_Transition,::Ifc2x3::IfcTransitionCode::ToString(v1_Transition))));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_SameSense));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_ParentCurve));data_->setArgument(2,attr);} }
 
 // Function implementations for IfcCompositeProfileDef
-IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr Ifc2x3::IfcCompositeProfileDef::Profiles() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as<::Ifc2x3::IfcProfileDef>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr Ifc2x3::IfcCompositeProfileDef::Profiles() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc2x3::IfcProfileDef >(); }
 void Ifc2x3::IfcCompositeProfileDef::setProfiles(IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
 bool Ifc2x3::IfcCompositeProfileDef::hasLabel() const { return !data_->getArgument(3)->isNull(); }
 std::string Ifc2x3::IfcCompositeProfileDef::Label() const { return *data_->getArgument(3); }
@@ -5798,7 +5798,7 @@ Ifc2x3::IfcConic::IfcConic(IfcEntityInstanceData* e) : IfcCurve((IfcEntityInstan
 Ifc2x3::IfcConic::IfcConic(::Ifc2x3::IfcAxis2Placement* v1_Position) : IfcCurve((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcConic_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Position));data_->setArgument(0,attr);} }
 
 // Function implementations for IfcConnectedFaceSet
-IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr Ifc2x3::IfcConnectedFaceSet::CfsFaces() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcFace>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr Ifc2x3::IfcConnectedFaceSet::CfsFaces() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcFace >(); }
 void Ifc2x3::IfcConnectedFaceSet::setCfsFaces(IfcTemplatedEntityList< ::Ifc2x3::IfcFace >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -5928,7 +5928,7 @@ std::string Ifc2x3::IfcConstraintAggregationRelationship::Description() const { 
 void Ifc2x3::IfcConstraintAggregationRelationship::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 ::Ifc2x3::IfcConstraint* Ifc2x3::IfcConstraintAggregationRelationship::RelatingConstraint() const { return (::Ifc2x3::IfcConstraint*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(2))); }
 void Ifc2x3::IfcConstraintAggregationRelationship::setRelatingConstraint(::Ifc2x3::IfcConstraint* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr Ifc2x3::IfcConstraintAggregationRelationship::RelatedConstraints() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcConstraint>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr Ifc2x3::IfcConstraintAggregationRelationship::RelatedConstraints() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcConstraint >(); }
 void Ifc2x3::IfcConstraintAggregationRelationship::setRelatedConstraints(IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 ::Ifc2x3::IfcLogicalOperatorEnum::Value Ifc2x3::IfcConstraintAggregationRelationship::LogicalAggregator() const { return ::Ifc2x3::IfcLogicalOperatorEnum::FromString(*data_->getArgument(4)); }
 void Ifc2x3::IfcConstraintAggregationRelationship::setLogicalAggregator(::Ifc2x3::IfcLogicalOperatorEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcLogicalOperatorEnum::ToString(v)));data_->setArgument(4,attr);} }
@@ -5960,7 +5960,7 @@ std::string Ifc2x3::IfcConstraintRelationship::Description() const { return *dat
 void Ifc2x3::IfcConstraintRelationship::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 ::Ifc2x3::IfcConstraint* Ifc2x3::IfcConstraintRelationship::RelatingConstraint() const { return (::Ifc2x3::IfcConstraint*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(2))); }
 void Ifc2x3::IfcConstraintRelationship::setRelatingConstraint(::Ifc2x3::IfcConstraint* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr Ifc2x3::IfcConstraintRelationship::RelatedConstraints() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcConstraint>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr Ifc2x3::IfcConstraintRelationship::RelatedConstraints() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcConstraint >(); }
 void Ifc2x3::IfcConstraintRelationship::setRelatedConstraints(IfcTemplatedEntityList< ::Ifc2x3::IfcConstraint >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 
 
@@ -6309,7 +6309,7 @@ Ifc2x3::IfcCurve::IfcCurve() : IfcGeometricRepresentationItem((IfcEntityInstance
 void Ifc2x3::IfcCurveBoundedPlane::setBasisSurface(::Ifc2x3::IfcPlane* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
 ::Ifc2x3::IfcCurve* Ifc2x3::IfcCurveBoundedPlane::OuterBoundary() const { return (::Ifc2x3::IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(1))); }
 void Ifc2x3::IfcCurveBoundedPlane::setOuterBoundary(::Ifc2x3::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr Ifc2x3::IfcCurveBoundedPlane::InnerBoundaries() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as<::Ifc2x3::IfcCurve>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr Ifc2x3::IfcCurveBoundedPlane::InnerBoundaries() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc2x3::IfcCurve >(); }
 void Ifc2x3::IfcCurveBoundedPlane::setInnerBoundaries(IfcTemplatedEntityList< ::Ifc2x3::IfcCurve >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
 
 
@@ -6339,7 +6339,7 @@ Ifc2x3::IfcCurveStyle::IfcCurveStyle(boost::optional< std::string > v1_Name, ::I
 bool Ifc2x3::IfcCurveStyleFont::hasName() const { return !data_->getArgument(0)->isNull(); }
 std::string Ifc2x3::IfcCurveStyleFont::Name() const { return *data_->getArgument(0); }
 void Ifc2x3::IfcCurveStyleFont::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr Ifc2x3::IfcCurveStyleFont::PatternList() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcCurveStyleFontPattern>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr Ifc2x3::IfcCurveStyleFont::PatternList() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcCurveStyleFontPattern >(); }
 void Ifc2x3::IfcCurveStyleFont::setPatternList(IfcTemplatedEntityList< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -6425,7 +6425,7 @@ Ifc2x3::IfcDerivedProfileDef::IfcDerivedProfileDef(IfcEntityInstanceData* e) : I
 Ifc2x3::IfcDerivedProfileDef::IfcDerivedProfileDef(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcProfileDef* v3_ParentProfile, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_Operator, boost::optional< std::string > v5_Label) : IfcProfileDef((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcDerivedProfileDef_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v1_ProfileType,::Ifc2x3::IfcProfileTypeEnum::ToString(v1_ProfileType))));data_->setArgument(0,attr);} if (v2_ProfileName) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_ProfileName));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_ParentProfile));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_Operator));data_->setArgument(3,attr);} if (v5_Label) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_Label));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } }
 
 // Function implementations for IfcDerivedUnit
-IfcTemplatedEntityList< ::Ifc2x3::IfcDerivedUnitElement >::ptr Ifc2x3::IfcDerivedUnit::Elements() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcDerivedUnitElement>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcDerivedUnitElement >::ptr Ifc2x3::IfcDerivedUnit::Elements() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcDerivedUnitElement >(); }
 void Ifc2x3::IfcDerivedUnit::setElements(IfcTemplatedEntityList< ::Ifc2x3::IfcDerivedUnitElement >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 ::Ifc2x3::IfcDerivedUnitEnum::Value Ifc2x3::IfcDerivedUnit::UnitType() const { return ::Ifc2x3::IfcDerivedUnitEnum::FromString(*data_->getArgument(1)); }
 void Ifc2x3::IfcDerivedUnit::setUnitType(::Ifc2x3::IfcDerivedUnitEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcDerivedUnitEnum::ToString(v)));data_->setArgument(1,attr);} }
@@ -6658,7 +6658,7 @@ bool Ifc2x3::IfcDocumentInformation::hasDescription() const { return !data_->get
 std::string Ifc2x3::IfcDocumentInformation::Description() const { return *data_->getArgument(2); }
 void Ifc2x3::IfcDocumentInformation::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 bool Ifc2x3::IfcDocumentInformation::hasDocumentReferences() const { return !data_->getArgument(3)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentReference >::ptr Ifc2x3::IfcDocumentInformation::DocumentReferences() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcDocumentReference>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentReference >::ptr Ifc2x3::IfcDocumentInformation::DocumentReferences() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcDocumentReference >(); }
 void Ifc2x3::IfcDocumentInformation::setDocumentReferences(IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentReference >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 bool Ifc2x3::IfcDocumentInformation::hasPurpose() const { return !data_->getArgument(4)->isNull(); }
 std::string Ifc2x3::IfcDocumentInformation::Purpose() const { return *data_->getArgument(4); }
@@ -6711,7 +6711,7 @@ Ifc2x3::IfcDocumentInformation::IfcDocumentInformation(std::string v1_DocumentId
 // Function implementations for IfcDocumentInformationRelationship
 ::Ifc2x3::IfcDocumentInformation* Ifc2x3::IfcDocumentInformationRelationship::RelatingDocument() const { return (::Ifc2x3::IfcDocumentInformation*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcDocumentInformationRelationship::setRelatingDocument(::Ifc2x3::IfcDocumentInformation* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentInformation >::ptr Ifc2x3::IfcDocumentInformationRelationship::RelatedDocuments() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcDocumentInformation>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentInformation >::ptr Ifc2x3::IfcDocumentInformationRelationship::RelatedDocuments() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcDocumentInformation >(); }
 void Ifc2x3::IfcDocumentInformationRelationship::setRelatedDocuments(IfcTemplatedEntityList< ::Ifc2x3::IfcDocumentInformation >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 bool Ifc2x3::IfcDocumentInformationRelationship::hasRelationshipType() const { return !data_->getArgument(2)->isNull(); }
 std::string Ifc2x3::IfcDocumentInformationRelationship::RelationshipType() const { return *data_->getArgument(2); }
@@ -6944,7 +6944,7 @@ Ifc2x3::IfcEdgeFeature::IfcEdgeFeature(IfcEntityInstanceData* e) : IfcFeatureEle
 Ifc2x3::IfcEdgeFeature::IfcEdgeFeature(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength) : IfcFeatureElementSubtraction((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcEdgeFeature_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ObjectType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ObjectType));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_ObjectPlacement));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_Representation));data_->setArgument(6,attr);} if (v8_Tag) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Tag));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } if (v9_FeatureLength) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_FeatureLength));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); } }
 
 // Function implementations for IfcEdgeLoop
-IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr Ifc2x3::IfcEdgeLoop::EdgeList() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcOrientedEdge>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr Ifc2x3::IfcEdgeLoop::EdgeList() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcOrientedEdge >(); }
 void Ifc2x3::IfcEdgeLoop::setEdgeList(IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -7127,7 +7127,7 @@ Ifc2x3::IfcElementComponentType::IfcElementComponentType(std::string v1_GlobalId
 bool Ifc2x3::IfcElementQuantity::hasMethodOfMeasurement() const { return !data_->getArgument(4)->isNull(); }
 std::string Ifc2x3::IfcElementQuantity::MethodOfMeasurement() const { return *data_->getArgument(4); }
 void Ifc2x3::IfcElementQuantity::setMethodOfMeasurement(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr Ifc2x3::IfcElementQuantity::Quantities() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcPhysicalQuantity>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr Ifc2x3::IfcElementQuantity::Quantities() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcPhysicalQuantity >(); }
 void Ifc2x3::IfcElementQuantity::setQuantities(IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -7263,7 +7263,7 @@ Ifc2x3::IfcEvaporatorType::IfcEvaporatorType(IfcEntityInstanceData* e) : IfcEner
 Ifc2x3::IfcEvaporatorType::IfcEvaporatorType(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporatorTypeEnum::Value v10_PredefinedType) : IfcEnergyConversionDeviceType((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcEvaporatorType_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ApplicableOccurrence) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ApplicableOccurrence));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } if (v6_HasPropertySets) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v6_HasPropertySets)->generalize());data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); } if (v7_RepresentationMaps) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v7_RepresentationMaps)->generalize());data_->setArgument(6,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(6, attr); } if (v8_Tag) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Tag));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } if (v9_ElementType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_ElementType));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v10_PredefinedType,::Ifc2x3::IfcEvaporatorTypeEnum::ToString(v10_PredefinedType))));data_->setArgument(9,attr);} }
 
 // Function implementations for IfcExtendedMaterialProperties
-IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcExtendedMaterialProperties::ExtendedProperties() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcProperty>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcExtendedMaterialProperties::ExtendedProperties() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcProperty >(); }
 void Ifc2x3::IfcExtendedMaterialProperties::setExtendedProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 bool Ifc2x3::IfcExtendedMaterialProperties::hasDescription() const { return !data_->getArgument(2)->isNull(); }
 std::string Ifc2x3::IfcExtendedMaterialProperties::Description() const { return *data_->getArgument(2); }
@@ -7339,7 +7339,7 @@ Ifc2x3::IfcExtrudedAreaSolid::IfcExtrudedAreaSolid(IfcEntityInstanceData* e) : I
 Ifc2x3::IfcExtrudedAreaSolid::IfcExtrudedAreaSolid(::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcDirection* v3_ExtrudedDirection, double v4_Depth) : IfcSweptAreaSolid((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcExtrudedAreaSolid_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_SweptArea));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_Position));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_ExtrudedDirection));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_Depth));data_->setArgument(3,attr);} }
 
 // Function implementations for IfcFace
-IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr Ifc2x3::IfcFace::Bounds() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcFaceBound>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr Ifc2x3::IfcFace::Bounds() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcFaceBound >(); }
 void Ifc2x3::IfcFace::setBounds(IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -7349,7 +7349,7 @@ Ifc2x3::IfcFace::IfcFace(IfcEntityInstanceData* e) : IfcTopologicalRepresentatio
 Ifc2x3::IfcFace::IfcFace(IfcTemplatedEntityList< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds) : IfcTopologicalRepresentationItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcFace_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Bounds)->generalize());data_->setArgument(0,attr);} }
 
 // Function implementations for IfcFaceBasedSurfaceModel
-IfcTemplatedEntityList< ::Ifc2x3::IfcConnectedFaceSet >::ptr Ifc2x3::IfcFaceBasedSurfaceModel::FbsmFaces() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcConnectedFaceSet>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcConnectedFaceSet >::ptr Ifc2x3::IfcFaceBasedSurfaceModel::FbsmFaces() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcConnectedFaceSet >(); }
 void Ifc2x3::IfcFaceBasedSurfaceModel::setFbsmFaces(IfcTemplatedEntityList< ::Ifc2x3::IfcConnectedFaceSet >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -7399,7 +7399,7 @@ Ifc2x3::IfcFacetedBrep::IfcFacetedBrep(IfcEntityInstanceData* e) : IfcManifoldSo
 Ifc2x3::IfcFacetedBrep::IfcFacetedBrep(::Ifc2x3::IfcClosedShell* v1_Outer) : IfcManifoldSolidBrep((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcFacetedBrep_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Outer));data_->setArgument(0,attr);} }
 
 // Function implementations for IfcFacetedBrepWithVoids
-IfcTemplatedEntityList< ::Ifc2x3::IfcClosedShell >::ptr Ifc2x3::IfcFacetedBrepWithVoids::Voids() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcClosedShell>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcClosedShell >::ptr Ifc2x3::IfcFacetedBrepWithVoids::Voids() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcClosedShell >(); }
 void Ifc2x3::IfcFacetedBrepWithVoids::setVoids(IfcTemplatedEntityList< ::Ifc2x3::IfcClosedShell >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -7921,12 +7921,12 @@ Ifc2x3::IfcGeometricSet::IfcGeometricSet(IfcEntityInstanceData* e) : IfcGeometri
 Ifc2x3::IfcGeometricSet::IfcGeometricSet(IfcEntityList::ptr v1_Elements) : IfcGeometricRepresentationItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcGeometricSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Elements));data_->setArgument(0,attr);} }
 
 // Function implementations for IfcGrid
-IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcGrid::UAxes() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcGridAxis>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcGrid::UAxes() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcGridAxis >(); }
 void Ifc2x3::IfcGrid::setUAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcGrid::VAxes() const { IfcEntityList::ptr es = *data_->getArgument(8); return es->as<::Ifc2x3::IfcGridAxis>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcGrid::VAxes() const { IfcEntityList::ptr es = *data_->getArgument(8); return es->as< ::Ifc2x3::IfcGridAxis >(); }
 void Ifc2x3::IfcGrid::setVAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(8,attr);} }
 bool Ifc2x3::IfcGrid::hasWAxes() const { return !data_->getArgument(9)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcGrid::WAxes() const { IfcEntityList::ptr es = *data_->getArgument(9); return es->as<::Ifc2x3::IfcGridAxis>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcGrid::WAxes() const { IfcEntityList::ptr es = *data_->getArgument(9); return es->as< ::Ifc2x3::IfcGridAxis >(); }
 void Ifc2x3::IfcGrid::setWAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(9,attr);} }
 
 ::Ifc2x3::IfcRelContainedInSpatialStructure::list::ptr Ifc2x3::IfcGrid::ContainedInStructure() const { return data_->getInverse(IFC2X3_IfcRelContainedInSpatialStructure_type, 4)->as<IfcRelContainedInSpatialStructure>(); }
@@ -8066,7 +8066,7 @@ Ifc2x3::IfcImageTexture::IfcImageTexture(bool v1_RepeatS, bool v2_RepeatT, ::Ifc
 void Ifc2x3::IfcInventory::setInventoryType(::Ifc2x3::IfcInventoryTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcInventoryTypeEnum::ToString(v)));data_->setArgument(5,attr);} }
 ::Ifc2x3::IfcActorSelect* Ifc2x3::IfcInventory::Jurisdiction() const { return (::Ifc2x3::IfcActorSelect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(6))); }
 void Ifc2x3::IfcInventory::setJurisdiction(::Ifc2x3::IfcActorSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr Ifc2x3::IfcInventory::ResponsiblePersons() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcPerson>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr Ifc2x3::IfcInventory::ResponsiblePersons() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcPerson >(); }
 void Ifc2x3::IfcInventory::setResponsiblePersons(IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 ::Ifc2x3::IfcCalendarDate* Ifc2x3::IfcInventory::LastUpdateDate() const { return (::Ifc2x3::IfcCalendarDate*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(8))); }
 void Ifc2x3::IfcInventory::setLastUpdateDate(::Ifc2x3::IfcCalendarDate* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
@@ -8084,7 +8084,7 @@ Ifc2x3::IfcInventory::IfcInventory(IfcEntityInstanceData* e) : IfcGroup((IfcEnti
 Ifc2x3::IfcInventory::IfcInventory(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcInventoryTypeEnum::Value v6_InventoryType, ::Ifc2x3::IfcActorSelect* v7_Jurisdiction, IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr v8_ResponsiblePersons, ::Ifc2x3::IfcCalendarDate* v9_LastUpdateDate, ::Ifc2x3::IfcCostValue* v10_CurrentValue, ::Ifc2x3::IfcCostValue* v11_OriginalValue) : IfcGroup((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcInventory_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ObjectType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ObjectType));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v6_InventoryType,::Ifc2x3::IfcInventoryTypeEnum::ToString(v6_InventoryType))));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_Jurisdiction));data_->setArgument(6,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v8_ResponsiblePersons)->generalize());data_->setArgument(7,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v9_LastUpdateDate));data_->setArgument(8,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v10_CurrentValue));data_->setArgument(9,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v11_OriginalValue));data_->setArgument(10,attr);} }
 
 // Function implementations for IfcIrregularTimeSeries
-IfcTemplatedEntityList< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr Ifc2x3::IfcIrregularTimeSeries::Values() const { IfcEntityList::ptr es = *data_->getArgument(8); return es->as<::Ifc2x3::IfcIrregularTimeSeriesValue>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr Ifc2x3::IfcIrregularTimeSeries::Values() const { IfcEntityList::ptr es = *data_->getArgument(8); return es->as< ::Ifc2x3::IfcIrregularTimeSeriesValue >(); }
 void Ifc2x3::IfcIrregularTimeSeries::setValues(IfcTemplatedEntityList< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(8,attr);} }
 
 
@@ -8179,7 +8179,7 @@ bool Ifc2x3::IfcLibraryInformation::hasVersionDate() const { return !data_->getA
 ::Ifc2x3::IfcCalendarDate* Ifc2x3::IfcLibraryInformation::VersionDate() const { return (::Ifc2x3::IfcCalendarDate*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(3))); }
 void Ifc2x3::IfcLibraryInformation::setVersionDate(::Ifc2x3::IfcCalendarDate* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
 bool Ifc2x3::IfcLibraryInformation::hasLibraryReference() const { return !data_->getArgument(4)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcLibraryReference >::ptr Ifc2x3::IfcLibraryInformation::LibraryReference() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcLibraryReference>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcLibraryReference >::ptr Ifc2x3::IfcLibraryInformation::LibraryReference() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcLibraryReference >(); }
 void Ifc2x3::IfcLibraryInformation::setLibraryReference(IfcTemplatedEntityList< ::Ifc2x3::IfcLibraryReference >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 
 
@@ -8224,7 +8224,7 @@ Ifc2x3::IfcLightFixtureType::IfcLightFixtureType(std::string v1_GlobalId, ::Ifc2
 // Function implementations for IfcLightIntensityDistribution
 ::Ifc2x3::IfcLightDistributionCurveEnum::Value Ifc2x3::IfcLightIntensityDistribution::LightDistributionCurve() const { return ::Ifc2x3::IfcLightDistributionCurveEnum::FromString(*data_->getArgument(0)); }
 void Ifc2x3::IfcLightIntensityDistribution::setLightDistributionCurve(::Ifc2x3::IfcLightDistributionCurveEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcLightDistributionCurveEnum::ToString(v)));data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcLightDistributionData >::ptr Ifc2x3::IfcLightIntensityDistribution::DistributionData() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcLightDistributionData>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcLightDistributionData >::ptr Ifc2x3::IfcLightIntensityDistribution::DistributionData() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcLightDistributionData >(); }
 void Ifc2x3::IfcLightIntensityDistribution::setDistributionData(IfcTemplatedEntityList< ::Ifc2x3::IfcLightDistributionData >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -8463,7 +8463,7 @@ Ifc2x3::IfcMaterialLayer::IfcMaterialLayer(IfcEntityInstanceData* e) : IfcUtil::
 Ifc2x3::IfcMaterialLayer::IfcMaterialLayer(::Ifc2x3::IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< bool > v3_IsVentilated) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC2X3_IfcMaterialLayer_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Material));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_LayerThickness));data_->setArgument(1,attr);} if (v3_IsVentilated) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_IsVentilated));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } }
 
 // Function implementations for IfcMaterialLayerSet
-IfcTemplatedEntityList< ::Ifc2x3::IfcMaterialLayer >::ptr Ifc2x3::IfcMaterialLayerSet::MaterialLayers() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcMaterialLayer>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcMaterialLayer >::ptr Ifc2x3::IfcMaterialLayerSet::MaterialLayers() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcMaterialLayer >(); }
 void Ifc2x3::IfcMaterialLayerSet::setMaterialLayers(IfcTemplatedEntityList< ::Ifc2x3::IfcMaterialLayer >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 bool Ifc2x3::IfcMaterialLayerSet::hasLayerSetName() const { return !data_->getArgument(1)->isNull(); }
 std::string Ifc2x3::IfcMaterialLayerSet::LayerSetName() const { return *data_->getArgument(1); }
@@ -8492,7 +8492,7 @@ Ifc2x3::IfcMaterialLayerSetUsage::IfcMaterialLayerSetUsage(IfcEntityInstanceData
 Ifc2x3::IfcMaterialLayerSetUsage::IfcMaterialLayerSetUsage(::Ifc2x3::IfcMaterialLayerSet* v1_ForLayerSet, ::Ifc2x3::IfcLayerSetDirectionEnum::Value v2_LayerSetDirection, ::Ifc2x3::IfcDirectionSenseEnum::Value v3_DirectionSense, double v4_OffsetFromReferenceLine) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC2X3_IfcMaterialLayerSetUsage_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_ForLayerSet));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v2_LayerSetDirection,::Ifc2x3::IfcLayerSetDirectionEnum::ToString(v2_LayerSetDirection))));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v3_DirectionSense,::Ifc2x3::IfcDirectionSenseEnum::ToString(v3_DirectionSense))));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_OffsetFromReferenceLine));data_->setArgument(3,attr);} }
 
 // Function implementations for IfcMaterialList
-IfcTemplatedEntityList< ::Ifc2x3::IfcMaterial >::ptr Ifc2x3::IfcMaterialList::Materials() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcMaterial>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcMaterial >::ptr Ifc2x3::IfcMaterialList::Materials() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcMaterial >(); }
 void Ifc2x3::IfcMaterialList::setMaterials(IfcTemplatedEntityList< ::Ifc2x3::IfcMaterial >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -8614,7 +8614,7 @@ bool Ifc2x3::IfcMechanicalSteelMaterialProperties::hasPlasticStrain() const { re
 double Ifc2x3::IfcMechanicalSteelMaterialProperties::PlasticStrain() const { return *data_->getArgument(11); }
 void Ifc2x3::IfcMechanicalSteelMaterialProperties::setPlasticStrain(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
 bool Ifc2x3::IfcMechanicalSteelMaterialProperties::hasRelaxations() const { return !data_->getArgument(12)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcRelaxation >::ptr Ifc2x3::IfcMechanicalSteelMaterialProperties::Relaxations() const { IfcEntityList::ptr es = *data_->getArgument(12); return es->as<::Ifc2x3::IfcRelaxation>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRelaxation >::ptr Ifc2x3::IfcMechanicalSteelMaterialProperties::Relaxations() const { IfcEntityList::ptr es = *data_->getArgument(12); return es->as< ::Ifc2x3::IfcRelaxation >(); }
 void Ifc2x3::IfcMechanicalSteelMaterialProperties::setRelaxations(IfcTemplatedEntityList< ::Ifc2x3::IfcRelaxation >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(12,attr);} }
 
 
@@ -8878,10 +8878,10 @@ bool Ifc2x3::IfcOrganization::hasDescription() const { return !data_->getArgumen
 std::string Ifc2x3::IfcOrganization::Description() const { return *data_->getArgument(2); }
 void Ifc2x3::IfcOrganization::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 bool Ifc2x3::IfcOrganization::hasRoles() const { return !data_->getArgument(3)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Ifc2x3::IfcOrganization::Roles() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcActorRole>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Ifc2x3::IfcOrganization::Roles() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcActorRole >(); }
 void Ifc2x3::IfcOrganization::setRoles(IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 bool Ifc2x3::IfcOrganization::hasAddresses() const { return !data_->getArgument(4)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr Ifc2x3::IfcOrganization::Addresses() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcAddress>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr Ifc2x3::IfcOrganization::Addresses() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcAddress >(); }
 void Ifc2x3::IfcOrganization::setAddresses(IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 
 ::Ifc2x3::IfcOrganizationRelationship::list::ptr Ifc2x3::IfcOrganization::IsRelatedBy() const { return data_->getInverse(IFC2X3_IfcOrganizationRelationship_type, 3)->as<IfcOrganizationRelationship>(); }
@@ -8901,7 +8901,7 @@ std::string Ifc2x3::IfcOrganizationRelationship::Description() const { return *d
 void Ifc2x3::IfcOrganizationRelationship::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 ::Ifc2x3::IfcOrganization* Ifc2x3::IfcOrganizationRelationship::RelatingOrganization() const { return (::Ifc2x3::IfcOrganization*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(2))); }
 void Ifc2x3::IfcOrganizationRelationship::setRelatingOrganization(::Ifc2x3::IfcOrganization* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcOrganization >::ptr Ifc2x3::IfcOrganizationRelationship::RelatedOrganizations() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcOrganization>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcOrganization >::ptr Ifc2x3::IfcOrganizationRelationship::RelatedOrganizations() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcOrganization >(); }
 void Ifc2x3::IfcOrganizationRelationship::setRelatedOrganizations(IfcTemplatedEntityList< ::Ifc2x3::IfcOrganization >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 
 
@@ -8971,7 +8971,7 @@ Ifc2x3::IfcParameterizedProfileDef::IfcParameterizedProfileDef(IfcEntityInstance
 Ifc2x3::IfcParameterizedProfileDef::IfcParameterizedProfileDef(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position) : IfcProfileDef((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcParameterizedProfileDef_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v1_ProfileType,::Ifc2x3::IfcProfileTypeEnum::ToString(v1_ProfileType))));data_->setArgument(0,attr);} if (v2_ProfileName) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_ProfileName));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Position));data_->setArgument(2,attr);} }
 
 // Function implementations for IfcPath
-IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr Ifc2x3::IfcPath::EdgeList() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcOrientedEdge>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr Ifc2x3::IfcPath::EdgeList() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcOrientedEdge >(); }
 void Ifc2x3::IfcPath::setEdgeList(IfcTemplatedEntityList< ::Ifc2x3::IfcOrientedEdge >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -9041,10 +9041,10 @@ bool Ifc2x3::IfcPerson::hasSuffixTitles() const { return !data_->getArgument(5)-
 std::vector< std::string > /*[1:?]*/ Ifc2x3::IfcPerson::SuffixTitles() const { return *data_->getArgument(5); }
 void Ifc2x3::IfcPerson::setSuffixTitles(std::vector< std::string > /*[1:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
 bool Ifc2x3::IfcPerson::hasRoles() const { return !data_->getArgument(6)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Ifc2x3::IfcPerson::Roles() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as<::Ifc2x3::IfcActorRole>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Ifc2x3::IfcPerson::Roles() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as< ::Ifc2x3::IfcActorRole >(); }
 void Ifc2x3::IfcPerson::setRoles(IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(6,attr);} }
 bool Ifc2x3::IfcPerson::hasAddresses() const { return !data_->getArgument(7)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr Ifc2x3::IfcPerson::Addresses() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcAddress>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr Ifc2x3::IfcPerson::Addresses() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcAddress >(); }
 void Ifc2x3::IfcPerson::setAddresses(IfcTemplatedEntityList< ::Ifc2x3::IfcAddress >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 
 ::Ifc2x3::IfcPersonAndOrganization::list::ptr Ifc2x3::IfcPerson::EngagedIn() const { return data_->getInverse(IFC2X3_IfcPersonAndOrganization_type, 0)->as<IfcPersonAndOrganization>(); }
@@ -9060,7 +9060,7 @@ void Ifc2x3::IfcPersonAndOrganization::setThePerson(::Ifc2x3::IfcPerson* v) { {I
 ::Ifc2x3::IfcOrganization* Ifc2x3::IfcPersonAndOrganization::TheOrganization() const { return (::Ifc2x3::IfcOrganization*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(1))); }
 void Ifc2x3::IfcPersonAndOrganization::setTheOrganization(::Ifc2x3::IfcOrganization* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
 bool Ifc2x3::IfcPersonAndOrganization::hasRoles() const { return !data_->getArgument(2)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Ifc2x3::IfcPersonAndOrganization::Roles() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as<::Ifc2x3::IfcActorRole>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr Ifc2x3::IfcPersonAndOrganization::Roles() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc2x3::IfcActorRole >(); }
 void Ifc2x3::IfcPersonAndOrganization::setRoles(IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
 
 
@@ -9070,7 +9070,7 @@ Ifc2x3::IfcPersonAndOrganization::IfcPersonAndOrganization(IfcEntityInstanceData
 Ifc2x3::IfcPersonAndOrganization::IfcPersonAndOrganization(::Ifc2x3::IfcPerson* v1_ThePerson, ::Ifc2x3::IfcOrganization* v2_TheOrganization, boost::optional< IfcTemplatedEntityList< ::Ifc2x3::IfcActorRole >::ptr > v3_Roles) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC2X3_IfcPersonAndOrganization_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_ThePerson));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_TheOrganization));data_->setArgument(1,attr);} if (v3_Roles) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Roles)->generalize());data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } }
 
 // Function implementations for IfcPhysicalComplexQuantity
-IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr Ifc2x3::IfcPhysicalComplexQuantity::HasQuantities() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as<::Ifc2x3::IfcPhysicalQuantity>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr Ifc2x3::IfcPhysicalComplexQuantity::HasQuantities() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc2x3::IfcPhysicalQuantity >(); }
 void Ifc2x3::IfcPhysicalComplexQuantity::setHasQuantities(IfcTemplatedEntityList< ::Ifc2x3::IfcPhysicalQuantity >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
 std::string Ifc2x3::IfcPhysicalComplexQuantity::Discrimination() const { return *data_->getArgument(3); }
 void Ifc2x3::IfcPhysicalComplexQuantity::setDiscrimination(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
@@ -9254,7 +9254,7 @@ Ifc2x3::IfcPointOnSurface::IfcPointOnSurface(IfcEntityInstanceData* e) : IfcPoin
 Ifc2x3::IfcPointOnSurface::IfcPointOnSurface(::Ifc2x3::IfcSurface* v1_BasisSurface, double v2_PointParameterU, double v3_PointParameterV) : IfcPoint((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcPointOnSurface_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_BasisSurface));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_PointParameterU));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_PointParameterV));data_->setArgument(2,attr);} }
 
 // Function implementations for IfcPolyLoop
-IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcPolyLoop::Polygon() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcCartesianPoint>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcPolyLoop::Polygon() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcCartesianPoint >(); }
 void Ifc2x3::IfcPolyLoop::setPolygon(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -9276,7 +9276,7 @@ Ifc2x3::IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(IfcEntityInst
 Ifc2x3::IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcAxis2Placement3D* v3_Position, ::Ifc2x3::IfcBoundedCurve* v4_PolygonalBoundary) : IfcHalfSpaceSolid((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcPolygonalBoundedHalfSpace_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_BaseSurface));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_AgreementFlag));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Position));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_PolygonalBoundary));data_->setArgument(3,attr);} }
 
 // Function implementations for IfcPolyline
-IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcPolyline::Points() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcCartesianPoint>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcPolyline::Points() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcCartesianPoint >(); }
 void Ifc2x3::IfcPolyline::setPoints(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -9504,7 +9504,7 @@ void Ifc2x3::IfcProductRepresentation::setName(std::string v) { {IfcWrite::IfcWr
 bool Ifc2x3::IfcProductRepresentation::hasDescription() const { return !data_->getArgument(1)->isNull(); }
 std::string Ifc2x3::IfcProductRepresentation::Description() const { return *data_->getArgument(1); }
 void Ifc2x3::IfcProductRepresentation::setDescription(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr Ifc2x3::IfcProductRepresentation::Representations() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as<::Ifc2x3::IfcRepresentation>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr Ifc2x3::IfcProductRepresentation::Representations() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc2x3::IfcRepresentation >(); }
 void Ifc2x3::IfcProductRepresentation::setRepresentations(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentation >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
 
 
@@ -9567,7 +9567,7 @@ void Ifc2x3::IfcProject::setLongName(std::string v) { {IfcWrite::IfcWriteArgumen
 bool Ifc2x3::IfcProject::hasPhase() const { return !data_->getArgument(6)->isNull(); }
 std::string Ifc2x3::IfcProject::Phase() const { return *data_->getArgument(6); }
 void Ifc2x3::IfcProject::setPhase(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationContext >::ptr Ifc2x3::IfcProject::RepresentationContexts() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcRepresentationContext>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationContext >::ptr Ifc2x3::IfcProject::RepresentationContexts() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcRepresentationContext >(); }
 void Ifc2x3::IfcProject::setRepresentationContexts(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationContext >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 ::Ifc2x3::IfcUnitAssignment* Ifc2x3::IfcProject::UnitsInContext() const { return (::Ifc2x3::IfcUnitAssignment*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(8))); }
 void Ifc2x3::IfcProject::setUnitsInContext(::Ifc2x3::IfcUnitAssignment* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
@@ -9594,7 +9594,7 @@ Ifc2x3::IfcProjectOrder::IfcProjectOrder(IfcEntityInstanceData* e) : IfcControl(
 Ifc2x3::IfcProjectOrder::IfcProjectOrder(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_ID, ::Ifc2x3::IfcProjectOrderTypeEnum::Value v7_PredefinedType, boost::optional< std::string > v8_Status) : IfcControl((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcProjectOrder_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ObjectType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ObjectType));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_ID));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v7_PredefinedType,::Ifc2x3::IfcProjectOrderTypeEnum::ToString(v7_PredefinedType))));data_->setArgument(6,attr);} if (v8_Status) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Status));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } }
 
 // Function implementations for IfcProjectOrderRecord
-IfcTemplatedEntityList< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr Ifc2x3::IfcProjectOrderRecord::Records() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcRelAssignsToProjectOrder>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr Ifc2x3::IfcProjectOrderRecord::Records() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcRelAssignsToProjectOrder >(); }
 void Ifc2x3::IfcProjectOrderRecord::setRecords(IfcTemplatedEntityList< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value Ifc2x3::IfcProjectOrderRecord::PredefinedType() const { return ::Ifc2x3::IfcProjectOrderRecordTypeEnum::FromString(*data_->getArgument(6)); }
 void Ifc2x3::IfcProjectOrderRecord::setPredefinedType(::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcProjectOrderRecordTypeEnum::ToString(v)));data_->setArgument(6,attr);} }
@@ -9657,7 +9657,7 @@ Ifc2x3::IfcPropertyBoundedValue::IfcPropertyBoundedValue(std::string v1_Name, bo
 // Function implementations for IfcPropertyConstraintRelationship
 ::Ifc2x3::IfcConstraint* Ifc2x3::IfcPropertyConstraintRelationship::RelatingConstraint() const { return (::Ifc2x3::IfcConstraint*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcPropertyConstraintRelationship::setRelatingConstraint(::Ifc2x3::IfcConstraint* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcPropertyConstraintRelationship::RelatedProperties() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcProperty>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcPropertyConstraintRelationship::RelatedProperties() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcProperty >(); }
 void Ifc2x3::IfcPropertyConstraintRelationship::setRelatedProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 bool Ifc2x3::IfcPropertyConstraintRelationship::hasName() const { return !data_->getArgument(2)->isNull(); }
 std::string Ifc2x3::IfcPropertyConstraintRelationship::Name() const { return *data_->getArgument(2); }
@@ -9757,7 +9757,7 @@ Ifc2x3::IfcPropertyReferenceValue::IfcPropertyReferenceValue(IfcEntityInstanceDa
 Ifc2x3::IfcPropertyReferenceValue::IfcPropertyReferenceValue(std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UsageName, ::Ifc2x3::IfcObjectReferenceSelect* v4_PropertyReference) : IfcSimpleProperty((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcPropertyReferenceValue_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Name));data_->setArgument(0,attr);} if (v2_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Description));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_UsageName) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_UsageName));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_PropertyReference));data_->setArgument(3,attr);} }
 
 // Function implementations for IfcPropertySet
-IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcPropertySet::HasProperties() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcProperty>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcPropertySet::HasProperties() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcProperty >(); }
 void Ifc2x3::IfcPropertySet::setHasProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 
 
@@ -10038,7 +10038,7 @@ Ifc2x3::IfcRectangularTrimmedSurface::IfcRectangularTrimmedSurface(::Ifc2x3::Ifc
 // Function implementations for IfcReferencesValueDocument
 ::Ifc2x3::IfcDocumentSelect* Ifc2x3::IfcReferencesValueDocument::ReferencedDocument() const { return (::Ifc2x3::IfcDocumentSelect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcReferencesValueDocument::setReferencedDocument(::Ifc2x3::IfcDocumentSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr Ifc2x3::IfcReferencesValueDocument::ReferencingValues() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcAppliedValue>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr Ifc2x3::IfcReferencesValueDocument::ReferencingValues() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcAppliedValue >(); }
 void Ifc2x3::IfcReferencesValueDocument::setReferencingValues(IfcTemplatedEntityList< ::Ifc2x3::IfcAppliedValue >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 bool Ifc2x3::IfcReferencesValueDocument::hasName() const { return !data_->getArgument(2)->isNull(); }
 std::string Ifc2x3::IfcReferencesValueDocument::Name() const { return *data_->getArgument(2); }
@@ -10056,7 +10056,7 @@ Ifc2x3::IfcReferencesValueDocument::IfcReferencesValueDocument(::Ifc2x3::IfcDocu
 // Function implementations for IfcRegularTimeSeries
 double Ifc2x3::IfcRegularTimeSeries::TimeStep() const { return *data_->getArgument(8); }
 void Ifc2x3::IfcRegularTimeSeries::setTimeStep(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(8,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcTimeSeriesValue >::ptr Ifc2x3::IfcRegularTimeSeries::Values() const { IfcEntityList::ptr es = *data_->getArgument(9); return es->as<::Ifc2x3::IfcTimeSeriesValue>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcTimeSeriesValue >::ptr Ifc2x3::IfcRegularTimeSeries::Values() const { IfcEntityList::ptr es = *data_->getArgument(9); return es->as< ::Ifc2x3::IfcTimeSeriesValue >(); }
 void Ifc2x3::IfcRegularTimeSeries::setValues(IfcTemplatedEntityList< ::Ifc2x3::IfcTimeSeriesValue >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(9,attr);} }
 
 
@@ -10093,7 +10093,7 @@ Ifc2x3::IfcReinforcementBarProperties::IfcReinforcementBarProperties(double v1_T
 bool Ifc2x3::IfcReinforcementDefinitionProperties::hasDefinitionType() const { return !data_->getArgument(4)->isNull(); }
 std::string Ifc2x3::IfcReinforcementDefinitionProperties::DefinitionType() const { return *data_->getArgument(4); }
 void Ifc2x3::IfcReinforcementDefinitionProperties::setDefinitionType(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr Ifc2x3::IfcReinforcementDefinitionProperties::ReinforcementSectionDefinitions() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcSectionReinforcementProperties>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr Ifc2x3::IfcReinforcementDefinitionProperties::ReinforcementSectionDefinitions() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcSectionReinforcementProperties >(); }
 void Ifc2x3::IfcReinforcementDefinitionProperties::setReinforcementSectionDefinitions(IfcTemplatedEntityList< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -10168,7 +10168,7 @@ Ifc2x3::IfcRelAggregates::IfcRelAggregates(IfcEntityInstanceData* e) : IfcRelDec
 Ifc2x3::IfcRelAggregates::IfcRelAggregates(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects) : IfcRelDecomposes((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelAggregates_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatingObject));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_RelatedObjects)->generalize());data_->setArgument(5,attr);} }
 
 // Function implementations for IfcRelAssigns
-IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr Ifc2x3::IfcRelAssigns::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcObjectDefinition>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr Ifc2x3::IfcRelAssigns::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcObjectDefinition >(); }
 void Ifc2x3::IfcRelAssigns::setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 bool Ifc2x3::IfcRelAssigns::hasRelatedObjectsType() const { return !data_->getArgument(5)->isNull(); }
 ::Ifc2x3::IfcObjectTypeEnum::Value Ifc2x3::IfcRelAssigns::RelatedObjectsType() const { return ::Ifc2x3::IfcObjectTypeEnum::FromString(*data_->getArgument(5)); }
@@ -10266,7 +10266,7 @@ Ifc2x3::IfcRelAssignsToResource::IfcRelAssignsToResource(IfcEntityInstanceData* 
 Ifc2x3::IfcRelAssignsToResource::IfcRelAssignsToResource(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcResource* v7_RelatingResource) : IfcRelAssigns((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelAssignsToResource_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatedObjects)->generalize());data_->setArgument(4,attr);} if (v6_RelatedObjectsType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(*v6_RelatedObjectsType,::Ifc2x3::IfcObjectTypeEnum::ToString(*v6_RelatedObjectsType))));data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_RelatingResource));data_->setArgument(6,attr);} }
 
 // Function implementations for IfcRelAssociates
-IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr Ifc2x3::IfcRelAssociates::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcRoot>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr Ifc2x3::IfcRelAssociates::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcRoot >(); }
 void Ifc2x3::IfcRelAssociates::setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcRoot >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 
 
@@ -10488,7 +10488,7 @@ Ifc2x3::IfcRelConnectsWithEccentricity::IfcRelConnectsWithEccentricity(IfcEntity
 Ifc2x3::IfcRelConnectsWithEccentricity::IfcRelConnectsWithEccentricity(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember* v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection* v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition* v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D* v10_ConditionCoordinateSystem, ::Ifc2x3::IfcConnectionGeometry* v11_ConnectionConstraint) : IfcRelConnectsStructuralMember((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelConnectsWithEccentricity_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatingStructuralMember));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_RelatedStructuralConnection));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_AppliedCondition));data_->setArgument(6,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v8_AdditionalConditions));data_->setArgument(7,attr);} if (v9_SupportedLength) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_SupportedLength));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v10_ConditionCoordinateSystem));data_->setArgument(9,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v11_ConnectionConstraint));data_->setArgument(10,attr);} }
 
 // Function implementations for IfcRelConnectsWithRealizingElements
-IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr Ifc2x3::IfcRelConnectsWithRealizingElements::RealizingElements() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcElement>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr Ifc2x3::IfcRelConnectsWithRealizingElements::RealizingElements() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcElement >(); }
 void Ifc2x3::IfcRelConnectsWithRealizingElements::setRealizingElements(IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 bool Ifc2x3::IfcRelConnectsWithRealizingElements::hasConnectionType() const { return !data_->getArgument(8)->isNull(); }
 std::string Ifc2x3::IfcRelConnectsWithRealizingElements::ConnectionType() const { return *data_->getArgument(8); }
@@ -10501,7 +10501,7 @@ Ifc2x3::IfcRelConnectsWithRealizingElements::IfcRelConnectsWithRealizingElements
 Ifc2x3::IfcRelConnectsWithRealizingElements::IfcRelConnectsWithRealizingElements(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement, IfcTemplatedEntityList< ::Ifc2x3::IfcElement >::ptr v8_RealizingElements, boost::optional< std::string > v9_ConnectionType) : IfcRelConnectsElements((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelConnectsWithRealizingElements_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_ConnectionGeometry));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_RelatingElement));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_RelatedElement));data_->setArgument(6,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v8_RealizingElements)->generalize());data_->setArgument(7,attr);} if (v9_ConnectionType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_ConnectionType));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); } }
 
 // Function implementations for IfcRelContainedInSpatialStructure
-IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr Ifc2x3::IfcRelContainedInSpatialStructure::RelatedElements() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcProduct>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr Ifc2x3::IfcRelContainedInSpatialStructure::RelatedElements() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcProduct >(); }
 void Ifc2x3::IfcRelContainedInSpatialStructure::setRelatedElements(IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 ::Ifc2x3::IfcSpatialStructureElement* Ifc2x3::IfcRelContainedInSpatialStructure::RelatingStructure() const { return (::Ifc2x3::IfcSpatialStructureElement*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(5))); }
 void Ifc2x3::IfcRelContainedInSpatialStructure::setRelatingStructure(::Ifc2x3::IfcSpatialStructureElement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
@@ -10515,7 +10515,7 @@ Ifc2x3::IfcRelContainedInSpatialStructure::IfcRelContainedInSpatialStructure(std
 // Function implementations for IfcRelCoversBldgElements
 ::Ifc2x3::IfcElement* Ifc2x3::IfcRelCoversBldgElements::RelatingBuildingElement() const { return (::Ifc2x3::IfcElement*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(4))); }
 void Ifc2x3::IfcRelCoversBldgElements::setRelatingBuildingElement(::Ifc2x3::IfcElement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr Ifc2x3::IfcRelCoversBldgElements::RelatedCoverings() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcCovering>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr Ifc2x3::IfcRelCoversBldgElements::RelatedCoverings() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcCovering >(); }
 void Ifc2x3::IfcRelCoversBldgElements::setRelatedCoverings(IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -10527,7 +10527,7 @@ Ifc2x3::IfcRelCoversBldgElements::IfcRelCoversBldgElements(std::string v1_Global
 // Function implementations for IfcRelCoversSpaces
 ::Ifc2x3::IfcSpace* Ifc2x3::IfcRelCoversSpaces::RelatedSpace() const { return (::Ifc2x3::IfcSpace*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(4))); }
 void Ifc2x3::IfcRelCoversSpaces::setRelatedSpace(::Ifc2x3::IfcSpace* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr Ifc2x3::IfcRelCoversSpaces::RelatedCoverings() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcCovering>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr Ifc2x3::IfcRelCoversSpaces::RelatedCoverings() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcCovering >(); }
 void Ifc2x3::IfcRelCoversSpaces::setRelatedCoverings(IfcTemplatedEntityList< ::Ifc2x3::IfcCovering >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -10539,7 +10539,7 @@ Ifc2x3::IfcRelCoversSpaces::IfcRelCoversSpaces(std::string v1_GlobalId, ::Ifc2x3
 // Function implementations for IfcRelDecomposes
 ::Ifc2x3::IfcObjectDefinition* Ifc2x3::IfcRelDecomposes::RelatingObject() const { return (::Ifc2x3::IfcObjectDefinition*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(4))); }
 void Ifc2x3::IfcRelDecomposes::setRelatingObject(::Ifc2x3::IfcObjectDefinition* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr Ifc2x3::IfcRelDecomposes::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcObjectDefinition>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr Ifc2x3::IfcRelDecomposes::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcObjectDefinition >(); }
 void Ifc2x3::IfcRelDecomposes::setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -10549,7 +10549,7 @@ Ifc2x3::IfcRelDecomposes::IfcRelDecomposes(IfcEntityInstanceData* e) : IfcRelati
 Ifc2x3::IfcRelDecomposes::IfcRelDecomposes(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects) : IfcRelationship((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelDecomposes_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatingObject));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_RelatedObjects)->generalize());data_->setArgument(5,attr);} }
 
 // Function implementations for IfcRelDefines
-IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr Ifc2x3::IfcRelDefines::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcObject>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr Ifc2x3::IfcRelDefines::RelatedObjects() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcObject >(); }
 void Ifc2x3::IfcRelDefines::setRelatedObjects(IfcTemplatedEntityList< ::Ifc2x3::IfcObject >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 
 
@@ -10591,7 +10591,7 @@ Ifc2x3::IfcRelFillsElement::IfcRelFillsElement(IfcEntityInstanceData* e) : IfcRe
 Ifc2x3::IfcRelFillsElement::IfcRelFillsElement(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcOpeningElement* v5_RelatingOpeningElement, ::Ifc2x3::IfcElement* v6_RelatedBuildingElement) : IfcRelConnects((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelFillsElement_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatingOpeningElement));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_RelatedBuildingElement));data_->setArgument(5,attr);} }
 
 // Function implementations for IfcRelFlowControlElements
-IfcTemplatedEntityList< ::Ifc2x3::IfcDistributionControlElement >::ptr Ifc2x3::IfcRelFlowControlElements::RelatedControlElements() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcDistributionControlElement>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcDistributionControlElement >::ptr Ifc2x3::IfcRelFlowControlElements::RelatedControlElements() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcDistributionControlElement >(); }
 void Ifc2x3::IfcRelFlowControlElements::setRelatedControlElements(IfcTemplatedEntityList< ::Ifc2x3::IfcDistributionControlElement >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 ::Ifc2x3::IfcDistributionFlowElement* Ifc2x3::IfcRelFlowControlElements::RelatingFlowElement() const { return (::Ifc2x3::IfcDistributionFlowElement*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(5))); }
 void Ifc2x3::IfcRelFlowControlElements::setRelatingFlowElement(::Ifc2x3::IfcDistributionFlowElement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
@@ -10640,7 +10640,7 @@ Ifc2x3::IfcRelOccupiesSpaces::IfcRelOccupiesSpaces(IfcEntityInstanceData* e) : I
 Ifc2x3::IfcRelOccupiesSpaces::IfcRelOccupiesSpaces(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, IfcTemplatedEntityList< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole) : IfcRelAssignsToActor((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelOccupiesSpaces_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatedObjects)->generalize());data_->setArgument(4,attr);} if (v6_RelatedObjectsType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(*v6_RelatedObjectsType,::Ifc2x3::IfcObjectTypeEnum::ToString(*v6_RelatedObjectsType))));data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_RelatingActor));data_->setArgument(6,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v8_ActingRole));data_->setArgument(7,attr);} }
 
 // Function implementations for IfcRelOverridesProperties
-IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcRelOverridesProperties::OverridingProperties() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as<::Ifc2x3::IfcProperty>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr Ifc2x3::IfcRelOverridesProperties::OverridingProperties() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as< ::Ifc2x3::IfcProperty >(); }
 void Ifc2x3::IfcRelOverridesProperties::setOverridingProperties(IfcTemplatedEntityList< ::Ifc2x3::IfcProperty >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(6,attr);} }
 
 
@@ -10662,7 +10662,7 @@ Ifc2x3::IfcRelProjectsElement::IfcRelProjectsElement(IfcEntityInstanceData* e) :
 Ifc2x3::IfcRelProjectsElement::IfcRelProjectsElement(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingElement, ::Ifc2x3::IfcFeatureElementAddition* v6_RelatedFeatureElement) : IfcRelConnects((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcRelProjectsElement_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_RelatingElement));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_RelatedFeatureElement));data_->setArgument(5,attr);} }
 
 // Function implementations for IfcRelReferencedInSpatialStructure
-IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr Ifc2x3::IfcRelReferencedInSpatialStructure::RelatedElements() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as<::Ifc2x3::IfcProduct>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr Ifc2x3::IfcRelReferencedInSpatialStructure::RelatedElements() const { IfcEntityList::ptr es = *data_->getArgument(4); return es->as< ::Ifc2x3::IfcProduct >(); }
 void Ifc2x3::IfcRelReferencedInSpatialStructure::setRelatedElements(IfcTemplatedEntityList< ::Ifc2x3::IfcProduct >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(4,attr);} }
 ::Ifc2x3::IfcSpatialStructureElement* Ifc2x3::IfcRelReferencedInSpatialStructure::RelatingStructure() const { return (::Ifc2x3::IfcSpatialStructureElement*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(5))); }
 void Ifc2x3::IfcRelReferencedInSpatialStructure::setRelatingStructure(::Ifc2x3::IfcSpatialStructureElement* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(5,attr);} }
@@ -10700,7 +10700,7 @@ Ifc2x3::IfcRelSequence::IfcRelSequence(std::string v1_GlobalId, ::Ifc2x3::IfcOwn
 // Function implementations for IfcRelServicesBuildings
 ::Ifc2x3::IfcSystem* Ifc2x3::IfcRelServicesBuildings::RelatingSystem() const { return (::Ifc2x3::IfcSystem*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(4))); }
 void Ifc2x3::IfcRelServicesBuildings::setRelatingSystem(::Ifc2x3::IfcSystem* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcSpatialStructureElement >::ptr Ifc2x3::IfcRelServicesBuildings::RelatedBuildings() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcSpatialStructureElement>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcSpatialStructureElement >::ptr Ifc2x3::IfcRelServicesBuildings::RelatedBuildings() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcSpatialStructureElement >(); }
 void Ifc2x3::IfcRelServicesBuildings::setRelatedBuildings(IfcTemplatedEntityList< ::Ifc2x3::IfcSpatialStructureElement >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -10770,7 +10770,7 @@ void Ifc2x3::IfcRepresentation::setRepresentationIdentifier(std::string v) { {If
 bool Ifc2x3::IfcRepresentation::hasRepresentationType() const { return !data_->getArgument(2)->isNull(); }
 std::string Ifc2x3::IfcRepresentation::RepresentationType() const { return *data_->getArgument(2); }
 void Ifc2x3::IfcRepresentation::setRepresentationType(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr Ifc2x3::IfcRepresentation::Items() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as<::Ifc2x3::IfcRepresentationItem>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr Ifc2x3::IfcRepresentation::Items() const { IfcEntityList::ptr es = *data_->getArgument(3); return es->as< ::Ifc2x3::IfcRepresentationItem >(); }
 void Ifc2x3::IfcRepresentation::setItems(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationItem >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(3,attr);} }
 
 ::Ifc2x3::IfcRepresentationMap::list::ptr Ifc2x3::IfcRepresentation::RepresentationMap() const { return data_->getInverse(IFC2X3_IfcRepresentationMap_type, 1)->as<IfcRepresentationMap>(); }
@@ -11049,7 +11049,7 @@ void Ifc2x3::IfcSectionReinforcementProperties::setTransversePosition(double v) 
 void Ifc2x3::IfcSectionReinforcementProperties::setReinforcementRole(::Ifc2x3::IfcReinforcingBarRoleEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcReinforcingBarRoleEnum::ToString(v)));data_->setArgument(3,attr);} }
 ::Ifc2x3::IfcSectionProperties* Ifc2x3::IfcSectionReinforcementProperties::SectionDefinition() const { return (::Ifc2x3::IfcSectionProperties*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(4))); }
 void Ifc2x3::IfcSectionReinforcementProperties::setSectionDefinition(::Ifc2x3::IfcSectionProperties* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcReinforcementBarProperties >::ptr Ifc2x3::IfcSectionReinforcementProperties::CrossSectionReinforcementDefinitions() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcReinforcementBarProperties>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcReinforcementBarProperties >::ptr Ifc2x3::IfcSectionReinforcementProperties::CrossSectionReinforcementDefinitions() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcReinforcementBarProperties >(); }
 void Ifc2x3::IfcSectionReinforcementProperties::setCrossSectionReinforcementDefinitions(IfcTemplatedEntityList< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 
@@ -11061,9 +11061,9 @@ Ifc2x3::IfcSectionReinforcementProperties::IfcSectionReinforcementProperties(dou
 // Function implementations for IfcSectionedSpine
 ::Ifc2x3::IfcCompositeCurve* Ifc2x3::IfcSectionedSpine::SpineCurve() const { return (::Ifc2x3::IfcCompositeCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcSectionedSpine::setSpineCurve(::Ifc2x3::IfcCompositeCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr Ifc2x3::IfcSectionedSpine::CrossSections() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcProfileDef>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr Ifc2x3::IfcSectionedSpine::CrossSections() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcProfileDef >(); }
 void Ifc2x3::IfcSectionedSpine::setCrossSections(IfcTemplatedEntityList< ::Ifc2x3::IfcProfileDef >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcAxis2Placement3D >::ptr Ifc2x3::IfcSectionedSpine::CrossSectionPositions() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as<::Ifc2x3::IfcAxis2Placement3D>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcAxis2Placement3D >::ptr Ifc2x3::IfcSectionedSpine::CrossSectionPositions() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc2x3::IfcAxis2Placement3D >(); }
 void Ifc2x3::IfcSectionedSpine::setCrossSectionPositions(IfcTemplatedEntityList< ::Ifc2x3::IfcAxis2Placement3D >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
 
 
@@ -11113,7 +11113,7 @@ Ifc2x3::IfcServiceLifeFactor::IfcServiceLifeFactor(IfcEntityInstanceData* e) : I
 Ifc2x3::IfcServiceLifeFactor::IfcServiceLifeFactor(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value v5_PredefinedType, ::Ifc2x3::IfcMeasureValue* v6_UpperValue, ::Ifc2x3::IfcMeasureValue* v7_MostUsedValue, ::Ifc2x3::IfcMeasureValue* v8_LowerValue) : IfcPropertySetDefinition((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcServiceLifeFactor_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v5_PredefinedType,::Ifc2x3::IfcServiceLifeFactorTypeEnum::ToString(v5_PredefinedType))));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_UpperValue));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_MostUsedValue));data_->setArgument(6,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v8_LowerValue));data_->setArgument(7,attr);} }
 
 // Function implementations for IfcShapeAspect
-IfcTemplatedEntityList< ::Ifc2x3::IfcShapeModel >::ptr Ifc2x3::IfcShapeAspect::ShapeRepresentations() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcShapeModel>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcShapeModel >::ptr Ifc2x3::IfcShapeAspect::ShapeRepresentations() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcShapeModel >(); }
 void Ifc2x3::IfcShapeAspect::setShapeRepresentations(IfcTemplatedEntityList< ::Ifc2x3::IfcShapeModel >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 bool Ifc2x3::IfcShapeAspect::hasName() const { return !data_->getArgument(1)->isNull(); }
 std::string Ifc2x3::IfcShapeAspect::Name() const { return *data_->getArgument(1); }
@@ -11242,7 +11242,7 @@ void Ifc2x3::IfcSoundProperties::setIsAttenuating(bool v) { {IfcWrite::IfcWriteA
 bool Ifc2x3::IfcSoundProperties::hasSoundScale() const { return !data_->getArgument(5)->isNull(); }
 ::Ifc2x3::IfcSoundScaleEnum::Value Ifc2x3::IfcSoundProperties::SoundScale() const { return ::Ifc2x3::IfcSoundScaleEnum::FromString(*data_->getArgument(5)); }
 void Ifc2x3::IfcSoundProperties::setSoundScale(::Ifc2x3::IfcSoundScaleEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc2x3::IfcSoundScaleEnum::ToString(v)));data_->setArgument(5,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcSoundValue >::ptr Ifc2x3::IfcSoundProperties::SoundValues() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as<::Ifc2x3::IfcSoundValue>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcSoundValue >::ptr Ifc2x3::IfcSoundProperties::SoundValues() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as< ::Ifc2x3::IfcSoundValue >(); }
 void Ifc2x3::IfcSoundProperties::setSoundValues(IfcTemplatedEntityList< ::Ifc2x3::IfcSoundValue >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(6,attr);} }
 
 
@@ -11476,10 +11476,10 @@ bool Ifc2x3::IfcStructuralAnalysisModel::hasOrientationOf2DPlane() const { retur
 ::Ifc2x3::IfcAxis2Placement3D* Ifc2x3::IfcStructuralAnalysisModel::OrientationOf2DPlane() const { return (::Ifc2x3::IfcAxis2Placement3D*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(6))); }
 void Ifc2x3::IfcStructuralAnalysisModel::setOrientationOf2DPlane(::Ifc2x3::IfcAxis2Placement3D* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 bool Ifc2x3::IfcStructuralAnalysisModel::hasLoadedBy() const { return !data_->getArgument(7)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoadGroup >::ptr Ifc2x3::IfcStructuralAnalysisModel::LoadedBy() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcStructuralLoadGroup>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoadGroup >::ptr Ifc2x3::IfcStructuralAnalysisModel::LoadedBy() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcStructuralLoadGroup >(); }
 void Ifc2x3::IfcStructuralAnalysisModel::setLoadedBy(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoadGroup >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 bool Ifc2x3::IfcStructuralAnalysisModel::hasHasResults() const { return !data_->getArgument(8)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralResultGroup >::ptr Ifc2x3::IfcStructuralAnalysisModel::HasResults() const { IfcEntityList::ptr es = *data_->getArgument(8); return es->as<::Ifc2x3::IfcStructuralResultGroup>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralResultGroup >::ptr Ifc2x3::IfcStructuralAnalysisModel::HasResults() const { IfcEntityList::ptr es = *data_->getArgument(8); return es->as< ::Ifc2x3::IfcStructuralResultGroup >(); }
 void Ifc2x3::IfcStructuralAnalysisModel::setHasResults(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralResultGroup >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(8,attr);} }
 
 
@@ -11559,7 +11559,7 @@ Ifc2x3::IfcStructuralLinearAction::IfcStructuralLinearAction(std::string v1_Glob
 // Function implementations for IfcStructuralLinearActionVarying
 ::Ifc2x3::IfcShapeAspect* Ifc2x3::IfcStructuralLinearActionVarying::VaryingAppliedLoadLocation() const { return (::Ifc2x3::IfcShapeAspect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(12))); }
 void Ifc2x3::IfcStructuralLinearActionVarying::setVaryingAppliedLoadLocation(::Ifc2x3::IfcShapeAspect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(12,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr Ifc2x3::IfcStructuralLinearActionVarying::SubsequentAppliedLoads() const { IfcEntityList::ptr es = *data_->getArgument(13); return es->as<::Ifc2x3::IfcStructuralLoad>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr Ifc2x3::IfcStructuralLinearActionVarying::SubsequentAppliedLoads() const { IfcEntityList::ptr es = *data_->getArgument(13); return es->as< ::Ifc2x3::IfcStructuralLoad >(); }
 void Ifc2x3::IfcStructuralLinearActionVarying::setSubsequentAppliedLoads(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(13,attr);} }
 
 
@@ -11766,7 +11766,7 @@ Ifc2x3::IfcStructuralPlanarAction::IfcStructuralPlanarAction(std::string v1_Glob
 // Function implementations for IfcStructuralPlanarActionVarying
 ::Ifc2x3::IfcShapeAspect* Ifc2x3::IfcStructuralPlanarActionVarying::VaryingAppliedLoadLocation() const { return (::Ifc2x3::IfcShapeAspect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(12))); }
 void Ifc2x3::IfcStructuralPlanarActionVarying::setVaryingAppliedLoadLocation(::Ifc2x3::IfcShapeAspect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(12,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr Ifc2x3::IfcStructuralPlanarActionVarying::SubsequentAppliedLoads() const { IfcEntityList::ptr es = *data_->getArgument(13); return es->as<::Ifc2x3::IfcStructuralLoad>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr Ifc2x3::IfcStructuralPlanarActionVarying::SubsequentAppliedLoads() const { IfcEntityList::ptr es = *data_->getArgument(13); return es->as< ::Ifc2x3::IfcStructuralLoad >(); }
 void Ifc2x3::IfcStructuralPlanarActionVarying::setSubsequentAppliedLoads(IfcTemplatedEntityList< ::Ifc2x3::IfcStructuralLoad >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(13,attr);} }
 
 
@@ -11953,7 +11953,7 @@ Ifc2x3::IfcStyleModel::IfcStyleModel(::Ifc2x3::IfcRepresentationContext* v1_Cont
 bool Ifc2x3::IfcStyledItem::hasItem() const { return !data_->getArgument(0)->isNull(); }
 ::Ifc2x3::IfcRepresentationItem* Ifc2x3::IfcStyledItem::Item() const { return (::Ifc2x3::IfcRepresentationItem*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc2x3::IfcStyledItem::setItem(::Ifc2x3::IfcRepresentationItem* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr Ifc2x3::IfcStyledItem::Styles() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcPresentationStyleAssignment>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr Ifc2x3::IfcStyledItem::Styles() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcPresentationStyleAssignment >(); }
 void Ifc2x3::IfcStyledItem::setStyles(IfcTemplatedEntityList< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 bool Ifc2x3::IfcStyledItem::hasName() const { return !data_->getArgument(2)->isNull(); }
 std::string Ifc2x3::IfcStyledItem::Name() const { return *data_->getArgument(2); }
@@ -12127,7 +12127,7 @@ Ifc2x3::IfcSurfaceStyleShading::IfcSurfaceStyleShading(IfcEntityInstanceData* e)
 Ifc2x3::IfcSurfaceStyleShading::IfcSurfaceStyleShading(::Ifc2x3::IfcColourRgb* v1_SurfaceColour) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC2X3_IfcSurfaceStyleShading_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_SurfaceColour));data_->setArgument(0,attr);} }
 
 // Function implementations for IfcSurfaceStyleWithTextures
-IfcTemplatedEntityList< ::Ifc2x3::IfcSurfaceTexture >::ptr Ifc2x3::IfcSurfaceStyleWithTextures::Textures() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcSurfaceTexture>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcSurfaceTexture >::ptr Ifc2x3::IfcSurfaceStyleWithTextures::Textures() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcSurfaceTexture >(); }
 void Ifc2x3::IfcSurfaceStyleWithTextures::setTextures(IfcTemplatedEntityList< ::Ifc2x3::IfcSurfaceTexture >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -12270,7 +12270,7 @@ Ifc2x3::IfcTShapeProfileDef::IfcTShapeProfileDef(::Ifc2x3::IfcProfileTypeEnum::V
 // Function implementations for IfcTable
 std::string Ifc2x3::IfcTable::Name() const { return *data_->getArgument(0); }
 void Ifc2x3::IfcTable::setName(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcTableRow >::ptr Ifc2x3::IfcTable::Rows() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcTableRow>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcTableRow >::ptr Ifc2x3::IfcTable::Rows() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcTableRow >(); }
 void Ifc2x3::IfcTable::setRows(IfcTemplatedEntityList< ::Ifc2x3::IfcTableRow >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -12544,7 +12544,7 @@ Ifc2x3::IfcTextureCoordinateGenerator::IfcTextureCoordinateGenerator(IfcEntityIn
 Ifc2x3::IfcTextureCoordinateGenerator::IfcTextureCoordinateGenerator(std::string v1_Mode, IfcEntityList::ptr v2_Parameter) : IfcTextureCoordinate((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcTextureCoordinateGenerator_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Mode));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_Parameter));data_->setArgument(1,attr);} }
 
 // Function implementations for IfcTextureMap
-IfcTemplatedEntityList< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr Ifc2x3::IfcTextureMap::TextureMaps() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcVertexBasedTextureMap>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr Ifc2x3::IfcTextureMap::TextureMaps() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcVertexBasedTextureMap >(); }
 void Ifc2x3::IfcTextureMap::setTextureMaps(IfcTemplatedEntityList< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 
 
@@ -12760,7 +12760,7 @@ bool Ifc2x3::IfcTypeObject::hasApplicableOccurrence() const { return !data_->get
 std::string Ifc2x3::IfcTypeObject::ApplicableOccurrence() const { return *data_->getArgument(4); }
 void Ifc2x3::IfcTypeObject::setApplicableOccurrence(std::string v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 bool Ifc2x3::IfcTypeObject::hasHasPropertySets() const { return !data_->getArgument(5)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr Ifc2x3::IfcTypeObject::HasPropertySets() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as<::Ifc2x3::IfcPropertySetDefinition>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr Ifc2x3::IfcTypeObject::HasPropertySets() const { IfcEntityList::ptr es = *data_->getArgument(5); return es->as< ::Ifc2x3::IfcPropertySetDefinition >(); }
 void Ifc2x3::IfcTypeObject::setHasPropertySets(IfcTemplatedEntityList< ::Ifc2x3::IfcPropertySetDefinition >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(5,attr);} }
 
 ::Ifc2x3::IfcRelDefinesByType::list::ptr Ifc2x3::IfcTypeObject::ObjectTypeOf() const { return data_->getInverse(IFC2X3_IfcRelDefinesByType_type, 5)->as<IfcRelDefinesByType>(); }
@@ -12772,7 +12772,7 @@ Ifc2x3::IfcTypeObject::IfcTypeObject(std::string v1_GlobalId, ::Ifc2x3::IfcOwner
 
 // Function implementations for IfcTypeProduct
 bool Ifc2x3::IfcTypeProduct::hasRepresentationMaps() const { return !data_->getArgument(6)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr Ifc2x3::IfcTypeProduct::RepresentationMaps() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as<::Ifc2x3::IfcRepresentationMap>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr Ifc2x3::IfcTypeProduct::RepresentationMaps() const { IfcEntityList::ptr es = *data_->getArgument(6); return es->as< ::Ifc2x3::IfcRepresentationMap >(); }
 void Ifc2x3::IfcTypeProduct::setRepresentationMaps(IfcTemplatedEntityList< ::Ifc2x3::IfcRepresentationMap >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(6,attr);} }
 bool Ifc2x3::IfcTypeProduct::hasTag() const { return !data_->getArgument(7)->isNull(); }
 std::string Ifc2x3::IfcTypeProduct::Tag() const { return *data_->getArgument(7); }
@@ -12863,9 +12863,9 @@ Ifc2x3::IfcVertex::IfcVertex(IfcEntityInstanceData* e) : IfcTopologicalRepresent
 Ifc2x3::IfcVertex::IfcVertex() : IfcTopologicalRepresentationItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcVertex_type);  }
 
 // Function implementations for IfcVertexBasedTextureMap
-IfcTemplatedEntityList< ::Ifc2x3::IfcTextureVertex >::ptr Ifc2x3::IfcVertexBasedTextureMap::TextureVertices() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcTextureVertex>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcTextureVertex >::ptr Ifc2x3::IfcVertexBasedTextureMap::TextureVertices() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcTextureVertex >(); }
 void Ifc2x3::IfcVertexBasedTextureMap::setTextureVertices(IfcTemplatedEntityList< ::Ifc2x3::IfcTextureVertex >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
-IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcVertexBasedTextureMap::TexturePoints() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as<::Ifc2x3::IfcCartesianPoint>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr Ifc2x3::IfcVertexBasedTextureMap::TexturePoints() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc2x3::IfcCartesianPoint >(); }
 void Ifc2x3::IfcVertexBasedTextureMap::setTexturePoints(IfcTemplatedEntityList< ::Ifc2x3::IfcCartesianPoint >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
 
 
@@ -12913,7 +12913,7 @@ Ifc2x3::IfcVirtualElement::IfcVirtualElement(IfcEntityInstanceData* e) : IfcElem
 Ifc2x3::IfcVirtualElement::IfcVirtualElement(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag) : IfcElement((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC2X3_IfcVirtualElement_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ObjectType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ObjectType));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_ObjectPlacement));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_Representation));data_->setArgument(6,attr);} if (v8_Tag) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Tag));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } }
 
 // Function implementations for IfcVirtualGridIntersection
-IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcVirtualGridIntersection::IntersectingAxes() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as<::Ifc2x3::IfcGridAxis>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr Ifc2x3::IfcVirtualGridIntersection::IntersectingAxes() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc2x3::IfcGridAxis >(); }
 void Ifc2x3::IfcVirtualGridIntersection::setIntersectingAxes(IfcTemplatedEntityList< ::Ifc2x3::IfcGridAxis >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(0,attr);} }
 std::vector< double > /*[2:3]*/ Ifc2x3::IfcVirtualGridIntersection::OffsetDistances() const { return *data_->getArgument(1); }
 void Ifc2x3::IfcVirtualGridIntersection::setOffsetDistances(std::vector< double > /*[2:3]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
@@ -13081,7 +13081,7 @@ void Ifc2x3::IfcWorkControl::setIdentifier(std::string v) { {IfcWrite::IfcWriteA
 ::Ifc2x3::IfcDateTimeSelect* Ifc2x3::IfcWorkControl::CreationDate() const { return (::Ifc2x3::IfcDateTimeSelect*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(6))); }
 void Ifc2x3::IfcWorkControl::setCreationDate(::Ifc2x3::IfcDateTimeSelect* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(6,attr);} }
 bool Ifc2x3::IfcWorkControl::hasCreators() const { return !data_->getArgument(7)->isNull(); }
-IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr Ifc2x3::IfcWorkControl::Creators() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as<::Ifc2x3::IfcPerson>(); }
+IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr Ifc2x3::IfcWorkControl::Creators() const { IfcEntityList::ptr es = *data_->getArgument(7); return es->as< ::Ifc2x3::IfcPerson >(); }
 void Ifc2x3::IfcWorkControl::setCreators(IfcTemplatedEntityList< ::Ifc2x3::IfcPerson >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(7,attr);} }
 bool Ifc2x3::IfcWorkControl::hasPurpose() const { return !data_->getArgument(8)->isNull(); }
 std::string Ifc2x3::IfcWorkControl::Purpose() const { return *data_->getArgument(8); }
