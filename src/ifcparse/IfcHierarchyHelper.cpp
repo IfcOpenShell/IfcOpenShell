@@ -82,7 +82,7 @@ typename Schema::IfcOwnerHistory* IfcHierarchyHelper<Schema>::addOwnerHistory() 
 
 	int timestamp = (int) time(0);
 	typename Schema::IfcOwnerHistory* owner_hist = new typename Schema::IfcOwnerHistory(person_and_org, application, 
-		boost::none, typename Schema::IfcChangeActionEnum::IfcChangeAction_ADDED, timestamp, person_and_org, application, timestamp);
+		boost::none, Schema::IfcChangeActionEnum::IfcChangeAction_ADDED, timestamp, person_and_org, application, timestamp);
 
 	addEntity(person);
 	addEntity(organization);
@@ -99,14 +99,14 @@ typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Sch
 
 	IfcEntityList::ptr units (new IfcEntityList);
 	typename Schema::IfcDimensionalExponents* dimexp = new typename Schema::IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0);
-	typename Schema::IfcSIUnit* unit1 = new typename Schema::IfcSIUnit(typename Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
-		typename Schema::IfcSIPrefix::IfcSIPrefix_MILLI, typename Schema::IfcSIUnitName::IfcSIUnitName_METRE);
-	typename Schema::IfcSIUnit* unit2a = new typename Schema::IfcSIUnit(typename Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
-		boost::none, typename Schema::IfcSIUnitName::IfcSIUnitName_RADIAN);
+	typename Schema::IfcSIUnit* unit1 = new typename Schema::IfcSIUnit(Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, 
+		Schema::IfcSIPrefix::IfcSIPrefix_MILLI, Schema::IfcSIUnitName::IfcSIUnitName_METRE);
+	typename Schema::IfcSIUnit* unit2a = new typename Schema::IfcSIUnit(Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, 
+		boost::none, Schema::IfcSIUnitName::IfcSIUnitName_RADIAN);
 	typename Schema::IfcMeasureWithUnit* unit2b = new typename Schema::IfcMeasureWithUnit(
 		new typename Schema::IfcPlaneAngleMeasure(0.017453293), unit2a);
 	typename Schema::IfcConversionBasedUnit* unit2 = new typename Schema::IfcConversionBasedUnit(dimexp, 
-		typename Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, "Degrees", unit2b);
+		Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT, "Degrees", unit2b);
 
 	units->push(unit1);
 	units->push(unit2);
@@ -155,7 +155,7 @@ typename Schema::IfcSite* IfcHierarchyHelper<Schema>::addSite(typename Schema::I
 
 	typename Schema::IfcSite* site = new typename Schema::IfcSite(IfcParse::IfcGlobalId(), owner_hist, boost::none, 
 		boost::none, boost::none, addLocalPlacement(), 0, boost::none, 
-		typename Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
+		Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
 		boost::none, boost::none, boost::none, boost::none, 0);
 
 	addEntity(site);
@@ -178,7 +178,7 @@ typename Schema::IfcBuilding* IfcHierarchyHelper<Schema>::addBuilding(typename S
 		site = addSite(0, owner_hist);
 	}
 	typename Schema::IfcBuilding* building = new typename Schema::IfcBuilding(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, boost::none, 
-		addLocalPlacement(), 0, boost::none, typename Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
+		addLocalPlacement(), 0, boost::none, Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, 
 		boost::none, boost::none, 0);
 
 	addEntity(building);
@@ -206,7 +206,7 @@ typename Schema::IfcBuildingStorey* IfcHierarchyHelper<Schema>::addBuildingStore
 	}
 	typename Schema::IfcBuildingStorey* storey = new typename Schema::IfcBuildingStorey(IfcParse::IfcGlobalId(), 
 		owner_hist, boost::none, boost::none, boost::none, addLocalPlacement(), 0, boost::none, 
-		typename Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, boost::none);
+		Schema::IfcElementCompositionEnum::IfcElementComposition_ELEMENT, boost::none);
 
 	addEntity(storey);
 	addRelatedObject<typename Schema::IfcRelAggregates>(building, storey);
@@ -255,7 +255,7 @@ void IfcHierarchyHelper<Schema>::addExtrudedPolyline(typename Schema::IfcShapeRe
 	if (cartesian_points->size()) cartesian_points->push(*cartesian_points->begin());
 	typename Schema::IfcPolyline* line = new typename Schema::IfcPolyline(cartesian_points);
 	typename Schema::IfcArbitraryClosedProfileDef* profile = new typename Schema::IfcArbitraryClosedProfileDef(
-		typename Schema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, line);
+		Schema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, line);
 
 	typename Schema::IfcExtrudedAreaSolid* solid = new typename Schema::IfcExtrudedAreaSolid(
 		profile, place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1), h);
@@ -295,7 +295,7 @@ void IfcHierarchyHelper<Schema>::addBox(typename Schema::IfcShapeRepresentation*
 {
 	if (false) { // TODO What's this?
 		typename Schema::IfcRectangleProfileDef* profile = new typename Schema::IfcRectangleProfileDef(
-			typename Schema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, place ? place : addPlacement2d(), w, d);
+			Schema::IfcProfileTypeEnum::IfcProfileType_AREA, boost::none, place ? place : addPlacement2d(), w, d);
 		typename Schema::IfcExtrudedAreaSolid* solid = new typename Schema::IfcExtrudedAreaSolid(profile, 
 			place2 ? place2 : addPlacement3d(), dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1), h);
 
@@ -395,7 +395,7 @@ void IfcHierarchyHelper<Schema>::clipRepresentation(typename Schema::IfcRepresen
 	for (typename Schema::IfcRepresentationItem::list::it i = items->begin(); i != items->end(); ++i) {
 		typename Schema::IfcRepresentationItem* item = *i;
 		typename Schema::IfcBooleanClippingResult* clip = new typename Schema::IfcBooleanClippingResult(
-			typename Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
+			Schema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE, item, half_space);
 		addEntity(clip);
 		new_items->push(clip);
 	}
@@ -407,14 +407,14 @@ typename Schema::IfcPresentationStyleAssignment* IfcHierarchyHelper<Schema>::add
 	typename Schema::IfcColourRgb* colour = new typename Schema::IfcColourRgb(boost::none, r, g, b);
 	typename Schema::IfcSurfaceStyleRendering* rendering = a == 1.0
 		? new typename Schema::IfcSurfaceStyleRendering(colour, boost::none, 0, 0, 0, 0, 
-			0, 0, typename Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
+			0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT)
 		: new typename Schema::IfcSurfaceStyleRendering(colour, 1.0-a, 0, 0, 0, 0, 
-			0, 0, typename Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
+			0, 0, Schema::IfcReflectanceMethodEnum::IfcReflectanceMethod_FLAT);
 
 	IfcEntityList::ptr styles(new IfcEntityList());
 	styles->push(rendering);
 	typename Schema::IfcSurfaceStyle* surface_style = new typename Schema::IfcSurfaceStyle(
-		boost::none, typename Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
+		boost::none, Schema::IfcSurfaceSide::IfcSurfaceSide_BOTH, styles);
 	IfcEntityList::ptr surface_styles(new IfcEntityList());
 	surface_styles->push(surface_style);
 	typename Schema::IfcPresentationStyleAssignment* style_assignment = 
@@ -541,7 +541,7 @@ typename Schema::IfcShapeRepresentation* IfcHierarchyHelper<Schema>::addEmptyRep
 
 template <typename Schema>
 typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::getRepresentationContext(const std::string& s) {
-	std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
+	typename std::map<std::string, typename Schema::IfcGeometricRepresentationContext*>::const_iterator it = contexts.find(s);
 	if (it != contexts.end()) return it->second;
 	else {
 		typename Schema::IfcProject* project = getSingle<typename Schema::IfcProject>();
@@ -558,5 +558,5 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
 	}
 }
 
-template IFC_PARSE_API IfcHierarchyHelper<Ifc2x3>;
-template IFC_PARSE_API IfcHierarchyHelper<Ifc4>;
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc2x3>;
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4>;
