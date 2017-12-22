@@ -187,12 +187,12 @@ class IFC_PARSE_API IfcFileWithSchema : public IfcFile {
 public:
 	std::pair<typename Schema::IfcNamedUnit*, double> getUnit(typename Schema::IfcUnitEnum::Value unit_type) {
 		std::pair<IfcUtil::IfcBaseClass*, double> unit_info = IfcFile::getUnit(Schema::IfcUnitEnum::ToString(unit_type));
-		return std::make_pair(unit_info.first->as<typename Schema::IfcNamedUnit>(), unit_info.second);
+		return std::make_pair(unit_info.first->template as<typename Schema::IfcNamedUnit>(), unit_info.second);
 	}
 	
 	/// Returns the entity with the specified GlobalId
-	virtual typename Schema::IfcRoot::list::ptr instance_by_guid(const std::string& guid) {
-		return IfcFile::instance_by_guid(guid)->as<typename Schema::IfcRoot>();
+	virtual typename Schema::IfcRoot* instance_by_guid(const std::string& guid) {
+		return IfcFile::instance_by_guid(guid)->template as<typename Schema::IfcRoot>();
 	}
 };
 

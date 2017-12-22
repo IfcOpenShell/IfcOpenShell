@@ -135,6 +135,8 @@ namespace IfcParse {
 			, schema_(0)
 		{}
 
+		virtual ~declaration() {}
+
 		const std::string& name() const { return name_; }
 		const std::string& name_lc() const { return name_lower_; }
 
@@ -232,7 +234,7 @@ namespace IfcParse {
 			{}
 
 			const std::string& name() const { return name_; }
-			aggregate_type type_of_aggregation() const { type_of_aggregation_; }
+			aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
 			int bound1() const { return bound1_; }
 			int bound2() const { return bound2_; }
 			const entity* entity_reference() const { return entity_reference_; }
@@ -358,7 +360,7 @@ namespace IfcParse {
 						index = std::distance(current->attributes().begin(), it);
 					}
 				}
-			} while ((current = current->supertype_));
+			} while ((current = current->supertype_) != 0);
 			return index;
 		}
 
@@ -376,7 +378,7 @@ namespace IfcParse {
 						index = std::distance(current->attributes().begin(), it);
 					}
 				}
-			} while ((current = current->supertype_));
+			} while ((current = current->supertype_) != 0);
 			return index;
 		}
 
