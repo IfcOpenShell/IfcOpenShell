@@ -130,7 +130,7 @@ typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Sch
 template <typename Schema>
 void IfcHierarchyHelper<Schema>::relatePlacements(typename Schema::IfcProduct* parent, typename Schema::IfcProduct* product) {
 	typename Schema::IfcObjectPlacement* place = product->hasObjectPlacement() ? product->ObjectPlacement() : 0;
-	if (place && place->declaration().is(typename Schema::IfcLocalPlacement::Class())) {
+	if (place && place->declaration().is(Schema::IfcLocalPlacement::Class())) {
 		typename Schema::IfcLocalPlacement* local_place = (typename Schema::IfcLocalPlacement*) place;
 		if (parent->hasObjectPlacement()) {
 			local_place->setPlacementRelTo(parent->ObjectPlacement());
