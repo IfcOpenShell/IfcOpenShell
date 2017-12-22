@@ -70,10 +70,11 @@
 }
 
 %module ifcopenshell_wrapper %{
-	#include "../ifcgeom/IfcGeom.h"
-	#include "../ifcgeom/IfcGeomIterator.h"
+	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom/IfcGeomTree.h"
 
+	#include "../ifcparse/Ifc2x3.h"
+	#include "../ifcparse/Ifc4.h"
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
 

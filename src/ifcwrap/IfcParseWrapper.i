@@ -58,12 +58,18 @@ private:
 %rename("add") addEntity;
 %rename("remove") removeEntity;
 
+%{
+static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
+	return decl->name();
+}
+%}
+
 %extend IfcParse::IfcFile {
 	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
-		return $self->entityByGuid(guid);
+		return $self->instance_by_guid(guid);
 	}
 	IfcEntityList::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
-		return $self->getInverse(e->data().id(), IfcSchema::Type::UNDEFINED, -1);
+		return $self->getInverse(e->data().id(), 0, -1);
 	}
 
 	void write(const std::string& fn) {
@@ -84,7 +90,7 @@ private:
 		const size_t n = std::distance($self->types_begin(), $self->types_end());
 		std::vector<std::string> ts;
 		ts.reserve(n);
-		std::transform($self->types_begin(), $self->types_end(), std::back_inserter(ts), IfcSchema::Type::ToString);
+		std::transform($self->types_begin(), $self->types_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
 		return ts;
 	}
 
@@ -92,7 +98,7 @@ private:
 		const size_t n = std::distance($self->types_incl_super_begin(), $self->types_incl_super_end());
 		std::vector<std::string> ts;
 		ts.reserve(n);
-		std::transform($self->types_incl_super_begin(), $self->types_incl_super_end(), std::back_inserter(ts), IfcSchema::Type::ToString);
+		std::transform($self->types_incl_super_begin(), $self->types_incl_super_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
 		return ts;
 	}
 
@@ -106,7 +112,7 @@ private:
 %extend IfcUtil::IfcBaseClass {
 
 	int get_attribute_category(const std::string& name) const {
-		if (IfcSchema::Type::IsSimple($self->declaration().type())) {
+		if (!$self->declaration().as_entity()) {
 			return name == "wrappedValue";
 		}
 		
@@ -177,7 +183,7 @@ private:
 	}
 	
 	bool is_a(const std::string& s) {
-		return self->declaration().is(IfcSchema::Type::FromString(boost::to_upper_copy(s)));
+		return self->declaration().is(s);
 	}
 
 	std::string is_a() const {
@@ -197,7 +203,7 @@ private:
 		if ($self == other) {
 			return true;
 		}
-		if (IfcSchema::Type::IsSimple($self->declaration().type()) || IfcSchema::Type::IsSimple(other->declaration().type())) {
+		if (!$self->declaration().as_entity() || !other->declaration().as_entity()) {
 			/// @todo
 			return false;
 		} else {
@@ -226,7 +232,7 @@ private:
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == a) {
 				return self->data().getInverse(
-					(*it)->entity_reference()->type(),
+					(*it)->entity_reference(),
 					(*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
 			}
 		}
@@ -286,7 +292,7 @@ private:
 			arg->set(a);
 			self->data().setArgument(i, arg);	
 		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
-			const IfcParse::enumeration_type* enum_type = get_schema().declaration_by_name($self->declaration().type())->as_entity()->
+			const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
 			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
 		
 			std::vector<std::string>::const_iterator it = std::find(
@@ -489,48 +495,35 @@ private:
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& fn) {
-		IfcParse::IfcFile* f = new IfcParse::IfcFile();
-		f->Init(fn);
+		IfcParse::IfcFile* f = new IfcParse::IfcFile(fn);
 		return f;
 	}
+
     IfcParse::IfcFile* read(const std::string& data) {
 		char* copiedData = new char[data.length()];
 		memcpy(copiedData, data.c_str(), data.length());
-		IfcParse::IfcFile* f = new IfcParse::IfcFile();
-		f->Init((void *)copiedData, data.length());
+		IfcParse::IfcFile* f = new IfcParse::IfcFile((void *)copiedData, data.length());
 		return f;
-	}
-	const char* schema_identifier() {
-		return IfcSchema::Identifier;
 	}
 
 	const char* version() {
 		return IFCOPENSHELL_VERSION;
 	}
 
-	std::string get_supertype(std::string n) {
-		boost::to_upper(n);
-		IfcSchema::Type::Enum t = IfcSchema::Type::FromString(n);
-		if (IfcSchema::Type::Parent(t)) {
-			return IfcSchema::Type::ToString(*IfcSchema::Type::Parent(t));
-		} else {
-			return "";
-		}
-	}
-
-	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& s) {
-		IfcSchema::Type::Enum ty = IfcSchema::Type::FromString(boost::to_upper_copy(s));
-		IfcEntityInstanceData* data = new IfcEntityInstanceData(ty);
+	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& schema_identifier, const std::string& name) {
+		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
+		const IfcParse::declaration* decl = schema->declaration_by_name(name);
+		IfcEntityInstanceData* data = new IfcEntityInstanceData(decl);
 		
 		size_t attr_count = 1;
-		if (get_schema().declaration_by_name(ty)->as_entity()) {
-			attr_count = get_schema().declaration_by_name(ty)->as_entity()->attribute_count();
+		if (decl->as_entity()) {
+			attr_count = decl->as_entity()->attribute_count();
 		}
 
 		data->setArgument(attr_count - 1, new IfcWrite::IfcWriteArgument());
 
-		if (get_schema().declaration_by_name(ty)->as_entity()) {			
-			const std::vector<bool>& derived = get_schema().declaration_by_name(ty)->as_entity()->derived();
+		if (decl->as_entity()) {			
+			const std::vector<bool>& derived = decl->as_entity()->derived();
 			std::vector<bool>::const_iterator it = derived.begin();
 
 			size_t index = 0;
@@ -543,7 +536,7 @@ private:
 			}
 		}
 		
-		return IfcSchema::SchemaEntity(data);
+		return schema->instantiate(data);
 	}
 %}
 

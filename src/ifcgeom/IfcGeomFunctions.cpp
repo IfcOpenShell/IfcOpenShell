@@ -145,6 +145,68 @@
 #endif
 #endif
 
+
+#define MAKE_INIT_FN__(a, b) init_ ## a ## b
+#define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
+#define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
+
+void MAKE_INIT_FN(Kernel)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
+	static const std::string schema_name = STRINGIFY(IfcSchema);
+
+	struct {
+		IfcGeom::Kernel* operator()(IfcParse::IfcFile* file) const {
+			IfcGeom::MAKE_TYPE_NAME(Kernel)* k = new IfcGeom::MAKE_TYPE_NAME(Kernel);
+			if (file) {
+				double unit_magnitude = 1.;
+
+				// Set unit information from file
+
+				IfcSchema::IfcProject::list::ptr projects = file->instances_by_type<IfcSchema::IfcProject>();
+				if (projects->size() == 1) {
+					IfcSchema::IfcProject* project = *projects->begin();
+					std::pair<std::string, double> unit_info = k->initializeUnits(project->UnitsInContext());
+					unit_magnitude = unit_info.second;
+				}
+
+				// Set precision from file
+
+				double lowest_precision_encountered = std::numeric_limits<double>::infinity();
+				bool any_precision_encountered = false;
+
+				IfcSchema::IfcGeometricRepresentationContext::list::it it;
+				IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts =
+					file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
+
+				for (it = contexts->begin(); it != contexts->end(); ++it) {
+					IfcSchema::IfcGeometricRepresentationContext* context = *it;
+					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
+						// Some arbitrary factor that has proven to work better for the models in the set of test files.
+						lowest_precision_encountered = context->Precision() * unit_magnitude * 10.;
+						any_precision_encountered = true;
+					}
+				}
+
+				double precision_to_set = 1.e-5;
+
+				if (any_precision_encountered) {
+					if (lowest_precision_encountered < 1.e-7) {
+						Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
+						precision_to_set = 1.e-7;
+					} else {
+						precision_to_set = lowest_precision_encountered;
+					}
+				}
+
+				k->setValue(IfcGeom::Kernel::GV_PRECISION, precision_to_set);
+			}
+			return k;
+		}
+	} factory;
+
+	mapping->bind(schema_name, factory);
+}
+
+
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
@@ -1783,15 +1845,6 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Curve& crv, const gp_Pnt& pt, gp
 	sac.Project(crv, pt, 1e-3, p, u, false);
 	d = pt.Distance(p);
 	return true;
-}
-
-int IfcGeom::Kernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t) {
-	int i = 0;
-	TopExp_Explorer exp(s, t);
-	for (; exp.More(); exp.Next()) {
-		++i;
-	}
-	return i;
 }
 
 bool IfcGeom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pnt& start, gp_Pnt& end) {

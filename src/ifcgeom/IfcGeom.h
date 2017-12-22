@@ -79,6 +79,11 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #define MAKE_TYPE_NAME_(a, b) MAKE_TYPE_NAME__(a, b)
 #define MAKE_TYPE_NAME(t) MAKE_TYPE_NAME_(t, IfcSchema)
 
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+#define INCLUDE(x) STRINGIFY(../ifcparse/x.h)
+#include INCLUDE(IfcSchema)
+
 namespace IfcGeom {
 
 class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
@@ -178,8 +183,7 @@ public:
 	bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
 	bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
 	bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen=0.1);
-	static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
-
+	
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
@@ -194,8 +198,6 @@ public:
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face); 
 	void apply_tolerance(TopoDS_Shape& s, double t);
-	void setValue(GeomValue var, double value);
-	double getValue(GeomValue var) const;
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	void remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
@@ -230,7 +232,7 @@ public:
 	template <typename P>
     IfcGeom::BRepElement<P>* create_brep_for_processed_representation(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
-	
+
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
 	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
@@ -298,6 +300,25 @@ public:
 	void set_conversion_placement_rel_to(const IfcParse::declaration* type);
 
 #include "IfcRegisterGeomHeader.h"
+
+	virtual void setValue(GeomValue var, double value);
+	virtual double getValue(GeomValue var) const;
+
+	virtual IfcGeom::BRepElement<double>* convert(
+		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
+		IfcUtil::IfcBaseClass* product)
+	{
+		return create_brep_for_representation_and_product<double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
+	}
+
+	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {
+		IfcRepresentationShapeItems items;
+		bool success = convert_shapes(item, items);
+		if (!success) {
+			throw IfcParse::IfcException("Failed to process representation item");
+		}
+		return items;
+	}
 
 };
 

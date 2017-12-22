@@ -1,8 +1,23 @@
 #ifndef ITERATOR_KERNEL_H
 #define ITERATOR_KERNEL_H
 
+#include "../ifcparse/IfcFile.h"
+#include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "../ifcgeom/IfcRepresentationShapeItem.h"
+
+#include <boost/function.hpp>
+
+#include <TopExp_Explorer.hxx>
+
 namespace IfcGeom {
+
+	template <typename T>
+	class BRepElement;
+
 	class Kernel {
+	private:
+		Kernel* implementation_;
+
 	public:
 		// Tolerances and settings for various geometrical operations:
 		enum GeomValue {
@@ -37,9 +52,45 @@ namespace IfcGeom {
 			// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
 			GV_DIMENSIONALITY
 		};
+
+		Kernel(IfcParse::IfcFile* file_ = 0);
 		
 		virtual ~Kernel() {}
+
+		virtual void setValue(GeomValue var, double value) {
+			implementation_->setValue(var, value);
+		}
+
+		virtual double getValue(GeomValue var) const {
+			return implementation_->getValue(var);
+		}
+
+		virtual BRepElement<double>* convert(
+			const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
+			IfcUtil::IfcBaseClass* product)
+		{
+			return implementation_->convert(settings, representation, product);
+		}
+
+		virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {
+			return implementation_->convert(item);
+		}
+
+		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
 	};
+
+	namespace impl {
+		typedef boost::function1<Kernel*, IfcParse::IfcFile*> kernel_fn;
+
+		class KernelFactoryImplementation : public std::map<std::string, kernel_fn> {
+		public:
+			KernelFactoryImplementation();
+			void bind(const std::string& schema_name, kernel_fn);
+			Kernel* construct(const std::string& schema_name, IfcParse::IfcFile*);
+		};
+
+		KernelFactoryImplementation& kernel_implementations();
+	}
 }
 
 #endif

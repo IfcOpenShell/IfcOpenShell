@@ -47,12 +47,6 @@
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcparse/Argument.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4.h"
-#else
-#include "../ifcparse/Ifc2x3.h"
-#endif
-
 #include "../ifcparse/IfcSpfStream.h"
 
 namespace IfcParse {

@@ -44,7 +44,9 @@ IfcParse::schema_definition::schema_definition(const std::string& name, const st
 	, factory_(factory)
 {
 	std::sort(declarations_.begin(), declarations_.end(), declaration_by_index_sort());
-	for (std::vector<const declaration*>::const_iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
+	for (std::vector<const declaration*>::iterator it = declarations_.begin(); it != declarations_.end(); ++it) {
+		(**it).schema_ = this;
+
 		if ((**it).as_type_declaration()) type_declarations_.push_back((**it).as_type_declaration());
 		if ((**it).as_select_type()) select_types_.push_back((**it).as_select_type());
 		if ((**it).as_enumeration_type()) enumeration_types_.push_back((**it).as_enumeration_type());
