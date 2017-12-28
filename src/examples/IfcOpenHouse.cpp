@@ -28,18 +28,23 @@
 
 #include <Geom_BSplineSurface.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
-
 #include <Standard_Version.hxx>
+
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
+#define IfcSchema Ifc4
 #else
 #include "../ifcparse/Ifc2x3.h"
+#define IfcSchema Ifc2x3
 #endif
 
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/Serialization.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -58,7 +63,7 @@ int main() {
 
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.
-	IfcHierarchyHelper file;
+	IfcHierarchyHelper<IfcSchema> file;
 	file.header().file_name().name("IfcOpenHouse.ifc");
 
 	// Start by adding a wall to the file, initially leaving most attributes blank.
@@ -262,11 +267,13 @@ int main() {
 	// will be tesselated using the deflection specified.
 	TopoDS_Shape shape;
 	createGroundShape(shape);
-	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(shape, 100.);
+	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::tesselate(STRINGIFY(IfcSchema), shape, 100.)->as<IfcSchema::IfcProductDefinitionShape>();
 	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
 
-	// Relate a property set to the IfcSite
-	const double site_area = IfcGeom::Kernel::face_area(TopoDS::Face(shape)) / 1000 / 1000;
+	GProp_GProps prop;
+	BRepGProp::SurfaceProperties(shape, prop);
+	const double site_area = prop.Mass() / 1000 / 1000;
+
 	IfcSchema::IfcProperty::list::ptr properties(new IfcSchema::IfcProperty::list);
 	properties->push(new IfcSchema::IfcPropertySingleValue("TotalArea", null, new IfcSchema::IfcAreaMeasure(site_area), 0));
 	IfcSchema::IfcPropertySet* pset = new IfcSchema::IfcPropertySet(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), S("Pset_SiteCommon"), null, properties);
@@ -334,9 +341,9 @@ int main() {
 		null, 
 		null,
 #ifdef USE_IFC4
-		file.entitiesByType<IfcSchema::IfcWallStandardCase>()->generalize(),
+		file.instances_by_type<IfcSchema::IfcWallStandardCase>()->generalize(),
 #else
-		file.entitiesByType<IfcSchema::IfcWallStandardCase>()->as<IfcSchema::IfcRoot>(),
+		file.instances_by_type<IfcSchema::IfcWallStandardCase>()->as<IfcSchema::IfcRoot>(),
 #endif
 		layer_usage);
 
@@ -391,7 +398,7 @@ int main() {
 	IfcSchema::IfcShapeRepresentation* door_body = 0;
 	for (IfcSchema::IfcRepresentation::list::it i = door_representations->begin(); i != door_representations->end(); ++i) {
 		IfcSchema::IfcRepresentation* rep = *i;
-		if (rep->is(IfcSchema::Type::IfcShapeRepresentation) && rep->RepresentationIdentifier() == "Body") {
+		if (rep->declaration().is(IfcSchema::IfcShapeRepresentation::Class()) && rep->RepresentationIdentifier() == "Body") {
 			door_body = (IfcSchema::IfcShapeRepresentation*) rep;
 		}
 	}
