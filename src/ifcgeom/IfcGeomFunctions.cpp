@@ -150,10 +150,8 @@
 #define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
 #define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
 
-void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
-	static const std::string schema_name = STRINGIFY(IfcSchema);
-
-	struct {
+namespace {
+	struct factory_t {
 		IfcGeom::Kernel* operator()(IfcParse::IfcFile* file) const {
 			IfcGeom::MAKE_TYPE_NAME(Kernel)* k = new IfcGeom::MAKE_TYPE_NAME(Kernel);
 			if (file) {
@@ -201,11 +199,14 @@ void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementat
 			}
 			return k;
 		}
-	} factory;
-
-	mapping->bind(schema_name, factory);
+	};
 }
 
+void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
+	static const std::string schema_name = STRINGIFY(IfcSchema);
+	factory_t factory;
+	mapping->bind(schema_name, factory);
+}
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
