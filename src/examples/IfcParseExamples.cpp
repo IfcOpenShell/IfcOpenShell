@@ -17,13 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
+// TODO: Multiple schemas
+#define IfcSchema Ifc2x3
+
 #include "../ifcparse/IfcFile.h"
+#include "../ifcparse/Ifc2x3.h"
 
 #if USE_VLD
 #include <vld.h>
 #endif
-
-using namespace IfcSchema;
 
 int main(int argc, char** argv) {
 
@@ -36,8 +38,8 @@ int main(int argc, char** argv) {
 	Logger::SetOutput(&std::cout,&std::cout);
 
 	// Parse the IFC file provided in argv[1]
-	IfcParse::IfcFile file;
-	if ( ! file.Init(argv[1]) ) {
+	IfcParse::IfcFile file(argv[1]);
+	if (!file.good()) {
 		std::cout << "Unable to parse .ifc file" << std::endl;
 		return 1;
 	}
@@ -58,19 +60,18 @@ int main(int argc, char** argv) {
 	// we need to cast them to IfcWindows. Since these properties 
 	// are optional we need to make sure the properties are 
 	// defined for the window in question before accessing them.
-	IfcBuildingElement::list::ptr elements = file.entitiesByType<IfcBuildingElement>();
+	IfcSchema::IfcBuildingElement::list::ptr elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
 
 	std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
 	
-	for ( IfcBuildingElement::list::it it = elements->begin(); it != elements->end(); ++ it ) {
+	for (IfcSchema::IfcBuildingElement::list::it it = elements->begin(); it != elements->end(); ++it) {
 		
-		const IfcBuildingElement* element = *it;
-		std::cout << element->entity->toString() << std::endl;
+		const IfcSchema::IfcBuildingElement* element = *it;
+		std::cout << element->data().toString() << std::endl;
 		
-		if ( element->is(IfcWindow::Class()) ) {
-			const IfcWindow* window = (IfcWindow*)element;
-			
-			if ( window->hasOverallWidth() && window->hasOverallHeight() ) {
+		const IfcSchema::IfcWindow* window;
+		if ((window = element->as<IfcSchema::IfcWindow>()) != 0) {
+			if (window->hasOverallWidth() && window->hasOverallHeight()) {
 				const double area = window->OverallWidth()*window->OverallHeight();
 				std::cout << "The area of this window is " << area << std::endl;
 			}

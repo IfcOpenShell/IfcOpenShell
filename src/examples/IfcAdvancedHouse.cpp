@@ -40,13 +40,16 @@
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4.h"
+#define IfcSchema Ifc4
 #else
 #include "../ifcparse/Ifc2x3.h"
+#define IfcSchema Ifc2x3
 #endif
 
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom_schema_agnostic/Serialization.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -59,7 +62,7 @@ int main() {
 
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.
-	IfcHierarchyHelper file;
+	IfcHierarchyHelper<IfcSchema> file;
 	file.header().file_name().name("IfcAdvancedHouse.ifc");
 
 	IfcSchema::IfcBuilding* building = file.addBuilding();
@@ -91,7 +94,7 @@ int main() {
 	// IfcFacetedBRep. If it would not be a polyhedron, serialise() can only be successful when linked
 	// to the IFC4 model and with `advanced` set to `true` which introduces IfcAdvancedFace. It would
 	// return `0` otherwise.
-	IfcSchema::IfcProductDefinitionShape* building_shape = IfcGeom::serialise(building_shell, false);
+	IfcSchema::IfcProductDefinitionShape* building_shape = IfcGeom::serialise(STRINGIFY(IfcSchema), building_shell, false)->as<IfcSchema::IfcProductDefinitionShape>();
 	
 	file.addEntity(building_shape);
 	IfcSchema::IfcRepresentation* rep = *building_shape->Representations()->begin();
@@ -108,9 +111,9 @@ int main() {
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 
-	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::serialise(shape, true);
+	IfcSchema::IfcProductDefinitionShape* ground_representation = IfcGeom::serialise(STRINGIFY(IfcSchema), shape, true)->as<IfcSchema::IfcProductDefinitionShape>();
 	if (!ground_representation) {
-		ground_representation = IfcGeom::tesselate(shape, 100.);
+		ground_representation = IfcGeom::tesselate(STRINGIFY(IfcSchema), shape, 100.)->as<IfcSchema::IfcProductDefinitionShape>();
 	}
 	file.getSingle<IfcSchema::IfcSite>()->setRepresentation(ground_representation);
 	
