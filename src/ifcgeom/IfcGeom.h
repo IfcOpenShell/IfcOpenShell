@@ -117,7 +117,8 @@ private:
 
 public:
 	MAKE_TYPE_NAME(Kernel)()
-		: deflection_tolerance(0.001)
+		: IfcGeom::Kernel(0)
+		, deflection_tolerance(0.001)
 		, wire_creation_tolerance(0.0001)
 		, point_equality_tolerance(0.00001)
 		, max_faces_to_sew(-1.0)
@@ -128,7 +129,7 @@ public:
 		, placement_rel_to(0)
 	{}
 
-	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) {
+	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) : IfcGeom::Kernel(0) {
 		*this = other;
 	}
 
