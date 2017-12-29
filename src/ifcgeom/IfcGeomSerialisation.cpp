@@ -493,7 +493,7 @@ int convert_to_ifc(const TopoDS_Shape& s, U*& item, bool advanced) {
 	return faces->size();
 }
 
-IfcUtil::IfcBaseClass* IfcGeom::serialise(const TopoDS_Shape& shape, bool advanced) {
+IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced) {
 #ifndef USE_IFC4
 	advanced = false;
 #endif
@@ -604,7 +604,7 @@ IfcUtil::IfcBaseClass* IfcGeom::serialise(const TopoDS_Shape& shape, bool advanc
 	return new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 }
 
-IfcUtil::IfcBaseClass* IfcGeom::tesselate(const TopoDS_Shape& shape, double deflection) {
+IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection) {
 	BRepMesh_IncrementalMesh(shape, deflection);
 
 	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);
