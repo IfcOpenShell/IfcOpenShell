@@ -1227,10 +1227,10 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
 }
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema)
-	: schema_(schema)
-	, ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
+	: parsing_complete_(false)
 	, good_(false)
-	, parsing_complete_(false)
+	, schema_(schema)
+	, ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
 	, MaxId(0)
 	, tokens(0)
 	, stream(0)

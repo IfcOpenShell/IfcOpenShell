@@ -233,6 +233,8 @@ IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_typ
 			return IfcUtil::Argument_DOUBLE;
 		case IfcParse::simple_type::string_type:
 			return IfcUtil::Argument_STRING;
+		case IfcParse::simple_type::datatype_COUNT:
+			throw IfcParse::IfcException("Invalid simple type encountered");
 		}
 	}
 
