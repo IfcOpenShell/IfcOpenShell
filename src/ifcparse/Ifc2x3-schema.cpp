@@ -1790,7 +1790,11 @@ class IFC2X3_instance_factory : public IfcParse::instance_factory {
 };
 
 
-#ifdef _MSC_VER
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#elif defined(_MSC_VER)
 #pragma optimize("", off)
 #endif
         
@@ -11527,7 +11531,10 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
 }
 
 
-#ifdef _MSC_VER
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC pop_options
+#elif defined(_MSC_VER)
 #pragma optimize("", on)
 #endif
         
