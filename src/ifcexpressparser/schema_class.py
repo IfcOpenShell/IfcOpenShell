@@ -91,7 +91,11 @@ class SchemaClass(codegen.Base):
         statements.append("{factory_placeholder}")
                       
         statements.append("""
-#ifdef _MSC_VER
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#elif defined(_MSC_VER)
 #pragma optimize("", off)
 #endif
         """)
@@ -198,7 +202,10 @@ class SchemaClass(codegen.Base):
         statements.extend(('}',''))
         
         statements.append("""
-#ifdef _MSC_VER
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC pop_options
+#elif defined(_MSC_VER)
 #pragma optimize("", on)
 #endif
         """)
