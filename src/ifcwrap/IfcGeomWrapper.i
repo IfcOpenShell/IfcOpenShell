@@ -41,7 +41,7 @@
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/IfcGeomIteratorSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
-%include "../ifcgeom/IfcGeomMaterial.h"
+%include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 

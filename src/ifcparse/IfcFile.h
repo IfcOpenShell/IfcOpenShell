@@ -99,7 +99,7 @@ public:
 	IfcFile(IfcParse::IfcSpfStream* f);
 	IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
 
-	~IfcFile();
+	virtual ~IfcFile();
 
 	bool good() const { return good_; }
 	
