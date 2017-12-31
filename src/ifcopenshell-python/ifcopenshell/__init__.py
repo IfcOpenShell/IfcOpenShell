@@ -59,8 +59,8 @@ from .file import file
 from .entity_instance import entity_instance
 
 
-def open(fn=None):
-    return file(ifcopenshell_wrapper.open(os.path.abspath(fn))) if fn else file()
+def open(fn):
+    return file(ifcopenshell_wrapper.open(os.path.abspath(fn)))
 
 
 def create_entity(type, *args, **kwargs):

@@ -24,10 +24,9 @@ private:
 	IfcEntityInstanceData();
 };
 
-%ignore IfcParse::IfcFile::Init;
-%ignore IfcParse::IfcFile::entityByGuid;
 %ignore IfcParse::IfcFile::register_inverse;
 %ignore IfcParse::IfcFile::unregister_inverse;
+%ignore IfcParse::IfcFile::schema;
 %ignore operator<<;
 
 %ignore IfcParse::FileDescription::FileDescription;
@@ -44,15 +43,8 @@ private:
 
 %ignore IfcUtil::IfcBaseClass::is;
 
-%rename("by_id") entityById;
-%rename("by_type") entitiesByType;
-%rename("__len__") getArgumentCount;
-%rename("get_argument_type") getArgumentType;
-%rename("get_argument_name") getArgumentName;
-%rename("get_argument_index") getArgumentIndex;
-%rename("get_argument_optionality") getArgumentOptionality;
-%rename("get_attribute_names") getAttributeNames;
-%rename("get_inverse_attribute_names") getInverseAttributeNames;
+%rename("by_id") instance_by_id;
+%rename("by_type") instances_by_type;
 %rename("entity_instance") IfcBaseClass;
 %rename("file") IfcFile;
 %rename("add") addEntity;
@@ -102,10 +94,16 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 		return ts;
 	}
 
+	std::string schema_name() const {
+		if ($self->schema() == 0) return "";
+		return $self->schema()->name();
+	}
+
 	%pythoncode %{
 		if _newclass:
 			# Hide the getters with read-only property implementations
 			header = property(header)
+			schema = property(schema_name)
 	%}
 }
 
@@ -146,7 +144,15 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 		return $self->data().id();
 	}
 
-	std::vector<std::string> getAttributeNames() const {
+	int __len__() const {
+		if ($self->declaration().as_entity()) {
+			return $self->declaration().as_entity()->attribute_count();
+		} else {
+			return 1;
+		}
+	}
+
+	std::vector<std::string> get_attribute_names() const {
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(1, "wrappedValue");
 		}
@@ -164,7 +170,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 		return attr_names;
 	}
 
-	std::vector<std::string> getInverseAttributeNames() const {
+	std::vector<std::string> get_inverse_attribute_names() const {
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(0);
 		}
@@ -223,7 +229,13 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	unsigned get_argument_index(const std::string& a) const {
-		return $self->declaration().as_entity()->attribute_index(a);
+		if ($self->declaration().as_entity()) {
+			return $self->declaration().as_entity()->attribute_index(a);
+		} else if (a == "wrappedValue") {
+			return 0;
+		} else {
+			throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
+		}
 	}
 
 	IfcEntityList::ptr get_inverse(const std::string& a) {
@@ -237,6 +249,22 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 			}
 		}
 		throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
+	}
+
+	const char* const get_argument_type(unsigned int i) const {
+		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		return IfcUtil::ArgumentTypeToString(arg_type);
+	}
+
+	const std::string& get_argument_name(unsigned int i) const {
+		if ($self->declaration().as_entity()) {
+			return $self->declaration().as_entity()->attribute_by_index(i)->name();
+		} else if (i == 0) {
+			static std::string WRAPPED = "wrappedValue";
+			return WRAPPED;
+		} else {
+			throw IfcParse::IfcException(boost::lexical_cast<std::string>(i) + " out of bounds on " + $self->declaration().name());
+		}
 	}
 
 	void setArgumentAsNull(unsigned int i) {
@@ -488,6 +516,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 %include "../ifcparse/IfcSpfHeader.h"
 %include "../ifcparse/IfcFile.h"
 %include "../ifcparse/IfcBaseClass.h"
+%include "../ifcparse/IfcSchema.h"
 
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;

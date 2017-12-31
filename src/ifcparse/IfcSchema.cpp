@@ -3,7 +3,7 @@
 #include <map>
 
 bool IfcParse::declaration::is(const std::string& name) const {
-	if (name_ == name) return true;
+	if (name_lower_ == boost::to_lower_copy(name)) return true;
 
 	if (this->as_entity()) {
 		return this->as_entity()->is(name);

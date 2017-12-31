@@ -1249,6 +1249,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	MaxId = 0;
 	tokens = 0;
 	stream = 0;
+	schema_ = 0;
 
 	setDefaultHeaderValues();
 	
@@ -1269,8 +1270,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 	} catch (...) {
 		// Purposely empty catch block
 	}
-
-	schema_ = 0;
 
 	if (schemas.size() == 1) {
 		try {
@@ -1493,13 +1492,21 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		// information needs to be accounted for for IfcLengthMeasures.
         double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
-		std::vector<const IfcParse::entity::attribute*> attribute_types = entity->declaration().as_entity()->all_attributes();
-
 		for (unsigned i = 0; i < we->getArgumentCount(); ++i) {
 			Argument* attr = we->getArgument(i);
 			IfcUtil::ArgumentType attr_type = attr->type();
 
-			IfcParse::declaration* decl = attribute_types[i]->type_of_attribute()->as_named_type()->declared_type();
+			IfcParse::declaration* decl = 0;
+			if (entity->declaration().as_entity()) {
+				decl = 0;
+				const parameter_type* pt = entity->declaration().as_entity()->attribute_by_index(i)->type_of_attribute();
+				while (pt->as_aggregation_type()) {
+					pt = pt->as_aggregation_type()->type_of_element();
+				}
+				if (pt->as_named_type()) {
+					decl = pt->as_named_type()->declared_type();
+				}
+			}
 			
 			if (attr_type == IfcUtil::Argument_ENTITY_INSTANCE) {
 				entity_entity_map_t::const_iterator eit = entity_file_map.find(*attr);
@@ -1595,7 +1602,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 	// The mapping by entity type is updated.
 	const IfcParse::declaration* ty = &new_entity->declaration();
 
-	{
+	if (ty->as_entity()) {
 		IfcEntityList::ptr insts = instances_by_type_excl_subtypes(ty);
 		if (!insts) {
 			insts = IfcEntityList::ptr(new IfcEntityList());
@@ -1604,7 +1611,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		insts->push(new_entity);
 	}
 
-	for (;;) {
+	for (; ty->as_entity();) {
 		IfcEntityList::ptr insts = instances_by_type(ty);
 		if (!insts) {
 			insts = IfcEntityList::ptr(new IfcEntityList());
@@ -1620,7 +1627,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		}
 	}
 
-	if (new_entity->declaration().as_entity()) {
+	if (ty->as_entity()) {
 		int new_id = -1;
 		if (!new_entity->data().file) {
 			// For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
@@ -1641,24 +1648,26 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		byid[new_id] = new_entity;
 	}
 
-	// The mapping by reference is updated.
-	IfcEntityList::ptr entity_attributes(new IfcEntityList);
-	try {
-		entity_attributes = traverse(new_entity, 1);
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	}
-
-	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-		IfcUtil::IfcBaseClass* entity_attribute = *it;
-		if (*it == new_entity) continue;
+	if (ty->as_entity()) {
+		// The mapping by reference is updated.
+		IfcEntityList::ptr entity_attributes(new IfcEntityList);
 		try {
-			if (entity_attribute->declaration().as_entity()) {
-				unsigned entity_attribute_id = entity_attribute->data().id();
-				byref[entity_attribute_id].push_back(new_entity->data().id());
-			}
+			entity_attributes = traverse(new_entity, 1);
 		} catch (const std::exception& e) {
 			Logger::Error(e);
+		}
+
+		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+			IfcUtil::IfcBaseClass* entity_attribute = *it;
+			if (*it == new_entity) continue;
+			try {
+				if (entity_attribute->declaration().as_entity()) {
+					unsigned entity_attribute_id = entity_attribute->data().id();
+					byref[entity_attribute_id].push_back(new_entity->data().id());
+				}
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			}
 		}
 	}
 
