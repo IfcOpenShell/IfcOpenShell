@@ -268,11 +268,11 @@ namespace IfcParse {
 			}
 			if (attr == 0) {
 				if (index < attributes_.size()) {
-					return attributes_[index];
+					attr = attributes_[index];
 				}
 				index -= attributes_.size();
 			}
-			return 0;
+			return attr;
 		}
 
 	public:

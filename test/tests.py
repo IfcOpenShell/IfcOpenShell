@@ -49,7 +49,7 @@ assert prop.NominalValue.wrappedValue in str(prop)
 
 # An instance added to a new file yields the same string
 # representation, except for any instance name identifiers.
-f2 = ifcopenshell.open()
+f2 = ifcopenshell.file(schema=f.schema)
 prop2 = f2.add(prop)
 assert str(prop) == str(prop2).replace(str(prop2.id()), str(prop.id()))
 assert prop2.id() == 1
@@ -61,7 +61,7 @@ assert f2.add(app).get_info(False, True) == app.get_info(False, True)
 assert "Version" in dir(app)
 
 # Enumeration of entity type names
-g = ifcopenshell.open()
+g = ifcopenshell.file(schema=f.schema)
 p = g.createIfcCartesianPoint((0.,0.))
 assert len(g.types()) == 1
 assert "IfcPoint" in g.types_with_super()

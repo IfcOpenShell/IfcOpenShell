@@ -55,11 +55,16 @@ class file(object):
     print(products[0] == ifc_file[122] == ifc_file['2XQ$n5SLP5MBLyL442paFx'])
     >>> True
     """
-    def __init__(self, f=None):
-        self.wrapped_data = f or ifcopenshell_wrapper.file()
+    def __init__(self, f=None, schema=None):
+        if f is not None:
+            self.wrapped_data = f
+        else:
+            args = filter(None, [schema])
+            args = map(ifcopenshell_wrapper.schema_by_name, args)
+            self.wrapped_data = ifcopenshell_wrapper.file(*args)
 
     def create_entity(self, type, *args, **kwargs):
-        e = entity_instance(type)
+        e = entity_instance((self.schema, type))
         self.wrapped_data.add(e.wrapped_data)
         e.wrapped_data.this.disown()
         attrs = list(enumerate(args)) + \
