@@ -41,16 +41,15 @@ script:
   - mkdir build
   - cd build
   - cmake ..
-  - make
-  - sudo make install
+  - sudo make -j2 install
   - cd ..
   - cd ..
   - pwd
   - cd IfcOpenShell
   - pwd
   - cd cmake
-  - mkdir build-ifc2x3 build-ifc4
-  - cd build-ifc2x3
+  - mkdir build
+  - cd build
   - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DBUILD_EXAMPLES=Off -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_EXECUTABLE=/usr/bin/python2.7 ..
   - sudo make install
   - cd ../../test

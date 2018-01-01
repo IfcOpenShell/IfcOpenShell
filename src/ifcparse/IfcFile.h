@@ -129,6 +129,16 @@ public:
 		}
 	}
 
+	template <class T>
+	typename T::list::ptr instances_by_type_excl_subtypes() {
+		IfcEntityList::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
+		if (untyped_list) {
+			return untyped_list->as<T>();
+		} else {
+			return typename T::list::ptr(new typename T::list);
+		}
+	}
+
 	/// Returns all entities in the file that match the positional argument.
 	/// NOTE: This also returns subtypes of the requested type, for example:
 	/// IfcWall will also return IfcWallStandardCase entities
