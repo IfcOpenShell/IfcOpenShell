@@ -7,7 +7,7 @@ IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
 		}
 
 		const std::string& schema_name = file->schema()->name();
-		impl::kernel_implementations().construct(schema_name, file);
+		implementation_ = impl::kernel_implementations().construct(schema_name, file);
 	}
 }
 

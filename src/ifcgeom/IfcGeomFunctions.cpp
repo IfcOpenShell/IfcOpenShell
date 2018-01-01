@@ -173,7 +173,7 @@ namespace {
 
 				IfcSchema::IfcGeometricRepresentationContext::list::it it;
 				IfcSchema::IfcGeometricRepresentationContext::list::ptr contexts =
-					file->instances_by_type<IfcSchema::IfcGeometricRepresentationContext>();
+					file->instances_by_type_excl_subtypes<IfcSchema::IfcGeometricRepresentationContext>();
 
 				for (it = contexts->begin(); it != contexts->end(); ++it) {
 					IfcSchema::IfcGeometricRepresentationContext* context = *it;

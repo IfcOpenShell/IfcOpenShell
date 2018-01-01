@@ -91,7 +91,12 @@ class iterator(_iterator):
     if has_occ:
         def get(self):
             return wrap_shape_creation(self.settings, _iterator.get(self))
-
+            
+    def __iter__(self):
+        if self.initialize():
+            while True:
+                yield self.get()
+                if not self.next(): break
 
 class tree(ifcopenshell_wrapper.tree):
 

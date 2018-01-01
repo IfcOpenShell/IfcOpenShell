@@ -167,14 +167,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	$result = boost::apply_visitor(ShapeRTTI(), $1);
 }
 
-// This does not seem to work:
-%ignore IfcGeom::Iterator<float>::Iterator(const IfcGeom::IteratorSettings&, IfcParse::IfcFile*);
-%ignore IfcGeom::Iterator<float>::Iterator(const IfcGeom::IteratorSettings&, void*, int);
-%ignore IfcGeom::Iterator<float>::Iterator(const IfcGeom::IteratorSettings&, std::istream&, int);
-%ignore IfcGeom::Iterator<double>::Iterator(const IfcGeom::IteratorSettings&, IfcParse::IfcFile*);
-%ignore IfcGeom::Iterator<double>::Iterator(const IfcGeom::IteratorSettings&, void*, int);
-%ignore IfcGeom::Iterator<double>::Iterator(const IfcGeom::IteratorSettings&, std::istream&, int);
-
 %extend IfcGeom::IteratorSettings {
 	%pythoncode %{
 		attrs = ("convert_back_units", "deflection_tolerance", "disable_opening_subtractions", "disable_triangulation", "faster_booleans", "sew_shells", "use_brep_data", "use_world_coords", "weld_vertices")
@@ -237,6 +229,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %extend IfcGeom::Element {
+
+	IfcUtil::IfcBaseClass* product_() const {
+		return $self->product();
+	}
+
 	%pythoncode %{
 		if _newclass:
 			# Hide the getters with read-only property implementations
@@ -248,7 +245,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			context = property(context)
 			unique_id = property(unique_id)
 			transformation = property(transformation)
+			product = property(product_)
 	%}
+
 };
 
 %extend IfcGeom::TriangulationElement {
