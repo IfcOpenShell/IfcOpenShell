@@ -51,7 +51,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
 }
 
 void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseClass* instance) {
-	Message(type, exception.what(), instance);
+	Message(type, std::string(exception.what()), instance);
 }
 
 void Logger::Status(const std::string& message, bool new_line) {
