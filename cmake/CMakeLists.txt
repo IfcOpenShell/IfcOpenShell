@@ -106,8 +106,9 @@ MACRO(SET_INSTALL_RPATHS _target _paths)
     SET_TARGET_PROPERTIES(${_target} PROPERTIES INSTALL_RPATH "${${_target}_rpaths}")
 ENDMACRO()
 
-# Find Boost
-IF(WIN32)
+# Find Boost: On win32 the (hardcoded) default is to use static libraries and
+# runtime, when doing running conda-build we pick what conda prepared for us.
+IF(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
 	SET(Boost_USE_STATIC_LIBS ON)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
