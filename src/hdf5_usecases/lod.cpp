@@ -96,7 +96,8 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 
 	std::set<IfcSchema::Type::Enum> geometric_types{
 		IfcSchema::Type::IfcStyledItem, IfcSchema::Type::IfcMaterialDefinitionRepresentation, IfcSchema::Type::IfcStyledRepresentation,
-		IfcSchema::Type::IfcSurfaceStyleRendering, IfcSchema::Type::IfcSurfaceStyle, IfcSchema::Type::IfcPresentationLayerAssignment	
+		IfcSchema::Type::IfcSurfaceStyleRendering, IfcSchema::Type::IfcSurfaceStyle, IfcSchema::Type::IfcPresentationLayerAssignment,
+		IfcSchema::Type::IfcPresentationStyleAssignment, IfcSchema::Type::IfcColourRgb
 	};
 	std::set<IfcSchema::Type::Enum> other_types;
 
