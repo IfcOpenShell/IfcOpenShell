@@ -23,6 +23,10 @@
 
 #include <Bnd_Box.hxx>
 #include <BRepBndLib.hxx>
+#include <BRep_Builder.hxx>
+#include <TopoDS_Compound.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepBuilderAPI_GTransform.hxx>
 
 #include <algorithm>
 
@@ -32,6 +36,11 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 	IfcGeom::Kernel kernel;
 	auto unit_factor = kernel.initializeUnits(*f.entitiesByType<IfcSchema::IfcUnitAssignment>()->begin());
 	
+	IfcGeom::IteratorSettings settings;
+	settings.convert_back_units() = true;
+	settings.disable_triangulation() = true;
+	settings.disable_opening_subtractions() = true;
+
 	IfcSchema::IfcProductDefinitionShape::list::ptr defs_ = f.entitiesByType<IfcSchema::IfcProductDefinitionShape>();
 	std::vector<IfcSchema::IfcProductDefinitionShape*> defs(defs_->begin(), defs_->end());
 	// Make sure to sort by id to have new definitions lining up in the same order
@@ -45,21 +54,60 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 
 	std::cerr << "boxes:" << std::endl;
 
-	std::for_each(defs.begin(), defs.end(), [&kernel, &str, N, &n, &unit_factor](IfcSchema::IfcProductDefinitionShape* def) {
-		Bnd_Box box;
-		auto reps = def->Representations();
-		IfcSchema::IfcRepresentationContext* context;
+	// In newer versions of IfcOpenShell this is a method Kernel::apply_transformation()
+	auto apply_transformation = [](const TopoDS_Shape& s, const gp_GTrsf& gt) {
+		if (gt.Form() == gp_Other) {
+			return BRepBuilderAPI_GTransform(s, gt, true).Shape();
+		}		
+		gp_Trsf t = gt.Trsf();
+		if (t.Form() == gp_Identity) {
+			return s;
+		} else {
+			/// @todo set to 1. and exactly 1. or use epsilon?
+			if (t.ScaleFactor() != 1.) {
+				return BRepBuilderAPI_Transform(s, t, true).Shape();
+			} else {
+				return s.Moved(t);
+			}
+		}
+	};
 
-		std::for_each(reps->begin(), reps->end(), [&kernel, &box, &context](auto rep) {
-			IfcGeom::IfcRepresentationShapeItems items;
+	// In newer versions of IfcOpenShell this is a method BRep::as_compound()
+	auto brep_as_compound = [&apply_transformation](const IfcGeom::Representation::BRep& brep) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++it) {
+			const TopoDS_Shape& s = it->Shape();
+			gp_GTrsf trsf = it->Placement();
 
-			if (rep->RepresentationIdentifier() == "Body") {
-				kernel.convert(rep, items);
-				context = rep->ContextOfItems();
+			if (brep.settings().convert_back_units()) {
+				gp_Trsf scale;
+				scale.SetScaleFactor(1.0 / brep.settings().unit_magnitude());
+				trsf.PreMultiply(scale);
 			}
 
-			for (auto& i : items) {
-				BRepBndLib::AddClose(i.Shape(), box);
+			const TopoDS_Shape moved_shape = apply_transformation(s, trsf);
+			builder.Add(compound, moved_shape);
+		}
+		return compound;
+	};
+
+	std::for_each(defs.begin(), defs.end(), [&kernel, &brep_as_compound, &str, N, &n, &settings](IfcSchema::IfcProductDefinitionShape* def) {
+		Bnd_Box box;
+
+		auto prods = def->data().getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
+		if (prods->size() != 1) return;
+
+		IfcSchema::IfcProduct* prod = *prods->begin();
+
+		auto reps = def->Representations();
+		
+		std::for_each(reps->begin(), reps->end(), [&kernel, &brep_as_compound, &settings, &box, prod](auto rep) {
+			if (rep->RepresentationIdentifier() == "Body") {
+				IfcGeom::BRepElement<double>* elem = kernel.create_brep_for_representation_and_product<double>(settings, rep, prod);
+				BRepBndLib::AddClose(brep_as_compound(elem->geometry()), box);
+				delete elem;
 			}
 		});
 
@@ -67,10 +115,6 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 
 		double xyz[6];
 		box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
-
-		for (int i = 0; i < 6; ++i) {
-			xyz[i] *= unit_factor.second;
-		}
 
 		str.write((char*)&name, sizeof(size_t));
 		str.write((char*)xyz, sizeof(double) * 6);
@@ -304,7 +348,7 @@ int main(int argc, char** argv) {
 			double xyz[6];
 
 			str.read((char*)&name, sizeof(size_t));
-			str.read((char*)xyz, sizeof(size_t));
+			str.read((char*)xyz, sizeof(double) * 6);
 
 			IfcSchema::IfcCartesianPoint* corner = new IfcSchema::IfcCartesianPoint(std::vector<double>{xyz[0], xyz[1], xyz[2]});;
 			IfcSchema::IfcBoundingBox* bbox = new IfcSchema::IfcBoundingBox(corner, xyz[3] - xyz[0], xyz[4] - xyz[1], xyz[5] - xyz[2]);
