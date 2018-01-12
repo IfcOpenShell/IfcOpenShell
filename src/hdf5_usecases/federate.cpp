@@ -159,6 +159,7 @@ public:
 	}
 };
 
+// Office_A_20110811_optimized.ifc Office_S_20110811_optimized.ifc Office_MEP_20110811_optimized.ifc
 int main(int argc, char** argv) {
 	
 	std::set<IfcSchema::Type::Enum> shared {
@@ -354,7 +355,7 @@ int main(int argc, char** argv) {
 		locator->next(filename, child_group, f);
 		IfcParse::instance_enumerator inst_enum(&f->header(), locator->full_begin(), locator->full_end());
 		
-		ifc_hdf5.write_population(child_group, shared_insts_enum, locator);
+		ifc_hdf5.write_population(child_group, inst_enum, locator);
 	}
 
 	return 0;
