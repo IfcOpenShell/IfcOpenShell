@@ -51,9 +51,12 @@ enumeration_descriptor_map_t enumeration_descriptor_map;
 inverse_map_t inverse_map;
 derived_map_t derived_map;
 
-
-#ifdef _MSC_VER
-#  pragma optimize( "", off )
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#elif defined(_MSC_VER)
+#pragma optimize("", off)
 #endif
 
 void InitDescriptorMap() {
@@ -1485,6 +1488,10 @@ void InitDescriptorMap() {
     current->add("FilletRadius",true,IfcUtil::Argument_DOUBLE,Type::IfcNonNegativeLengthMeasure);
     current->add("FlangeEdgeRadius",true,IfcUtil::Argument_DOUBLE,Type::IfcNonNegativeLengthMeasure);
     current->add("FlangeSlope",true,IfcUtil::Argument_DOUBLE,Type::IfcPlaneAngleMeasure);
+    current = entity_descriptor_map[Type::IfcIndexedPolygonalFace] = new IfcEntityDescriptor(Type::IfcIndexedPolygonalFace,entity_descriptor_map.find(Type::IfcTessellatedItem)->second);
+    current->add("CoordIndex",false,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
+    current = entity_descriptor_map[Type::IfcIndexedPolygonalFaceWithVoids] = new IfcEntityDescriptor(Type::IfcIndexedPolygonalFaceWithVoids,entity_descriptor_map.find(Type::IfcIndexedPolygonalFace)->second);
+    current->add("InnerCoordIndices",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcLShapeProfileDef] = new IfcEntityDescriptor(Type::IfcLShapeProfileDef,entity_descriptor_map.find(Type::IfcParameterizedProfileDef)->second);
     current->add("Depth",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("Width",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
@@ -1767,6 +1774,8 @@ void InitDescriptorMap() {
     current->add("LongName",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcSphere] = new IfcEntityDescriptor(Type::IfcSphere,entity_descriptor_map.find(Type::IfcCsgPrimitive3D)->second);
     current->add("Radius",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
+    current = entity_descriptor_map[Type::IfcSphericalSurface] = new IfcEntityDescriptor(Type::IfcSphericalSurface,entity_descriptor_map.find(Type::IfcElementarySurface)->second);
+    current->add("Radius",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current = entity_descriptor_map[Type::IfcStructuralActivity] = new IfcEntityDescriptor(Type::IfcStructuralActivity,entity_descriptor_map.find(Type::IfcProduct)->second);
     current->add("AppliedLoad",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcStructuralLoad);
     current->add("GlobalOrLocal",false,IfcUtil::Argument_ENUMERATION,Type::IfcGlobalOrLocalEnum);
@@ -1785,6 +1794,10 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcStructuralSurfaceActivityTypeEnum);
     current = entity_descriptor_map[Type::IfcSubContractResourceType] = new IfcEntityDescriptor(Type::IfcSubContractResourceType,entity_descriptor_map.find(Type::IfcConstructionResourceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcSubContractResourceTypeEnum);
+    current = entity_descriptor_map[Type::IfcSurfaceCurve] = new IfcEntityDescriptor(Type::IfcSurfaceCurve,entity_descriptor_map.find(Type::IfcCurve)->second);
+    current->add("Curve3D",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
+    current->add("AssociatedGeometry",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcPcurve);
+    current->add("MasterRepresentation",false,IfcUtil::Argument_ENUMERATION,Type::IfcPreferredSurfaceCurveRepresentation);
     current = entity_descriptor_map[Type::IfcSurfaceCurveSweptAreaSolid] = new IfcEntityDescriptor(Type::IfcSurfaceCurveSweptAreaSolid,entity_descriptor_map.find(Type::IfcSweptAreaSolid)->second);
     current->add("Directrix",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCurve);
     current->add("StartParam",true,IfcUtil::Argument_DOUBLE,Type::IfcParameterValue);
@@ -1809,13 +1822,16 @@ void InitDescriptorMap() {
     current->add("WorkMethod",true,IfcUtil::Argument_STRING,Type::IfcLabel);
     current = entity_descriptor_map[Type::IfcTessellatedFaceSet] = new IfcEntityDescriptor(Type::IfcTessellatedFaceSet,entity_descriptor_map.find(Type::IfcTessellatedItem)->second);
     current->add("Coordinates",false,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcCartesianPointList3D);
-    current->add("Normals",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
-    current->add("Closed",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current = entity_descriptor_map[Type::IfcToroidalSurface] = new IfcEntityDescriptor(Type::IfcToroidalSurface,entity_descriptor_map.find(Type::IfcElementarySurface)->second);
+    current->add("MajorRadius",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
+    current->add("MinorRadius",false,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current = entity_descriptor_map[Type::IfcTransportElementType] = new IfcEntityDescriptor(Type::IfcTransportElementType,entity_descriptor_map.find(Type::IfcElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcTransportElementTypeEnum);
     current = entity_descriptor_map[Type::IfcTriangulatedFaceSet] = new IfcEntityDescriptor(Type::IfcTriangulatedFaceSet,entity_descriptor_map.find(Type::IfcTessellatedFaceSet)->second);
+    current->add("Normals",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE,Type::IfcParameterValue);
+    current->add("Closed",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current->add("CoordIndex",false,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
-    current->add("NormalIndex",true,IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
+    current->add("PnIndex",true,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcWindowLiningProperties] = new IfcEntityDescriptor(Type::IfcWindowLiningProperties,entity_descriptor_map.find(Type::IfcPreDefinedPropertySet)->second);
     current->add("LiningDepth",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("LiningThickness",true,IfcUtil::Argument_DOUBLE,Type::IfcNonNegativeLengthMeasure);
@@ -2038,6 +2054,8 @@ void InitDescriptorMap() {
     current->add("SelfIntersect",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
     current = entity_descriptor_map[Type::IfcInterceptorType] = new IfcEntityDescriptor(Type::IfcInterceptorType,entity_descriptor_map.find(Type::IfcFlowTreatmentDeviceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcInterceptorTypeEnum);
+    current = entity_descriptor_map[Type::IfcIntersectionCurve] = new IfcEntityDescriptor(Type::IfcIntersectionCurve,entity_descriptor_map.find(Type::IfcSurfaceCurve)->second);
+
     current = entity_descriptor_map[Type::IfcInventory] = new IfcEntityDescriptor(Type::IfcInventory,entity_descriptor_map.find(Type::IfcGroup)->second);
     current->add("PredefinedType",true,IfcUtil::Argument_ENUMERATION,Type::IfcInventoryTypeEnum);
     current->add("Jurisdiction",true,IfcUtil::Argument_ENTITY_INSTANCE,Type::IfcActorSelect);
@@ -2096,6 +2114,10 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcPipeSegmentTypeEnum);
     current = entity_descriptor_map[Type::IfcPlateType] = new IfcEntityDescriptor(Type::IfcPlateType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcPlateTypeEnum);
+    current = entity_descriptor_map[Type::IfcPolygonalFaceSet] = new IfcEntityDescriptor(Type::IfcPolygonalFaceSet,entity_descriptor_map.find(Type::IfcTessellatedFaceSet)->second);
+    current->add("Closed",true,IfcUtil::Argument_BOOL,Type::IfcBoolean);
+    current->add("Faces",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcIndexedPolygonalFace);
+    current->add("PnIndex",true,IfcUtil::Argument_AGGREGATE_OF_INT,Type::IfcPositiveInteger);
     current = entity_descriptor_map[Type::IfcPolyline] = new IfcEntityDescriptor(Type::IfcPolyline,entity_descriptor_map.find(Type::IfcBoundedCurve)->second);
     current->add("Points",false,IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE,Type::IfcCartesianPoint);
     current = entity_descriptor_map[Type::IfcPort] = new IfcEntityDescriptor(Type::IfcPort,entity_descriptor_map.find(Type::IfcProduct)->second);
@@ -2153,6 +2175,8 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcRoofTypeEnum);
     current = entity_descriptor_map[Type::IfcSanitaryTerminalType] = new IfcEntityDescriptor(Type::IfcSanitaryTerminalType,entity_descriptor_map.find(Type::IfcFlowTerminalType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcSanitaryTerminalTypeEnum);
+    current = entity_descriptor_map[Type::IfcSeamCurve] = new IfcEntityDescriptor(Type::IfcSeamCurve,entity_descriptor_map.find(Type::IfcSurfaceCurve)->second);
+
     current = entity_descriptor_map[Type::IfcShadingDeviceType] = new IfcEntityDescriptor(Type::IfcShadingDeviceType,entity_descriptor_map.find(Type::IfcBuildingElementType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcShadingDeviceTypeEnum);
     current = entity_descriptor_map[Type::IfcSite] = new IfcEntityDescriptor(Type::IfcSite,entity_descriptor_map.find(Type::IfcSpatialStructureElement)->second);
@@ -2247,7 +2271,7 @@ void InitDescriptorMap() {
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcTendonTypeEnum);
     current->add("NominalDiameter",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current->add("CrossSectionArea",true,IfcUtil::Argument_DOUBLE,Type::IfcAreaMeasure);
-    current->add("SheethDiameter",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
+    current->add("SheathDiameter",true,IfcUtil::Argument_DOUBLE,Type::IfcPositiveLengthMeasure);
     current = entity_descriptor_map[Type::IfcTransformerType] = new IfcEntityDescriptor(Type::IfcTransformerType,entity_descriptor_map.find(Type::IfcEnergyConversionDeviceType)->second);
     current->add("PredefinedType",false,IfcUtil::Argument_ENUMERATION,Type::IfcTransformerTypeEnum);
     current = entity_descriptor_map[Type::IfcTransportElement] = new IfcEntityDescriptor(Type::IfcTransportElement,entity_descriptor_map.find(Type::IfcElement)->second);
@@ -2906,6 +2930,7 @@ void InitDescriptorMap() {
     values.push_back("ELEMENT");
     values.push_back("PARTIAL");
     values.push_back("PROVISIONFORVOID");
+    values.push_back("PROVISIONFORSPACE");
     values.push_back("USERDEFINED");
     values.push_back("NOTDEFINED");
     current_enum = enumeration_descriptor_map[Type::IfcBuildingElementProxyTypeEnum] = new IfcEnumerationDescriptor(Type::IfcBuildingElementProxyTypeEnum, values);
@@ -3550,7 +3575,7 @@ void InitDescriptorMap() {
     values.push_back("EXTERNAL_WATER");
     values.push_back("EXTERNAL_FIRE");
     values.push_back("USERDEFINED");
-    values.push_back("NOTDEFIEND");
+    values.push_back("NOTDEFINED");
     current_enum = enumeration_descriptor_map[Type::IfcExternalSpatialElementTypeEnum] = new IfcEnumerationDescriptor(Type::IfcExternalSpatialElementTypeEnum, values);
     values.clear(); values.reserve(128);
     values.push_back("CENTRIFUGALFORWARDCURVED");
@@ -3970,6 +3995,11 @@ void InitDescriptorMap() {
     values.push_back("NOTDEFINED");
     current_enum = enumeration_descriptor_map[Type::IfcPlateTypeEnum] = new IfcEnumerationDescriptor(Type::IfcPlateTypeEnum, values);
     values.clear(); values.reserve(128);
+    values.push_back("CURVE3D");
+    values.push_back("PCURVE_S1");
+    values.push_back("PCURVE_S2");
+    current_enum = enumeration_descriptor_map[Type::IfcPreferredSurfaceCurveRepresentation] = new IfcEnumerationDescriptor(Type::IfcPreferredSurfaceCurveRepresentation, values);
+    values.clear(); values.reserve(128);
     values.push_back("ADVICE_CAUTION");
     values.push_back("ADVICE_NOTE");
     values.push_back("ADVICE_WARNING");
@@ -4229,6 +4259,7 @@ void InitDescriptorMap() {
     values.push_back("TAPERED");
     current_enum = enumeration_descriptor_map[Type::IfcSectionTypeEnum] = new IfcEnumerationDescriptor(Type::IfcSectionTypeEnum, values);
     values.clear(); values.reserve(128);
+    values.push_back("COSENSOR");
     values.push_back("CO2SENSOR");
     values.push_back("CONDUCTANCESENSOR");
     values.push_back("CONTACTSENSOR");
@@ -4742,10 +4773,6 @@ void InitDescriptorMap() {
     current_enum = enumeration_descriptor_map[Type::IfcWorkScheduleTypeEnum] = new IfcEnumerationDescriptor(Type::IfcWorkScheduleTypeEnum, values);
 }
 
-#ifdef _MSC_VER
-#  pragma optimize( "", on )
-#endif
-
 void InitInverseMap() {
     inverse_map[Type::IfcActor].insert(std::make_pair("IsActingUpon", std::make_pair(Type::IfcRelAssignsToActor, 6)));
     inverse_map[Type::IfcActorRole].insert(std::make_pair("HasExternalReference", std::make_pair(Type::IfcExternalReferenceRelationship, 3)));
@@ -4806,6 +4833,7 @@ void InitInverseMap() {
     inverse_map[Type::IfcGridAxis].insert(std::make_pair("PartOfU", std::make_pair(Type::IfcGrid, 7)));
     inverse_map[Type::IfcGridAxis].insert(std::make_pair("HasIntersections", std::make_pair(Type::IfcVirtualGridIntersection, 0)));
     inverse_map[Type::IfcGroup].insert(std::make_pair("IsGroupedBy", std::make_pair(Type::IfcRelAssignsToGroup, 6)));
+    inverse_map[Type::IfcIndexedPolygonalFace].insert(std::make_pair("ToFaceSet", std::make_pair(Type::IfcPolygonalFaceSet, 2)));
     inverse_map[Type::IfcLibraryInformation].insert(std::make_pair("LibraryInfoForObjects", std::make_pair(Type::IfcRelAssociatesLibrary, 5)));
     inverse_map[Type::IfcLibraryInformation].insert(std::make_pair("HasLibraryReferences", std::make_pair(Type::IfcLibraryReference, 5)));
     inverse_map[Type::IfcLibraryReference].insert(std::make_pair("LibraryRefForObjects", std::make_pair(Type::IfcRelAssociatesLibrary, 5)));
@@ -4907,6 +4935,13 @@ void InitDerivedMap() {
     {std::set<int> idxs; idxs.insert(0); idxs.insert(1); derived_map[Type::IfcOrientedEdge] = idxs;}
     {std::set<int> idxs; idxs.insert(0); derived_map[Type::IfcSIUnit] = idxs;}
 }
+
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC pop_options
+#elif defined(_MSC_VER)
+#pragma optimize("", on)
+#endif
 
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
     if (entity_descriptor_map.empty()) ::InitDescriptorMap();

@@ -284,13 +284,13 @@ public:
 		else if (attr_->type() == IfcUtil::Argument_UNKNOWN) {
 			auto aggregation = schema_attr_->type_of_attribute()->as_aggregation_type();
 			if (aggregation == nullptr) {
-				throw std::exception("Attribute of unknown type encountered, expected empty aggregate");
+				throw std::runtime_error("Attribute of unknown type encountered, expected empty aggregate");
 			}
 			auto elem_type = aggregation->type_of_element();
 			if (elem_type->as_named_type()) {
 				auto entity = elem_type->as_named_type()->declared_type()->as_entity();
 				if (entity == nullptr) {
-					throw std::exception("Not implemented");
+					throw std::runtime_error("Not implemented");
 				}
 				std::vector<IfcUtil::IfcBaseClass*> empty;
 				t(empty);
@@ -300,10 +300,10 @@ public:
 					std::vector<int> empty;
 					t(empty);
 				} else {
-					throw std::exception("Not implemented");
+					throw std::runtime_error("Not implemented");
 				}
 			} else {
-				throw std::exception("Not implemented");
+				throw std::runtime_error("Not implemented");
 			}
 		}		
 	}
@@ -336,7 +336,7 @@ public:
 
 	std::pair<int, int> operator()(IfcUtil::IfcBaseClass* v) {
 		if (IfcSchema::Type::IsSimple(v->declaration().type())) {
-			throw std::exception("Simple type not expected here");
+			throw std::runtime_error("Simple type not expected here");
 		}
 
 		IfcSchema::Type::Enum t = v->declaration().type();
@@ -1183,7 +1183,7 @@ H5::DataType* type_mapper::operator()(const IfcParse::select_type* pt, const boo
 				break;
 			}
 			default:
-				throw std::exception("Unexpected attribute types for datatype width reference");
+				throw std::runtime_error("Unexpected attribute types for datatype width reference");
 			}
 		});
 		std::set_intersection(leafs_schema.begin(), leafs_schema.end(), instantiated.begin(), instantiated.end(), std::inserter(leafs_model, leafs_model.end()));
@@ -1747,7 +1747,7 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 		}
 
 		size_t dataset_size = entity_datatype.getSize() * static_cast<size_t>(num_instances);
-		void* data = allocator.allocate(dataset_size);
+		uint8_t* data = (uint8_t*) allocator.allocate(dataset_size);
 		void* ptr = data;
 		std::cerr << dataset_size << std::endl;
 
@@ -2033,7 +2033,8 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		} else if (is_padded != not_padded) {
 			const size_t offs = ct->getMemberOffset(1);
 			void* member_ptr = (uint8_t*)buffer + offs;
-			int N = read<int>(buffer, &ct->getMemberDataType(0));
+			H5::DataType length_dt = ct->getMemberDataType(0);
+			int N = read<int>(buffer, &length_dt);
 			H5::DataType MEMBER(member_type, *ct, 1);
 			
 			visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues, N);

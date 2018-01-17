@@ -327,11 +327,7 @@ namespace IfcParse {
 				if (current_inst_name_ != 0) {
 					try {
 						inst_data = new Entity(current_inst_name_, file_);
-						if (file_->create_latebound_entities()) {
-							entity_instance = new IfcLateBoundEntity(inst_data);
-						} else {
-							entity_instance = IfcSchema::SchemaEntity(inst_data);
-						}
+						entity_instance = IfcSchema::SchemaEntity(inst_data);
 					} catch (const IfcException& ex) {
 						current_inst_name_ = 0;
 						Logger::Message(Logger::LOG_ERROR, ex.what());

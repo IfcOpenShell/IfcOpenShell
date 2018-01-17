@@ -207,7 +207,7 @@ if(HDF5_SUPPORT)
         # An additional lib- prefix is added by HDF5 to denote static libraries
         SET(HDF5_LIBRARIES libhdf5_cpp libhdf5 libzlib)
     ELSE()
-        SET(HDF5_LIBRARIES hdf5_cpp hdf5 zlib)
+        SET(HDF5_LIBRARIES hdf5_cpp hdf5 z szip)
     ENDIF()
 endif()
 
@@ -450,6 +450,10 @@ ENDIF()
 IF(HDF5_SUPPORT)
     ADD_SUBDIRECTORY(../src/hdf5_usecases hdf5_usecases)
 ENDIF()
+
+if(NOT MSVC)
+    add_definitions(-std=c++14)
+endif()
     
 # CMake installation targets
 INSTALL(FILES ${IFCPARSE_H_FILES} DESTINATION include/ifcparse)

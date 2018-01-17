@@ -196,9 +196,12 @@ enumeration_descriptor_map_t enumeration_descriptor_map;
 inverse_map_t inverse_map;
 derived_map_t derived_map;
 
-
-#ifdef _MSC_VER
-#  pragma optimize( "", off )
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#elif defined(_MSC_VER)
+#pragma optimize("", off)
 #endif
 
 void InitDescriptorMap() {
@@ -210,10 +213,6 @@ void InitDescriptorMap() {
 %(enumeration_descriptors)s
 }
 
-#ifdef _MSC_VER
-#  pragma optimize( "", on )
-#endif
-
 void InitInverseMap() {
 %(inverse_implementations)s
 }
@@ -221,6 +220,13 @@ void InitInverseMap() {
 void InitDerivedMap() {
 %(derived_field_statements)s
 }
+
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC pop_options
+#elif defined(_MSC_VER)
+#pragma optimize("", on)
+#endif
 
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
     if (entity_descriptor_map.empty()) ::InitDescriptorMap();

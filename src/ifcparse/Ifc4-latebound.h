@@ -24,6 +24,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef USE_IFC4
+
 #ifndef IFC4RT_H
 #define IFC4RT_H
 
@@ -48,4 +50,5 @@ namespace Type {
     void PopulateDerivedFields(IfcWrite::IfcWritableEntity* e);
 }}
 
+#endif
 #endif

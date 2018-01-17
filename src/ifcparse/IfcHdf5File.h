@@ -86,12 +86,12 @@ namespace IfcParse {
 
 		vector_vector_iterator<T>& operator++() {
 			if (!b_) {
-				throw std::exception;
+				throw std::runtime_error("");
 			}
 			++(*b_);
 			if ((*b_) == a_->end()) {
 				do {
-					++a;
+					++a_;
 				} while (a_ != container_.end() && a_->size() == 0);
 				if (a_ != container_.end()) {
 					b_ = a_->begin();
@@ -243,11 +243,6 @@ namespace IfcParse {
 		std::string flatten_aggregate_name(const IfcParse::parameter_type* at) const;
 		std::pair<size_t, size_t> make_instance_reference(const IfcUtil::IfcBaseClass* instance) const;
 		// void write_select(void*& ptr, IfcUtil::IfcBaseClass* instance, const H5::CompType* datatype) const;
-
-		template <typename T>
-		const H5::DataType* get_datatype() const {
-			return default_types.find(IfcUtil::cpp_to_schema_type<T>::schema_type)->second;
-		}
 
 		H5::DataSet create_dataset(H5::Group* population_group, const std::string& path, H5::DataType datatype, int rank, hsize_t* dimensions);
 		

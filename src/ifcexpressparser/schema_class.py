@@ -80,10 +80,16 @@ class SchemaClass(codegen.Base):
             for name in collection.keys():
                 statements.append('%(cpp_type)s* %(name)s_type = 0;' % locals())
                 
-        statements.append('#ifdef _MSC_VER'          )
-        statements.append('#pragma optimize("", off)')
-        statements.append('#endif'                   )
-                          
+        statements.append("""
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#elif defined(_MSC_VER)
+#pragma optimize("", off)
+#endif
+        """)
+                                  
         statements.append('schema_definition* populate_schema() {')
         
         emitted_types = set()
@@ -181,9 +187,14 @@ class SchemaClass(codegen.Base):
         
         statements.extend(('}',''))
         
-        statements.append('#ifdef _MSC_VER'         )
-        statements.append('#pragma optimize("", on)')
-        statements.append('#endif'                  )
+        statements.append("""
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC pop_options
+#elif defined(_MSC_VER)
+#pragma optimize("", on)
+#endif
+        """)
         
         statements.extend(('const schema_definition& get_schema() {',
                            '',

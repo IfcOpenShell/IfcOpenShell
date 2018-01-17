@@ -51,9 +51,12 @@ enumeration_descriptor_map_t enumeration_descriptor_map;
 inverse_map_t inverse_map;
 derived_map_t derived_map;
 
-
-#ifdef _MSC_VER
-#  pragma optimize( "", off )
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#elif defined(_MSC_VER)
+#pragma optimize("", off)
 #endif
 
 void InitDescriptorMap() {
@@ -4063,10 +4066,6 @@ void InitDescriptorMap() {
     current_enum = enumeration_descriptor_map[Type::IfcWorkControlTypeEnum] = new IfcEnumerationDescriptor(Type::IfcWorkControlTypeEnum, values);
 }
 
-#ifdef _MSC_VER
-#  pragma optimize( "", on )
-#endif
-
 void InitInverseMap() {
     inverse_map[Type::IfcActor].insert(std::make_pair("IsActingUpon", std::make_pair(Type::IfcRelAssignsToActor, 6)));
     inverse_map[Type::IfcAddress].insert(std::make_pair("OfPerson", std::make_pair(Type::IfcPerson, 7)));
@@ -4190,6 +4189,13 @@ void InitDerivedMap() {
     {std::set<int> idxs; idxs.insert(0); idxs.insert(1); derived_map[Type::IfcOrientedEdge] = idxs;}
     {std::set<int> idxs; idxs.insert(0); derived_map[Type::IfcSIUnit] = idxs;}
 }
+
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC pop_options
+#elif defined(_MSC_VER)
+#pragma optimize("", on)
+#endif
 
 int Type::GetAttributeIndex(Enum t, const std::string& a) {
     if (entity_descriptor_map.empty()) ::InitDescriptorMap();

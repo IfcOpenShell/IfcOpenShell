@@ -31,6 +31,8 @@ import re
 import os
 import csv
 
+from builtins import open
+
 try: from html.entities import entitydefs
 except: from htmlentitydefs import entitydefs
 
@@ -45,17 +47,17 @@ regices = list(zip([re.compile(s,re.M) for s in [r'<[\w\n=" \-/\.;_\t:%#,\?\(\)]
 definition_files = ['DocEntity.csv', 'DocEnumeration.csv', 'DocDefined.csv', 'DocSelect.csv']
 definition_files = map(make_absolute, definition_files)
 for fn in definition_files:
-    with open(fn) as f:
+    with open(fn, encoding='utf-8', errors='ignore') as f:
         for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
             name_to_oid[name] = oid
             oid_to_name[oid] = name
             oid_to_desc[oid] = desc
 
-with open(make_absolute('DocEntityAttributes.csv')) as f:
+with open(make_absolute('DocEntityAttributes.csv'), encoding='utf-8', errors='ignore') as f:
     for pid, x, oid in csv.reader(f, delimiter=';', quotechar='"'):
         oid_to_pid[oid] = pid
 
-with open(make_absolute('DocAttribute.csv')) as f:
+with open(make_absolute('DocAttribute.csv'), encoding='utf-8', errors='ignore') as f:
     for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
         pid = oid_to_pid[oid]
         pname = oid_to_name[pid]

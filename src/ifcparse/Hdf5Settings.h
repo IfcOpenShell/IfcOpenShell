@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 namespace IfcParse {
 	
@@ -44,7 +45,7 @@ namespace IfcParse {
 			if (s == "padded") return padded;
 			if (s == "referenced") return standard_referenced;
 			if (s == "padded-referenced") return padded_referenced;
-			throw std::exception("Unrecognized profile");
+			throw std::runtime_error("Unrecognized profile");
 		}
 
 	private:

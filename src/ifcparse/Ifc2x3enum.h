@@ -24,6 +24,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifndef USE_IFC4
+
 #ifndef IFC2X3ENUM_H
 #define IFC2X3ENUM_H
 
@@ -43,4 +45,5 @@ namespace Type {
 
 }
 
+#endif
 #endif
