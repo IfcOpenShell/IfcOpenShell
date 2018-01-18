@@ -910,7 +910,18 @@ H5::DataType* type_mapper::operator()(const IfcParse::parameter_type* pt, const 
 			if (max_length_copy[0] == 0) max_length_copy[0] = 1;
 			
 			// Assume attribute lists are homogeneous and can be directly passed to supertypes
-			H5::DataType* element_dt = (*this)(pt->as_aggregation_type()->type_of_element(), instances, dims - 1, max_length + 1);
+			boost::optional< std::vector<Argument*> > instances_sub;
+			if (instances) {
+				instances_sub.emplace();
+				const std::vector<Argument*>& instances_orig = *instances;
+				std::for_each(instances_orig.begin(), instances_orig.end(), [&instances_sub](Argument* attr) {
+					for (unsigned i = 0; i < attr->size(); ++i) {
+						(*instances_sub).push_back((*attr)[i]);
+					}
+				});
+			}
+
+			H5::DataType* element_dt = (*this)(pt->as_aggregation_type()->type_of_element(), instances_sub, dims - 1, max_length + 1);
 
 			if (element_dt == nullptr) {
 				// in case of select with all instance refs
