@@ -286,24 +286,32 @@ public:
 			if (aggregation == nullptr) {
 				throw std::runtime_error("Attribute of unknown type encountered, expected empty aggregate");
 			}
-			auto elem_type = aggregation->type_of_element();
+			const IfcParse::parameter_type* elem_type = aggregation->type_of_element();
+			bool processed = false;
 			if (elem_type->as_named_type()) {
 				auto entity = elem_type->as_named_type()->declared_type()->as_entity();
-				if (entity == nullptr) {
-					throw std::runtime_error("Not implemented");
-				}
-				std::vector<IfcUtil::IfcBaseClass*> empty;
-				t(empty);
-			} else if (elem_type->as_simple_type()) {
+				std::cerr << elem_type->as_named_type()->declared_type()->name() << std::endl;
+				std::cerr << attr_->toString() << std::endl;
+				if (entity != nullptr) {
+					std::vector<IfcUtil::IfcBaseClass*> empty;
+					t(empty);
+					processed = true;
+				} else if (elem_type->as_named_type()->declared_type()->as_type_declaration()) {
+					elem_type = elem_type->as_named_type()->declared_type()->as_type_declaration()->declared_type();
+				} 
+			}
+			if (!processed) {
+			if (elem_type->as_simple_type()) {
 				auto dt = elem_type->as_simple_type()->declared_type();
 				if (dt == IfcParse::simple_type::integer_type) {
 					std::vector<int> empty;
 					t(empty);
 				} else {
-					throw std::runtime_error("Not implemented");
+					throw std::runtime_error("Not implemented: dt != IfcParse::simple_type::integer_type");
 				}
 			} else {
-				throw std::runtime_error("Not implemented");
+				throw std::runtime_error("Not implemented: aggregation->type_of_element()");
+			}
 			}
 		}		
 	}
@@ -454,7 +462,7 @@ public:
 			hsize_t* array_dims = new hsize_t[ndims];
 			arr->getArrayDims(array_dims);
 			if (ndims != 1) {
-				throw std::runtime_error("Not implemented");
+				throw std::runtime_error("Not implemented: getArrayDims() != 1");
 			}
 			H5::DataType super = arr->getSuper();
 			default_value_visitor visitor(super);
