@@ -9,21 +9,23 @@ source:
 build:
   number: 0
   features:
-    - vc9   [win and py27]
-    - vc10  [win and py34]
-    - vc14  [win and py35]
-    - vc14  [win and py36]
+    - vc9     # [win and py27]
+    - vc10    # [win and py34]
+    - vc14    # [win and py35]
+    - vc14    # [win and py36]
 
 requirements:
   build:
+    - gcc     # [osx]
     - make
     - python
     - oce==0.17.2
     - cmake
-    - swig >=3.0.9
+    - swig>=3.0.9
     - libboost
     - icu
   run:
+    - python
     - oce==0.17.2
     - libboost
     - icu
