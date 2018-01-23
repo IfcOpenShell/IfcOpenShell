@@ -36,7 +36,7 @@ class SchemaClass(codegen.Base):
                 aggr_type = type.aggregate_type
                 make_bound = lambda b: -1 if b == '?' else int(b)
                 bound1, bound2 = map(make_bound, (type.bounds.lower, type.bounds.upper))
-                decl_type = get_declared_type(type.type)
+                decl_type = get_declared_type(type.type, emitted_names)
                 return "new aggregation_type(aggregation_type::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(decl_type)s)" % locals()
             elif isinstance(type, nodes.BinaryType):
                 return "new simple_type(simple_type::binary_type)"
@@ -93,9 +93,13 @@ class SchemaClass(codegen.Base):
         statements.append('schema_definition* populate_schema() {')
         
         emitted_types = set()
-        while len(emitted_types) < len(mapping.schema.simpletypes):
+        # while len(emitted_types) < len(set(mapping.schema.simpletypes.keys()) - {"IfcPropertySetDefinitionSet"}):
+        while len(emitted_types) < len(set(mapping.schema.simpletypes.keys()) - {"IfcPropertySetDefinitionSet"}):
             for name, type in mapping.schema.simpletypes.items():
                 if name in emitted_types: continue
+                
+                # No support for types refering to entities :(
+                if name == "IfcPropertySetDefinitionSet": continue
                 
                 try:
                     declared_type = get_declared_type(type, emitted_types)
@@ -133,10 +137,11 @@ class SchemaClass(codegen.Base):
         while len(emitted_selects) < len(mapping.schema.selects):
             for name, type in mapping.schema.selects.items():
                 if name in emitted_selects: continue
-                if set(type.values) < emmited:
+                type_values = sorted(set(type.values) - {"IfcPropertySetDefinitionSet"})
+                if set(type_values) < emmited:
                     statements.append('    {')
-                    statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type.values))
-                    statements.extend(map(lambda v: '        items.push_back(%s_type);' % v, sorted(type.values)))
+                    statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type_values))
+                    statements.extend(map(lambda v: '        items.push_back(%s_type);' % v, sorted(type_values)))
                     statements.append('        %(name)s_type = new select_type(IfcSchema::Type::%(name)s, items);' % locals())
                     statements.append('    }')
                     emitted_selects.add(name)

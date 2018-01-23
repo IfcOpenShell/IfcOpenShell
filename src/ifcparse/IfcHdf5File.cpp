@@ -290,8 +290,6 @@ public:
 			bool processed = false;
 			if (elem_type->as_named_type()) {
 				auto entity = elem_type->as_named_type()->declared_type()->as_entity();
-				std::cerr << elem_type->as_named_type()->declared_type()->name() << std::endl;
-				std::cerr << attr_->toString() << std::endl;
 				if (entity != nullptr) {
 					std::vector<IfcUtil::IfcBaseClass*> empty;
 					t(empty);
@@ -474,7 +472,17 @@ public:
 			break;
 		}
 		default:
-			throw std::runtime_error("Unexpected type encountered");
+		{
+			// TK: Ifc4 IfcValue select valuations can result into H5T_OPAQUE types for
+			// IfcBinary. This is not likely an issue, as these are simply padding values.
+			// TODO: Use H5T_BITSET for binary instead?
+			
+			// const char* class_names[] = {"H5T_NO_CLASS", "H5T_INTEGER", "H5T_FLOAT", "H5T_TIME", "H5T_STRING", "H5T_BITFIELD", "H5T_OPAQUE", "H5T_COMPOUND", "H5T_REFERENCE", "H5T_ENUM", "H5T_VLEN", "H5T_ARRAY", "H5T_NCLASSES"};
+			// throw std::runtime_error(std::string("Unexpected type encountered ") + class_names[((int)datatype_.getClass())+1]);
+			
+			memset(ptr, 0, datatype_.getSize());
+                        advance(ptr, datatype_.getSize());
+		}
 		}
 	}
 };
