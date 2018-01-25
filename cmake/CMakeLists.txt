@@ -27,6 +27,8 @@ OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizati
 OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(BUILD_IFCPYTHON "Build IfcPython." ON)
 OPTION(BUILD_EXAMPLES "Build example applications." ON)
+OPTION(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
+OPTION(BUILD_CONVERT "Build IfcConvert executable." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
@@ -582,30 +584,45 @@ set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
 TARGET_LINK_LIBRARIES(IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4)
 
 # IfcConvert
-file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
-file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
-set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
-ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
-if (IFCCONVERT_DOUBLE_PRECISION)
-    set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
-endif()
+if(BUILD_CONVERT)
+	file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
+	file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
+	set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
+	ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
+	if (IFCCONVERT_DOUBLE_PRECISION)
+	    set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
+	endif()
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
-if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    # Only set RPATHs when building shared libraries (i.e. IfcParse and
-    # IfcGeom are dynamically linked). Not necessarily a perfect solution
-    # but probably a good indication of whether RPATHs are necessary.
-    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
+	TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
+	if ((NOT WIN32) AND BUILD_SHARED_LIBS)
+	    # Only set RPATHs when building shared libraries (i.e. IfcParse and
+	    # IfcGeom are dynamically linked). Not necessarily a perfect solution
+	    # but probably a good indication of whether RPATHs are necessary.
+	    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
+	endif()
+	INSTALL(TARGETS IfcConvert
+ 		ARCHIVE DESTINATION ${LIBDIR}
+		LIBRARY DESTINATION ${LIBDIR}
+		RUNTIME DESTINATION ${BINDIR}
+	)
+
 endif()
 
 # IfcGeomServer
-file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
-file(GLOB H_FILES ../src/ifcgeomserver/*.h)
-set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
-ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
-if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
+if(BUILD_GEOMSERVER)
+	file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
+	file(GLOB H_FILES ../src/ifcgeomserver/*.h)
+	set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
+	ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
+	TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
+	if ((NOT WIN32) AND BUILD_SHARED_LIBS)
+	    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
+    	INSTALL(TARGETS IfcGeomServer
+		ARCHIVE DESTINATION ${LIBDIR}
+		LIBRARY DESTINATION ${LIBDIR}
+		RUNTIME DESTINATION ${BINDIR}
+	)
+	endif()
 endif()
 
 IF(BUILD_IFCPYTHON)
@@ -633,7 +650,7 @@ INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
 )
 
-INSTALL(TARGETS IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcConvert IfcGeomServer
+INSTALL(TARGETS IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}
