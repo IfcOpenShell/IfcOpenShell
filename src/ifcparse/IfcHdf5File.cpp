@@ -733,9 +733,9 @@ void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType&
 
 			Argument* attr = v->data().getArgument(ifc_attr_idx);
 			if (!attr->isNull()) {
-				// TODO: This is now index in IFC-attributes list, specify
-				set_unset_bitmap_value |= (1 << (ifc_hdf5_idx++));
+				set_unset_bitmap_value |= (1 << ifc_hdf5_idx);
 			}
+			ifc_hdf5_idx ++;
 			write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, visitor, attr_type);
 			apply_attribute_visitor(attr, attributes[ifc_attr_idx]).apply(attribute_visitor);
 		}
