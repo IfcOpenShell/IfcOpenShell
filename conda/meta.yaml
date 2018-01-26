@@ -19,14 +19,14 @@ requirements:
     - gcc     # [osx]
     - make
     - python
-    - oce==0.17.2
+    - oce ==0.17.2
     - cmake
-    - swig>=3.0.9
+    - swig >=3.0.9
     - libboost
     - icu
   run:
     - python
-    - oce==0.17.2
+    - oce ==0.17.2
     - libboost
     - icu
 
