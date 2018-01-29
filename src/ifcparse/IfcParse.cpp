@@ -604,12 +604,54 @@ EntityArgument::EntityArgument(const Token& t) {
 	entity = file->schema()->instantiate(data);
 }
 
+namespace {
+	template <typename T>
+	class vector_or_array {
+		std::vector<T>* vector_;
+		T* array_;
+		size_t size_, index_;
+
+	public:
+		vector_or_array(std::vector<T>* vector)
+			: vector_(vector)
+			, array_(0)
+			, size_(0)
+			, index_(0)
+		{}
+
+		vector_or_array(Argument** arr, size_t size)
+			: vector_(0)
+			, array_(arr)
+			, size_(size)
+			, index_(0)
+		{}
+
+		void push_back(const T& t) {
+			if (array_ && index_ < size_) {
+				array_[index_++] = t;
+			} else if (vector_) {
+				vector_->push_back(t);
+			}
+		}
+	};
+}
+
 // 
 // Reads the arguments from a list of token
 // Aditionally, registers the ids (i.e. #[\d]+) in the inverse map
 //
-void IfcParse::IfcFile::load(unsigned entity_instance_name, std::vector<Argument*>& attributes) {
+size_t IfcParse::IfcFile::load(unsigned entity_instance_name, Argument**& attributes, size_t num_attributes) {
 	Token next = tokens->Next();
+
+	std::vector<Argument*>* vector = 0;
+	vector_or_array<Argument*> filler(attributes, num_attributes);
+	if (attributes == 0) {
+		vector = new std::vector<Argument*>();
+		filler = vector_or_array<Argument*>(vector);
+	}
+
+	size_t return_value = num_attributes;
+
 	while( next.startPos || next.lexer ) {
 		if ( TokenFunc::isOperator(next,',') ) {
 			// do nothing
@@ -617,59 +659,64 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, std::vector<Argument
 			break;
 		} else if ( TokenFunc::isOperator(next,'(') ) {
 			ArgumentList* alist = new ArgumentList();
-			load(entity_instance_name, alist->arguments());
-			attributes.push_back(alist);
+			alist->size() = load(entity_instance_name, alist->arguments(), 0);
+			filler.push_back(alist);
 		} else {
 			if ( TokenFunc::isIdentifier(next) ) {
 				if (!parsing_complete_) {
 					register_inverse(entity_instance_name, next);
 				}
 			} if ( TokenFunc::isKeyword(next) ) {
-				// tokens->Next();
 				try {
-					attributes.push_back(new EntityArgument(next));
+					filler.push_back(new EntityArgument(next));
 				} catch ( IfcException& e ) {
 					Logger::Message(Logger::LOG_ERROR, e.what());
 				}
 			} else {
-				attributes.push_back(new TokenArgument(next));
+				filler.push_back(new TokenArgument(next));
 			}
 		}
 		next = tokens->Next();
 	}
+
+	if (vector) {
+		attributes = new Argument*[vector->size()];
+		return_value = vector->size();
+		for (size_t i = 0; i < vector->size(); ++i) {
+			attributes[i] = vector->at(i);
+		}
+	}
+
+	delete vector;
+
+	return return_value;
 }
 
 IfcUtil::ArgumentType ArgumentList::type() const {
-	if (list.empty()) {
+	if (size_ == 0) {
 		return IfcUtil::Argument_EMPTY_AGGREGATE;
 	}
 
-	const IfcUtil::ArgumentType elem_type = list[0]->type();
+	const IfcUtil::ArgumentType elem_type = list_[0]->type();
 	return IfcUtil::make_aggregate(elem_type);
-}
-
-void ArgumentList::push(Argument* l) {
-	list.push_back(l);
 }
 
 // templated helper function for reading arguments into a list
 template<typename T>
-std::vector<T> read_aggregate_as_vector(const std::vector<Argument*>& list) {
+std::vector<T> read_aggregate_as_vector(Argument** list, size_t size) {
 	std::vector<T> return_value;
-	return_value.reserve(list.size());
-	std::vector<Argument*>::const_iterator it = list.begin();
-	for (; it != list.end(); ++it) {
-		return_value.push_back(**it);
+	return_value.reserve(size);
+	for (size_t i = 0; i < size; ++i) {
+		return_value.push_back(*list[i]);
 	}
 	return return_value;
 }
 template<typename T>
-std::vector< std::vector<T> > read_aggregate_of_aggregate_as_vector2(const std::vector<Argument*>& list) {
+std::vector< std::vector<T> > read_aggregate_of_aggregate_as_vector2(Argument** list, size_t size) {
 	std::vector< std::vector<T> > return_value;
-	return_value.reserve(list.size());
-	std::vector<Argument*>::const_iterator it = list.begin();
-	for (; it != list.end(); ++it) {
-		return_value.push_back(**it);
+	return_value.reserve(size);
+	for (size_t i = 0; i < size; ++i) {
+		return_value.push_back(*list[i]);
 	}
 	return return_value;
 }
@@ -678,45 +725,43 @@ std::vector< std::vector<T> > read_aggregate_of_aggregate_as_vector2(const std::
 // Functions for casting the ArgumentList to other types
 //
 ArgumentList::operator std::vector<double>() const {
-	return read_aggregate_as_vector<double>(list);
+	return read_aggregate_as_vector<double>(list_, size_);
 }
 
 ArgumentList::operator std::vector<int>() const {
-	return read_aggregate_as_vector<int>(list);
+	return read_aggregate_as_vector<int>(list_, size_);
 }
 
 ArgumentList::operator std::vector<std::string>() const {
-	return read_aggregate_as_vector<std::string>(list);
+	return read_aggregate_as_vector<std::string>(list_, size_);
 }
 
 ArgumentList::operator std::vector<boost::dynamic_bitset<> >() const {
-	return read_aggregate_as_vector<boost::dynamic_bitset<> >(list);
+	return read_aggregate_as_vector<boost::dynamic_bitset<> >(list_, size_);
 }
 
 ArgumentList::operator IfcEntityList::ptr() const {
 	IfcEntityList::ptr l ( new IfcEntityList() );
-	std::vector<Argument*>::const_iterator it;
-	for ( it = list.begin(); it != list.end(); ++ it ) {
+	for (size_t i = 0; i < size_; ++i) {
 		// FIXME: account for $
-		IfcUtil::IfcBaseClass* entity = **it;
+		IfcUtil::IfcBaseClass* entity = *list_[i];
 		l->push(entity);
 	}
 	return l;
 }
 
 ArgumentList::operator std::vector< std::vector<int> >() const {
-	return read_aggregate_of_aggregate_as_vector2<int>(list);
+	return read_aggregate_of_aggregate_as_vector2<int>(list_, size_);
 }
 
 ArgumentList::operator std::vector< std::vector<double> >() const {
-	return read_aggregate_of_aggregate_as_vector2<double>(list);
+	return read_aggregate_of_aggregate_as_vector2<double>(list_, size_);
 }
 
 ArgumentList::operator IfcEntityListList::ptr() const {
 	IfcEntityListList::ptr l ( new IfcEntityListList() );
-	std::vector<Argument*>::const_iterator it;
-	for ( it = list.begin(); it != list.end(); ++ it ) {
-		const Argument* arg = *it;
+	for (size_t i = 0; i < size_; ++i) {
+		const Argument* arg = list_[i];
 		const ArgumentList* arg_list;
 		if ((arg_list = dynamic_cast<const ArgumentList*>(arg)) != 0) {
 			IfcEntityList::ptr e = *arg_list;
@@ -726,15 +771,16 @@ ArgumentList::operator IfcEntityListList::ptr() const {
 	return l;
 }
 
-unsigned int ArgumentList::size() const { return (unsigned int) list.size(); }
+unsigned int ArgumentList::size() const { return (unsigned int)size_; }
 
 Argument* ArgumentList::operator [] (unsigned int i) const {
-	if ( i >= list.size() ) {
+	if (i >= size_) {
 		throw IfcAttributeOutOfRangeException("Argument index out of range");
 	}
-	return list[i];
+	return list_[i];
 }
 
+/*
 void ArgumentList::set(unsigned int i, Argument* argument) {
 	while (size() < i) {
 		push(new NullArgument());
@@ -746,13 +792,16 @@ void ArgumentList::set(unsigned int i, Argument* argument) {
 		list.push_back(argument);
 	}	
 }
+*/
 
 std::string ArgumentList::toString(bool upper) const {
 	std::stringstream ss;
 	ss << "(";
-	for( std::vector<Argument*>::const_iterator it = list.begin(); it != list.end(); it ++ ) {
-		if ( it != list.begin() ) ss << ",";
-		ss << (*it)->toString(upper);
+	for (size_t i = 0; i < size_; ++i) {
+		if (i != 0) {
+			ss << ",";
+		}
+		ss << list_[i]->toString(upper);
 	}
 	ss << ")";
 	return ss.str();
@@ -761,10 +810,10 @@ std::string ArgumentList::toString(bool upper) const {
 bool ArgumentList::isNull() const { return false; }
 
 ArgumentList::~ArgumentList() {
-	for( std::vector<Argument*>::iterator it = list.begin(); it != list.end(); it ++ ) {
-		delete (*it);
+	for (size_t i = 0; i < size_; ++i) {
+		delete list_[i];
 	}
-	list.clear();
+	delete[] list_;
 }
 
 
@@ -850,8 +899,7 @@ void IfcParse::IfcFile::load(const IfcEntityInstanceData& data) {
 		if (!TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity instance");
 	}
 	tokens->Next();
-	// TODO: reserve based on number of schema attrs
-	load(data.id(), data.attributes());
+	load(data.id(), data.attributes(), data.getArgumentCount());
 	unsigned int old_offset = tokens->stream->Tell();
 	Token semilocon = tokens->Next();
 	if (!TokenFunc::isOperator(semilocon, ';')) {
@@ -884,29 +932,36 @@ void IfcParse::IfcFile::unregister_inverse(unsigned id_from, IfcUtil::IfcBaseCla
 // Note that this initializes the entity if it is not initialized
 //
 std::string IfcEntityInstanceData::toString(bool upper) const {
-	if (!initialized_) {
+	if (attributes_ == 0) {
 		load();
 	}
 
 	std::stringstream ss;
 	ss.imbue(std::locale::classic());
 	
-	std::string dt = type()->name();
-	if (upper) {
-		boost::to_upper(dt);
-	}
+	std::string dt;
+	if (type_) {
+		dt = type()->name();
+		if (upper) {
+			boost::to_upper(dt);
+		}
 
-	if (type()->as_entity() || id_ != 0) {
-		ss << "#" << id_ << "=";
+		if (type()->as_entity() || id_ != 0) {
+			ss << "#" << id_ << "=";
+		}
 	}
 
 	ss << dt << "(";
-	std::vector<Argument*>::const_iterator it = attributes_.begin();
-	for (; it != attributes_.end(); ++it) {
-		if (it != attributes_.begin()) {
+
+	for (size_t i = 0; i < getArgumentCount(); ++i) {
+		if (i != 0) {
 			ss << ",";
 		}
-		ss << (*it)->toString(upper);
+		if (attributes_[i] == 0) {
+			ss << "$";
+		} else {
+			ss << attributes_[i]->toString(upper);
+		}
 	}
 	ss << ")";
 
@@ -914,10 +969,10 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
 }
 
 IfcEntityInstanceData::~IfcEntityInstanceData() {
-	std::vector<Argument*>::const_iterator it = attributes_.begin();
-	for (; it != attributes_.end(); ++it) {
-		delete *it;
+	for (size_t i = 0; i < getArgumentCount(); ++i) {
+		delete attributes_[i];
 	}
+	delete[] attributes_;
 }
 
 unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
@@ -936,8 +991,11 @@ IfcEntityList::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration
 }
 
 void IfcEntityInstanceData::load() const {
+	// type_ is 0 for header entities which have their size predetermined in code
+	if (type_ != 0) {
+		attributes_ = new Argument*[getArgumentCount()];
+	}
 	file->load(*this);
-	initialized_ = true;
 }
 
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
@@ -945,21 +1003,23 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 	type_ = e.type_;
 	id_ = 0;
 
-	// In order not to have the instance read from file
-	initialized_ = true;
-
 	const unsigned int count = e.getArgumentCount();
+
+	// In order not to have the instance read from file
+	attributes_ = new Argument*[count];
+
 	for (unsigned int i = 0; i < count; ++i) {
+		attributes_[i] = 0;
 		this->setArgument(i, e.getArgument(i));
 	}
 }
 
 
 Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
-	if (!initialized_) {
+	if (attributes_ == 0) {
 		load();
 	}
-	if (i < attributes_.size()) {
+	if (i < getArgumentCount()) {
 		return attributes_[i];
 	} else {
 		throw IfcParse::IfcException("Attribute index out of range");
@@ -1058,12 +1118,8 @@ public:
 };
 
 void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::ArgumentType attr_type) {
-	if (!initialized_) {
+	if (attributes_ == 0) {
 		load();
-	}
-
-	while (attributes_.size() < i) {
-		attributes_.push_back(new NullArgument());
 	}
 
 	if (attr_type == IfcUtil::Argument_UNKNOWN) {
@@ -1178,7 +1234,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		return;
 	}
 
-	if (i < attributes_.size()) {
+	if (attributes_[i] != 0) {
 		Argument* current_attribute = attributes_[i];
 		if (this->file) {
 			unregister_inverse_visitor visitor(*this->file, *this);
@@ -1192,12 +1248,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 		apply_individual_instance_visitor(copy).apply(visitor);
 	}	
 
-	if (i < attributes_.size()) {
-		attributes_[i] = copy;
-	} else {
-		// We have asserted above that the size is at least i
-		attributes_.push_back(copy);
-	}
+	attributes_[i] = copy;
 }
 
 //

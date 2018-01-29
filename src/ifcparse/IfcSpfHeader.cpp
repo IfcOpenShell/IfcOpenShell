@@ -35,14 +35,17 @@ static const char * const DATA				= "DATA";
 
 using namespace IfcParse;
 
-HeaderEntity::HeaderEntity(const char * const datatype, IfcFile* file)
-	: IfcEntityInstanceData(0, file), _datatype(datatype)
+HeaderEntity::HeaderEntity(const char * const datatype, size_t size, IfcFile* file)
+	: IfcEntityInstanceData(file, size), size_(size), _datatype(datatype)
 {
 	if (file) {
 		offset_in_file_ = file->stream->Tell();
 		load();
 	} else {
-		initialized_ = true;
+		// attributes_ = new Argument*[size];
+		for (size_t i = 0; i < size; ++i) {
+			attributes_[i] = 0;
+		}
 	}
 }
 
@@ -168,6 +171,6 @@ FileSchema& IfcSpfHeader::file_schema() {
 	}
 }
 
-FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, file) {}
-FileName::FileName(IfcFile* file) : HeaderEntity(FILE_NAME, file) {}
-FileSchema::FileSchema(IfcFile* file) : HeaderEntity(FILE_SCHEMA, file) {}
+FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, 2, file) {}
+FileName::FileName(IfcFile* file) : HeaderEntity(FILE_NAME, 7, file) {}
+FileSchema::FileSchema(IfcFile* file) : HeaderEntity(FILE_SCHEMA, 1, file) {}
