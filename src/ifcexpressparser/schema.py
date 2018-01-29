@@ -60,6 +60,12 @@ class Schema:
         return str(v) in self.types
     def is_entity(self, v):
         return str(v) in self.entities
+    def __len__(self):
+        return len(self.types) + len(self.entities)
+    def __iter__(self):
+        return iter(self.keys)
+    def __getitem__(self, key):
+        return self.types_entities[key]
     def __init__(self, parsetree):
         self.name = parsetree[1]
 
@@ -67,6 +73,9 @@ class Schema:
 
         self.types = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.TypeDeclaration)])
         self.entities = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.EntityDeclaration)])
+        
+        self.keys = list(self.types.keys()) + list(self.entities.keys())
+        self.types_entities = {k: v for d in (self.types, self.entities) for k, v in d.items()}
 
         of_type = lambda *types: sort([(a, b.type.type) for a,b in self.types.items() if any(isinstance(b.type.type, ty) for ty in types)])
 
