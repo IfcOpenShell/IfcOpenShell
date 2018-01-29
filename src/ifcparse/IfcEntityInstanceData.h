@@ -52,8 +52,12 @@ public:
 	{}
 
 	IfcEntityInstanceData(const IfcParse::declaration* type)
-		: file(0), id_(0), type_(type), attributes_(0)
-	{}
+		: file(0), id_(0), type_(type), attributes_(new Argument*[getArgumentCount()])
+	{
+		for (size_t i = 0; i < getArgumentCount(); ++i) {
+			attributes_[i] = 0;
+		}
+	}
 
 	void load() const;
 

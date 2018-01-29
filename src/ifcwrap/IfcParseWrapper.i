@@ -543,13 +543,10 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
 		IfcEntityInstanceData* data = new IfcEntityInstanceData(decl);
-		
-		size_t attr_count = 1;
-		if (decl->as_entity()) {
-			attr_count = decl->as_entity()->attribute_count();
-		}
 
-		data->setArgument(attr_count - 1, new IfcWrite::IfcWriteArgument());
+		for (size_t i = 0; i < data->getArgumentCount(); ++i) {
+			data->setArgument(i, new IfcWrite::IfcWriteArgument());
+		}
 
 		if (decl->as_entity()) {			
 			const std::vector<bool>& derived = decl->as_entity()->derived();
