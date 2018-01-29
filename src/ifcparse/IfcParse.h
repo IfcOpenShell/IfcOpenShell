@@ -160,9 +160,11 @@ namespace IfcParse {
 	///                 ==========
 	class IFC_PARSE_API ArgumentList: public Argument {
 	private:
-		std::vector<Argument*> list;
-		void push(Argument* l);
+		size_t size_;
+		Argument** list_;
+
 	public:
+		ArgumentList() : size_(0), list_(0) {}
 		~ArgumentList();
 
 		void read(IfcSpfLexer* t, std::vector<unsigned int>& ids);
@@ -183,11 +185,11 @@ namespace IfcParse {
 		unsigned int size() const;
 
 		Argument* operator [] (unsigned int i) const;
-		void set(unsigned int i, Argument*);
 
 		std::string toString(bool upper=false) const;
 
-		std::vector<Argument*>& arguments() { return list; }
+		Argument**& arguments() { return list_; }
+		size_t& size() { return size_; }
 	};
 
 

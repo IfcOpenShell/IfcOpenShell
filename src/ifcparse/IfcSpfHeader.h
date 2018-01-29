@@ -30,11 +30,12 @@ namespace IfcParse {
 class IFC_PARSE_API HeaderEntity : public IfcEntityInstanceData {
 private:	
 	const char * const _datatype;
+	size_t size_;
 
 	HeaderEntity(const HeaderEntity&); //N/A
 	HeaderEntity& operator =(const HeaderEntity&); //N/A
 protected:
-	HeaderEntity(const char * const datatype, IfcParse::IfcFile* file);
+	HeaderEntity(const char * const datatype, size_t size, IfcParse::IfcFile* file);
 
 	void setValue(unsigned int i, const std::string& s) {
 		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
@@ -49,19 +50,13 @@ protected:
 	}
 
 public:
+	virtual unsigned int getArgumentCount() const {
+		return size_;
+	}
 
 	std::string toString(bool upper=false) const {
 		std::stringstream ss;
-		// Unfortunately this is duplicated from IfcEntityInstanceData::toString()
-		ss << _datatype << "(";
-		std::vector<Argument*>::const_iterator it = attributes_.begin();
-		for (; it != attributes_.end(); ++it) {
-			if (it != attributes_.begin()) {
-				ss << ",";
-			}
-			ss << (*it)->toString(upper);
-		}
-		ss << ")";
+		ss << _datatype << IfcEntityInstanceData::toString(upper);
 		return ss.str();
 	}
 };
