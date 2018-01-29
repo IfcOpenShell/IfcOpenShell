@@ -2115,135 +2115,6 @@ class IFC4_instance_factory : public IfcParse::instance_factory {
 IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcAbsorbedDoseMeasure_type = new type_declaration("IfcAbsorbedDoseMeasure", 0, new simple_type(simple_type::real_type));
     IFC4_IfcAccelerationMeasure_type = new type_declaration("IfcAccelerationMeasure", 1, new simple_type(simple_type::real_type));
-    IFC4_IfcAmountOfSubstanceMeasure_type = new type_declaration("IfcAmountOfSubstanceMeasure", 29, new simple_type(simple_type::real_type));
-    IFC4_IfcAngularVelocityMeasure_type = new type_declaration("IfcAngularVelocityMeasure", 32, new simple_type(simple_type::real_type));
-    IFC4_IfcArcIndex_type = new type_declaration("IfcArcIndex", 43, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IFC4_IfcPositiveInteger_type)));
-    IFC4_IfcAreaDensityMeasure_type = new type_declaration("IfcAreaDensityMeasure", 44, new simple_type(simple_type::real_type));
-    IFC4_IfcAreaMeasure_type = new type_declaration("IfcAreaMeasure", 45, new simple_type(simple_type::real_type));
-    IFC4_IfcBinary_type = new type_declaration("IfcBinary", 63, new simple_type(simple_type::binary_type));
-    IFC4_IfcBoolean_type = new type_declaration("IfcBoolean", 69, new simple_type(simple_type::boolean_type));
-    IFC4_IfcCardinalPointReference_type = new type_declaration("IfcCardinalPointReference", 118, new simple_type(simple_type::integer_type));
-    IFC4_IfcComplexNumber_type = new type_declaration("IfcComplexNumber", 161, new aggregation_type(aggregation_type::array_type, 1, 2, new simple_type(simple_type::real_type)));
-    IFC4_IfcCompoundPlaneAngleMeasure_type = new type_declaration("IfcCompoundPlaneAngleMeasure", 169, new aggregation_type(aggregation_type::list_type, 3, 4, new simple_type(simple_type::integer_type)));
-    IFC4_IfcContextDependentMeasure_type = new type_declaration("IfcContextDependentMeasure", 199, new simple_type(simple_type::real_type));
-    IFC4_IfcCountMeasure_type = new type_declaration("IfcCountMeasure", 221, new simple_type(simple_type::number_type));
-    IFC4_IfcCurvatureMeasure_type = new type_declaration("IfcCurvatureMeasure", 236, new simple_type(simple_type::real_type));
-    IFC4_IfcDate_type = new type_declaration("IfcDate", 254, new simple_type(simple_type::string_type));
-    IFC4_IfcDateTime_type = new type_declaration("IfcDateTime", 255, new simple_type(simple_type::string_type));
-    IFC4_IfcDayInMonthNumber_type = new type_declaration("IfcDayInMonthNumber", 256, new simple_type(simple_type::integer_type));
-    IFC4_IfcDayInWeekNumber_type = new type_declaration("IfcDayInWeekNumber", 257, new simple_type(simple_type::integer_type));
-    IFC4_IfcDescriptiveMeasure_type = new type_declaration("IfcDescriptiveMeasure", 264, new simple_type(simple_type::string_type));
-    IFC4_IfcDimensionCount_type = new type_declaration("IfcDimensionCount", 266, new simple_type(simple_type::integer_type));
-    IFC4_IfcDoseEquivalentMeasure_type = new type_declaration("IfcDoseEquivalentMeasure", 304, new simple_type(simple_type::real_type));
-    IFC4_IfcDuration_type = new type_declaration("IfcDuration", 316, new simple_type(simple_type::string_type));
-    IFC4_IfcDynamicViscosityMeasure_type = new type_declaration("IfcDynamicViscosityMeasure", 317, new simple_type(simple_type::real_type));
-    IFC4_IfcElectricCapacitanceMeasure_type = new type_declaration("IfcElectricCapacitanceMeasure", 324, new simple_type(simple_type::real_type));
-    IFC4_IfcElectricChargeMeasure_type = new type_declaration("IfcElectricChargeMeasure", 325, new simple_type(simple_type::real_type));
-    IFC4_IfcElectricConductanceMeasure_type = new type_declaration("IfcElectricConductanceMeasure", 326, new simple_type(simple_type::real_type));
-    IFC4_IfcElectricCurrentMeasure_type = new type_declaration("IfcElectricCurrentMeasure", 327, new simple_type(simple_type::real_type));
-    IFC4_IfcElectricResistanceMeasure_type = new type_declaration("IfcElectricResistanceMeasure", 340, new simple_type(simple_type::real_type));
-    IFC4_IfcElectricVoltageMeasure_type = new type_declaration("IfcElectricVoltageMeasure", 344, new simple_type(simple_type::real_type));
-    IFC4_IfcEnergyMeasure_type = new type_declaration("IfcEnergyMeasure", 359, new simple_type(simple_type::real_type));
-    IFC4_IfcFontStyle_type = new type_declaration("IfcFontStyle", 435, new simple_type(simple_type::string_type));
-    IFC4_IfcFontVariant_type = new type_declaration("IfcFontVariant", 436, new simple_type(simple_type::string_type));
-    IFC4_IfcFontWeight_type = new type_declaration("IfcFontWeight", 437, new simple_type(simple_type::string_type));
-    IFC4_IfcForceMeasure_type = new type_declaration("IfcForceMeasure", 441, new simple_type(simple_type::real_type));
-    IFC4_IfcFrequencyMeasure_type = new type_declaration("IfcFrequencyMeasure", 442, new simple_type(simple_type::real_type));
-    IFC4_IfcGloballyUniqueId_type = new type_declaration("IfcGloballyUniqueId", 458, new simple_type(simple_type::string_type));
-    IFC4_IfcHeatFluxDensityMeasure_type = new type_declaration("IfcHeatFluxDensityMeasure", 471, new simple_type(simple_type::real_type));
-    IFC4_IfcHeatingValueMeasure_type = new type_declaration("IfcHeatingValueMeasure", 472, new simple_type(simple_type::real_type));
-    IFC4_IfcIdentifier_type = new type_declaration("IfcIdentifier", 476, new simple_type(simple_type::string_type));
-    IFC4_IfcIlluminanceMeasure_type = new type_declaration("IfcIlluminanceMeasure", 477, new simple_type(simple_type::real_type));
-    IFC4_IfcInductanceMeasure_type = new type_declaration("IfcInductanceMeasure", 483, new simple_type(simple_type::real_type));
-    IFC4_IfcInteger_type = new type_declaration("IfcInteger", 484, new simple_type(simple_type::integer_type));
-    IFC4_IfcIntegerCountRateMeasure_type = new type_declaration("IfcIntegerCountRateMeasure", 485, new simple_type(simple_type::integer_type));
-    IFC4_IfcIonConcentrationMeasure_type = new type_declaration("IfcIonConcentrationMeasure", 492, new simple_type(simple_type::real_type));
-    IFC4_IfcIsothermalMoistureCapacityMeasure_type = new type_declaration("IfcIsothermalMoistureCapacityMeasure", 496, new simple_type(simple_type::real_type));
-    IFC4_IfcKinematicViscosityMeasure_type = new type_declaration("IfcKinematicViscosityMeasure", 500, new simple_type(simple_type::real_type));
-    IFC4_IfcLabel_type = new type_declaration("IfcLabel", 502, new simple_type(simple_type::string_type));
-    IFC4_IfcLanguageId_type = new type_declaration("IfcLanguageId", 510, new named_type(IFC4_IfcIdentifier_type));
-    IFC4_IfcLengthMeasure_type = new type_declaration("IfcLengthMeasure", 513, new simple_type(simple_type::real_type));
-    IFC4_IfcLineIndex_type = new type_declaration("IfcLineIndex", 536, new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC4_IfcPositiveInteger_type)));
-    IFC4_IfcLinearForceMeasure_type = new type_declaration("IfcLinearForceMeasure", 532, new simple_type(simple_type::real_type));
-    IFC4_IfcLinearMomentMeasure_type = new type_declaration("IfcLinearMomentMeasure", 533, new simple_type(simple_type::real_type));
-    IFC4_IfcLinearStiffnessMeasure_type = new type_declaration("IfcLinearStiffnessMeasure", 534, new simple_type(simple_type::real_type));
-    IFC4_IfcLinearVelocityMeasure_type = new type_declaration("IfcLinearVelocityMeasure", 535, new simple_type(simple_type::real_type));
-    IFC4_IfcLogical_type = new type_declaration("IfcLogical", 539, new simple_type(simple_type::logical_type));
-    IFC4_IfcLuminousFluxMeasure_type = new type_declaration("IfcLuminousFluxMeasure", 543, new simple_type(simple_type::real_type));
-    IFC4_IfcLuminousIntensityDistributionMeasure_type = new type_declaration("IfcLuminousIntensityDistributionMeasure", 544, new simple_type(simple_type::real_type));
-    IFC4_IfcLuminousIntensityMeasure_type = new type_declaration("IfcLuminousIntensityMeasure", 545, new simple_type(simple_type::real_type));
-    IFC4_IfcMagneticFluxDensityMeasure_type = new type_declaration("IfcMagneticFluxDensityMeasure", 546, new simple_type(simple_type::real_type));
-    IFC4_IfcMagneticFluxMeasure_type = new type_declaration("IfcMagneticFluxMeasure", 547, new simple_type(simple_type::real_type));
-    IFC4_IfcMassDensityMeasure_type = new type_declaration("IfcMassDensityMeasure", 551, new simple_type(simple_type::real_type));
-    IFC4_IfcMassFlowRateMeasure_type = new type_declaration("IfcMassFlowRateMeasure", 552, new simple_type(simple_type::real_type));
-    IFC4_IfcMassMeasure_type = new type_declaration("IfcMassMeasure", 553, new simple_type(simple_type::real_type));
-    IFC4_IfcMassPerLengthMeasure_type = new type_declaration("IfcMassPerLengthMeasure", 554, new simple_type(simple_type::real_type));
-    IFC4_IfcModulusOfElasticityMeasure_type = new type_declaration("IfcModulusOfElasticityMeasure", 590, new simple_type(simple_type::real_type));
-    IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfLinearSubgradeReactionMeasure", 591, new simple_type(simple_type::real_type));
-    IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfRotationalSubgradeReactionMeasure", 592, new simple_type(simple_type::real_type));
-    IFC4_IfcModulusOfSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfSubgradeReactionMeasure", 594, new simple_type(simple_type::real_type));
-    IFC4_IfcMoistureDiffusivityMeasure_type = new type_declaration("IfcMoistureDiffusivityMeasure", 597, new simple_type(simple_type::real_type));
-    IFC4_IfcMolecularWeightMeasure_type = new type_declaration("IfcMolecularWeightMeasure", 598, new simple_type(simple_type::real_type));
-    IFC4_IfcMomentOfInertiaMeasure_type = new type_declaration("IfcMomentOfInertiaMeasure", 599, new simple_type(simple_type::real_type));
-    IFC4_IfcMonetaryMeasure_type = new type_declaration("IfcMonetaryMeasure", 600, new simple_type(simple_type::real_type));
-    IFC4_IfcMonthInYearNumber_type = new type_declaration("IfcMonthInYearNumber", 602, new simple_type(simple_type::integer_type));
-    IFC4_IfcNonNegativeLengthMeasure_type = new type_declaration("IfcNonNegativeLengthMeasure", 607, new named_type(IFC4_IfcLengthMeasure_type));
-    IFC4_IfcNumericMeasure_type = new type_declaration("IfcNumericMeasure", 610, new simple_type(simple_type::number_type));
-    IFC4_IfcPHMeasure_type = new type_declaration("IfcPHMeasure", 646, new simple_type(simple_type::real_type));
-    IFC4_IfcParameterValue_type = new type_declaration("IfcParameterValue", 635, new simple_type(simple_type::real_type));
-    IFC4_IfcPlanarForceMeasure_type = new type_declaration("IfcPlanarForceMeasure", 665, new simple_type(simple_type::real_type));
-    IFC4_IfcPlaneAngleMeasure_type = new type_declaration("IfcPlaneAngleMeasure", 667, new simple_type(simple_type::real_type));
-    IFC4_IfcPositiveInteger_type = new type_declaration("IfcPositiveInteger", 680, new named_type(IFC4_IfcInteger_type));
-    IFC4_IfcPositiveLengthMeasure_type = new type_declaration("IfcPositiveLengthMeasure", 681, new named_type(IFC4_IfcLengthMeasure_type));
-    IFC4_IfcPositivePlaneAngleMeasure_type = new type_declaration("IfcPositivePlaneAngleMeasure", 682, new named_type(IFC4_IfcPlaneAngleMeasure_type));
-    IFC4_IfcPowerMeasure_type = new type_declaration("IfcPowerMeasure", 685, new simple_type(simple_type::real_type));
-    IFC4_IfcPresentableText_type = new type_declaration("IfcPresentableText", 692, new simple_type(simple_type::string_type));
-    IFC4_IfcPressureMeasure_type = new type_declaration("IfcPressureMeasure", 699, new simple_type(simple_type::real_type));
-    IFC4_IfcPropertySetDefinitionSet_type = new type_declaration("IfcPropertySetDefinitionSet", 733, new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC4_IfcPropertySetDefinition_type)));
-    IFC4_IfcRadioActivityMeasure_type = new type_declaration("IfcRadioActivityMeasure", 757, new simple_type(simple_type::real_type));
-    IFC4_IfcRatioMeasure_type = new type_declaration("IfcRatioMeasure", 767, new simple_type(simple_type::real_type));
-    IFC4_IfcReal_type = new type_declaration("IfcReal", 770, new simple_type(simple_type::real_type));
-    IFC4_IfcRotationalFrequencyMeasure_type = new type_declaration("IfcRotationalFrequencyMeasure", 861, new simple_type(simple_type::real_type));
-    IFC4_IfcRotationalMassMeasure_type = new type_declaration("IfcRotationalMassMeasure", 862, new simple_type(simple_type::real_type));
-    IFC4_IfcRotationalStiffnessMeasure_type = new type_declaration("IfcRotationalStiffnessMeasure", 863, new simple_type(simple_type::real_type));
-    IFC4_IfcSectionModulusMeasure_type = new type_declaration("IfcSectionModulusMeasure", 872, new simple_type(simple_type::real_type));
-    IFC4_IfcSectionalAreaIntegralMeasure_type = new type_declaration("IfcSectionalAreaIntegralMeasure", 870, new simple_type(simple_type::real_type));
-    IFC4_IfcShearModulusMeasure_type = new type_declaration("IfcShearModulusMeasure", 887, new simple_type(simple_type::real_type));
-    IFC4_IfcSolidAngleMeasure_type = new type_declaration("IfcSolidAngleMeasure", 908, new simple_type(simple_type::real_type));
-    IFC4_IfcSoundPowerLevelMeasure_type = new type_declaration("IfcSoundPowerLevelMeasure", 911, new simple_type(simple_type::real_type));
-    IFC4_IfcSoundPowerMeasure_type = new type_declaration("IfcSoundPowerMeasure", 912, new simple_type(simple_type::real_type));
-    IFC4_IfcSoundPressureLevelMeasure_type = new type_declaration("IfcSoundPressureLevelMeasure", 913, new simple_type(simple_type::real_type));
-    IFC4_IfcSoundPressureMeasure_type = new type_declaration("IfcSoundPressureMeasure", 914, new simple_type(simple_type::real_type));
-    IFC4_IfcSpecificHeatCapacityMeasure_type = new type_declaration("IfcSpecificHeatCapacityMeasure", 929, new simple_type(simple_type::real_type));
-    IFC4_IfcSpecularExponent_type = new type_declaration("IfcSpecularExponent", 930, new simple_type(simple_type::real_type));
-    IFC4_IfcSpecularRoughness_type = new type_declaration("IfcSpecularRoughness", 932, new simple_type(simple_type::real_type));
-    IFC4_IfcStrippedOptional_type = new type_declaration("IfcStrippedOptional", 944, new simple_type(simple_type::boolean_type));
-    IFC4_IfcTemperatureGradientMeasure_type = new type_declaration("IfcTemperatureGradientMeasure", 1036, new simple_type(simple_type::real_type));
-    IFC4_IfcTemperatureRateOfChangeMeasure_type = new type_declaration("IfcTemperatureRateOfChangeMeasure", 1037, new simple_type(simple_type::real_type));
-    IFC4_IfcText_type = new type_declaration("IfcText", 1046, new simple_type(simple_type::string_type));
-    IFC4_IfcTextAlignment_type = new type_declaration("IfcTextAlignment", 1047, new simple_type(simple_type::string_type));
-    IFC4_IfcTextDecoration_type = new type_declaration("IfcTextDecoration", 1048, new simple_type(simple_type::string_type));
-    IFC4_IfcTextFontName_type = new type_declaration("IfcTextFontName", 1049, new simple_type(simple_type::string_type));
-    IFC4_IfcTextTransformation_type = new type_declaration("IfcTextTransformation", 1058, new simple_type(simple_type::string_type));
-    IFC4_IfcThermalAdmittanceMeasure_type = new type_declaration("IfcThermalAdmittanceMeasure", 1064, new simple_type(simple_type::real_type));
-    IFC4_IfcThermalConductivityMeasure_type = new type_declaration("IfcThermalConductivityMeasure", 1065, new simple_type(simple_type::real_type));
-    IFC4_IfcThermalExpansionCoefficientMeasure_type = new type_declaration("IfcThermalExpansionCoefficientMeasure", 1066, new simple_type(simple_type::real_type));
-    IFC4_IfcThermalResistanceMeasure_type = new type_declaration("IfcThermalResistanceMeasure", 1067, new simple_type(simple_type::real_type));
-    IFC4_IfcThermalTransmittanceMeasure_type = new type_declaration("IfcThermalTransmittanceMeasure", 1068, new simple_type(simple_type::real_type));
-    IFC4_IfcThermodynamicTemperatureMeasure_type = new type_declaration("IfcThermodynamicTemperatureMeasure", 1069, new simple_type(simple_type::real_type));
-    IFC4_IfcTime_type = new type_declaration("IfcTime", 1070, new simple_type(simple_type::string_type));
-    IFC4_IfcTimeMeasure_type = new type_declaration("IfcTimeMeasure", 1071, new simple_type(simple_type::real_type));
-    IFC4_IfcTimeStamp_type = new type_declaration("IfcTimeStamp", 1077, new simple_type(simple_type::integer_type));
-    IFC4_IfcTorqueMeasure_type = new type_declaration("IfcTorqueMeasure", 1080, new simple_type(simple_type::real_type));
-    IFC4_IfcURIReference_type = new type_declaration("IfcURIReference", 1111, new simple_type(simple_type::string_type));
-    IFC4_IfcVaporPermeabilityMeasure_type = new type_declaration("IfcVaporPermeabilityMeasure", 1117, new simple_type(simple_type::real_type));
-    IFC4_IfcVolumeMeasure_type = new type_declaration("IfcVolumeMeasure", 1130, new simple_type(simple_type::real_type));
-    IFC4_IfcVolumetricFlowRateMeasure_type = new type_declaration("IfcVolumetricFlowRateMeasure", 1131, new simple_type(simple_type::real_type));
-    IFC4_IfcWarpingConstantMeasure_type = new type_declaration("IfcWarpingConstantMeasure", 1137, new simple_type(simple_type::real_type));
-    IFC4_IfcWarpingMomentMeasure_type = new type_declaration("IfcWarpingMomentMeasure", 1138, new simple_type(simple_type::real_type));
-    IFC4_IfcBoxAlignment_type = new type_declaration("IfcBoxAlignment", 83, new named_type(IFC4_IfcLabel_type));
-    IFC4_IfcNormalisedRatioMeasure_type = new type_declaration("IfcNormalisedRatioMeasure", 608, new named_type(IFC4_IfcRatioMeasure_type));
-    IFC4_IfcPositiveRatioMeasure_type = new type_declaration("IfcPositiveRatioMeasure", 683, new named_type(IFC4_IfcRatioMeasure_type));
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("EMAIL");
@@ -2361,6 +2232,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WHISTLE");
         IFC4_IfcAlarmTypeEnum_type = new enumeration_type("IfcAlarmTypeEnum", 28, items);
     }
+    IFC4_IfcAmountOfSubstanceMeasure_type = new type_declaration("IfcAmountOfSubstanceMeasure", 29, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("IN_PLANE_LOADING_2D");
@@ -2380,6 +2252,9 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcAnalysisTheoryTypeEnum_type = new enumeration_type("IfcAnalysisTheoryTypeEnum", 31, items);
     }
+    IFC4_IfcAngularVelocityMeasure_type = new type_declaration("IfcAngularVelocityMeasure", 32, new simple_type(simple_type::real_type));
+    IFC4_IfcAreaDensityMeasure_type = new type_declaration("IfcAreaDensityMeasure", 44, new simple_type(simple_type::real_type));
+    IFC4_IfcAreaMeasure_type = new type_declaration("IfcAreaMeasure", 45, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("ADD");
@@ -2463,6 +2338,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("NOTINCLUDES");
         IFC4_IfcBenchmarkEnum_type = new enumeration_type("IfcBenchmarkEnum", 61, items);
     }
+    IFC4_IfcBinary_type = new type_declaration("IfcBinary", 63, new simple_type(simple_type::binary_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
@@ -2471,6 +2347,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WATER");
         IFC4_IfcBoilerTypeEnum_type = new enumeration_type("IfcBoilerTypeEnum", 68, items);
     }
+    IFC4_IfcBoolean_type = new type_declaration("IfcBoolean", 69, new simple_type(simple_type::boolean_type));
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("DIFFERENCE");
@@ -2555,6 +2432,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcCableSegmentTypeEnum_type = new enumeration_type("IfcCableSegmentTypeEnum", 117, items);
     }
+    IFC4_IfcCardinalPointReference_type = new type_declaration("IfcCardinalPointReference", 118, new simple_type(simple_type::integer_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("ADDED");
@@ -2618,12 +2496,14 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcCommunicationsApplianceTypeEnum_type = new enumeration_type("IfcCommunicationsApplianceTypeEnum", 160, items);
     }
+    IFC4_IfcComplexNumber_type = new type_declaration("IfcComplexNumber", 161, new aggregation_type(aggregation_type::array_type, 1, 2, new simple_type(simple_type::real_type)));
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("P_COMPLEX");
         items.push_back("Q_COMPLEX");
         IFC4_IfcComplexPropertyTemplateTypeEnum_type = new enumeration_type("IfcComplexPropertyTemplateTypeEnum", 164, items);
     }
+    IFC4_IfcCompoundPlaneAngleMeasure_type = new type_declaration("IfcCompoundPlaneAngleMeasure", 169, new aggregation_type(aggregation_type::list_type, 3, 4, new simple_type(simple_type::integer_type)));
     {
         std::vector<std::string> items; items.reserve(17);
         items.push_back("BOOSTER");
@@ -2712,6 +2592,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcConstructionProductResourceTypeEnum_type = new enumeration_type("IfcConstructionProductResourceTypeEnum", 195, items);
     }
+    IFC4_IfcContextDependentMeasure_type = new type_declaration("IfcContextDependentMeasure", 199, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("FLOATING");
@@ -2759,6 +2640,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcCostScheduleTypeEnum_type = new enumeration_type("IfcCostScheduleTypeEnum", 219, items);
     }
+    IFC4_IfcCountMeasure_type = new type_declaration("IfcCountMeasure", 221, new simple_type(simple_type::number_type));
     {
         std::vector<std::string> items; items.reserve(12);
         items.push_back("CEILING");
@@ -2789,6 +2671,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcCurtainWallTypeEnum_type = new enumeration_type("IfcCurtainWallTypeEnum", 235, items);
     }
+    IFC4_IfcCurvatureMeasure_type = new type_declaration("IfcCurvatureMeasure", 236, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("LINEAR");
@@ -2823,6 +2706,10 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcDataOriginEnum_type = new enumeration_type("IfcDataOriginEnum", 253, items);
     }
+    IFC4_IfcDate_type = new type_declaration("IfcDate", 254, new simple_type(simple_type::string_type));
+    IFC4_IfcDateTime_type = new type_declaration("IfcDateTime", 255, new simple_type(simple_type::string_type));
+    IFC4_IfcDayInMonthNumber_type = new type_declaration("IfcDayInMonthNumber", 256, new simple_type(simple_type::integer_type));
+    IFC4_IfcDayInWeekNumber_type = new type_declaration("IfcDayInWeekNumber", 257, new simple_type(simple_type::integer_type));
     {
         std::vector<std::string> items; items.reserve(53);
         items.push_back("ACCELERATIONUNIT");
@@ -2880,6 +2767,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WARPINGMOMENTUNIT");
         IFC4_IfcDerivedUnitEnum_type = new enumeration_type("IfcDerivedUnitEnum", 263, items);
     }
+    IFC4_IfcDescriptiveMeasure_type = new type_declaration("IfcDescriptiveMeasure", 264, new simple_type(simple_type::string_type));
+    IFC4_IfcDimensionCount_type = new type_declaration("IfcDimensionCount", 266, new simple_type(simple_type::integer_type));
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NEGATIVE");
@@ -3075,6 +2964,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcDoorTypeOperationEnum_type = new enumeration_type("IfcDoorTypeOperationEnum", 303, items);
     }
+    IFC4_IfcDoseEquivalentMeasure_type = new type_declaration("IfcDoseEquivalentMeasure", 304, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BEND");
@@ -3105,6 +2995,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcDuctSilencerTypeEnum_type = new enumeration_type("IfcDuctSilencerTypeEnum", 315, items);
     }
+    IFC4_IfcDuration_type = new type_declaration("IfcDuration", 316, new simple_type(simple_type::string_type));
+    IFC4_IfcDynamicViscosityMeasure_type = new type_declaration("IfcDynamicViscosityMeasure", 317, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(18);
         items.push_back("DISHWASHER");
@@ -3127,6 +3019,10 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WASHINGMACHINE");
         IFC4_IfcElectricApplianceTypeEnum_type = new enumeration_type("IfcElectricApplianceTypeEnum", 323, items);
     }
+    IFC4_IfcElectricCapacitanceMeasure_type = new type_declaration("IfcElectricCapacitanceMeasure", 324, new simple_type(simple_type::real_type));
+    IFC4_IfcElectricChargeMeasure_type = new type_declaration("IfcElectricChargeMeasure", 325, new simple_type(simple_type::real_type));
+    IFC4_IfcElectricConductanceMeasure_type = new type_declaration("IfcElectricConductanceMeasure", 326, new simple_type(simple_type::real_type));
+    IFC4_IfcElectricCurrentMeasure_type = new type_declaration("IfcElectricCurrentMeasure", 327, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("CONSUMERUNIT");
@@ -3168,6 +3064,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcElectricMotorTypeEnum_type = new enumeration_type("IfcElectricMotorTypeEnum", 339, items);
     }
+    IFC4_IfcElectricResistanceMeasure_type = new type_declaration("IfcElectricResistanceMeasure", 340, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("NOTDEFINED");
@@ -3177,6 +3074,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcElectricTimeControlTypeEnum_type = new enumeration_type("IfcElectricTimeControlTypeEnum", 343, items);
     }
+    IFC4_IfcElectricVoltageMeasure_type = new type_declaration("IfcElectricVoltageMeasure", 344, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("ACCESSORY_ASSEMBLY");
@@ -3199,6 +3097,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("PARTIAL");
         IFC4_IfcElementCompositionEnum_type = new enumeration_type("IfcElementCompositionEnum", 352, items);
     }
+    IFC4_IfcEnergyMeasure_type = new type_declaration("IfcEnergyMeasure", 359, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("EXTERNALCOMBUSTION");
@@ -3340,6 +3239,9 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WATERMETER");
         IFC4_IfcFlowMeterTypeEnum_type = new enumeration_type("IfcFlowMeterTypeEnum", 424, items);
     }
+    IFC4_IfcFontStyle_type = new type_declaration("IfcFontStyle", 435, new simple_type(simple_type::string_type));
+    IFC4_IfcFontVariant_type = new type_declaration("IfcFontVariant", 436, new simple_type(simple_type::string_type));
+    IFC4_IfcFontWeight_type = new type_declaration("IfcFontWeight", 437, new simple_type(simple_type::string_type));
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CAISSON_FOUNDATION");
@@ -3351,6 +3253,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcFootingTypeEnum_type = new enumeration_type("IfcFootingTypeEnum", 440, items);
     }
+    IFC4_IfcForceMeasure_type = new type_declaration("IfcForceMeasure", 441, new simple_type(simple_type::real_type));
+    IFC4_IfcFrequencyMeasure_type = new type_declaration("IfcFrequencyMeasure", 442, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("BED");
@@ -3390,6 +3294,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("LOCAL_COORDS");
         IFC4_IfcGlobalOrLocalEnum_type = new enumeration_type("IfcGlobalOrLocalEnum", 459, items);
     }
+    IFC4_IfcGloballyUniqueId_type = new type_declaration("IfcGloballyUniqueId", 458, new simple_type(simple_type::string_type));
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("IRREGULAR");
@@ -3408,6 +3313,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcHeatExchangerTypeEnum_type = new enumeration_type("IfcHeatExchangerTypeEnum", 470, items);
     }
+    IFC4_IfcHeatFluxDensityMeasure_type = new type_declaration("IfcHeatFluxDensityMeasure", 471, new simple_type(simple_type::real_type));
+    IFC4_IfcHeatingValueMeasure_type = new type_declaration("IfcHeatingValueMeasure", 472, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(15);
         items.push_back("ADIABATICAIRWASHER");
@@ -3427,6 +3334,11 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcHumidifierTypeEnum_type = new enumeration_type("IfcHumidifierTypeEnum", 475, items);
     }
+    IFC4_IfcIdentifier_type = new type_declaration("IfcIdentifier", 476, new simple_type(simple_type::string_type));
+    IFC4_IfcIlluminanceMeasure_type = new type_declaration("IfcIlluminanceMeasure", 477, new simple_type(simple_type::real_type));
+    IFC4_IfcInductanceMeasure_type = new type_declaration("IfcInductanceMeasure", 483, new simple_type(simple_type::real_type));
+    IFC4_IfcInteger_type = new type_declaration("IfcInteger", 484, new simple_type(simple_type::integer_type));
+    IFC4_IfcIntegerCountRateMeasure_type = new type_declaration("IfcIntegerCountRateMeasure", 485, new simple_type(simple_type::integer_type));
     {
         std::vector<std::string> items; items.reserve(6);
         items.push_back("CYCLONIC");
@@ -3456,6 +3368,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcInventoryTypeEnum_type = new enumeration_type("IfcInventoryTypeEnum", 491, items);
     }
+    IFC4_IfcIonConcentrationMeasure_type = new type_declaration("IfcIonConcentrationMeasure", 492, new simple_type(simple_type::real_type));
+    IFC4_IfcIsothermalMoistureCapacityMeasure_type = new type_declaration("IfcIsothermalMoistureCapacityMeasure", 496, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("DATA");
@@ -3464,6 +3378,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcJunctionBoxTypeEnum_type = new enumeration_type("IfcJunctionBoxTypeEnum", 499, items);
     }
+    IFC4_IfcKinematicViscosityMeasure_type = new type_declaration("IfcKinematicViscosityMeasure", 500, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("PIECEWISE_BEZIER_KNOTS");
@@ -3472,6 +3387,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("UNSPECIFIED");
         IFC4_IfcKnotType_type = new enumeration_type("IfcKnotType", 501, items);
     }
+    IFC4_IfcLabel_type = new type_declaration("IfcLabel", 502, new simple_type(simple_type::string_type));
     {
         std::vector<std::string> items; items.reserve(21);
         items.push_back("ADMINISTRATION");
@@ -3512,6 +3428,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcLampTypeEnum_type = new enumeration_type("IfcLampTypeEnum", 509, items);
     }
+    IFC4_IfcLanguageId_type = new type_declaration("IfcLanguageId", 510, new named_type(IFC4_IfcIdentifier_type));
     {
         std::vector<std::string> items; items.reserve(3);
         items.push_back("AXIS1");
@@ -3519,6 +3436,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("AXIS3");
         IFC4_IfcLayerSetDirectionEnum_type = new enumeration_type("IfcLayerSetDirectionEnum", 512, items);
     }
+    IFC4_IfcLengthMeasure_type = new type_declaration("IfcLengthMeasure", 513, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("NOTDEFINED");
@@ -3551,6 +3469,10 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcLightFixtureTypeEnum_type = new enumeration_type("IfcLightFixtureTypeEnum", 523, items);
     }
+    IFC4_IfcLinearForceMeasure_type = new type_declaration("IfcLinearForceMeasure", 532, new simple_type(simple_type::real_type));
+    IFC4_IfcLinearMomentMeasure_type = new type_declaration("IfcLinearMomentMeasure", 533, new simple_type(simple_type::real_type));
+    IFC4_IfcLinearStiffnessMeasure_type = new type_declaration("IfcLinearStiffnessMeasure", 534, new simple_type(simple_type::real_type));
+    IFC4_IfcLinearVelocityMeasure_type = new type_declaration("IfcLinearVelocityMeasure", 535, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("LOAD_CASE");
@@ -3560,6 +3482,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcLoadGroupTypeEnum_type = new enumeration_type("IfcLoadGroupTypeEnum", 537, items);
     }
+    IFC4_IfcLogical_type = new type_declaration("IfcLogical", 539, new simple_type(simple_type::logical_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("LOGICALAND");
@@ -3569,6 +3492,15 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("LOGICALXOR");
         IFC4_IfcLogicalOperatorEnum_type = new enumeration_type("IfcLogicalOperatorEnum", 540, items);
     }
+    IFC4_IfcLuminousFluxMeasure_type = new type_declaration("IfcLuminousFluxMeasure", 543, new simple_type(simple_type::real_type));
+    IFC4_IfcLuminousIntensityDistributionMeasure_type = new type_declaration("IfcLuminousIntensityDistributionMeasure", 544, new simple_type(simple_type::real_type));
+    IFC4_IfcLuminousIntensityMeasure_type = new type_declaration("IfcLuminousIntensityMeasure", 545, new simple_type(simple_type::real_type));
+    IFC4_IfcMagneticFluxDensityMeasure_type = new type_declaration("IfcMagneticFluxDensityMeasure", 546, new simple_type(simple_type::real_type));
+    IFC4_IfcMagneticFluxMeasure_type = new type_declaration("IfcMagneticFluxMeasure", 547, new simple_type(simple_type::real_type));
+    IFC4_IfcMassDensityMeasure_type = new type_declaration("IfcMassDensityMeasure", 551, new simple_type(simple_type::real_type));
+    IFC4_IfcMassFlowRateMeasure_type = new type_declaration("IfcMassFlowRateMeasure", 552, new simple_type(simple_type::real_type));
+    IFC4_IfcMassMeasure_type = new type_declaration("IfcMassMeasure", 553, new simple_type(simple_type::real_type));
+    IFC4_IfcMassPerLengthMeasure_type = new type_declaration("IfcMassPerLengthMeasure", 554, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(12);
         items.push_back("ANCHORBOLT");
@@ -3614,6 +3546,33 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcMemberTypeEnum_type = new enumeration_type("IfcMemberTypeEnum", 586, items);
     }
+    IFC4_IfcModulusOfElasticityMeasure_type = new type_declaration("IfcModulusOfElasticityMeasure", 590, new simple_type(simple_type::real_type));
+    IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfLinearSubgradeReactionMeasure", 591, new simple_type(simple_type::real_type));
+    IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfRotationalSubgradeReactionMeasure", 592, new simple_type(simple_type::real_type));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type);
+        IFC4_IfcModulusOfRotationalSubgradeReactionSelect_type = new select_type("IfcModulusOfRotationalSubgradeReactionSelect", 593, items);
+    }
+    IFC4_IfcModulusOfSubgradeReactionMeasure_type = new type_declaration("IfcModulusOfSubgradeReactionMeasure", 594, new simple_type(simple_type::real_type));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcModulusOfSubgradeReactionMeasure_type);
+        IFC4_IfcModulusOfSubgradeReactionSelect_type = new select_type("IfcModulusOfSubgradeReactionSelect", 595, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type);
+        IFC4_IfcModulusOfTranslationalSubgradeReactionSelect_type = new select_type("IfcModulusOfTranslationalSubgradeReactionSelect", 596, items);
+    }
+    IFC4_IfcMoistureDiffusivityMeasure_type = new type_declaration("IfcMoistureDiffusivityMeasure", 597, new simple_type(simple_type::real_type));
+    IFC4_IfcMolecularWeightMeasure_type = new type_declaration("IfcMolecularWeightMeasure", 598, new simple_type(simple_type::real_type));
+    IFC4_IfcMomentOfInertiaMeasure_type = new type_declaration("IfcMomentOfInertiaMeasure", 599, new simple_type(simple_type::real_type));
+    IFC4_IfcMonetaryMeasure_type = new type_declaration("IfcMonetaryMeasure", 600, new simple_type(simple_type::real_type));
+    IFC4_IfcMonthInYearNumber_type = new type_declaration("IfcMonthInYearNumber", 602, new simple_type(simple_type::integer_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BELTDRIVE");
@@ -3623,11 +3582,13 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcMotorConnectionTypeEnum_type = new enumeration_type("IfcMotorConnectionTypeEnum", 605, items);
     }
+    IFC4_IfcNonNegativeLengthMeasure_type = new type_declaration("IfcNonNegativeLengthMeasure", 607, new named_type(IFC4_IfcLengthMeasure_type));
     {
         std::vector<std::string> items; items.reserve(1);
         items.push_back("NULL");
         IFC4_IfcNullStyle_type = new enumeration_type("IfcNullStyle", 609, items);
     }
+    IFC4_IfcNumericMeasure_type = new type_declaration("IfcNumericMeasure", 610, new simple_type(simple_type::number_type));
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("ACTOR");
@@ -3689,6 +3650,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcOutletTypeEnum_type = new enumeration_type("IfcOutletTypeEnum", 632, items);
     }
+    IFC4_IfcPHMeasure_type = new type_declaration("IfcPHMeasure", 646, new simple_type(simple_type::real_type));
+    IFC4_IfcParameterValue_type = new type_declaration("IfcParameterValue", 635, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("NOTDEFINED");
@@ -3766,6 +3729,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcPipeSegmentTypeEnum_type = new enumeration_type("IfcPipeSegmentTypeEnum", 660, items);
     }
+    IFC4_IfcPlanarForceMeasure_type = new type_declaration("IfcPlanarForceMeasure", 665, new simple_type(simple_type::real_type));
+    IFC4_IfcPlaneAngleMeasure_type = new type_declaration("IfcPlaneAngleMeasure", 667, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("CURTAIN_PANEL");
@@ -3774,6 +3739,12 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcPlateTypeEnum_type = new enumeration_type("IfcPlateTypeEnum", 671, items);
     }
+    IFC4_IfcPositiveInteger_type = new type_declaration("IfcPositiveInteger", 680, new named_type(IFC4_IfcInteger_type));
+    IFC4_IfcPositiveLengthMeasure_type = new type_declaration("IfcPositiveLengthMeasure", 681, new named_type(IFC4_IfcLengthMeasure_type));
+    IFC4_IfcPositivePlaneAngleMeasure_type = new type_declaration("IfcPositivePlaneAngleMeasure", 682, new named_type(IFC4_IfcPlaneAngleMeasure_type));
+    IFC4_IfcPowerMeasure_type = new type_declaration("IfcPowerMeasure", 685, new simple_type(simple_type::real_type));
+    IFC4_IfcPresentableText_type = new type_declaration("IfcPresentableText", 692, new simple_type(simple_type::string_type));
+    IFC4_IfcPressureMeasure_type = new type_declaration("IfcPressureMeasure", 699, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ADVICE_CAUTION");
@@ -3864,6 +3835,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("VERTICALTURBINE");
         IFC4_IfcPumpTypeEnum_type = new enumeration_type("IfcPumpTypeEnum", 749, items);
     }
+    IFC4_IfcRadioActivityMeasure_type = new type_declaration("IfcRadioActivityMeasure", 757, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BALUSTRADE");
@@ -3893,6 +3865,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcRampTypeEnum_type = new enumeration_type("IfcRampTypeEnum", 766, items);
     }
+    IFC4_IfcRatioMeasure_type = new type_declaration("IfcRatioMeasure", 767, new simple_type(simple_type::real_type));
+    IFC4_IfcReal_type = new type_declaration("IfcReal", 770, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(8);
         items.push_back("BY_DAY_COUNT");
@@ -4005,6 +3979,15 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcRoofTypeEnum_type = new enumeration_type("IfcRoofTypeEnum", 859, items);
     }
+    IFC4_IfcRotationalFrequencyMeasure_type = new type_declaration("IfcRotationalFrequencyMeasure", 861, new simple_type(simple_type::real_type));
+    IFC4_IfcRotationalMassMeasure_type = new type_declaration("IfcRotationalMassMeasure", 862, new simple_type(simple_type::real_type));
+    IFC4_IfcRotationalStiffnessMeasure_type = new type_declaration("IfcRotationalStiffnessMeasure", 863, new simple_type(simple_type::real_type));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcRotationalStiffnessMeasure_type);
+        IFC4_IfcRotationalStiffnessSelect_type = new select_type("IfcRotationalStiffnessSelect", 864, items);
+    }
     {
         std::vector<std::string> items; items.reserve(16);
         items.push_back("ATTO");
@@ -4075,12 +4058,14 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WCSEAT");
         IFC4_IfcSanitaryTerminalTypeEnum_type = new enumeration_type("IfcSanitaryTerminalTypeEnum", 868, items);
     }
+    IFC4_IfcSectionModulusMeasure_type = new type_declaration("IfcSectionModulusMeasure", 872, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(2);
         items.push_back("TAPERED");
         items.push_back("UNIFORM");
         IFC4_IfcSectionTypeEnum_type = new enumeration_type("IfcSectionTypeEnum", 875, items);
     }
+    IFC4_IfcSectionalAreaIntegralMeasure_type = new type_declaration("IfcSectionalAreaIntegralMeasure", 870, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(25);
         items.push_back("CO2SENSOR");
@@ -4129,6 +4114,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcShadingDeviceTypeEnum_type = new enumeration_type("IfcShadingDeviceTypeEnum", 883, items);
     }
+    IFC4_IfcShearModulusMeasure_type = new type_declaration("IfcShearModulusMeasure", 887, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(12);
         items.push_back("P_BOUNDEDVALUE");
@@ -4163,6 +4149,11 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcSolarDeviceTypeEnum_type = new enumeration_type("IfcSolarDeviceTypeEnum", 907, items);
     }
+    IFC4_IfcSolidAngleMeasure_type = new type_declaration("IfcSolidAngleMeasure", 908, new simple_type(simple_type::real_type));
+    IFC4_IfcSoundPowerLevelMeasure_type = new type_declaration("IfcSoundPowerLevelMeasure", 911, new simple_type(simple_type::real_type));
+    IFC4_IfcSoundPowerMeasure_type = new type_declaration("IfcSoundPowerMeasure", 912, new simple_type(simple_type::real_type));
+    IFC4_IfcSoundPressureLevelMeasure_type = new type_declaration("IfcSoundPressureLevelMeasure", 913, new simple_type(simple_type::real_type));
+    IFC4_IfcSoundPressureMeasure_type = new type_declaration("IfcSoundPressureMeasure", 914, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("CONVECTOR");
@@ -4196,6 +4187,9 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("VENTILATION");
         IFC4_IfcSpatialZoneTypeEnum_type = new enumeration_type("IfcSpatialZoneTypeEnum", 928, items);
     }
+    IFC4_IfcSpecificHeatCapacityMeasure_type = new type_declaration("IfcSpecificHeatCapacityMeasure", 929, new simple_type(simple_type::real_type));
+    IFC4_IfcSpecularExponent_type = new type_declaration("IfcSpecularExponent", 930, new simple_type(simple_type::real_type));
+    IFC4_IfcSpecularRoughness_type = new type_declaration("IfcSpecularRoughness", 932, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("BIRDCAGE");
@@ -4245,6 +4239,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("READWRITELOCKED");
         IFC4_IfcStateEnum_type = new enumeration_type("IfcStateEnum", 943, items);
     }
+    IFC4_IfcStrippedOptional_type = new type_declaration("IfcStrippedOptional", 944, new simple_type(simple_type::boolean_type));
     {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("CONST");
@@ -4373,6 +4368,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcTaskTypeEnum_type = new enumeration_type("IfcTaskTypeEnum", 1034, items);
     }
+    IFC4_IfcTemperatureGradientMeasure_type = new type_declaration("IfcTemperatureGradientMeasure", 1036, new simple_type(simple_type::real_type));
+    IFC4_IfcTemperatureRateOfChangeMeasure_type = new type_declaration("IfcTemperatureRateOfChangeMeasure", 1037, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(5);
         items.push_back("COUPLER");
@@ -4392,6 +4389,10 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("WIRE");
         IFC4_IfcTendonTypeEnum_type = new enumeration_type("IfcTendonTypeEnum", 1043, items);
     }
+    IFC4_IfcText_type = new type_declaration("IfcText", 1046, new simple_type(simple_type::string_type));
+    IFC4_IfcTextAlignment_type = new type_declaration("IfcTextAlignment", 1047, new simple_type(simple_type::string_type));
+    IFC4_IfcTextDecoration_type = new type_declaration("IfcTextDecoration", 1048, new simple_type(simple_type::string_type));
+    IFC4_IfcTextFontName_type = new type_declaration("IfcTextFontName", 1049, new simple_type(simple_type::string_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("DOWN");
@@ -4399,6 +4400,21 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("RIGHT");
         items.push_back("UP");
         IFC4_IfcTextPath_type = new enumeration_type("IfcTextPath", 1053, items);
+    }
+    IFC4_IfcTextTransformation_type = new type_declaration("IfcTextTransformation", 1058, new simple_type(simple_type::string_type));
+    IFC4_IfcThermalAdmittanceMeasure_type = new type_declaration("IfcThermalAdmittanceMeasure", 1064, new simple_type(simple_type::real_type));
+    IFC4_IfcThermalConductivityMeasure_type = new type_declaration("IfcThermalConductivityMeasure", 1065, new simple_type(simple_type::real_type));
+    IFC4_IfcThermalExpansionCoefficientMeasure_type = new type_declaration("IfcThermalExpansionCoefficientMeasure", 1066, new simple_type(simple_type::real_type));
+    IFC4_IfcThermalResistanceMeasure_type = new type_declaration("IfcThermalResistanceMeasure", 1067, new simple_type(simple_type::real_type));
+    IFC4_IfcThermalTransmittanceMeasure_type = new type_declaration("IfcThermalTransmittanceMeasure", 1068, new simple_type(simple_type::real_type));
+    IFC4_IfcThermodynamicTemperatureMeasure_type = new type_declaration("IfcThermodynamicTemperatureMeasure", 1069, new simple_type(simple_type::real_type));
+    IFC4_IfcTime_type = new type_declaration("IfcTime", 1070, new simple_type(simple_type::string_type));
+    IFC4_IfcTimeMeasure_type = new type_declaration("IfcTimeMeasure", 1071, new simple_type(simple_type::real_type));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcDuration_type);
+        items.push_back(IFC4_IfcRatioMeasure_type);
+        IFC4_IfcTimeOrRatioSelect_type = new select_type("IfcTimeOrRatioSelect", 1072, items);
     }
     {
         std::vector<std::string> items; items.reserve(7);
@@ -4411,6 +4427,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("PIECEWISECONTINUOUS");
         IFC4_IfcTimeSeriesDataTypeEnum_type = new enumeration_type("IfcTimeSeriesDataTypeEnum", 1075, items);
     }
+    IFC4_IfcTimeStamp_type = new type_declaration("IfcTimeStamp", 1077, new simple_type(simple_type::integer_type));
+    IFC4_IfcTorqueMeasure_type = new type_declaration("IfcTorqueMeasure", 1080, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(7);
         items.push_back("CURRENT");
@@ -4429,6 +4447,12 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("CONTSAMEGRADIENTSAMECURVATURE");
         items.push_back("DISCONTINUOUS");
         IFC4_IfcTransitionCode_type = new enumeration_type("IfcTransitionCode", 1084, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcLinearStiffnessMeasure_type);
+        IFC4_IfcTranslationalStiffnessSelect_type = new select_type("IfcTranslationalStiffnessSelect", 1085, items);
     }
     {
         std::vector<std::string> items; items.reserve(7);
@@ -4455,6 +4479,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcTubeBundleTypeEnum_type = new enumeration_type("IfcTubeBundleTypeEnum", 1097, items);
     }
+    IFC4_IfcURIReference_type = new type_declaration("IfcURIReference", 1111, new simple_type(simple_type::string_type));
     {
         std::vector<std::string> items; items.reserve(30);
         items.push_back("ABSORBEDDOSEUNIT");
@@ -4541,6 +4566,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcValveTypeEnum_type = new enumeration_type("IfcValveTypeEnum", 1116, items);
     }
+    IFC4_IfcVaporPermeabilityMeasure_type = new type_declaration("IfcVaporPermeabilityMeasure", 1117, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(4);
         items.push_back("COMPRESSION");
@@ -4561,6 +4587,8 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("USERDEFINED");
         IFC4_IfcVoidingFeatureTypeEnum_type = new enumeration_type("IfcVoidingFeatureTypeEnum", 1129, items);
     }
+    IFC4_IfcVolumeMeasure_type = new type_declaration("IfcVolumeMeasure", 1130, new simple_type(simple_type::real_type));
+    IFC4_IfcVolumetricFlowRateMeasure_type = new type_declaration("IfcVolumetricFlowRateMeasure", 1131, new simple_type(simple_type::real_type));
     {
         std::vector<std::string> items; items.reserve(11);
         items.push_back("ELEMENTEDWALL");
@@ -4575,6 +4603,14 @@ IfcParse::schema_definition* IFC4_populate_schema() {
         items.push_back("STANDARD");
         items.push_back("USERDEFINED");
         IFC4_IfcWallTypeEnum_type = new enumeration_type("IfcWallTypeEnum", 1136, items);
+    }
+    IFC4_IfcWarpingConstantMeasure_type = new type_declaration("IfcWarpingConstantMeasure", 1137, new simple_type(simple_type::real_type));
+    IFC4_IfcWarpingMomentMeasure_type = new type_declaration("IfcWarpingMomentMeasure", 1138, new simple_type(simple_type::real_type));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcWarpingMomentMeasure_type);
+        IFC4_IfcWarpingStiffnessSelect_type = new select_type("IfcWarpingStiffnessSelect", 1139, items);
     }
     {
         std::vector<std::string> items; items.reserve(9);
@@ -4820,6 +4856,198 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcVertexPoint_type = new entity("IfcVertexPoint", 1122, IFC4_IfcVertex_type);
     IFC4_IfcVirtualGridIntersection_type = new entity("IfcVirtualGridIntersection", 1127, 0);
     IFC4_IfcWorkTime_type = new entity("IfcWorkTime", 1162, IFC4_IfcSchedulingTime_type);
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcOrganization_type);
+        items.push_back(IFC4_IfcPerson_type);
+        items.push_back(IFC4_IfcPersonAndOrganization_type);
+        IFC4_IfcActorSelect_type = new select_type("IfcActorSelect", 8, items);
+    }
+    IFC4_IfcArcIndex_type = new type_declaration("IfcArcIndex", 43, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IFC4_IfcPositiveInteger_type)));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcLengthMeasure_type);
+        items.push_back(IFC4_IfcPlaneAngleMeasure_type);
+        IFC4_IfcBendingParameterSelect_type = new select_type("IfcBendingParameterSelect", 62, items);
+    }
+    IFC4_IfcBoxAlignment_type = new type_declaration("IfcBoxAlignment", 83, new named_type(IFC4_IfcLabel_type));
+    {
+        std::vector<const declaration*> items; items.reserve(71);
+        items.push_back(IFC4_IfcAbsorbedDoseMeasure_type);
+        items.push_back(IFC4_IfcAccelerationMeasure_type);
+        items.push_back(IFC4_IfcAngularVelocityMeasure_type);
+        items.push_back(IFC4_IfcAreaDensityMeasure_type);
+        items.push_back(IFC4_IfcCompoundPlaneAngleMeasure_type);
+        items.push_back(IFC4_IfcCurvatureMeasure_type);
+        items.push_back(IFC4_IfcDoseEquivalentMeasure_type);
+        items.push_back(IFC4_IfcDynamicViscosityMeasure_type);
+        items.push_back(IFC4_IfcElectricCapacitanceMeasure_type);
+        items.push_back(IFC4_IfcElectricChargeMeasure_type);
+        items.push_back(IFC4_IfcElectricConductanceMeasure_type);
+        items.push_back(IFC4_IfcElectricResistanceMeasure_type);
+        items.push_back(IFC4_IfcElectricVoltageMeasure_type);
+        items.push_back(IFC4_IfcEnergyMeasure_type);
+        items.push_back(IFC4_IfcForceMeasure_type);
+        items.push_back(IFC4_IfcFrequencyMeasure_type);
+        items.push_back(IFC4_IfcHeatFluxDensityMeasure_type);
+        items.push_back(IFC4_IfcHeatingValueMeasure_type);
+        items.push_back(IFC4_IfcIlluminanceMeasure_type);
+        items.push_back(IFC4_IfcInductanceMeasure_type);
+        items.push_back(IFC4_IfcIntegerCountRateMeasure_type);
+        items.push_back(IFC4_IfcIonConcentrationMeasure_type);
+        items.push_back(IFC4_IfcIsothermalMoistureCapacityMeasure_type);
+        items.push_back(IFC4_IfcKinematicViscosityMeasure_type);
+        items.push_back(IFC4_IfcLinearForceMeasure_type);
+        items.push_back(IFC4_IfcLinearMomentMeasure_type);
+        items.push_back(IFC4_IfcLinearStiffnessMeasure_type);
+        items.push_back(IFC4_IfcLinearVelocityMeasure_type);
+        items.push_back(IFC4_IfcLuminousFluxMeasure_type);
+        items.push_back(IFC4_IfcLuminousIntensityDistributionMeasure_type);
+        items.push_back(IFC4_IfcMagneticFluxDensityMeasure_type);
+        items.push_back(IFC4_IfcMagneticFluxMeasure_type);
+        items.push_back(IFC4_IfcMassDensityMeasure_type);
+        items.push_back(IFC4_IfcMassFlowRateMeasure_type);
+        items.push_back(IFC4_IfcMassPerLengthMeasure_type);
+        items.push_back(IFC4_IfcModulusOfElasticityMeasure_type);
+        items.push_back(IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type);
+        items.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type);
+        items.push_back(IFC4_IfcModulusOfSubgradeReactionMeasure_type);
+        items.push_back(IFC4_IfcMoistureDiffusivityMeasure_type);
+        items.push_back(IFC4_IfcMolecularWeightMeasure_type);
+        items.push_back(IFC4_IfcMomentOfInertiaMeasure_type);
+        items.push_back(IFC4_IfcMonetaryMeasure_type);
+        items.push_back(IFC4_IfcPHMeasure_type);
+        items.push_back(IFC4_IfcPlanarForceMeasure_type);
+        items.push_back(IFC4_IfcPowerMeasure_type);
+        items.push_back(IFC4_IfcPressureMeasure_type);
+        items.push_back(IFC4_IfcRadioActivityMeasure_type);
+        items.push_back(IFC4_IfcRotationalFrequencyMeasure_type);
+        items.push_back(IFC4_IfcRotationalMassMeasure_type);
+        items.push_back(IFC4_IfcRotationalStiffnessMeasure_type);
+        items.push_back(IFC4_IfcSectionModulusMeasure_type);
+        items.push_back(IFC4_IfcSectionalAreaIntegralMeasure_type);
+        items.push_back(IFC4_IfcShearModulusMeasure_type);
+        items.push_back(IFC4_IfcSoundPowerLevelMeasure_type);
+        items.push_back(IFC4_IfcSoundPowerMeasure_type);
+        items.push_back(IFC4_IfcSoundPressureLevelMeasure_type);
+        items.push_back(IFC4_IfcSoundPressureMeasure_type);
+        items.push_back(IFC4_IfcSpecificHeatCapacityMeasure_type);
+        items.push_back(IFC4_IfcTemperatureGradientMeasure_type);
+        items.push_back(IFC4_IfcTemperatureRateOfChangeMeasure_type);
+        items.push_back(IFC4_IfcThermalAdmittanceMeasure_type);
+        items.push_back(IFC4_IfcThermalConductivityMeasure_type);
+        items.push_back(IFC4_IfcThermalExpansionCoefficientMeasure_type);
+        items.push_back(IFC4_IfcThermalResistanceMeasure_type);
+        items.push_back(IFC4_IfcThermalTransmittanceMeasure_type);
+        items.push_back(IFC4_IfcTorqueMeasure_type);
+        items.push_back(IFC4_IfcVaporPermeabilityMeasure_type);
+        items.push_back(IFC4_IfcVolumetricFlowRateMeasure_type);
+        items.push_back(IFC4_IfcWarpingConstantMeasure_type);
+        items.push_back(IFC4_IfcWarpingMomentMeasure_type);
+        IFC4_IfcDerivedMeasureValue_type = new select_type("IfcDerivedMeasureValue", 259, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcRepresentation_type);
+        items.push_back(IFC4_IfcRepresentationItem_type);
+        IFC4_IfcLayeredItem_type = new select_type("IfcLayeredItem", 511, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcLibraryInformation_type);
+        items.push_back(IFC4_IfcLibraryReference_type);
+        IFC4_IfcLibrarySelect_type = new select_type("IfcLibrarySelect", 516, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcExternalReference_type);
+        items.push_back(IFC4_IfcLightIntensityDistribution_type);
+        IFC4_IfcLightDistributionDataSourceSelect_type = new select_type("IfcLightDistributionDataSourceSelect", 519, items);
+    }
+    IFC4_IfcLineIndex_type = new type_declaration("IfcLineIndex", 536, new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC4_IfcPositiveInteger_type)));
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcMaterialDefinition_type);
+        items.push_back(IFC4_IfcMaterialList_type);
+        items.push_back(IFC4_IfcMaterialUsageDefinition_type);
+        IFC4_IfcMaterialSelect_type = new select_type("IfcMaterialSelect", 573, items);
+    }
+    IFC4_IfcNormalisedRatioMeasure_type = new type_declaration("IfcNormalisedRatioMeasure", 608, new named_type(IFC4_IfcRatioMeasure_type));
+    {
+        std::vector<const declaration*> items; items.reserve(9);
+        items.push_back(IFC4_IfcAddress_type);
+        items.push_back(IFC4_IfcAppliedValue_type);
+        items.push_back(IFC4_IfcExternalReference_type);
+        items.push_back(IFC4_IfcMaterialDefinition_type);
+        items.push_back(IFC4_IfcOrganization_type);
+        items.push_back(IFC4_IfcPerson_type);
+        items.push_back(IFC4_IfcPersonAndOrganization_type);
+        items.push_back(IFC4_IfcTable_type);
+        items.push_back(IFC4_IfcTimeSeries_type);
+        IFC4_IfcObjectReferenceSelect_type = new select_type("IfcObjectReferenceSelect", 616, items);
+    }
+    IFC4_IfcPositiveRatioMeasure_type = new type_declaration("IfcPositiveRatioMeasure", 683, new named_type(IFC4_IfcRatioMeasure_type));
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcArcIndex_type);
+        items.push_back(IFC4_IfcLineIndex_type);
+        IFC4_IfcSegmentIndexSelect_type = new select_type("IfcSegmentIndexSelect", 876, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(13);
+        items.push_back(IFC4_IfcBoolean_type);
+        items.push_back(IFC4_IfcDate_type);
+        items.push_back(IFC4_IfcDateTime_type);
+        items.push_back(IFC4_IfcDuration_type);
+        items.push_back(IFC4_IfcIdentifier_type);
+        items.push_back(IFC4_IfcInteger_type);
+        items.push_back(IFC4_IfcLabel_type);
+        items.push_back(IFC4_IfcLogical_type);
+        items.push_back(IFC4_IfcPositiveInteger_type);
+        items.push_back(IFC4_IfcReal_type);
+        items.push_back(IFC4_IfcText_type);
+        items.push_back(IFC4_IfcTime_type);
+        items.push_back(IFC4_IfcTimeStamp_type);
+        IFC4_IfcSimpleValue_type = new select_type("IfcSimpleValue", 893, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(6);
+        items.push_back(IFC4_IfcDescriptiveMeasure_type);
+        items.push_back(IFC4_IfcLengthMeasure_type);
+        items.push_back(IFC4_IfcNormalisedRatioMeasure_type);
+        items.push_back(IFC4_IfcPositiveLengthMeasure_type);
+        items.push_back(IFC4_IfcPositiveRatioMeasure_type);
+        items.push_back(IFC4_IfcRatioMeasure_type);
+        IFC4_IfcSizeSelect_type = new select_type("IfcSizeSelect", 898, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcSpecularExponent_type);
+        items.push_back(IFC4_IfcSpecularRoughness_type);
+        IFC4_IfcSpecularHighlightSelect_type = new select_type("IfcSpecularHighlightSelect", 931, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcPresentationStyle_type);
+        items.push_back(IFC4_IfcPresentationStyleAssignment_type);
+        IFC4_IfcStyleAssignmentSelect_type = new select_type("IfcStyleAssignmentSelect", 987, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(5);
+        items.push_back(IFC4_IfcExternallyDefinedSurfaceStyle_type);
+        items.push_back(IFC4_IfcSurfaceStyleLighting_type);
+        items.push_back(IFC4_IfcSurfaceStyleRefraction_type);
+        items.push_back(IFC4_IfcSurfaceStyleShading_type);
+        items.push_back(IFC4_IfcSurfaceStyleWithTextures_type);
+        IFC4_IfcSurfaceStyleElementSelect_type = new select_type("IfcSurfaceStyleElementSelect", 1005, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcDerivedUnit_type);
+        items.push_back(IFC4_IfcMonetaryUnit_type);
+        items.push_back(IFC4_IfcNamedUnit_type);
+        IFC4_IfcUnit_type = new select_type("IfcUnit", 1102, items);
+    }
     IFC4_IfcApprovalRelationship_type = new entity("IfcApprovalRelationship", 39, IFC4_IfcResourceLevelRelationship_type);
     IFC4_IfcArbitraryClosedProfileDef_type = new entity("IfcArbitraryClosedProfileDef", 40, IFC4_IfcProfileDef_type);
     IFC4_IfcArbitraryOpenProfileDef_type = new entity("IfcArbitraryOpenProfileDef", 41, IFC4_IfcProfileDef_type);
@@ -4957,6 +5185,124 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcVertexLoop_type = new entity("IfcVertexLoop", 1121, IFC4_IfcLoop_type);
     IFC4_IfcWindowStyle_type = new entity("IfcWindowStyle", 1149, IFC4_IfcTypeProduct_type);
     IFC4_IfcZShapeProfileDef_type = new entity("IfcZShapeProfileDef", 1164, IFC4_IfcParameterizedProfileDef_type);
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcClassification_type);
+        items.push_back(IFC4_IfcClassificationReference_type);
+        IFC4_IfcClassificationReferenceSelect_type = new select_type("IfcClassificationReferenceSelect", 143, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcClassification_type);
+        items.push_back(IFC4_IfcClassificationReference_type);
+        IFC4_IfcClassificationSelect_type = new select_type("IfcClassificationSelect", 144, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcCoordinateReferenceSystem_type);
+        items.push_back(IFC4_IfcGeometricRepresentationContext_type);
+        IFC4_IfcCoordinateReferenceSystemSelect_type = new select_type("IfcCoordinateReferenceSystemSelect", 215, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcObjectDefinition_type);
+        items.push_back(IFC4_IfcPropertyDefinition_type);
+        IFC4_IfcDefinitionSelect_type = new select_type("IfcDefinitionSelect", 258, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcDocumentInformation_type);
+        items.push_back(IFC4_IfcDocumentReference_type);
+        IFC4_IfcDocumentSelect_type = new select_type("IfcDocumentSelect", 290, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcPositiveLengthMeasure_type);
+        items.push_back(IFC4_IfcVector_type);
+        IFC4_IfcHatchLineDistanceSelect_type = new select_type("IfcHatchLineDistanceSelect", 467, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(23);
+        items.push_back(IFC4_IfcAmountOfSubstanceMeasure_type);
+        items.push_back(IFC4_IfcAreaMeasure_type);
+        items.push_back(IFC4_IfcComplexNumber_type);
+        items.push_back(IFC4_IfcContextDependentMeasure_type);
+        items.push_back(IFC4_IfcCountMeasure_type);
+        items.push_back(IFC4_IfcDescriptiveMeasure_type);
+        items.push_back(IFC4_IfcElectricCurrentMeasure_type);
+        items.push_back(IFC4_IfcLengthMeasure_type);
+        items.push_back(IFC4_IfcLuminousIntensityMeasure_type);
+        items.push_back(IFC4_IfcMassMeasure_type);
+        items.push_back(IFC4_IfcNonNegativeLengthMeasure_type);
+        items.push_back(IFC4_IfcNormalisedRatioMeasure_type);
+        items.push_back(IFC4_IfcNumericMeasure_type);
+        items.push_back(IFC4_IfcParameterValue_type);
+        items.push_back(IFC4_IfcPlaneAngleMeasure_type);
+        items.push_back(IFC4_IfcPositiveLengthMeasure_type);
+        items.push_back(IFC4_IfcPositivePlaneAngleMeasure_type);
+        items.push_back(IFC4_IfcPositiveRatioMeasure_type);
+        items.push_back(IFC4_IfcRatioMeasure_type);
+        items.push_back(IFC4_IfcSolidAngleMeasure_type);
+        items.push_back(IFC4_IfcThermodynamicTemperatureMeasure_type);
+        items.push_back(IFC4_IfcTimeMeasure_type);
+        items.push_back(IFC4_IfcVolumeMeasure_type);
+        IFC4_IfcMeasureValue_type = new select_type("IfcMeasureValue", 575, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcPoint_type);
+        items.push_back(IFC4_IfcVertexPoint_type);
+        IFC4_IfcPointOrVertexPoint_type = new select_type("IfcPointOrVertexPoint", 675, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(5);
+        items.push_back(IFC4_IfcCurveStyle_type);
+        items.push_back(IFC4_IfcFillAreaStyle_type);
+        items.push_back(IFC4_IfcNullStyle_type);
+        items.push_back(IFC4_IfcSurfaceStyle_type);
+        items.push_back(IFC4_IfcTextStyle_type);
+        IFC4_IfcPresentationStyleSelect_type = new select_type("IfcPresentationStyleSelect", 698, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcProductDefinitionShape_type);
+        items.push_back(IFC4_IfcRepresentationMap_type);
+        IFC4_IfcProductRepresentationSelect_type = new select_type("IfcProductRepresentationSelect", 708, items);
+    }
+    IFC4_IfcPropertySetDefinitionSet_type = new type_declaration("IfcPropertySetDefinitionSet", 733, new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC4_IfcPropertySetDefinition_type)));
+    {
+        std::vector<const declaration*> items; items.reserve(16);
+        items.push_back(IFC4_IfcActorRole_type);
+        items.push_back(IFC4_IfcAppliedValue_type);
+        items.push_back(IFC4_IfcApproval_type);
+        items.push_back(IFC4_IfcConstraint_type);
+        items.push_back(IFC4_IfcContextDependentUnit_type);
+        items.push_back(IFC4_IfcConversionBasedUnit_type);
+        items.push_back(IFC4_IfcExternalInformation_type);
+        items.push_back(IFC4_IfcExternalReference_type);
+        items.push_back(IFC4_IfcMaterialDefinition_type);
+        items.push_back(IFC4_IfcOrganization_type);
+        items.push_back(IFC4_IfcPerson_type);
+        items.push_back(IFC4_IfcPersonAndOrganization_type);
+        items.push_back(IFC4_IfcPhysicalQuantity_type);
+        items.push_back(IFC4_IfcProfileDef_type);
+        items.push_back(IFC4_IfcPropertyAbstraction_type);
+        items.push_back(IFC4_IfcTimeSeries_type);
+        IFC4_IfcResourceObjectSelect_type = new select_type("IfcResourceObjectSelect", 849, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcExternallyDefinedTextFont_type);
+        items.push_back(IFC4_IfcPreDefinedTextFont_type);
+        IFC4_IfcTextFontSelect_type = new select_type("IfcTextFontSelect", 1050, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcDerivedMeasureValue_type);
+        items.push_back(IFC4_IfcMeasureValue_type);
+        items.push_back(IFC4_IfcSimpleValue_type);
+        IFC4_IfcValue_type = new select_type("IfcValue", 1113, items);
+    }
     IFC4_IfcAdvancedFace_type = new entity("IfcAdvancedFace", 16, IFC4_IfcFaceSurface_type);
     IFC4_IfcAnnotationFillArea_type = new entity("IfcAnnotationFillArea", 34, IFC4_IfcGeometricRepresentationItem_type);
     IFC4_IfcAsymmetricIShapeProfileDef_type = new entity("IfcAsymmetricIShapeProfileDef", 49, IFC4_IfcParameterizedProfileDef_type);
@@ -5120,6 +5466,137 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcTriangulatedFaceSet_type = new entity("IfcTriangulatedFaceSet", 1090, IFC4_IfcTessellatedFaceSet_type);
     IFC4_IfcWindowLiningProperties_type = new entity("IfcWindowLiningProperties", 1144, IFC4_IfcPreDefinedPropertySet_type);
     IFC4_IfcWindowPanelProperties_type = new entity("IfcWindowPanelProperties", 1147, IFC4_IfcPreDefinedPropertySet_type);
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcMeasureWithUnit_type);
+        items.push_back(IFC4_IfcReference_type);
+        items.push_back(IFC4_IfcValue_type);
+        IFC4_IfcAppliedValueSelect_type = new select_type("IfcAppliedValueSelect", 37, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcAxis2Placement2D_type);
+        items.push_back(IFC4_IfcAxis2Placement3D_type);
+        IFC4_IfcAxis2Placement_type = new select_type("IfcAxis2Placement", 54, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(4);
+        items.push_back(IFC4_IfcBooleanResult_type);
+        items.push_back(IFC4_IfcCsgPrimitive3D_type);
+        items.push_back(IFC4_IfcHalfSpaceSolid_type);
+        items.push_back(IFC4_IfcSolidModel_type);
+        IFC4_IfcBooleanOperand_type = new select_type("IfcBooleanOperand", 71, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcColourSpecification_type);
+        items.push_back(IFC4_IfcPreDefinedColour_type);
+        IFC4_IfcColour_type = new select_type("IfcColour", 149, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcColourRgb_type);
+        items.push_back(IFC4_IfcNormalisedRatioMeasure_type);
+        IFC4_IfcColourOrFactor_type = new select_type("IfcColourOrFactor", 150, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBooleanResult_type);
+        items.push_back(IFC4_IfcCsgPrimitive3D_type);
+        IFC4_IfcCsgSelect_type = new select_type("IfcCsgSelect", 229, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcCurveStyleFont_type);
+        items.push_back(IFC4_IfcPreDefinedCurveFont_type);
+        IFC4_IfcCurveStyleFontSelect_type = new select_type("IfcCurveStyleFontSelect", 248, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(4);
+        items.push_back(IFC4_IfcColour_type);
+        items.push_back(IFC4_IfcExternallyDefinedHatchStyle_type);
+        items.push_back(IFC4_IfcFillAreaStyleHatching_type);
+        items.push_back(IFC4_IfcFillAreaStyleTiles_type);
+        IFC4_IfcFillStyleSelect_type = new select_type("IfcFillStyleSelect", 406, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcCurve_type);
+        items.push_back(IFC4_IfcPoint_type);
+        items.push_back(IFC4_IfcSurface_type);
+        IFC4_IfcGeometricSetSelect_type = new select_type("IfcGeometricSetSelect", 457, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcDirection_type);
+        items.push_back(IFC4_IfcVirtualGridIntersection_type);
+        IFC4_IfcGridPlacementDirectionSelect_type = new select_type("IfcGridPlacementDirectionSelect", 463, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(6);
+        items.push_back(IFC4_IfcAppliedValue_type);
+        items.push_back(IFC4_IfcMeasureWithUnit_type);
+        items.push_back(IFC4_IfcReference_type);
+        items.push_back(IFC4_IfcTable_type);
+        items.push_back(IFC4_IfcTimeSeries_type);
+        items.push_back(IFC4_IfcValue_type);
+        IFC4_IfcMetricValueSelect_type = new select_type("IfcMetricValueSelect", 588, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcProcess_type);
+        items.push_back(IFC4_IfcTypeProcess_type);
+        IFC4_IfcProcessSelect_type = new select_type("IfcProcessSelect", 704, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcProduct_type);
+        items.push_back(IFC4_IfcTypeProduct_type);
+        IFC4_IfcProductSelect_type = new select_type("IfcProductSelect", 709, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcPropertySetDefinition_type);
+        items.push_back(IFC4_IfcPropertySetDefinitionSet_type);
+        IFC4_IfcPropertySetDefinitionSelect_type = new select_type("IfcPropertySetDefinitionSelect", 732, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcResource_type);
+        items.push_back(IFC4_IfcTypeResource_type);
+        IFC4_IfcResourceSelect_type = new select_type("IfcResourceSelect", 850, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcClosedShell_type);
+        items.push_back(IFC4_IfcOpenShell_type);
+        IFC4_IfcShell_type = new select_type("IfcShell", 888, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcClosedShell_type);
+        items.push_back(IFC4_IfcSolidModel_type);
+        IFC4_IfcSolidOrShell_type = new select_type("IfcSolidOrShell", 910, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(3);
+        items.push_back(IFC4_IfcFaceBasedSurfaceModel_type);
+        items.push_back(IFC4_IfcFaceSurface_type);
+        items.push_back(IFC4_IfcSurface_type);
+        IFC4_IfcSurfaceOrFaceSurface_type = new select_type("IfcSurfaceOrFaceSurface", 1001, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcCartesianPoint_type);
+        items.push_back(IFC4_IfcParameterValue_type);
+        IFC4_IfcTrimmingSelect_type = new select_type("IfcTrimmingSelect", 1093, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcDirection_type);
+        items.push_back(IFC4_IfcVector_type);
+        IFC4_IfcVectorOrDirection_type = new select_type("IfcVectorOrDirection", 1119, items);
+    }
     IFC4_IfcActor_type = new entity("IfcActor", 6, IFC4_IfcObject_type);
     IFC4_IfcAdvancedBrep_type = new entity("IfcAdvancedBrep", 14, IFC4_IfcManifoldSolidBrep_type);
     IFC4_IfcAdvancedBrepWithVoids_type = new entity("IfcAdvancedBrepWithVoids", 15, IFC4_IfcAdvancedBrep_type);
@@ -5287,6 +5764,30 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcWorkPlan_type = new entity("IfcWorkPlan", 1158, IFC4_IfcWorkControl_type);
     IFC4_IfcWorkSchedule_type = new entity("IfcWorkSchedule", 1160, IFC4_IfcWorkControl_type);
     IFC4_IfcZone_type = new entity("IfcZone", 1163, IFC4_IfcSystem_type);
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcCurveStyleFontAndScaling_type);
+        items.push_back(IFC4_IfcCurveStyleFontSelect_type);
+        IFC4_IfcCurveFontOrScaledCurveFontSelect_type = new select_type("IfcCurveFontOrScaledCurveFontSelect", 240, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcCompositeCurveOnSurface_type);
+        items.push_back(IFC4_IfcPcurve_type);
+        IFC4_IfcCurveOnSurface_type = new select_type("IfcCurveOnSurface", 242, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcBoundedCurve_type);
+        items.push_back(IFC4_IfcEdgeCurve_type);
+        IFC4_IfcCurveOrEdgeCurve_type = new select_type("IfcCurveOrEdgeCurve", 243, items);
+    }
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcElement_type);
+        items.push_back(IFC4_IfcStructuralItem_type);
+        IFC4_IfcStructuralActivityAssignmentSelect_type = new select_type("IfcStructuralActivityAssignmentSelect", 947, items);
+    }
     IFC4_IfcActionRequest_type = new entity("IfcActionRequest", 2, IFC4_IfcControl_type);
     IFC4_IfcAirTerminalBoxType_type = new entity("IfcAirTerminalBoxType", 19, IFC4_IfcFlowControllerType_type);
     IFC4_IfcAirTerminalType_type = new entity("IfcAirTerminalType", 21, IFC4_IfcFlowTerminalType_type);
@@ -5418,6 +5919,12 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcWasteTerminal_type = new entity("IfcWasteTerminal", 1140, IFC4_IfcFlowTerminal_type);
     IFC4_IfcWindow_type = new entity("IfcWindow", 1143, IFC4_IfcBuildingElement_type);
     IFC4_IfcWindowStandardCase_type = new entity("IfcWindowStandardCase", 1148, IFC4_IfcWindow_type);
+    {
+        std::vector<const declaration*> items; items.reserve(2);
+        items.push_back(IFC4_IfcExternalSpatialElement_type);
+        items.push_back(IFC4_IfcSpace_type);
+        IFC4_IfcSpaceBoundarySelect_type = new select_type("IfcSpaceBoundarySelect", 916, items);
+    }
     IFC4_IfcActuatorType_type = new entity("IfcActuatorType", 10, IFC4_IfcDistributionControlElementType_type);
     IFC4_IfcAirTerminal_type = new entity("IfcAirTerminal", 17, IFC4_IfcFlowTerminal_type);
     IFC4_IfcAirTerminalBox_type = new entity("IfcAirTerminalBox", 18, IFC4_IfcFlowController_type);
@@ -5463,513 +5970,6 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     IFC4_IfcActuator_type = new entity("IfcActuator", 9, IFC4_IfcDistributionControlElement_type);
     IFC4_IfcAlarm_type = new entity("IfcAlarm", 26, IFC4_IfcDistributionControlElement_type);
     IFC4_IfcController_type = new entity("IfcController", 202, IFC4_IfcDistributionControlElement_type);
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcOrganization_type);
-        items.push_back(IFC4_IfcPerson_type);
-        items.push_back(IFC4_IfcPersonAndOrganization_type);
-        IFC4_IfcActorSelect_type = new select_type("IfcActorSelect", 8, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcAxis2Placement2D_type);
-        items.push_back(IFC4_IfcAxis2Placement3D_type);
-        IFC4_IfcAxis2Placement_type = new select_type("IfcAxis2Placement", 54, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcLengthMeasure_type);
-        items.push_back(IFC4_IfcPlaneAngleMeasure_type);
-        IFC4_IfcBendingParameterSelect_type = new select_type("IfcBendingParameterSelect", 62, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(4);
-        items.push_back(IFC4_IfcBooleanResult_type);
-        items.push_back(IFC4_IfcCsgPrimitive3D_type);
-        items.push_back(IFC4_IfcHalfSpaceSolid_type);
-        items.push_back(IFC4_IfcSolidModel_type);
-        IFC4_IfcBooleanOperand_type = new select_type("IfcBooleanOperand", 71, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcClassification_type);
-        items.push_back(IFC4_IfcClassificationReference_type);
-        IFC4_IfcClassificationReferenceSelect_type = new select_type("IfcClassificationReferenceSelect", 143, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcClassification_type);
-        items.push_back(IFC4_IfcClassificationReference_type);
-        IFC4_IfcClassificationSelect_type = new select_type("IfcClassificationSelect", 144, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcColourSpecification_type);
-        items.push_back(IFC4_IfcPreDefinedColour_type);
-        IFC4_IfcColour_type = new select_type("IfcColour", 149, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcColourRgb_type);
-        items.push_back(IFC4_IfcNormalisedRatioMeasure_type);
-        IFC4_IfcColourOrFactor_type = new select_type("IfcColourOrFactor", 150, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcCoordinateReferenceSystem_type);
-        items.push_back(IFC4_IfcGeometricRepresentationContext_type);
-        IFC4_IfcCoordinateReferenceSystemSelect_type = new select_type("IfcCoordinateReferenceSystemSelect", 215, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBooleanResult_type);
-        items.push_back(IFC4_IfcCsgPrimitive3D_type);
-        IFC4_IfcCsgSelect_type = new select_type("IfcCsgSelect", 229, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcCompositeCurveOnSurface_type);
-        items.push_back(IFC4_IfcPcurve_type);
-        IFC4_IfcCurveOnSurface_type = new select_type("IfcCurveOnSurface", 242, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoundedCurve_type);
-        items.push_back(IFC4_IfcEdgeCurve_type);
-        IFC4_IfcCurveOrEdgeCurve_type = new select_type("IfcCurveOrEdgeCurve", 243, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcCurveStyleFont_type);
-        items.push_back(IFC4_IfcPreDefinedCurveFont_type);
-        IFC4_IfcCurveStyleFontSelect_type = new select_type("IfcCurveStyleFontSelect", 248, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcObjectDefinition_type);
-        items.push_back(IFC4_IfcPropertyDefinition_type);
-        IFC4_IfcDefinitionSelect_type = new select_type("IfcDefinitionSelect", 258, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(71);
-        items.push_back(IFC4_IfcAbsorbedDoseMeasure_type);
-        items.push_back(IFC4_IfcAccelerationMeasure_type);
-        items.push_back(IFC4_IfcAngularVelocityMeasure_type);
-        items.push_back(IFC4_IfcAreaDensityMeasure_type);
-        items.push_back(IFC4_IfcCompoundPlaneAngleMeasure_type);
-        items.push_back(IFC4_IfcCurvatureMeasure_type);
-        items.push_back(IFC4_IfcDoseEquivalentMeasure_type);
-        items.push_back(IFC4_IfcDynamicViscosityMeasure_type);
-        items.push_back(IFC4_IfcElectricCapacitanceMeasure_type);
-        items.push_back(IFC4_IfcElectricChargeMeasure_type);
-        items.push_back(IFC4_IfcElectricConductanceMeasure_type);
-        items.push_back(IFC4_IfcElectricResistanceMeasure_type);
-        items.push_back(IFC4_IfcElectricVoltageMeasure_type);
-        items.push_back(IFC4_IfcEnergyMeasure_type);
-        items.push_back(IFC4_IfcForceMeasure_type);
-        items.push_back(IFC4_IfcFrequencyMeasure_type);
-        items.push_back(IFC4_IfcHeatFluxDensityMeasure_type);
-        items.push_back(IFC4_IfcHeatingValueMeasure_type);
-        items.push_back(IFC4_IfcIlluminanceMeasure_type);
-        items.push_back(IFC4_IfcInductanceMeasure_type);
-        items.push_back(IFC4_IfcIntegerCountRateMeasure_type);
-        items.push_back(IFC4_IfcIonConcentrationMeasure_type);
-        items.push_back(IFC4_IfcIsothermalMoistureCapacityMeasure_type);
-        items.push_back(IFC4_IfcKinematicViscosityMeasure_type);
-        items.push_back(IFC4_IfcLinearForceMeasure_type);
-        items.push_back(IFC4_IfcLinearMomentMeasure_type);
-        items.push_back(IFC4_IfcLinearStiffnessMeasure_type);
-        items.push_back(IFC4_IfcLinearVelocityMeasure_type);
-        items.push_back(IFC4_IfcLuminousFluxMeasure_type);
-        items.push_back(IFC4_IfcLuminousIntensityDistributionMeasure_type);
-        items.push_back(IFC4_IfcMagneticFluxDensityMeasure_type);
-        items.push_back(IFC4_IfcMagneticFluxMeasure_type);
-        items.push_back(IFC4_IfcMassDensityMeasure_type);
-        items.push_back(IFC4_IfcMassFlowRateMeasure_type);
-        items.push_back(IFC4_IfcMassPerLengthMeasure_type);
-        items.push_back(IFC4_IfcModulusOfElasticityMeasure_type);
-        items.push_back(IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type);
-        items.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type);
-        items.push_back(IFC4_IfcModulusOfSubgradeReactionMeasure_type);
-        items.push_back(IFC4_IfcMoistureDiffusivityMeasure_type);
-        items.push_back(IFC4_IfcMolecularWeightMeasure_type);
-        items.push_back(IFC4_IfcMomentOfInertiaMeasure_type);
-        items.push_back(IFC4_IfcMonetaryMeasure_type);
-        items.push_back(IFC4_IfcPHMeasure_type);
-        items.push_back(IFC4_IfcPlanarForceMeasure_type);
-        items.push_back(IFC4_IfcPowerMeasure_type);
-        items.push_back(IFC4_IfcPressureMeasure_type);
-        items.push_back(IFC4_IfcRadioActivityMeasure_type);
-        items.push_back(IFC4_IfcRotationalFrequencyMeasure_type);
-        items.push_back(IFC4_IfcRotationalMassMeasure_type);
-        items.push_back(IFC4_IfcRotationalStiffnessMeasure_type);
-        items.push_back(IFC4_IfcSectionModulusMeasure_type);
-        items.push_back(IFC4_IfcSectionalAreaIntegralMeasure_type);
-        items.push_back(IFC4_IfcShearModulusMeasure_type);
-        items.push_back(IFC4_IfcSoundPowerLevelMeasure_type);
-        items.push_back(IFC4_IfcSoundPowerMeasure_type);
-        items.push_back(IFC4_IfcSoundPressureLevelMeasure_type);
-        items.push_back(IFC4_IfcSoundPressureMeasure_type);
-        items.push_back(IFC4_IfcSpecificHeatCapacityMeasure_type);
-        items.push_back(IFC4_IfcTemperatureGradientMeasure_type);
-        items.push_back(IFC4_IfcTemperatureRateOfChangeMeasure_type);
-        items.push_back(IFC4_IfcThermalAdmittanceMeasure_type);
-        items.push_back(IFC4_IfcThermalConductivityMeasure_type);
-        items.push_back(IFC4_IfcThermalExpansionCoefficientMeasure_type);
-        items.push_back(IFC4_IfcThermalResistanceMeasure_type);
-        items.push_back(IFC4_IfcThermalTransmittanceMeasure_type);
-        items.push_back(IFC4_IfcTorqueMeasure_type);
-        items.push_back(IFC4_IfcVaporPermeabilityMeasure_type);
-        items.push_back(IFC4_IfcVolumetricFlowRateMeasure_type);
-        items.push_back(IFC4_IfcWarpingConstantMeasure_type);
-        items.push_back(IFC4_IfcWarpingMomentMeasure_type);
-        IFC4_IfcDerivedMeasureValue_type = new select_type("IfcDerivedMeasureValue", 259, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcDocumentInformation_type);
-        items.push_back(IFC4_IfcDocumentReference_type);
-        IFC4_IfcDocumentSelect_type = new select_type("IfcDocumentSelect", 290, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(4);
-        items.push_back(IFC4_IfcColour_type);
-        items.push_back(IFC4_IfcExternallyDefinedHatchStyle_type);
-        items.push_back(IFC4_IfcFillAreaStyleHatching_type);
-        items.push_back(IFC4_IfcFillAreaStyleTiles_type);
-        IFC4_IfcFillStyleSelect_type = new select_type("IfcFillStyleSelect", 406, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcCurve_type);
-        items.push_back(IFC4_IfcPoint_type);
-        items.push_back(IFC4_IfcSurface_type);
-        IFC4_IfcGeometricSetSelect_type = new select_type("IfcGeometricSetSelect", 457, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcDirection_type);
-        items.push_back(IFC4_IfcVirtualGridIntersection_type);
-        IFC4_IfcGridPlacementDirectionSelect_type = new select_type("IfcGridPlacementDirectionSelect", 463, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcPositiveLengthMeasure_type);
-        items.push_back(IFC4_IfcVector_type);
-        IFC4_IfcHatchLineDistanceSelect_type = new select_type("IfcHatchLineDistanceSelect", 467, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcRepresentation_type);
-        items.push_back(IFC4_IfcRepresentationItem_type);
-        IFC4_IfcLayeredItem_type = new select_type("IfcLayeredItem", 511, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcLibraryInformation_type);
-        items.push_back(IFC4_IfcLibraryReference_type);
-        IFC4_IfcLibrarySelect_type = new select_type("IfcLibrarySelect", 516, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcExternalReference_type);
-        items.push_back(IFC4_IfcLightIntensityDistribution_type);
-        IFC4_IfcLightDistributionDataSourceSelect_type = new select_type("IfcLightDistributionDataSourceSelect", 519, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcMaterialDefinition_type);
-        items.push_back(IFC4_IfcMaterialList_type);
-        items.push_back(IFC4_IfcMaterialUsageDefinition_type);
-        IFC4_IfcMaterialSelect_type = new select_type("IfcMaterialSelect", 573, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(23);
-        items.push_back(IFC4_IfcAmountOfSubstanceMeasure_type);
-        items.push_back(IFC4_IfcAreaMeasure_type);
-        items.push_back(IFC4_IfcComplexNumber_type);
-        items.push_back(IFC4_IfcContextDependentMeasure_type);
-        items.push_back(IFC4_IfcCountMeasure_type);
-        items.push_back(IFC4_IfcDescriptiveMeasure_type);
-        items.push_back(IFC4_IfcElectricCurrentMeasure_type);
-        items.push_back(IFC4_IfcLengthMeasure_type);
-        items.push_back(IFC4_IfcLuminousIntensityMeasure_type);
-        items.push_back(IFC4_IfcMassMeasure_type);
-        items.push_back(IFC4_IfcNonNegativeLengthMeasure_type);
-        items.push_back(IFC4_IfcNormalisedRatioMeasure_type);
-        items.push_back(IFC4_IfcNumericMeasure_type);
-        items.push_back(IFC4_IfcParameterValue_type);
-        items.push_back(IFC4_IfcPlaneAngleMeasure_type);
-        items.push_back(IFC4_IfcPositiveLengthMeasure_type);
-        items.push_back(IFC4_IfcPositivePlaneAngleMeasure_type);
-        items.push_back(IFC4_IfcPositiveRatioMeasure_type);
-        items.push_back(IFC4_IfcRatioMeasure_type);
-        items.push_back(IFC4_IfcSolidAngleMeasure_type);
-        items.push_back(IFC4_IfcThermodynamicTemperatureMeasure_type);
-        items.push_back(IFC4_IfcTimeMeasure_type);
-        items.push_back(IFC4_IfcVolumeMeasure_type);
-        IFC4_IfcMeasureValue_type = new select_type("IfcMeasureValue", 575, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type);
-        IFC4_IfcModulusOfRotationalSubgradeReactionSelect_type = new select_type("IfcModulusOfRotationalSubgradeReactionSelect", 593, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcModulusOfSubgradeReactionMeasure_type);
-        IFC4_IfcModulusOfSubgradeReactionSelect_type = new select_type("IfcModulusOfSubgradeReactionSelect", 595, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type);
-        IFC4_IfcModulusOfTranslationalSubgradeReactionSelect_type = new select_type("IfcModulusOfTranslationalSubgradeReactionSelect", 596, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(9);
-        items.push_back(IFC4_IfcAddress_type);
-        items.push_back(IFC4_IfcAppliedValue_type);
-        items.push_back(IFC4_IfcExternalReference_type);
-        items.push_back(IFC4_IfcMaterialDefinition_type);
-        items.push_back(IFC4_IfcOrganization_type);
-        items.push_back(IFC4_IfcPerson_type);
-        items.push_back(IFC4_IfcPersonAndOrganization_type);
-        items.push_back(IFC4_IfcTable_type);
-        items.push_back(IFC4_IfcTimeSeries_type);
-        IFC4_IfcObjectReferenceSelect_type = new select_type("IfcObjectReferenceSelect", 616, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcPoint_type);
-        items.push_back(IFC4_IfcVertexPoint_type);
-        IFC4_IfcPointOrVertexPoint_type = new select_type("IfcPointOrVertexPoint", 675, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(5);
-        items.push_back(IFC4_IfcCurveStyle_type);
-        items.push_back(IFC4_IfcFillAreaStyle_type);
-        items.push_back(IFC4_IfcNullStyle_type);
-        items.push_back(IFC4_IfcSurfaceStyle_type);
-        items.push_back(IFC4_IfcTextStyle_type);
-        IFC4_IfcPresentationStyleSelect_type = new select_type("IfcPresentationStyleSelect", 698, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcProcess_type);
-        items.push_back(IFC4_IfcTypeProcess_type);
-        IFC4_IfcProcessSelect_type = new select_type("IfcProcessSelect", 704, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcProductDefinitionShape_type);
-        items.push_back(IFC4_IfcRepresentationMap_type);
-        IFC4_IfcProductRepresentationSelect_type = new select_type("IfcProductRepresentationSelect", 708, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcProduct_type);
-        items.push_back(IFC4_IfcTypeProduct_type);
-        IFC4_IfcProductSelect_type = new select_type("IfcProductSelect", 709, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcPropertySetDefinition_type);
-        items.push_back(IFC4_IfcPropertySetDefinitionSet_type);
-        IFC4_IfcPropertySetDefinitionSelect_type = new select_type("IfcPropertySetDefinitionSelect", 732, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(16);
-        items.push_back(IFC4_IfcActorRole_type);
-        items.push_back(IFC4_IfcAppliedValue_type);
-        items.push_back(IFC4_IfcApproval_type);
-        items.push_back(IFC4_IfcConstraint_type);
-        items.push_back(IFC4_IfcContextDependentUnit_type);
-        items.push_back(IFC4_IfcConversionBasedUnit_type);
-        items.push_back(IFC4_IfcExternalInformation_type);
-        items.push_back(IFC4_IfcExternalReference_type);
-        items.push_back(IFC4_IfcMaterialDefinition_type);
-        items.push_back(IFC4_IfcOrganization_type);
-        items.push_back(IFC4_IfcPerson_type);
-        items.push_back(IFC4_IfcPersonAndOrganization_type);
-        items.push_back(IFC4_IfcPhysicalQuantity_type);
-        items.push_back(IFC4_IfcProfileDef_type);
-        items.push_back(IFC4_IfcPropertyAbstraction_type);
-        items.push_back(IFC4_IfcTimeSeries_type);
-        IFC4_IfcResourceObjectSelect_type = new select_type("IfcResourceObjectSelect", 849, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcResource_type);
-        items.push_back(IFC4_IfcTypeResource_type);
-        IFC4_IfcResourceSelect_type = new select_type("IfcResourceSelect", 850, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcRotationalStiffnessMeasure_type);
-        IFC4_IfcRotationalStiffnessSelect_type = new select_type("IfcRotationalStiffnessSelect", 864, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcArcIndex_type);
-        items.push_back(IFC4_IfcLineIndex_type);
-        IFC4_IfcSegmentIndexSelect_type = new select_type("IfcSegmentIndexSelect", 876, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcClosedShell_type);
-        items.push_back(IFC4_IfcOpenShell_type);
-        IFC4_IfcShell_type = new select_type("IfcShell", 888, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(13);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcDate_type);
-        items.push_back(IFC4_IfcDateTime_type);
-        items.push_back(IFC4_IfcDuration_type);
-        items.push_back(IFC4_IfcIdentifier_type);
-        items.push_back(IFC4_IfcInteger_type);
-        items.push_back(IFC4_IfcLabel_type);
-        items.push_back(IFC4_IfcLogical_type);
-        items.push_back(IFC4_IfcPositiveInteger_type);
-        items.push_back(IFC4_IfcReal_type);
-        items.push_back(IFC4_IfcText_type);
-        items.push_back(IFC4_IfcTime_type);
-        items.push_back(IFC4_IfcTimeStamp_type);
-        IFC4_IfcSimpleValue_type = new select_type("IfcSimpleValue", 893, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(6);
-        items.push_back(IFC4_IfcDescriptiveMeasure_type);
-        items.push_back(IFC4_IfcLengthMeasure_type);
-        items.push_back(IFC4_IfcNormalisedRatioMeasure_type);
-        items.push_back(IFC4_IfcPositiveLengthMeasure_type);
-        items.push_back(IFC4_IfcPositiveRatioMeasure_type);
-        items.push_back(IFC4_IfcRatioMeasure_type);
-        IFC4_IfcSizeSelect_type = new select_type("IfcSizeSelect", 898, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcClosedShell_type);
-        items.push_back(IFC4_IfcSolidModel_type);
-        IFC4_IfcSolidOrShell_type = new select_type("IfcSolidOrShell", 910, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcExternalSpatialElement_type);
-        items.push_back(IFC4_IfcSpace_type);
-        IFC4_IfcSpaceBoundarySelect_type = new select_type("IfcSpaceBoundarySelect", 916, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcSpecularExponent_type);
-        items.push_back(IFC4_IfcSpecularRoughness_type);
-        IFC4_IfcSpecularHighlightSelect_type = new select_type("IfcSpecularHighlightSelect", 931, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcElement_type);
-        items.push_back(IFC4_IfcStructuralItem_type);
-        IFC4_IfcStructuralActivityAssignmentSelect_type = new select_type("IfcStructuralActivityAssignmentSelect", 947, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcPresentationStyle_type);
-        items.push_back(IFC4_IfcPresentationStyleAssignment_type);
-        IFC4_IfcStyleAssignmentSelect_type = new select_type("IfcStyleAssignmentSelect", 987, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcFaceBasedSurfaceModel_type);
-        items.push_back(IFC4_IfcFaceSurface_type);
-        items.push_back(IFC4_IfcSurface_type);
-        IFC4_IfcSurfaceOrFaceSurface_type = new select_type("IfcSurfaceOrFaceSurface", 1001, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(5);
-        items.push_back(IFC4_IfcExternallyDefinedSurfaceStyle_type);
-        items.push_back(IFC4_IfcSurfaceStyleLighting_type);
-        items.push_back(IFC4_IfcSurfaceStyleRefraction_type);
-        items.push_back(IFC4_IfcSurfaceStyleShading_type);
-        items.push_back(IFC4_IfcSurfaceStyleWithTextures_type);
-        IFC4_IfcSurfaceStyleElementSelect_type = new select_type("IfcSurfaceStyleElementSelect", 1005, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcExternallyDefinedTextFont_type);
-        items.push_back(IFC4_IfcPreDefinedTextFont_type);
-        IFC4_IfcTextFontSelect_type = new select_type("IfcTextFontSelect", 1050, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcDuration_type);
-        items.push_back(IFC4_IfcRatioMeasure_type);
-        IFC4_IfcTimeOrRatioSelect_type = new select_type("IfcTimeOrRatioSelect", 1072, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcLinearStiffnessMeasure_type);
-        IFC4_IfcTranslationalStiffnessSelect_type = new select_type("IfcTranslationalStiffnessSelect", 1085, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcCartesianPoint_type);
-        items.push_back(IFC4_IfcParameterValue_type);
-        IFC4_IfcTrimmingSelect_type = new select_type("IfcTrimmingSelect", 1093, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcDerivedUnit_type);
-        items.push_back(IFC4_IfcMonetaryUnit_type);
-        items.push_back(IFC4_IfcNamedUnit_type);
-        IFC4_IfcUnit_type = new select_type("IfcUnit", 1102, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcDerivedMeasureValue_type);
-        items.push_back(IFC4_IfcMeasureValue_type);
-        items.push_back(IFC4_IfcSimpleValue_type);
-        IFC4_IfcValue_type = new select_type("IfcValue", 1113, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcDirection_type);
-        items.push_back(IFC4_IfcVector_type);
-        IFC4_IfcVectorOrDirection_type = new select_type("IfcVectorOrDirection", 1119, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcBoolean_type);
-        items.push_back(IFC4_IfcWarpingMomentMeasure_type);
-        IFC4_IfcWarpingStiffnessSelect_type = new select_type("IfcWarpingStiffnessSelect", 1139, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(3);
-        items.push_back(IFC4_IfcMeasureWithUnit_type);
-        items.push_back(IFC4_IfcReference_type);
-        items.push_back(IFC4_IfcValue_type);
-        IFC4_IfcAppliedValueSelect_type = new select_type("IfcAppliedValueSelect", 37, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(2);
-        items.push_back(IFC4_IfcCurveStyleFontAndScaling_type);
-        items.push_back(IFC4_IfcCurveStyleFontSelect_type);
-        IFC4_IfcCurveFontOrScaledCurveFontSelect_type = new select_type("IfcCurveFontOrScaledCurveFontSelect", 240, items);
-    }
-    {
-        std::vector<const declaration*> items; items.reserve(6);
-        items.push_back(IFC4_IfcAppliedValue_type);
-        items.push_back(IFC4_IfcMeasureWithUnit_type);
-        items.push_back(IFC4_IfcReference_type);
-        items.push_back(IFC4_IfcTable_type);
-        items.push_back(IFC4_IfcTimeSeries_type);
-        items.push_back(IFC4_IfcValue_type);
-        IFC4_IfcMetricValueSelect_type = new select_type("IfcMetricValueSelect", 588, items);
-    }
     {
         std::vector<const entity::attribute*> attributes; attributes.reserve(3);
         attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC4_IfcActionRequestTypeEnum_type), true));
@@ -12538,135 +12538,6 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     std::vector<const declaration*> declarations; declarations.reserve(1165);
     declarations.push_back(IFC4_IfcAbsorbedDoseMeasure_type);
     declarations.push_back(IFC4_IfcAccelerationMeasure_type);
-    declarations.push_back(IFC4_IfcAmountOfSubstanceMeasure_type);
-    declarations.push_back(IFC4_IfcAngularVelocityMeasure_type);
-    declarations.push_back(IFC4_IfcArcIndex_type);
-    declarations.push_back(IFC4_IfcAreaDensityMeasure_type);
-    declarations.push_back(IFC4_IfcAreaMeasure_type);
-    declarations.push_back(IFC4_IfcBinary_type);
-    declarations.push_back(IFC4_IfcBoolean_type);
-    declarations.push_back(IFC4_IfcCardinalPointReference_type);
-    declarations.push_back(IFC4_IfcComplexNumber_type);
-    declarations.push_back(IFC4_IfcCompoundPlaneAngleMeasure_type);
-    declarations.push_back(IFC4_IfcContextDependentMeasure_type);
-    declarations.push_back(IFC4_IfcCountMeasure_type);
-    declarations.push_back(IFC4_IfcCurvatureMeasure_type);
-    declarations.push_back(IFC4_IfcDate_type);
-    declarations.push_back(IFC4_IfcDateTime_type);
-    declarations.push_back(IFC4_IfcDayInMonthNumber_type);
-    declarations.push_back(IFC4_IfcDayInWeekNumber_type);
-    declarations.push_back(IFC4_IfcDescriptiveMeasure_type);
-    declarations.push_back(IFC4_IfcDimensionCount_type);
-    declarations.push_back(IFC4_IfcDoseEquivalentMeasure_type);
-    declarations.push_back(IFC4_IfcDuration_type);
-    declarations.push_back(IFC4_IfcDynamicViscosityMeasure_type);
-    declarations.push_back(IFC4_IfcElectricCapacitanceMeasure_type);
-    declarations.push_back(IFC4_IfcElectricChargeMeasure_type);
-    declarations.push_back(IFC4_IfcElectricConductanceMeasure_type);
-    declarations.push_back(IFC4_IfcElectricCurrentMeasure_type);
-    declarations.push_back(IFC4_IfcElectricResistanceMeasure_type);
-    declarations.push_back(IFC4_IfcElectricVoltageMeasure_type);
-    declarations.push_back(IFC4_IfcEnergyMeasure_type);
-    declarations.push_back(IFC4_IfcFontStyle_type);
-    declarations.push_back(IFC4_IfcFontVariant_type);
-    declarations.push_back(IFC4_IfcFontWeight_type);
-    declarations.push_back(IFC4_IfcForceMeasure_type);
-    declarations.push_back(IFC4_IfcFrequencyMeasure_type);
-    declarations.push_back(IFC4_IfcGloballyUniqueId_type);
-    declarations.push_back(IFC4_IfcHeatFluxDensityMeasure_type);
-    declarations.push_back(IFC4_IfcHeatingValueMeasure_type);
-    declarations.push_back(IFC4_IfcIdentifier_type);
-    declarations.push_back(IFC4_IfcIlluminanceMeasure_type);
-    declarations.push_back(IFC4_IfcInductanceMeasure_type);
-    declarations.push_back(IFC4_IfcInteger_type);
-    declarations.push_back(IFC4_IfcIntegerCountRateMeasure_type);
-    declarations.push_back(IFC4_IfcIonConcentrationMeasure_type);
-    declarations.push_back(IFC4_IfcIsothermalMoistureCapacityMeasure_type);
-    declarations.push_back(IFC4_IfcKinematicViscosityMeasure_type);
-    declarations.push_back(IFC4_IfcLabel_type);
-    declarations.push_back(IFC4_IfcLanguageId_type);
-    declarations.push_back(IFC4_IfcLengthMeasure_type);
-    declarations.push_back(IFC4_IfcLineIndex_type);
-    declarations.push_back(IFC4_IfcLinearForceMeasure_type);
-    declarations.push_back(IFC4_IfcLinearMomentMeasure_type);
-    declarations.push_back(IFC4_IfcLinearStiffnessMeasure_type);
-    declarations.push_back(IFC4_IfcLinearVelocityMeasure_type);
-    declarations.push_back(IFC4_IfcLogical_type);
-    declarations.push_back(IFC4_IfcLuminousFluxMeasure_type);
-    declarations.push_back(IFC4_IfcLuminousIntensityDistributionMeasure_type);
-    declarations.push_back(IFC4_IfcLuminousIntensityMeasure_type);
-    declarations.push_back(IFC4_IfcMagneticFluxDensityMeasure_type);
-    declarations.push_back(IFC4_IfcMagneticFluxMeasure_type);
-    declarations.push_back(IFC4_IfcMassDensityMeasure_type);
-    declarations.push_back(IFC4_IfcMassFlowRateMeasure_type);
-    declarations.push_back(IFC4_IfcMassMeasure_type);
-    declarations.push_back(IFC4_IfcMassPerLengthMeasure_type);
-    declarations.push_back(IFC4_IfcModulusOfElasticityMeasure_type);
-    declarations.push_back(IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type);
-    declarations.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type);
-    declarations.push_back(IFC4_IfcModulusOfSubgradeReactionMeasure_type);
-    declarations.push_back(IFC4_IfcMoistureDiffusivityMeasure_type);
-    declarations.push_back(IFC4_IfcMolecularWeightMeasure_type);
-    declarations.push_back(IFC4_IfcMomentOfInertiaMeasure_type);
-    declarations.push_back(IFC4_IfcMonetaryMeasure_type);
-    declarations.push_back(IFC4_IfcMonthInYearNumber_type);
-    declarations.push_back(IFC4_IfcNonNegativeLengthMeasure_type);
-    declarations.push_back(IFC4_IfcNumericMeasure_type);
-    declarations.push_back(IFC4_IfcPHMeasure_type);
-    declarations.push_back(IFC4_IfcParameterValue_type);
-    declarations.push_back(IFC4_IfcPlanarForceMeasure_type);
-    declarations.push_back(IFC4_IfcPlaneAngleMeasure_type);
-    declarations.push_back(IFC4_IfcPositiveInteger_type);
-    declarations.push_back(IFC4_IfcPositiveLengthMeasure_type);
-    declarations.push_back(IFC4_IfcPositivePlaneAngleMeasure_type);
-    declarations.push_back(IFC4_IfcPowerMeasure_type);
-    declarations.push_back(IFC4_IfcPresentableText_type);
-    declarations.push_back(IFC4_IfcPressureMeasure_type);
-    declarations.push_back(IFC4_IfcPropertySetDefinitionSet_type);
-    declarations.push_back(IFC4_IfcRadioActivityMeasure_type);
-    declarations.push_back(IFC4_IfcRatioMeasure_type);
-    declarations.push_back(IFC4_IfcReal_type);
-    declarations.push_back(IFC4_IfcRotationalFrequencyMeasure_type);
-    declarations.push_back(IFC4_IfcRotationalMassMeasure_type);
-    declarations.push_back(IFC4_IfcRotationalStiffnessMeasure_type);
-    declarations.push_back(IFC4_IfcSectionModulusMeasure_type);
-    declarations.push_back(IFC4_IfcSectionalAreaIntegralMeasure_type);
-    declarations.push_back(IFC4_IfcShearModulusMeasure_type);
-    declarations.push_back(IFC4_IfcSolidAngleMeasure_type);
-    declarations.push_back(IFC4_IfcSoundPowerLevelMeasure_type);
-    declarations.push_back(IFC4_IfcSoundPowerMeasure_type);
-    declarations.push_back(IFC4_IfcSoundPressureLevelMeasure_type);
-    declarations.push_back(IFC4_IfcSoundPressureMeasure_type);
-    declarations.push_back(IFC4_IfcSpecificHeatCapacityMeasure_type);
-    declarations.push_back(IFC4_IfcSpecularExponent_type);
-    declarations.push_back(IFC4_IfcSpecularRoughness_type);
-    declarations.push_back(IFC4_IfcStrippedOptional_type);
-    declarations.push_back(IFC4_IfcTemperatureGradientMeasure_type);
-    declarations.push_back(IFC4_IfcTemperatureRateOfChangeMeasure_type);
-    declarations.push_back(IFC4_IfcText_type);
-    declarations.push_back(IFC4_IfcTextAlignment_type);
-    declarations.push_back(IFC4_IfcTextDecoration_type);
-    declarations.push_back(IFC4_IfcTextFontName_type);
-    declarations.push_back(IFC4_IfcTextTransformation_type);
-    declarations.push_back(IFC4_IfcThermalAdmittanceMeasure_type);
-    declarations.push_back(IFC4_IfcThermalConductivityMeasure_type);
-    declarations.push_back(IFC4_IfcThermalExpansionCoefficientMeasure_type);
-    declarations.push_back(IFC4_IfcThermalResistanceMeasure_type);
-    declarations.push_back(IFC4_IfcThermalTransmittanceMeasure_type);
-    declarations.push_back(IFC4_IfcThermodynamicTemperatureMeasure_type);
-    declarations.push_back(IFC4_IfcTime_type);
-    declarations.push_back(IFC4_IfcTimeMeasure_type);
-    declarations.push_back(IFC4_IfcTimeStamp_type);
-    declarations.push_back(IFC4_IfcTorqueMeasure_type);
-    declarations.push_back(IFC4_IfcURIReference_type);
-    declarations.push_back(IFC4_IfcVaporPermeabilityMeasure_type);
-    declarations.push_back(IFC4_IfcVolumeMeasure_type);
-    declarations.push_back(IFC4_IfcVolumetricFlowRateMeasure_type);
-    declarations.push_back(IFC4_IfcWarpingConstantMeasure_type);
-    declarations.push_back(IFC4_IfcWarpingMomentMeasure_type);
-    declarations.push_back(IFC4_IfcBoxAlignment_type);
-    declarations.push_back(IFC4_IfcNormalisedRatioMeasure_type);
-    declarations.push_back(IFC4_IfcPositiveRatioMeasure_type);
     declarations.push_back(IFC4_IfcActionRequestTypeEnum_type);
     declarations.push_back(IFC4_IfcActionSourceTypeEnum_type);
     declarations.push_back(IFC4_IfcActionTypeEnum_type);
@@ -12676,8 +12547,12 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcAirTerminalTypeEnum_type);
     declarations.push_back(IFC4_IfcAirToAirHeatRecoveryTypeEnum_type);
     declarations.push_back(IFC4_IfcAlarmTypeEnum_type);
+    declarations.push_back(IFC4_IfcAmountOfSubstanceMeasure_type);
     declarations.push_back(IFC4_IfcAnalysisModelTypeEnum_type);
     declarations.push_back(IFC4_IfcAnalysisTheoryTypeEnum_type);
+    declarations.push_back(IFC4_IfcAngularVelocityMeasure_type);
+    declarations.push_back(IFC4_IfcAreaDensityMeasure_type);
+    declarations.push_back(IFC4_IfcAreaMeasure_type);
     declarations.push_back(IFC4_IfcArithmeticOperatorEnum_type);
     declarations.push_back(IFC4_IfcAssemblyPlaceEnum_type);
     declarations.push_back(IFC4_IfcAudioVisualApplianceTypeEnum_type);
@@ -12685,7 +12560,9 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcBSplineSurfaceForm_type);
     declarations.push_back(IFC4_IfcBeamTypeEnum_type);
     declarations.push_back(IFC4_IfcBenchmarkEnum_type);
+    declarations.push_back(IFC4_IfcBinary_type);
     declarations.push_back(IFC4_IfcBoilerTypeEnum_type);
+    declarations.push_back(IFC4_IfcBoolean_type);
     declarations.push_back(IFC4_IfcBooleanOperator_type);
     declarations.push_back(IFC4_IfcBuildingElementPartTypeEnum_type);
     declarations.push_back(IFC4_IfcBuildingElementProxyTypeEnum_type);
@@ -12695,13 +12572,16 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcCableCarrierSegmentTypeEnum_type);
     declarations.push_back(IFC4_IfcCableFittingTypeEnum_type);
     declarations.push_back(IFC4_IfcCableSegmentTypeEnum_type);
+    declarations.push_back(IFC4_IfcCardinalPointReference_type);
     declarations.push_back(IFC4_IfcChangeActionEnum_type);
     declarations.push_back(IFC4_IfcChillerTypeEnum_type);
     declarations.push_back(IFC4_IfcChimneyTypeEnum_type);
     declarations.push_back(IFC4_IfcCoilTypeEnum_type);
     declarations.push_back(IFC4_IfcColumnTypeEnum_type);
     declarations.push_back(IFC4_IfcCommunicationsApplianceTypeEnum_type);
+    declarations.push_back(IFC4_IfcComplexNumber_type);
     declarations.push_back(IFC4_IfcComplexPropertyTemplateTypeEnum_type);
+    declarations.push_back(IFC4_IfcCompoundPlaneAngleMeasure_type);
     declarations.push_back(IFC4_IfcCompressorTypeEnum_type);
     declarations.push_back(IFC4_IfcCondenserTypeEnum_type);
     declarations.push_back(IFC4_IfcConnectionTypeEnum_type);
@@ -12709,18 +12589,27 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcConstructionEquipmentResourceTypeEnum_type);
     declarations.push_back(IFC4_IfcConstructionMaterialResourceTypeEnum_type);
     declarations.push_back(IFC4_IfcConstructionProductResourceTypeEnum_type);
+    declarations.push_back(IFC4_IfcContextDependentMeasure_type);
     declarations.push_back(IFC4_IfcControllerTypeEnum_type);
     declarations.push_back(IFC4_IfcCooledBeamTypeEnum_type);
     declarations.push_back(IFC4_IfcCoolingTowerTypeEnum_type);
     declarations.push_back(IFC4_IfcCostItemTypeEnum_type);
     declarations.push_back(IFC4_IfcCostScheduleTypeEnum_type);
+    declarations.push_back(IFC4_IfcCountMeasure_type);
     declarations.push_back(IFC4_IfcCoveringTypeEnum_type);
     declarations.push_back(IFC4_IfcCrewResourceTypeEnum_type);
     declarations.push_back(IFC4_IfcCurtainWallTypeEnum_type);
+    declarations.push_back(IFC4_IfcCurvatureMeasure_type);
     declarations.push_back(IFC4_IfcCurveInterpolationEnum_type);
     declarations.push_back(IFC4_IfcDamperTypeEnum_type);
     declarations.push_back(IFC4_IfcDataOriginEnum_type);
+    declarations.push_back(IFC4_IfcDate_type);
+    declarations.push_back(IFC4_IfcDateTime_type);
+    declarations.push_back(IFC4_IfcDayInMonthNumber_type);
+    declarations.push_back(IFC4_IfcDayInWeekNumber_type);
     declarations.push_back(IFC4_IfcDerivedUnitEnum_type);
+    declarations.push_back(IFC4_IfcDescriptiveMeasure_type);
+    declarations.push_back(IFC4_IfcDimensionCount_type);
     declarations.push_back(IFC4_IfcDirectionSenseEnum_type);
     declarations.push_back(IFC4_IfcDiscreteAccessoryTypeEnum_type);
     declarations.push_back(IFC4_IfcDistributionChamberElementTypeEnum_type);
@@ -12734,17 +12623,27 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcDoorStyleOperationEnum_type);
     declarations.push_back(IFC4_IfcDoorTypeEnum_type);
     declarations.push_back(IFC4_IfcDoorTypeOperationEnum_type);
+    declarations.push_back(IFC4_IfcDoseEquivalentMeasure_type);
     declarations.push_back(IFC4_IfcDuctFittingTypeEnum_type);
     declarations.push_back(IFC4_IfcDuctSegmentTypeEnum_type);
     declarations.push_back(IFC4_IfcDuctSilencerTypeEnum_type);
+    declarations.push_back(IFC4_IfcDuration_type);
+    declarations.push_back(IFC4_IfcDynamicViscosityMeasure_type);
     declarations.push_back(IFC4_IfcElectricApplianceTypeEnum_type);
+    declarations.push_back(IFC4_IfcElectricCapacitanceMeasure_type);
+    declarations.push_back(IFC4_IfcElectricChargeMeasure_type);
+    declarations.push_back(IFC4_IfcElectricConductanceMeasure_type);
+    declarations.push_back(IFC4_IfcElectricCurrentMeasure_type);
     declarations.push_back(IFC4_IfcElectricDistributionBoardTypeEnum_type);
     declarations.push_back(IFC4_IfcElectricFlowStorageDeviceTypeEnum_type);
     declarations.push_back(IFC4_IfcElectricGeneratorTypeEnum_type);
     declarations.push_back(IFC4_IfcElectricMotorTypeEnum_type);
+    declarations.push_back(IFC4_IfcElectricResistanceMeasure_type);
     declarations.push_back(IFC4_IfcElectricTimeControlTypeEnum_type);
+    declarations.push_back(IFC4_IfcElectricVoltageMeasure_type);
     declarations.push_back(IFC4_IfcElementAssemblyTypeEnum_type);
     declarations.push_back(IFC4_IfcElementCompositionEnum_type);
+    declarations.push_back(IFC4_IfcEnergyMeasure_type);
     declarations.push_back(IFC4_IfcEngineTypeEnum_type);
     declarations.push_back(IFC4_IfcEvaporativeCoolerTypeEnum_type);
     declarations.push_back(IFC4_IfcEvaporatorTypeEnum_type);
@@ -12758,37 +12657,86 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcFlowDirectionEnum_type);
     declarations.push_back(IFC4_IfcFlowInstrumentTypeEnum_type);
     declarations.push_back(IFC4_IfcFlowMeterTypeEnum_type);
+    declarations.push_back(IFC4_IfcFontStyle_type);
+    declarations.push_back(IFC4_IfcFontVariant_type);
+    declarations.push_back(IFC4_IfcFontWeight_type);
     declarations.push_back(IFC4_IfcFootingTypeEnum_type);
+    declarations.push_back(IFC4_IfcForceMeasure_type);
+    declarations.push_back(IFC4_IfcFrequencyMeasure_type);
     declarations.push_back(IFC4_IfcFurnitureTypeEnum_type);
     declarations.push_back(IFC4_IfcGeographicElementTypeEnum_type);
     declarations.push_back(IFC4_IfcGeometricProjectionEnum_type);
     declarations.push_back(IFC4_IfcGlobalOrLocalEnum_type);
+    declarations.push_back(IFC4_IfcGloballyUniqueId_type);
     declarations.push_back(IFC4_IfcGridTypeEnum_type);
     declarations.push_back(IFC4_IfcHeatExchangerTypeEnum_type);
+    declarations.push_back(IFC4_IfcHeatFluxDensityMeasure_type);
+    declarations.push_back(IFC4_IfcHeatingValueMeasure_type);
     declarations.push_back(IFC4_IfcHumidifierTypeEnum_type);
+    declarations.push_back(IFC4_IfcIdentifier_type);
+    declarations.push_back(IFC4_IfcIlluminanceMeasure_type);
+    declarations.push_back(IFC4_IfcInductanceMeasure_type);
+    declarations.push_back(IFC4_IfcInteger_type);
+    declarations.push_back(IFC4_IfcIntegerCountRateMeasure_type);
     declarations.push_back(IFC4_IfcInterceptorTypeEnum_type);
     declarations.push_back(IFC4_IfcInternalOrExternalEnum_type);
     declarations.push_back(IFC4_IfcInventoryTypeEnum_type);
+    declarations.push_back(IFC4_IfcIonConcentrationMeasure_type);
+    declarations.push_back(IFC4_IfcIsothermalMoistureCapacityMeasure_type);
     declarations.push_back(IFC4_IfcJunctionBoxTypeEnum_type);
+    declarations.push_back(IFC4_IfcKinematicViscosityMeasure_type);
     declarations.push_back(IFC4_IfcKnotType_type);
+    declarations.push_back(IFC4_IfcLabel_type);
     declarations.push_back(IFC4_IfcLaborResourceTypeEnum_type);
     declarations.push_back(IFC4_IfcLampTypeEnum_type);
+    declarations.push_back(IFC4_IfcLanguageId_type);
     declarations.push_back(IFC4_IfcLayerSetDirectionEnum_type);
+    declarations.push_back(IFC4_IfcLengthMeasure_type);
     declarations.push_back(IFC4_IfcLightDistributionCurveEnum_type);
     declarations.push_back(IFC4_IfcLightEmissionSourceEnum_type);
     declarations.push_back(IFC4_IfcLightFixtureTypeEnum_type);
+    declarations.push_back(IFC4_IfcLinearForceMeasure_type);
+    declarations.push_back(IFC4_IfcLinearMomentMeasure_type);
+    declarations.push_back(IFC4_IfcLinearStiffnessMeasure_type);
+    declarations.push_back(IFC4_IfcLinearVelocityMeasure_type);
     declarations.push_back(IFC4_IfcLoadGroupTypeEnum_type);
+    declarations.push_back(IFC4_IfcLogical_type);
     declarations.push_back(IFC4_IfcLogicalOperatorEnum_type);
+    declarations.push_back(IFC4_IfcLuminousFluxMeasure_type);
+    declarations.push_back(IFC4_IfcLuminousIntensityDistributionMeasure_type);
+    declarations.push_back(IFC4_IfcLuminousIntensityMeasure_type);
+    declarations.push_back(IFC4_IfcMagneticFluxDensityMeasure_type);
+    declarations.push_back(IFC4_IfcMagneticFluxMeasure_type);
+    declarations.push_back(IFC4_IfcMassDensityMeasure_type);
+    declarations.push_back(IFC4_IfcMassFlowRateMeasure_type);
+    declarations.push_back(IFC4_IfcMassMeasure_type);
+    declarations.push_back(IFC4_IfcMassPerLengthMeasure_type);
     declarations.push_back(IFC4_IfcMechanicalFastenerTypeEnum_type);
     declarations.push_back(IFC4_IfcMedicalDeviceTypeEnum_type);
     declarations.push_back(IFC4_IfcMemberTypeEnum_type);
+    declarations.push_back(IFC4_IfcModulusOfElasticityMeasure_type);
+    declarations.push_back(IFC4_IfcModulusOfLinearSubgradeReactionMeasure_type);
+    declarations.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionMeasure_type);
+    declarations.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionSelect_type);
+    declarations.push_back(IFC4_IfcModulusOfSubgradeReactionMeasure_type);
+    declarations.push_back(IFC4_IfcModulusOfSubgradeReactionSelect_type);
+    declarations.push_back(IFC4_IfcModulusOfTranslationalSubgradeReactionSelect_type);
+    declarations.push_back(IFC4_IfcMoistureDiffusivityMeasure_type);
+    declarations.push_back(IFC4_IfcMolecularWeightMeasure_type);
+    declarations.push_back(IFC4_IfcMomentOfInertiaMeasure_type);
+    declarations.push_back(IFC4_IfcMonetaryMeasure_type);
+    declarations.push_back(IFC4_IfcMonthInYearNumber_type);
     declarations.push_back(IFC4_IfcMotorConnectionTypeEnum_type);
+    declarations.push_back(IFC4_IfcNonNegativeLengthMeasure_type);
     declarations.push_back(IFC4_IfcNullStyle_type);
+    declarations.push_back(IFC4_IfcNumericMeasure_type);
     declarations.push_back(IFC4_IfcObjectTypeEnum_type);
     declarations.push_back(IFC4_IfcObjectiveEnum_type);
     declarations.push_back(IFC4_IfcOccupantTypeEnum_type);
     declarations.push_back(IFC4_IfcOpeningElementTypeEnum_type);
     declarations.push_back(IFC4_IfcOutletTypeEnum_type);
+    declarations.push_back(IFC4_IfcPHMeasure_type);
+    declarations.push_back(IFC4_IfcParameterValue_type);
     declarations.push_back(IFC4_IfcPerformanceHistoryTypeEnum_type);
     declarations.push_back(IFC4_IfcPermeableCoveringOperationEnum_type);
     declarations.push_back(IFC4_IfcPermitTypeEnum_type);
@@ -12797,7 +12745,15 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcPileTypeEnum_type);
     declarations.push_back(IFC4_IfcPipeFittingTypeEnum_type);
     declarations.push_back(IFC4_IfcPipeSegmentTypeEnum_type);
+    declarations.push_back(IFC4_IfcPlanarForceMeasure_type);
+    declarations.push_back(IFC4_IfcPlaneAngleMeasure_type);
     declarations.push_back(IFC4_IfcPlateTypeEnum_type);
+    declarations.push_back(IFC4_IfcPositiveInteger_type);
+    declarations.push_back(IFC4_IfcPositiveLengthMeasure_type);
+    declarations.push_back(IFC4_IfcPositivePlaneAngleMeasure_type);
+    declarations.push_back(IFC4_IfcPowerMeasure_type);
+    declarations.push_back(IFC4_IfcPresentableText_type);
+    declarations.push_back(IFC4_IfcPressureMeasure_type);
     declarations.push_back(IFC4_IfcProcedureTypeEnum_type);
     declarations.push_back(IFC4_IfcProfileTypeEnum_type);
     declarations.push_back(IFC4_IfcProjectOrderTypeEnum_type);
@@ -12807,9 +12763,12 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcProtectiveDeviceTrippingUnitTypeEnum_type);
     declarations.push_back(IFC4_IfcProtectiveDeviceTypeEnum_type);
     declarations.push_back(IFC4_IfcPumpTypeEnum_type);
+    declarations.push_back(IFC4_IfcRadioActivityMeasure_type);
     declarations.push_back(IFC4_IfcRailingTypeEnum_type);
     declarations.push_back(IFC4_IfcRampFlightTypeEnum_type);
     declarations.push_back(IFC4_IfcRampTypeEnum_type);
+    declarations.push_back(IFC4_IfcRatioMeasure_type);
+    declarations.push_back(IFC4_IfcReal_type);
     declarations.push_back(IFC4_IfcRecurrenceTypeEnum_type);
     declarations.push_back(IFC4_IfcReflectanceMethodEnum_type);
     declarations.push_back(IFC4_IfcReinforcingBarRoleEnum_type);
@@ -12818,23 +12777,39 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcReinforcingMeshTypeEnum_type);
     declarations.push_back(IFC4_IfcRoleEnum_type);
     declarations.push_back(IFC4_IfcRoofTypeEnum_type);
+    declarations.push_back(IFC4_IfcRotationalFrequencyMeasure_type);
+    declarations.push_back(IFC4_IfcRotationalMassMeasure_type);
+    declarations.push_back(IFC4_IfcRotationalStiffnessMeasure_type);
+    declarations.push_back(IFC4_IfcRotationalStiffnessSelect_type);
     declarations.push_back(IFC4_IfcSIPrefix_type);
     declarations.push_back(IFC4_IfcSIUnitName_type);
     declarations.push_back(IFC4_IfcSanitaryTerminalTypeEnum_type);
+    declarations.push_back(IFC4_IfcSectionModulusMeasure_type);
     declarations.push_back(IFC4_IfcSectionTypeEnum_type);
+    declarations.push_back(IFC4_IfcSectionalAreaIntegralMeasure_type);
     declarations.push_back(IFC4_IfcSensorTypeEnum_type);
     declarations.push_back(IFC4_IfcSequenceEnum_type);
     declarations.push_back(IFC4_IfcShadingDeviceTypeEnum_type);
+    declarations.push_back(IFC4_IfcShearModulusMeasure_type);
     declarations.push_back(IFC4_IfcSimplePropertyTemplateTypeEnum_type);
     declarations.push_back(IFC4_IfcSlabTypeEnum_type);
     declarations.push_back(IFC4_IfcSolarDeviceTypeEnum_type);
+    declarations.push_back(IFC4_IfcSolidAngleMeasure_type);
+    declarations.push_back(IFC4_IfcSoundPowerLevelMeasure_type);
+    declarations.push_back(IFC4_IfcSoundPowerMeasure_type);
+    declarations.push_back(IFC4_IfcSoundPressureLevelMeasure_type);
+    declarations.push_back(IFC4_IfcSoundPressureMeasure_type);
     declarations.push_back(IFC4_IfcSpaceHeaterTypeEnum_type);
     declarations.push_back(IFC4_IfcSpaceTypeEnum_type);
     declarations.push_back(IFC4_IfcSpatialZoneTypeEnum_type);
+    declarations.push_back(IFC4_IfcSpecificHeatCapacityMeasure_type);
+    declarations.push_back(IFC4_IfcSpecularExponent_type);
+    declarations.push_back(IFC4_IfcSpecularRoughness_type);
     declarations.push_back(IFC4_IfcStackTerminalTypeEnum_type);
     declarations.push_back(IFC4_IfcStairFlightTypeEnum_type);
     declarations.push_back(IFC4_IfcStairTypeEnum_type);
     declarations.push_back(IFC4_IfcStateEnum_type);
+    declarations.push_back(IFC4_IfcStrippedOptional_type);
     declarations.push_back(IFC4_IfcStructuralCurveActivityTypeEnum_type);
     declarations.push_back(IFC4_IfcStructuralCurveMemberTypeEnum_type);
     declarations.push_back(IFC4_IfcStructuralSurfaceActivityTypeEnum_type);
@@ -12847,22 +12822,48 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcTankTypeEnum_type);
     declarations.push_back(IFC4_IfcTaskDurationEnum_type);
     declarations.push_back(IFC4_IfcTaskTypeEnum_type);
+    declarations.push_back(IFC4_IfcTemperatureGradientMeasure_type);
+    declarations.push_back(IFC4_IfcTemperatureRateOfChangeMeasure_type);
     declarations.push_back(IFC4_IfcTendonAnchorTypeEnum_type);
     declarations.push_back(IFC4_IfcTendonTypeEnum_type);
+    declarations.push_back(IFC4_IfcText_type);
+    declarations.push_back(IFC4_IfcTextAlignment_type);
+    declarations.push_back(IFC4_IfcTextDecoration_type);
+    declarations.push_back(IFC4_IfcTextFontName_type);
     declarations.push_back(IFC4_IfcTextPath_type);
+    declarations.push_back(IFC4_IfcTextTransformation_type);
+    declarations.push_back(IFC4_IfcThermalAdmittanceMeasure_type);
+    declarations.push_back(IFC4_IfcThermalConductivityMeasure_type);
+    declarations.push_back(IFC4_IfcThermalExpansionCoefficientMeasure_type);
+    declarations.push_back(IFC4_IfcThermalResistanceMeasure_type);
+    declarations.push_back(IFC4_IfcThermalTransmittanceMeasure_type);
+    declarations.push_back(IFC4_IfcThermodynamicTemperatureMeasure_type);
+    declarations.push_back(IFC4_IfcTime_type);
+    declarations.push_back(IFC4_IfcTimeMeasure_type);
+    declarations.push_back(IFC4_IfcTimeOrRatioSelect_type);
     declarations.push_back(IFC4_IfcTimeSeriesDataTypeEnum_type);
+    declarations.push_back(IFC4_IfcTimeStamp_type);
+    declarations.push_back(IFC4_IfcTorqueMeasure_type);
     declarations.push_back(IFC4_IfcTransformerTypeEnum_type);
     declarations.push_back(IFC4_IfcTransitionCode_type);
+    declarations.push_back(IFC4_IfcTranslationalStiffnessSelect_type);
     declarations.push_back(IFC4_IfcTransportElementTypeEnum_type);
     declarations.push_back(IFC4_IfcTrimmingPreference_type);
     declarations.push_back(IFC4_IfcTubeBundleTypeEnum_type);
+    declarations.push_back(IFC4_IfcURIReference_type);
     declarations.push_back(IFC4_IfcUnitEnum_type);
     declarations.push_back(IFC4_IfcUnitaryControlElementTypeEnum_type);
     declarations.push_back(IFC4_IfcUnitaryEquipmentTypeEnum_type);
     declarations.push_back(IFC4_IfcValveTypeEnum_type);
+    declarations.push_back(IFC4_IfcVaporPermeabilityMeasure_type);
     declarations.push_back(IFC4_IfcVibrationIsolatorTypeEnum_type);
     declarations.push_back(IFC4_IfcVoidingFeatureTypeEnum_type);
+    declarations.push_back(IFC4_IfcVolumeMeasure_type);
+    declarations.push_back(IFC4_IfcVolumetricFlowRateMeasure_type);
     declarations.push_back(IFC4_IfcWallTypeEnum_type);
+    declarations.push_back(IFC4_IfcWarpingConstantMeasure_type);
+    declarations.push_back(IFC4_IfcWarpingMomentMeasure_type);
+    declarations.push_back(IFC4_IfcWarpingStiffnessSelect_type);
     declarations.push_back(IFC4_IfcWasteTerminalTypeEnum_type);
     declarations.push_back(IFC4_IfcWindowPanelOperationEnum_type);
     declarations.push_back(IFC4_IfcWindowPanelPositionEnum_type);
@@ -12998,6 +12999,26 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcVertexPoint_type);
     declarations.push_back(IFC4_IfcVirtualGridIntersection_type);
     declarations.push_back(IFC4_IfcWorkTime_type);
+    declarations.push_back(IFC4_IfcActorSelect_type);
+    declarations.push_back(IFC4_IfcArcIndex_type);
+    declarations.push_back(IFC4_IfcBendingParameterSelect_type);
+    declarations.push_back(IFC4_IfcBoxAlignment_type);
+    declarations.push_back(IFC4_IfcDerivedMeasureValue_type);
+    declarations.push_back(IFC4_IfcLayeredItem_type);
+    declarations.push_back(IFC4_IfcLibrarySelect_type);
+    declarations.push_back(IFC4_IfcLightDistributionDataSourceSelect_type);
+    declarations.push_back(IFC4_IfcLineIndex_type);
+    declarations.push_back(IFC4_IfcMaterialSelect_type);
+    declarations.push_back(IFC4_IfcNormalisedRatioMeasure_type);
+    declarations.push_back(IFC4_IfcObjectReferenceSelect_type);
+    declarations.push_back(IFC4_IfcPositiveRatioMeasure_type);
+    declarations.push_back(IFC4_IfcSegmentIndexSelect_type);
+    declarations.push_back(IFC4_IfcSimpleValue_type);
+    declarations.push_back(IFC4_IfcSizeSelect_type);
+    declarations.push_back(IFC4_IfcSpecularHighlightSelect_type);
+    declarations.push_back(IFC4_IfcStyleAssignmentSelect_type);
+    declarations.push_back(IFC4_IfcSurfaceStyleElementSelect_type);
+    declarations.push_back(IFC4_IfcUnit_type);
     declarations.push_back(IFC4_IfcApprovalRelationship_type);
     declarations.push_back(IFC4_IfcArbitraryClosedProfileDef_type);
     declarations.push_back(IFC4_IfcArbitraryOpenProfileDef_type);
@@ -13135,6 +13156,20 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcVertexLoop_type);
     declarations.push_back(IFC4_IfcWindowStyle_type);
     declarations.push_back(IFC4_IfcZShapeProfileDef_type);
+    declarations.push_back(IFC4_IfcClassificationReferenceSelect_type);
+    declarations.push_back(IFC4_IfcClassificationSelect_type);
+    declarations.push_back(IFC4_IfcCoordinateReferenceSystemSelect_type);
+    declarations.push_back(IFC4_IfcDefinitionSelect_type);
+    declarations.push_back(IFC4_IfcDocumentSelect_type);
+    declarations.push_back(IFC4_IfcHatchLineDistanceSelect_type);
+    declarations.push_back(IFC4_IfcMeasureValue_type);
+    declarations.push_back(IFC4_IfcPointOrVertexPoint_type);
+    declarations.push_back(IFC4_IfcPresentationStyleSelect_type);
+    declarations.push_back(IFC4_IfcProductRepresentationSelect_type);
+    declarations.push_back(IFC4_IfcPropertySetDefinitionSet_type);
+    declarations.push_back(IFC4_IfcResourceObjectSelect_type);
+    declarations.push_back(IFC4_IfcTextFontSelect_type);
+    declarations.push_back(IFC4_IfcValue_type);
     declarations.push_back(IFC4_IfcAdvancedFace_type);
     declarations.push_back(IFC4_IfcAnnotationFillArea_type);
     declarations.push_back(IFC4_IfcAsymmetricIShapeProfileDef_type);
@@ -13298,6 +13333,26 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcTriangulatedFaceSet_type);
     declarations.push_back(IFC4_IfcWindowLiningProperties_type);
     declarations.push_back(IFC4_IfcWindowPanelProperties_type);
+    declarations.push_back(IFC4_IfcAppliedValueSelect_type);
+    declarations.push_back(IFC4_IfcAxis2Placement_type);
+    declarations.push_back(IFC4_IfcBooleanOperand_type);
+    declarations.push_back(IFC4_IfcColour_type);
+    declarations.push_back(IFC4_IfcColourOrFactor_type);
+    declarations.push_back(IFC4_IfcCsgSelect_type);
+    declarations.push_back(IFC4_IfcCurveStyleFontSelect_type);
+    declarations.push_back(IFC4_IfcFillStyleSelect_type);
+    declarations.push_back(IFC4_IfcGeometricSetSelect_type);
+    declarations.push_back(IFC4_IfcGridPlacementDirectionSelect_type);
+    declarations.push_back(IFC4_IfcMetricValueSelect_type);
+    declarations.push_back(IFC4_IfcProcessSelect_type);
+    declarations.push_back(IFC4_IfcProductSelect_type);
+    declarations.push_back(IFC4_IfcPropertySetDefinitionSelect_type);
+    declarations.push_back(IFC4_IfcResourceSelect_type);
+    declarations.push_back(IFC4_IfcShell_type);
+    declarations.push_back(IFC4_IfcSolidOrShell_type);
+    declarations.push_back(IFC4_IfcSurfaceOrFaceSurface_type);
+    declarations.push_back(IFC4_IfcTrimmingSelect_type);
+    declarations.push_back(IFC4_IfcVectorOrDirection_type);
     declarations.push_back(IFC4_IfcActor_type);
     declarations.push_back(IFC4_IfcAdvancedBrep_type);
     declarations.push_back(IFC4_IfcAdvancedBrepWithVoids_type);
@@ -13465,6 +13520,10 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcWorkPlan_type);
     declarations.push_back(IFC4_IfcWorkSchedule_type);
     declarations.push_back(IFC4_IfcZone_type);
+    declarations.push_back(IFC4_IfcCurveFontOrScaledCurveFontSelect_type);
+    declarations.push_back(IFC4_IfcCurveOnSurface_type);
+    declarations.push_back(IFC4_IfcCurveOrEdgeCurve_type);
+    declarations.push_back(IFC4_IfcStructuralActivityAssignmentSelect_type);
     declarations.push_back(IFC4_IfcActionRequest_type);
     declarations.push_back(IFC4_IfcAirTerminalBoxType_type);
     declarations.push_back(IFC4_IfcAirTerminalType_type);
@@ -13596,6 +13655,7 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcWasteTerminal_type);
     declarations.push_back(IFC4_IfcWindow_type);
     declarations.push_back(IFC4_IfcWindowStandardCase_type);
+    declarations.push_back(IFC4_IfcSpaceBoundarySelect_type);
     declarations.push_back(IFC4_IfcActuatorType_type);
     declarations.push_back(IFC4_IfcAirTerminal_type);
     declarations.push_back(IFC4_IfcAirTerminalBox_type);
@@ -13641,66 +13701,6 @@ IfcParse::schema_definition* IFC4_populate_schema() {
     declarations.push_back(IFC4_IfcActuator_type);
     declarations.push_back(IFC4_IfcAlarm_type);
     declarations.push_back(IFC4_IfcController_type);
-    declarations.push_back(IFC4_IfcActorSelect_type);
-    declarations.push_back(IFC4_IfcAxis2Placement_type);
-    declarations.push_back(IFC4_IfcBendingParameterSelect_type);
-    declarations.push_back(IFC4_IfcBooleanOperand_type);
-    declarations.push_back(IFC4_IfcClassificationReferenceSelect_type);
-    declarations.push_back(IFC4_IfcClassificationSelect_type);
-    declarations.push_back(IFC4_IfcColour_type);
-    declarations.push_back(IFC4_IfcColourOrFactor_type);
-    declarations.push_back(IFC4_IfcCoordinateReferenceSystemSelect_type);
-    declarations.push_back(IFC4_IfcCsgSelect_type);
-    declarations.push_back(IFC4_IfcCurveOnSurface_type);
-    declarations.push_back(IFC4_IfcCurveOrEdgeCurve_type);
-    declarations.push_back(IFC4_IfcCurveStyleFontSelect_type);
-    declarations.push_back(IFC4_IfcDefinitionSelect_type);
-    declarations.push_back(IFC4_IfcDerivedMeasureValue_type);
-    declarations.push_back(IFC4_IfcDocumentSelect_type);
-    declarations.push_back(IFC4_IfcFillStyleSelect_type);
-    declarations.push_back(IFC4_IfcGeometricSetSelect_type);
-    declarations.push_back(IFC4_IfcGridPlacementDirectionSelect_type);
-    declarations.push_back(IFC4_IfcHatchLineDistanceSelect_type);
-    declarations.push_back(IFC4_IfcLayeredItem_type);
-    declarations.push_back(IFC4_IfcLibrarySelect_type);
-    declarations.push_back(IFC4_IfcLightDistributionDataSourceSelect_type);
-    declarations.push_back(IFC4_IfcMaterialSelect_type);
-    declarations.push_back(IFC4_IfcMeasureValue_type);
-    declarations.push_back(IFC4_IfcModulusOfRotationalSubgradeReactionSelect_type);
-    declarations.push_back(IFC4_IfcModulusOfSubgradeReactionSelect_type);
-    declarations.push_back(IFC4_IfcModulusOfTranslationalSubgradeReactionSelect_type);
-    declarations.push_back(IFC4_IfcObjectReferenceSelect_type);
-    declarations.push_back(IFC4_IfcPointOrVertexPoint_type);
-    declarations.push_back(IFC4_IfcPresentationStyleSelect_type);
-    declarations.push_back(IFC4_IfcProcessSelect_type);
-    declarations.push_back(IFC4_IfcProductRepresentationSelect_type);
-    declarations.push_back(IFC4_IfcProductSelect_type);
-    declarations.push_back(IFC4_IfcPropertySetDefinitionSelect_type);
-    declarations.push_back(IFC4_IfcResourceObjectSelect_type);
-    declarations.push_back(IFC4_IfcResourceSelect_type);
-    declarations.push_back(IFC4_IfcRotationalStiffnessSelect_type);
-    declarations.push_back(IFC4_IfcSegmentIndexSelect_type);
-    declarations.push_back(IFC4_IfcShell_type);
-    declarations.push_back(IFC4_IfcSimpleValue_type);
-    declarations.push_back(IFC4_IfcSizeSelect_type);
-    declarations.push_back(IFC4_IfcSolidOrShell_type);
-    declarations.push_back(IFC4_IfcSpaceBoundarySelect_type);
-    declarations.push_back(IFC4_IfcSpecularHighlightSelect_type);
-    declarations.push_back(IFC4_IfcStructuralActivityAssignmentSelect_type);
-    declarations.push_back(IFC4_IfcStyleAssignmentSelect_type);
-    declarations.push_back(IFC4_IfcSurfaceOrFaceSurface_type);
-    declarations.push_back(IFC4_IfcSurfaceStyleElementSelect_type);
-    declarations.push_back(IFC4_IfcTextFontSelect_type);
-    declarations.push_back(IFC4_IfcTimeOrRatioSelect_type);
-    declarations.push_back(IFC4_IfcTranslationalStiffnessSelect_type);
-    declarations.push_back(IFC4_IfcTrimmingSelect_type);
-    declarations.push_back(IFC4_IfcUnit_type);
-    declarations.push_back(IFC4_IfcValue_type);
-    declarations.push_back(IFC4_IfcVectorOrDirection_type);
-    declarations.push_back(IFC4_IfcWarpingStiffnessSelect_type);
-    declarations.push_back(IFC4_IfcAppliedValueSelect_type);
-    declarations.push_back(IFC4_IfcCurveFontOrScaledCurveFontSelect_type);
-    declarations.push_back(IFC4_IfcMetricValueSelect_type);
     return new schema_definition("IFC4", declarations, new IFC4_instance_factory());
 }
 
