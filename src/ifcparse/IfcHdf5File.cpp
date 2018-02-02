@@ -139,7 +139,7 @@ bool is_select(H5::DataType& datatype) {
 		return false;
 	}
 
-	return compound->getMemberName(0) == "type_code";
+	return compound->getMemberName(0) == "select_bitmap";
 }
 
 void advance(void*& ptr, size_t n) {
@@ -753,22 +753,63 @@ void write_visit::visit(void*& ptr, H5::DataType& datatype, select_item& v) {
 
 	H5::CompType* compound = (H5::CompType*) &datatype;
 	const bool data_is_entity = !!data->declaration().as_entity();
+	std::string data_declaration_as_hdf5;
+	if (!data_is_entity) {
+		data_declaration_as_hdf5 = type_mapper_.make_select_leaf(&data->declaration(), no_instances).first;
+	}
+
+	size_t select_bitmap_size = 0;
+	uint16_t select_bitmap_value = 0;
+	void* select_bitmap_location = nullptr;
+
+	int select_bitmap_index = 0;
 
 	for (int i = 0; i < compound->getNmembers(); ++i) {
 		const std::string name = compound->getMemberName(i);
 		H5::DataType MEMBER(attr_type, *compound, i);
 
-		if (name == "type_code") {
+		if (name == "select_bitmap") {
+			select_bitmap_location = ptr;
+			select_bitmap_size = attr_type.getSize();
+			advance(ptr, attr_type.getSize());
+		} else if (name == "type_code") {
 			write_number_of_size(ptr, attr_type.getSize(), data->declaration().type());
+		} else if (name == "type_path") {
+			const std::string type_path_name = data->declaration().name();
+			write(ptr, type_path_name);
 		} else if (data_is_entity && name == "instance-value") {
 			visit(ptr, attr_type, data);
-		} else if (type_mapper_.make_select_leaf(&data->declaration(), no_instances).first == name) {
+
+			select_bitmap_value |= (1 << select_bitmap_index);
+		} else if (data_declaration_as_hdf5 == name) {
 			write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, *this, attr_type);
 			apply_attribute_visitor(data->data().getArgument(0), 0).apply(attribute_visitor);
+
+			select_bitmap_value |= (1 << select_bitmap_index);
 		} else {
 			default_value_visitor visitor(attr_type);
 			visitor(ptr);
+			select_bitmap_index++;
 		}
+	}
+
+	if (select_bitmap_location != nullptr) {
+		if (select_bitmap_value == 0) {
+			std::cerr << "instantiated value " << data_declaration_as_hdf5 << std::endl;
+			std::cerr << "members: (";
+			for (int i = 0; i < compound->getNmembers(); ++i) {
+				if (i) std::cerr << ",";
+				std::cerr << compound->getMemberName(i);
+			}
+			std::cerr << ")" << std::endl;
+			throw std::runtime_error("Select valuation not written to file");
+		}
+
+		if (std::bitset<16>(select_bitmap_value).count() > 1) {
+			throw std::runtime_error("Multiple select valuations written to file");
+		}
+
+		write_number_of_size(select_bitmap_location, select_bitmap_size, select_bitmap_value);
 	}
 }
 
@@ -1230,8 +1271,41 @@ H5::DataType* type_mapper::operator()(const IfcParse::select_type* pt, const boo
 	} else {
 		std::set<std::string> member_names;
 		std::vector<IfcParse::IfcHdf5File::compound_member> h5_attributes;
+		h5_attributes.push_back(std::make_pair(std::string("select_bitmap"), &H5::PredType::NATIVE_UINT16));
 
-		h5_attributes.push_back(std::make_pair(std::string("type_code"), &H5::PredType::NATIVE_INT16));
+		bool ambiguous = false;
+
+		if (pt->name() == "IfcSpecularHighlightSelect") {
+			std::cerr << 1;
+		}
+
+		// NB: It is necessary to detect ambiguity on schema leafs, because that is the only thing we have when parsing the model
+		for (auto it = leafs_schema.begin(); it != leafs_schema.end(); ++it) {
+			const IfcParse::declaration* decl = (*it);
+			if (decl->as_entity()) {
+				continue;
+			}
+
+			// NB: Not taking into account instances as we're only interested in name
+			auto leaf_type = make_select_leaf(decl, no_instances);
+
+			if (member_names.find(leaf_type.first) != member_names.end()) {
+				ambiguous = true;
+				break;
+			}
+
+			member_names.insert(leaf_type.first);
+		}
+
+		member_names.clear();
+
+		if (ambiguous) {
+			if (padded_) {
+				h5_attributes.push_back(std::make_pair(std::string("type_code"), &H5::PredType::NATIVE_INT16));
+			} else {
+				h5_attributes.push_back(std::make_pair(std::string("type_path"), default_types_[IfcParse::simple_type::string_type]));
+			}
+		}
 
 		for (auto it = leafs->begin(); it != leafs->end(); ++it) {
 			const IfcParse::declaration* decl = (*it);
@@ -2040,11 +2114,20 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		std::vector<bool>::const_iterator derived_it = derived.begin();
 		std::vector<std::string> attribute_names;
 		std::vector<std::string>::const_iterator attribute_name_it = attribute_names.begin();
+		std::vector<const IfcParse::select_type*> attribute_types_select;
+		
 		if (&name != &no_name) {
 			auto entity = get_schema().declaration_by_name(IfcSchema::Type::FromString(boost::to_upper_copy(name)))->as_entity();
 			auto attributes = entity->all_attributes();
 			std::transform(attributes.begin(), attributes.end(), std::back_inserter(attribute_names), [](const IfcParse::entity::attribute* attr) {
 				return attr->name();
+			});
+			std::transform(attributes.begin(), attributes.end(), std::back_inserter(attribute_types_select), [](const IfcParse::entity::attribute* attr) {
+				if (attr->type_of_attribute()->as_named_type()) {
+					return attr->type_of_attribute()->as_named_type()->declared_type()->as_select_type();
+				} else {
+					return (const IfcParse::select_type*) nullptr;
+				}
 			});
 			derived = entity->derived();
 			derived_it = derived.begin();
@@ -2076,7 +2159,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 
 			for (int i = 0; i < ct->getNmembers(); ++i) {
 				const std::string member_name = ct->getMemberName(i);
-				
+
 				const size_t offs = ct->getMemberOffset(i);
 				void* member_ptr = (uint8_t*)buffer + offs;
 				H5::DataType MEMBER(member_type, *ct, i);
@@ -2090,6 +2173,62 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 						inst_name = read<int>(member_ptr, &member_type);
 					}
 					output << "#" << inst_name << "=" << boost::to_upper_copy(name) << "(";
+				} else if (member_name == "select_bitmap") {
+					if (i != 0) {
+						throw std::runtime_error("Unexpected within select compound");
+					}
+
+					if (attribute_types_select[ifc_idx] == nullptr) {
+						throw std::runtime_error("Select compound encountered for non-select type");
+					}
+
+					const std::string next_member_name = ct->getMemberName(1);
+					int extra_offset = 1;
+					bool has_path = next_member_name == "type_path" || next_member_name == "type_code";
+					if (has_path) {
+						extra_offset += 1;
+					}
+					int select_valuation_int = read<int>(member_ptr, &member_type) + extra_offset;
+					select_valuation = ct->getMemberName(select_valuation_int);
+					if (!has_path) {
+						// we need to do a reverse lookup in order to find express type from matching HDF5 type in unambiguous select instantiation
+
+						std::set<const IfcParse::declaration*> leafs_schema;
+						visit_select(attribute_types_select[ifc_idx], leafs_schema);
+						
+						bool path_emitted = false;
+						for (auto it = leafs_schema.begin(); it != leafs_schema.end(); ++it) {
+							const IfcParse::declaration* decl = (*it);
+							if (decl->as_entity()) {
+								continue;
+							}
+
+							IfcParse::Hdf5Settings settings;
+							auto leaf_type = type_mapper(nullptr, nullptr, nullptr, settings).make_select_leaf(decl, no_instances);
+
+							if (select_valuation == leaf_type.first) {
+								output << decl->name() << "(";
+								path_emitted = true;
+							}
+						}
+
+						if (!path_emitted) {
+							throw std::runtime_error("Unable to lookup type path from instantiation");
+						}
+					}
+				} else if (member_name == "type_path") {
+					const char* const ty = read<char*>(member_ptr, &member_type);
+					auto decl = get_schema().declaration_by_name(ty);
+					if (decl->as_entity()) {
+						select_valuation = "instance-value";
+					} else {
+						std::string type_string = ty;
+						boost::to_upper(type_string);
+						output << type_string << "(";
+						IfcParse::Hdf5Settings settings;
+						select_valuation = type_mapper(nullptr, nullptr, nullptr, settings).make_select_leaf(decl, no_instances).first;
+						is_selected_simple_type = true;
+					}
 				} else if (member_name == "type_code") {
 					is_select = true;
 					IfcSchema::Type::Enum ty = (IfcSchema::Type::Enum) read<int>(member_ptr, &member_type);
