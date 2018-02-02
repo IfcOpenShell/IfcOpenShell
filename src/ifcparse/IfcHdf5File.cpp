@@ -10,6 +10,18 @@
 #pragma message("warning: HDF5 compression support is recommended")
 #endif
 
+// Some string definitions used throughout this code
+namespace {
+    const char* const select_bitmap = "select_bitmap";
+    const char* const Entity_Instance_Identifier = "Entity-Instance-Identifier";
+    const char* const set_unset_bitmap = "set_unset_bitmap";
+    const char* const type_code = "type_code";
+    const char* const type_path = "type_path";
+    const char* const HDF5_dataset_index = "_HDF5_dataset_index_";
+    const char* const HDF5_instance_index = "_HDF5_instance_index_";
+    const char* const HDF_INSTANCE_REFERENCE_HANDLE = "_HDF_INSTANCE_REFERENCE_HANDLE_";
+}
+
 static boost::optional< std::vector<Argument*> > no_instances = boost::none;
 
 #define MEMBER(name, compound, index) name(H5Tget_member_type((compound).getId(), index)); H5Idec_ref(name.getId());
@@ -139,7 +151,7 @@ bool is_select(H5::DataType& datatype) {
 		return false;
 	}
 
-	return compound->getMemberName(0) == "select_bitmap";
+	return compound->getMemberName(0) == select_bitmap;
 }
 
 void advance(void*& ptr, size_t n) {
@@ -371,8 +383,9 @@ public:
 		H5::DataSpace space(1, &dims);
 		hsize_t coord = ref.second;
 		space.selectElements(H5S_SELECT_SET, 1, &coord);
-		const std::string path = population_group_path_ + IfcSchema::Type::ToString(*(begin() + ref.first));
-		hdf5_file_.reference(ptr, path + "_instances", space);
+		const std::string entity = IfcSchema::Type::ToString(*(begin() + ref.first));
+		const std::string path = population_group_path_ + entity + "_objects/" + entity + "_instances";
+		hdf5_file_.reference(ptr, path, space);
 		advance(ptr, sizeof(hdset_reg_ref_t));
 	}
 };
@@ -682,9 +695,6 @@ public:
 	}
 };
 
-static const std::string Entity_Instance_Identifier = "Entity-Instance-Identifier";
-static const std::string set_unset_bitmap = "set_unset_bitmap";
-
 template <typename T>
 void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType& datatype, IfcUtil::IfcBaseEntity* v) {
 	pointer_increment_assert _(ptr, datatype.getSize());
@@ -768,13 +778,13 @@ void write_visit::visit(void*& ptr, H5::DataType& datatype, select_item& v) {
 		const std::string name = compound->getMemberName(i);
 		H5::DataType MEMBER(attr_type, *compound, i);
 
-		if (name == "select_bitmap") {
+		if (name == select_bitmap) {
 			select_bitmap_location = ptr;
 			select_bitmap_size = attr_type.getSize();
 			advance(ptr, attr_type.getSize());
-		} else if (name == "type_code") {
+		} else if (name == type_code) {
 			write_number_of_size(ptr, attr_type.getSize(), data->declaration().type());
-		} else if (name == "type_path") {
+		} else if (name == type_path) {
 			const std::string type_path_name = data->declaration().name();
 			write(ptr, type_path_name);
 		} else if (data_is_entity && name == "instance-value") {
@@ -920,12 +930,12 @@ type_mapper::type_mapper(const IfcParse::schema_definition* schema_def, IfcParse
 	declared_types_.resize(IfcSchema::Type::UNDEFINED);
 
 	if (referenced_) {
-		instance_reference_ = commit(new H5::PredType(H5::PredType::STD_REF_DSETREG), "_HDF_INSTANCE_REFERENCE_HANDLE_");
+		instance_reference_ = commit(new H5::PredType(H5::PredType::STD_REF_DSETREG), HDF_INSTANCE_REFERENCE_HANDLE);
 	} else {
 		std::vector< IfcParse::IfcHdf5File::compound_member > members;
-		members.push_back(std::make_pair(std::string("_HDF5_dataset_index_"), new H5::PredType(H5::PredType::NATIVE_INT16)));
-		members.push_back(std::make_pair(std::string("_HDF5_instance_index_"), new H5::PredType(H5::PredType::NATIVE_INT32)));
-		instance_reference_ = commit(create_compound(members), "_HDF_INSTANCE_REFERENCE_HANDLE_");
+		members.push_back(std::make_pair(std::string(HDF5_dataset_index), new H5::PredType(H5::PredType::NATIVE_INT16)));
+		members.push_back(std::make_pair(std::string(HDF5_instance_index), new H5::PredType(H5::PredType::NATIVE_INT32)));
+		instance_reference_ = commit(create_compound(members), HDF_INSTANCE_REFERENCE_HANDLE);
 	}
 
 	{
@@ -1271,13 +1281,9 @@ H5::DataType* type_mapper::operator()(const IfcParse::select_type* pt, const boo
 	} else {
 		std::set<std::string> member_names;
 		std::vector<IfcParse::IfcHdf5File::compound_member> h5_attributes;
-		h5_attributes.push_back(std::make_pair(std::string("select_bitmap"), &H5::PredType::NATIVE_UINT16));
+		h5_attributes.push_back(std::make_pair(std::string(select_bitmap), &H5::PredType::NATIVE_UINT16));
 
 		bool ambiguous = false;
-
-		if (pt->name() == "IfcSpecularHighlightSelect") {
-			std::cerr << 1;
-		}
 
 		// NB: It is necessary to detect ambiguity on schema leafs, because that is the only thing we have when parsing the model
 		for (auto it = leafs_schema.begin(); it != leafs_schema.end(); ++it) {
@@ -1301,9 +1307,9 @@ H5::DataType* type_mapper::operator()(const IfcParse::select_type* pt, const boo
 
 		if (ambiguous) {
 			if (padded_) {
-				h5_attributes.push_back(std::make_pair(std::string("type_code"), &H5::PredType::NATIVE_INT16));
+				h5_attributes.push_back(std::make_pair(std::string(type_code), &H5::PredType::NATIVE_INT16));
 			} else {
-				h5_attributes.push_back(std::make_pair(std::string("type_path"), default_types_[IfcParse::simple_type::string_type]));
+				h5_attributes.push_back(std::make_pair(std::string(type_path), default_types_[IfcParse::simple_type::string_type]));
 			}
 		}
 
@@ -1425,9 +1431,9 @@ H5::CompType* type_mapper::operator()(const IfcParse::entity* e, const boost::op
 	h5_attributes.reserve(attributes.size() + inverse_attributes.size() + num_extra);
 
 	if (has_optional_attributes) {
-		h5_attributes.push_back(std::make_pair(std::string("set_unset_bitmap"), &H5::PredType::NATIVE_INT16));
+		h5_attributes.push_back(std::make_pair(std::string(set_unset_bitmap), &H5::PredType::NATIVE_INT16));
 	}
-	h5_attributes.push_back(std::make_pair(std::string("Entity-Instance-Identifier"), &H5::PredType::NATIVE_INT32));
+	h5_attributes.push_back(std::make_pair(std::string(Entity_Instance_Identifier), &H5::PredType::NATIVE_INT32));
 
 	jt = attributes_derived_in_subtype.begin();
 	for (auto it = attributes.begin(); it != attributes.end(); ++it, ++jt) {
@@ -1821,7 +1827,8 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 			// locator->instances(*dsn_it).size();
 			H5::DataType entity_datatype = schema_group.openDataType(current_entity_name);
 
-			create_dataset(&population_group, dataset_path, entity_datatype, 1, &num_instances).close();
+			H5::Group object_group = population_group.createGroup(current_entity_name + "_objects");
+			create_dataset(&object_group, dataset_path, entity_datatype, 1, &num_instances).close();
 			entity_datatype.close();
 		}
 	}
@@ -1842,9 +1849,10 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 		H5::DataSet dataset;
 		
 		if (referenced) {
-			dataset = population_group.openDataSet(dataset_path);
+			dataset = population_group.openDataSet(current_entity_name + "_objects/" + dataset_path);
 		} else {
-			dataset = create_dataset(&population_group, dataset_path, entity_datatype, 1, &num_instances);
+			H5::Group object_group = population_group.createGroup(current_entity_name + "_objects");
+			dataset = create_dataset(&object_group, dataset_path, entity_datatype, 1, &num_instances);
 		}
 
 		size_t dataset_size = entity_datatype.getSize() * static_cast<size_t>(num_instances);
@@ -1871,7 +1879,7 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 bool is_instance_ref(H5::DataType* dt) {
 	if (dt->getClass() != H5T_COMPOUND) return false;
 	H5::CompType* ct = (H5::CompType*) dt;
-	return ct->getMemberName(0) == "_HDF5_dataset_index_";
+	return ct->getMemberName(0) == HDF5_dataset_index;
 }
 
 enum padded_datatype_type {
@@ -2005,7 +2013,7 @@ public:
 			std::string path;
 			if (dataset_paths_.empty()) {
 				const std::string& nm = dataset_names_[pair[0]];
-				path = "population/" + nm + "_instances";
+				path = "population/" + nm + "_objects/" + nm + "_instances";
 			} else {
 				path = dataset_paths_[pair[0]];
 				if (path.empty()) {
@@ -2030,7 +2038,7 @@ public:
 			uint8_t* buffer = new uint8_t[datatype.getSize()];
 			dataset.read(buffer, datatype, memspace, dataspace);
 
-			int idx = datatype.getMemberIndex("Entity-Instance-Identifier");
+			int idx = datatype.getMemberIndex(Entity_Instance_Identifier);
 			size_t inst_name_offset = datatype.getMemberOffset(idx);
 			H5::DataType MEMBER(member_type, datatype, idx);
 
@@ -2164,16 +2172,16 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 				void* member_ptr = (uint8_t*)buffer + offs;
 				H5::DataType MEMBER(member_type, *ct, i);
 
-				if (member_name == "set_unset_bitmap") {
+				if (member_name == set_unset_bitmap) {
 					mask = new std::bitset<64>(read<int>(member_ptr, &member_type));
-				} else if (member_name == "Entity-Instance-Identifier") {
+				} else if (member_name == Entity_Instance_Identifier) {
 					is_instance = true;
 					int inst_name = resolver.instance_name(path, row);
 					if (inst_name == 0) {
 						inst_name = read<int>(member_ptr, &member_type);
 					}
 					output << "#" << inst_name << "=" << boost::to_upper_copy(name) << "(";
-				} else if (member_name == "select_bitmap") {
+				} else if (member_name == select_bitmap) {
 					if (i != 0) {
 						throw std::runtime_error("Unexpected within select compound");
 					}
@@ -2184,7 +2192,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 
 					const std::string next_member_name = ct->getMemberName(1);
 					int extra_offset = 1;
-					bool has_path = next_member_name == "type_path" || next_member_name == "type_code";
+					bool has_path = next_member_name == type_path || next_member_name == type_code;
 					if (has_path) {
 						extra_offset += 1;
 					}
@@ -2216,7 +2224,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 							throw std::runtime_error("Unable to lookup type path from instantiation");
 						}
 					}
-				} else if (member_name == "type_path") {
+				} else if (member_name == type_path) {
 					const char* const ty = read<char*>(member_ptr, &member_type);
 					auto decl = get_schema().declaration_by_name(ty);
 					if (decl->as_entity()) {
@@ -2229,7 +2237,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 						select_valuation = type_mapper(nullptr, nullptr, nullptr, settings).make_select_leaf(decl, no_instances).first;
 						is_selected_simple_type = true;
 					}
-				} else if (member_name == "type_code") {
+				} else if (member_name == type_code) {
 					is_select = true;
 					IfcSchema::Type::Enum ty = (IfcSchema::Type::Enum) read<int>(member_ptr, &member_type);
 					auto decl = get_schema().declaration_by_name(ty);
