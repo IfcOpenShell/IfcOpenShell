@@ -159,7 +159,7 @@ class Implementation(codegen.Base):
         schema_entity_statements += [templates.schema_entity_stmt%locals() for name, type in mapping.schema.simpletypes.items()]
         schema_entity_statements += [templates.schema_entity_stmt%locals() for name, type in mapping.schema.entities.items()]
 
-        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
+        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]), key=lambda s: s.lower())
         max_len = max(map(len, enumerable_types))
         type_name_strings = catc(map(stringify, enumerable_types))
         string_map_statements = [templates.string_map_statement % {

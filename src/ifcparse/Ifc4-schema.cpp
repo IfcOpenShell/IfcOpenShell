@@ -348,13 +348,10 @@ entity* IfcIShapeProfileDef_type = 0;
 entity* IfcImageTexture_type = 0;
 entity* IfcIndexedColourMap_type = 0;
 entity* IfcIndexedPolyCurve_type = 0;
-entity* IfcIndexedPolygonalFace_type = 0;
-entity* IfcIndexedPolygonalFaceWithVoids_type = 0;
 entity* IfcIndexedTextureMap_type = 0;
 entity* IfcIndexedTriangleTextureMap_type = 0;
 entity* IfcInterceptor_type = 0;
 entity* IfcInterceptorType_type = 0;
-entity* IfcIntersectionCurve_type = 0;
 entity* IfcInventory_type = 0;
 entity* IfcIrregularTimeSeries_type = 0;
 entity* IfcIrregularTimeSeriesValue_type = 0;
@@ -464,7 +461,6 @@ entity* IfcPointOnCurve_type = 0;
 entity* IfcPointOnSurface_type = 0;
 entity* IfcPolyLoop_type = 0;
 entity* IfcPolygonalBoundedHalfSpace_type = 0;
-entity* IfcPolygonalFaceSet_type = 0;
 entity* IfcPolyline_type = 0;
 entity* IfcPort_type = 0;
 entity* IfcPostalAddress_type = 0;
@@ -615,7 +611,6 @@ entity* IfcSIUnit_type = 0;
 entity* IfcSanitaryTerminal_type = 0;
 entity* IfcSanitaryTerminalType_type = 0;
 entity* IfcSchedulingTime_type = 0;
-entity* IfcSeamCurve_type = 0;
 entity* IfcSectionProperties_type = 0;
 entity* IfcSectionReinforcementProperties_type = 0;
 entity* IfcSectionedSpine_type = 0;
@@ -649,7 +644,6 @@ entity* IfcSpatialStructureElementType_type = 0;
 entity* IfcSpatialZone_type = 0;
 entity* IfcSpatialZoneType_type = 0;
 entity* IfcSphere_type = 0;
-entity* IfcSphericalSurface_type = 0;
 entity* IfcStackTerminal_type = 0;
 entity* IfcStackTerminalType_type = 0;
 entity* IfcStair_type = 0;
@@ -700,7 +694,6 @@ entity* IfcSubContractResource_type = 0;
 entity* IfcSubContractResourceType_type = 0;
 entity* IfcSubedge_type = 0;
 entity* IfcSurface_type = 0;
-entity* IfcSurfaceCurve_type = 0;
 entity* IfcSurfaceCurveSweptAreaSolid_type = 0;
 entity* IfcSurfaceFeature_type = 0;
 entity* IfcSurfaceOfLinearExtrusion_type = 0;
@@ -755,7 +748,6 @@ entity* IfcTimeSeries_type = 0;
 entity* IfcTimeSeriesValue_type = 0;
 entity* IfcTopologicalRepresentationItem_type = 0;
 entity* IfcTopologyRepresentation_type = 0;
-entity* IfcToroidalSurface_type = 0;
 entity* IfcTransformer_type = 0;
 entity* IfcTransformerType_type = 0;
 entity* IfcTransportElement_type = 0;
@@ -1127,7 +1119,6 @@ enumeration_type* IfcPileTypeEnum_type = 0;
 enumeration_type* IfcPipeFittingTypeEnum_type = 0;
 enumeration_type* IfcPipeSegmentTypeEnum_type = 0;
 enumeration_type* IfcPlateTypeEnum_type = 0;
-enumeration_type* IfcPreferredSurfaceCurveRepresentation_type = 0;
 enumeration_type* IfcProcedureTypeEnum_type = 0;
 enumeration_type* IfcProfileTypeEnum_type = 0;
 enumeration_type* IfcProjectOrderTypeEnum_type = 0;
@@ -1217,7 +1208,6 @@ schema_definition* populate_schema() {
     IfcAccelerationMeasure_type = new type_declaration(IfcSchema::Type::IfcAccelerationMeasure, new simple_type(simple_type::real_type));
     IfcAmountOfSubstanceMeasure_type = new type_declaration(IfcSchema::Type::IfcAmountOfSubstanceMeasure, new simple_type(simple_type::real_type));
     IfcAngularVelocityMeasure_type = new type_declaration(IfcSchema::Type::IfcAngularVelocityMeasure, new simple_type(simple_type::real_type));
-    IfcArcIndex_type = new type_declaration(IfcSchema::Type::IfcArcIndex, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IfcPositiveInteger_type)));
     IfcAreaDensityMeasure_type = new type_declaration(IfcSchema::Type::IfcAreaDensityMeasure, new simple_type(simple_type::real_type));
     IfcAreaMeasure_type = new type_declaration(IfcSchema::Type::IfcAreaMeasure, new simple_type(simple_type::real_type));
     IfcBinary_type = new type_declaration(IfcSchema::Type::IfcBinary, new simple_type(simple_type::binary_type));
@@ -1263,7 +1253,6 @@ schema_definition* populate_schema() {
     IfcLabel_type = new type_declaration(IfcSchema::Type::IfcLabel, new simple_type(simple_type::string_type));
     IfcLanguageId_type = new type_declaration(IfcSchema::Type::IfcLanguageId, new named_type(IfcIdentifier_type));
     IfcLengthMeasure_type = new type_declaration(IfcSchema::Type::IfcLengthMeasure, new simple_type(simple_type::real_type));
-    IfcLineIndex_type = new type_declaration(IfcSchema::Type::IfcLineIndex, new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IfcPositiveInteger_type)));
     IfcLinearForceMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearForceMeasure, new simple_type(simple_type::real_type));
     IfcLinearMomentMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearMomentMeasure, new simple_type(simple_type::real_type));
     IfcLinearStiffnessMeasure_type = new type_declaration(IfcSchema::Type::IfcLinearStiffnessMeasure, new simple_type(simple_type::real_type));
@@ -1299,7 +1288,6 @@ schema_definition* populate_schema() {
     IfcPowerMeasure_type = new type_declaration(IfcSchema::Type::IfcPowerMeasure, new simple_type(simple_type::real_type));
     IfcPresentableText_type = new type_declaration(IfcSchema::Type::IfcPresentableText, new simple_type(simple_type::string_type));
     IfcPressureMeasure_type = new type_declaration(IfcSchema::Type::IfcPressureMeasure, new simple_type(simple_type::real_type));
-    IfcPropertySetDefinitionSet_type = new type_declaration(IfcSchema::Type::IfcPropertySetDefinitionSet, new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IfcPropertySetDefinition_type)));
     IfcRadioActivityMeasure_type = new type_declaration(IfcSchema::Type::IfcRadioActivityMeasure, new simple_type(simple_type::real_type));
     IfcRatioMeasure_type = new type_declaration(IfcSchema::Type::IfcRatioMeasure, new simple_type(simple_type::real_type));
     IfcReal_type = new type_declaration(IfcSchema::Type::IfcReal, new simple_type(simple_type::real_type));
@@ -1341,7 +1329,9 @@ schema_definition* populate_schema() {
     IfcVolumetricFlowRateMeasure_type = new type_declaration(IfcSchema::Type::IfcVolumetricFlowRateMeasure, new simple_type(simple_type::real_type));
     IfcWarpingConstantMeasure_type = new type_declaration(IfcSchema::Type::IfcWarpingConstantMeasure, new simple_type(simple_type::real_type));
     IfcWarpingMomentMeasure_type = new type_declaration(IfcSchema::Type::IfcWarpingMomentMeasure, new simple_type(simple_type::real_type));
+    IfcArcIndex_type = new type_declaration(IfcSchema::Type::IfcArcIndex, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IfcPositiveInteger_type)));
     IfcBoxAlignment_type = new type_declaration(IfcSchema::Type::IfcBoxAlignment, new named_type(IfcLabel_type));
+    IfcLineIndex_type = new type_declaration(IfcSchema::Type::IfcLineIndex, new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IfcPositiveInteger_type)));
     IfcNormalisedRatioMeasure_type = new type_declaration(IfcSchema::Type::IfcNormalisedRatioMeasure, new named_type(IfcRatioMeasure_type));
     IfcPositiveRatioMeasure_type = new type_declaration(IfcSchema::Type::IfcPositiveRatioMeasure, new named_type(IfcRatioMeasure_type));
     {
@@ -1587,12 +1577,11 @@ schema_definition* populate_schema() {
         IfcBuildingElementPartTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcBuildingElementPartTypeEnum, items);
     }
     {
-        std::vector<std::string> items; items.reserve(7);
+        std::vector<std::string> items; items.reserve(6);
         items.push_back("COMPLEX");
         items.push_back("ELEMENT");
         items.push_back("NOTDEFINED");
         items.push_back("PARTIAL");
-        items.push_back("PROVISIONFORSPACE");
         items.push_back("PROVISIONFORVOID");
         items.push_back("USERDEFINED");
         IfcBuildingElementProxyTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcBuildingElementProxyTypeEnum, items);
@@ -2360,7 +2349,7 @@ schema_definition* populate_schema() {
         items.push_back("EXTERNAL_EARTH");
         items.push_back("EXTERNAL_FIRE");
         items.push_back("EXTERNAL_WATER");
-        items.push_back("NOTDEFINED");
+        items.push_back("NOTDEFIEND");
         items.push_back("USERDEFINED");
         IfcExternalSpatialElementTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcExternalSpatialElementTypeEnum, items);
     }
@@ -2876,13 +2865,6 @@ schema_definition* populate_schema() {
         IfcPlateTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcPlateTypeEnum, items);
     }
     {
-        std::vector<std::string> items; items.reserve(3);
-        items.push_back("CURVE3D");
-        items.push_back("PCURVE_S1");
-        items.push_back("PCURVE_S2");
-        IfcPreferredSurfaceCurveRepresentation_type = new enumeration_type(IfcSchema::Type::IfcPreferredSurfaceCurveRepresentation, items);
-    }
-    {
         std::vector<std::string> items; items.reserve(9);
         items.push_back("ADVICE_CAUTION");
         items.push_back("ADVICE_NOTE");
@@ -3190,11 +3172,10 @@ schema_definition* populate_schema() {
         IfcSectionTypeEnum_type = new enumeration_type(IfcSchema::Type::IfcSectionTypeEnum, items);
     }
     {
-        std::vector<std::string> items; items.reserve(26);
+        std::vector<std::string> items; items.reserve(25);
         items.push_back("CO2SENSOR");
         items.push_back("CONDUCTANCESENSOR");
         items.push_back("CONTACTSENSOR");
-        items.push_back("COSENSOR");
         items.push_back("FIRESENSOR");
         items.push_back("FLOWSENSOR");
         items.push_back("FROSTSENSOR");
@@ -4118,8 +4099,6 @@ schema_definition* populate_schema() {
     IfcGeographicElementType_type = new entity(IfcSchema::Type::IfcGeographicElementType, IfcElementType_type);
     IfcGeometricCurveSet_type = new entity(IfcSchema::Type::IfcGeometricCurveSet, IfcGeometricSet_type);
     IfcIShapeProfileDef_type = new entity(IfcSchema::Type::IfcIShapeProfileDef, IfcParameterizedProfileDef_type);
-    IfcIndexedPolygonalFace_type = new entity(IfcSchema::Type::IfcIndexedPolygonalFace, IfcTessellatedItem_type);
-    IfcIndexedPolygonalFaceWithVoids_type = new entity(IfcSchema::Type::IfcIndexedPolygonalFaceWithVoids, IfcIndexedPolygonalFace_type);
     IfcLShapeProfileDef_type = new entity(IfcSchema::Type::IfcLShapeProfileDef, IfcParameterizedProfileDef_type);
     IfcLaborResourceType_type = new entity(IfcSchema::Type::IfcLaborResourceType, IfcConstructionResourceType_type);
     IfcLine_type = new entity(IfcSchema::Type::IfcLine, IfcCurve_type);
@@ -4212,7 +4191,6 @@ schema_definition* populate_schema() {
     IfcSpatialZone_type = new entity(IfcSchema::Type::IfcSpatialZone, IfcSpatialElement_type);
     IfcSpatialZoneType_type = new entity(IfcSchema::Type::IfcSpatialZoneType, IfcSpatialElementType_type);
     IfcSphere_type = new entity(IfcSchema::Type::IfcSphere, IfcCsgPrimitive3D_type);
-    IfcSphericalSurface_type = new entity(IfcSchema::Type::IfcSphericalSurface, IfcElementarySurface_type);
     IfcStructuralActivity_type = new entity(IfcSchema::Type::IfcStructuralActivity, IfcProduct_type);
     IfcStructuralItem_type = new entity(IfcSchema::Type::IfcStructuralItem, IfcProduct_type);
     IfcStructuralMember_type = new entity(IfcSchema::Type::IfcStructuralMember, IfcStructuralItem_type);
@@ -4221,7 +4199,6 @@ schema_definition* populate_schema() {
     IfcStructuralSurfaceMemberVarying_type = new entity(IfcSchema::Type::IfcStructuralSurfaceMemberVarying, IfcStructuralSurfaceMember_type);
     IfcStructuralSurfaceReaction_type = new entity(IfcSchema::Type::IfcStructuralSurfaceReaction, IfcStructuralReaction_type);
     IfcSubContractResourceType_type = new entity(IfcSchema::Type::IfcSubContractResourceType, IfcConstructionResourceType_type);
-    IfcSurfaceCurve_type = new entity(IfcSchema::Type::IfcSurfaceCurve, IfcCurve_type);
     IfcSurfaceCurveSweptAreaSolid_type = new entity(IfcSchema::Type::IfcSurfaceCurveSweptAreaSolid, IfcSweptAreaSolid_type);
     IfcSurfaceOfLinearExtrusion_type = new entity(IfcSchema::Type::IfcSurfaceOfLinearExtrusion, IfcSweptSurface_type);
     IfcSurfaceOfRevolution_type = new entity(IfcSchema::Type::IfcSurfaceOfRevolution, IfcSweptSurface_type);
@@ -4229,7 +4206,6 @@ schema_definition* populate_schema() {
     IfcTask_type = new entity(IfcSchema::Type::IfcTask, IfcProcess_type);
     IfcTaskType_type = new entity(IfcSchema::Type::IfcTaskType, IfcTypeProcess_type);
     IfcTessellatedFaceSet_type = new entity(IfcSchema::Type::IfcTessellatedFaceSet, IfcTessellatedItem_type);
-    IfcToroidalSurface_type = new entity(IfcSchema::Type::IfcToroidalSurface, IfcElementarySurface_type);
     IfcTransportElementType_type = new entity(IfcSchema::Type::IfcTransportElementType, IfcElementType_type);
     IfcTriangulatedFaceSet_type = new entity(IfcSchema::Type::IfcTriangulatedFaceSet, IfcTessellatedFaceSet_type);
     IfcWindowLiningProperties_type = new entity(IfcSchema::Type::IfcWindowLiningProperties, IfcPreDefinedPropertySet_type);
@@ -4309,7 +4285,6 @@ schema_definition* populate_schema() {
     IfcHumidifierType_type = new entity(IfcSchema::Type::IfcHumidifierType, IfcEnergyConversionDeviceType_type);
     IfcIndexedPolyCurve_type = new entity(IfcSchema::Type::IfcIndexedPolyCurve, IfcBoundedCurve_type);
     IfcInterceptorType_type = new entity(IfcSchema::Type::IfcInterceptorType, IfcFlowTreatmentDeviceType_type);
-    IfcIntersectionCurve_type = new entity(IfcSchema::Type::IfcIntersectionCurve, IfcSurfaceCurve_type);
     IfcInventory_type = new entity(IfcSchema::Type::IfcInventory, IfcGroup_type);
     IfcJunctionBoxType_type = new entity(IfcSchema::Type::IfcJunctionBoxType, IfcFlowFittingType_type);
     IfcLaborResource_type = new entity(IfcSchema::Type::IfcLaborResource, IfcConstructionResource_type);
@@ -4331,7 +4306,6 @@ schema_definition* populate_schema() {
     IfcPipeFittingType_type = new entity(IfcSchema::Type::IfcPipeFittingType, IfcFlowFittingType_type);
     IfcPipeSegmentType_type = new entity(IfcSchema::Type::IfcPipeSegmentType, IfcFlowSegmentType_type);
     IfcPlateType_type = new entity(IfcSchema::Type::IfcPlateType, IfcBuildingElementType_type);
-    IfcPolygonalFaceSet_type = new entity(IfcSchema::Type::IfcPolygonalFaceSet, IfcTessellatedFaceSet_type);
     IfcPolyline_type = new entity(IfcSchema::Type::IfcPolyline, IfcBoundedCurve_type);
     IfcPort_type = new entity(IfcSchema::Type::IfcPort, IfcProduct_type);
     IfcProcedure_type = new entity(IfcSchema::Type::IfcProcedure, IfcProcess_type);
@@ -4350,7 +4324,6 @@ schema_definition* populate_schema() {
     IfcRelAggregates_type = new entity(IfcSchema::Type::IfcRelAggregates, IfcRelDecomposes_type);
     IfcRoofType_type = new entity(IfcSchema::Type::IfcRoofType, IfcBuildingElementType_type);
     IfcSanitaryTerminalType_type = new entity(IfcSchema::Type::IfcSanitaryTerminalType, IfcFlowTerminalType_type);
-    IfcSeamCurve_type = new entity(IfcSchema::Type::IfcSeamCurve, IfcSurfaceCurve_type);
     IfcShadingDeviceType_type = new entity(IfcSchema::Type::IfcShadingDeviceType, IfcBuildingElementType_type);
     IfcSite_type = new entity(IfcSchema::Type::IfcSite, IfcSpatialStructureElement_type);
     IfcSlabType_type = new entity(IfcSchema::Type::IfcSlabType, IfcBuildingElementType_type);
@@ -4600,12 +4573,11 @@ schema_definition* populate_schema() {
         IfcBendingParameterSelect_type = new select_type(IfcSchema::Type::IfcBendingParameterSelect, items);
     }
     {
-        std::vector<const declaration*> items; items.reserve(5);
+        std::vector<const declaration*> items; items.reserve(4);
         items.push_back(IfcBooleanResult_type);
         items.push_back(IfcCsgPrimitive3D_type);
         items.push_back(IfcHalfSpaceSolid_type);
         items.push_back(IfcSolidModel_type);
-        items.push_back(IfcTessellatedFaceSet_type);
         IfcBooleanOperand_type = new select_type(IfcSchema::Type::IfcBooleanOperand, items);
     }
     {
@@ -4645,10 +4617,9 @@ schema_definition* populate_schema() {
         IfcCsgSelect_type = new select_type(IfcSchema::Type::IfcCsgSelect, items);
     }
     {
-        std::vector<const declaration*> items; items.reserve(3);
+        std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IfcCompositeCurveOnSurface_type);
         items.push_back(IfcPcurve_type);
-        items.push_back(IfcSurfaceCurve_type);
         IfcCurveOnSurface_type = new select_type(IfcSchema::Type::IfcCurveOnSurface, items);
     }
     {
@@ -4894,9 +4865,8 @@ schema_definition* populate_schema() {
         IfcProductSelect_type = new select_type(IfcSchema::Type::IfcProductSelect, items);
     }
     {
-        std::vector<const declaration*> items; items.reserve(2);
+        std::vector<const declaration*> items; items.reserve(1);
         items.push_back(IfcPropertySetDefinition_type);
-        items.push_back(IfcPropertySetDefinitionSet_type);
         IfcPropertySetDefinitionSelect_type = new select_type(IfcSchema::Type::IfcPropertySetDefinitionSelect, items);
     }
     {
@@ -4944,8 +4914,7 @@ schema_definition* populate_schema() {
         IfcShell_type = new select_type(IfcSchema::Type::IfcShell, items);
     }
     {
-        std::vector<const declaration*> items; items.reserve(14);
-        items.push_back(IfcBinary_type);
+        std::vector<const declaration*> items; items.reserve(13);
         items.push_back(IfcBoolean_type);
         items.push_back(IfcDate_type);
         items.push_back(IfcDateTime_type);
@@ -7538,20 +7507,6 @@ schema_definition* populate_schema() {
         IfcIndexedPolyCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("CoordIndex", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IfcPositiveInteger_type)), false));
-        std::vector<bool> derived; derived.reserve(1);
-        derived.push_back(false);
-        IfcIndexedPolygonalFace_type->set_attributes(attributes, derived);
-    }
-    {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("InnerCoordIndices", new aggregation_type(aggregation_type::list_type, 1, -1, new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IfcPositiveInteger_type))), false));
-        std::vector<bool> derived; derived.reserve(2);
-        derived.push_back(false); derived.push_back(false);
-        IfcIndexedPolygonalFaceWithVoids_type->set_attributes(attributes, derived);
-    }
-    {
         std::vector<const entity::attribute*> attributes; attributes.reserve(2);
         attributes.push_back(new entity::attribute("MappedTo", new named_type(IfcTessellatedFaceSet_type), false));
         attributes.push_back(new entity::attribute("TexCoords", new named_type(IfcTextureVertexList_type), false));
@@ -7579,12 +7534,6 @@ schema_definition* populate_schema() {
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcInterceptorType_type->set_attributes(attributes, derived);
-    }
-    {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
-        std::vector<bool> derived; derived.reserve(3);
-        derived.push_back(false); derived.push_back(false); derived.push_back(false);
-        IfcIntersectionCurve_type->set_attributes(attributes, derived);
     }
     {
         std::vector<const entity::attribute*> attributes; attributes.reserve(6);
@@ -8474,15 +8423,6 @@ schema_definition* populate_schema() {
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcPolygonalBoundedHalfSpace_type->set_attributes(attributes, derived);
-    }
-    {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Closed", new named_type(IfcBoolean_type), true));
-        attributes.push_back(new entity::attribute("Faces", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IfcIndexedPolygonalFace_type)), false));
-        attributes.push_back(new entity::attribute("PnIndex", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IfcPositiveInteger_type)), true));
-        std::vector<bool> derived; derived.reserve(4);
-        derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
-        IfcPolygonalFaceSet_type->set_attributes(attributes, derived);
     }
     {
         std::vector<const entity::attribute*> attributes; attributes.reserve(1);
@@ -9696,12 +9636,6 @@ schema_definition* populate_schema() {
         IfcSchedulingTime_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
-        std::vector<bool> derived; derived.reserve(3);
-        derived.push_back(false); derived.push_back(false); derived.push_back(false);
-        IfcSeamCurve_type->set_attributes(attributes, derived);
-    }
-    {
         std::vector<const entity::attribute*> attributes; attributes.reserve(3);
         attributes.push_back(new entity::attribute("SectionType", new named_type(IfcSectionTypeEnum_type), false));
         attributes.push_back(new entity::attribute("StartProfile", new named_type(IfcProfileDef_type), false));
@@ -9953,13 +9887,6 @@ schema_definition* populate_schema() {
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IfcSphere_type->set_attributes(attributes, derived);
-    }
-    {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Radius", new named_type(IfcPositiveLengthMeasure_type), false));
-        std::vector<bool> derived; derived.reserve(2);
-        derived.push_back(false); derived.push_back(false);
-        IfcSphericalSurface_type->set_attributes(attributes, derived);
     }
     {
         std::vector<const entity::attribute*> attributes; attributes.reserve(1);
@@ -10338,15 +10265,6 @@ schema_definition* populate_schema() {
         IfcSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Curve3D", new named_type(IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("AssociatedGeometry", new aggregation_type(aggregation_type::list_type, 1, 2, new named_type(IfcPcurve_type)), false));
-        attributes.push_back(new entity::attribute("MasterRepresentation", new named_type(IfcPreferredSurfaceCurveRepresentation_type), false));
-        std::vector<bool> derived; derived.reserve(3);
-        derived.push_back(false); derived.push_back(false); derived.push_back(false);
-        IfcSurfaceCurve_type->set_attributes(attributes, derived);
-    }
-    {
         std::vector<const entity::attribute*> attributes; attributes.reserve(4);
         attributes.push_back(new entity::attribute("Directrix", new named_type(IfcCurve_type), false));
         attributes.push_back(new entity::attribute("StartParam", new named_type(IfcParameterValue_type), true));
@@ -10672,16 +10590,18 @@ schema_definition* populate_schema() {
         attributes.push_back(new entity::attribute("PredefinedType", new named_type(IfcTendonTypeEnum_type), false));
         attributes.push_back(new entity::attribute("NominalDiameter", new named_type(IfcPositiveLengthMeasure_type), true));
         attributes.push_back(new entity::attribute("CrossSectionArea", new named_type(IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("SheathDiameter", new named_type(IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new entity::attribute("SheethDiameter", new named_type(IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcTendonType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
+        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
         attributes.push_back(new entity::attribute("Coordinates", new named_type(IfcCartesianPointList3D_type), false));
-        std::vector<bool> derived; derived.reserve(1);
-        derived.push_back(false);
+        attributes.push_back(new entity::attribute("Normals", new aggregation_type(aggregation_type::list_type, 1, -1, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IfcParameterValue_type))), true));
+        attributes.push_back(new entity::attribute("Closed", new named_type(IfcBoolean_type), true));
+        std::vector<bool> derived; derived.reserve(3);
+        derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcTessellatedFaceSet_type->set_attributes(attributes, derived);
     }
     {
@@ -10828,14 +10748,6 @@ schema_definition* populate_schema() {
         IfcTopologyRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("MajorRadius", new named_type(IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("MinorRadius", new named_type(IfcPositiveLengthMeasure_type), false));
-        std::vector<bool> derived; derived.reserve(3);
-        derived.push_back(false); derived.push_back(false); derived.push_back(false);
-        IfcToroidalSurface_type->set_attributes(attributes, derived);
-    }
-    {
         std::vector<const entity::attribute*> attributes; attributes.reserve(1);
         attributes.push_back(new entity::attribute("PredefinedType", new named_type(IfcTransformerTypeEnum_type), true));
         std::vector<bool> derived; derived.reserve(9);
@@ -10874,11 +10786,9 @@ schema_definition* populate_schema() {
         IfcTrapeziumProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Normals", new aggregation_type(aggregation_type::list_type, 1, -1, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IfcParameterValue_type))), true));
-        attributes.push_back(new entity::attribute("Closed", new named_type(IfcBoolean_type), true));
+        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
         attributes.push_back(new entity::attribute("CoordIndex", new aggregation_type(aggregation_type::list_type, 1, -1, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IfcPositiveInteger_type))), false));
-        attributes.push_back(new entity::attribute("PnIndex", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IfcPositiveInteger_type)), true));
+        attributes.push_back(new entity::attribute("NormalIndex", new aggregation_type(aggregation_type::list_type, 1, -1, new aggregation_type(aggregation_type::list_type, 3, 3, new named_type(IfcPositiveInteger_type))), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IfcTriangulatedFaceSet_type->set_attributes(attributes, derived);
@@ -11421,11 +11331,6 @@ schema_definition* populate_schema() {
         IfcGroup_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ToFaceSet", entity::inverse_attribute::set_type, 1, -1, IfcPolygonalFaceSet_type, IfcPolygonalFaceSet_type->attributes()[1]));
-        IfcIndexedPolygonalFace_type->set_inverse_attributes(attributes);
-    }
-    {
         std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
         attributes.push_back(new entity::inverse_attribute("LibraryInfoForObjects", entity::inverse_attribute::set_type, 0, -1, IfcRelAssociatesLibrary_type, IfcRelAssociatesLibrary_type->attributes()[0]));
         attributes.push_back(new entity::inverse_attribute("HasLibraryReferences", entity::inverse_attribute::set_type, 0, -1, IfcLibraryReference_type, IfcLibraryReference_type->attributes()[2]));
@@ -11719,12 +11624,11 @@ schema_definition* populate_schema() {
         IfcTypeResource_type->set_inverse_attributes(attributes);
     }
 
-    std::vector<const declaration*> declarations; declarations.reserve(1174);
+    std::vector<const declaration*> declarations; declarations.reserve(1164);
     declarations.push_back(IfcAbsorbedDoseMeasure_type);
     declarations.push_back(IfcAccelerationMeasure_type);
     declarations.push_back(IfcAmountOfSubstanceMeasure_type);
     declarations.push_back(IfcAngularVelocityMeasure_type);
-    declarations.push_back(IfcArcIndex_type);
     declarations.push_back(IfcAreaDensityMeasure_type);
     declarations.push_back(IfcAreaMeasure_type);
     declarations.push_back(IfcBinary_type);
@@ -11770,7 +11674,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcLabel_type);
     declarations.push_back(IfcLanguageId_type);
     declarations.push_back(IfcLengthMeasure_type);
-    declarations.push_back(IfcLineIndex_type);
     declarations.push_back(IfcLinearForceMeasure_type);
     declarations.push_back(IfcLinearMomentMeasure_type);
     declarations.push_back(IfcLinearStiffnessMeasure_type);
@@ -11806,7 +11709,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcPowerMeasure_type);
     declarations.push_back(IfcPresentableText_type);
     declarations.push_back(IfcPressureMeasure_type);
-    declarations.push_back(IfcPropertySetDefinitionSet_type);
     declarations.push_back(IfcRadioActivityMeasure_type);
     declarations.push_back(IfcRatioMeasure_type);
     declarations.push_back(IfcReal_type);
@@ -11848,7 +11750,9 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcVolumetricFlowRateMeasure_type);
     declarations.push_back(IfcWarpingConstantMeasure_type);
     declarations.push_back(IfcWarpingMomentMeasure_type);
+    declarations.push_back(IfcArcIndex_type);
     declarations.push_back(IfcBoxAlignment_type);
+    declarations.push_back(IfcLineIndex_type);
     declarations.push_back(IfcNormalisedRatioMeasure_type);
     declarations.push_back(IfcPositiveRatioMeasure_type);
     declarations.push_back(IfcActionRequestTypeEnum_type);
@@ -11982,7 +11886,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcPipeFittingTypeEnum_type);
     declarations.push_back(IfcPipeSegmentTypeEnum_type);
     declarations.push_back(IfcPlateTypeEnum_type);
-    declarations.push_back(IfcPreferredSurfaceCurveRepresentation_type);
     declarations.push_back(IfcProcedureTypeEnum_type);
     declarations.push_back(IfcProfileTypeEnum_type);
     declarations.push_back(IfcProjectOrderTypeEnum_type);
@@ -12372,8 +12275,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcGeographicElementType_type);
     declarations.push_back(IfcGeometricCurveSet_type);
     declarations.push_back(IfcIShapeProfileDef_type);
-    declarations.push_back(IfcIndexedPolygonalFace_type);
-    declarations.push_back(IfcIndexedPolygonalFaceWithVoids_type);
     declarations.push_back(IfcLShapeProfileDef_type);
     declarations.push_back(IfcLaborResourceType_type);
     declarations.push_back(IfcLine_type);
@@ -12466,7 +12367,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcSpatialZone_type);
     declarations.push_back(IfcSpatialZoneType_type);
     declarations.push_back(IfcSphere_type);
-    declarations.push_back(IfcSphericalSurface_type);
     declarations.push_back(IfcStructuralActivity_type);
     declarations.push_back(IfcStructuralItem_type);
     declarations.push_back(IfcStructuralMember_type);
@@ -12475,7 +12375,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcStructuralSurfaceMemberVarying_type);
     declarations.push_back(IfcStructuralSurfaceReaction_type);
     declarations.push_back(IfcSubContractResourceType_type);
-    declarations.push_back(IfcSurfaceCurve_type);
     declarations.push_back(IfcSurfaceCurveSweptAreaSolid_type);
     declarations.push_back(IfcSurfaceOfLinearExtrusion_type);
     declarations.push_back(IfcSurfaceOfRevolution_type);
@@ -12483,7 +12382,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcTask_type);
     declarations.push_back(IfcTaskType_type);
     declarations.push_back(IfcTessellatedFaceSet_type);
-    declarations.push_back(IfcToroidalSurface_type);
     declarations.push_back(IfcTransportElementType_type);
     declarations.push_back(IfcTriangulatedFaceSet_type);
     declarations.push_back(IfcWindowLiningProperties_type);
@@ -12563,7 +12461,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcHumidifierType_type);
     declarations.push_back(IfcIndexedPolyCurve_type);
     declarations.push_back(IfcInterceptorType_type);
-    declarations.push_back(IfcIntersectionCurve_type);
     declarations.push_back(IfcInventory_type);
     declarations.push_back(IfcJunctionBoxType_type);
     declarations.push_back(IfcLaborResource_type);
@@ -12585,7 +12482,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcPipeFittingType_type);
     declarations.push_back(IfcPipeSegmentType_type);
     declarations.push_back(IfcPlateType_type);
-    declarations.push_back(IfcPolygonalFaceSet_type);
     declarations.push_back(IfcPolyline_type);
     declarations.push_back(IfcPort_type);
     declarations.push_back(IfcProcedure_type);
@@ -12604,7 +12500,6 @@ schema_definition* populate_schema() {
     declarations.push_back(IfcRelAggregates_type);
     declarations.push_back(IfcRoofType_type);
     declarations.push_back(IfcSanitaryTerminalType_type);
-    declarations.push_back(IfcSeamCurve_type);
     declarations.push_back(IfcShadingDeviceType_type);
     declarations.push_back(IfcSite_type);
     declarations.push_back(IfcSlabType_type);

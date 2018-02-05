@@ -1837,7 +1837,7 @@ void IfcParse::IfcHdf5File::write_population(H5::Group& population_group, instan
 		
 		const std::string current_entity_name = IfcSchema::Type::ToString(*dsn_it);
 		const std::string dataset_path = current_entity_name + "_instances";
-
+		
 		auto instances = ifcfile.by_type(*dsn_it);
 		hsize_t num_instances = instances.size();
 
@@ -2003,6 +2003,11 @@ public:
 				pair[i] = read<int>((uint8_t*)data + offset, &mt);
 			}
 
+#ifdef RENUMBER_INSTANCES
+			std::string path = dataset_names_[pair[0]];
+			return instance_name(path, pair[1]);
+#endif
+
 			auto ppair = std::make_pair(pair[0], pair[1]);
 
 			auto cache_it = cache_.find(ppair);
@@ -2027,20 +2032,22 @@ public:
 
 			H5::DataSet dataset = file_.openDataSet(path);
 			H5::CompType datatype = dataset.getCompType();
+
 			H5::DataSpace dataspace = dataset.getSpace();
 			if (dataspace.getSimpleExtentNdims() != 1) {
 				throw std::runtime_error("Expected one-dimensional data");
 			}
+
+			int idx = datatype.getMemberIndex(Entity_Instance_Identifier);
+			size_t inst_name_offset = datatype.getMemberOffset(idx);
+			H5::DataType MEMBER(member_type, datatype, idx);
+
 			dataspace.selectElements(H5S_SELECT_SET, 1, pair + 1);
 			const hsize_t one = 1;
 			H5::DataSpace memspace(1, &one);
 
 			uint8_t* buffer = new uint8_t[datatype.getSize()];
 			dataset.read(buffer, datatype, memspace, dataspace);
-
-			int idx = datatype.getMemberIndex(Entity_Instance_Identifier);
-			size_t inst_name_offset = datatype.getMemberOffset(idx);
-			H5::DataType MEMBER(member_type, datatype, idx);
 
 			size_t inst_name = read<int>((uint8_t*)buffer + inst_name_offset, &member_type);
 
@@ -2094,7 +2101,7 @@ public:
 			const size_t offs = dtype.getMemberOffset(i);
 			H5::DataType MEMBER(instidt, dtype, i);
 
-			const int name = read<int>(buffer + offs, &instidt);			
+			const int name = read<int>(buffer + offs, &instidt);
 
 			instidt.close();
 			dtype.close();
@@ -2114,7 +2121,15 @@ public:
 	H5::H5File& file() { return file_; }
 };
 
-void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::string& path = no_name, int row = -1, const std::bitset<64>& bitmask = many_trues, int padded_length=-1) {
+// https://stackoverflow.com/questions/994593/how-to-do-an-integer-log2-in-c
+int uint64_log2(uint64_t n)
+{
+#define S(k) if (n >= (UINT64_C(1) << k)) { i += k; n >>= k; }
+	int i = -(n == 0); S(32); S(16); S(8); S(4); S(2); S(1); return i;
+#undef S
+}
+
+void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::DataType* dt, const std::string& name = no_name, const std::string& path = no_name, int row = -1, const std::bitset<64>& bitmask = many_trues, int padded_length=-1, const IfcParse::parameter_type* attribute_type=nullptr) {
 	if (dt->getClass() == H5T_COMPOUND) {
 
 		// std::vector<IfcParse::entity::attribute*> schema_attributes;
@@ -2122,20 +2137,17 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		std::vector<bool>::const_iterator derived_it = derived.begin();
 		std::vector<std::string> attribute_names;
 		std::vector<std::string>::const_iterator attribute_name_it = attribute_names.begin();
-		std::vector<const IfcParse::select_type*> attribute_types_select;
-		
-		if (&name != &no_name) {
+		std::vector<const IfcParse::parameter_type*> attribute_types;
+
+		// Check whether we have already traversed into a entity attribute compound
+		if (&name != &no_name && attribute_type == nullptr) {
 			auto entity = get_schema().declaration_by_name(IfcSchema::Type::FromString(boost::to_upper_copy(name)))->as_entity();
 			auto attributes = entity->all_attributes();
 			std::transform(attributes.begin(), attributes.end(), std::back_inserter(attribute_names), [](const IfcParse::entity::attribute* attr) {
 				return attr->name();
 			});
-			std::transform(attributes.begin(), attributes.end(), std::back_inserter(attribute_types_select), [](const IfcParse::entity::attribute* attr) {
-				if (attr->type_of_attribute()->as_named_type()) {
-					return attr->type_of_attribute()->as_named_type()->declared_type()->as_select_type();
-				} else {
-					return (const IfcParse::select_type*) nullptr;
-				}
+			std::transform(attributes.begin(), attributes.end(), std::back_inserter(attribute_types), [](const IfcParse::entity::attribute* attr) {
+				return attr->type_of_attribute();
 			});
 			derived = entity->derived();
 			derived_it = derived.begin();
@@ -2159,6 +2171,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 		} else {
 			int ifc_idx = 0;
 			const std::bitset<64>* mask = &bitmask;
+			int mask_it = 0;
 			std::string select_valuation;
 			bool is_instance = false;
 			bool is_select = false;
@@ -2176,19 +2189,30 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 					mask = new std::bitset<64>(read<int>(member_ptr, &member_type));
 				} else if (member_name == Entity_Instance_Identifier) {
 					is_instance = true;
-					int inst_name = resolver.instance_name(path, row);
-					if (inst_name == 0) {
-						inst_name = read<int>(member_ptr, &member_type);
-					}
+					int inst_name = read<int>(member_ptr, &member_type);
+#ifdef RENUMBER_INSTANCES
+					int inst_name_ = resolver.instance_name(path, row);
+					if (inst_name_ != 0) inst_name = inst_name_;
+#endif
 					output << "#" << inst_name << "=" << boost::to_upper_copy(name) << "(";
 				} else if (member_name == select_bitmap) {
 					if (i != 0) {
 						throw std::runtime_error("Unexpected within select compound");
 					}
 
-					if (attribute_types_select[ifc_idx] == nullptr) {
+					const IfcParse::select_type* decl = nullptr;
+
+					if (attribute_type) {
+						if (attribute_type->as_named_type()) {
+							decl = attribute_type->as_named_type()->declared_type()->as_select_type();
+						}
+					}
+
+					if (decl == nullptr) {
 						throw std::runtime_error("Select compound encountered for non-select type");
 					}
+
+					is_select = true;
 
 					const std::string next_member_name = ct->getMemberName(1);
 					int extra_offset = 1;
@@ -2196,55 +2220,52 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 					if (has_path) {
 						extra_offset += 1;
 					}
-					int select_valuation_int = read<int>(member_ptr, &member_type) + extra_offset;
+					int select_valuation_int = uint64_log2(read<int>(member_ptr, &member_type)) + extra_offset;
 					select_valuation = ct->getMemberName(select_valuation_int);
-					if (!has_path) {
+
+					if (!has_path && select_valuation != "instance-value") {
 						// we need to do a reverse lookup in order to find express type from matching HDF5 type in unambiguous select instantiation
+						// for instance reference such a look up is not necessary as they are written as a instance reference.
 
 						std::set<const IfcParse::declaration*> leafs_schema;
-						visit_select(attribute_types_select[ifc_idx], leafs_schema);
-						
-						bool path_emitted = false;
+						visit_select(decl, leafs_schema);
+
 						for (auto it = leafs_schema.begin(); it != leafs_schema.end(); ++it) {
-							const IfcParse::declaration* decl = (*it);
-							if (decl->as_entity()) {
+							const IfcParse::declaration* leaf_decl = (*it);
+							if (leaf_decl->as_entity()) {
 								continue;
 							}
 
 							IfcParse::Hdf5Settings settings;
-							auto leaf_type = type_mapper(nullptr, nullptr, nullptr, settings).make_select_leaf(decl, no_instances);
+							auto leaf_type = type_mapper(nullptr, nullptr, nullptr, settings).make_select_leaf(leaf_decl, no_instances);
 
 							if (select_valuation == leaf_type.first) {
-								output << decl->name() << "(";
-								path_emitted = true;
+								output << boost::to_upper_copy(leaf_decl->name()) << "(";
+								is_selected_simple_type = true;
 							}
 						}
 
-						if (!path_emitted) {
+						if (!is_selected_simple_type) {
 							throw std::runtime_error("Unable to lookup type path from instantiation");
 						}
 					}
-				} else if (member_name == type_path) {
-					const char* const ty = read<char*>(member_ptr, &member_type);
-					auto decl = get_schema().declaration_by_name(ty);
-					if (decl->as_entity()) {
-						select_valuation = "instance-value";
+				} else if (member_name == type_path || member_name == type_code) {
+					std::string type_string;
+					const IfcParse::declaration* decl;
+					
+					if (member_name == type_path) {
+						const char* const ty = read<char*>(member_ptr, &member_type);
+						type_string = ty;
+						decl = get_schema().declaration_by_name(type_string);
 					} else {
-						std::string type_string = ty;
-						boost::to_upper(type_string);
-						output << type_string << "(";
-						IfcParse::Hdf5Settings settings;
-						select_valuation = type_mapper(nullptr, nullptr, nullptr, settings).make_select_leaf(decl, no_instances).first;
-						is_selected_simple_type = true;
+						IfcSchema::Type::Enum ty = (IfcSchema::Type::Enum) read<int>(member_ptr, &member_type);
+						decl = get_schema().declaration_by_name(ty);
+						type_string = decl->name();
 					}
-				} else if (member_name == type_code) {
-					is_select = true;
-					IfcSchema::Type::Enum ty = (IfcSchema::Type::Enum) read<int>(member_ptr, &member_type);
-					auto decl = get_schema().declaration_by_name(ty);
+
 					if (decl->as_entity()) {
 						select_valuation = "instance-value";
 					} else {
-						std::string type_string = IfcSchema::Type::ToString(ty);
 						boost::to_upper(type_string);
 						output << type_string << "(";
 						IfcParse::Hdf5Settings settings;
@@ -2270,8 +2291,12 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 						if (ifc_idx) {
 							output << ",";
 						}
-						if ((*mask)[ifc_idx]) {
-							visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues);
+						if ((*mask)[mask_it++]) {
+							const IfcParse::parameter_type* decl = nullptr;
+							if (!attribute_types.empty()) {
+								decl = attribute_types[ifc_idx];
+							}
+							visit(resolver, output, member_ptr, &member_type, name, path, -1, many_trues, -1, decl);
 						} else {
 							output << "$";
 						}
@@ -2308,6 +2333,18 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 			}
 		}
 	} else if (dt->getClass() == H5T_VLEN) {
+		const IfcParse::parameter_type* elem_decl = nullptr;
+
+		if (attribute_type->as_aggregation_type()) {
+			elem_decl = attribute_type->as_aggregation_type()->type_of_element();
+		} else if (attribute_type->as_named_type()->declared_type()->as_type_declaration() &&
+			attribute_type->as_named_type()->declared_type()->as_type_declaration()->declared_type()->as_aggregation_type())
+		{
+			elem_decl = attribute_type->as_named_type()->declared_type()->as_type_declaration()->declared_type()->as_aggregation_type()->type_of_element();
+		} else {
+			throw std::runtime_error("Variable length field encountered for non aggregation type");
+		}
+
 		hvl_t* ht = (hvl_t*)buffer;
 		H5::VarLenType* vt = (H5::VarLenType*) dt;
 		H5::DataType dt2 = vt->getSuper();
@@ -2316,7 +2353,7 @@ void visit(instance_resolver& resolver, std::ostream& output, void* buffer, H5::
 			if (i) {
 				output << ",";
 			}
-			visit(resolver, output, (uint8_t*)ht->p + i * dt2.getSize(), &dt2);
+			visit(resolver, output, (uint8_t*)ht->p + i * dt2.getSize(), &dt2, no_name, no_name, -1, many_trues, -1, elem_decl);
 		}
 		output << ")";
 		dt2.close();

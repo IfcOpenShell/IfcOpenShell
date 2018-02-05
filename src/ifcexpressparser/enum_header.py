@@ -22,7 +22,7 @@ import codegen
 
 class EnumHeader(codegen.Base):
     def __init__(self, mapping):
-        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
+        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]), key=lambda s: s.lower())
         
         self.str = templates.enum_header % {
             'schema_name_upper' : mapping.schema.name.upper(),
