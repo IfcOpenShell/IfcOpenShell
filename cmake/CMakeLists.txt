@@ -307,6 +307,7 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
         ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-latebound.h
         ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}.cpp
         ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-latebound.cpp
+        ${IFC_PARSE_DIR}/Ifc${IFC_VERSION}-schema.cpp
         PARENT_SCOPE
     )
 endfunction()
