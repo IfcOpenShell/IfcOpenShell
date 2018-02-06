@@ -212,7 +212,6 @@ namespace IfcParse {
 			std::string name_;
 			aggregate_type type_of_aggregation_;
 			int bound1_, bound2_;
-			parameter_type* type_of_element_;
 			const entity* entity_reference_;
 			const attribute* attribute_reference_;
 		public:

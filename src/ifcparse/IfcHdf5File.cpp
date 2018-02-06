@@ -706,11 +706,13 @@ void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType&
 	H5::CompType* compound = (H5::CompType*) &datatype;
 
 	auto attributes = v->declaration().all_attributes();
+	auto inverse_attributes = v->declaration().all_inverse_attributes();
+
 	// TFK: Creating copies
 	// TFK: Do this once for every entity
-	std::vector<std::string> attribute_names;
+	std::vector<std::string> attribute_names, inverse_attribute_names;
 	attribute_names.reserve(attributes.size());
-
+	
 	std::transform(attributes.begin(), attributes.end(),
 		std::back_inserter(attribute_names),
 		[](const IfcParse::entity::attribute* attr) {
@@ -735,19 +737,35 @@ void IfcParse::IfcHdf5File::write_instance(void*& ptr, T& visitor, H5::DataType&
 			advance(ptr, set_unset_bitmap_size);
 		} else {
 			auto it = std::find(attribute_names.begin(), attribute_names.end(), name);
-			if (it == attribute_names.end()) {
-				throw std::runtime_error("Unexpected compound member");
-			}
-			
-			int ifc_attr_idx = std::distance(attribute_names.begin(), it);
 
-			Argument* attr = v->data().getArgument(ifc_attr_idx);
-			if (!attr->isNull()) {
-				set_unset_bitmap_value |= (1 << ifc_hdf5_idx);
+			if (it == attribute_names.end()) {
+				auto inv = std::find_if(inverse_attributes.begin(), inverse_attributes.end(), [&name](const IfcParse::entity::inverse_attribute*& attr) {
+					return attr->name() == name;
+				});
+				
+				if (inv == inverse_attributes.end()) {
+					throw std::runtime_error("Unexpected compound member");
+				}
+
+				// inverse attribute
+				auto eref = (*inv)->entity_reference();
+				auto attr_idx = eref->attribute_index((*inv)->attribute_reference());
+
+				auto instances = v->data().getInverse(eref->type(), attr_idx);
+				std::vector<IfcUtil::IfcBaseClass*> vec(instances->begin(), instances->end());
+				visitor.visit(ptr, attr_type, vec);
+			} else {
+				// forward attribute
+				int ifc_attr_idx = std::distance(attribute_names.begin(), it);
+
+				Argument* attr = v->data().getArgument(ifc_attr_idx);
+				if (!attr->isNull()) {
+					set_unset_bitmap_value |= (1 << ifc_hdf5_idx);
+				}
+				ifc_hdf5_idx++;
+				write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, visitor, attr_type);
+				apply_attribute_visitor(attr, attributes[ifc_attr_idx]).apply(attribute_visitor);
 			}
-			ifc_hdf5_idx ++;
-			write_visit_instance_attribute/*<typename T::locator_type>*/ attribute_visitor(ptr, visitor, attr_type);
-			apply_attribute_visitor(attr, attributes[ifc_attr_idx]).apply(attribute_visitor);
 		}
 	}
 
@@ -1505,10 +1523,33 @@ H5::CompType* type_mapper::operator()(const IfcParse::entity* e, const boost::op
 	if (settings_.instantiate_inverse()) {
 		for (auto it = inverse_attributes.begin(); it != inverse_attributes.end(); ++it) {
 			const std::string& name = (*it)->name();
-			// H5::DataType* ir_copy = new H5::DataType();
-			// ir_copy->copy(*instance_reference_);
-			const H5::DataType* type = new H5::VarLenType(instance_reference_);
-			h5_attributes.push_back(std::make_pair(name, type));
+			const H5::DataType* type = nullptr;
+			if (padded_ && instances) {
+				hsize_t max_len = 0;
+
+				auto eref = (*it)->entity_reference();
+				auto attr_idx = eref->attribute_index((*it)->attribute_reference());
+
+				std::for_each(instances->begin(), instances->end(), [&max_len, eref, attr_idx](IfcUtil::IfcBaseClass*& inst) {
+					auto s = inst->data().getInverse(eref->type(), attr_idx)->size();
+					if (s > max_len) {
+						max_len = s;
+					}
+				});
+
+				if (max_len > 0) {
+					std::vector< IfcParse::IfcHdf5File::compound_member > members;
+					members.push_back(std::make_pair(std::string("length"), new H5::PredType(H5::PredType::NATIVE_UINT32)));
+					members.push_back(std::make_pair(std::string("data"), new H5::ArrayType(*instance_reference_, 1, &max_len)));
+					type = create_compound(members);
+				}
+			} else {
+				type = new H5::VarLenType(instance_reference_);
+			}
+			if (type != nullptr) {
+				// Padded serialization may omit attributes
+				h5_attributes.push_back(std::make_pair(name, type));
+			}
 		}
 	}
 
