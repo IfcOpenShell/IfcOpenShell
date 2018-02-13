@@ -10,6 +10,8 @@
 #pragma message("warning: HDF5 compression support is recommended")
 #endif
 
+#define RENUMBER_INSTANCES
+
 // Some string definitions used throughout this code
 namespace {
     const char* const select_bitmap = "select_bitmap";
@@ -2045,8 +2047,8 @@ public:
 			}
 
 #ifdef RENUMBER_INSTANCES
-			std::string path = dataset_names_[pair[0]];
-			return instance_name(path, pair[1]);
+			std::string path_ = dataset_names_[pair[0]];
+			return instance_name(path_, pair[1]);
 #endif
 
 			auto ppair = std::make_pair(pair[0], pair[1]);

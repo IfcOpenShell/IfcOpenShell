@@ -29,6 +29,7 @@
 
 #pragma warning(disable:4100) 
 
+// A comparison operator that is used to isolate the shared hierarchy
 class ifc_inst_cmp {
 public:
 
@@ -159,9 +160,10 @@ public:
 	}
 };
 
-// Office_A_20110811_optimized.ifc Office_S_20110811_optimized.ifc Office_MEP_20110811_optimized.ifc
+// Usage: hdf5_federate Office_A_20110811_optimized.ifc Office_S_20110811_optimized.ifc Office_MEP_20110811_optimized.ifc
 int main(int argc, char** argv) {
 	
+	// A set of datatypes for the shared hierarchy
 	std::set<IfcSchema::Type::Enum> shared {
 		IfcSchema::Type::IfcSite,
 		IfcSchema::Type::IfcConversionBasedUnit,
@@ -177,13 +179,14 @@ int main(int argc, char** argv) {
 		IfcSchema::Type::IfcBuildingStorey
 	};
 
+	// Open the set of input files
 	std::vector<IfcParse::IfcFile*> files;
-
 	for (int i = 1; i < argc; ++i) {
 		files.push_back(new IfcParse::IfcFile());
 		files.back()->Init(argv[i]);
 	}
 
+	// Detect shared instances
 	std::set<IfcUtil::IfcBaseClass*> shared_instances;
 
 	for (auto& ty : shared) {	
@@ -206,6 +209,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	// Follow forward references for shared instances
 	std::set<IfcUtil::IfcBaseClass*> shared_instances_and_refs;
 
 	for (auto& inst : shared_instances) {
@@ -224,6 +228,7 @@ int main(int argc, char** argv) {
 	time(&now_);
 	int now = (int)now_;
 	
+	// Create a novel ownerhistory for the shared hierarchy
 	IfcSchema::IfcPerson* person = new IfcSchema::IfcPerson(std::string("tfk"), std::string("Krijnen"), std::string("Thomas"), boost::none, boost::none, boost::none, boost::none, boost::none);
 	IfcSchema::IfcOrganization* org = new IfcSchema::IfcOrganization(std::string("TU/e"), "Eindhoven University of Technology", boost::none, boost::none, boost::none);
 	IfcSchema::IfcPersonAndOrganization* pando = new IfcSchema::IfcPersonAndOrganization(person, org, boost::none);
@@ -253,6 +258,7 @@ int main(int argc, char** argv) {
 	shared_instances_and_refs.clear();
 	shared_instances_and_refs.insert(shared_instances_and_refs_vector.begin(), shared_instances_and_refs_vector.end());
 
+	// Assign the new ownerhistory to rooted elements in the shared hierarchy
 	std::for_each(shared_instances_and_refs.begin(), shared_instances_and_refs.end(), [owner_history](IfcUtil::IfcBaseClass* inst) {
 		const IfcParse::entity* e = inst->declaration().as_entity();
 		if (e) {
@@ -273,21 +279,14 @@ int main(int argc, char** argv) {
 		}
 	});
 
-	/*
-	for (auto& i : shared_instances_and_refs) {
-		if (shared_instances.find(i) == shared_instances.end()) {
-			std::cerr << i->data().toString() << std::endl;
-		}
-	}
-
-	std::cerr << "----" << std::endl;
-	*/
-
 	std::set<IfcUtil::IfcBaseClass*, ifc_inst_cmp> shared_instances_and_refs_unique(shared_instances_and_refs.begin(), shared_instances_and_refs.end());
 	
-	
+	// Serialize models into different groups
+
 	IfcParse::Hdf5Settings settings;
 	settings.profile() = IfcParse::Hdf5Settings::standard_referenced;
+	settings.compress() = true;
+	settings.chunk_size() = 1024;
 
 	std::vector<std::string> names;
 	std::vector<std::pair<std::string::const_iterator, std::string::const_iterator>> fixes;

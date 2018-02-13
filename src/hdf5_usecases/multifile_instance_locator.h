@@ -196,7 +196,7 @@ public:
 		space.selectElements(H5S_SELECT_SET, 1, &coord);
 		const std::string path = IfcSchema::Type::ToString(pop->first[a]);
 
-		std::string full_path = group->getObjName() + "/" + path + "_instances";
+		std::string full_path = group->getObjName() + "/" + path + "_objects" + "/" + path + "_instances";
 
 		root_file_->reference(ptr, full_path, space);
 		ptr = static_cast<uint8_t*>(ptr) + sizeof(hdset_reg_ref_t);

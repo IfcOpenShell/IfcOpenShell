@@ -93,6 +93,7 @@ void generate_bounding_boxes(IfcParse::IfcFile& f, const std::string& fn) {
 		return compound;
 	};
 
+	// Generate non-aa bounding boxes in local coordinates as a tuple of six doubles from existing IfcProductDefinitionShape instances
 	std::for_each(defs.begin(), defs.end(), [&kernel, &brep_as_compound, &str, N, &n, &settings](IfcSchema::IfcProductDefinitionShape* def) {
 		Bnd_Box box;
 
@@ -138,6 +139,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		return a->data().id() < b->data().id();
 	});
 
+	// Initial choice of geometric types
 	std::set<IfcSchema::Type::Enum> geometric_types{
 		IfcSchema::Type::IfcStyledItem, IfcSchema::Type::IfcMaterialDefinitionRepresentation, IfcSchema::Type::IfcStyledRepresentation,
 		IfcSchema::Type::IfcSurfaceStyleRendering, IfcSchema::Type::IfcSurfaceStyle, IfcSchema::Type::IfcPresentationLayerAssignment,
@@ -145,6 +147,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	};
 	std::set<IfcSchema::Type::Enum> other_types;
 
+	// Find all instances
 	std::set<IfcUtil::IfcBaseClass*> geometric_instances;
 
 	for (auto ty : geometric_types) {
@@ -170,6 +173,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		}
 	});
 
+	// Recurse over forward attributes
 	auto vist_geometric = [&f, &geometric_types, &geometric_instances, &N, &n](IfcUtil::IfcBaseEntity* def) {
 		auto refs = f.traverse(def);
 		geometric_instances.insert(refs->begin(), refs->end());
@@ -188,6 +192,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	
 	std::for_each(defs.begin(), defs.end(), vist_geometric);
 
+	// Include connection geometry (e.g space boundaries) as well
 	auto connection_geom = f.entitiesByType<IfcSchema::IfcConnectionGeometry>();
 	
 	n = 0;
@@ -195,6 +200,7 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 	
 	std::for_each(connection_geom->begin(), connection_geom->end(), vist_geometric);
 
+	// Traverse again all instances, but now to detect which geometric types are fully and only shared by geometric instances
 	std::function<void(IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*)> fn;
 	fn = [&f, &geometric_instances, &other_types, &fn](IfcUtil::IfcBaseClass* root, IfcUtil::IfcBaseClass* inst) {
 		if (geometric_instances.find(inst) == geometric_instances.end()) {
@@ -235,8 +241,6 @@ void find_geometric_types(IfcParse::IfcFile& f, const std::string& tfn) {
 		const size_t name = ty;
 		str.write((char*)&name, sizeof(size_t));
 	}
-
-	std::cin.get();
 }
 
 int main(int argc, char** argv) {
@@ -341,6 +345,7 @@ int main(int argc, char** argv) {
 	auto id = f.FreshId();
 	int num_points_added = 0;
 
+	// Create bounding box representation from the 6-tuple definitions
 	{
 		std::ifstream str(cache_fn.c_str(), std::ios_base::binary);
 		while (!str.eof()) {
@@ -387,6 +392,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	// Generate proper buckets of data and serialize
+
 	all_old_defs.insert(all_old_defs.end(), old_defs.begin(), old_defs.end());
 	all_old_defs.insert(all_old_defs.end(), old_prop_defs.begin(), old_prop_defs.end());
 	all_old_defs.insert(all_old_defs.end(), old_geom_defs.begin(), old_geom_defs.end());
@@ -413,7 +420,7 @@ int main(int argc, char** argv) {
 	IfcParse::Hdf5Settings settings;
 	settings.profile() = IfcParse::Hdf5Settings::padded;
 	settings.compress() = true;
-	settings.chunk_size() = 256;
+	settings.chunk_size() = 1024;
 
 	H5::H5File hdf(argv[1] + std::string(".hdf"), H5F_ACC_TRUNC);
 	H5::H5File geom_hdf(argv[1] + std::string("-geometry.hdf"), H5F_ACC_TRUNC);
