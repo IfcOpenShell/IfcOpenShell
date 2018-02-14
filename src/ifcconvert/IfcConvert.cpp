@@ -298,6 +298,8 @@ int main(int argc, char** argv)
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
+		("building-local-placement",
+			"Similar to --site-local-placement, but placing elements in locally in the parent IfcBuilding coord system")
         ("precision", po::value<short>(&precision)->default_value(SerializerSettings::DEFAULT_PRECISION),
             "Sets the precision to be used to format floating-point values, 15 by default. "
             "Use a negative value to use the system's default precision (should be 6 typically). "
@@ -370,6 +372,7 @@ int main(int argc, char** argv)
     const bool center_model = vmap.count("center-model") != 0 ;
     const bool model_offset = vmap.count("model-offset") != 0 ;
 	const bool site_local_placement = vmap.count("site-local-placement") != 0 ;
+	const bool building_local_placement = vmap.count("building-local-placement") != 0 ;
     const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
 
 #ifdef HAVE_ICU
@@ -504,6 +507,8 @@ int main(int argc, char** argv)
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
 	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
+	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
+
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -614,8 +619,8 @@ int main(int argc, char** argv)
     if (center_model || model_offset) {
         double* offset = serializer->settings().offset;
         if (center_model) {
-			if (site_local_placement) {
-				Logger::Error("Cannot use --center-model together with --site-local-placement");
+			if (site_local_placement || building_local_placement) {
+				Logger::Error("Cannot use --center-model together with --{site,building}-local-placement");
 				delete serializer;
 				return EXIT_FAILURE;
 			}
