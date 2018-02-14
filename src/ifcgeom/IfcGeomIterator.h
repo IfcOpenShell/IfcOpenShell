@@ -683,7 +683,12 @@ namespace IfcGeom {
             kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
             kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
-			if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
+			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
+				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
+					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
+				}
+				kernel.set_conversion_placement_rel_to(IfcSchema::Type::IfcBuilding);
+			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 				kernel.set_conversion_placement_rel_to(IfcSchema::Type::IfcSite);
 			}
 		}
