@@ -407,12 +407,20 @@ namespace IfcGeom {
 
 					geometry_reuse_ok_for_current_representation_ = reuse_ok_(unfiltered_products);
 
-					if (!geometry_reuse_ok_for_current_representation_ && representation->RepresentationMap()->size() == 1) {
+					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+
+					if (!geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
 						// unfiltered_products contains products represented by this representation by means of mapped items.
 						// For example because of openings applied to products, reuse might not be acceptable and then the
 						// products will be processed by means of their immediate representation and not the mapped representation.
-						_nextShape();
-						continue;
+
+						// IfcRepresentationMaps are also used for IfcTypeProducts, so an additional check is performed whether the map
+						// is indeed used by IfcMappedItems.
+						IfcSchema::IfcRepresentationMap* map = *maps->begin();
+						if (map->MapUsage()->size() > 0) {
+							_nextShape();
+							continue;
+						}
 					}
 
 					bool representation_processed_as_mapped_item = false;
