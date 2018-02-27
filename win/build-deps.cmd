@@ -154,7 +154,7 @@ set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\%VS_PLATFORM%\lib
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 
-call :DownloadFile http://downloads.sourceforge.net/project/boost/boost/%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
