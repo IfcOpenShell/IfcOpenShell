@@ -267,11 +267,13 @@ if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error 
 
-set DEPENDENCY_NAME=Open CASCADE 7.1.0
-set OCCT_FILENAME=occt-89aebde
+set OCCT_HASH=88af392
+set OCCT_VERSION=7.2.0
+set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
+set OCCT_FILENAME=occt-%OCCT_HASH%
 set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
 cd "%DEPS_DIR%"
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=89aebde;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=%OCCT_HASH%;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
 if not %ERRORLEVEL%==0 goto :Error
 
 if exist "%DEPS_DIR%\%OCCT_FILENAME%" (
@@ -289,24 +291,43 @@ if not %ERRORLEVEL%==0 goto :Error
 set DEPENDENCY_NAME=Additional files
 :: Somehow these two files are not present in the downloaded
 :: snapshot. Path names being too long for gitweb snapshot?
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx
+
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx
 if not %ERRORLEVEL%==0 goto :Error
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx
+
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx
 if not %ERRORLEVEL%==0 goto :Error
-set DEPENDENCY_NAME=Open CASCADE 7.1.0
+
+if "%OCCT_VERSION%"=="7.2.0" (
+
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/StepVisual/StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx" "%OCCT_FILENAME%\src\StepVisual" StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx
+if not %ERRORLEVEL%==0 goto :Error
+
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx
+if not %ERRORLEVEL%==0 goto :Error
+
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/StepVisual/StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx" "%OCCT_FILENAME%\src\StepVisual" StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx
+if not %ERRORLEVEL%==0 goto :Error
+
+call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx
+if not %ERRORLEVEL%==0 goto :Error
+
+)
+
+set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 
 :: Patching always blindly would trigger a rebuild each time
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
     echo Patching %DEPENDENCY_NAME%'s CMake files
     REM OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
-    copy /y "%~dp0patches\89aebde_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
+    if exist "%~dp0patches\%OCCT_HASH%_CMakeLists.txt" copy /y "%~dp0patches\%OCCT_HASH%_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
     REM Patch OCCT to be built against the static MSVC run-time.
-    copy /y "%~dp0patches\89aebde_adm-cmake-occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
+    if exist "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_defs_flags.cmake" copy /y "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
     REM OCCT tries to deploy PDBs from the bin directory even if static build is used.
-    copy /y "%~dp0patches\89aebde_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
+    if exist "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_toolkit.cmake" copy /y "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
     REM Patch header file for HAVE_NO_DLL
-    copy /y "%~dp0patches\89aebde_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
+    if exist "%~dp0patches\%OCCT_HASH%_Standard_Macro.hxx" copy /y "%~dp0patches\%OCCT_HASH%_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
     REM NOTE If adding a new patch, adjust the checks above and below accordingly
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
