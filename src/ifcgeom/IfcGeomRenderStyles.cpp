@@ -56,7 +56,7 @@ namespace {
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
-const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_styles) {
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_styles) {
 	if (shading_styles.second == 0) {
 		return 0;
 	}
@@ -66,13 +66,17 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 		return &(it->second);
 	}
 	SurfaceStyle surface_style;
-	if (shading_styles.first->hasName()) {
-		surface_style = SurfaceStyle(surface_style_id, shading_styles.first->Name());
+
+	IfcSchema::IfcSurfaceStyle* style = shading_styles.first->as<IfcSchema::IfcSurfaceStyle>();
+	IfcSchema::IfcSurfaceStyleShading* shading = shading_styles.second->as<IfcSchema::IfcSurfaceStyleShading>();
+
+	if (style->hasName()) {
+		surface_style = SurfaceStyle(surface_style_id, style->Name());
 	} else {
 		surface_style = SurfaceStyle(surface_style_id);
 	}
 	double rgb[3];
-	if (process_colour(shading_styles.second->SurfaceColour(), rgb)) {
+	if (process_colour(shading->SurfaceColour(), rgb)) {
 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 	}
 	if (shading_styles.second->declaration().is(IfcSchema::IfcSurfaceStyleRendering::Class())) {
