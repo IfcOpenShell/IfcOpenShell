@@ -124,7 +124,7 @@ echo.
 call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
 
 set /p do_continue="> "
-if "%do_continue%"==n goto :Finish
+if "%do_continue%"=="n" goto :Finish
 
 :: Cache last used CMake generator for other scripts to use
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
