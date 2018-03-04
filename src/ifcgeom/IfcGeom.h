@@ -110,7 +110,7 @@ private:
 
 	std::map<int, SurfaceStyle> style_cache;
 
-	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
+	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
 
 	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
 	const IfcParse::declaration* placement_rel_to;
@@ -224,9 +224,7 @@ public:
 
     static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
-    static std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> get_layers(IfcSchema::IfcProduct* prod);
-
-	template <typename P>
+    template <typename P>
     IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 

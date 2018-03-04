@@ -5,11 +5,24 @@
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 
+#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/Ifc4.h"
+
 #include <boost/function.hpp>
 
 #include <TopExp_Explorer.hxx>
 
 namespace IfcGeom {
+
+	namespace impl {
+		// LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
+		IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
+			return item->LayerAssignments()->generalize();
+		}
+		IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
+			return item->LayerAssignment()->generalize();
+		}
+	}
 
 	template <typename T>
 	class BRepElement;
@@ -76,7 +89,36 @@ namespace IfcGeom {
 			return implementation_->convert(item);
 		}
 
+		virtual bool convert(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
+			return implementation_->convert(item, trsf);
+		}
+
 		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
+
+		template <typename Schema>
+		static std::map<std::string, typename Schema::IfcPresentationLayerAssignment*> get_layers(typename Schema::IfcProduct* prod) {
+			std::map<std::string, Schema::IfcPresentationLayerAssignment*> layers;
+			if (prod->hasRepresentation()) {
+				IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
+				Schema::IfcRepresentation::list::ptr representations = r->as<Schema::IfcRepresentation>();
+				for (Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+					Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+					for (Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+						layers[(*jt)->Name()] = *jt;
+					}
+				}
+
+				Schema::IfcRepresentationItem::list::ptr items = r->as<Schema::IfcRepresentationItem>();
+				for (Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+					Schema::IfcPresentationLayerAssignment::list::ptr a = impl::getLayerAssignments(*it)->as<Schema::IfcPresentationLayerAssignment>();
+					for (Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+						layers[(*jt)->Name()] = *jt;
+					}
+				}
+			}
+			return layers;
+		}
+
 	};
 
 	namespace impl {
