@@ -545,7 +545,7 @@ if(NOT MSVC)
     endif()
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom Serializers_ifc2x3 Serializers_ifc4 IfcGeom Serializers_ifc2x3 Serializers_ifc4 IfcGeom)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -582,6 +582,29 @@ set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
 TARGET_LINK_LIBRARIES(IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4)
+
+# Serializers
+file(GLOB SERIALIZERS_H_FILES ../src/serializers/*.h)
+file(GLOB SERIALIZERS_CPP_FILES ../src/serializers/*.cpp)
+set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
+file(GLOB SERIALIZERS_S_H_FILES ../src/serializers/schema_dependent/*.h)
+file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
+set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
+
+add_library(Serializers_ifc2x3 ${SERIALIZERS_S_FILES})
+add_library(Serializers_ifc4 ${SERIALIZERS_S_FILES})
+
+set_target_properties(Serializers_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3")
+# TODO: Detect based on IfcSchema
+set_target_properties(Serializers_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4")
+
+TARGET_LINK_LIBRARIES(Serializers_ifc2x3 IfcGeom ${OPENCASCADE_LIBRARIES})
+TARGET_LINK_LIBRARIES(Serializers_ifc4 IfcGeom ${OPENCASCADE_LIBRARIES})
+
+add_library(Serializers ${SERIALIZERS_FILES})
+set_target_properties(Serializers PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+
+TARGET_LINK_LIBRARIES(Serializers Serializers_ifc2x3 Serializers_ifc4)
 
 # IfcConvert
 if(BUILD_CONVERT)
