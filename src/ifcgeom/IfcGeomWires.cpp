@@ -253,14 +253,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		wire_last_vertex = edge_last_vertex;
 	}
 
-	gp_Pnt first = BRep_Tool::Pnt(edge_last_vertex);
-	gp_Pnt last = BRep_Tool::Pnt(wire_first_vertex);
+	IfcEntityList::ptr profile = l->entity->getInverse(IfcSchema::Type::IfcProfileDef, -1);
 
-	Standard_Real distance = first.SquareDistance(last);
-	if (distance > precision_sq_2) {
-		w.Add(BRepBuilderAPI_MakeEdge(edge_last_vertex, wire_first_vertex));
+	if (profile && profile->size() > 0) {
+		gp_Pnt first = BRep_Tool::Pnt(edge_last_vertex);
+		gp_Pnt last = BRep_Tool::Pnt(wire_first_vertex);
 
-		Logger::Message(Logger::LOG_ERROR, "Closed gap on:", l->entity);
+		Standard_Real distance = first.SquareDistance(last);
+		if (distance > precision_sq_2) {
+			w.Add(BRepBuilderAPI_MakeEdge(edge_last_vertex, wire_first_vertex));
+
+			Logger::Message(Logger::LOG_ERROR, "Closed gap on:", l->entity);
+		}
 	}
 
 	wire = w.Wire();
