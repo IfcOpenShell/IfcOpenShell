@@ -26,11 +26,11 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcconvert/ColladaSerializer.h"
-#include "../ifcconvert/IgesSerializer.h"
-#include "../ifcconvert/StepSerializer.h"
-#include "../ifcconvert/WavefrontObjSerializer.h"
-#include "../ifcconvert/SvgSerializer.h"
+#include "../serializers/ColladaSerializer.h"
+#include "../serializers/IgesSerializer.h"
+#include "../serializers/StepSerializer.h"
+#include "../serializers/WavefrontObjSerializer.h"
+#include "../serializers/SvgSerializer.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 

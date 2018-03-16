@@ -12,17 +12,17 @@
 
 #include <TopExp_Explorer.hxx>
 
-namespace IfcGeom {
-
-	namespace impl {
-		// LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
-		IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
-			return item->LayerAssignments()->generalize();
-		}
-		IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
-			return item->LayerAssignment()->generalize();
-		}
+namespace {
+	// LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
+	IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
+		return item->LayerAssignments()->generalize();
 	}
+	IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
+		return item->LayerAssignment()->generalize();
+	}
+}
+
+namespace IfcGeom {
 
 	template <typename T>
 	class BRepElement;
@@ -110,7 +110,7 @@ namespace IfcGeom {
 
 				Schema::IfcRepresentationItem::list::ptr items = r->as<Schema::IfcRepresentationItem>();
 				for (Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-					Schema::IfcPresentationLayerAssignment::list::ptr a = impl::getLayerAssignments(*it)->as<Schema::IfcPresentationLayerAssignment>();
+					Schema::IfcPresentationLayerAssignment::list::ptr a = getLayerAssignments(*it)->as<Schema::IfcPresentationLayerAssignment>();
 					for (Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
 						layers[(*jt)->Name()] = *jt;
 					}

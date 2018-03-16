@@ -22,8 +22,8 @@
 #ifndef SVGSERIALIZER_H
 #define SVGSERIALIZER_H
 
-#include "../ifcconvert/GeometrySerializer.h"
-#include "../ifcconvert/util.h"
+#include "../serializers/GeometrySerializer.h"
+#include "../serializers/util.h"
 
 #include <sstream>
 #include <string>

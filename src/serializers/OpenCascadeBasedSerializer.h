@@ -22,7 +22,7 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
-#include "../ifcconvert/GeometrySerializer.h"
+#include "../serializers/GeometrySerializer.h"
 
 class OpenCascadeBasedSerializer : public GeometrySerializer {
 	OpenCascadeBasedSerializer(const OpenCascadeBasedSerializer&); //N/A
