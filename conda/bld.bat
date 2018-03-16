@@ -10,6 +10,9 @@ cmake -G "NMake Makefiles" ^
  -DOCC_INCLUDE_DIR="%LIBRARY_PREFIX%\include\oce" ^
  -DOCC_LIBRARY_DIR="%LIBRARY_PREFIX%\lib" ^
  -DCOLLADA_SUPPORT=Off ^
+ -DBUILD_EXAMPLES=Off ^
+ -DBUILD_GEOMSERVER=Off ^
+ -DBUILD_CONVERT=Off ^
  ../cmake
  
 if errorlevel 1 exit 1
