@@ -432,8 +432,11 @@ void XmlSerializer::finalize() {
 			emitted_materials.insert(mat);
 			ptree node;
 			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
-			if (mat->as<IfcMaterialLayerSetUsage>()) {
-				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
+			if (mat->as<IfcMaterialLayerSetUsage>() || mat->as<IfcMaterialLayerSet>()) {				
+				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSet>();
+				if (!layerset) {
+					layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
+				}				
 				if (layerset->hasLayerSetName()) {
 					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
 				}
