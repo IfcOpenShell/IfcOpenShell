@@ -81,6 +81,8 @@ The following instructions are for Ubuntu, modify as required for other operatin
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
 
+Note: where `make -j` is written, add a number roughly equal to the amount of CPU cores + 1.
+
 **1)** Install most of the prerequisites and dependencies:
 
     $ sudo apt-get install git cmake gcc g++ libboost-all-dev libicu-dev
@@ -103,7 +105,7 @@ meant to be used for a typical IfcOpenShell workspace setup.
 
 **3)** For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
-    $ sudo apt-get install libpcre3-dev
+    $ sudo apt-get install libpcre3-dev libxml2-dev
     $ git clone https://github.com/KhronosGroup/OpenCOLLADA.git
     $ cd OpenCOLLADA
     Using a known good revision, but HEAD should work too:
