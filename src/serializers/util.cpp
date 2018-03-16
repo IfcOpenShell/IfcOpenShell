@@ -20,7 +20,7 @@
 #include <set>
 #include <iostream>
 
-#include "../ifcconvert/util.h"
+#include "../serializers/util.h"
 
 using namespace util;
 

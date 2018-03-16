@@ -24,7 +24,7 @@
 #include <string>
 #include <fstream>
 
-#include "../ifcconvert/GeometrySerializer.h"
+#include "../serializers/GeometrySerializer.h"
 
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
 class WaveFrontOBJSerializer : public GeometrySerializer {

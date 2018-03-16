@@ -43,7 +43,7 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
-#include "../ifcconvert/GeometrySerializer.h"
+#include "../serializers/GeometrySerializer.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -86,7 +86,7 @@ private:
 			const std::string scene_id;
 			bool scene_opened;
 			std::stack<COLLADASW::Node*> parentNodes;
-			std::stack<IfcGeom::Transformation<double> > matrixStack;
+			std::stack<IfcGeom::Transformation<real_t> > matrixStack;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)

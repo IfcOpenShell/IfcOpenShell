@@ -430,6 +430,10 @@ ElSE()
     endif()
 ENDIF()
 
+if (IFCCONVERT_DOUBLE_PRECISION)
+    SET(CONVERT_PRECISION "-DIFCCONVERT_DOUBLE_PRECISION")
+endif()
+
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS}
 )
@@ -554,7 +558,7 @@ if(NOT MSVC)
     endif()
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom Serializers_ifc2x3 Serializers_ifc4 IfcGeom Serializers_ifc2x3 Serializers_ifc4 IfcGeom)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom Serializers_ifc2x3 Serializers_ifc4 Serializers Serializers_ifc2x3 Serializers_ifc4 Serializers)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -603,15 +607,15 @@ set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 add_library(Serializers_ifc2x3 ${SERIALIZERS_S_FILES})
 add_library(Serializers_ifc4 ${SERIALIZERS_S_FILES})
 
-set_target_properties(Serializers_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3")
+set_target_properties(Serializers_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3 ${CONVERT_PRECISION}")
 # TODO: Detect based on IfcSchema
-set_target_properties(Serializers_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4")
+set_target_properties(Serializers_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4 ${CONVERT_PRECISION}")
 
 TARGET_LINK_LIBRARIES(Serializers_ifc2x3 IfcGeom ${OPENCASCADE_LIBRARIES})
 TARGET_LINK_LIBRARIES(Serializers_ifc4 IfcGeom ${OPENCASCADE_LIBRARIES})
 
 add_library(Serializers ${SERIALIZERS_FILES})
-set_target_properties(Serializers PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}")
 
 TARGET_LINK_LIBRARIES(Serializers Serializers_ifc2x3 Serializers_ifc4)
 
@@ -621,9 +625,7 @@ if(BUILD_CONVERT)
 	file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
 	set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 	ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
-	if (IFCCONVERT_DOUBLE_PRECISION)
-	    set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS -DIFCCONVERT_DOUBLE_PRECISION)
-	endif()
+	set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
 	TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
 	if ((NOT WIN32) AND BUILD_SHARED_LIBS)
