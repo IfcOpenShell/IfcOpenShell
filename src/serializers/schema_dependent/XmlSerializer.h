@@ -17,25 +17,29 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef XMLSERIALIZER_H
-#define XMLSERIALIZER_H
+#ifndef XMLSERIALIZERIMPL_H
+#define XMLSERIALIZERIMPL_H
 
-#include "../../serializers/Serializer.h"
+#include "../../ifcparse/macros.h"
+#include "../../serializers/XmlSerializer.h"
 
-class XmlSerializer : public Serializer {
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
+#include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
+
+class MAKE_TYPE_NAME(XmlSerializer) : public XmlSerializer {
 private:
 	IfcParse::IfcFile* file;
-	std::string xml_filename;
-public:
-	XmlSerializer(const std::string& xml_filename)
-		: Serializer()
-		, xml_filename(xml_filename)
-	{}
 
-	bool ready() { return true; }
-	void writeHeader() {}
+public:
+	MAKE_TYPE_NAME(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
+		: XmlSerializer(nullptr, "")
+	{
+		this->file = file;
+		this->xml_filename = xml_filename;
+	}
+
 	void finalize();
-	void setFile(IfcParse::IfcFile* f) { file = f; }
+	void setFile(IfcParse::IfcFile*) {}
 };
 
 #endif

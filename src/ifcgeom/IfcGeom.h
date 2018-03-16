@@ -46,6 +46,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <TopTools_ListOfShape.hxx>
 #include <BOPAlgo_Operation.hxx>
 
+#include "../ifcparse/macros.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcBaseClass.h"
 
@@ -75,14 +76,8 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #endif
 
-#define MAKE_TYPE_NAME__(a, b) a ## b
-#define MAKE_TYPE_NAME_(a, b) MAKE_TYPE_NAME__(a, b)
-#define MAKE_TYPE_NAME(t) MAKE_TYPE_NAME_(t, IfcSchema)
-
-#define STRINGIFY_(x) #x
-#define STRINGIFY(x) STRINGIFY_(x)
-#define INCLUDE(x) STRINGIFY(../ifcparse/x.h)
-#include INCLUDE(IfcSchema)
+#define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x.h)
+#include INCLUDE_PARENT_DIR(IfcSchema)
 
 namespace IfcGeom {
 
