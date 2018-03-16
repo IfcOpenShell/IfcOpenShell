@@ -133,6 +133,7 @@
 
 #include <Standard_Version.hxx>
 
+#include "../ifcparse/macros.h"
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeom.h"
@@ -144,11 +145,6 @@
 #warning "You are linking against linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
 #endif
 #endif
-
-
-#define MAKE_INIT_FN__(a, b) init_ ## a ## b
-#define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
-#define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
 
 namespace {
 	struct factory_t {

@@ -30,6 +30,7 @@
 #include "../serializers/IgesSerializer.h"
 #include "../serializers/StepSerializer.h"
 #include "../serializers/WavefrontObjSerializer.h"
+#include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
@@ -69,6 +70,7 @@ void print_usage(bool suggest_help = true)
 #endif
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
+        << "  .xml   XML            Property definitions and decomposition tree\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
         << "\n"
         << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n";
@@ -441,6 +443,24 @@ int main(int argc, char** argv)
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
 	IfcParse::IfcFile* ifc_file = 0;
+
+    if (output_extension == ".xml") {
+        int exit_code = EXIT_FAILURE;
+        try {
+            if (init_input_file(input_filename, ifc_file, no_progress, mmap)) {
+                XmlSerializer s(ifc_file, output_temp_filename);
+                Logger::Status("Writing XML output...");
+                s.finalize();
+                Logger::Status("Done!");
+                rename_file(output_temp_filename, output_filename);
+                exit_code = EXIT_SUCCESS;
+            }
+        } catch (const std::exception& e) {
+			Logger::Error(e);
+		}
+        write_log();
+        return exit_code;
+    }
 
 	/*
     if (!filter_filename.empty()) {

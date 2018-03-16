@@ -1,29 +1,40 @@
 #define SCHEMA_METHOD
 
+#include "../serializers/Serializer.h"
 #include "../ifcparse/IfcFile.h"
 
 #include <boost/function.hpp>
 
 #include <map>
 
-template <typename T>
-class schema_delegate {
+class XmlSerializer : public Serializer {
+private:
+	XmlSerializer* implementation_;
 
-};
+protected:
+	std::string xml_filename;
 
-class XmlSerializer : public schema_delegate<> {
+public:
+	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename);
 
+	virtual ~XmlSerializer() {}
+
+	bool ready() { return true; }
+	void writeHeader() {}
+
+	void finalize() { implementation_->finalize(); }
+	void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
 };
 
 struct XmlSerializerFactory {
-	typedef boost::function1<XmlSerializer*, IfcParse::IfcFile*> fn;
+	typedef boost::function2<XmlSerializer*, IfcParse::IfcFile*, std::string> fn;
 
 	class Factory : public std::map<std::string, fn> {
 	public:
 		Factory();
 		void bind(const std::string& schema_name, fn);
-		XmlSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*);
+		XmlSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string);
 	};
 
-	Factory& implementations();
+	static Factory& implementations();
 };
