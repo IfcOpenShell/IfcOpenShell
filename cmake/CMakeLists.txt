@@ -114,6 +114,13 @@ IF(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
 	SET(Boost_USE_STATIC_LIBS ON)
 	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
+ELSE()
+    # Disable Boost's autolinking as the libraries to be linked to are supplied
+    # already by CMake, and it's going to conflict if there are multiple, as is
+    # the case in conda-forge's libboost feedstock.
+    #
+    # Should this always be specified?
+	ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
 ENDIF()
 
 set(BOOST_COMPONENTS system program_options regex thread date_time)
@@ -400,6 +407,7 @@ IF(MSVC)
 	ENDIF()
 	# Link against the static VC runtime
     # TODO Make this configurable
+	IF("$ENV{CONDA_BUILD}" STREQUAL "")
 	FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
 			CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
 			CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
@@ -410,6 +418,7 @@ IF(MSVC)
 			STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
 		ENDIF()
 	ENDFOREACH()
+	ENDIF()
 ElSE()
     add_definitions(-Wall -Wextra)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
