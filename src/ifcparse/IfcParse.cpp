@@ -969,10 +969,12 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
 }
 
 IfcEntityInstanceData::~IfcEntityInstanceData() {
-	for (size_t i = 0; i < getArgumentCount(); ++i) {
-		delete attributes_[i];
+	if (attributes_ != NULL) {
+		for (size_t i = 0; i < getArgumentCount(); ++i) {
+			delete attributes_[i];
+		}
+		delete[] attributes_;
 	}
-	delete[] attributes_;
 }
 
 unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
