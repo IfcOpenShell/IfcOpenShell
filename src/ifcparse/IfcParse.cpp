@@ -1328,6 +1328,11 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 		} catch (const IfcParse::IfcException& e) {
 			Logger::Error(e);
 		}
+
+		if (schema_ == 0 && schemas.front().substr(0, 4) == "IFC2") {
+			Logger::Message(Logger::LOG_ERROR, schemas.front() + " not supported, using IFC2X3 instead");
+			schema_ = IfcParse::schema_by_name("IFC2X3");
+		}
 	}
 
 	if (schema_ == 0) {
