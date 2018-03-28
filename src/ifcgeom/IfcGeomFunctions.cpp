@@ -1455,6 +1455,9 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			}
 		}
 	}
+    else {
+        Logger::Notice("Object '" + product->Name() + "' (guid " + product->GlobalId() + " ) has no material!");
+    }
 
 	if (material_style_applied) {
 		representation_id_builder << "-material-" << single_material->entity->id();
