@@ -103,6 +103,11 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 			COLLADASW::Triangles triangles(mSW);
             std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
                 ? materials[previous_material_id].original_name() : materials[previous_material_id].name());
+
+            if (material_name.empty()) {
+                material_name = "missing-material-" + materials[previous_material_id].name();
+            }
+
             collada_id(material_name);
             triangles.setMaterial(material_name);
             triangles.setCount((unsigned long)num_triangles);
@@ -160,6 +165,11 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 		COLLADASW::Lines lines(mSW);
         std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
             ? materials[it->first].original_name() : materials[it->first].name());
+
+        if (material_name.empty()) {
+            material_name = "missing-material-" + materials[it->first].name();
+        }
+
         collada_id(material_name);
         lines.setMaterial(material_name);
 		lines.setCount((unsigned long)it->second.size());
@@ -228,7 +238,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
     BOOST_FOREACH(std::string material_name, material_ids) {
         /// @todo This is done 6 times in this file, try to perform this once and be done with the material naming for the export.
         collada_id(material_name);
-        COLLADASW::InstanceMaterial material (material_name, "#" + material_name);
+        COLLADASW::InstanceMaterial material(material_name, "#" + material_name);
 		instanceGeometry.getBindMaterial().getInstanceMaterialList().push_back(material);
 	}
 	instanceGeometry.add();
@@ -407,6 +417,11 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 		}
 		std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
 			? material.original_name() : material.name());
+
+        if (material_name.empty()) {
+            material_name = "missing-material-" + material.name();
+        }
+
 		collada_id(material_name);
 		material_references.push_back(material_name);
 	}
