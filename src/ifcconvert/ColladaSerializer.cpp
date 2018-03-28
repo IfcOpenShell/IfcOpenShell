@@ -313,6 +313,11 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write
 {
     std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
         ? material.original_name() : material.name());
+
+	if (material_name.empty()) {
+		material_name = "missing-material-" + material.name();
+	}
+
     collada_id(material_name);
     openEffect(material_name + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
@@ -360,6 +365,11 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
     BOOST_FOREACH(const IfcGeom::Material& material, materials) {
         std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
             ? material.original_name() : material.name());
+
+		if (material_name.empty()) {
+			material_name = "missing-material-" + material.name();
+		}
+
         std::string  material_name_unescaped = material_name; // workaround double-escaping that would occur in addInstanceEffect()
         IfcUtil::sanitate_material_name(material_name_unescaped);
         collada_id(material_name);
