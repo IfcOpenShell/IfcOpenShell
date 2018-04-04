@@ -1605,7 +1605,6 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 				if (boost::math::isnan(conversion_factor)) {
 					const std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = getUnit("LENGTHUNIT");
 					const std::pair<IfcUtil::IfcBaseClass*, double> other_file_unit = other_file->getUnit("LENGTHUNIT");
-					std::cerr << other_file_unit.second << " " << this_file_unit.second << std::endl;
 					if (this_file_unit.first && other_file_unit.first) {
 						conversion_factor = other_file_unit.second / this_file_unit.second;
 					} else {
@@ -2027,7 +2026,7 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 	std::pair<IfcUtil::IfcBaseClass*, double> return_value(0, 1.);
 	IfcEntityList::ptr projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
 
-	if (projects->size() == 1) {
+	if (projects && projects->size() == 1) {
 		IfcUtil::IfcBaseClass* project = *projects->begin();
 		
 		IfcUtil::IfcBaseClass* unit_assignment = *project->data().getArgument(
