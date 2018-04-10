@@ -7,6 +7,9 @@ fi
 
 if [ `uname` == Darwin ]; then
     PY_LIB="libpython${MY_PY_VER}.dylib"
+    export   CFLAGS="$CFLAGS   -Wl,-flat_namespace,-undefined,suppress"
+    export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
+    export  LDFLAGS="$LDFLAGS  -Wl,-flat_namespace,-undefined,suppress"
 else
     PY_LIB="libpython${MY_PY_VER}.so"
 fi
