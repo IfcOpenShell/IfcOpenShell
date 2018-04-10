@@ -25,6 +25,7 @@ requirements:
     - libboost
     - icu
   run:
+    - libgcc  # [osx]
     - python
     - oce ==0.17.3
     - libboost
