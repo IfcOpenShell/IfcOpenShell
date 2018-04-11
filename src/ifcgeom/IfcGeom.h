@@ -253,6 +253,8 @@ public:
 	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
 	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 
+	bool is_valid_shell(const TopoDS_Shape &shape) const;
+
 	static double shape_volume(const TopoDS_Shape& s);
 	static double face_area(const TopoDS_Face& f);
 

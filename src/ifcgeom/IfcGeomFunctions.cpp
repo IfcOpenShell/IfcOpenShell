@@ -1122,9 +1122,10 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 		sew.Add(BRepBuilderAPI_MakeFace(w));
 		previous_edge.Nullify();
 	}
-		
+
 	sew.Perform();
 	shape = sew.SewedShape();
+    if(!is_valid_shell(shape)) return false;
 
 	try {
 		ShapeFix_Solid solid;
@@ -1143,13 +1144,18 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 	return true;
 }
 
+bool IfcGeom::Kernel::is_valid_shell(const TopoDS_Shape &shape) const
+{
+    return BRepCheck_Analyzer(shape).IsValid() != 0 && IfcGeom::Kernel::count(shape, TopAbs_SHELL) > 0;
+}
+
 bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse) {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
 
 	result = TopoDS_Shape();
-			
+
 	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 		TopoDS_Shape merged;
 		const TopoDS_Shape& s = it->Shape();
@@ -2415,9 +2421,12 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 			for (faces_with_mass_t::const_iterator kt = solids.begin(); kt != solids.end(); ++kt) {
 				builder.Add(kt->first);
 			}
-		
+
 			builder.Perform();
-			shells.push_back(TopoDS::Shell(builder.SewedShape()));
+			TopoDS_Shape shape = builder.SewedShape();
+			if (is_valid_shell(shape)) {
+				shells.push_back(TopoDS::Shell(shape));
+			}
 		}
 	}
 
@@ -2613,7 +2622,7 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 	// the addition of the two result volumes matches that of the input.
 	
 	TopoDS_Solid solid;
-	if (shell.ShapeType() == TopAbs_SHELL) {
+	if (shell.ShapeType() == TopAbs_SHELL && is_valid_shell(shell)) {
 		solid = BRepBuilderAPI_MakeSolid(TopoDS::Shell(shell)).Solid();
 	} else if (shell.ShapeType() == TopAbs_SOLID) {
 		solid = TopoDS::Solid(shell);
