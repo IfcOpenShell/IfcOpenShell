@@ -188,8 +188,10 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	}
 
 	if (valid_shell) {
+
 		TopoDS_Shape complete_shape;
 		TopExp_Explorer exp(shape, TopAbs_SHELL);
+
 		for (; exp.More(); exp.Next()) {
 			TopoDS_Shape result_shape = exp.Current();
 
@@ -234,12 +236,28 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 					B.MakeCompound(C);
 					B.Add(C, complete_shape);
 					complete_shape = C;
-					Logger::Message(Logger::LOG_WARNING, "Multiple components in IfcConnectedFaceSet");
+					Logger::Message(Logger::LOG_ERROR, "Multiple components in IfcConnectedFaceSet");
 				}
 				B.Add(complete_shape, result_shape);
 			}
 		}
+		
+		TopExp_Explorer loose_faces(shape, TopAbs_FACE, TopAbs_SHELL);
+
+		for (; loose_faces.More(); loose_faces.Next()) {
+			BRep_Builder B;
+			if (complete_shape.ShapeType() != TopAbs_COMPOUND) {
+				TopoDS_Compound C;
+				B.MakeCompound(C);
+				B.Add(C, complete_shape);
+				complete_shape = C;
+				Logger::Message(Logger::LOG_ERROR, "Loose faces in IfcConnectedFaceSet");
+			}
+			B.Add(complete_shape, loose_faces.Current());
+		}
+
 		shape = complete_shape;
+
 	} else {
 		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset");
 	}
