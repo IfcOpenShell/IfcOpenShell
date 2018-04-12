@@ -116,6 +116,9 @@ namespace IfcGeom {
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
+
+        IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
+
 		int done;
 		int total;
 
@@ -187,6 +190,7 @@ namespace IfcGeom {
 			bool any_precision_encountered = false;
 
 			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
+            ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
 
 			IfcSchema::IfcGeometricRepresentationContext::list::it it;
 			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
@@ -384,6 +388,7 @@ namespace IfcGeom {
 
 				// Note that this can be a nullptr (!), but the fact that set size should be one still holds
 				associated_single_materials.insert(kernel.get_single_material_association(product));
+                if (associated_single_materials.size() > 1) return false;
 			}
 
 			return associated_single_materials.size() == 1;
@@ -428,10 +433,12 @@ namespace IfcGeom {
 					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
 						// Check if this represenation has (or will be) processed as part its mapped representation
-						representation_processed_as_mapped_item = reuse_ok_(kernel.products_represented_by(representation_mapped_to));
+						representation_processed_as_mapped_item = ok_mapped_representations->contains(representation_mapped_to) ||
+                                reuse_ok_(kernel.products_represented_by(representation_mapped_to));
 					}
 
 					if (representation_processed_as_mapped_item) {
+                        ok_mapped_representations->push(representation_mapped_to);
 						_nextShape();
 						continue;
 					}
