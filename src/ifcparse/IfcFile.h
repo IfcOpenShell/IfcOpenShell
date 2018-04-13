@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <boost/unordered_map.hpp>
 
 #include "ifc_parse_api.h"
 
@@ -35,7 +36,7 @@ namespace IfcParse {
 class IFC_PARSE_API IfcFile {
 public:
 	typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> entities_by_type_t;
-	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
+	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
