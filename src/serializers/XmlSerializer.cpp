@@ -24,7 +24,7 @@ XmlSerializer* XmlSerializerFactory::Factory::construct(const std::string& schem
 }
 
 XmlSerializer::XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename) {
-	if (file != nullptr) {
+	if (file) {
 		implementation_ = XmlSerializerFactory::implementations().construct(file->schema()->name(), file, xml_filename);
 	}
 }

@@ -32,7 +32,7 @@ private:
 
 public:
 	MAKE_TYPE_NAME(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
-		: XmlSerializer(nullptr, "")
+		: XmlSerializer(0, "")
 	{
 		this->file = file;
 		this->xml_filename = xml_filename;
