@@ -97,21 +97,21 @@ namespace IfcGeom {
 
 		template <typename Schema>
 		static std::map<std::string, typename Schema::IfcPresentationLayerAssignment*> get_layers(typename Schema::IfcProduct* prod) {
-			std::map<std::string, Schema::IfcPresentationLayerAssignment*> layers;
+			std::map<std::string, typename Schema::IfcPresentationLayerAssignment*> layers;
 			if (prod->hasRepresentation()) {
 				IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
-				Schema::IfcRepresentation::list::ptr representations = r->as<Schema::IfcRepresentation>();
-				for (Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
-					Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-					for (Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+				typename Schema::IfcRepresentation::list::ptr representations = r->as<typename Schema::IfcRepresentation>();
+				for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+					typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+					for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
 						layers[(*jt)->Name()] = *jt;
 					}
 				}
 
-				Schema::IfcRepresentationItem::list::ptr items = r->as<Schema::IfcRepresentationItem>();
-				for (Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-					Schema::IfcPresentationLayerAssignment::list::ptr a = getLayerAssignments(*it)->as<Schema::IfcPresentationLayerAssignment>();
-					for (Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+				typename Schema::IfcRepresentationItem::list::ptr items = r->as<typename Schema::IfcRepresentationItem>();
+				for (typename Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+					typename Schema::IfcPresentationLayerAssignment::list::ptr a = getLayerAssignments(*it)->template as<typename Schema::IfcPresentationLayerAssignment>();
+					for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
 						layers[(*jt)->Name()] = *jt;
 					}
 				}
