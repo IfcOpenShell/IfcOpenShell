@@ -328,6 +328,8 @@ if not %ERRORLEVEL%==0 (
     if exist "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_toolkit.cmake" copy /y "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
     REM Patch header file for HAVE_NO_DLL
     if exist "%~dp0patches\%OCCT_HASH%_Standard_Macro.hxx" copy /y "%~dp0patches\%OCCT_HASH%_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
+    REM https://tracker.dev.opencascade.org/view.php?id=28248
+    if exist "%~dp0patches\%OCCT_HASH%_src-HLRBRep-HLRBRep_InternalAlgo.cxx" copy /y "%~dp0patches\%OCCT_HASH%_src-HLRBRep-HLRBRep_InternalAlgo.cxx" "%DEPENDENCY_DIR%\src\HLRBRep\HLRBRep_InternalAlgo.cxx"
     REM NOTE If adding a new patch, adjust the checks above and below accordingly
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
