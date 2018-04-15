@@ -59,8 +59,10 @@ logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
 OCE_VERSION="0.18"
-OCCT_VERSION="7.1.0"
-OCCT_HASH="89aebde"
+# OCCT_VERSION="7.1.0"
+# OCCT_HASH="89aebde"
+OCCT_VERSION="7.2.0"
+OCCT_HASH="88af392"
 PYTHON_VERSIONS=["2.7.12", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2"]
 BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.39"
@@ -183,7 +185,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch"]:
     if which(cmd) is None:
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
@@ -284,7 +286,7 @@ def git_clone(clone_url, target_dir, revision=None):
     if revision != None:
         __check_call__([git, "checkout", revision], cwd=target_dir)
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, additional_files={}, no_append_name=False):
+def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -346,6 +348,14 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     for path, url in additional_files.items():
         if not os.path.exists(path):
             urllib.urlretrieve(url, os.path.join(extract_dir, path))
+            
+    if patch is not None:
+        patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), patch))
+        if os.path.exists(patch_abs):
+            try: __check_call__(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
+            except Exception as e:
+                # Assert that the patch has already been applied
+                __check_call__(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
             
     if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, "build")
@@ -457,7 +467,15 @@ build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_a
 build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-%s" % SWIG_VERSION)
 
 if USE_OCCT:
-    long_filename = "src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation"
+    long_filenames = ["src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation"]
+    if OCCT_VERSION == "7.2.0":
+        long_filenames += [
+            "src/StepVisual/StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem",
+            "src/RWStepVisual/RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem"
+        ]
+    long_filenames_ext = [("%s.hxx" % fn) for fn in long_filenames] + [("%s.cxx" % fn) for fn in long_filenames]
+    patch_filename = "patches/occt/%s.patch" % OCCT_HASH
+    
     occt_gitweb = "http://git.dev.opencascade.org/gitweb/?p=occt.git"
     build_dependency(
         name="occt-%s" % OCCT_VERSION,
@@ -467,13 +485,11 @@ if USE_OCCT:
             "-DBUILD_LIBRARY_TYPE=Static",
             "-DBUILD_MODULE_Draw=0",
         ],
-        download_url="%s;a=snapshot;h=%s;sf=tgz" % (occt_gitweb, OCCT_HASH),
-        additional_files = {
-            "%s.hxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.hxx" % (occt_gitweb, OCCT_HASH, long_filename),
-            "%s.cxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.cxx" % (occt_gitweb, OCCT_HASH, long_filename)
-        },
-        download_name="occt-%s.tar.gz" % OCCT_HASH,
-        no_append_name=True)
+        download_url = "%s;a=snapshot;h=%s;sf=tgz" % (occt_gitweb, OCCT_HASH),
+        additional_files = {fn: "%s;a=blob_plain;hb=%s;f=%s.hxx" % (occt_gitweb, OCCT_HASH, fn) for fn in long_filenames_ext},
+        patch = patch_filename,
+        download_name = "occt-%s.tar.gz" % OCCT_HASH,
+        no_append_name = True)
 else:
     build_dependency(name="oce-%s" % (OCE_VERSION,), mode="cmake", build_tool_args=["-DOCE_DISABLE_TKSERVICE_FONT=ON", "-DOCE_TESTING=OFF", "-DOCE_BUILD_SHARED_LIB=OFF", "-DOCE_DISABLE_X11=ON", "-DOCE_VISUALISATION=OFF", "-DOCE_OCAF=OFF", "-DOCE_INSTALL_PREFIX=%s/install/oce-%s" % (DEPS_DIR, OCE_VERSION)], download_url="https://github.com/tpaviot/oce/archive/", download_name="OCE-%s.tar.gz" % (OCE_VERSION,))
         
