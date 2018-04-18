@@ -231,6 +231,8 @@ public:
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
 	bool triangulate_wire(const TopoDS_Wire&, TopTools_ListOfShape&);
+	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
+	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 
 	static double shape_volume(const TopoDS_Shape& s);
 	static double face_area(const TopoDS_Face& f);

@@ -95,6 +95,7 @@
 #include <ShapeFix_Solid.hxx>
 
 #include <ShapeAnalysis_Curve.hxx>
+#include <ShapeAnalysis_Wire.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <ShapeAnalysis_ShapeTolerance.hxx>
 
@@ -130,6 +131,8 @@
 #include <GCPnts_AbscissaPoint.hxx>
 
 #include <BRepClass3d_SolidClassifier.hxx>
+
+#include <GeomAPI_ExtremaCurveCurve.hxx>
 
 #include <Standard_Version.hxx>
 
@@ -614,7 +617,15 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 }
 #endif
 
-bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face) {
+bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face) {
+	TopoDS_Wire wire = w;
+	
+	TopTools_ListOfShape results;
+	if (wire_intersections(wire, results)) {
+		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+		select_largest(results, wire);
+	}
+
 	ShapeFix_ShapeTolerance FTol;
 	FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
 
@@ -2764,6 +2775,224 @@ TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const 
 	} else {
 
 		return apply_transformation(s, t.Trsf());
+	}
+}
+
+namespace {
+
+	/*
+	 * A small helper utility to wrap around a numeric range
+	*/
+	class bounded_int {
+	private:
+		int i;
+		size_t n;
+	public:
+		bounded_int(int i, size_t n) : i(i), n(n) {}
+
+		bounded_int& operator--() {
+			--i;
+			if (i == -1) {
+				i = n - 1;
+			}
+			return *this;
+		}
+
+		bounded_int& operator++() {
+			++i;
+			if (i == n) {
+				i = 0;
+			}
+			return *this;
+		}
+
+		operator int() { return i; }
+	};
+
+	std::string format_pnt(const gp_Pnt& p) {
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(4) << p.X() << " " << p.Y() << " " << p.Z();
+		return ss.str();
+	}
+
+	std::string format_edge(const TopoDS_Edge& e) {
+		std::stringstream ss;
+		TopoDS_Vertex v1, v2;
+		TopExp::Vertices(e, v1, v2);
+		gp_Pnt p1 = BRep_Tool::Pnt(v1);
+		gp_Pnt p2 = BRep_Tool::Pnt(v2);
+		ss << "edge " << format_pnt(p1) << " -> " << format_pnt(p2);
+		return ss.str();
+	}
+
+}
+
+bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires) {
+	if (!wire.Closed()) {
+		wires.Append(wire);
+		return false;
+	}
+
+	int n = count(wire, TopAbs_EDGE);
+	if (n < 3) {
+		wires.Append(wire);
+		return false;
+	}
+
+	// Note: initialize empty
+	Handle(ShapeExtend_WireData) wd = new ShapeExtend_WireData();
+
+	// ... to be sure to get consecutive edges
+	int i = 0;
+	BRepTools_WireExplorer exp(wire);
+	for (; exp.More(); exp.Next()) {
+		wd->Add(exp.Current());
+	}
+	
+	bool intersected = false;
+
+	// tfk: Extrema on infinite curves proved to be more robust.
+	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
+	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
+			
+	for (int i = 2; i < n; ++i) {
+		for (int j = 0; j < i - 1; ++j) {
+			if (i == n - 1 && j == 0) continue;
+
+			bool unbounded_intersects;
+			const double eps = getValue(GV_PRECISION) * 10.;
+
+			double u11, u12, u21, u22, U1, U2;
+			GeomAPI_ExtremaCurveCurve ecc(
+				BRep_Tool::Curve(wd->Edge(i + 1), u11, u12),
+				BRep_Tool::Curve(wd->Edge(j + 1), u21, u22)
+			);
+
+			if ((unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps))) {
+				ecc.Parameters(1, U1, U2);
+			}
+
+			if (u11 > u12) {
+				std::swap(u11, u12);
+			}
+			if (u21 > u22) {
+				std::swap(u21, u22);
+			}
+
+			/// @todo: tfk: probably need different thresholds on non-linear curves
+			u11 -= eps;
+			u12 += eps;
+			u21 -= eps;
+			u22 += eps;
+
+			// tfk: code below is for ShapeAnalysis_Wire::CheckIntersectingEdges()
+			// IntRes2d_SequenceOfIntersectionPoint points2d;
+			// TColgp_SequenceOfPnt points3d;
+			// TColStd_SequenceOfReal errors;
+			// if (saw.CheckIntersectingEdges(i + 1, j + 1, points2d, points3d, errors)) {
+
+			if (unbounded_intersects &&	u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
+
+				intersected = true;
+
+				// Explore a forward and backward cycle from the intersection point
+				for (int fb = 0; fb <= 1; ++fb) {
+					const bool forward = fb == 0;
+
+					BRepBuilderAPI_MakeWire mw;
+					bool first = true;
+
+					for (bounded_int k(j, n);;) {
+						bool intersecting = k == j || k == i;
+						if (intersecting) {
+							TopoDS_Edge e = wd->Edge(k + 1);
+							
+							TopoDS_Vertex v1, v2;
+							TopExp::Vertices(e, v1, v2);
+							const TopoDS_Vertex* v = first == forward ? &v2 : &v1;
+
+							// gp_Pnt p2 = points3d.Value(1);
+							
+							gp_Pnt p1 = BRep_Tool::Pnt(*v);
+							gp_Pnt pp1, pp2;
+							ecc.Points(1, pp1, pp2);
+							const gp_Pnt& p2 = k == i ? pp1 : pp2;
+							
+							// Substitute with a new edge from/to the intersection point
+							if (p1.Distance(p2) > getValue(GV_PRECISION) * 2) {
+								double _, __;
+								Handle_Geom_Curve crv = BRep_Tool::Curve(e, _, __);
+								BRepBuilderAPI_MakeEdge me(crv, p1, p2);
+								TopoDS_Edge ed = me.Edge();
+								mw.Add(ed);
+							}
+
+							first = false;
+						} else {
+							// Re-use original edge
+							mw.Add(wd->Edge(k+1));
+						}
+
+						if (k == i) {
+							break;
+						}
+
+						if (forward) {
+							++k;
+						} else {
+							--k;
+						}
+					}
+
+					// Recursively process both cuts
+					wire_intersections(mw.Wire(), wires);
+				}
+
+				return true;
+			}
+		}
+	}
+
+	// No intersections found, append original wire
+	if (!intersected) {
+		wires.Append(wire);
+	}
+
+	return intersected;
+}
+
+void IfcGeom::Kernel::select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest) {
+	double mass = 0.;	
+	TopTools_ListIteratorOfListOfShape it(shapes);
+	for (; it.More(); it.Next()) {
+		/*
+		// tfk: bounding box is more efficient probably
+		const TopoDS_Wire& w = TopoDS::Wire(it.Value());
+		TopoDS_Face face = BRepBuilderAPI_MakeFace(w).Face();
+		const double m = face_area(face);
+		*/
+
+		Bnd_Box bb;
+		BRepBndLib::AddClose(it.Value(), bb);
+		double xyz_min[3], xyz_max[3];
+		bb.Get(xyz_min[0], xyz_min[1], xyz_min[2], xyz_max[0], xyz_max[1], xyz_max[2]);
+		const double eps = getValue(GV_PRECISION);
+
+		double m = 1.;
+		for (int i = 0; i < 3; ++i) {
+			if (Precision::IsNegativeInfinite(xyz_min[i])) {
+				xyz_min[i] = 0.;
+			}
+			if (Precision::IsInfinite(xyz_max[i])) {
+				xyz_max[i] = 0.;
+			}			
+			m *= (xyz_max[i] + eps) - (xyz_min[i] - eps);
+		}
+
+		if (m > mass) {
+			mass = m;
+			largest = it.Value();
+		}
 	}
 }
 
