@@ -400,7 +400,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	const double eps = getValue(GV_PRECISION) * 10;
 	const bool closed_by_proximity = polygon.Length() >= 2 && polygon.First().Distance(polygon.Last()) < eps;
 	if (closed_by_proximity) {
-		polygon.Remove(polygon.Upper());
+		// tfk: note 1-based
+		polygon.Remove(polygon.Length());
 	}
 
 	// Remove points that are too close to one another
