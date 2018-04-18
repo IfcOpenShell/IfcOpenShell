@@ -486,7 +486,7 @@ if USE_OCCT:
             "-DBUILD_MODULE_Draw=0",
         ],
         download_url = "%s;a=snapshot;h=%s;sf=tgz" % (occt_gitweb, OCCT_HASH),
-        additional_files = {fn: "%s;a=blob_plain;hb=%s;f=%s.hxx" % (occt_gitweb, OCCT_HASH, fn) for fn in long_filenames_ext},
+        additional_files = {fn: "%s;a=blob_plain;hb=%s;f=%s" % (occt_gitweb, OCCT_HASH, fn) for fn in long_filenames_ext},
         patch = patch_filename,
         download_name = "occt-%s.tar.gz" % OCCT_HASH,
         no_append_name = True)
