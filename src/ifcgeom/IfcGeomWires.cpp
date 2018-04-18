@@ -397,12 +397,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 		polygon.Append(pnt);
 	}
 
+	const double eps = getValue(GV_PRECISION) * 10;
+	const bool closed_by_proximity = polygon.Length() >= 2 && polygon.First().Distance(polygon.Last()) < eps;
+	if (closed_by_proximity) {
+		polygon.Remove(polygon.Upper());
+	}
+
 	// Remove points that are too close to one another
-	remove_duplicate_points_from_loop(polygon, false);
+	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 	
 	BRepBuilderAPI_MakePolygon w;
 	for (int i = 1; i <= polygon.Length(); ++i) {
 		w.Add(polygon.Value(i));
+	}
+
+	if (closed_by_proximity) {
+		w.Close();
 	}
 
 	result = w.Wire();
@@ -428,7 +438,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	remove_duplicate_points_from_loop(polygon, true);
+	const double eps = getValue(GV_PRECISION) * 10;
+	remove_duplicate_points_from_loop(polygon, true, eps);
 
 	int count = polygon.Length();
 	if (original_count - count != 0) {
@@ -447,7 +458,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	}
 	w.Close();
 
-	result = w.Wire();	
+	result = w.Wire();
+
+	TopTools_ListOfShape results;
+	if (wire_intersections(result, results)) {
+		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", l->entity);
+		select_largest(results, result);
+	}
+
 	return true;
 }
 
