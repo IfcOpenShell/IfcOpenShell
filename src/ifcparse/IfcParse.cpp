@@ -1806,7 +1806,7 @@ IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
 	entity_by_id_t::const_iterator it = byid.find(id);
 	if (it == byid.end()) {
-		throw IfcException("Entity not found");
+		throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
 	}
 	return it->second;
 }
@@ -1814,7 +1814,7 @@ IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
 IfcSchema::IfcRoot* IfcFile::entityByGuid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
-		throw IfcException("Entity not found");
+		throw IfcException("Instance with GlobalId '" + guid + "' not found");
 	} else {
 		return it->second;
 	}
