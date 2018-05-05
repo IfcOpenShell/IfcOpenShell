@@ -106,6 +106,7 @@
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 
+#include <BRepBuilderAPI_Copy.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
@@ -586,9 +587,12 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			}
 
 			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+				TopoDS_Shape opening_shape_solid;
+				const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(opening_shapes[i].Shape(), opening_shape_solid);
+
 				gp_GTrsf gtrsf = opening_shapes[i].Placement();
 				gtrsf.PreMultiply(opening_trsf);
-				TopoDS_Shape opening_shape = apply_transformation(opening_shapes[i].Shape(), gtrsf);
+				TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, gtrsf);
 				opening_shapelist.Append(opening_shape);
 			}
 
@@ -2800,7 +2804,7 @@ namespace {
 
 		bounded_int& operator++() {
 			++i;
-			if (i == n) {
+			if (i == (int) n) {
 				i = 0;
 			}
 			return *this;
@@ -2843,7 +2847,6 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	Handle(ShapeExtend_WireData) wd = new ShapeExtend_WireData();
 
 	// ... to be sure to get consecutive edges
-	int i = 0;
 	BRepTools_WireExplorer exp(wire);
 	for (; exp.More(); exp.Next()) {
 		wd->Add(exp.Current());
@@ -3054,6 +3057,20 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return succesful;
 }
 #else
+
+TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
+	TopTools_ListOfShape r;
+	TopTools_ListIteratorOfListOfShape it(l);
+	for (; it.More(); it.Next()) {
+		r.Append(BRepBuilderAPI_Copy(it.Value()));
+	}
+	return r;
+}
+
+TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+	return BRepBuilderAPI_Copy(s);
+}
+
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
@@ -3070,10 +3087,10 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		fuzziness = getValue(GV_PRECISION);
 	}
 	TopTools_ListOfShape s1s;
-	s1s.Append(a);
+	s1s.Append(copy_operand(a));
 	builder->SetFuzzyValue(fuzziness);
 	builder->SetArguments(s1s);
-	builder->SetTools(b);
+	builder->SetTools(copy_operand(b));
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
