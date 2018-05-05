@@ -1907,7 +1907,7 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 					IfcEntityListList::ptr li = *arg;
 					valid = li->contains(instance);
 				}
-			} catch (IfcException& e) {
+			} catch (const IfcException& e) {
 				valid = false;
 				Logger::Error(e);
 			}
