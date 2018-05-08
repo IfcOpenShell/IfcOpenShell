@@ -397,7 +397,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 		polygon.Append(pnt);
 	}
 
-	const double eps = getValue(GV_PRECISION) * 2.;
+	const double eps = getValue(GV_PRECISION) * 10;
 	const bool closed_by_proximity = polygon.Length() >= 2 && polygon.First().Distance(polygon.Last()) < eps;
 	if (closed_by_proximity) {
 		// tfk: note 1-based
@@ -439,7 +439,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyLoop* l, TopoDS_Wire& resu
 	}
 
 	// Remove points that are too close to one another
-	const double eps = getValue(GV_PRECISION) * 2.;
+	const double eps = getValue(GV_PRECISION) * 10;
 	remove_duplicate_points_from_loop(polygon, true, eps);
 
 	int count = polygon.Length();
