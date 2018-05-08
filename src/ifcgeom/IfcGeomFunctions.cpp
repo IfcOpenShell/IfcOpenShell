@@ -2863,7 +2863,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			if (i == n - 1 && j == 0) continue;
 
 			bool unbounded_intersects;
-			const double eps = getValue(GV_PRECISION) * 10.;
+			const double eps = getValue(GV_PRECISION) * 2.;
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
