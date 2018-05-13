@@ -3086,9 +3086,22 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	if (fuzziness < 0.) {
 		fuzziness = getValue(GV_PRECISION);
 	}
+
+	double min_edge_len = std::numeric_limits<double>::infinity();
+	// ... to be sure to get consecutive edges
+	TopExp_Explorer exp(a, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		GProp_GProps prop;
+		BRepGProp::LinearProperties(exp.Current(), prop);
+		double l = prop.Mass();
+		if (l < min_edge_len) {
+			min_edge_len = l;
+		}
+	}
+
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
-	builder->SetFuzzyValue(fuzziness);
+	builder->SetFuzzyValue((std::min)(min_edge_len / 3., fuzziness));
 	builder->SetArguments(s1s);
 	builder->SetTools(copy_operand(b));
 	builder->Build();
@@ -3112,7 +3125,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000.) {
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_edge_len) {
             return boolean_operation(a, b, op, result, new_fuzziness);
         }
 	}
