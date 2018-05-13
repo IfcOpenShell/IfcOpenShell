@@ -913,7 +913,7 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_t
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
 {
     std::vector<IfcGeom::filter_t> filter_funcs;
-    foreach(const geom_filter& f, filters) {
+    BOOST_FOREACH(const geom_filter& f, filters) {
         if (f.type == geom_filter::ENTITY_TYPE) {
             entity_filter.include = f.include;
             entity_filter.traverse = f.traverse;

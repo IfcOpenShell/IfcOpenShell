@@ -22,6 +22,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/version.hpp>
+#include <boost/foreach.hpp>
 
 #include "XmlSerializer.h"
 
@@ -340,16 +341,16 @@ void XmlSerializer::finalize() {
 	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
 	
 	// Write the SPF header as XML nodes.
-	foreach(const std::string& s, file->header().file_description().description()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().author()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().organization()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	header.put("file_description.implementation_level", file->header().file_description().implementation_level());
