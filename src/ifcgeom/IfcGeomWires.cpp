@@ -85,8 +85,160 @@
 
 #include <Geom_BSplineCurve.hxx>
 #include <BRepTools_WireExplorer.hxx>
+#include <ShapeBuild_ReShape.hxx>
+
 
 #include "../ifcgeom/IfcGeom.h"
+
+namespace {
+	// Returns the other vertex of an edge
+	TopoDS_Vertex other(const TopoDS_Edge& e, const TopoDS_Vertex& v) {
+		TopoDS_Vertex a, b;
+		TopExp::Vertices(e, a, b);
+		return v.IsSame(b) ? a : b;
+	}
+
+	// Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
+	TopoDS_Wire adjust(const TopoDS_Wire& w, const TopoDS_Edge& e, const TopoDS_Vertex& v, const gp_Pnt& p) {
+		gp_Pnt p1 = p;
+		gp_Pnt p2 = BRep_Tool::Pnt(other(e, v));
+
+		if (e.Orientation() == TopAbs_REVERSED) {
+			std::swap(p1, p2);
+		}
+
+		// Already asserted this is a replacement for a linear edge
+		TopoDS_Edge new_edge = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
+		new_edge.Orientation(e.Orientation());
+
+		ShapeBuild_ReShape reshape;
+		reshape.Replace(e, new_edge);
+
+		return TopoDS::Wire(reshape.Apply(w));
+	}
+
+	// A wrapper around BRepBuilderAPI_MakeWire that makes sure segments are connected either by moving end points or by adding intermediate segments
+	class wire_builder {
+	private:
+		BRepBuilderAPI_MakeWire mw_;
+		double p_;
+		bool skip_next_;
+		const IfcUtil::IfcBaseClass* inst_;
+
+	public:
+		wire_builder(double p, const IfcUtil::IfcBaseClass* inst = 0) : p_(p), skip_next_(false), inst_(inst) {}
+
+		void operator()(const TopoDS_Shape& a) {
+			if (skip_next_) {
+				// tfk: not ideal, adjusting both start and end points not supported now.
+				skip_next_ = false;
+				return;
+			}
+
+			mw_.Add(TopoDS::Wire(a));
+		}
+
+		void operator()(const TopoDS_Shape& a, const TopoDS_Shape& b, bool last) {
+			if (skip_next_) {
+				// tfk: not ideal, adjusting both start and end points not supported now.
+				skip_next_ = false;
+				return;
+			}
+
+			const TopoDS_Wire& w1 = TopoDS::Wire(a);
+			const TopoDS_Wire& w2 = TopoDS::Wire(b);
+
+			TopoDS_Vertex w11, w12, w21, w22;
+			TopExp::Vertices(w1, w11, w12);
+			TopExp::Vertices(w2, w21, w22);
+
+			gp_Pnt p1 = BRep_Tool::Pnt(w12);
+			gp_Pnt p2 = BRep_Tool::Pnt(w21);
+
+			double dist = p1.Distance(p2);
+			TopTools_IndexedDataMapOfShapeListOfShape wmap1, wmap2;
+
+			// Distance is within 2p, this is fine
+			if (dist < 2. * p_) {
+				mw_.Add(w1);
+				goto check;
+			}
+
+			// Distance is too large for attempting to move end points, add intermediate edge
+			if (dist > 1000. * p_) {
+				mw_.Add(w1);
+				mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+				Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_->entity);
+				goto check;
+			}
+
+			// Find edges connected to end- and begin vertex
+			TopExp::MapShapesAndAncestors(w1, TopAbs_VERTEX, TopAbs_EDGE, wmap1);
+			TopExp::MapShapesAndAncestors(w2, TopAbs_VERTEX, TopAbs_EDGE, wmap2);
+
+			const TopTools_ListOfShape& last_edges = wmap1.FindFromKey(w12);
+			const TopTools_ListOfShape& first_edges = wmap2.FindFromKey(w21);
+
+			double _, __;
+			if (last_edges.Extent() == 1 && first_edges.Extent() == 1) {
+				Handle(Geom_Curve) c1 = BRep_Tool::Curve(TopoDS::Edge(last_edges.First()), _, __);
+				Handle(Geom_Curve) c2 = BRep_Tool::Curve(TopoDS::Edge(first_edges.First()), _, __);
+
+				const bool is_line1 = c1->DynamicType() == STANDARD_TYPE(Geom_Line);
+				const bool is_line2 = c2->DynamicType() == STANDARD_TYPE(Geom_Line);
+
+				// Adjust the segment that is linear
+				if (is_line1) {
+					mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
+					Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
+				} else if (is_line2 && !last) {
+					// tfk: not ideal, begin point of first edge cannot be adjusted now for cyclic wires
+					mw_.Add(w1);
+					mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
+					skip_next_ = true;
+					Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
+				} else {
+					// If both aren't linear an edge is added
+					mw_.Add(w1);
+					mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+					Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_->entity);
+				}
+			} else {
+				Logger::Error("Internal error, inconsistent wire segments", inst_->entity);
+				mw_.Add(w1);
+			}
+
+		check:
+			if (mw_.Error() == BRepBuilderAPI_NonManifoldWire) {
+				Logger::Error("Non-manifold curve segments:", inst_->entity);
+			} else if (mw_.Error() == BRepBuilderAPI_DisconnectedWire) {
+				Logger::Error("Failed to join curve segments:", inst_->entity);
+			}
+		}
+
+		const TopoDS_Wire& wire() { return mw_.Wire(); }
+	};
+
+	template <typename Fn>
+	void shape_pair_enumerate(TopTools_ListIteratorOfListOfShape& it, Fn& fn, bool closed) {
+		bool is_first = true;
+		TopoDS_Shape first, previous, current;
+		for (; it.More(); it.Next(), is_first = false) {
+			current = it.Value();
+			if (is_first) {
+				first = current;
+			} else {
+				fn(previous, current, false);
+			}
+			previous = current;
+		}
+		if (closed) {
+			fn(current, first, true);
+		} else {
+			fn(current);
+		}
+	}
+}
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
 	if ( getValue(GV_PLANEANGLE_UNIT)<0 ) {
@@ -165,109 +317,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		return use_radians || use_degrees;
 	}
 
-	BRepBuilderAPI_MakeWire w;
-	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
+	
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = l->Segments();
 
-	const double precision_sq_2 = 2 * getValue(GV_PRECISION) * getValue(GV_PRECISION);
+	TopTools_ListOfShape converted_segments;
 	
-	for(IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++it) {
-		
+	for (IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++it) {
+
 		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
 		TopoDS_Wire segment;
-		
+
 		if (!convert_wire(curve, segment)) {
 			Logger::Message(Logger::LOG_ERROR, "Failed to convert curve:", curve->entity);
 			continue;
 		}
-		
+
 		if (!(*it)->SameSense()) {
 			segment.Reverse();
 		}
-		
+
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(segment, getValue(GV_PRECISION), TopAbs_WIRE);
-		
-		TopExp::Vertices(segment, edge_first_vertex, edge_last_vertex);
 
-		if (it == segments->begin()) {
-			wire_first_vertex = edge_first_vertex;
-		} else {
-			gp_Pnt first = BRep_Tool::Pnt(edge_first_vertex);
-			gp_Pnt last = BRep_Tool::Pnt(wire_last_vertex);
+		converted_segments.Append(segment);
 
-			Standard_Real distance = first.SquareDistance(last);
-			if (distance > precision_sq_2) {
-				w.Add(BRepBuilderAPI_MakeEdge(wire_last_vertex, edge_first_vertex));
-
-				Logger::Message(Logger::LOG_ERROR, "Closed gap on:", l->entity);
-			}
-		}
-
-		w.Add(segment);
-
-		if ( w.Error() != BRepBuilderAPI_WireDone ) {
-			if (w.Error() == BRepBuilderAPI_NonManifoldWire) {
-
-				Logger::Message(Logger::LOG_ERROR, "Non-manifold curve segments:", l->entity);
-
-			} else if (w.Error() == BRepBuilderAPI_DisconnectedWire) {
-
-				Logger::Message(Logger::LOG_ERROR, "Failed to join curve segments:", l->entity);
-
-				gp_Pnt p1, p2;
-				int precision = 4;
-				double d = 0.;
-				
-				if (!wire_last_vertex.IsNull()) {
-					p1 = BRep_Tool::Pnt(wire_last_vertex);
-				}
-				if (!edge_first_vertex.IsNull()) {
-					p2 = BRep_Tool::Pnt(edge_first_vertex);
-				}
-				if (!wire_last_vertex.IsNull() && !edge_first_vertex.IsNull()) {
-					d = p1.Distance(p2);
-					precision = ceil(-log10(d)) + 3;
-				}
-
-				if (!wire_last_vertex.IsNull()) {
-					std::stringstream ss;
-					ss << std::setprecision(precision) << "Last vertex at (" << p1.X() << " " << p1.Y() << " " << p1.Z() << ")";
-					Logger::Message(Logger::LOG_NOTICE, ss.str());
-				}
-
-				if (!edge_first_vertex.IsNull()) {
-					std::stringstream ss;
-					ss << std::setprecision(precision) << "Segment starts at (" << p2.X() << " " << p2.Y() << " " << p2.Z() << ")";
-					if (d > 0.) {
-						ss << ", distance " << d << " > precision " << std::fixed << getValue(GV_PRECISION) / 10.;
-					}
-					ss << " for:";
-					Logger::Message(Logger::LOG_NOTICE, ss.str(), (*it)->entity);
-				}
-			}
-			
-			return false;
-		}
-
-		wire_last_vertex = edge_last_vertex;
 	}
+
+	BRepBuilderAPI_MakeWire w;
+	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
+
+	const double precision_sq_2 = 2 * getValue(GV_PRECISION) * getValue(GV_PRECISION);
+
+	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
 	IfcEntityList::ptr profile = l->entity->getInverse(IfcSchema::Type::IfcProfileDef, -1);
+	const bool force_close = profile && profile->size() > 0;
 
-	if (profile && profile->size() > 0) {
-		gp_Pnt first = BRep_Tool::Pnt(edge_last_vertex);
-		gp_Pnt last = BRep_Tool::Pnt(wire_first_vertex);
-
-		Standard_Real distance = first.SquareDistance(last);
-		if (distance > precision_sq_2) {
-			w.Add(BRepBuilderAPI_MakeEdge(edge_last_vertex, wire_first_vertex));
-
-			Logger::Message(Logger::LOG_ERROR, "Closed gap on:", l->entity);
-		}
-	}
-
-	wire = w.Wire();
+	wire_builder bld(getValue(GV_PRECISION), l);
+	shape_pair_enumerate(it, bld, force_close);
+	wire = bld.wire();
 
 	return true;
 }
