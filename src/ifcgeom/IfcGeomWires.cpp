@@ -86,7 +86,7 @@
 #include <Geom_BSplineCurve.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <ShapeBuild_ReShape.hxx>
-
+#include <TopTools_ListOfShape.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
