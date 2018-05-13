@@ -155,8 +155,7 @@ namespace {
 			gp_Pnt p1 = BRep_Tool::Pnt(w12);
 			gp_Pnt p2 = BRep_Tool::Pnt(w21);
 
-			double dist = p1.Distance(p2);
-			TopTools_IndexedDataMapOfShapeListOfShape wmap1, wmap2;
+			double dist = p1.Distance(p2);			
 
 			// Distance is within 2p, this is fine
 			if (dist < 2. * p_) {
@@ -172,40 +171,44 @@ namespace {
 				goto check;
 			}
 
-			// Find edges connected to end- and begin vertex
-			TopExp::MapShapesAndAncestors(w1, TopAbs_VERTEX, TopAbs_EDGE, wmap1);
-			TopExp::MapShapesAndAncestors(w2, TopAbs_VERTEX, TopAbs_EDGE, wmap2);
+			{
+				TopTools_IndexedDataMapOfShapeListOfShape wmap1, wmap2;
 
-			const TopTools_ListOfShape& last_edges = wmap1.FindFromKey(w12);
-			const TopTools_ListOfShape& first_edges = wmap2.FindFromKey(w21);
+				// Find edges connected to end- and begin vertex
+				TopExp::MapShapesAndAncestors(w1, TopAbs_VERTEX, TopAbs_EDGE, wmap1);
+				TopExp::MapShapesAndAncestors(w2, TopAbs_VERTEX, TopAbs_EDGE, wmap2);
 
-			double _, __;
-			if (last_edges.Extent() == 1 && first_edges.Extent() == 1) {
-				Handle(Geom_Curve) c1 = BRep_Tool::Curve(TopoDS::Edge(last_edges.First()), _, __);
-				Handle(Geom_Curve) c2 = BRep_Tool::Curve(TopoDS::Edge(first_edges.First()), _, __);
+				const TopTools_ListOfShape& last_edges = wmap1.FindFromKey(w12);
+				const TopTools_ListOfShape& first_edges = wmap2.FindFromKey(w21);
 
-				const bool is_line1 = c1->DynamicType() == STANDARD_TYPE(Geom_Line);
-				const bool is_line2 = c2->DynamicType() == STANDARD_TYPE(Geom_Line);
+				double _, __;
+				if (last_edges.Extent() == 1 && first_edges.Extent() == 1) {
+					Handle(Geom_Curve) c1 = BRep_Tool::Curve(TopoDS::Edge(last_edges.First()), _, __);
+					Handle(Geom_Curve) c2 = BRep_Tool::Curve(TopoDS::Edge(first_edges.First()), _, __);
 
-				// Adjust the segment that is linear
-				if (is_line1) {
-					mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
-					Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
-				} else if (is_line2 && !last) {
-					// tfk: not ideal, begin point of first edge cannot be adjusted now for cyclic wires
-					mw_.Add(w1);
-					mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
-					skip_next_ = true;
-					Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
+					const bool is_line1 = c1->DynamicType() == STANDARD_TYPE(Geom_Line);
+					const bool is_line2 = c2->DynamicType() == STANDARD_TYPE(Geom_Line);
+
+					// Adjust the segment that is linear
+					if (is_line1) {
+						mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
+						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
+					} else if (is_line2 && !last) {
+						// tfk: not ideal, begin point of first edge cannot be adjusted now for cyclic wires
+						mw_.Add(w1);
+						mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
+						skip_next_ = true;
+						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
+					} else {
+						// If both aren't linear an edge is added
+						mw_.Add(w1);
+						mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+						Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_->entity);
+					}
 				} else {
-					// If both aren't linear an edge is added
+					Logger::Error("Internal error, inconsistent wire segments", inst_->entity);
 					mw_.Add(w1);
-					mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-					Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_->entity);
 				}
-			} else {
-				Logger::Error("Internal error, inconsistent wire segments", inst_->entity);
-				mw_.Add(w1);
 			}
 
 		check:
