@@ -2838,7 +2838,10 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	}
 
 	int n = count(wire, TopAbs_EDGE);
-	if (n < 3) {
+	if (n < 3 || n > 128) {
+		if (n > 128) {
+			Logger::Notice("Too many segments for detection of self-intersections");
+		}
 		wires.Append(wire);
 		return false;
 	}
