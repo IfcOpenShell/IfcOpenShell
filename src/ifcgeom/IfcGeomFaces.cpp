@@ -213,7 +213,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			process_wire:
 
 				if (face_surface.IsNull()) {
-					mf = new BRepBuilderAPI_MakeFace(wire);
+					if (count(wire, TopAbs_EDGE) > 128) {
+						// tfk: optimization find the underlying surface ourselves since it's going
+						// to be planar in IFC if no explicit surface is given. Should we always do this?
+						gp_Pln pln;
+						approximate_plane_through_wire(wire, pln);
+						mf = new BRepBuilderAPI_MakeFace(pln, wire, true);
+					} else {
+						mf = new BRepBuilderAPI_MakeFace(wire);
+					}
 				} else {
 					/// @todo check necessity of false here
 					mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false); 
