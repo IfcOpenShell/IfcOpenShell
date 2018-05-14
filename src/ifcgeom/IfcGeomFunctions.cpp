@@ -2437,7 +2437,7 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 	}
 	apply_tolerance(solid, getValue(GV_PRECISION));
 
-	BOPCol_ListOfShape shapes;
+	TopTools_ListOfShape shapes;
 	shapes.Append(input);
 	shapes.Append(solid);
 	BOPAlgo_PaveFiller filler(new NCollection_IncAllocator); // TODO: Does this need to be freed?
