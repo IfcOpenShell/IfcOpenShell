@@ -133,7 +133,7 @@ def display_shape(shape, clr=None, viewer_handle=None):
         if isinstance(clr, tuple) and len(clr) == 4 and clr[3] < 1.:
             ais.SetTransparency(1. - clr[3])
 
-    elif representation:
+    elif representation and hasattr(OCC.AIS, "AIS_MultipleConnectedShape"):
         default_style_applied = None
 
         ais = OCC.AIS.AIS_MultipleConnectedShape(shape)
