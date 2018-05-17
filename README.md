@@ -137,6 +137,15 @@ If all worked out correctly you can now use IfcOpenShell. See the examples below
 
     $ sudo make install
 
+Installing IfcOpenShell with Conda
+----------------------------------
+Another option for building and installing IfcOpenShell is to use the popular
+[Anaconda Python Distribution](https://www.anaconda.com/download).
+The requirements are spread across a number of channels.
+You can add these channels to your configuration, or specify them all on the command line:
+
+    $ conda install -c conda-forge -c oce -c dlr-sc -c ifcopenshell ifcopenshell
+
 Usage examples
 --------------
 
