@@ -49,13 +49,11 @@ from .main import settings, iterator
 from .occ_utils import display_shape
 
 from .. import open as open_ifc_file
-from .. import get_supertype
+from .. import version as ifcopenshell_version
 
-# Depending on Python version and what not there may or may not be a QString
-try:
-except ImportError:
-    QString = str
-
+if ifcopenshell_version < "0.6":
+    # not yet ported
+    from .. import get_supertype
 
 class configuration(object):
     def __init__(self):
@@ -158,7 +156,7 @@ class application(QtWidgets.QApplication):
             elif action in displaymode:
                 self.instanceDisplayModeChanged.emit(inst, displaymode.index(action))
 
-        def clicked(self, index):
+        def clicked_(self, index):
             inst = index.data(QtCore.Qt.UserRole)
             if hasattr(inst, 'toPyObject'):
                 inst = inst
@@ -215,7 +213,7 @@ class application(QtWidgets.QApplication):
                         itm.setData(0, QtCore.Qt.UserRole, product)
                         self.children[parent].append(product)
             self.product_to_item = dict(zip(items.keys(), map(self.indexFromItem, items.values())))
-            self.clicked[QModelIndex].connect(self.clicked)
+            self.clicked.connect(self.clicked_)
             self.expandAll()
 
     class type_treeview(abstract_treeview):
@@ -239,7 +237,8 @@ class application(QtWidgets.QApplication):
                         itm.setData(0, QtCore.Qt.UserRole, t2)
                         self.children[s2].append(t2)
 
-                add(t)
+                if ifcopenshell_version < "0.6":
+                    add(t)
 
             for p in products:
                 t = QString(p.is_a())
@@ -248,7 +247,7 @@ class application(QtWidgets.QApplication):
                 self.children[t].append(p)
 
             self.product_to_item = dict(zip(items.keys(), map(self.indexFromItem, items.values())))
-            self.clicked[QModelIndex].connect(self.clicked)
+            self.clicked.connect(self.clicked)
             self.expandAll()
 
     class property_table(QtWidgets.QWidget):
