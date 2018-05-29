@@ -54,6 +54,21 @@ private:
 static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
 	return decl->name();
 }
+
+static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClass* inst, unsigned i) {
+	const IfcParse::parameter_type* pt = 0;
+	if (inst->declaration().as_entity()) {
+		pt = inst->declaration().as_entity()->attribute_by_index(i)->type_of_attribute();
+	} else if (inst->declaration().as_type_declaration() && i == 0) {
+		pt = inst->declaration().as_type_declaration()->declared_type();
+	}
+
+	if (pt == 0) {
+		return IfcUtil::Argument_UNKNOWN;
+	} else {
+		return IfcUtil::from_parameter_type(pt);
+	}
+}
 %}
 
 %extend IfcParse::IfcFile {
@@ -252,8 +267,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	const char* const get_argument_type(unsigned int i) const {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
-		return IfcUtil::ArgumentTypeToString(arg_type);
+		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, i));
 	}
 
 	const std::string& get_argument_name(unsigned int i) const {
@@ -277,7 +291,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsInt(unsigned int i, int v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_INT) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -292,7 +306,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsBool(unsigned int i, bool v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_BOOL) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -303,7 +317,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsDouble(unsigned int i, double v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_DOUBLE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -314,7 +328,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsString(unsigned int i, const std::string& a) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_STRING) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(a);
@@ -350,7 +364,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -361,7 +375,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -372,7 +386,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -396,7 +410,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsEntityInstance(unsigned int i, IfcUtil::IfcBaseClass* v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -407,7 +421,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfEntityInstance(unsigned int i, IfcEntityList::ptr v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -418,7 +432,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -429,7 +443,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
@@ -440,7 +454,7 @@ static const std::string& helper_fn_declaration_get_name(const IfcParse::declara
 	}
 
 	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, IfcEntityListList::ptr v) {
-		IfcUtil::ArgumentType arg_type = IfcUtil::from_parameter_type($self->declaration().as_entity()->attribute_by_index(i)->type_of_attribute());
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
 			arg->set(v);
