@@ -99,21 +99,22 @@ namespace {
 		return v.IsSame(b) ? a : b;
 	}
 
+	TopoDS_Edge first_edge(const TopoDS_Wire& w) {
+		TopoDS_Vertex v1, v2;
+		TopExp::Vertices(w, v1, v2);
+		TopTools_IndexedDataMapOfShapeListOfShape wm;
+		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, wm);
+		return TopoDS::Edge(wm.FindFromKey(v1).First());
+	}
+
 	// Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
-	TopoDS_Wire adjust(const TopoDS_Wire& w, const TopoDS_Edge& e, const TopoDS_Vertex& v, const gp_Pnt& p) {
-		gp_Pnt p1 = p;
-		gp_Pnt p2 = BRep_Tool::Pnt(other(e, v));
-
-		if (e.Orientation() == TopAbs_REVERSED) {
-			std::swap(p1, p2);
-		}
-
-		// Already asserted this is a replacement for a linear edge
-		TopoDS_Edge new_edge = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
-		new_edge.Orientation(e.Orientation());
+	TopoDS_Wire adjust(const TopoDS_Wire& w, const TopoDS_Vertex& v, const gp_Pnt& p) {
+		BRep_Builder b;
+		TopoDS_Vertex v2;
+		b.MakeVertex(v2, p, BRep_Tool::Tolerance(v));
 
 		ShapeBuild_ReShape reshape;
-		reshape.Replace(e, new_edge);
+		reshape.Replace(v.Oriented(TopAbs_FORWARD), v2);
 
 		return TopoDS::Wire(reshape.Apply(w));
 	}
@@ -123,31 +124,33 @@ namespace {
 	private:
 		BRepBuilderAPI_MakeWire mw_;
 		double p_;
-		bool skip_next_;
+		bool override_next_;
+		gp_Pnt next_override_;
 		const IfcUtil::IfcBaseClass* inst_;
 
 	public:
-		wire_builder(double p, const IfcUtil::IfcBaseClass* inst = 0) : p_(p), skip_next_(false), inst_(inst) {}
+		wire_builder(double p, const IfcUtil::IfcBaseClass* inst = 0) : p_(p), override_next_(false), inst_(inst) {}
 
 		void operator()(const TopoDS_Shape& a) {
-			if (skip_next_) {
-				// tfk: not ideal, adjusting both start and end points not supported now.
-				skip_next_ = false;
-				return;
-			}
-
-			mw_.Add(TopoDS::Wire(a));
+			const TopoDS_Wire& w = TopoDS::Wire(a);
+			if (override_next_) {
+				override_next_ = false;
+				TopoDS_Edge e = first_edge(w);
+				mw_.Add(adjust(w, TopExp::FirstVertex(e, true), next_override_));
+			} else {
+				mw_.Add(w);
+			}			
 		}
 
 		void operator()(const TopoDS_Shape& a, const TopoDS_Shape& b, bool last) {
-			if (skip_next_) {
-				// tfk: not ideal, adjusting both start and end points not supported now.
-				skip_next_ = false;
-				return;
-			}
-
-			const TopoDS_Wire& w1 = TopoDS::Wire(a);
+			TopoDS_Wire w1 = TopoDS::Wire(a);
 			const TopoDS_Wire& w2 = TopoDS::Wire(b);
+
+			if (override_next_) {
+				override_next_ = false;
+				TopoDS_Edge e = first_edge(w1);
+				w1 = adjust(w1, TopExp::FirstVertex(e, true), next_override_);
+			}
 
 			TopoDS_Vertex w11, w12, w21, w22;
 			TopExp::Vertices(w1, w11, w12);
@@ -156,10 +159,10 @@ namespace {
 			gp_Pnt p1 = BRep_Tool::Pnt(w12);
 			gp_Pnt p2 = BRep_Tool::Pnt(w21);
 
-			double dist = p1.Distance(p2);			
+			double dist = p1.Distance(p2);
 
 			// Distance is within 2p, this is fine
-			if (dist < 2. * p_) {
+			if (dist < p_) {
 				mw_.Add(w1);
 				goto check;
 			}
@@ -192,13 +195,12 @@ namespace {
 
 					// Adjust the segment that is linear
 					if (is_line1) {
-						mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
+						mw_.Add(adjust(w1, w12, p2));
 						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
 					} else if (is_line2 && !last) {
-						// tfk: not ideal, begin point of first edge cannot be adjusted now for cyclic wires
 						mw_.Add(w1);
-						mw_.Add(adjust(w1, TopoDS::Edge(last_edges.First()), w12, p2));
-						skip_next_ = true;
+						override_next_ = true;
+						next_override_ = p1;
 						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_->entity);
 					} else {
 						// If both aren't linear an edge is added
