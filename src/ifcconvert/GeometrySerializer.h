@@ -82,6 +82,14 @@ public:
     const SerializerSettings& settings() const { return settings_; }
     SerializerSettings& settings() { return settings_; }
 
+    /// Returns ID for the object depending on the used setting.
+    virtual std::string object_id(const IfcGeom::Element<real_t>* o)
+    {
+        if (settings_.get(SerializerSettings::USE_ELEMENT_GUIDS)) return o->guid();
+        if (settings_.get(SerializerSettings::USE_ELEMENT_NAMES)) return o->name();
+        return o->unique_id();
+    }
+
 protected:
     SerializerSettings settings_;
 };
