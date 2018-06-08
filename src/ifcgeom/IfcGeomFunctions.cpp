@@ -3065,17 +3065,33 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 }
 #else
 
-TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
-	TopTools_ListOfShape r;
-	TopTools_ListIteratorOfListOfShape it(l);
-	for (; it.More(); it.Next()) {
-		r.Append(BRepBuilderAPI_Copy(it.Value()));
+namespace {
+	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			r.Append(BRepBuilderAPI_Copy(it.Value()));
+		}
+		return r;
 	}
-	return r;
-}
 
-TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
-	return BRepBuilderAPI_Copy(s);
+	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+		return BRepBuilderAPI_Copy(s);
+	}
+
+	double min_edge_length(const TopoDS_Shape& a) {
+		double min_edge_len = std::numeric_limits<double>::infinity();
+		TopExp_Explorer exp(a, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			GProp_GProps prop;
+			BRepGProp::LinearProperties(exp.Current(), prop);
+			double l = prop.Mass();
+			if (l < min_edge_len) {
+				min_edge_len = l;
+			}
+		}
+		return min_edge_len;
+	}
 }
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
@@ -3094,21 +3110,12 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		fuzziness = getValue(GV_PRECISION);
 	}
 
-	double min_edge_len = std::numeric_limits<double>::infinity();
-	// ... to be sure to get consecutive edges
-	TopExp_Explorer exp(a, TopAbs_EDGE);
-	for (; exp.More(); exp.Next()) {
-		GProp_GProps prop;
-		BRepGProp::LinearProperties(exp.Current(), prop);
-		double l = prop.Mass();
-		if (l < min_edge_len) {
-			min_edge_len = l;
-		}
-	}
+	const double min_edge_len = min_edge_length(a);
+	const double fuzz = (std::min)(min_edge_len / 3., fuzziness);
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
-	builder->SetFuzzyValue((std::min)(min_edge_len / 3., fuzziness));
+	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
 	builder->SetTools(copy_operand(b));
 	builder->Build();
@@ -3117,6 +3124,9 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 
 		ShapeFix_Shape fix(r);
 		try {
+			fix.SetMinTolerance(fuzz);
+			fix.SetMaxTolerance(fuzz);
+			fix.SetPrecision(fuzz);
 			fix.Perform();
 			r = fix.Shape();
 		} catch (...) {
