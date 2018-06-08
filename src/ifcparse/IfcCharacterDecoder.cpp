@@ -70,6 +70,10 @@
 using namespace IfcParse;
 using namespace IfcWrite;
 
+#ifdef HAVE_ICU
+#include <unicode/unistr.h>
+#endif
+
 void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
 #ifdef HAVE_ICU
 	if ( destination ) {

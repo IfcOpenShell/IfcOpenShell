@@ -549,8 +549,9 @@ if(NOT MSVC)
             message(FATAL_ERROR "OCCT7 requires a compiler with C++11 support")
         endif()
     else()
-        add_definitions(-std=c++03)
+        add_definitions(-std=c++0x)
     endif()
+
 endif()
 
 set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom)
