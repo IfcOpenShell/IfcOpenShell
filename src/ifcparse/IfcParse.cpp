@@ -1896,15 +1896,20 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
 		bool valid = type == IfcSchema::Type::UNDEFINED || (*it)->is(type);
 		if (valid && attribute_index >= 0) {
-			Argument* arg = (*it)->entity->getArgument(attribute_index);
-			if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-				valid = instance == *arg;
-			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-				IfcEntityList::ptr li = *arg;
-				valid = li->contains(instance);
-			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-				IfcEntityListList::ptr li = *arg;
-				valid = li->contains(instance);
+			try {
+				Argument* arg = (*it)->entity->getArgument(attribute_index);
+				if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+					valid = instance == *arg;
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityList::ptr li = *arg;
+					valid = li->contains(instance);
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityListList::ptr li = *arg;
+					valid = li->contains(instance);
+				}
+			} catch (const IfcException& e) {
+				valid = false;
+				Logger::Error(e);
 			}
 		}
 		if (valid) {

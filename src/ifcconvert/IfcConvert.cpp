@@ -113,7 +113,7 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 }
 
 static std::stringstream log_stream;
-void write_log();
+void write_log(bool);
 
 /// @todo make the filters non-global
 IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
@@ -152,13 +152,16 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile& ifc_file, b
 
 int main(int argc, char** argv)
 {
+	std::string log_format;
     po::options_description generic_options("Command line options");
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
-        ("verbose,v", "more verbose output")
-        ("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
-        ("no-progress", "Suppress possible progress bar type of prints that use carriage return.");
+		("verbose,v", "more verbose log messages")
+		("quiet,q", "less status and progress output")
+		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
+		("no-progress", "suppress possible progress bar type of prints that use carriage return")
+		("log-format", po::value<std::string>(&log_format), "log format: plain or json");
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -174,7 +177,7 @@ int main(int argc, char** argv)
     inclusion_traverse_filter include_traverse_filter;
     exclusion_filter exclude_filter;
     exclusion_traverse_filter exclude_traverse_filter;
-    std::string filter_filename;
+	std::string filter_filename;
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -336,7 +339,36 @@ int main(int argc, char** argv)
 
     po::notify(vmap);
 
-    print_version();
+	const bool mmap = vmap.count("mmap") != 0;
+	const bool verbose = vmap.count("verbose") != 0;
+	const bool no_progress = vmap.count("no-progress") != 0;
+	const bool quiet = vmap.count("quiet") != 0;
+	const bool weld_vertices = vmap.count("weld-vertices") != 0;
+	const bool use_world_coords = vmap.count("use-world-coords") != 0;
+	const bool convert_back_units = vmap.count("convert-back-units") != 0;
+	const bool sew_shells = vmap.count("sew-shells") != 0;
+#if OCC_VERSION_HEX < 0x60900
+	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
+#endif
+	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
+	const bool include_plan = vmap.count("plan") != 0;
+	const bool include_model = vmap.count("model") != 0 || (!include_plan);
+	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
+	const bool use_element_names = vmap.count("use-element-names") != 0;
+	const bool use_element_guids = vmap.count("use-element-guids") != 0;
+	const bool use_material_names = vmap.count("use-material-names") != 0;
+	const bool use_element_types = vmap.count("use-element-types") != 0;
+	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
+	const bool no_normals = vmap.count("no-normals") != 0;
+	const bool center_model = vmap.count("center-model") != 0;
+	const bool model_offset = vmap.count("model-offset") != 0;
+	const bool site_local_placement = vmap.count("site-local-placement") != 0;
+	const bool building_local_placement = vmap.count("building-local-placement") != 0;
+	const bool generate_uvs = vmap.count("generate-uvs") != 0;
+
+	if (!quiet || vmap.count("version")) {
+		print_version();
+	}
 
     if (vmap.count("version")) {
         return EXIT_SUCCESS;
@@ -349,31 +381,6 @@ int main(int argc, char** argv)
         print_usage();
         return EXIT_FAILURE;
     }
-	const bool mmap = vmap.count("mmap") != 0;
-	const bool verbose = vmap.count("verbose") != 0;
-	const bool no_progress = vmap.count("no-progress") != 0;
-	const bool weld_vertices = vmap.count("weld-vertices") != 0;
-	const bool use_world_coords = vmap.count("use-world-coords") != 0;
-	const bool convert_back_units = vmap.count("convert-back-units") != 0;
-	const bool sew_shells = vmap.count("sew-shells") != 0;
-#if OCC_VERSION_HEX < 0x60900
-	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
-#endif
-	const bool disable_opening_subtractions = vmap.count("disable-opening-subtractions") != 0;
-	const bool include_plan = vmap.count("plan") != 0;
-	const bool include_model = vmap.count("model") != 0 || (!include_plan);
-	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
-    const bool use_element_names = vmap.count("use-element-names") != 0;
-    const bool use_element_guids = vmap.count("use-element-guids") != 0 ;
-    const bool use_material_names = vmap.count("use-material-names") != 0;
-	const bool use_element_types = vmap.count("use-element-types") != 0;
-	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
-    const bool no_normals = vmap.count("no-normals") != 0 ;
-    const bool center_model = vmap.count("center-model") != 0 ;
-    const bool model_offset = vmap.count("model-offset") != 0 ;
-	const bool site_local_placement = vmap.count("site-local-placement") != 0 ;
-	const bool building_local_placement = vmap.count("building-local-placement") != 0 ;
-    const bool generate_uvs = vmap.count("generate-uvs") != 0 ;
 
 #ifdef HAVE_ICU
     if (!unicode_mode.empty()) {
@@ -438,12 +445,25 @@ int main(int argc, char** argv)
     Logger::SetOutput(&std::cout, &log_stream);
     Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
+	if (vmap.count("log-format") == 1) {
+		boost::to_lower(log_format);
+		if (log_format == "plain") {
+			Logger::OutputFormat(Logger::FMT_PLAIN);
+		} else if (log_format == "json") {
+			Logger::OutputFormat(Logger::FMT_JSON);
+		} else {
+			std::cerr << "[Error] --log-format should be either plain or json" << std::endl;
+			print_usage();
+			return EXIT_FAILURE;
+		}
+	}
+
     IfcParse::IfcFile ifc_file;
 
     if (output_extension == ".xml") {
         int exit_code = EXIT_FAILURE;
         try {
-            if (init_input_file(input_filename, ifc_file, no_progress, mmap)) {
+            if (init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
                 XmlSerializer s(output_temp_filename);
                 s.setFile(&ifc_file);
                 Logger::Status("Writing XML output...");
@@ -455,7 +475,7 @@ int main(int argc, char** argv)
         } catch (const std::exception& e) {
 			Logger::Error(e);
 		}
-        write_log();
+        write_log(!quiet);
         return exit_code;
     }
 
@@ -548,7 +568,7 @@ int main(int argc, char** argv)
 		}
 	} else {
         std::cerr << "[Error] Unknown output filename extension '" + output_extension + "'\n";
-		write_log();
+		write_log(!quiet);
 		print_usage();
 		return EXIT_FAILURE;
 	}
@@ -557,7 +577,7 @@ int main(int argc, char** argv)
 
     if (use_element_hierarchy && output_extension != ".dae") {
         std::cerr << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
-		write_log();
+		write_log(!quiet);
 		print_usage();
         delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
@@ -582,14 +602,14 @@ int main(int argc, char** argv)
 	if (!serializer->ready()) {
         delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
-		write_log();
+		write_log(!quiet);
 		return EXIT_FAILURE;
 	}
 
 	time_t start,end;
 	time(&start);
 	
-    if (!init_input_file(input_filename, ifc_file, no_progress, mmap)) {
+    if (!init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
         return EXIT_FAILURE;
     }
 
@@ -600,7 +620,7 @@ int main(int argc, char** argv)
         Logger::Error("No geometrical entities found");
         delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
-        write_log();
+        write_log(!quiet);
         return EXIT_FAILURE;
     }
 
@@ -614,7 +634,7 @@ int main(int argc, char** argv)
 
 	serializer->writeHeader();
 
-	int old_progress = -1;
+	int old_progress = quiet ? 0 : -1;
 
     if (center_model || model_offset) {
         double* offset = serializer->settings().offset;
@@ -643,7 +663,9 @@ int main(int argc, char** argv)
         Logger::Notice(msg.str());
     }
 
-	Logger::Status("Creating geometry...");
+	if (!quiet) {
+		Logger::Status("Creating geometry...");
+	}
 
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
 	// wrap an iterator of all geometrical products in the Ifc file. 
@@ -670,14 +692,28 @@ int main(int argc, char** argv)
 		}
 
         if (!no_progress) {
-            const int progress = context_iterator.progress() / 2;
-            if (old_progress != progress) Logger::ProgressBar(progress);
-            old_progress = progress;
+			if (quiet) {
+				const int progress = context_iterator.progress();
+				for (; old_progress < progress; ++old_progress) {
+					std::cout << ".";
+				}
+				std::cout << std::flush;
+			} else {
+				const int progress = context_iterator.progress() / 2;
+				if (old_progress != progress) Logger::ProgressBar(progress);
+				old_progress = progress;
+			}
         }
     } while (++num_created, context_iterator.next());
 
-    Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
-        " objects)                                ");
+	if (!no_progress && quiet) {
+		for (; old_progress < 100; ++old_progress) {
+			std::cout << ".";
+		}
+	} else {
+		Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
+			" objects)                                ");
+	}
 
     serializer->finalize();
 	delete serializer;
@@ -690,34 +726,39 @@ int main(int argc, char** argv)
             output_temp_filename + "' for the conversion result.");
     }
 
-	write_log();
+	write_log(!quiet);
 
 	time(&end);
 
-    int seconds = (int)difftime(end, start);
-	std::stringstream msg;
-	int minutes = seconds / 60;
-	seconds = seconds % 60;
-	msg << "\nConversion took";
-	if (minutes > 0) {
-		msg << " " << minutes << " minute";
-		if (minutes > 1) {
+	if (!quiet) {
+		int seconds = (int)difftime(end, start);
+		std::stringstream msg;
+		int minutes = seconds / 60;
+		seconds = seconds % 60;
+		msg << "\nConversion took";
+		if (minutes > 0) {
+			msg << " " << minutes << " minute";
+			if (minutes > 1) {
+				msg << "s";
+			}
+		}
+		msg << " " << seconds << " second";
+		if (seconds > 1) {
 			msg << "s";
 		}
+		Logger::Status(msg.str());
 	}
-	msg << " " << seconds << " second";
-	if (seconds > 1) {
-		msg << "s";
-	}
-	Logger::Status(msg.str());
 
     return successful ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-void write_log() {
+void write_log(bool header) {
 	std::string log = log_stream.str();
 	if (!log.empty()) {
-		std::cout << "\nLog:\n" << log << std::endl;
+		if (header) {
+			std::cout << "\nLog:\n";
+		}
+		std::cout << log << std::endl;
 	}
 }
 
@@ -872,7 +913,7 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_t
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
 {
     std::vector<IfcGeom::filter_t> filter_funcs;
-    foreach(const geom_filter& f, filters) {
+    BOOST_FOREACH(const geom_filter& f, filters) {
         if (f.type == geom_filter::ENTITY_TYPE) {
             entity_filter.include = f.include;
             entity_filter.traverse = f.traverse;

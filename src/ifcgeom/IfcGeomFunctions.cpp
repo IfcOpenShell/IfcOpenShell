@@ -106,6 +106,7 @@
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 
+#include <BRepBuilderAPI_Copy.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
@@ -586,9 +587,12 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			}
 
 			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+				TopoDS_Shape opening_shape_solid;
+				const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(opening_shapes[i].Shape(), opening_shape_solid);
+
 				gp_GTrsf gtrsf = opening_shapes[i].Placement();
 				gtrsf.PreMultiply(opening_trsf);
-				TopoDS_Shape opening_shape = apply_transformation(opening_shapes[i].Shape(), gtrsf);
+				TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, gtrsf);
 				opening_shapelist.Append(opening_shape);
 			}
 
@@ -2433,7 +2437,11 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 	}
 	apply_tolerance(solid, getValue(GV_PRECISION));
 
+#if OCC_VERSION_HEX >= 0x70300
+	TopTools_ListOfShape shapes;
+#else
 	BOPCol_ListOfShape shapes;
+#endif
 	shapes.Append(input);
 	shapes.Append(solid);
 	BOPAlgo_PaveFiller filler(new NCollection_IncAllocator); // TODO: Does this need to be freed?
@@ -2800,7 +2808,7 @@ namespace {
 
 		bounded_int& operator++() {
 			++i;
-			if (i == n) {
+			if (i == (int) n) {
 				i = 0;
 			}
 			return *this;
@@ -2834,7 +2842,10 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	}
 
 	int n = count(wire, TopAbs_EDGE);
-	if (n < 3) {
+	if (n < 3 || n > 128) {
+		if (n > 128) {
+			Logger::Notice("Too many segments for detection of self-intersections");
+		}
 		wires.Append(wire);
 		return false;
 	}
@@ -2843,7 +2854,6 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	Handle(ShapeExtend_WireData) wd = new ShapeExtend_WireData();
 
 	// ... to be sure to get consecutive edges
-	int i = 0;
 	BRepTools_WireExplorer exp(wire);
 	for (; exp.More(); exp.Next()) {
 		wd->Add(exp.Current());
@@ -2860,7 +2870,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			if (i == n - 1 && j == 0) continue;
 
 			bool unbounded_intersects;
-			const double eps = getValue(GV_PRECISION) * 10.;
+			const double eps = getValue(GV_PRECISION) * 2.;
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
@@ -3054,6 +3064,36 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return succesful;
 }
 #else
+
+namespace {
+	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			r.Append(BRepBuilderAPI_Copy(it.Value()));
+		}
+		return r;
+	}
+
+	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+		return BRepBuilderAPI_Copy(s);
+	}
+
+	double min_edge_length(const TopoDS_Shape& a) {
+		double min_edge_len = std::numeric_limits<double>::infinity();
+		TopExp_Explorer exp(a, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			GProp_GProps prop;
+			BRepGProp::LinearProperties(exp.Current(), prop);
+			double l = prop.Mass();
+			if (l < min_edge_len) {
+				min_edge_len = l;
+			}
+		}
+		return min_edge_len;
+	}
+}
+
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
@@ -3069,17 +3109,24 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	if (fuzziness < 0.) {
 		fuzziness = getValue(GV_PRECISION);
 	}
+
+	const double min_edge_len = min_edge_length(a);
+	const double fuzz = (std::min)(min_edge_len / 3., fuzziness);
+
 	TopTools_ListOfShape s1s;
-	s1s.Append(a);
-	builder->SetFuzzyValue(fuzziness);
+	s1s.Append(copy_operand(a));
+	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
-	builder->SetTools(b);
+	builder->SetTools(copy_operand(b));
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
 
 		ShapeFix_Shape fix(r);
 		try {
+			fix.SetMinTolerance(fuzz);
+			fix.SetMaxTolerance(fuzz);
+			fix.SetPrecision(fuzz);
 			fix.Perform();
 			r = fix.Shape();
 		} catch (...) {
@@ -3095,7 +3142,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000.) {
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_edge_len) {
             return boolean_operation(a, b, op, result, new_fuzziness);
         }
 	}
