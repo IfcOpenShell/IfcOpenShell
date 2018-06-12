@@ -3066,19 +3066,6 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 #else
 
 namespace {
-	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
-		TopTools_ListOfShape r;
-		TopTools_ListIteratorOfListOfShape it(l);
-		for (; it.More(); it.Next()) {
-			r.Append(BRepBuilderAPI_Copy(it.Value()));
-		}
-		return r;
-	}
-
-	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
-		return BRepBuilderAPI_Copy(s);
-	}
-
 	double min_edge_length(const TopoDS_Shape& a) {
 		double min_edge_len = std::numeric_limits<double>::infinity();
 		TopExp_Explorer exp(a, TopAbs_EDGE);
@@ -3114,10 +3101,11 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	const double fuzz = (std::min)(min_edge_len / 3., fuzziness);
 
 	TopTools_ListOfShape s1s;
-	s1s.Append(copy_operand(a));
+	s1s.Append(a);
+	builder->SetNonDestructive(true);
 	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
-	builder->SetTools(copy_operand(b));
+	builder->SetTools(b);
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
