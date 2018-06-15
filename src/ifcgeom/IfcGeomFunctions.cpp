@@ -3066,6 +3066,30 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 #else
 
 namespace {
+	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
+#if OCC_VERSION_HEX < 0x70000
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			r.Append(BRepBuilderAPI_Copy(it.Value()));
+		}
+		return r;
+#else
+		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
+		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
+		// create copies.
+		return l;
+#endif
+	}
+
+	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+#if OCC_VERSION_HEX < 0x70000
+		return BRepBuilderAPI_Copy(s);
+#else
+		return s;
+#endif
+	}
+
 	double min_edge_length(const TopoDS_Shape& a) {
 		double min_edge_len = std::numeric_limits<double>::infinity();
 		TopExp_Explorer exp(a, TopAbs_EDGE);
@@ -3101,11 +3125,13 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	const double fuzz = (std::min)(min_edge_len / 3., fuzziness);
 
 	TopTools_ListOfShape s1s;
-	s1s.Append(a);
+	s1s.Append(copy_operand(a));
+#if OCC_VERSION_HEX >= 0x70000
 	builder->SetNonDestructive(true);
+#endif
 	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
-	builder->SetTools(b);
+	builder->SetTools(copy_operand(b));
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
