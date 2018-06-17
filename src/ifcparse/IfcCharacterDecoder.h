@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -32,6 +32,7 @@
 
 #ifdef HAVE_ICU
 #include "unicode/ucnv.h"
+#include "unicode/unistr.h"
 #else
 typedef unsigned int UChar32;
 #endif
