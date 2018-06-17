@@ -77,7 +77,7 @@ void IfcCharacterDecoder::addChar(std::stringstream& s,const UChar32& ch) {
            maximum length in bytes is 4. We add 1 for the NUL character. In other encodings
            the length could be higher, but we have not taken that into account. */
 		char extraction_buffer[5] = {};
-		UnicodeString(ch).extract(extraction_buffer,5,destination,status);
+        icu::UnicodeString(ch).extract(extraction_buffer,5,destination,status);
         extraction_buffer[4] = '\0';
 		s << extraction_buffer;
 	} else {
