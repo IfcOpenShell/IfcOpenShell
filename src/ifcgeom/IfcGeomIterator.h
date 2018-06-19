@@ -40,14 +40,14 @@
  *     orientation and translation of the mesh in relation to the world origin  *
  *                                                                              *
  * IfcGeom::Iterator::initialize()                                              *
- *   finds the most suitable representation contexts. Returns true iff          *
+ *   finds the most suitable representation contexts. Returns true if           *
  *   at least a single representation will process successfully                 *
  *                                                                              *
  * IfcGeom::Iterator::get()                                                     *
  *   returns a pointer to the current IfcGeom::Element                          *
  *                                                                              * 
  * IfcGeom::Iterator::next()                                                    *
- *   returns true iff a following entity is available for a successive call to  *
+ *   returns true if a following entity is available for a successive call to   *
  *   IfcGeom::Iterator::get()                                                   *
  *                                                                              *
  * IfcGeom::Iterator::progress()                                                *
