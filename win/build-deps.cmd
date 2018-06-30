@@ -191,8 +191,6 @@ call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BIT
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-goto :Successful
-
 :ICU
 set DEPENDENCY_NAME=ICU
 set DEPENDENCY_DIR=N/A
