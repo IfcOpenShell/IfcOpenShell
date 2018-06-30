@@ -85,6 +85,14 @@ FOR %%i IN (powershell git cmake) DO (
     where.exe %%i 1> NUL 2> NUL || call cecho.cmd 0 12 "Required tool `'%%i`' not installed or not added to PATH" && goto :ErrorAndPrintUsage
 )
 
+cmake --version | findstr version > temp.txt
+set /p CMAKE_VERSION=<temp.txt
+del temp.txt
+if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
+    echo "CMake v3.11.4 or higher is required"
+    goto :ErrorAndPrintUsage
+)
+
 :: Print build configuration information
 
 call cecho.cmd 0 10 "Script configuration:"
@@ -141,15 +149,13 @@ cd "%DEPS_DIR%"
 :: by modifying this file and using goto.
 :Boost
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.65.1
-:: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
-set DEPENDENCY_NAME=Boost %BOOST_VERSION%
-set DEPENDENCY_DIR="%DEPS_DIR%\boost"
+set BOOST_VERSION=1.67.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
-REM set BOOST_ROOT=%DEPS_DIR%\boost
-REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost
-set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\%VS_PLATFORM%\lib
+:: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
+set DEPENDENCY_NAME=Boost %BOOST_VERSION%
+set DEPENDENCY_DIR="%DEPS_DIR%\boost_%BOOST_VER%"
+set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%VS_PLATFORM%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
@@ -157,15 +163,14 @@ set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
+call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: Build Boost build script
-if not exist "%DEPS_DIR%\boost\project-config.jam". (
+if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     cd "%DEPS_DIR%"
-    ren boost_%BOOST_VER% boost
-    IF NOT EXIST "%DEPS_DIR%\boost\boost.css" GOTO :Error
-    cd "%DEPS_DIR%\boost"
+    IF NOT EXIST "%DEPENDENCY_DIR%\boost.css" GOTO :Error
+    cd "%DEPENDENCY_DIR%"
     call cecho.cmd 0 13 "Building Boost build script."
     call bootstrap msvc
     IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -173,9 +178,9 @@ if not exist "%DEPS_DIR%\boost\project-config.jam". (
 
 set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
-cd "%DEPS_DIR%\boost"
+cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
-IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
+IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
 :: BOOST_VC_VER can be empty (or needs to be) for newer VS versions
 set BOOST_VC_VER=
 if %VS_VER% LSS 2017 (
@@ -185,6 +190,8 @@ if %VS_VER% LSS 2017 (
 call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+goto :Successful
 
 :ICU
 set DEPENDENCY_NAME=ICU
