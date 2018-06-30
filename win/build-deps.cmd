@@ -502,7 +502,7 @@ exit /b %RET%
 :ExtractArchive
 if not exist "%~3". (
     call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2."
-    7za x %1 -y -o%2
+    7za x %1 -y -o%2 > nul
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
