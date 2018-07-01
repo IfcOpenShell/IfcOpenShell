@@ -242,7 +242,7 @@ def __check_output__(cmds, cwd=None):
 
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 ICU_VERSION_UNDERSCORE=ICU_VERSION.replace(".", "_")
-CMAKE_VERSION_2=CMAKE_VERSION[0:3]
+CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
 BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
