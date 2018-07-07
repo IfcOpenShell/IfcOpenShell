@@ -12,18 +12,24 @@ import OCC.AIS
 
 from collections import defaultdict, Iterable, OrderedDict
 
-os.environ['QT_API'] = 'pyqt4'
+try:
+    QString = unicode
+except NameError:
+    # Python 3
+    QString = str
+
+os.environ['QT_API'] = 'pyqt5'
 try:
     from pyqode.qt import QtCore
 except BaseException:
     pass
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from .code_editor_pane import code_edit
 
 try:
-    from OCC.Display.pyqt4Display import qtViewer3d
+    from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
     import OCC.Display
 
@@ -33,9 +39,9 @@ except BaseException:
         pass
 
     try:
-        OCC.Display.backend.get_backend("qt-pyqt4")
+        OCC.Display.backend.get_backend("qt-pyqt5")
     except BaseException:
-        OCC.Display.backend.load_backend("qt-pyqt4")
+        OCC.Display.backend.load_backend("qt-pyqt5")
 
     from OCC.Display.qtDisplay import qtViewer3d
 
@@ -43,14 +49,11 @@ from .main import settings, iterator
 from .occ_utils import display_shape
 
 from .. import open as open_ifc_file
-from .. import get_supertype
+from .. import version as ifcopenshell_version
 
-# Depending on Python version and what not there may or may not be a QString
-try:
-    from PyQt4.QtCore import QString
-except ImportError:
-    QString = str
-
+if ifcopenshell_version < "0.6":
+    # not yet ported
+    from .. import get_supertype
 
 class configuration(object):
     def __init__(self):
@@ -113,11 +116,11 @@ if selection:
         return OrderedDict([(k, self.config_decode(self.config.get(s, k))) for k in self.config.options(s)])
 
 
-class application(QtGui.QApplication):
+class application(QtWidgets.QApplication):
     """A pythonOCC, PyQt based IfcOpenShell application
     with two tree views and a graphical 3d view"""
 
-    class abstract_treeview(QtGui.QTreeWidget):
+    class abstract_treeview(QtWidgets.QTreeWidget):
 
         """Base class for the two treeview controls"""
 
@@ -126,7 +129,7 @@ class application(QtGui.QApplication):
         instanceDisplayModeChanged = QtCore.pyqtSignal([object, int])
 
         def __init__(self):
-            QtGui.QTreeView.__init__(self)
+            QtWidgets.QTreeView.__init__(self)
             self.setColumnCount(len(self.ATTRIBUTES))
             self.setHeaderLabels(self.ATTRIBUTES)
             self.children = defaultdict(list)
@@ -140,23 +143,23 @@ class application(QtGui.QApplication):
             return c
 
         def contextMenuEvent(self, event):
-            menu = QtGui.QMenu(self)
+            menu = QtWidgets.QMenu(self)
             visibility = [menu.addAction("Show"), menu.addAction("Hide")]
             displaymode = [menu.addAction("Solid"), menu.addAction("Wireframe")]
             action = menu.exec_(self.mapToGlobal(event.pos()))
             index = self.selectionModel().currentIndex()
             inst = index.data(QtCore.Qt.UserRole)
             if hasattr(inst, 'toPyObject'):
-                inst = inst.toPyObject()
+                inst = inst
             if action in visibility:
                 self.instanceVisibilityChanged.emit(inst, visibility.index(action))
             elif action in displaymode:
                 self.instanceDisplayModeChanged.emit(inst, displaymode.index(action))
 
-        def clicked(self, index):
+        def clicked_(self, index):
             inst = index.data(QtCore.Qt.UserRole)
             if hasattr(inst, 'toPyObject'):
-                inst = inst.toPyObject()
+                inst = inst
             if inst:
                 self.instanceSelected.emit(inst)
 
@@ -165,7 +168,7 @@ class application(QtGui.QApplication):
             if itm is None:
                 return
             self.selectionModel().setCurrentIndex(itm,
-                                                  QtGui.QItemSelectionModel.SelectCurrent | QtGui.QItemSelectionModel.Rows)
+                                                  QtCore.QItemSelectionModel.SelectCurrent | QtCore.QItemSelectionModel.Rows)
 
     class decomposition_treeview(abstract_treeview):
 
@@ -206,11 +209,11 @@ class application(QtGui.QApplication):
                                 sl.append(product.is_a())
                             else:
                                 sl.append(getattr(product, attr) or '')
-                        itm = items[product] = QtGui.QTreeWidgetItem(items.get(parent, self), sl)
+                        itm = items[product] = QtWidgets.QTreeWidgetItem(items.get(parent, self), sl)
                         itm.setData(0, QtCore.Qt.UserRole, product)
                         self.children[parent].append(product)
             self.product_to_item = dict(zip(items.keys(), map(self.indexFromItem, items.values())))
-            self.connect(self, QtCore.SIGNAL("clicked(const QModelIndex &)"), self.clicked)
+            self.clicked.connect(self.clicked_)
             self.expandAll()
 
     class type_treeview(abstract_treeview):
@@ -230,33 +233,34 @@ class application(QtGui.QApplication):
                         add(s)
                     s2, t2 = map(QString, (s, t))
                     if t2 not in items:
-                        itm = items[t2] = QtGui.QTreeWidgetItem(items.get(s2, self), [t2])
+                        itm = items[t2] = QtWidgets.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
                         self.children[s2].append(t2)
 
-                add(t)
+                if ifcopenshell_version < "0.6":
+                    add(t)
 
             for p in products:
                 t = QString(p.is_a())
-                itm = items[p] = QtGui.QTreeWidgetItem(items.get(t, self), [p.Name or '<no name>'])
+                itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or '<no name>'])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
 
             self.product_to_item = dict(zip(items.keys(), map(self.indexFromItem, items.values())))
-            self.connect(self, QtCore.SIGNAL("clicked(const QModelIndex &)"), self.clicked)
+            self.clicked.connect(self.clicked)
             self.expandAll()
 
-    class property_table(QtGui.QWidget):
+    class property_table(QtWidgets.QWidget):
 
         def __init__(self):
-            QtGui.QWidget.__init__(self)
-            self.layout = QtGui.QVBoxLayout(self)
+            QtWidgets.QWidget.__init__(self)
+            self.layout = QtWidgets.QVBoxLayout(self)
             self.setLayout(self.layout)
-            self.scroll = QtGui.QScrollArea(self)
+            self.scroll = QtWidgets.QScrollArea(self)
             self.layout.addWidget(self.scroll)
             self.scroll.setWidgetResizable(True)
-            self.scrollContent = QtGui.QWidget(self.scroll)
-            self.scrollLayout = QtGui.QVBoxLayout(self.scrollContent)
+            self.scrollContent = QtWidgets.QWidget(self.scroll)
+            self.scrollLayout = QtWidgets.QVBoxLayout(self.scrollContent)
             self.scrollContent.setLayout(self.scrollLayout)
             self.scroll.setWidget(self.scrollContent)
             self.prop_dict = {}
@@ -271,17 +275,17 @@ class application(QtGui.QApplication):
                     if child.widget() is not None:
                         child.widget().deleteLater()
 
-            self.scroll = QtGui.QScrollArea()
+            self.scroll = QtWidgets.QScrollArea()
             self.scroll.setWidgetResizable(True)
 
             prop_sets = self.prop_dict.get(str(product))
 
             if prop_sets is not None:
                 for k, v in prop_sets:
-                    group_box = QtGui.QGroupBox()
+                    group_box = QtWidgets.QGroupBox()
 
                     group_box.setTitle(k)
-                    group_layout = QtGui.QVBoxLayout()
+                    group_layout = QtWidgets.QVBoxLayout()
                     group_box.setLayout(group_layout)
 
                     for name, value in v.items():
@@ -300,7 +304,7 @@ class application(QtGui.QApplication):
                             type_str = " <i>(%s)</i>" % value.is_a()
                         else:
                             type_str = ""
-                        label = QtGui.QLabel("<b>%s</b>: %s%s" % (prop_name, value_str, type_str))
+                        label = QtWidgets.QLabel("<b>%s</b>: %s%s" % (prop_name, value_str, type_str))
                         group_layout.addWidget(label)
 
                     group_layout.addStretch()
@@ -308,7 +312,7 @@ class application(QtGui.QApplication):
 
                 self.scrollLayout.addStretch()
             else:
-                label = QtGui.QLabel("No IfcPropertySets asscociated with selected entity instance")
+                label = QtWidgets.QLabel("No IfcPropertySets asscociated with selected entity instance")
                 self.scrollLayout.addWidget(label)
 
         def load_file(self, f, **kwargs):
@@ -431,7 +435,7 @@ class application(QtGui.QApplication):
                 self.ais_to_product[self.counter] = product
                 self.product_to_ais[product] = ais
                 self.counter += 1
-                QtGui.QApplication.processEvents()
+                QtWidgets.QApplication.processEvents()
                 if product.is_a() in {'IfcSpace', 'IfcOpeningElement'}:
                     v.Context.Erase(ais, True)
                 progress = it.progress() // 2
@@ -493,14 +497,14 @@ class application(QtGui.QApplication):
                 inst = self.ais_to_product[ais.GetObject().SelectionPriority()]
                 self.instanceSelected.emit(inst)
 
-    class window(QtGui.QMainWindow):
+    class window(QtWidgets.QMainWindow):
 
         TITLE = "IfcOpenShell IFC viewer"
 
         window_closed = QtCore.pyqtSignal([])
 
         def __init__(self):
-            QtGui.QMainWindow.__init__(self)
+            QtWidgets.QMainWindow.__init__(self)
             self.setWindowTitle(self.TITLE)
             self.menu = self.menuBar()
             self.menus = {}
@@ -515,9 +519,9 @@ class application(QtGui.QApplication):
                 self.menus[menu] = m
 
             if icon:
-                a = QtGui.QAction(QtGui.QIcon(icon), label, self)
+                a = QtWidgets.QAction(QtGui.QIcon(icon), label, self)
             else:
-                a = QtGui.QAction(label, self)
+                a = QtWidgets.QAction(label, self)
 
             if shortcut:
                 a.setShortcut(shortcut)
@@ -534,20 +538,20 @@ class application(QtGui.QApplication):
         return handler
 
     def __init__(self, settings=None):
-        QtGui.QApplication.__init__(self, sys.argv)
+        QtWidgets.QApplication.__init__(self, sys.argv)
         self.window = application.window()
         self.tree = application.decomposition_treeview()
         self.tree2 = application.type_treeview()
         self.propview = self.property_table()
         self.canvas = application.viewer(self.window)
-        self.tabs = QtGui.QTabWidget()
+        self.tabs = QtWidgets.QTabWidget()
         self.window.resize(800, 600)
-        splitter = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(self.tabs)
         self.tabs.addTab(self.tree, 'Decomposition')
         self.tabs.addTab(self.tree2, 'Types')
         self.tabs.addTab(self.propview, "Properties")
-        splitter2 = QtGui.QSplitter(QtCore.Qt.Vertical)
+        splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(self.canvas)
         self.editor = code_edit(self.canvas, configuration().options('snippets'))
         splitter2.addWidget(self.editor)
@@ -585,8 +589,8 @@ class application(QtGui.QApplication):
         sys.exit(self.exec_())
 
     def browse(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self.window, 'Open file', ".",
-                                                     "Industry Foundation Classes (*.ifc)")
+        filename = QtWidgets.QFileDialog.getOpenFileName(self.window, 'Open file', ".",
+                                                     "Industry Foundation Classes (*.ifc)")[0]
         self.load(filename)
 
     def clear(self):

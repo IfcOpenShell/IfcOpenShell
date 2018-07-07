@@ -7,10 +7,10 @@ import sys
 import logging
 
 from code import InteractiveConsole
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
-    from PyQt4 import QtWidgets
+    from PyQt5 import QtWidgets
 except BaseException:
     QtWidgets = QtGui
 
@@ -32,23 +32,23 @@ except BaseException:
 
 
 class StdoutRedirector(object):
-    '''A class for redirecting stdout to this Text widget.'''
+    """A class for redirecting stdout to this Text widget."""
 
     def __init__(self, widget):
         self.widget = widget
         self.isError = False
 
-    def write(self, str):
+    def write(self, myStr):
         self.widget.moveCursor(QtGui.QTextCursor.End)
         if self.isError:
             self.widget.setTextColor(QtCore.Qt.red)
         else:
             self.widget.setTextColor(QtCore.Qt.white)
-        self.widget.insertPlainText(str)
+        self.widget.insertPlainText(myStr)
         self.widget.moveCursor(QtGui.QTextCursor.End)
 
 
-class code_edit(QtGui.QWidget):
+class code_edit(QtWidgets.QWidget):
     class Console(InteractiveConsole):
         def __init__(*args):
             InteractiveConsole.__init__(*args)
@@ -73,18 +73,15 @@ class code_edit(QtGui.QWidget):
         self.c = self.Console({'model': self.model, 'viewer': self.viewer, 'selection': product})
 
     def __init__(self, viewer, snippets=None):
-
         self.model = None
         self.viewer = viewer
-        QtGui.QWidget.__init__(self)
-        self.layout = QtGui.QVBoxLayout(self)
+        QtWidgets.QWidget.__init__(self)
+        self.layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(self.layout)
         self.c = None
-
-        self.tools = QtGui.QHBoxLayout(self)
+        self.tools = QtWidgets.QHBoxLayout(self)
         self.layout.addLayout(self.tools)
-
-        self.runbutton = QtGui.QPushButton("Run")
+        self.runbutton = QtWidgets.QPushButton("Run")
         width = self.runbutton.fontMetrics().boundingRect("Run").width() + 20
         self.runbutton.setMaximumWidth(width)
         self.tools.addWidget(self.runbutton)
@@ -129,11 +126,10 @@ class code_edit(QtGui.QWidget):
             for snip_name in self.snippets.keys():
                 self.list.addItem(snip_name)
             self.tools.addWidget(self.list)
-            QtCore.QObject.connect(self.list, QtCore.SIGNAL("currentIndexChanged(int)"), self.replace_snippet)
+            self.list.currentIndexChanged[int].connect(self.replace_snippet)
 
         self.layout.addWidget(self.editor)
-
-        self.output = QtGui.QTextEdit()
+        self.output = QtWidgets.QTextEdit()
         self.output.setReadOnly(True)
         self.output.setStyleSheet('font-size: 10pt; font-family: Consolas, Courier; background-color: #444;')
         self.layout.addWidget(self.output)

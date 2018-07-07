@@ -92,7 +92,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
         faces = [[f[i], f[i + 1], f[i + 2]] \
             for i in range(0, len(f), 3)]
 
-        me = bpy.data.meshes.new('mesh%d' % ob.geometry.id)
+        # Depending on version, geometry.id will be either int or str
+        me = bpy.data.meshes.new('mesh-%r' % ob.geometry.id)
         me.from_pydata(verts, [], faces)
         me.validate()
         

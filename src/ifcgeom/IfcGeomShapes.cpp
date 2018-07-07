@@ -551,7 +551,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return false;
 	}
 
+#if OCC_VERSION_HEX < 0x60900
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
+#else
+	const double fuzz = is_halfspace ? getValue(GV_PRECISION) * 10. : -1.;
+	bool valid_result = boolean_operation(s1, s2, occ_op, shape, fuzz);
+#endif
 
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 		// In case of a subtraction, a check on volume is performed.

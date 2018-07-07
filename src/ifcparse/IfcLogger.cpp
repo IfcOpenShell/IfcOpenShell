@@ -25,8 +25,43 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/version.hpp>
+
 #include <iostream>
 #include <algorithm>
+
+using boost::property_tree::ptree;
+
+namespace {
+	static const char* severity_strings[] = {"Notice", "Warning", "Error"};
+
+	void plain_text_message(std::ostream& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+		os << "[" << severity_strings[type] << "] ";
+		if (current_product) {
+			std::string global_id = *(**current_product).data().getArgument((**current_product).declaration().as_entity()->attribute_index("GlobalId"));
+			os << "{" << global_id << "} ";
+		}
+		os << message << std::endl;
+		if (instance) {
+			os << instance->data().toString() << std::endl;
+		}
+	}
+
+	void json_message(std::ostream& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+		ptree pt;
+		pt.put("level", severity_strings[type]);
+		if (current_product) {
+			pt.put("product", (**current_product).data().toString());
+		}
+		pt.put("message", message);
+		if (instance) {
+			pt.put("instance", instance->data().toString());
+		}
+		boost::property_tree::write_json(os, pt, false);
+	}
+}
 
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
 	log1 = l1; 
@@ -37,15 +72,11 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
-	if ( log2 && type >= verbosity ) {
-		(*log2) << "[" << severity_strings[type] << "] ";
-		if ( current_product ) {
-			std::string global_id = *(**current_product).data().getArgument((**current_product).declaration().as_entity()->attribute_index("GlobalId"));
-		    (*log2) << "{" << global_id << "} ";
-		}
-		(*log2) << message << std::endl;
-		if (instance) {
-			(*log2) << instance->data().toString() << std::endl;
+    if (log2 && type >= verbosity) {
+		if (format == FMT_PLAIN) {
+			plain_text_message(*log2, current_product, type, message, instance);
+		} else if (format == FMT_JSON) {
+			json_message(*log2, current_product, type, message, instance);
 		}
 	}
 }
@@ -55,26 +86,32 @@ void Logger::Message(Logger::Severity type, const std::exception& exception, con
 }
 
 void Logger::Status(const std::string& message, bool new_line) {
-	if ( log1 ) {
+	if (log1) {
 		(*log1) << message;
 		if ( new_line ) (*log1) << std::endl;
 		else (*log1) << std::flush;
 	}
 }
+
 void Logger::ProgressBar(int progress) {
-	if ( log1 ) {
+	if (log1) {
 		Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
 	}
 }
+
 std::string Logger::GetLog() {
 	return log_stream.str();
 }
+
 void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
 Logger::Severity Logger::Verbosity() { return verbosity; }
+
+void Logger::OutputFormat(Format f) { format = f; }
+Logger::Format Logger::OutputFormat() { return format; }
 
 std::ostream* Logger::log1 = 0;
 std::ostream* Logger::log2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
-const char* Logger::severity_strings[] = { "Notice","Warning","Error" };
+Logger::Format Logger::format = Logger::FMT_PLAIN;
 boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product;

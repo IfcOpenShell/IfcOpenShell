@@ -119,6 +119,9 @@ namespace IfcGeom {
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
+
+        IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
+
 		int done;
 		int total;
 
@@ -192,6 +195,7 @@ namespace IfcGeom {
 			bool any_precision_encountered = false;
 
 			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
+            ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
 
 			IfcSchema::IfcGeometricRepresentationContext::list::it it;
 			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
@@ -389,6 +393,7 @@ namespace IfcGeom {
 
 				// Note that this can be a nullptr (!), but the fact that set size should be one still holds
 				associated_single_materials.insert(kernel.get_single_material_association(product));
+                if (associated_single_materials.size() > 1) return false;
 			}
 
 			return associated_single_materials.size() == 1;
@@ -412,12 +417,20 @@ namespace IfcGeom {
 
 					geometry_reuse_ok_for_current_representation_ = reuse_ok_(unfiltered_products);
 
-					if (!geometry_reuse_ok_for_current_representation_ && representation->RepresentationMap()->size() == 1) {
+					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+
+					if (!geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
 						// unfiltered_products contains products represented by this representation by means of mapped items.
 						// For example because of openings applied to products, reuse might not be acceptable and then the
 						// products will be processed by means of their immediate representation and not the mapped representation.
-						_nextShape();
-						continue;
+
+						// IfcRepresentationMaps are also used for IfcTypeProducts, so an additional check is performed whether the map
+						// is indeed used by IfcMappedItems.
+						IfcSchema::IfcRepresentationMap* map = *maps->begin();
+						if (map->MapUsage()->size() > 0) {
+							_nextShape();
+							continue;
+						}
 					}
 
 					bool representation_processed_as_mapped_item = false;
@@ -425,10 +438,12 @@ namespace IfcGeom {
 					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
 						// Check if this represenation has (or will be) processed as part its mapped representation
-						representation_processed_as_mapped_item = reuse_ok_(kernel.products_represented_by(representation_mapped_to));
+						representation_processed_as_mapped_item = ok_mapped_representations->contains(representation_mapped_to) ||
+                                reuse_ok_(kernel.products_represented_by(representation_mapped_to));
 					}
 
 					if (representation_processed_as_mapped_item) {
+                        ok_mapped_representations->push(representation_mapped_to);
 						_nextShape();
 						continue;
 					}
@@ -688,7 +703,12 @@ namespace IfcGeom {
             kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
             kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
-			if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
+			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
+				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
+					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
+				}
+				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcBuilding::Class());
+			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
 			}
 		}

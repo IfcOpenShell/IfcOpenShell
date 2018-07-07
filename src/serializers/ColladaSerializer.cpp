@@ -21,6 +21,8 @@
 
 #include "ColladaSerializer.h"
 
+#include <boost/foreach.hpp>
+
 #include <COLLADASWPrimitves.h>
 #include <COLLADASWSource.h>
 #include <COLLADASWScene.h>
@@ -223,7 +225,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.addMatrix(matrix_array);
 	COLLADASW::InstanceGeometry instanceGeometry(mSW);
 	instanceGeometry.setUrl ("#" + geom_name);
-    foreach(std::string material_name, material_ids) {
+    BOOST_FOREACH(std::string material_name, material_ids) {
         /// @todo This is done 6 times in this file, try to perform this once and be done with the material naming for the export.
         collada_id(material_name);
         COLLADASW::InstanceMaterial material (material_name, "#" + material_name);
@@ -362,7 +364,7 @@ bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeo
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 	effects.close();
-    foreach(const IfcGeom::Material& material, materials) {
+    BOOST_FOREACH(const IfcGeom::Material& material, materials) {
         std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
             ? material.original_name() : material.name());
         std::string  material_name_unescaped = material_name; // workaround double-escaping that would occur in addInstanceEffect()
@@ -408,7 +410,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	collada_id(representation_id);
 
 	std::vector<std::string> material_references;
-	foreach(const IfcGeom::Material& material, mesh.materials()) {
+	BOOST_FOREACH(const IfcGeom::Material& material, mesh.materials()) {
 		if (!materials.contains(material)) {
 			materials.add(material);
 		}
