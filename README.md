@@ -77,9 +77,11 @@ or Clang 3.5 has been confirmed to work.
 
 ### Compiling on *nix
 
-The following instructions are for Ubuntu, modify as required for other operating systems. [nix/build-all.sh] script
+The following instructions are for Ubuntu, modify as required for other operating systems. [nix/build-all.py] script
 can be experimented with and studied for pointers for other operating systems, but note that this script is not currently
 meant to be used for a typical IfcOpenShell workspace setup.
+
+Note: where `make -j` is written, add a number roughly equal to the amount of CPU cores + 1.
 
 **1)** Install most of the prerequisites and dependencies:
 
@@ -103,7 +105,7 @@ meant to be used for a typical IfcOpenShell workspace setup.
 
 **3)** For building IfcConvert with COLLADA (.dae) support (on by default), OpenCOLLADA is needed:
 
-    $ sudo apt-get install libpcre3-dev
+    $ sudo apt-get install libpcre3-dev libxml2-dev
     $ git clone https://github.com/KhronosGroup/OpenCOLLADA.git
     $ cd OpenCOLLADA
     Using a known good revision, but HEAD should work too:
@@ -134,6 +136,15 @@ If all worked out correctly you can now use IfcOpenShell. See the examples below
 **6)** Install the project if wanted:
 
     $ sudo make install
+
+Installing IfcOpenShell with Conda
+----------------------------------
+Another option for building and installing IfcOpenShell is to use the popular
+[Anaconda Python Distribution](https://www.anaconda.com/download).
+The requirements are spread across a number of channels.
+You can add these channels to your configuration, or specify them all on the command line:
+
+    $ conda install -c conda-forge -c oce -c dlr-sc -c ifcopenshell ifcopenshell
 
 Usage examples
 --------------
@@ -214,4 +225,4 @@ Usage examples
 [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
 [MSYS2]: https://msys2.github.io/ "MSYS2"
 [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
-[nix/build-all.sh]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.sh "nix/build-all.sh"
+[nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"

@@ -58,9 +58,12 @@ popd
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
-set BOOST_ROOT=%DEPS_DIR%\boost
-REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost\boost
-set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\vs%VS_VER%-%VS_PLATFORM%\lib
+:: tfk: todo remove duplication
+set BOOST_VERSION=1.67.0
+set BOOST_VER=%BOOST_VERSION:.=_%
+
+set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
+set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\vs%VS_VER%-%VS_PLATFORM%\lib
 set ICU_INCLUDE_DIR=%INSTALL_DIR%\icu\include
 set ICU_LIBRARY_DIR=%INSTALL_DIR%\icu\lib
 if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce

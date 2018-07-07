@@ -22,6 +22,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/version.hpp>
+#include <boost/foreach.hpp>
 
 #include "XmlSerializer.h"
 
@@ -279,6 +280,9 @@ ptree& descend(IfcSchema::IfcObjectDefinition* product, ptree& tree) {
 			if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
 				format_entity_instance(pset, child, true);
 			}
+			if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
+				format_entity_instance(pset, child, true);
+			}
 		}
 
 #ifdef USE_IFC4
@@ -358,16 +362,16 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
 	
 	// Write the SPF header as XML nodes.
-	foreach(const std::string& s, file->header().file_description().description()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().author()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().organization()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	header.put("file_description.implementation_level", file->header().file_description().implementation_level());
@@ -450,8 +454,11 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 			emitted_materials.insert(mat);
 			ptree node;
 			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
-			if (mat->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-				IfcSchema::IfcMaterialLayerSet* layerset = mat->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
+			if (mat->as<IfcSchema::IfcMaterialLayerSetUsage>() || mat->as<IfcSchema::IfcMaterialLayerSet>()) {				
+				IfcSchema::IfcMaterialLayerSet* layerset = mat->as<IfcSchema::IfcMaterialLayerSet>();
+				if (!layerset) {
+					layerset = mat->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
+				}				
 				if (layerset->hasLayerSetName()) {
 					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
 				}

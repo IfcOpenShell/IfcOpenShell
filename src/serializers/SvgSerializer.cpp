@@ -360,26 +360,26 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			if (pnt.Z() < zmin) { zmin = pnt.Z(); }
 			if (pnt.Z() > zmax) { zmax = pnt.Z(); }
 		}}
-
-		if (section_height) {
-			if (zmin > section_height || zmax < section_height) continue;
-		} else {
-			if (zmin == inf || (zmax - zmin) < 1.) continue;
-		}
-
-		// Priority:
-		// 1) section_height
-		// 2) Storey elevation + 1m
-		// 3) zmin + 1m
+		
+		// Empty geometry, no vertices encountered
+		if (zmin == inf) continue;
+		
+		// Determine slicing plane z coordinate, priority:
+		// 1) explicitly set global section height
+		// 2) containing building storey elevation + 1m
+		// 3) zmin (from geometry bounding box) + 1m
 		double cut_z;
 		if (section_height) {
 			cut_z = section_height.get();
-		} else if (storey_elevation) {
+		} else if (storey_elevation && !(zmin > *storey_elevation || zmax < *storey_elevation)) {
 			cut_z = storey_elevation.get() + 1.;
 		} else {
 			cut_z = zmin + 1.;
 		}
 
+		// No intersection with bounding box, fail early
+		if (zmin > cut_z || zmax < cut_z) continue;
+        
 		// Create a horizontal cross section 1 meter above the bottom point of the shape		
 		TopoDS_Shape result = BRepAlgoAPI_Section(subshape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
 

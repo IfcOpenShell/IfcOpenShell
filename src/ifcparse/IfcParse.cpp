@@ -988,7 +988,7 @@ unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
 //
 // Returns the entities of Entity type that have this entity in their ArgumentList
 //
-IfcEntityList::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration* type, int attribute_index) {
+IfcEntityList::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration* type, int attribute_index) const {
 	return file->getInverse(id_, type, attribute_index);
 }
 
@@ -1891,7 +1891,7 @@ IfcEntityList::ptr IfcFile::instances_by_reference(int t) {
 IfcUtil::IfcBaseClass* IfcFile::instance_by_id(int id) {
 	entity_by_id_t::const_iterator it = byid.find(id);
 	if (it == byid.end()) {
-		throw IfcException("Entity not found");
+		throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
 	}
 	return it->second;
 }
@@ -1899,7 +1899,7 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_id(int id) {
 IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
-		throw IfcException("Entity not found");
+		throw IfcException("Instance with GlobalId '" + guid + "' not found");
 	} else {
 		return it->second;
 	}
@@ -1980,15 +1980,20 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, const IfcParse::declarat
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
 		bool valid = type == 0 || (*it)->declaration().is(*type);
 		if (valid && attribute_index >= 0) {
-			Argument* arg = (*it)->data().getArgument(attribute_index);
-			if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-				valid = instance == *arg;
-			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-				IfcEntityList::ptr li = *arg;
-				valid = li->contains(instance);
-			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-				IfcEntityListList::ptr li = *arg;
-				valid = li->contains(instance);
+            try {
+                Argument* arg = (*it)->data().getArgument(attribute_index);
+                if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+                    valid = instance == *arg;
+                } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+                    IfcEntityList::ptr li = *arg;
+                    valid = li->contains(instance);
+                } else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+                    IfcEntityListList::ptr li = *arg;
+                    valid = li->contains(instance);
+                }
+            } catch (const IfcException& e) {
+				valid = false;
+				Logger::Error(e);
 			}
 		}
 		if (valid) {

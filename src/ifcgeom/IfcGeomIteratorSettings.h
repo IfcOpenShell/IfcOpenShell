@@ -82,8 +82,10 @@ namespace IfcGeom
 			SEARCH_FLOOR = 1 << 14,
 			///
 			SITE_LOCAL_PLACEMENT = 1 << 15,
-            /// Number of different setting flags.
-            NUM_SETTINGS = 15
+			///
+			BUILDING_LOCAL_PLACEMENT = 1 << 16,
+			/// Number of different setting flags.
+			NUM_SETTINGS = 16
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
