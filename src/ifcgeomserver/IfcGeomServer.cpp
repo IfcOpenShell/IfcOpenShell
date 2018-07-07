@@ -155,7 +155,7 @@ protected:
 	}
 public:
 	const std::string& string() { return str; }
-	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION "-2") {}
+	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION "-0") {}
 };
 
 class More : public Command {
@@ -224,7 +224,7 @@ public:
 
 class Entity : public Command {
 private:
-	const IfcGeom::TriangulationElement<float>* geom;
+	const IfcGeom::TriangulationElement<float, double>* geom;
 	bool append_line_data;
 	EntityExtension* eext_;
 protected:
@@ -235,14 +235,14 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		const std::vector<float>& m = geom->transformation().matrix().data();
-		const float matrix_array[16] = {
+		const std::vector<double>& m = geom->transformation().matrix().data();
+		const double matrix_array[16] = {
 			m[0], m[3], m[6], m[ 9],
 			m[1], m[4], m[7], m[10],
 			m[2], m[5], m[8], m[11],
 			   0,    0,    0,     1
 		};
-		swrite(s, std::string((char*)matrix_array, 16 * sizeof(float)));
+		swrite(s, std::string((char*)matrix_array, 16 * sizeof(double)));
 		
 		// The first bit of the string is always the instance name of the representation.
 		const std::string& representation_id = geom->geometry().id();
@@ -310,7 +310,7 @@ protected:
 		}
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<float>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
+	Entity(const IfcGeom::TriangulationElement<float, double>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
 };
 
 class Next : public Command {
@@ -370,9 +370,9 @@ static const double MAX_WALKABLE_SURFACE_ANGLE_DEGREES = 15.;
 
 class QuantityWriter : public EntityExtension {
 private:
-	const IfcGeom::BRepElement<float>* elem_;
+	const IfcGeom::BRepElement<float, double>* elem_;
 public:
-	QuantityWriter(const IfcGeom::BRepElement<float>* elem) :
+	QuantityWriter(const IfcGeom::BRepElement<float, double>* elem) :
 		elem_(elem)
 	{}
 	void write_contents(std::ostream& s) {
@@ -471,7 +471,7 @@ int main () {
 	double deflection = 1.e-3;
 	bool has_more = false;
 
-	IfcGeom::Iterator<float>* iterator = 0;
+	IfcGeom::Iterator<float, double>* iterator = 0;
 	IfcParse::IfcFile* file = 0;
 	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
@@ -501,7 +501,7 @@ int main () {
 			settings.set_deflection_tolerance(deflection);
 
 			file = new IfcParse::IfcFile(data, (int)len);
-			iterator = new IfcGeom::Iterator<float>(settings, file);
+			iterator = new IfcGeom::Iterator<float, double>(settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
@@ -513,7 +513,7 @@ int main () {
 				exit_code = 1;
 				break;
 			}
-			const IfcGeom::TriangulationElement<float>* geom = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator->get());
+			const IfcGeom::TriangulationElement<float, double>* geom = static_cast<const IfcGeom::TriangulationElement<float, double>*>(iterator->get());
 			QuantityWriter eext(iterator->get_native());
 			Entity(geom, &eext).write(std::cout);
 			continue;

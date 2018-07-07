@@ -221,13 +221,13 @@ public:
 
     static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
 
-    template <typename P>
-    IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(
+    template <typename P, typename PP>
+    IfcGeom::BRepElement<P, PP>* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
-	template <typename P>
-    IfcGeom::BRepElement<P>* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
+	template <typename P, typename PP>
+    IfcGeom::BRepElement<P, PP>* create_brep_for_processed_representation(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P, PP>*);
 
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
@@ -304,7 +304,7 @@ public:
 		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 		IfcUtil::IfcBaseClass* product)
 	{
-		return create_brep_for_representation_and_product<double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
+		return create_brep_for_representation_and_product<double, double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
 	}
 
 	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {

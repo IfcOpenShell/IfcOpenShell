@@ -2,8 +2,9 @@
 #include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
 
 namespace IfcGeom {
-	template class MAKE_TYPE_NAME(IteratorImplementation_)<float>;
-	template class MAKE_TYPE_NAME(IteratorImplementation_)<double>;
+	template class MAKE_TYPE_NAME(IteratorImplementation_)<float, float>;
+	template class MAKE_TYPE_NAME(IteratorImplementation_)<float, double>;
+	template class MAKE_TYPE_NAME(IteratorImplementation_)<double, double>;
 }
 
 #define MAKE_INIT_FN__(a, b) init_ ## a ## b
@@ -11,20 +12,21 @@ namespace IfcGeom {
 #define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
 
 namespace {
-	template <typename P>
+	template <typename P, typename PP>
 	struct factory_t {
-		IfcGeom::IteratorImplementation<P>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
-			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P>(settings, file);
+		IfcGeom::IteratorImplementation<P, PP>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
+			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P, PP>(settings, file);
 		}
 	};
 }
 
-template <typename P>
-void MAKE_INIT_FN(IteratorImplementation_)(IteratorFactoryImplementation<P>* mapping) {
+template <typename P, typename PP>
+void MAKE_INIT_FN(IteratorImplementation_)(IteratorFactoryImplementation<P, PP>* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
-	factory_t<P> factory;
+	factory_t<P, PP> factory;
 	mapping->bind(schema_name, factory);
 }
 
-template void MAKE_INIT_FN(IteratorImplementation_)<float>(IteratorFactoryImplementation<float>*);
-template void MAKE_INIT_FN(IteratorImplementation_)<double>(IteratorFactoryImplementation<double>*);
+template void MAKE_INIT_FN(IteratorImplementation_)<float, float>(IteratorFactoryImplementation<float, float>*);
+template void MAKE_INIT_FN(IteratorImplementation_)<float, double>(IteratorFactoryImplementation<float, double>*);
+template void MAKE_INIT_FN(IteratorImplementation_)<double, double>(IteratorFactoryImplementation<double, double>*);
