@@ -70,7 +70,7 @@
 
 namespace IfcGeom {
 	
-	template <typename P>
+	template <typename P = double, typename PP = P>
 	class Iterator {
 	private:
 		Iterator(const Iterator&); // N/I
@@ -78,14 +78,14 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* file_;
 		IfcGeom::IteratorSettings settings_;
-		IteratorImplementation<P>* implementation_;
+		IteratorImplementation<P, PP>* implementation_;
 
 	public:
 		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file)
 			: file_(file)
 			, settings_(settings)
 		{
-			implementation_ = iterator_implementations<P>().construct(file_->schema()->name(), settings, file);
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file);
 		}
 
 		bool initialize() {
@@ -102,11 +102,11 @@ namespace IfcGeom {
 
 		IfcUtil::IfcBaseClass* next() const { return implementation_->next(); }
 
-		Element<P>* get() { return implementation_->get(); }
+		Element<P, PP>* get() { return implementation_->get(); }
 
-		BRepElement<P>* get_native() { return implementation_->get_native(); }
+		BRepElement<P, PP>* get_native() { return implementation_->get_native(); }
 
-		const Element<P>* get_object(int id) { return implementation_->get_object(id); }
+		const Element<P, PP>* get_object(int id) { return implementation_->get_object(id); }
 
 		IfcUtil::IfcBaseClass* create() { return implementation_->create(); }
 	};

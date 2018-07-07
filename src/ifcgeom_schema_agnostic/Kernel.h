@@ -24,7 +24,7 @@ namespace {
 
 namespace IfcGeom {
 
-	template <typename T>
+	template <typename P, typename PP>
 	class BRepElement;
 
 	class Kernel {
@@ -78,7 +78,7 @@ namespace IfcGeom {
 			return implementation_->getValue(var);
 		}
 
-		virtual BRepElement<double>* convert(
+		virtual BRepElement<double, double>* convert(
 			const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 			IfcUtil::IfcBaseClass* product)
 		{
