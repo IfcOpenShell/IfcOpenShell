@@ -357,6 +357,7 @@ IF %OCCT_VC_VER% GTR 14 (
 )
 move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
 move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\lib\*.*" "%OCC_LIBRARY_DIR%"
 rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%"
 :: Removed unneeded bits
 rmdir /s /q "%INSTALL_DIR%\opencascade\data"
