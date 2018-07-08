@@ -1,9 +1,9 @@
 package:
   name: ifcopenshell
-  version: "0.6.0a0"
+  version: "0.6.0a1"
 
 source:
-  git_rev: "v0.6.0a0"
+  git_rev: "v0.6.0a1"
   git_url: https://github.com/IfcOpenShell/IfcOpenShell
 
 build:
@@ -19,7 +19,7 @@ requirements:
     - gcc     # [osx]
     - make
     - python
-    - oce ==0.17.3
+    - oce ==0.18.3
     - cmake
     - swig >=3.0.9
     - libboost
@@ -27,7 +27,7 @@ requirements:
   run:
     - libgcc  # [osx]
     - python
-    - oce ==0.17.3
+    - oce ==0.18.3
     - libboost
     - icu
 
