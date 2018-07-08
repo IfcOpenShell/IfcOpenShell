@@ -35,8 +35,11 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
-#include <IGESControl_Controller.hxx>
 #include <Standard_Version.hxx>
+
+#if OCC_VERSION_HEX < 0x60900
+#include <IGESControl_Controller.hxx>
+#endif
 
 #include <boost/program_options.hpp>
 
@@ -562,7 +565,10 @@ int main(int argc, char** argv)
 	} else if (output_extension == ".stp") {
 		serializer = new StepSerializer(output_temp_filename, settings);
 	} else if (output_extension == ".igs") {
+#if OCC_VERSION_HEX < 0x60900
+		// According to https://tracker.dev.opencascade.org/view.php?id=25689 something has been fixed in 6.9.0
 		IGESControl_Controller::Init(); // work around Open Cascade bug
+#endif
 		serializer = new IgesSerializer(output_temp_filename, settings);
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
