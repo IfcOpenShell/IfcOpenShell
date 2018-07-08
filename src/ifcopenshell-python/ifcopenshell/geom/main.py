@@ -71,12 +71,8 @@ class settings(ifcopenshell_wrapper.settings):
                 ifcopenshell_wrapper.settings.set(self, *args)
 
 
-# Hide templating precision to the user by choosing based on Python's
-# internal float type. This is probably always going to be a double.
-for ty in (ifcopenshell_wrapper.iterator_single_precision, ifcopenshell_wrapper.iterator_double_precision):
-    if ty.mantissa_size() == sys.float_info.mant_dig:
-        _iterator = ty
-
+# Assert templated precision to match Python's internal float type
+assert ifcopenshell_wrapper.iterator_double_precision.mantissa_size() == sys.float_info.mant_dig
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):

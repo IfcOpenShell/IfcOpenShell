@@ -105,30 +105,15 @@
 // Using RTTI return a more specialized type of Element
 // Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
 // except for the IfcGeom::Element instances which are returned by Iterator::getObject() calls
-%typemap(out) IfcGeom::Element<float>* {
-	IfcGeom::SerializedElement<float>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<float>*>($1);
-	IfcGeom::TriangulationElement<float>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<float>*>($1);
-	if (triangulation_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_float_t, 0);
-	} else if (serialized_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_float_t, 0);
-	} else {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_IfcGeom__ElementT_float_t, SWIG_POINTER_OWN);
-	}
-}
-
-// Using RTTI return a more specialized type of Element
-// Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
-// except for the IfcGeom::Element instances which are returned by Iterator::getObject() calls
 %typemap(out) IfcGeom::Element<double>* {
 	IfcGeom::SerializedElement<double>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<double>*>($1);
 	IfcGeom::TriangulationElement<double>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<double>*>($1);
 	if (triangulation_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_t, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_double_t, 0);
 	} else if (serialized_elem) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_t, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_double_t, 0);
 	} else {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_IfcGeom__ElementT_double_t, SWIG_POINTER_OWN);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), SWIGTYPE_p_IfcGeom__ElementT_double_double_t, SWIG_POINTER_OWN);
 	}
 }
 
@@ -140,9 +125,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcGeom::SerializedElement<double>* serialized_elem = dynamic_cast<IfcGeom::SerializedElement<double>*>(elem);
 		IfcGeom::TriangulationElement<double>* triangulation_elem = dynamic_cast<IfcGeom::TriangulationElement<double>*>(elem);
 		if (triangulation_elem) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_t, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulation_elem), SWIGTYPE_p_IfcGeom__TriangulationElementT_double_double_t, SWIG_POINTER_OWN);
 		} else if (serialized_elem) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_t, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_elem), SWIGTYPE_p_IfcGeom__SerializedElementT_double_double_t, SWIG_POINTER_OWN);
 		} else {
 			throw std::runtime_error("Invalid element encountered");
 		}
@@ -459,26 +444,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 namespace IfcGeom {
-	%template(iterator_single_precision) Iterator<float>;
 	%template(iterator_double_precision) Iterator<double>;
-
-	%template(element_single_precision) Element<float>;
 	%template(element_double_precision) Element<double>;
-
-	%template(triangulation_element_single_precision) TriangulationElement<float>;
 	%template(triangulation_element_double_precision) TriangulationElement<double>;
-
-	%template(serialized_element_single_precision) SerializedElement<float>;
 	%template(serialized_element_double_precision) SerializedElement<double>;
-
-	%template(transformation_single_precision) Transformation<float>;
 	%template(transformation_double_precision) Transformation<double>;
-
-	%template(matrix_single_precision) Matrix<float>;
 	%template(matrix_double_precision) Matrix<double>;
-
 	namespace Representation {
-		%template(triangulation_single_precision) Triangulation<float>;
 		%template(triangulation_double_precision) Triangulation<double>;
 	};
 };
