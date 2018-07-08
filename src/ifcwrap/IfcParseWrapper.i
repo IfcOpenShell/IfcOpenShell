@@ -27,6 +27,9 @@ private:
 %ignore IfcParse::IfcFile::register_inverse;
 %ignore IfcParse::IfcFile::unregister_inverse;
 %ignore IfcParse::IfcFile::schema;
+%ignore IfcParse::IfcFile::begin;
+%ignore IfcParse::IfcFile::end;
+
 %ignore operator<<;
 
 %ignore IfcParse::FileDescription::FileDescription;
