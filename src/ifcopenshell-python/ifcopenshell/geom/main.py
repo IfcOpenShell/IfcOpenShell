@@ -73,6 +73,7 @@ class settings(ifcopenshell_wrapper.settings):
 
 # Assert templated precision to match Python's internal float type
 assert ifcopenshell_wrapper.iterator_double_precision.mantissa_size() == sys.float_info.mant_dig
+_iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):
