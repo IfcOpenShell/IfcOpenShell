@@ -1732,8 +1732,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 			entities_by_ref_t::iterator byref_it = byref.find(name);
 			if (byref_it != byref.end()) {
 				std::vector<unsigned>& ids = byref_it->second;
-				std::vector<unsigned>::const_iterator removed_from = std::remove(ids.begin(), ids.end(), id);
-				ids.erase(removed_from, ids.end());
+				ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
 			}
 		}
 	}
