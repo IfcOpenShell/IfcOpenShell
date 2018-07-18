@@ -413,8 +413,11 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 
 std::string ColladaSerializer::differentiateSlabTypes(const IfcSchema::IfcSlab* slab)
 {
-    switch (slab->PredefinedType())
-    {
+    if (!slab->hasPredefinedType()) {
+        return "_Unknown";
+    }
+
+    switch (slab->PredefinedType()) {
     case IfcSlabTypeEnum::IfcSlabType_FLOOR: return "_Floor";
     case IfcSlabTypeEnum::IfcSlabType_ROOF: return "_Roof";
     case IfcSlabTypeEnum::IfcSlabType_LANDING: return "_Landing";
