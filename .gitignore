@@ -1,6 +1,7 @@
 # Dependency and build folders created by the build scripts
 /deps*/
 /build*/
+cmake/cmake-build-debug/
 /install*/
 /win/BuildDepsCache*.txt
 # IfcExpressParser residue
