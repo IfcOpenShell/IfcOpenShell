@@ -135,6 +135,12 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance->getArgumentCount();
 	for (unsigned i = 0; i < n; ++i) {
+		try {
+		    instance->getArgument(i);
+		} catch (const std::exception& e) {
+		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance->entity);
+		    continue;
+		}		
 		const Argument* argument = instance->getArgument(i);
 		if (argument->isNull()) continue;
 
