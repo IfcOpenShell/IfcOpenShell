@@ -38,11 +38,11 @@ namespace {
 
 std::map<std::string, std::string> argument_name_map;
 
-// Format an IFC attribute and maybe returns as string. Only literal scalar 
+// Format an IFC attribute and maybe returns as string. Only literal scalar
 // values are converted. Things like entity instances and lists are omitted.
 boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
 	boost::optional<std::string> value;
-	
+
 	// Hard-code lat-lon as it represents an array
 	// of integers best emitted as a single decimal
 	if (argument_name == "IfcSite.RefLatitude" ||
@@ -111,7 +111,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				gp_Trsf trsf;
 				IfcGeom::Kernel kernel;
-				
+
 				if (kernel.convert(placement, trsf)) {
 					std::stringstream stream;
 					for (int i = 1; i < 5; ++i) {
@@ -122,7 +122,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 						stream << ((i == 4) ? "1" : "0 ");
 					}
 					value = stream.str();
-				}				
+				}
 			}
 			break; }
         default:
@@ -135,6 +135,13 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance->getArgumentCount();
 	for (unsigned i = 0; i < n; ++i) {
+        try {
+            instance->getArgument(i);
+        } catch (const std::exception& e) {
+            Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance->entity);
+            continue;
+        }
+
 		const Argument* argument = instance->getArgument(i);
 		if (argument->isNull()) continue;
 
@@ -180,7 +187,7 @@ std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
 	return IfcSchema::Type::ToString(inst->type()) + "_" + boost::lexical_cast<std::string>(inst->entity->id());
 }
 
-// A function to be called recursively. Template specialization is used 
+// A function to be called recursively. Template specialization is used
 // to descend into decomposition, containment and property relationships.
 template <typename A>
 ptree& descend(A* instance, ptree& tree) {
@@ -209,14 +216,14 @@ typename V::list::ptr get_related(T* t, F f, G g) {
 template <>
 ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 	ptree& child = format_entity_instance(product, tree);
-	
+
 	if (product->is(Type::IfcSpatialStructureElement)) {
 		IfcSpatialStructureElement* structure = (IfcSpatialStructureElement*) product;
 
 		IfcObjectDefinition::list::ptr elements = get_related
 			<IfcSpatialStructureElement, IfcRelContainedInSpatialStructure, IfcObjectDefinition>
 			(structure, &IfcSpatialStructureElement::ContainsElements, &IfcRelContainedInSpatialStructure::RelatedElements);
-	
+
 		for (IfcObjectDefinition::list::it it = elements->begin(); it != elements->end(); ++it) {
 			descend(*it, child);
 		}
@@ -290,7 +297,7 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
             node.put("<xmlattr>.xlink:href", "#" + it->first);
             format_entity_instance(it->second, node, child, true);
         }
-		
+
 		IfcRelAssociates::list::ptr associations = product->HasAssociations();
 		for (IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
 			if ((*it)->as<IfcRelAssociatesMaterial>()) {
@@ -339,7 +346,7 @@ void XmlSerializer::finalize() {
 	IfcProject* project = *projects->begin();
 
 	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
-	
+
 	// Write the SPF header as XML nodes.
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
@@ -359,7 +366,7 @@ void XmlSerializer::finalize() {
 	header.put("file_name.preprocessor_version",        file->header().file_name().preprocessor_version());
 	header.put("file_name.originating_system",          file->header().file_name().originating_system());
 	header.put("file_name.authorization",               file->header().file_name().authorization());
-	
+
 	// Descend into the decomposition structure of the IFC file.
 	descend(project, decomposition);
 
@@ -370,7 +377,7 @@ void XmlSerializer::finalize() {
 		ptree& node = format_entity_instance(pset, properties);
 		format_properties(pset->HasProperties(), node);
 	}
-	
+
 	// Write all quantities and values as XML nodes.
 	IfcElementQuantity::list::ptr qtosets = file->entitiesByType<IfcElementQuantity>();
 	for (IfcElementQuantity::list::it it = qtosets->begin(); it != qtosets->end(); ++it) {
@@ -385,8 +392,8 @@ void XmlSerializer::finalize() {
 	for (IfcTypeObject::list::it it = type_objects->begin(); it != type_objects->end(); ++it) {
 		IfcTypeObject* type_object = *it;
 		ptree& node = descend(type_object, types);
-		// ptree& node = format_entity_instance(type_object, types);	
-		
+		// ptree& node = format_entity_instance(type_object, types);
+
 		if (type_object->hasHasPropertySets()) {
 			IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
 			for (IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
@@ -433,11 +440,11 @@ void XmlSerializer::finalize() {
 			emitted_materials.insert(mat);
 			ptree node;
 			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
-			if (mat->as<IfcMaterialLayerSetUsage>() || mat->as<IfcMaterialLayerSet>()) {				
+			if (mat->as<IfcMaterialLayerSetUsage>() || mat->as<IfcMaterialLayerSet>()) {
 				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSet>();
 				if (!layerset) {
 					layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
-				}				
+				}
 				if (layerset->hasLayerSetName()) {
 					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
 				}
