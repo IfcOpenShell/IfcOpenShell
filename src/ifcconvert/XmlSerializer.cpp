@@ -139,7 +139,7 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 		    instance->getArgument(i);
 		} catch (const std::exception& e) {
 		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance->entity);
-		    continue;
+		    break;
 		}		
 		const Argument* argument = instance->getArgument(i);
 		if (argument->isNull()) continue;
