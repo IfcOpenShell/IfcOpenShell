@@ -1079,6 +1079,10 @@ private:
 
 	template <typename T>
 	void apply_attribute_(T& t, Argument* attr) const {
+		if (!attr) {
+			return;
+		}
+
 		if (attr->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
 			IfcUtil::IfcBaseClass* inst = *attr;
 			t(inst);

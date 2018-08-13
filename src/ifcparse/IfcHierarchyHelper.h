@@ -39,7 +39,7 @@
 #include "../ifcparse/IfcWrite.h"
 #include "../ifcparse/IfcGlobalId.h"
 
-namespace impl {
+namespace {
 	IfcUtil::IfcBaseClass* get_parent_of_relation(IfcUtil::IfcBaseClass* t) {
 		return *t->data().getArgument(
 			t->declaration().as_entity()->attribute_index("RelatingObject")
@@ -132,10 +132,10 @@ public:
 		bool found = false;
 		for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;
-			if (impl::get_parent_of_relation(rel) == relating_object) {
-				IfcEntityList::ptr products = impl::get_children_of_relation(rel);
+			if (get_parent_of_relation(rel) == relating_object) {
+				IfcEntityList::ptr products = get_children_of_relation(rel);
 				products->push(related_object);
-				impl::set_children_of_relation(rel, products);
+				set_children_of_relation(rel, products);
 				found = true;
 				break;
 			}
@@ -154,8 +154,13 @@ public:
 			IfcEntityInstanceData* data = new IfcEntityInstanceData(&T::Class());
 			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set<std::string>(IfcParse::IfcGlobalId()); data->setArgument(0, attr); }
 			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(owner_hist); data->setArgument(1, attr); }
-			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(relating_object); data->setArgument(4, attr); }
-			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(related_objects); data->setArgument(5, attr); }
+			int relating_index = 4, related_index = 5;
+			if (T::Class().name() == "IfcRelContainedInSpatialStructure") {
+				// IfcRelContainedInSpatialStructure has attributes reversed.
+				std::swap(relating_index, related_index);
+			}
+			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(relating_object); data->setArgument(relating_index, attr); }
+			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(related_objects); data->setArgument(related_index, attr); }
 			
 			T* t = (T*)Schema::get_schema().instantiate(data);
 			addEntity(t);
