@@ -52,6 +52,9 @@ namespace IfcUtil {
 
 		template <class T>
 		T* as() {
+			if (this == 0) {
+				return static_cast<T*>(0);
+			}
 			return declaration().is(T::Class())
 				? static_cast<T*>(this)
 				: static_cast<T*>(0);
@@ -59,6 +62,9 @@ namespace IfcUtil {
 
 		template <class T>
 		const T* as() const {
+			if (this == 0) {
+				return static_cast<const T*>(0);
+			}
 			return declaration().is(T::Class())
 				? static_cast<const T*>(this)
 				: static_cast<const T*>(0);
