@@ -159,6 +159,7 @@ int main(int argc, char** argv)
 		("version", "display version information")
 		("verbose,v", "more verbose log messages")
 		("quiet,q", "less status and progress output")
+		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json");
@@ -343,6 +344,7 @@ int main(int argc, char** argv)
 	const bool verbose = vmap.count("verbose") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
+	const bool stderr_progress = vmap.count("stderr-progress") != 0;
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
@@ -696,8 +698,12 @@ int main(int argc, char** argv)
 				const int progress = context_iterator.progress();
 				for (; old_progress < progress; ++old_progress) {
 					std::cout << ".";
+					if (stderr_progress)
+						std::cerr << ".";
 				}
 				std::cout << std::flush;
+				if (stderr_progress)
+					std::cerr << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -709,7 +715,12 @@ int main(int argc, char** argv)
 	if (!no_progress && quiet) {
 		for (; old_progress < 100; ++old_progress) {
 			std::cout << ".";
+			if (stderr_progress)
+				std::cerr << ".";
 		}
+		std::cout << std::flush;
+		if (stderr_progress)
+			std::cerr << std::flush;
 	} else {
 		Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
 			" objects)                                ");
