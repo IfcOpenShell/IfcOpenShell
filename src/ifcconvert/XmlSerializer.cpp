@@ -137,7 +137,7 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 	for (unsigned i = 0; i < n; ++i) {
 		try {
 		    instance->getArgument(i);
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance->entity);
 		    break;
 		}		
@@ -328,7 +328,11 @@ void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 void format_quantities(IfcPhysicalQuantity::list::ptr quantities, ptree& node) {
 	for (IfcPhysicalQuantity::list::it it = quantities->begin(); it != quantities->end(); ++it) {
 		IfcPhysicalQuantity* p = *it;
-		format_entity_instance(p, node);
+		ptree& node2 = format_entity_instance(p, node);
+		if (p->is(Type::IfcPhysicalComplexQuantity)) {
+			IfcPhysicalComplexQuantity* complex = (IfcPhysicalComplexQuantity*)p;
+			format_quantities(complex->HasQuantities(), node2);
+		}
 	}
 }
 
