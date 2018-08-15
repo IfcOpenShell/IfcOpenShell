@@ -118,9 +118,11 @@ ELSE()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
     # the case in conda-forge's libboost feedstock.
-    #
-    # Should this always be specified?
-	ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+    ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+    IF(WIN32)
+        # Necessary for boost version >= 1.67
+        SET(BCRYPT_LIBRARIES "bcrypt.lib")
+    ENDIF()
 ENDIF()
 
 set(BOOST_COMPONENTS system program_options regex thread date_time)
@@ -569,8 +571,10 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS)
 
+TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
+
 IF(UNICODE_SUPPORT)
-	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES} ${Boost_LIBRARIES})
+	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
 ENDIF()
 
 # IfcGeom
