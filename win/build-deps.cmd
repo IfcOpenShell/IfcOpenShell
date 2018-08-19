@@ -250,10 +250,14 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 if %IFCOS_USE_OCCT%==FALSE goto :OCE
 :OCCT
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCCT_VERSION=7.3.0
+SET OCCT_VER=V%OCCT_VERSION:.=_%
+
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.6.5
@@ -272,76 +276,24 @@ if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error 
 
-set OCCT_HASH=88af392
-set OCCT_VERSION=7.2.0
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
-set OCCT_FILENAME=occt-%OCCT_HASH%
-set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
+set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
 cd "%DEPS_DIR%"
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=%OCCT_HASH%;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
+call :GitCloneAndCheckoutRevision https://git.dev.opencascade.org/repos/occt.git "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
-
-if exist "%DEPS_DIR%\%OCCT_FILENAME%" (
-    :: TK: I am having a hard time to reinitialize OCCT, because the directory ends up being recreated by a prior cmake step, even if manually deleted.
-    :: Therefore check if the directory contains a full checkout [using a single file as proxy] and delete the directory tree if it is not.
-    if not exist "%DEPS_DIR%\%OCCT_FILENAME%\OCCT_LGPL_EXCEPTION.txt". rd /s/q "%DEPS_DIR%\%OCCT_FILENAME%"
-)
-
-
-call :ExtractArchive %OCCT_FILENAME%.tar.gz "%DEPS_DIR%" "%DEPENDENCY_DIR%"
-if not %ERRORLEVEL%==0 goto :Error
-call :ExtractArchive %OCCT_FILENAME%.tar "%DEPS_DIR%" "%DEPENDENCY_DIR%"
-if not %ERRORLEVEL%==0 goto :Error
-
-set DEPENDENCY_NAME=Additional files
-:: Somehow these two files are not present in the downloaded
-:: snapshot. Path names being too long for gitweb snapshot?
-
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx
-if not %ERRORLEVEL%==0 goto :Error
-
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx
-if not %ERRORLEVEL%==0 goto :Error
-
-if "%OCCT_VERSION%"=="7.2.0" (
-
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/StepVisual/StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx" "%OCCT_FILENAME%\src\StepVisual" StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx
-if not %ERRORLEVEL%==0 goto :Error
-
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.cxx
-if not %ERRORLEVEL%==0 goto :Error
-
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/StepVisual/StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx" "%OCCT_FILENAME%\src\StepVisual" StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx
-if not %ERRORLEVEL%==0 goto :Error
-
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=%OCCT_HASH%;f=src/RWStepVisual/RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem.hxx
-if not %ERRORLEVEL%==0 goto :Error
-
-)
-
-set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 
 :: Patching always blindly would trigger a rebuild each time
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
-    echo Patching %DEPENDENCY_NAME%'s CMake files
-    REM OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
-    if exist "%~dp0patches\%OCCT_HASH%_CMakeLists.txt" copy /y "%~dp0patches\%OCCT_HASH%_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
-    REM Patch OCCT to be built against the static MSVC run-time.
-    if exist "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_defs_flags.cmake" copy /y "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
-    REM OCCT tries to deploy PDBs from the bin directory even if static build is used.
-    if exist "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_toolkit.cmake" copy /y "%~dp0patches\%OCCT_HASH%_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
-    REM Patch header file for HAVE_NO_DLL
-    if exist "%~dp0patches\%OCCT_HASH%_Standard_Macro.hxx" copy /y "%~dp0patches\%OCCT_HASH%_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
-    REM https://tracker.dev.opencascade.org/view.php?id=28248
-    if exist "%~dp0patches\%OCCT_HASH%_src-HLRBRep-HLRBRep_InternalAlgo.cxx" copy /y "%~dp0patches\%OCCT_HASH%_src-HLRBRep-HLRBRep_InternalAlgo.cxx" "%DEPENDENCY_DIR%\src\HLRBRep\HLRBRep_InternalAlgo.cxx"
-    REM NOTE If adding a new patch, adjust the checks above and below accordingly
+    pushd "%DEPENDENCY_DIR%"
+    git apply ""%~dp0patches\%OCCT_VER%.patch"
+    popd
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
-call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
     -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
@@ -355,14 +307,14 @@ set OCCT_VC_VER=%VC_VER%
 IF %OCCT_VC_VER% GTR 14 (
     set OCCT_VC_VER=14
 )
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\lib\*.*" "%OCC_LIBRARY_DIR%"
-rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%"
+move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\lib\*.*" "%OCC_LIBRARY_DIR%"
+rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%"
 :: Removed unneeded bits
-rmdir /s /q "%INSTALL_DIR%\opencascade\data"
-rmdir /s /q "%INSTALL_DIR%\opencascade\samples"
-del "%INSTALL_DIR%\opencascade\*.bat"
+rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
+rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
+del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
 goto :Python
 
