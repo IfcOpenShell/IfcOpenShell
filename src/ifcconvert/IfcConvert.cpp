@@ -296,7 +296,7 @@ int main(int argc, char** argv)
 			"Applicable for DAE output.")
         ("center-model",
             "Centers the elements upon serialization by applying the center point of "
-            "all placements as an offset. Applicable for OBJ and DAE output.")
+            "all placements as an offset. Applicable for OBJ and DAE output. Can take several minutes on large models.")
         ("model-offset", po::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
 		("site-local-placement",
@@ -638,7 +638,7 @@ int main(int argc, char** argv)
 
 	int old_progress = quiet ? 0 : -1;
 
-    if (center_model || model_offset) {
+    if (is_tesselated && (center_model || model_offset)) {
         double* offset = serializer->settings().offset;
         if (center_model) {
 			if (site_local_placement || building_local_placement) {
@@ -646,6 +646,11 @@ int main(int argc, char** argv)
 				delete serializer;
 				return EXIT_FAILURE;
 			}
+
+            if (!quiet) Logger::Status("Computing bounds...");
+            context_iterator.compute_bounds();
+            if (!quiet) Logger::Status("Done!");
+
             gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
             offset[0] = -center.X();
             offset[1] = -center.Y();
