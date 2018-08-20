@@ -135,6 +135,9 @@
 
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 
+#include <Extrema_ExtPC.hxx>
+#include <BRepAdaptor_Curve.hxx>
+
 #include <Standard_Version.hxx>
 
 #include "../ifcparse/IfcSIPrefix.h"
@@ -630,8 +633,27 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& fa
 		select_largest(results, wire);
 	}
 
-	ShapeFix_ShapeTolerance FTol;
-	FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+	bool is_2d = true;
+	TopExp_Explorer exp(wire, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		double a, b;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			is_2d = false;
+			break;
+		}
+		Handle(Geom_Line) line = Handle(Geom_Line)::DownCast(crv);
+		if (line->Lin().Direction().Z() > ALMOST_ZERO) {
+			is_2d = false;
+			break;
+		}
+	}
+
+	if (!is_2d) {
+		// For 2d wires (e.g. profiles) a higher tolerance for plane fitting is never required.
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+	}
 
 	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
@@ -2870,7 +2892,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			if (i == n - 1 && j == 0) continue;
 
 			bool unbounded_intersects;
-			const double eps = getValue(GV_PRECISION) * 2.;
+			const double eps = getValue(GV_PRECISION) * 10.;
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
@@ -3006,6 +3028,99 @@ void IfcGeom::Kernel::select_largest(const TopTools_ListOfShape& shapes, TopoDS_
 	}
 }
 
+bool IfcGeom::Kernel::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height) {
+	TopExp_Explorer exp(b, TopAbs_FACE);
+	if (!exp.More()) {
+		return false;
+	}
+
+	TopoDS_Face face = TopoDS::Face(exp.Current());
+	exp.Next();
+
+	if (exp.More()) {
+		return false;
+	}
+
+	Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
+
+	// const gp_XYZ xyz = a.Location().Transformation().TranslationPart();
+	// std::cout << "dz " << xyz.Z() << std::endl;
+
+	if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+		return false;
+	}
+
+	Bnd_Box bb;
+	BRepBndLib::Add(a, bb);
+
+	double xs[2], ys[2], zs[2];
+	bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
+
+	gp_Pln pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
+
+	gp_Pnt P = pln.Position().Location();
+	gp_Vec z = pln.Position().Direction();
+	gp_Vec x = pln.Position().XDirection();
+	gp_Vec y = pln.Position().YDirection();
+
+	if (face.Orientation() != TopAbs_REVERSED) {
+		z.Reverse();
+	}
+
+	double D, Umin, Umax, Vmin, Vmax;
+	D = 0.;
+	Umin = Vmin = +std::numeric_limits<double>::infinity();
+	Umax = Vmax = -std::numeric_limits<double>::infinity();
+
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			for (int k = 0; k < 2; ++k) {
+				gp_Pnt p(xs[i], ys[j], zs[k]);
+				
+				gp_Vec d = p.XYZ() - P.XYZ();
+				const double u = d.Dot(x);
+				const double v = d.Dot(y);
+				const double w = d.Dot(z);
+
+				if (w > D) {
+					D = w;
+				}
+				if (u < Umin) {
+					Umin = u;
+				}
+				if (u > Umax) {
+					Umax = u;
+				}
+				if (v < Vmin) {
+					Vmin = v;
+				}
+				if (v > Vmax) {
+					Vmax = v;
+				}
+			}
+		}
+	}
+
+	const double eps = getValue(GV_PRECISION) * 2.;
+
+	BRepBuilderAPI_MakePolygon poly;
+	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmin + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmin + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmax + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmax + eps));
+	poly.Close();
+
+	BRepBuilderAPI_MakeFace mf(surf, poly.Wire(), true);
+
+	gp_Vec vec = gp_Vec(z.XYZ() * (D + eps));
+
+	BRepPrimAPI_MakePrism mp(mf.Face(), vec);
+	box = mp.Shape();
+	
+	height = D;
+	return true;
+}
+
 #if OCC_VERSION_HEX < 0x60900
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result) {
 	result = a;
@@ -3103,6 +3218,48 @@ namespace {
 		}
 		return min_edge_len;
 	}
+
+	double min_vertex_edge_distance(const TopoDS_Shape& a, double t) {
+		TopExp_Explorer exp(a, TopAbs_VERTEX);
+
+		double M = std::numeric_limits<double>::infinity();
+
+		for (; exp.More(); exp.Next()) {
+			if (exp.Current().Orientation() != TopAbs_FORWARD) {
+				continue;
+			}
+
+			const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
+			gp_Pnt p = BRep_Tool::Pnt(v);
+
+			TopExp_Explorer exp2(a, TopAbs_EDGE);
+			for (; exp2.More(); exp2.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(exp2.Current());
+				TopoDS_Vertex v1, v2;
+				TopExp::Vertices(e, v1, v2);
+
+				if (v.IsEqual(v1) || v.IsEqual(v2)) {
+					continue;
+				}
+
+				BRepAdaptor_Curve crv(e);
+				Extrema_ExtPC ext(p, crv);
+				if (!ext.IsDone()) {
+					continue;
+				}
+
+				for (int i = 1; i <= ext.NbExt(); ++i) {
+					const double m = sqrt(ext.SquareDistance(i));
+					if (m < M && m > t) {
+						M = m;
+					}
+				}
+			}
+		}
+
+		return M;
+	}
+
 }
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
@@ -3121,8 +3278,20 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		fuzziness = getValue(GV_PRECISION);
 	}
 
-	const double min_edge_len = min_edge_length(a);
-	const double fuzz = (std::min)(min_edge_len / 3., fuzziness);
+	double min_len = (std::min)(min_edge_length(a), min_vertex_edge_distance(a, getValue(GV_PRECISION)));
+	TopTools_ListIteratorOfListOfShape it(b);
+	for (; it.More(); it.Next()) {
+		double d = min_edge_length(it.Value());
+		if (d < min_len) {
+			min_len = d;
+		}
+		d = min_vertex_edge_distance(it.Value(), getValue(GV_PRECISION));
+		if (d < min_len) {
+			min_len = d;
+		}
+	}
+
+	const double fuzz = (std::min)(min_len / 10., fuzziness);
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
@@ -3156,7 +3325,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_edge_len) {
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_len) {
             return boolean_operation(a, b, op, result, new_fuzziness);
         }
 	}

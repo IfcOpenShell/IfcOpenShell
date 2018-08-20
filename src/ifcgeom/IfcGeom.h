@@ -195,6 +195,8 @@ public:
 	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 #endif
 
+	bool fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height);
+
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
 	const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
