@@ -416,6 +416,18 @@ namespace IfcGeom {
 				if (!ifcproducts) {
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
 					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel.products_represented_by(representation);
+                    // Filter the products based on the set of entities and/or names being included or excluded for processing.
+                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
+                        IfcSchema::IfcProduct* prod = *jt;
+                        if (boost::all(filters_, filter_match(prod))) {
+                            ifcproducts->push(prod);
+                        }
+                    }
+
+                    if (ifcproducts->size() == 0) {
+                        _nextShape();
+                        continue;
+                    }
 
 					geometry_reuse_ok_for_current_representation_ = reuse_ok_(unfiltered_products);
 
@@ -449,14 +461,6 @@ namespace IfcGeom {
 						_nextShape();
 						continue;
 					}
-
-                    // Filter the products based on the set of entities and/or names being included or excluded for processing.
-                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
-                        IfcSchema::IfcProduct* prod = *jt;
-                        if (boost::all(filters_, filter_match(prod))) {
-                            ifcproducts->push(prod);
-                        }
-                    }
 
 					ifcproduct_iterator = ifcproducts->begin();
 				}
