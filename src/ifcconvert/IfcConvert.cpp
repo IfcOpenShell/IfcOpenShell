@@ -779,6 +779,8 @@ void write_log(bool header) {
 	}
 }
 
+#include <boost/algorithm/string/predicate.hpp>
+
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
@@ -788,6 +790,12 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 	ifc_file = new IfcParse::IfcFile(filename, mmap);
 #else
 	(void)mmap;
+
+#ifdef WITH_IFCXML
+	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
+		ifc_file = IfcParse::parse_ifcxml(filename);
+	} else
+#endif
 	ifc_file = new IfcParse::IfcFile(filename);
 	if (!ifc_file->good()) {
 #endif
