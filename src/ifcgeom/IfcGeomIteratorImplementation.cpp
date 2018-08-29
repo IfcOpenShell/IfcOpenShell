@@ -13,7 +13,7 @@ namespace IfcGeom {
 
 namespace {
 	template <typename P, typename PP>
-	struct factory_t {
+	struct MAKE_TYPE_NAME(factory_t) {
 		IfcGeom::IteratorImplementation<P, PP>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file) const {
 			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P, PP>(settings, file);
 		}
@@ -23,7 +23,7 @@ namespace {
 template <typename P, typename PP>
 void MAKE_INIT_FN(IteratorImplementation_)(IteratorFactoryImplementation<P, PP>* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
-	factory_t<P, PP> factory;
+	MAKE_TYPE_NAME(factory_t)<P, PP> factory;
 	mapping->bind(schema_name, factory);
 }
 
