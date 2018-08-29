@@ -86,6 +86,7 @@ private:
 
 	void initialize_(IfcParse::IfcSpfStream* f);
 
+	void build_inverses_(IfcUtil::IfcBaseClass*);
 public:
 	IfcParse::IfcSpfLexer* tokens;
 	IfcParse::IfcSpfStream* stream;
@@ -191,6 +192,11 @@ public:
 	const IfcParse::schema_definition* schema() const { return schema_; }
 
 	std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
+
+	bool parsing_complete() const { return parsing_complete_; }
+	bool& parsing_complete() { return parsing_complete_; }
+
+	void build_inverses();
 };
 
 template <typename Schema>
@@ -206,6 +212,10 @@ public:
 		return IfcFile::instance_by_guid(guid)->template as<typename Schema::IfcRoot>();
 	}
 };
+
+#ifdef WITH_IFCXML
+IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
+#endif
 
 }
 

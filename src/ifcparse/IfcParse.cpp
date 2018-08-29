@@ -1016,13 +1016,18 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
 	}
 }
 
+static IfcParse::NullArgument static_null_attribute;
 
 Argument* IfcEntityInstanceData::getArgument(unsigned int i) const {
 	if (attributes_ == 0) {
 		load();
 	}
 	if (i < getArgumentCount()) {
-		return attributes_[i];
+		if (attributes_[i] == nullptr) {
+			return &static_null_attribute;
+		} else {
+			return attributes_[i];
+		}
 	} else {
 		throw IfcParse::IfcException("Attribute index out of range");
 	}
@@ -1284,8 +1289,8 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
 }
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema)
-	: parsing_complete_(false)
-	, good_(false)
+	: parsing_complete_(true)
+	, good_(true)
 	, schema_(schema)
 	, ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
 	, MaxId(0)
@@ -1521,18 +1526,20 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 
 	// Obtain all forward references by a depth-first 
 	// traversal and add them to the file.
-	try {
-		IfcEntityList::ptr entity_attributes = traverse(entity, 1);
-		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-			if (*it != entity) {
-				entity_entity_map_t::iterator mit2 = entity_file_map.find(*it);
-				if (mit2 == entity_file_map.end()) {
-					entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+	if (parsing_complete_) {
+		try {
+			IfcEntityList::ptr entity_attributes = traverse(entity, 1);
+			for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+				if (*it != entity) {
+					entity_entity_map_t::iterator mit2 = entity_file_map.find(*it);
+					if (mit2 == entity_file_map.end()) {
+						entity_file_map.insert(entity_entity_map_t::value_type(*it, addEntity(*it)));
+					}
 				}
 			}
+		} catch (...) {
+			Logger::Message(Logger::LOG_ERROR, "Failed to visit forward references of", entity);
 		}
-	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "Failed to visit forward references of", entity);
 	}
 
 	// See whether the instance is already part of a file
@@ -1642,6 +1649,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 			we->set_id(FreshId());
 		}
 
+		// @todo entity_file_map: use weak_ptr
 		entity_file_map.insert(entity_entity_map_t::value_type(entity, new_entity));
 	}
 
@@ -1709,27 +1717,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
 		byid[new_id] = new_entity;
 	}
 
-	if (ty->as_entity()) {
-		// The mapping by reference is updated.
-		IfcEntityList::ptr entity_attributes(new IfcEntityList);
-		try {
-			entity_attributes = traverse(new_entity, 1);
-		} catch (const std::exception& e) {
-			Logger::Error(e);
-		}
-
-		for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-			IfcUtil::IfcBaseClass* entity_attribute = *it;
-			if (*it == new_entity) continue;
-			try {
-				if (entity_attribute->declaration().as_entity()) {
-					unsigned entity_attribute_id = entity_attribute->data().id();
-					byref[entity_attribute_id].push_back(new_entity->data().id());
-				}
-			} catch (const std::exception& e) {
-				Logger::Error(e);
-			}
-		}
+	if (parsing_complete_ && ty->as_entity()) {
+		build_inverses_(new_entity);
 	}
 
 	return new_entity;
@@ -2096,4 +2085,32 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 	}
 
 	return return_value;
+}
+
+void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
+	IfcEntityList::ptr entity_attributes(new IfcEntityList);
+	try {
+		entity_attributes = traverse(inst, 1);
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
+
+	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+		IfcUtil::IfcBaseClass* entity_attribute = *it;
+		if (*it == inst) continue;
+		try {
+			if (entity_attribute->declaration().as_entity()) {
+				unsigned entity_attribute_id = entity_attribute->data().id();
+				byref[entity_attribute_id].push_back(inst->data().id());
+			}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
+	}
+}
+
+void IfcParse::IfcFile::build_inverses() {
+	for (auto& pair : *this) {
+		build_inverses_(pair.second);	
+	}
 }
