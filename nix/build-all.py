@@ -559,6 +559,8 @@ run_cmake("", cmake_args=[
     "-DICU_INCLUDE_DIR="         "%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION),
     "-DICU_LIBRARY_DIR="         "%s/install/icu-%s/lib" % (DEPS_DIR, ICU_VERSION),
     "-DPCRE_LIBRARY_DIR="        "%s/install/pcre-%s/lib" % (DEPS_DIR, PCRE_VERSION),
+    "-DLIBXML2_INCLUDE_DIR="     "%s/install/libxml2-%s/include/libxml2" % (DEPS_DIR, LIBXML_VERSION),
+    "-DLIBXML2_LIBRARIES="       "%s/install/libxml2-%s/lib/libxml2.a" % (DEPS_DIR, LIBXML_VERSION),
     "-DBUILD_IFCPYTHON="         "OFF",
     "-DUSE_MMAP="                "OFF",
     "-DCMAKE_INSTALL_PREFIX="    "%s/install/ifcopenshell" % (DEPS_DIR,)], cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -596,6 +598,8 @@ for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
     "-DOPENCOLLADA_LIBRARY_DIR=%s/install/OpenCOLLADA/lib/opencollada" % (DEPS_DIR,),
     "-DICU_INCLUDE_DIR=%s/install/icu-%s/include" % (DEPS_DIR, ICU_VERSION),
     "-DICU_LIBRARY_DIR=%s/install/icu-%s/lib" % (DEPS_DIR, ICU_VERSION),
+    "-DLIBXML2_INCLUDE_DIR=%s/install/libxml2-%s/include/libxml2" % (DEPS_DIR, LIBXML_VERSION),
+    "-DLIBXML2_LIBRARIES=%s/install/libxml2-%s/lib/libxml2.a" % (DEPS_DIR, LIBXML_VERSION),
     "-DPYTHON_LIBRARY=%s" % (PYTHON_LIBRARY,),
     "-DPYTHON_EXECUTABLE=%s" % (PYTHON_EXECUTABLE,),
     "-DPYTHON_INCLUDE_DIR=%s" % (PYTHON_INCLUDE,),
