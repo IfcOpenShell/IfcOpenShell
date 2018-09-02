@@ -484,8 +484,28 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 					});
 					if (found == inverses.end()) {
 						Logger::Error("Unknown attribute " + tagname);
+						state->stack.push_back(state->stack.back());
 					} else {
-						state->stack.push_back(stack_node::inverse(state->stack.back().inst(), *found));
+						if ((*found)->bound1() == 0 && (*found)->bound2() == 1) {
+							auto inst_or_ref = create_instance((*found)->entity_reference());
+							IfcUtil::IfcBaseClass* inst;
+							Argument* attr;
+							instance_to_attribute(inst_or_ref, attr, inst);
+							if (inst != nullptr) {
+								int idx = (*found)->entity_reference()->attribute_index(
+									(*found)->attribute_reference()
+								);
+								IfcWrite::IfcWriteArgument* attr_inv = new IfcWrite::IfcWriteArgument();
+								attr_inv->set(state->stack.back().inst());
+								inst->data().setArgument(idx, attr_inv);
+								state->stack.push_back(stack_node::instance(id_in_file, inst));
+							} else {
+								Logger::Error("Unknown attribute " + tagname);
+								state->stack.push_back(state->stack.back());
+							}
+						} else {
+							state->stack.push_back(stack_node::inverse(state->stack.back().inst(), *found));
+						}
 					}
 				} else {
 					const IfcParse::parameter_type* attribute_type = current->attribute_by_index(idx)->type_of_attribute();
