@@ -234,7 +234,7 @@ static void end_element(void* user, const xmlChar* tag) {
 	}	
 }
 
-static void characters(void* user, const xmlChar* ch, int len) {
+static void process_characters(void* user, const xmlChar* ch, int len) {
 	ifcxml_parse_state* state = (ifcxml_parse_state*)user;
 
 	if (state->file == nullptr) {
@@ -602,7 +602,7 @@ IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filen
 	memset(&handler, 0, sizeof(xmlSAXHandler));
 	handler.startElement = start_element;
 	handler.endElement = end_element;
-	handler.characters = characters;
+	handler.characters = process_characters;
 
 	xmlSAXUserParseFile(&handler, &state, filename.c_str());
 
