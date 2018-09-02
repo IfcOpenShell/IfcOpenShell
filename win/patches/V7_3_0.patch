@@ -1,0 +1,72 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fca978164..dda41e2c6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -426,6 +426,9 @@ endforeach()
+ if (NOT BUILD_SHARED_LIBS)
+   list (REMOVE_ITEM BUILD_TOOLKITS DRAWEXE)
+   message (STATUS "Info: DRAWEXE is not included due to ${BUILD_LIBRARY_TYPE} build library type")
++  # IfcOpenShell begin
++  add_definitions(-DHAVE_NO_DLL)
++  # IfcOpenShell end
+ endif()
+ 
+ # accumulate all used toolkits
+diff --git a/adm/cmake/occt_defs_flags.cmake b/adm/cmake/occt_defs_flags.cmake
+index 09da18d38..46e6e6814 100644
+--- a/adm/cmake/occt_defs_flags.cmake
++++ b/adm/cmake/occt_defs_flags.cmake
+@@ -140,3 +140,18 @@ endif()
+ 
+ set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
+ set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
++
++# IfcOpenShell begin
++if (MSVC)
++    foreach(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
++            CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
++            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
++        if (${flag} MATCHES "/MD")
++            string(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
++        endif()
++        if (${flag} MATCHES "/MDd")
++            string(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
++        endif()
++    endforeach()
++endif()
++# IfcOpenShell end
+diff --git a/adm/cmake/occt_toolkit.cmake b/adm/cmake/occt_toolkit.cmake
+index f59b1639d..aee227516 100644
+--- a/adm/cmake/occt_toolkit.cmake
++++ b/adm/cmake/occt_toolkit.cmake
+@@ -208,11 +208,26 @@ if (EXECUTABLE_PROJECT)
+ else()
+   add_library (${PROJECT_NAME} ${USED_SRCFILES} ${USED_INCFILES} ${USED_RCFILE} ${RESOURCE_FILES} ${${PROJECT_NAME}_MOC_FILES})
+ 
+-  if (MSVC)
+-    install (FILES  ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.pdb
+-             CONFIGURATIONS Debug RelWithDebInfo
+-             DESTINATION "${INSTALL_DIR_BIN}\${OCCT_INSTALL_BIN_LETTER}")
++  # IfcOpenShell begin
++  if (BUILD_SHARED_LIBS)
++    if (MSVC)
++      install (FILES  ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.pdb
++               CONFIGURATIONS Debug RelWithDebInfo
++               DESTINATION "${INSTALL_DIR_BIN}\${OCCT_INSTALL_BIN_LETTER}")
++    endif()
++  else()
++    if (MSVC)
++      set_target_properties (${PROJECT_NAME} PROPERTIES
++        COMPILE_PDB_NAME ${PROJECT_NAME}
++        COMPILE_PDB_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/pdb/
++      )
++
++      install (FILES  ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/pdb/\${CMAKE_INSTALL_CONFIG_NAME}/${PROJECT_NAME}.pdb
++               CONFIGURATIONS Debug RelWithDebInfo
++               DESTINATION "${INSTALL_DIR_LIB}\${OCCT_INSTALL_BIN_LETTER}")
++    endif()
+   endif()
++  # IfcOpenShell end
+ 
+   if (BUILD_SHARED_LIBS AND NOT "${BUILD_SHARED_LIBRARY_NAME_POSTFIX}" STREQUAL "")
+     set (CMAKE_SHARED_LIBRARY_SUFFIX_DEFAULT ${CMAKE_SHARED_LIBRARY_SUFFIX})
