@@ -1,3 +1,5 @@
+#define BOOST_RESULT_OF_USE_DECLTYPE
+
 #include "IfcFile.h"
 
 #include <libxml/parser.h>
