@@ -291,6 +291,13 @@ namespace IfcGeom {
 			done = 0;
 			total = representations->size();
 
+			return true;
+		}
+
+        /// Computes model's bounding box (bounds_min and bounds_max).
+        /// @note Can take several minutes for large files.
+        void compute_bounds()
+        {
             for (int i = 1; i < 4; ++i) {
                 bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
                 bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
@@ -300,21 +307,21 @@ namespace IfcGeom {
             for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
                 IfcSchema::IfcProduct* product = *iter;
                 if (product->hasObjectPlacement()) {
-					// Use a fresh trsf every time in order to prevent the result to be concatenated
+                    // Use a fresh trsf every time in order to prevent the result to be concatenated
                     gp_Trsf trsf; 
-					bool success = false;
-					
-					try {
-						success = kernel.convert(product->ObjectPlacement(), trsf);
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					} catch (...) {
-						Logger::Error("Failed to construct placement");
-					}
-					
-					if (!success) {
-						continue;
-					}
+                    bool success = false;
+
+                    try {
+                        success = kernel.convert(product->ObjectPlacement(), trsf);
+                    } catch (const std::exception& e) {
+                        Logger::Error(e);
+                    } catch (...) {
+                        Logger::Error("Failed to construct placement");
+                    }
+
+                    if (!success) {
+                        continue;
+                    }
 
                     const gp_XYZ& pos = trsf.TranslationPart();
                     bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
@@ -325,9 +332,7 @@ namespace IfcGeom {
                     bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
                 }
             }
-
-			return true;
-		}
+        }
 
 		int progress() const { return 100 * done / total; }
 

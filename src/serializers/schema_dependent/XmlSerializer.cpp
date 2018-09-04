@@ -153,6 +153,12 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance->declaration().attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
+		try {
+		    instance->data().getArgument(i);
+		} catch (const std::exception&) {
+		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
+		    break;
+		}		
 		const Argument* argument = instance->data().getArgument(i);
 		if (argument->isNull()) continue;
 
@@ -343,7 +349,11 @@ void format_properties(IfcSchema::IfcProperty::list::ptr properties, ptree& node
 void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptree& node) {
 	for (IfcSchema::IfcPhysicalQuantity::list::it it = quantities->begin(); it != quantities->end(); ++it) {
 		IfcSchema::IfcPhysicalQuantity* p = *it;
-		format_entity_instance(p, node);
+		ptree& node2 = format_entity_instance(p, node);
+		if (p->declaration().is(IfcSchema::IfcPhysicalComplexQuantity::Class())) {
+			IfcSchema::IfcPhysicalComplexQuantity* complex = (IfcSchema::IfcPhysicalComplexQuantity*)p;
+			format_quantities(complex->HasQuantities(), node2);
+		}
 	}
 }
 
@@ -374,13 +384,55 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
-	header.put("file_description.implementation_level", file->header().file_description().implementation_level());
-	header.put("file_name.name",                        file->header().file_name().name());
-	header.put("file_name.time_stamp",                  file->header().file_name().time_stamp());
-	header.put("file_name.preprocessor_version",        file->header().file_name().preprocessor_version());
-	header.put("file_name.originating_system",          file->header().file_name().originating_system());
-	header.put("file_name.authorization",               file->header().file_name().authorization());
-	
+	try {
+		header.put("file_description.implementation_level", file->header().file_description().implementation_level());
+	}
+	catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to get ifc file header file_description implementation_level, error: '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+	try {
+		header.put("file_name.name", file->header().file_name().name());
+	}
+	catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to get ifc file header file_name name, error: '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+    try {
+        header.put("file_name.time_stamp", file->header().file_name().time_stamp());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name time_stamp, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+    try {
+        header.put("file_name.preprocessor_version", file->header().file_name().preprocessor_version());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name preprocessor_version, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+    try {
+        header.put("file_name.originating_system", file->header().file_name().originating_system());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name originating_system, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+    try {
+        header.put("file_name.authorization", file->header().file_name().authorization());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name authorization, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+
 	// Descend into the decomposition structure of the IFC file.
 	descend(project, decomposition);
 
