@@ -263,20 +263,13 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 		{ 0, 0, 0, 1 }
 	};
 
-	// Chose a name of the parent object
-	std::string name = "";
-	if (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES)) {
-		name = parent.type() + " " + parent.name();
-	} else {
-		name = parent.unique_id();
-	}
+    std::string name = serializer->object_id(&parent);
 	collada_id(name);
-
-	const std::string& id = name;
 
 	COLLADASW::Node *current_node;
 	current_node = new COLLADASW::Node(mSW);
-	current_node->setNodeId(id);
+	current_node->setNodeId(name);
+    /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 	current_node->setNodeName(name);
 	current_node->setType(COLLADASW::Node::NODE);
 	current_node->start();
@@ -391,19 +384,7 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 {
 	const IfcGeom::Representation::Triangulation<real_t>& mesh = o->geometry();
 	
-	std::string slabSuffix = "";
-	if (o->type() == "IfcSlab")
-	{
-		slabSuffix = differentiateSlabTypes(o);
-	}
-	
-	std::string name = serializer->settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
-		? o->guid()
-		: (serializer->settings().get(SerializerSettings::USE_ELEMENT_NAMES) 
-			? o->name()
-			: (serializer->settings().get(SerializerSettings::USE_ELEMENT_TYPES)
-				? (o->type() + slabSuffix)
-				: o->unique_id()));
+    std::string name = serializer->object_id(o);
 	collada_id(name);
 	
 	std::string representation_id = "representation-" + o->geometry().id();
@@ -430,24 +411,48 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	deferreds.push_back(deferred);
 }
 
-std::string ColladaSerializer::ColladaExporter::differentiateSlabTypes(const IfcGeom::TriangulationElement<real_t>* o) {
+std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEntity* slab)
+{
+	auto value = slab->get("PredefinedType");
+
+    if (value->isNull()) {
+        return "_Unknown";
+    }
+
+	const std::string str_value = *value;
 	std::string result;
 
-	if (!o->product()->get("ObjectType")->isNull()) {
-		const std::string object_type = *o->product()->get("ObjectType");
-		result = "_" + object_type;
+	if (str_value == "FLOOR") {
+		result = "_Floor";
+	} else if (str_value == "ROOF") {
+		result = "_Roof";
+	} else if (str_value == "LANDING") {
+		result = "_Landing";
+	} else if (str_value == "BASESLAB") {
+		result = "_BaseSlab";
+	} else if (str_value == "NOTDEFINED") {
+		result = "_NotDefined";
 	} else {
-		result = "_Unknown"; 
+		auto otype = slab->get("ObjectType");
+		if (otype->isNull()) {
+			result = "_Unknown";
+		} else {
+			result = *otype;
+		}
 	}
-
-	const std::string slabtype = *o->product()->get("PredefinedType");
-	if (slabtype != "NOTDEFINED" && slabtype != "USERDEFINED") {
-		result = "_" + slabtype;
-	}
-
-	collada_id(result);
 
 	return result;
+}
+
+std::string ColladaSerializer::object_id(const IfcGeom::Element<real_t>* o) /*override*/
+{
+    if (settings_.get(SerializerSettings::USE_ELEMENT_TYPES)) {
+        const std::string slabSuffix = (o->product() && o->product()->declaration().name() == "IfcSlab")
+            ? differentiateSlabTypes(o->product())
+            : "";
+        return o->type() + slabSuffix;
+    }
+    return GeometrySerializer::object_id(o);
 }
 
 void ColladaSerializer::ColladaExporter::endDocument() {

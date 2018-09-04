@@ -481,6 +481,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
+	bool is_unbounded_halfspace = is_halfspace && !operand2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
 		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
@@ -524,6 +525,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		const double second_operand_volume = shape_volume(s2);
 		if ( second_operand_volume <= ALMOST_ZERO )
 			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2);
+	}
+
+	if (is_unbounded_halfspace) {
+		TopoDS_Shape temp;
+		double d;
+		if (fit_halfspace(s1, s2, temp, d)) {
+			if (d < getValue(GV_PRECISION)) {
+				Logger::Message(Logger::LOG_WARNING, "Subtraction yields unchanged volume:", l);
+				shape = s1;
+				return true;
+			} else {
+				s2 = temp;
+			}
+		}
 	}
 
 	const IfcSchema::IfcBooleanOperator::Value op = l->Operator();
