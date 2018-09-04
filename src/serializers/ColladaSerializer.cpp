@@ -437,7 +437,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 		if (otype->isNull()) {
 			result = "_Unknown";
 		} else {
-			result = *otype;
+			result = (std::string) *otype;
 		}
 	}
 
