@@ -154,7 +154,7 @@
 #endif
 
 namespace {
-	struct factory_t {
+	struct MAKE_TYPE_NAME(factory_t) {
 		IfcGeom::Kernel* operator()(IfcParse::IfcFile* file) const {
 			IfcGeom::MAKE_TYPE_NAME(Kernel)* k = new IfcGeom::MAKE_TYPE_NAME(Kernel);
 			if (file) {
@@ -207,7 +207,7 @@ namespace {
 
 void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
-	factory_t factory;
+	MAKE_TYPE_NAME(factory_t) factory;
 	mapping->bind(schema_name, factory);
 }
 
