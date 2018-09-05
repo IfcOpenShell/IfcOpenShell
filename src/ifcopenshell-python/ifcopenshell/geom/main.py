@@ -187,13 +187,13 @@ def make_shape_function(fn):
     if has_occ:
         import OCC.TopoDS
 
-        def _(string_or_shape, *args):
+        def _(schema, string_or_shape, *args):
             if isinstance(string_or_shape, OCC.TopoDS.TopoDS_Shape):
                 string_or_shape = utils.serialize_shape(string_or_shape)
-            return entity_instance_or_none(fn(string_or_shape, *args))
+            return entity_instance_or_none(fn(schema, string_or_shape, *args))
     else:
-        def _(string, *args):
-            return entity_instance_or_none(fn(string, *args))
+        def _(schema, string, *args):
+            return entity_instance_or_none(fn(schema, string, *args))
     return _
 
 
