@@ -464,7 +464,7 @@ void XmlSerializer::finalize() {
 
     // Layer assignments. IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier)
     // so use names as the IDs and only insert those with unique names. In case of possible duplicate names/IDs
-    // the first IfcPresentationLayerAssignment occurence takes precedence.
+    // the first IfcPresentationLayerAssignment occurrence takes precedence.
     std::set<std::string> layer_names;
     IfcPresentationLayerAssignment::list::ptr layer_assignments = file->entitiesByType<IfcPresentationLayerAssignment>();
     for (IfcPresentationLayerAssignment::list::it it = layer_assignments->begin(); it != layer_assignments->end(); ++it) {

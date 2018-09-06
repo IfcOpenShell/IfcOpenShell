@@ -304,7 +304,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 				use_radians = true;
 			} else {
 				// No heuristic left to prefer the one over the other,
-				// apparently both variants are equally succesful.
+				// apparently both variants are equally successful.
 				// The curve might be composed of only straight segments.
 				// Let's go with the wire created using radians as that
 				// at least is a SI unit.

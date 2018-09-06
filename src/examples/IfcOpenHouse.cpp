@@ -240,7 +240,7 @@ int main() {
 	file.addBuildingProduct(west_wall);
 
 	// The west wall is assigned an opening element we created for the south wall, opening elements are
-	// not shared accross building elements, even if they share the same representation. Hence, the east
+	// not shared across building elements, even if they share the same representation. Hence, the east
 	// wall will not feature this opening.
 	// NB: an Opening Element can only be used to create a single void within a single Element, as per:
 	// http://www.buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcproductextension/lexical/ifcfeatureelementsubtraction.htm
@@ -412,7 +412,7 @@ int main() {
 	// Therefore we will construct the window as a decomposition of beams and a plate, in which 
 	// only the plate will have a transparent material assigned.
 
-	// The window frame will consists of four seperate beams.
+	// The window frame will consists of four separate beams.
 	// AutoCAD Architecture will create an internal window type for the IfcWindow created.
 	// Therefore the OverallWidth and OverallHeight of the window attributes will need to
 	// match the bounding box of the representation. Furthermore, the window placement needs
@@ -463,10 +463,10 @@ int main() {
 	);
 		file.addBuildingProduct(window);		
 
-		// Initalize a list of parts for the window to be composed of
+		// Initialize a list of parts for the window to be composed of
 		IfcSchema::IfcObjectDefinition::list::ptr window_parts(new IfcTemplatedEntityList<IfcSchema::IfcObjectDefinition>());
 
-		// The placements for the beams are not shared accross the different windows because every
+		// The placements for the beams are not shared across the different windows because every
 		// beam is placed relative to its parent window entity.
 		IfcSchema::IfcLocalPlacement::list::ptr frame_placements (new IfcTemplatedEntityList<IfcSchema::IfcLocalPlacement>());
 		frame_placements->push(file.addLocalPlacement(storey_placement,  930,45));

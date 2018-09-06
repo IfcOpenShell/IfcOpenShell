@@ -675,10 +675,10 @@ bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, Top
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
 			Logger::Error(e.GetMessageString());
 		} else {
-			Logger::Error("Unknown error convering curve to wire");
+			Logger::Error("Unknown error converting curve to wire");
 		}
 	} catch (...) {
-		Logger::Error("Unknown error convering curve to wire");
+		Logger::Error("Unknown error converting curve to wire");
 	}
 	return false;
 }
@@ -2539,7 +2539,7 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape
 		return false;
 	}
 
-	// Add a little bit of resulution so that the median is shifted towards the mass
+	// Add a little bit of resolution so that the median is shifted towards the mass
 	// of the curve. This helps to find the parameter ordering for conic surfaces.
 	for (TopExp_Explorer exp(shp, TopAbs_EDGE); exp.More(); exp.Next(), ++vertex_count) {
 		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
