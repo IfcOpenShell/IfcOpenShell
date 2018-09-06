@@ -15,7 +15,7 @@ Usage Instructions
 Building using MSYS is very similar to using the MSVC batch files, but instead the shell scripts
 are used. Note that the MSYS support is currently a bit experimental. It is advised to check out the contents
 of the shell scripts before using them. Note that contrary to MSVC, with MSYS all of the dependencies are not
-built or used as static libaries. Currently Release build is used for all libraries.
+built or used as static libraries. Currently Release build is used for all libraries.
 
 ### MSVC
 Execute `build-deps.cmd` to fetch, build and install the dependencies. The batch file will print the requirements for
@@ -28,7 +28,7 @@ deduced from the MSVC environment variables. User-friendly VS generator shorthan
 `vs2013-x86` or `vs2015-x64`, and these are converted to the appropriate CMake ones by the scripts. A build type
 (`Build`, `Rebuild`, or `Clean`, defaults to `Build`) can be provided as `%3`. See `vs-cfg.cmd` if you wish to change
 the defaults. The batch file will create `deps\` and `deps-vs<VERSION>-<ARCHITECTURE>-installed\` directories to the
-project root. Debug and release builds of the depedencies can co-exist by simply running
+project root. Debug and release builds of the dependencies can co-exist by simply running
 ```
 > build-deps.cmd <GENERATOR> Debug
 > build-deps.cmd <GENERATOR> <Release|RelWithDebInfo|MinSizeRel>
