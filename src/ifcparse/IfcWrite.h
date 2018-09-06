@@ -80,7 +80,7 @@ namespace IfcWrite {
 			boost::dynamic_bitset<>,
 			// An enumeration argument, e.g. .USERDEFINED. 
 			// To initialize the argument a string representation
-			// has to be explicitely passed of the enumeration value
+			// has to be explicitly passed of the enumeration value
 			// which is stored internally as an integer. The argument
 			// itself does not keep track of what schema enumeration
 			// type is represented.

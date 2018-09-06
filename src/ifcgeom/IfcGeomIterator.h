@@ -349,7 +349,7 @@ namespace IfcGeom {
 		// Move to the next IfcRepresentation
 		void _nextShape() {
 			// In order to conserve memory and reduce cache insertion times, the cache is
-			// cleared after an arbitary number of processed representations. This has been
+			// cleared after an arbitrary number of processed representations. This has been
 			// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
 			static const int clear_interval = 64;
 			if (done % clear_interval == clear_interval - 1) {
@@ -437,7 +437,7 @@ namespace IfcGeom {
 
 					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
-						// Check if this represenation has (or will be) processed as part its mapped representation
+						// Check if this representation has (or will be) processed as part its mapped representation
 						representation_processed_as_mapped_item = ok_mapped_representations->contains(representation_mapped_to) ||
                                 reuse_ok_(kernel.products_represented_by(representation_mapped_to));
 					}
