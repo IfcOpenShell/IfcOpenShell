@@ -78,6 +78,8 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* file_;
 		IfcGeom::IteratorSettings settings_;
+		std::vector<IfcGeom::filter_t> filters_;
+
 		IteratorImplementation<P, PP>* implementation_;
 
 	public:
@@ -85,7 +87,15 @@ namespace IfcGeom {
 			: file_(file)
 			, settings_(settings)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file);
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_);
+		}
+
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
+			: file_(file)
+			, settings_(settings)
+			, filters_(filters)
+		{
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_);
 		}
 
 		bool initialize() {
@@ -93,6 +103,11 @@ namespace IfcGeom {
 		}
 
 		int progress() const { return implementation_->progress(); }
+
+		void compute_bounds() { implementation_->compute_bounds(); }
+
+		const gp_XYZ& bounds_min() const { return implementation_->bounds_min(); }
+		const gp_XYZ& bounds_max() const { return implementation_->bounds_max(); }
 
 		const std::string& unit_name() const { return implementation_->getUnitName(); }
 

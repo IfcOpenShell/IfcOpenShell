@@ -1,8 +1,11 @@
 #ifndef ITERATOR_IMPLEMENTATION_H
 #define ITERATOR_IMPLEMENTATION_H
 
+#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
+
+#include <gp_XYZ.hxx>
 
 #include <boost/function.hpp>
 
@@ -20,9 +23,9 @@ namespace IfcGeom {
 	class BRepElement;
 }
 
-typedef boost::function2<IfcGeom::IteratorImplementation<float, float>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_float_float_fn;
-typedef boost::function2<IfcGeom::IteratorImplementation<float, double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_float_double_fn;
-typedef boost::function2<IfcGeom::IteratorImplementation<double, double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*> iterator_double_double_fn;
+typedef boost::function3<IfcGeom::IteratorImplementation<float, float>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_float_float_fn;
+typedef boost::function3<IfcGeom::IteratorImplementation<float, double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_float_double_fn;
+typedef boost::function3<IfcGeom::IteratorImplementation<double, double>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_double_double_fn;
 
 template <typename P, typename PP>
 struct get_factory_type {};
@@ -47,7 +50,7 @@ class IteratorFactoryImplementation : public std::map<std::string, typename get_
 public:
 	IteratorFactoryImplementation();
 	void bind(const std::string& schema_name, typename get_factory_type<P, PP>::type fn);
-	IfcGeom::IteratorImplementation<P, PP>* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*);
+	IfcGeom::IteratorImplementation<P, PP>* construct(const std::string& schema_name, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&);
 };
 
 template <typename P, typename PP>
@@ -59,6 +62,9 @@ namespace IfcGeom {
 	class IteratorImplementation {
 	public:
 		virtual bool initialize() = 0;
+		virtual void compute_bounds() = 0;
+		virtual const gp_XYZ& bounds_min() const = 0;
+		virtual const gp_XYZ& bounds_max() const = 0;
 		virtual int progress() const = 0;
 		virtual const std::string& getUnitName() const = 0;
 		virtual double getUnitMagnitude() const = 0;
