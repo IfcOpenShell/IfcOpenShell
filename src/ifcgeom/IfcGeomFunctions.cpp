@@ -1332,7 +1332,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 
 	int parent_id = -1;
 	try {
-		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product);
+		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product)->as<IfcSchema::IfcObjectDefinition>();
 		if (parent_object) {
 			parent_id = parent_object->data().id();
 		}
@@ -1499,7 +1499,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_represen
 {
 	int parent_id = -1;
 	try {
-		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product);
+		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product)->as<IfcSchema::IfcObjectDefinition>();
 		if (parent_object) {
 			parent_id = parent_object->data().id();
 		}
@@ -1539,61 +1539,6 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_represen
 		brep->geometry_pointer(),
         product
 	);
-}
-
-IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchema::IfcProduct* product) {
-	IfcSchema::IfcObjectDefinition* parent = 0;
-
-	// In case of an opening element, parent to the RelatingBuildingElement
-	if ( product->declaration().is(IfcSchema::IfcOpeningElement::Class() ) ) {
-		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;
-		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();
-		if ( voids->size() ) {
-			IfcSchema::IfcRelVoidsElement* ifc_void = *voids->begin();
-			parent = ifc_void->RelatingBuildingElement();
-		}
-	} else if ( product->declaration().is(IfcSchema::IfcElement::Class() ) ) {
-		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
-		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
-		// In case of a RelatedBuildingElement parent to the opening element
-		if ( fills->size() ) {
-			for ( IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it ) {
-				IfcSchema::IfcRelFillsElement* fill = *it;
-				IfcSchema::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();
-				if ( product == ifc_objectdef ) continue;
-				parent = ifc_objectdef;
-			}
-		} 
-		// Else simply parent to the containing structure
-		if (!parent) {
-			IfcSchema::IfcRelContainedInSpatialStructure::list::ptr parents = element->ContainedInStructure();
-			if ( parents->size() ) {
-				IfcSchema::IfcRelContainedInSpatialStructure* container = *parents->begin();
-				parent = container->RelatingStructure();
-			}
-		}
-	}
-	// Parent decompositions to the RelatingObject
-	if (!parent) {
-		IfcEntityList::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);
-		parents->push(product->data().getInverse((&IfcSchema::IfcRelNests::Class()), -1));
-		for ( IfcEntityList::it it = parents->begin(); it != parents->end(); ++ it ) {
-			IfcSchema::IfcRelDecomposes* decompose = (IfcSchema::IfcRelDecomposes*)*it;
-			IfcSchema::IfcObjectDefinition* ifc_objectdef;
-#ifdef USE_IFC4
-			if (decompose->declaration().is(IfcSchema::IfcRelAggregates::Class())) {
-				ifc_objectdef = ((IfcSchema::IfcRelAggregates*)decompose)->RelatingObject();
-			} else {
-				continue;
-			}
-#else
-			ifc_objectdef = decompose->RelatingObject();
-#endif
-			if ( product == ifc_objectdef ) continue;
-			parent = ifc_objectdef;
-		}
-	}
-	return parent;
 }
 
 template IFC_GEOM_API IfcGeom::BRepElement<float, float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, float>(

@@ -80,8 +80,8 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
 #include "../ifcgeom/IfcGeomIteratorSettings.h"
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
-#include "../ifcgeom/IfcGeomFilter.h"
 
+#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
@@ -155,15 +155,6 @@ namespace IfcGeom {
 	public:
 		typedef P Precision;
 		typedef PP PlacementPrecision;
-
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, std::vector<IfcGeom::filter_t>& filters)
-            : settings(settings)
-            , ifc_file(file)
-            , owns_ifc_file(false)
-            , filters_(filters)
-        {
-            _initialize();
-        }
 
 		bool initialize() {
 			try {
@@ -614,7 +605,7 @@ namespace IfcGeom {
 					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
-						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
+						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product)->as<IfcSchema::IfcObjectDefinition>();
 						if (parent_object) {
 							parent_id = parent_object->data().id();
 						}
@@ -721,31 +712,11 @@ namespace IfcGeom {
 
 		bool owns_ifc_file;
 	public:
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
 			: settings(settings)
 			, ifc_file(file)
 			, owns_ifc_file(false)
-		{
-			_initialize();
-		}
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, const std::string& filename)
-			: settings(settings)
-			, ifc_file(new IfcParse::IfcFile(filename))
-			, owns_ifc_file(true)
-		{
-			_initialize();
-		}
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, void* data, int length)
-			: settings(settings)
-			, ifc_file(new IfcParse::IfcFile(data, length))
-			, owns_ifc_file(true)
-		{
-			_initialize();
-		}
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, std::istream& filestream, int length)
-			: settings(settings)
-			, ifc_file(new IfcParse::IfcFile(filestream, length))
-			, owns_ifc_file(true)
+			, filters_(filters)
 		{
 			_initialize();
 		}

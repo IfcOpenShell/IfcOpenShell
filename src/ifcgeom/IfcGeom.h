@@ -221,8 +221,6 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-    static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
-
     template <typename P, typename PP>
     IfcGeom::BRepElement<P, PP>* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);

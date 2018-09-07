@@ -23,7 +23,8 @@
 #ifndef IFCGEOMFILTER_H
 #define IFCGEOMFILTER_H
 
-#include "IfcGeom.h"
+#include "Kernel.h"
+#include "../ifcparse/IfcFile.h"
 
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -33,15 +34,13 @@
 
 #include <functional>
 
-namespace IfcGeom
-{
+namespace IfcGeom {
     /// The filter function (free or member function) or function object (use boost::ref() to reference to it)
     /// should return true if the geometry for the product is wanted to be included in the output.
     /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
-    typedef boost::function<bool(IfcSchema::IfcProduct*)> filter_t;
+	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;
 
-    struct filter
-    {
+	struct filter {
         filter() : include(false), traverse(false) {}
         filter(bool incl, bool trav) : include(incl), traverse(trav) {}
         /// Should the product be included (true) or excluded (false).
@@ -52,8 +51,7 @@ namespace IfcGeom
         /// Optional description for the filtering criteria of this filter.
         std::string description;
 
-        bool match(IfcSchema::IfcProduct* prod, const filter_t& pred) const
-        {
+		bool match(IfcUtil::IfcBaseEntity* prod, const filter_t& pred) const {
             bool is_match = pred(prod);
             if (!is_match && traverse) {
                 is_match = traverse_match(prod, pred);
@@ -61,46 +59,38 @@ namespace IfcGeom
             return is_match == include;
         }
 
-        static bool traverse_match(IfcSchema::IfcProduct* prod, const filter_t& pred)
-        {
-			throw std::runtime_error("todo");
-			/*
-            IfcSchema::IfcProduct* parent, *current = prod;
-            while ((parent = dynamic_cast<IfcSchema::IfcProduct*>(IfcGeom::Kernel::get_decomposing_entity(current))) != 0) {
+		static bool traverse_match(IfcUtil::IfcBaseEntity* prod, const filter_t& pred) {
+			IfcUtil::IfcBaseEntity* parent, *current = prod;
+			while ((parent = IfcGeom::Kernel::get_decomposing_entity(current)) != nullptr) {
                 if (pred(parent)) {
                     return true;
                 }
                 current = parent;
             }
-			*/
             return false;
         }
     };
 
-    struct wildcard_filter : public filter
-    {
+	struct wildcard_filter : public filter {
         wildcard_filter() : filter(false, false) {}
         wildcard_filter(bool include, bool traverse, const std::set<std::string>& patterns)
-            : filter(include, traverse)
-        {
+			: filter(include, traverse) {
             populate(patterns);
         }
 
         std::set<boost::regex> values;
 
-        void populate(const std::set<std::string>& patterns)
-        {
+		void populate(const std::set<std::string>& patterns) {
             values.clear();
-            BOOST_FOREACH(const std::string &pattern, patterns) {
+			for(auto& pattern: patterns) {
                 values.insert(wildcard_string_to_regex(pattern));
             }
         }
 
         bool match(const std::string &str) const { return match_values(values, str); }
 
-        static bool match_values(const std::set<boost::regex>& values, const std::string &str)
-        {
-            BOOST_FOREACH(const boost::regex& r, values) {
+		static bool match_values(const std::set<boost::regex>& values, const std::string &str) {
+			for(auto& r: values) {
                 if (boost::regex_match(str, r)) {
                     return true;
                 }
@@ -108,11 +98,10 @@ namespace IfcGeom
             return false;
         }
 
-        static boost::regex wildcard_string_to_regex(std::string str)
-        {
+		static boost::regex wildcard_string_to_regex(std::string str) {
             // Escape all non-"*?" regex special chars
             static const std::string special_chars = "\\^.$|()[]+/";
-            BOOST_FOREACH(char c, special_chars) {
+			for(auto c: special_chars) {
                 std::string char_str(1, c);
                 boost::replace_all(str, char_str, "\\" + char_str);
             }
@@ -124,127 +113,78 @@ namespace IfcGeom
     };
 
     /// @note supports only string arguments for now
-    struct string_arg_filter : public wildcard_filter
-    {
-        // Using this for now in order to overcome the fact that different classes have the argument at different indices.
-        typedef std::map<const IfcParse::declaration*, unsigned short> arg_map_t;
-        arg_map_t args;
+	struct attribute_filter : public wildcard_filter {
+		std::string attribute_name;
 
-        /// @todo Take only attribute name when IfcBaseClass and IfcLateBoundEntity are merged.
-        string_arg_filter(arg_map_t args) : args(args) { assert_arguments(); }
-        string_arg_filter(const IfcParse::declaration* type, unsigned short index) { args[type] = index;  assert_arguments(); }
-        string_arg_filter(
-			const IfcParse::declaration* type1, unsigned short index1,
-			const IfcParse::declaration* type2, unsigned short index2)
-        {
-            args[type1] = index1;
-            args[type2] = index2;
-            assert_arguments();
-        }
+		attribute_filter() {}
+		attribute_filter(const std::string& attribute_name)
+			: attribute_name(attribute_name) {}
 
-        /// @todo this won't be needed when we have the generic argument name access
-        void assert_arguments()
-        {
-			// TODO
-#if 0
-            for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                IfcEntityInstanceData dummy(it->first);
-                IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
-                assert(it->second < base->getArgumentCount() && "Argument index out of bounds");
-                assert(base->getArgumentType(it->second) == IfcUtil::Argument_STRING && "Argument type not string");
-                delete base;
+		std::string value(IfcUtil::IfcBaseEntity* prod) const {
+			try {
+				return (std::string) *prod->get(attribute_name);
+			} catch (...) {
+				// Either
+				// (a) not an attribute name for this entity instance
+				// (b) not a string attribute
+				// (c) null for this entity instance
+				// @todo: validate the filters with a reference to the schema
+				//        probably in IfcGeomIteratorImplementation
+				return "<invalid>";
             }
-#endif
         }
 
-        std::string value(IfcSchema::IfcProduct* prod) const
-        {
-            for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                if (prod->declaration().is(*it->first) && it->second < prod->data().getArgumentCount() &&
-                    prod->data().getArgument(it->second)->type() == IfcUtil::Argument_STRING) {
-                    Argument *arg = prod->data().getArgument(it->second);
-                    if (!arg->isNull()) {
-                        return *arg;
-                    }
-                }
-            }
-            return "";
-        }
+		bool match(IfcUtil::IfcBaseEntity* prod) const {
+			return wildcard_filter::match(value(prod));
+		}
 
-        bool match(IfcSchema::IfcProduct* prod) const { return wildcard_filter::match(value(prod)); }
-
-        bool operator()(IfcSchema::IfcProduct* prod) const
-        {
+		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
             // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
-            return filter::match(prod, std::bind1st(std::mem_fun(&string_arg_filter::match), this));
+			return filter::match(prod, std::bind1st(std::mem_fun(&attribute_filter::match), this));
         }
 
-        void update_description()
-        {
+		void update_description() {
             std::stringstream ss;
 
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude");
             std::vector<std::string> patterns;
-            BOOST_FOREACH(const boost::regex& r, values) {
+			for (auto& r : values) {
                 patterns.push_back("\"" + r.str() + "\"");
             }
 
-			// TODO
-#if 0
-            for (arg_map_t::const_iterator it = args.begin(); it != args.end(); ++it) {
-                IfcEntityInstanceData dummy(it->first);
-				IfcUtil::IfcBaseClass* base = IfcSchema::SchemaEntity(&dummy);
-                try {
-                    ss << " " << IfcSchema::ToString::Class()(it->first) << "." << base->declaration().as_entity()->all_attributes()[it->second]->name();
-                } catch (const std::exception& e) {
-					Logger::Error(e);
-				}
-                delete base;
-            }
-#endif
-
+			ss << " " << attribute_name;
             ss << " values " << boost::algorithm::join(patterns, " ");
+
             description = ss.str();
         }
     };
 
-    struct layer_filter : public wildcard_filter
-    {
-        typedef std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> layer_map_t;
+	struct layer_filter : public wildcard_filter {
+		typedef std::map<std::string, IfcUtil::IfcBaseEntity*> layer_map_t;
 
         layer_filter() {}
         layer_filter(bool include, bool traverse, const std::set<std::string>& patterns)
-            : wildcard_filter(include, traverse, patterns)
-        {
-        }
+			: wildcard_filter(include, traverse, patterns) {}
 
-        bool match(IfcSchema::IfcProduct* prod) const
-        {
-			throw std::runtime_error("todo");
-			/*
+		bool match(IfcUtil::IfcBaseEntity* prod) const {
             layer_map_t layers = IfcGeom::Kernel::get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
-			*/
         }
 
-        bool operator()(IfcSchema::IfcProduct* prod) const
-        {
+		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
             return filter::match(prod, std::bind1st(std::mem_fun(&layer_filter::match), this));
         }
 
-        struct wildcards_match
-        {
+		struct wildcards_match {
             wildcards_match(const std::set<boost::regex>& patterns) : patterns(patterns) {}
-            bool operator()(const layer_map_t::value_type& layer_map_value) const
-            {
+			bool operator()(const layer_map_t::value_type& layer_map_value) const {
                 return wildcard_filter::match_values(patterns, layer_map_value.first);
             }
 
             std::set<boost::regex> patterns;
         };
 
-        void update_description()
-        {
+		void update_description() {
             std::stringstream ss;
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " layers";
             std::vector<std::string> str_values;
@@ -256,62 +196,35 @@ namespace IfcGeom
         }
     };
 
-    struct entity_filter : public filter
-    {
+	struct entity_filter : public filter {
+		std::set<std::string> entity_names;
+
         entity_filter() {}
-        entity_filter(bool include, bool traverse/*, const std::set<std::string>& types*/)
+		entity_filter(bool include, bool traverse, const std::set<std::string>& entity_names)
             : filter(include, traverse)
-        {
-            //populate(types);
-        }
+			, entity_names(entity_names) {}
 
-        std::set<const IfcParse::declaration*> values;
-
-        void populate(const std::set<std::string>&)
-        {
-			// TODO
-#if 0
-            values.clear();
-            BOOST_FOREACH(const std::string& type, types) {
-				const IfcParse::declaration* ty;
-                try {
-                    ty = IfcSchema::FromString::Class()(boost::to_upper_copy(type));
-                } catch (const IfcParse::IfcException&) {
-                    throw IfcParse::IfcException("'" +  type + "' does not name a valid IFC entity");
-                }
-                values.insert(ty);
-                /// @todo Add child classes so that containment in set can be in O(log n)
-            }
-#endif
-        }
-
-        bool match(IfcSchema::IfcProduct* prod) const
-        {
+		bool match(IfcUtil::IfcBaseEntity* prod) const {
             // The set is iterated over to able to filter on subtypes.
-            BOOST_FOREACH(const IfcParse::declaration* type, values) {
-                if (prod->declaration().is(*type)) {
+			for (auto& name : entity_names) {
+				if (prod->declaration().is(name)) {
                     return true;
                 }
             }
             return false;
         }
 
-        bool operator()(IfcSchema::IfcProduct* prod) const
-        {
+		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
             return filter::match(prod, std::bind1st(std::mem_fun(&entity_filter::match), this));
         }
 
-        void update_description()
-        {
-			// TODO
-#if 0
+		void update_description() {
             std::stringstream ss;
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " entities";
-            BOOST_FOREACH(IfcSchema::Enum::Class() type, values) {
-                ss << " " << IfcSchema::ToString::Class()(type);
+			for (auto& name : entity_names) {
+				ss << " " << name;
             }
             description = ss.str();
-#endif
         }
     };
 }

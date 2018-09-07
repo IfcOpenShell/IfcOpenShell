@@ -33,6 +33,7 @@
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 
+#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 
 #include <Standard_Version.hxx>
@@ -119,16 +120,9 @@ static std::stringstream log_stream;
 void write_log(bool);
 
 /// @todo make the filters non-global
-/*
 IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
 IfcGeom::layer_filter layer_filter;
-const std::string NAME_ARG = "Name", GUID_ARG = "GlobalId", DESC_ARG = "Description", TAG_ARG = "Tag";
-boost::array<std::string, 4> supported_args = { { NAME_ARG, GUID_ARG, DESC_ARG, TAG_ARG } };
-IfcGeom::string_arg_filter guid_filter(IfcSchema::Type::IfcRoot, 0); // IfcRoot.GlobalId
-// Note: skipping IfcRoot OwnerHistory, argument index 1
-IfcGeom::string_arg_filter name_filter(IfcSchema::Type::IfcRoot, 2); // IfcRoot.Name
-IfcGeom::string_arg_filter desc_filter(IfcSchema::Type::IfcRoot, 3); // IfcRoot.Description
-IfcGeom::string_arg_filter tag_filter(IfcSchema::Type::IfcProxy, 8, IfcSchema::Type::IfcElement, 7); // IfcProxy.Tag & IfcElement.Tag
+IfcGeom::attribute_filter attribute_filter;
 
 struct geom_filter
 {
@@ -151,7 +145,6 @@ struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filte
 size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_traverse_filter&, exclusion_filter&, exclusion_traverse_filter&);
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
-*/
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
 
@@ -179,13 +172,11 @@ int main(int argc, char** argv)
 		
 
     double deflection_tolerance;
-    /*
 	inclusion_filter include_filter;
     inclusion_traverse_filter include_traverse_filter;
     exclusion_filter exclude_filter;
     exclusion_traverse_filter exclude_traverse_filter;
     std::string filter_filename;
-	*/
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -232,14 +223,13 @@ int main(int argc, char** argv)
 		("enable-layerset-slicing",
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
-		/*
 		("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
-			"Specifies that the entities that match a specific filtering criteria are to be included in the geometrical output:\n"
+			"Specifies that the instances that match a specific filtering criteria are to be included in the geometrical output:\n"
 			"1) 'entities': the following list of types should be included. SVG output defaults "
 			"to IfcSpace to be included. The entity names are handled case-insensitively.\n"
-			"2) 'layers': the entities that are assigned to presentation layers of which names "
+			"2) 'layers': the instances that are assigned to presentation layers of which names "
 			"match the given values should be included.\n"
-			"3) 'arg <ArgumentName>': the following list of values for that specific argument should be included. "
+			"3) 'attribute <AttributeName>': products whose value for <AttributeName> should be included\n. "
 			"Currently supported arguments are GlobalId, Name, Description, and Tag.\n\n"
 			"The values for 'layers' and 'arg' are handled case-sensitively (wildcards supported)."
 			"--include and --exclude cannot be placed right before input file argument and "
@@ -258,8 +248,7 @@ int main(int argc, char** argv)
 			"Specifies a filter file that describes the used filtering criteria. Supported formats "
 			"are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimeters."
 			"Multiple filters of same type with different values can be inserted on their own lines. "
-			"See --include, --include+, --exclude, and --exclude+ for more details.");
-		*/
+			"See --include, --include+, --exclude, and --exclude+ for more details.")
 		("no-normals",
 			"Disables computation of normals. Saves time and file size and is useful "
 			"in instances where you're going to recompute normals for the exported "
@@ -490,7 +479,6 @@ int main(int argc, char** argv)
         return exit_code;
     }
 
-	/*
     if (!filter_filename.empty()) {
         size_t num_filters = read_filters_from_file(filter_filename, include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
         if (num_filters) {
@@ -514,14 +502,10 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    if (!entity_filter.values.empty()) { entity_filter.update_description(); Logger::Notice(entity_filter.description); }
+    if (!entity_filter.entity_names.empty()) { entity_filter.update_description(); Logger::Notice(entity_filter.description); }
     if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Notice(layer_filter.description); }
-    if (!guid_filter.values.empty()) { guid_filter.update_description(); Logger::Notice(guid_filter.description); }
-    if (!name_filter.values.empty()) { name_filter.update_description(); Logger::Notice(name_filter.description); }
-    if (!desc_filter.values.empty()) { desc_filter.update_description(); Logger::Notice(desc_filter.description); }
-    if (!tag_filter.values.empty()) { tag_filter.update_description(); Logger::Notice(tag_filter.description); }
-	*/
-
+	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); Logger::Notice(layer_filter.description); }
+    
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
@@ -629,7 +613,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file);
+    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -663,7 +647,6 @@ int main(int argc, char** argv)
 
 			throw std::runtime_error("needs more work");
             
-			/*
             if (!quiet) Logger::Status("Computing bounds...");
             context_iterator.compute_bounds();
             if (!quiet) Logger::Status("Done!");
@@ -672,7 +655,6 @@ int main(int argc, char** argv)
             offset[0] = -center.X();
             offset[1] = -center.Y();
             offset[2] = -center.Z();
-			*/
         } else {
             if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
                 std::cerr << "[Error] Invalid use of --model-offset\n";
@@ -826,7 +808,6 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
 }
 
-/*
 bool append_filter(const std::string& type, const std::vector<std::string>& values, geom_filter& filter)
 {
     geom_filter temp;
@@ -910,9 +891,6 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
     } else if (type == "arg") {
         filter.type = geom_filter::ENTITY_ARG;
         filter.arg = *(values.begin() + 1);
-        if (std::find(supported_args.begin(), supported_args.end(), filter.arg) == supported_args.end()) {
-            throw po::validation_error(po::validation_error::invalid_option_value);
-        }
     } else {
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
@@ -958,65 +936,38 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_t
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
 {
     std::vector<IfcGeom::filter_t> filter_funcs;
-    BOOST_FOREACH(const geom_filter& f, filters) {
+    for(auto& f: filters) {
         if (f.type == geom_filter::ENTITY_TYPE) {
             entity_filter.include = f.include;
             entity_filter.traverse = f.traverse;
-            try {
-                entity_filter.populate(f.values);
-            } catch (const IfcParse::IfcException& e) {
-                std::cerr << "[Error] " << e.what() << std::endl;
-                return std::vector<IfcGeom::filter_t>();
-            }
+			entity_filter.entity_names = f.values;
         } else if (f.type == geom_filter::LAYER_NAME) {
             layer_filter.include = f.include;
             layer_filter.traverse = f.traverse;
             layer_filter.populate(f.values);
         } else if (f.type == geom_filter::ENTITY_ARG) {
-            if (f.arg == GUID_ARG) {
-                guid_filter.include = f.include;
-                guid_filter.traverse = f.traverse;
-                guid_filter.populate(f.values);
-            } else if (f.arg == NAME_ARG) {
-                name_filter.include = f.include;
-                name_filter.traverse = f.traverse;
-                name_filter.populate(f.values);
-            } else if (f.arg == DESC_ARG) {
-                desc_filter.include = f.include;
-                desc_filter.traverse = f.traverse;
-                desc_filter.populate(f.values);
-            } else if (f.arg == TAG_ARG) {
-                tag_filter.include = f.include;
-                tag_filter.traverse = f.traverse;
-                tag_filter.populate(f.values);
-            }
+			attribute_filter.include = f.include;
+			attribute_filter.traverse = f.traverse;
+			attribute_filter.attribute_name = f.arg;
+			attribute_filter.populate(f.values);
         }
     }
 
     // If no entity names are specified these are the defaults to skip from output
-    if (entity_filter.values.empty()) {
-        try {
-            std::set<std::string> entities;
-            entities.insert("IfcSpace");
-            if (output_extension == ".svg") {
-                entity_filter.include = true;
-            } else {
-                entities.insert("IfcOpeningElement");
-            }
-            entity_filter.populate(entities);
-        } catch (const IfcParse::IfcException& e) {
-            std::cerr << "[Error] " << e.what() << std::endl;
-            return std::vector<IfcGeom::filter_t>();
+    if (entity_filter.entity_names.empty()) {
+        std::set<std::string> entities;
+        entities.insert("IfcSpace");
+        if (output_extension == ".svg") {
+            entity_filter.include = true;
+        } else {
+            entities.insert("IfcOpeningElement");
         }
+        entity_filter.entity_names = entities;
     }
 
     if (!layer_filter.values.empty()) { filter_funcs.push_back(boost::ref(layer_filter));  }
-    if (!entity_filter.values.empty()) { filter_funcs.push_back(boost::ref(entity_filter)); }
-    if (!guid_filter.values.empty()) { filter_funcs.push_back(boost::ref(guid_filter)); }
-    if (!name_filter.values.empty()) { filter_funcs.push_back(boost::ref(name_filter)); }
-    if (!desc_filter.values.empty()) { filter_funcs.push_back(boost::ref(desc_filter)); }
-    if (!tag_filter.values.empty()) { filter_funcs.push_back(boost::ref(tag_filter)); }
+    if (!entity_filter.entity_names.empty()) { filter_funcs.push_back(boost::ref(entity_filter)); }
+    if (!attribute_filter.values.empty()) { filter_funcs.push_back(boost::ref(attribute_filter)); }
 
     return filter_funcs;
 }
-*/

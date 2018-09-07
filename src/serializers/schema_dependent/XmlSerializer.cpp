@@ -308,8 +308,8 @@ ptree& descend(IfcSchema::IfcObjectDefinition* product, ptree& tree) {
 	}
 
     if (product->declaration().is(IfcSchema::IfcProduct::Class())) {
-        std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> layers = IfcGeom::Kernel::get_layers<IfcSchema>(product->as<IfcSchema::IfcProduct>());
-        for (std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+        std::map<std::string, IfcUtil::IfcBaseEntity*> layers = IfcGeom::Kernel::get_layers(product);
+        for (std::map<std::string, IfcUtil::IfcBaseEntity*>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
             // IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier) so use name as the ID.
             // Note that the IfcPresentationLayerAssignment passed here doesn't really matter as as_link is true
             // for the format_entity_instance() call.
