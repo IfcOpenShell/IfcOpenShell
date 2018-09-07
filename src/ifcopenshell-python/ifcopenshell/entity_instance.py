@@ -196,7 +196,7 @@ class entity_instance(object):
                         attr_value = entity_instance.walk(is_instance, get_info_, attr_value)
                     yield self.attribute_name(i), attr_value
                 except BaseException:
-                    logging.exception("unhandled exception occured setting attribute name for {}".format(self))
+                    logging.exception("unhandled exception occurred setting attribute name for {}".format(self))
 
         return return_type(_())
 
