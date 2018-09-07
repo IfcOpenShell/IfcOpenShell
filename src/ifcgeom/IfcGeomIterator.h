@@ -145,6 +145,8 @@ namespace IfcGeom {
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
 				unit_magnitude = length_unit.second;
+			} else {
+				Logger::Error("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
 			}
 		}
 
