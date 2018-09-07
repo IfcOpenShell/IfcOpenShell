@@ -736,10 +736,10 @@ bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, Top
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
 			Logger::Error(e.GetMessageString());
 		} else {
-			Logger::Error("Unknown error convering curve to wire");
+			Logger::Error("Unknown error converting curve to wire");
 		}
 	} catch (...) {
-		Logger::Error("Unknown error convering curve to wire");
+		Logger::Error("Unknown error converting curve to wire");
 	}
 	return false;
 }
@@ -1563,6 +1563,8 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	std::string unit_name = "METER";
 	double unit_magnitude = 1.;
 
+	bool length_unit_encountered = false, angle_unit_encountered = false;
+
 	try {
 		IfcEntityList::ptr units = unit_assignment->Units();
 		if (!units || !units->size()) {
@@ -1592,8 +1594,10 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 								unit_name = current_unit_name;
 								unit_magnitude = current_unit_magnitude;
 								setValue(IfcGeom::Kernel::GV_LENGTH_UNIT, current_unit_magnitude);
+								length_unit_encountered = true;
 							} else {
 								setValue(IfcGeom::Kernel::GV_PLANEANGLE_UNIT, current_unit_magnitude);
+								angle_unit_encountered = true;
 							}
 						}
 					}
@@ -1604,6 +1608,14 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 		std::stringstream ss;
 		ss << "Failed to determine unit information '" << ex.what() << "'";
 		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+
+	if (!length_unit_encountered) {
+		Logger::Error("No length unit encountered");
+	}
+
+	if (!angle_unit_encountered) {
+		Logger::Error("No plane angle unit encountered");
 	}
 
 	return std::pair<std::string, double>(unit_name, unit_magnitude);
@@ -2513,7 +2525,7 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape
 		return false;
 	}
 
-	// Add a little bit of resulution so that the median is shifted towards the mass
+	// Add a little bit of resolution so that the median is shifted towards the mass
 	// of the curve. This helps to find the parameter ordering for conic surfaces.
 	for (TopExp_Explorer exp(shp, TopAbs_EDGE); exp.More(); exp.Next(), ++vertex_count) {
 		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());

@@ -145,7 +145,7 @@ echo.
 
 cd "%DEPS_DIR%"
 
-:: Note all of the depedencies have approriate label so that user can easily skip something if wanted
+:: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.

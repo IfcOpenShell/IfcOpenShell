@@ -294,7 +294,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 		tri->mesh.buildNormals();
 		// Either use this or undefine the FACESETS_AS_COMPOUND option in IfcGeom.h to have
 		// properly oriented normals. Using only the line below will result in a consistent
-		// orientation of normals accross shells, but not always oriented towards the
+		// orientation of normals across shells, but not always oriented towards the
 		// outside.
 		// tri->mesh.UnifyNormals(false);
 		tri->mesh.BuildStripsAndEdges();

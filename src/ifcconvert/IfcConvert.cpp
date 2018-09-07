@@ -246,7 +246,7 @@ int main(int argc, char** argv)
 			"of the filtered entity. See --include+ for more details.")
 		("filter-file", po::value<std::string>(&filter_filename),
 			"Specifies a filter file that describes the used filtering criteria. Supported formats "
-			"are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimeters."
+			"are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimiters."
 			"Multiple filters of same type with different values can be inserted on their own lines. "
 			"See --include, --include+, --exclude, and --exclude+ for more details.")
 		("no-normals",

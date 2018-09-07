@@ -38,12 +38,12 @@ namespace IfcGeom {
 			// Default: 0.001m / 1mm
 			GV_DEFLECTION_TOLERANCE,
 			// Specifies the tolerance of the wire builder, most notably for trimmed curves
-			// Defailt: 0.0001m / 0.1mm
+			// Default: 0.0001m / 0.1mm
 			GV_WIRE_CREATION_TOLERANCE,
 			// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
 			// Read-only
 			GV_MINIMAL_FACE_AREA,
-			// Specifies the treshold distance under which cartesian points are deemed equal
+			// Specifies the threshold distance under which cartesian points are deemed equal
 			// Default: 0.00001m / 0.01mm
 			GV_POINT_EQUALITY_TOLERANCE,
 			// Specifies maximum number of faces for a shell to be sewed. Sewing shells
