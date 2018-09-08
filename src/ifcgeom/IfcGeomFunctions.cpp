@@ -167,6 +167,8 @@ namespace {
 					IfcSchema::IfcProject* project = *projects->begin();
 					std::pair<std::string, double> unit_info = k->initializeUnits(project->UnitsInContext());
 					unit_magnitude = unit_info.second;
+				} else {
+					Logger::Error("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
 				}
 
 				// Set precision from file
