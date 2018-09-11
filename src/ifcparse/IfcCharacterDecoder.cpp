@@ -27,6 +27,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <unicode/unistr.h>
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcException.h"
