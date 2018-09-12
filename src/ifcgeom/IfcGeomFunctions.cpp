@@ -174,12 +174,23 @@ bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, T
 bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
 	bool valid_shell = false;
 	
+
+	int max_faces = getValue(GV_MAX_FACES_TO_SEW);
+	if (max_faces == -1) {
+		max_faces = 1000;
+	}
+
+	if (face_list.Extent() > max_faces) {
+		throw too_many_faces_exception();
+	}
+
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
 	BRepOffsetAPI_Sewing builder;
 	builder.SetTolerance(getValue(GV_PRECISION));
 	builder.SetMaxTolerance(getValue(GV_PRECISION));
 	builder.SetMinTolerance(getValue(GV_PRECISION));
+
 	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 		builder.Add(face_iterator.Value());
 	}
@@ -1324,7 +1335,9 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			} else {
 				convert_openings(product,openings,shapes,trsf,opened_shapes);
 			}
-		} catch(...) { 
+		} catch (const std::exception& e) {
+			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product->entity);
+		} catch(...) {
 			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product->entity); 
 		}
         if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
