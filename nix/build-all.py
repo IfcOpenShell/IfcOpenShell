@@ -556,7 +556,7 @@ run_cmake("", cmake_args=[
 logger.info("\rBuilding executables...   ")
 
 __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=executables_dir)
-__check_call__([make, "install/strip"], cwd=executables_dir)
+__check_call__([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 # On OSX the actual Python library is not linked against.
 ADDITIONAL_ARGS=""
