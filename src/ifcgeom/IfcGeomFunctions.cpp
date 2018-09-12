@@ -44,6 +44,9 @@
 #include <gp_Pln.hxx>
 #include <gp_Circ.hxx>
 
+#include <boost/range/irange.hpp>
+#include <boost/range/algorithm_ext/push_back.hpp>
+
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
@@ -143,6 +146,7 @@
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom/IfcGeomTree.h"
 
 #if OCC_VERSION_HEX < 0x60900
 #ifdef _MSC_VER
@@ -2876,10 +2880,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	}
 
 	int n = count(wire, TopAbs_EDGE);
-	if (n < 3 || n > 128) {
-		if (n > 128) {
-			Logger::Notice("Too many segments for detection of self-intersections");
-		}
+	if (n < 3) {
 		wires.Append(wire);
 		return false;
 	}
@@ -2889,8 +2890,15 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 
 	// ... to be sure to get consecutive edges
 	BRepTools_WireExplorer exp(wire);
+	IfcGeom::impl::tree<int> tree;
+
+	int edge_idx = 0;
 	for (; exp.More(); exp.Next()) {
 		wd->Add(exp.Current());
+		if (n > 64) {
+			// tfk: indices in tree are 0-based vd 1-based in wiredata
+			tree.add(edge_idx++, exp.Current());
+		}
 	}
 	
 	bool intersected = false;
@@ -2898,13 +2906,37 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// tfk: Extrema on infinite curves proved to be more robust.
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
-			
-	for (int i = 2; i < n; ++i) {
-		for (int j = 0; j < i - 1; ++j) {
-			if (i == n - 1 && j == 0) continue;
+	
+	const double eps = getValue(GV_PRECISION) * 10.;
 
+	for (int i = 2; i < n; ++i) {
+
+		std::vector<int> js;
+		if (n > 64) {
+			Bnd_Box b;
+			BRepBndLib::Add(wd->Edge(i + 1), b);
+			b.Enlarge(eps);
+			js = tree.select_box(b, false);
+		} else {
+			boost::push_back(js, boost::irange(0, i - 1));
+		}
+
+		for(std::vector<int>::const_iterator it = js.begin(); it != js.end(); ++it) {
+            int j = *it;
+
+			if (n > 64) {
+				if (j > i) {
+					continue;
+				}
+				if ((std::max)(i, j) - (std::min)(i, j) <= 1) {
+					continue;
+				}
+			} 
+			
+			// Only check non-consecutive edges
+			if (i == n - 1 && j == 0) continue;
+			
 			bool unbounded_intersects;
-			const double eps = getValue(GV_PRECISION) * 10.;
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
