@@ -3127,6 +3127,10 @@ bool IfcGeom::Kernel::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b
 	Bnd_Box bb;
 	BRepBndLib::Add(a, bb);
 
+	if (bb.IsVoid()) {
+		return false;
+	}
+
 	double xs[2], ys[2], zs[2];
 	bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
 
