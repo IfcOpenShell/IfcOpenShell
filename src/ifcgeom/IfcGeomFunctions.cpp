@@ -3295,7 +3295,7 @@ namespace {
 				TopoDS_Vertex v1, v2;
 				TopExp::Vertices(e, v1, v2);
 
-				if (v.IsEqual(v1) || v.IsEqual(v2)) {
+				if (v.IsSame(v1) || v.IsSame(v2)) {
 					continue;
 				}
 
