@@ -44,6 +44,9 @@
 #include <gp_Pln.hxx>
 #include <gp_Circ.hxx>
 
+#include <boost/range/irange.hpp>
+#include <boost/range/algorithm_ext/push_back.hpp>
+
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
@@ -144,6 +147,7 @@
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom/IfcGeomTree.h"
 
 #if OCC_VERSION_HEX < 0x60900
 #ifdef _MSC_VER
@@ -233,12 +237,23 @@ bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, T
 bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
 	bool valid_shell = false;
 	
+
+	int max_faces = getValue(GV_MAX_FACES_TO_SEW);
+	if (max_faces == -1) {
+		max_faces = 1000;
+	}
+
+	if (face_list.Extent() > max_faces) {
+		throw too_many_faces_exception();
+	}
+
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
 	BRepOffsetAPI_Sewing builder;
 	builder.SetTolerance(getValue(GV_PRECISION));
 	builder.SetMaxTolerance(getValue(GV_PRECISION));
 	builder.SetMinTolerance(getValue(GV_PRECISION));
+
 	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 		builder.Add(face_iterator.Value());
 	}
@@ -1368,6 +1383,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		}
 
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
+		bool caught_error = false;
 		try {
 #if OCC_VERSION_HEX < 0x60900
             const bool faster_booleans = settings.get(IteratorSettings::FASTER_BOOLEANS);
@@ -1387,9 +1403,17 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 			} else {
 				convert_openings(product,openings,shapes,trsf,opened_shapes);
 			}
+		} catch (const std::exception& e) {
+			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product);
+			caught_error = true;
 		} catch(...) { 
 			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product); 
 		}
+
+		if (caught_error && opened_shapes.size() < shapes.size()) {
+			opened_shapes = shapes;
+		}
+
         if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
 				it->prepend(trsf);
@@ -2852,10 +2876,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	}
 
 	int n = count(wire, TopAbs_EDGE);
-	if (n < 3 || n > 128) {
-		if (n > 128) {
-			Logger::Notice("Too many segments for detection of self-intersections");
-		}
+	if (n < 3) {
 		wires.Append(wire);
 		return false;
 	}
@@ -2865,8 +2886,24 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 
 	// ... to be sure to get consecutive edges
 	BRepTools_WireExplorer exp(wire);
+	IfcGeom::impl::tree<int> tree;
+
+	int edge_idx = 0;
 	for (; exp.More(); exp.Next()) {
 		wd->Add(exp.Current());
+		if (n > 64) {
+			// tfk: indices in tree are 0-based vd 1-based in wiredata
+			tree.add(edge_idx++, exp.Current());
+		}
+	}
+
+	if (wd->NbEdges() != n) {
+		// If the number of edges differs, BRepTools_WireExplorer did not
+		// reach every edge, probably due to loops exactly at vertex locations.
+		// This is not supported by this algorithm which only elimates loops
+		// due to edge crossings.
+
+		throw geometry_exception("Invalid loop");
 	}
 	
 	bool intersected = false;
@@ -2874,13 +2911,37 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// tfk: Extrema on infinite curves proved to be more robust.
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
-			
-	for (int i = 2; i < n; ++i) {
-		for (int j = 0; j < i - 1; ++j) {
-			if (i == n - 1 && j == 0) continue;
+	
+	const double eps = getValue(GV_PRECISION) * 10.;
 
+	for (int i = 2; i < n; ++i) {
+
+		std::vector<int> js;
+		if (n > 64) {
+			Bnd_Box b;
+			BRepBndLib::Add(wd->Edge(i + 1), b);
+			b.Enlarge(eps);
+			js = tree.select_box(b, false);
+		} else {
+			boost::push_back(js, boost::irange(0, i - 1));
+		}
+
+		for(std::vector<int>::const_iterator it = js.begin(); it != js.end(); ++it) {
+            int j = *it;
+
+			if (n > 64) {
+				if (j > i) {
+					continue;
+				}
+				if ((std::max)(i, j) - (std::min)(i, j) <= 1) {
+					continue;
+				}
+			} 
+			
+			// Only check non-consecutive edges
+			if (i == n - 1 && j == 0) continue;
+			
 			bool unbounded_intersects;
-			const double eps = getValue(GV_PRECISION) * 10.;
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
@@ -3040,6 +3101,10 @@ bool IfcGeom::Kernel::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b
 
 	Bnd_Box bb;
 	BRepBndLib::Add(a, bb);
+
+	if (bb.IsVoid()) {
+		return false;
+	}
 
 	double xs[2], ys[2], zs[2];
 	bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
@@ -3226,7 +3291,7 @@ namespace {
 				TopoDS_Vertex v1, v2;
 				TopExp::Vertices(e, v1, v2);
 
-				if (v.IsEqual(v1) || v.IsEqual(v2)) {
+				if (v.IsSame(v1) || v.IsSame(v2)) {
 					continue;
 				}
 
@@ -3246,6 +3311,30 @@ namespace {
 		}
 
 		return M;
+	}
+
+	bool is_manifold(const TopoDS_Shape& a) {
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() != 2) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool is_manifold(const TopTools_ListOfShape& l) {
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			if (!is_manifold(it.Value())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
@@ -3307,7 +3396,20 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		success = BRepCheck_Analyzer(r).IsValid() != 0;
 
 		if (success) {
-			result = r;
+
+			success = !is_manifold(a) || is_manifold(r);
+
+			if (success) {
+				
+				// when there are edges or vertex-edge distances close to the used fuzziness, the  
+				// output is not trusted and the operation is attempted with a higher fuzziness.
+				double min_len_check = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION)));
+				success = min_len_check > fuzziness * 10.;
+
+				if (success) {
+					result = r;
+				}
+			}
 		}
 	}
 	delete builder;

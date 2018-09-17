@@ -494,7 +494,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	}
 
 	const double eps = getValue(GV_PRECISION) * 10;
-	const bool closed_by_proximity = polygon.Length() >= 2 && polygon.First().Distance(polygon.Last()) < eps;
+	const bool closed_by_proximity = polygon.Length() >= 3 && polygon.First().Distance(polygon.Last()) < eps;
 	if (closed_by_proximity) {
 		// tfk: note 1-based
 		polygon.Remove(polygon.Length());
@@ -502,6 +502,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 
 	// Remove points that are too close to one another
 	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+
+	if (polygon.Length() < 2) {
+		return false;
+	}
 	
 	BRepBuilderAPI_MakePolygon w;
 	for (int i = 1; i <= polygon.Length(); ++i) {

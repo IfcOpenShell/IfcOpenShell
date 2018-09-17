@@ -341,7 +341,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				TopoDS_Iterator jt(face, false);
 				for (; jt.More(); jt.Next()) {
 					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
-					if (wire_map.IsBound(w)) {
+					// tfk: @todo if wire_map contains w, I would assume wire_senses also contains w,
+					// this is not the case in github issue #405.
+					if (wire_map.IsBound(w) && wire_senses.IsBound(w)) {
 						const TopTools_ListOfShape& shapes = wire_map.Find(w);
 						TopTools_ListIteratorOfListOfShape it(shapes);
 						for (; it.More(); it.Next()) {
