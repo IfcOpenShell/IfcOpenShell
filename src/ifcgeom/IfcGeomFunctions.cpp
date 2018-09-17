@@ -3317,6 +3317,30 @@ namespace {
 		return M;
 	}
 
+	bool is_manifold(const TopoDS_Shape& a) {
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() != 2) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool is_manifold(const TopTools_ListOfShape& l) {
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			if (!is_manifold(it.Value())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 }
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
@@ -3376,7 +3400,12 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		success = BRepCheck_Analyzer(r).IsValid() != 0;
 
 		if (success) {
-			result = r;
+
+			success = !is_manifold(a) || is_manifold(r);
+
+			if (success) {
+				result = r;
+			}
 		}
 	}
 	delete builder;
