@@ -1316,6 +1316,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		}
 
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
+		bool caught_error = false;
 		try {
 #if OCC_VERSION_HEX < 0x60900
             const bool faster_booleans = settings.get(IteratorSettings::FASTER_BOOLEANS);
@@ -1337,9 +1338,16 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			}
 		} catch (const std::exception& e) {
 			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product->entity);
+			caught_error = true;
 		} catch(...) {
 			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product->entity); 
+			caught_error = true;
 		}
+
+		if (caught_error && opened_shapes.size() < shapes.size()) {
+			opened_shapes = shapes;
+		}
+
         if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
 				it->prepend(trsf);
