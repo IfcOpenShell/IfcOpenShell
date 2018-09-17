@@ -2921,6 +2921,15 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			tree.add(edge_idx++, exp.Current());
 		}
 	}
+
+	if (wd->NbEdges() != n) {
+		// If the number of edges differs, BRepTools_WireExplorer did not
+		// reach every edge, probably due to loops exactly at vertex locations.
+		// This is not supported by this algorithm which only elimates loops
+		// due to edge crossings.
+
+		throw geometry_exception("Invalid loop");
+	}
 	
 	bool intersected = false;
 
