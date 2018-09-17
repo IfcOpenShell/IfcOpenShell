@@ -3404,7 +3404,15 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 			success = !is_manifold(a) || is_manifold(r);
 
 			if (success) {
-				result = r;
+				
+				// when there are edges or vertex-edge distances close to the used fuzziness, the  
+				// output is not trusted and the operation is attempted with a higher fuzziness.
+				double min_len_check = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION)));
+				success = min_len_check > fuzziness * 10.;
+
+				if (success) {
+					result = r;
+				}
 			}
 		}
 	}
