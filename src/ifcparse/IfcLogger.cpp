@@ -45,7 +45,11 @@ namespace {
 		}
 		os << message << std::endl;
 		if (instance) {
-			os << instance->data().toString() << std::endl;
+			std::string instance_string = instance->data().toString();
+			if (instance_string.size() > 259) {
+				instance_string = instance_string.substr(0, 256) + "...";
+			}
+			os << instance_string << std::endl;
 		}
 	}
 
