@@ -670,14 +670,18 @@ cmake_args=[
 ]
 
 if "occ" in targets and USE_OCCT:
+    occ_include_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals())
+    occ_library_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib".format(**locals())
     cmake_args.extend([
-        "-DOCC_INCLUDE_DIR="           "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals()),
-        "-DOCC_LIBRARY_DIR="          "{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib".format(**locals())
+        "-DOCC_INCLUDE_DIR="           +occ_include_dir,
+        "-DOCC_LIBRARY_DIR="           +occ_library_dir
     ])
 elif "occ" in targets:
+    occ_include_dir =                  "{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce".format(**locals())
+    occ_library_dir =                  "{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend([
-        "-DOCC_INCLUDE_DIR="           "{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce".format(**locals()),
-        "-DOCC_LIBRARY_DIR="          "{DEPS_DIR}/install/oce-{OCE_VERSION}/lib".format(**locals())
+        "-DOCC_INCLUDE_DIR="           +occ_include_dir,
+        "-DOCC_LIBRARY_DIR="           +occ_library_dir
     ])
 
 if "OpenCOLLADA" in targets:
@@ -738,17 +742,15 @@ if "IfcOpenShell-Python" in targets:
                 "-DBOOST_ROOT="              "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
                 "-DOCC_INCLUDE_DIR="         +occ_include_dir,
                 "-DOCC_LIBRARY_DIR="         +occ_library_dir,
-                "-DOPENCOLLADA_INCLUDE_DIR=" "{DEPS_DIR}/install/OpenCOLLADA/include/opencollada".format(**locals()),
-                "-DOPENCOLLADA_LIBRARY_DIR=" "{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada".format(**locals()),
                 "-DICU_INCLUDE_DIR="         "{DEPS_DIR}/install/icu-{ICU_VERSION}/include".format(**locals()),
                 "-DICU_LIBRARY_DIR="         "{DEPS_DIR}/install/icu-{ICU_VERSION}/lib".format(**locals()),
-                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.a".format(**locals()),
                 "-DPYTHON_LIBRARY="          +PYTHON_LIBRARY,
                 "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
+                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
+                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.a".format(**locals()),
                 "-DCOLLADA_SUPPORT=OFF"
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
         
