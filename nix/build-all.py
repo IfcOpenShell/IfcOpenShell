@@ -520,6 +520,7 @@ if USE_OCCT and "occ" in targets:
         download_url = "https://git.dev.opencascade.org/repos/occt.git",
         download_name = "occt",
         download_tool=download_tool_git,
+        patch="./patches/occt/enable-exception-handling.patch",
         revision="V" + OCCT_VERSION.replace('.', '_')
     )
 elif "occ" in targets:

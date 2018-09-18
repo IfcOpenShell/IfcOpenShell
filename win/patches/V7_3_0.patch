@@ -13,15 +13,20 @@ index fca978164..dda41e2c6 100644
  
  # accumulate all used toolkits
 diff --git a/adm/cmake/occt_defs_flags.cmake b/adm/cmake/occt_defs_flags.cmake
-index 09da18d38..46e6e6814 100644
+index 09da18d38..a07b9cf74 100644
 --- a/adm/cmake/occt_defs_flags.cmake
 +++ b/adm/cmake/occt_defs_flags.cmake
-@@ -140,3 +140,18 @@ endif()
+@@ -138,5 +138,21 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR MINGW)
+   set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+ endif()
  
- set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
- set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
-+
+-set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
+-set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
 +# IfcOpenShell begin
++# https://salsa.debian.org/science-team/opencascade/blob/739e7e9c4fbe575165eb3ff0251774bfad27139e/debian/patches/enable-exception-handling.patch
++# set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
++# set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
++
 +if (MSVC)
 +    foreach(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
 +            CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
