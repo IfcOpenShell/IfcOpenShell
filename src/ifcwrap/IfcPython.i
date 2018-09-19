@@ -70,18 +70,15 @@
 }
 
 %module ifcopenshell_wrapper %{
-	#include "../ifcgeom/IfcGeom.h"
-	#include "../ifcgeom/IfcGeomIterator.h"
+	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom/IfcGeomTree.h"
-
+	
+	#include "../ifcparse/Ifc2x3.h"
+	#include "../ifcparse/Ifc4.h"
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
-	
-	#ifdef USE_IFC4
-	#include "../ifcparse/Ifc4-latebound.h"
-	#else
-	#include "../ifcparse/Ifc2x3-latebound.h"
-	#endif
+	#include "../ifcparse/IfcSchema.h"
 
 	#include <BRepTools_ShapeSet.hxx>
 %}

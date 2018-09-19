@@ -54,6 +54,31 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	brep_data_ = sstream.str();
 }
 
+// todo copied from kernel
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepBuilderAPI_GTransform.hxx>
+
+TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
+	if (t.Form() == gp_Identity) {
+		return s;
+	} else {
+		/// @todo set to 1. and exactly 1. or use epsilon?
+		if (t.ScaleFactor() != 1.) {
+			return BRepBuilderAPI_Transform(s, t, true);
+		} else {
+			return s.Moved(t);
+		}
+	}
+}
+
+TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
+	if (t.Form() == gp_Other) {
+		return BRepBuilderAPI_GTransform(s, t, true);
+	} else {
+		return apply_transformation(s, t.Trsf());
+	}
+}
+
 TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
@@ -68,7 +93,7 @@ TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
 			trsf.PreMultiply(scale);
 		}
 
-		const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(s, trsf);
+		const TopoDS_Shape moved_shape = apply_transformation(s, trsf);
 		builder.Add(compound, moved_shape);
 	}
 	return compound;

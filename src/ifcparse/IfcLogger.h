@@ -20,18 +20,14 @@
 #ifndef IFCLOGGER_H
 #define IFCLOGGER_H
 
+#include "../ifcparse/IfcBaseClass.h"
+
 #include <set>
 #include <string>
 #include <vector>
 #include <sstream>
 #include <algorithm>
 #include <exception>
-
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4.h"
-#else
-#include "../ifcparse/Ifc2x3.h"
-#endif
 
 #include <boost/optional.hpp>
 
@@ -47,9 +43,13 @@ private:
 	static std::stringstream log_stream;
 	static Severity verbosity;
 	static Format format;
-	static boost::optional<IfcSchema::IfcProduct*> current_product;
+	static boost::optional<IfcUtil::IfcBaseClass*> current_product;
 public:
-	static void SetProduct(boost::optional<IfcSchema::IfcProduct*> product);
+
+	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
+		current_product = product;
+	}
+
 	/// Determines to what stream respectively progress and errors are logged
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
 
@@ -62,16 +62,16 @@ public:
 	static Format OutputFormat();
 	
 	/// Log a message to the output stream
-	static void Message(Severity type, const std::string& message, IfcEntityInstanceData* entity=0);
-	static void Message(Severity type, const std::exception& message, IfcEntityInstanceData* entity = 0);
+	static void Message(Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance = 0);
+	static void Message(Severity type, const std::exception& message, const IfcUtil::IfcBaseClass* instance = 0);
 	
-	static void Notice(const std::string& message, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, message, entity); }
-    static void Warning(const std::string& message, IfcEntityInstanceData* entity=0) { Message(LOG_WARNING, message, entity); }
-    static void Error(const std::string& message, IfcEntityInstanceData* entity=0) { Message(LOG_ERROR, message, entity); }
+	static void Notice(const std::string& message, const IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_NOTICE, message, instance); }
+    static void Warning(const std::string& message, const IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_WARNING, message, instance); }
+    static void Error(const std::string& message, const IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_ERROR, message, instance); }
 	
-	static void Notice(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_NOTICE, exception, entity); }
-	static void Warning(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_WARNING, exception, entity); }
-	static void Error(const std::exception& exception, IfcEntityInstanceData* entity = 0) { Message(LOG_ERROR, exception, entity); }
+	static void Notice(const std::exception& exception, const IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_NOTICE, exception, instance); }
+	static void Warning(const std::exception& exception, const IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_WARNING, exception, instance); }
+	static void Error(const std::exception& exception, const IfcUtil::IfcBaseClass* instance = 0) { Message(LOG_ERROR, exception, instance); }
 
 	static void Status(const std::string& message, bool new_line=true);
 

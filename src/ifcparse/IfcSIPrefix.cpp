@@ -16,47 +16,52 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
+
 #include "IfcSIPrefix.h"
 
-double IfcParse::IfcSIPrefixToValue(IfcSchema::IfcSIPrefix::IfcSIPrefix v) {
-	if      ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_EXA   ) return 1.e18;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PETA  ) return 1.e15;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_TERA  ) return 1.e12;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_GIGA  ) return 1.e9;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MEGA  ) return 1.e6;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_KILO  ) return 1.e3;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_HECTO ) return 1.e2;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECA  ) return 1.;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_DECI  ) return 1.e-1;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_CENTI ) return 1.e-2;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MILLI ) return 1.e-3;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_MICRO ) return 1.e-6;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_NANO  ) return 1.e-9;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_PICO  ) return 1.e-12;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_FEMTO ) return 1.e-15;
-	else if ( v == IfcSchema::IfcSIPrefix::IfcSIPrefix_ATTO  ) return 1.e-18;
+#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/Ifc4.h"
+
+double IfcParse::IfcSIPrefixToValue(const std::string& v) {
+	if      ( v == "EXA"   ) return 1.e18;
+	else if ( v == "PETA"  ) return 1.e15;
+	else if ( v == "TERA"  ) return 1.e12;
+	else if ( v == "GIGA"  ) return 1.e9;
+	else if ( v == "MEGA"  ) return 1.e6;
+	else if ( v == "KILO"  ) return 1.e3;
+	else if ( v == "HECTO" ) return 1.e2;
+	else if ( v == "DECA"  ) return 1.;
+	else if ( v == "DECI"  ) return 1.e-1;
+	else if ( v == "CENTI" ) return 1.e-2;
+	else if ( v == "MILLI" ) return 1.e-3;
+	else if ( v == "MICRO" ) return 1.e-6;
+	else if ( v == "NANO"  ) return 1.e-9;
+	else if ( v == "PICO"  ) return 1.e-12;
+	else if ( v == "FEMTO" ) return 1.e-15;
+	else if ( v == "ATTO"  ) return 1.e-18;
 	else return 1.;
 }
 
-double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
+template <typename Schema>
+double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
 	double scale =  1.;
-	IfcSchema::IfcSIUnit* si_unit = 0;
+	typename Schema::IfcSIUnit* si_unit = 0;
 
-	if (named_unit->is(IfcSchema::Type::IfcConversionBasedUnit)) {
-		IfcSchema::IfcConversionBasedUnit* conv_unit = named_unit->as<IfcSchema::IfcConversionBasedUnit>();
-		IfcSchema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
-		IfcSchema::IfcUnit* component = factor->UnitComponent();
-		if (component->is(IfcSchema::Type::IfcSIUnit)) {
-			si_unit = component->as<IfcSchema::IfcSIUnit>();
-			IfcSchema::IfcValue* v = factor->ValueComponent();
-			scale = *v->entity->getArgument(0);
+	if (named_unit->declaration().is(Schema::IfcConversionBasedUnit::Class())) {
+		typename Schema::IfcConversionBasedUnit* conv_unit = named_unit->template as<typename Schema::IfcConversionBasedUnit>();
+		typename Schema::IfcMeasureWithUnit* factor = conv_unit->ConversionFactor();
+		typename Schema::IfcUnit* component = factor->UnitComponent();
+		if (component->declaration().is(Schema::IfcSIUnit::Class())) {
+			si_unit = component->template as<typename Schema::IfcSIUnit>();
+			typename Schema::IfcValue* v = factor->ValueComponent();
+			scale = *v->data().getArgument(0);
 		}		
-	} else if (named_unit->is(IfcSchema::Type::IfcSIUnit)) {
-		si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
+	} else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
+		si_unit = named_unit->template as<typename Schema::IfcSIUnit>();
 	}
 	if (si_unit) {
 		if (si_unit->hasPrefix()) {
-			scale *= IfcSIPrefixToValue(si_unit->Prefix());
+			scale *= IfcSIPrefixToValue(Schema::IfcSIPrefix::ToString(si_unit->Prefix()));
 		}
 	} else {
 		scale = 0.;
@@ -64,3 +69,6 @@ double IfcParse::get_SI_equivalent(IfcSchema::IfcNamedUnit* named_unit) {
 
 	return scale;
 }
+
+template double IfcParse::get_SI_equivalent<Ifc2x3>(typename Ifc2x3::IfcNamedUnit* named_unit);
+template double IfcParse::get_SI_equivalent<Ifc4>(typename Ifc4::IfcNamedUnit* named_unit);

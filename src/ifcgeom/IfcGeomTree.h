@@ -21,7 +21,9 @@
 #define IFCGEOMTREE_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomIterator.h"
+#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/Kernel.h"
 
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>
@@ -243,7 +245,7 @@ namespace IfcGeom {
 		};
 	}
 
-	class tree : public impl::tree<IfcSchema::IfcProduct*> {
+	class tree : public impl::tree<IfcUtil::IfcBaseEntity*> {
 	public:
 
 		tree() {};
@@ -267,7 +269,7 @@ namespace IfcGeom {
 			if (it.initialize()) {
 				do {
 					IfcGeom::BRepElement<double>* elem = (IfcGeom::BRepElement<double>*)it.get();
-					add((IfcSchema::IfcProduct*)f.entityById(elem->id()), elem->geometry().as_compound());
+					add((IfcUtil::IfcBaseEntity*)f.instance_by_id(elem->id()), elem->geometry().as_compound());
 				} while (it.next());
 			}
 		}

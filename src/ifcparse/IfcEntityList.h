@@ -44,12 +44,12 @@ public:
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
-		for (it i = begin(); i != end(); ++i) if (all || (*i)->is(U::Class())) r->push((U*)*i);
+		const bool all = !U::Class().as_entity();
+		for (it i = begin(); i != end(); ++i) if (all || (*i)->declaration().is(U::Class())) r->push((U*)*i);
 		return r;
 	}
 	void remove(IfcUtil::IfcBaseClass*);
-	IfcEntityList::ptr filtered(const std::set<IfcSchema::Type::Enum>& entities);
+	IfcEntityList::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
 	IfcEntityList::ptr unique();
 };
 
@@ -73,8 +73,8 @@ public:
 	template <class U>
 	typename U::list::ptr as() {
 		typename U::list::ptr r(new typename U::list);
-		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
-		for (it i = begin(); i != end(); ++i) if (all || (*i)->is(U::Class())) r->push((U*)*i);
+		const bool all = !U::Class().as_entity();
+		for (it i = begin(); i != end(); ++i) if (all || (*i)->declaration().is(U::Class())) r->push((U*)*i);
 		return r;
 	}
 	void remove(T* t) {
@@ -128,12 +128,12 @@ public:
 	template <class U>
 	typename IfcTemplatedEntityListList<U>::ptr as() {
 		typename IfcTemplatedEntityListList<U>::ptr r(new IfcTemplatedEntityListList<U>);
-		const bool all = U::Class() == IfcSchema::Type::UNDEFINED;
+		const bool all = !U::Class().as_entity();
 		for (outer_it outer = begin(); outer != end(); ++outer) {
 			const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
 			typename std::vector<U*> to;
 			for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
-				if (all || (*inner)->is(U::Class())) to.push_back((U*)*inner);
+				if (all || (*inner)->declaration().is(U::Class())) to.push_back((U*)*inner);
 			}
 			r->push(to);
 		}

@@ -18,7 +18,9 @@
  ********************************************************************************/
 
 #include "IfcLogger.h"
+
 #include "../ifcparse/IfcException.h"
+#include "../ifcparse/Argument.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
@@ -35,14 +37,15 @@ using boost::property_tree::ptree;
 namespace {
 	static const char* severity_strings[] = {"Notice", "Warning", "Error"};
 
-	void plain_text_message(std::ostream& os, const boost::optional<IfcSchema::IfcProduct*>& current_product, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
+	void plain_text_message(std::ostream& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
 		os << "[" << severity_strings[type] << "] ";
 		if (current_product) {
-			os << "{" << (*current_product)->GlobalId() << "} ";
+			std::string global_id = *(**current_product).data().getArgument((**current_product).declaration().as_entity()->attribute_index("GlobalId"));
+			os << "{" << global_id << "} ";
 		}
 		os << message << std::endl;
-		if (entity) {
-			std::string instance_string = entity->toString();
+		if (instance) {
+			std::string instance_string = instance->data().toString();
 			if (instance_string.size() > 259) {
 				instance_string = instance_string.substr(0, 256) + "...";
 			}
@@ -50,22 +53,18 @@ namespace {
 		}
 	}
 
-	void json_message(std::ostream& os, const boost::optional<IfcSchema::IfcProduct*>& current_product, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
+	void json_message(std::ostream& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
 		ptree pt;
 		pt.put("level", severity_strings[type]);
 		if (current_product) {
-			pt.put("product", (**current_product).entity->toString());
+			pt.put("product", (**current_product).data().toString());
 		}
 		pt.put("message", message);
-		if (entity) {
-			pt.put("instance", entity);
+		if (instance) {
+			pt.put("instance", instance->data().toString());
 		}
 		boost::property_tree::write_json(os, pt, false);
 	}
-}
-
-void Logger::SetProduct(boost::optional<IfcSchema::IfcProduct*> product) {
-	current_product = product;
 }
 
 void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
@@ -76,18 +75,18 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
-	if (log2 && type >= verbosity) {
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+    if (log2 && type >= verbosity) {
 		if (format == FMT_PLAIN) {
-			plain_text_message(*log2, current_product, type, message, entity);
+			plain_text_message(*log2, current_product, type, message, instance);
 		} else if (format == FMT_JSON) {
-			json_message(*log2, current_product, type, message, entity);
+			json_message(*log2, current_product, type, message, instance);
 		}
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, IfcEntityInstanceData* entity) {
-	Message(type, exception.what(), entity);
+void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseClass* instance) {
+	Message(type, std::string(exception.what()), instance);
 }
 
 void Logger::Status(const std::string& message, bool new_line) {
@@ -119,4 +118,4 @@ std::ostream* Logger::log2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
 Logger::Format Logger::format = Logger::FMT_PLAIN;
-boost::optional<IfcSchema::IfcProduct*> Logger::current_product;
+boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product;

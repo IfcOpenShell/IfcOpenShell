@@ -21,55 +21,65 @@
 
 #include "IfcGeom.h"
 
-bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
-	if (colour != 0) {
-		rgb[0] = colour->Red();
-		rgb[1] = colour->Green();
-		rgb[2] = colour->Blue();
+namespace {
+
+	bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
+		if (colour != 0) {
+			rgb[0] = colour->Red();
+			rgb[1] = colour->Green();
+			rgb[2] = colour->Blue();
+		}
+		return colour != 0;
 	}
-	return colour != 0;
+
+	bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, double* rgb) {
+		if (factor != 0) {
+			const double f = *factor;
+			rgb[0] = rgb[1] = rgb[2] = f;
+		}
+		return factor != 0;
+	}
+
+	bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, double* rgb) {
+		if (colour_or_factor == 0) {
+			return false;
+		} else if (colour_or_factor->declaration().is(IfcSchema::IfcColourRgb::Class())) {
+			return process_colour(static_cast<IfcSchema::IfcColourRgb*>(colour_or_factor), rgb);
+		} else if (colour_or_factor->declaration().is(IfcSchema::IfcNormalisedRatioMeasure::Class())) {
+			return process_colour(static_cast<IfcSchema::IfcNormalisedRatioMeasure*>(colour_or_factor), rgb);
+		} else {
+			return false;
+		}
+	}
+
 }
 
-bool process_colour(IfcSchema::IfcNormalisedRatioMeasure* factor, double* rgb) {
-	if (factor != 0) {
-		const double f = *factor;
-		rgb[0] = rgb[1] = rgb[2] = f;
-	}
-	return factor != 0;
-}
+#define Kernel MAKE_TYPE_NAME(Kernel)
 
-bool process_colour(IfcSchema::IfcColourOrFactor* colour_or_factor, double* rgb) {
-	if (colour_or_factor == 0) {
-		return false;
-	} else if (colour_or_factor->is(IfcSchema::Type::IfcColourRgb)) {
-		return process_colour(static_cast<IfcSchema::IfcColourRgb*>(colour_or_factor), rgb);
-	} else if (colour_or_factor->is(IfcSchema::Type::IfcNormalisedRatioMeasure)) {
-		return process_colour(static_cast<IfcSchema::IfcNormalisedRatioMeasure*>(colour_or_factor), rgb);
-	} else {
-		return false;
-	}
-}
-
-const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_styles) {
+const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_styles) {
 	if (shading_styles.second == 0) {
 		return 0;
 	}
-	int surface_style_id = shading_styles.first->entity->id();
+	int surface_style_id = shading_styles.first->data().id();
 	std::map<int,SurfaceStyle>::const_iterator it = style_cache.find(surface_style_id);
 	if (it != style_cache.end()) {
 		return &(it->second);
 	}
 	SurfaceStyle surface_style;
-	if (shading_styles.first->hasName()) {
-		surface_style = SurfaceStyle(surface_style_id, shading_styles.first->Name());
+
+	IfcSchema::IfcSurfaceStyle* style = shading_styles.first->as<IfcSchema::IfcSurfaceStyle>();
+	IfcSchema::IfcSurfaceStyleShading* shading = shading_styles.second->as<IfcSchema::IfcSurfaceStyleShading>();
+
+	if (style->hasName()) {
+		surface_style = SurfaceStyle(surface_style_id, style->Name());
 	} else {
 		surface_style = SurfaceStyle(surface_style_id);
 	}
 	double rgb[3];
-	if (process_colour(shading_styles.second->SurfaceColour(), rgb)) {
+	if (process_colour(shading->SurfaceColour(), rgb)) {
 		surface_style.Diffuse().reset(SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
 	}
-	if (shading_styles.second->is(IfcSchema::Type::IfcSurfaceStyleRendering)) {
+	if (shading_styles.second->declaration().is(IfcSchema::IfcSurfaceStyleRendering::Class())) {
 		IfcSchema::IfcSurfaceStyleRendering* rendering_style = static_cast<IfcSchema::IfcSurfaceStyleRendering*>(shading_styles.second);
 		if (rendering_style->hasDiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
 			SurfaceStyle::ColorComponent diffuse = surface_style.Diffuse().get_value_or(SurfaceStyle::ColorComponent(1,1,1));
@@ -86,12 +96,12 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::internalize_surface_style(const st
 		}
 		if (rendering_style->hasSpecularHighlight()) {
 			IfcSchema::IfcSpecularHighlightSelect* highlight = rendering_style->SpecularHighlight();
-			if (highlight->is(IfcSchema::Type::IfcSpecularRoughness)) {
+			if (highlight->declaration().is(IfcSchema::IfcSpecularRoughness::Class())) {
 				double roughness = *((IfcSchema::IfcSpecularRoughness*)highlight);
 				if (roughness >= 1e-9) {
 					surface_style.Specularity().reset(1.0 / roughness);
 				}
-			} else if (highlight->is(IfcSchema::Type::IfcSpecularExponent)) {
+			} else if (highlight->declaration().is(IfcSchema::IfcSpecularExponent::Class())) {
 				surface_style.Specularity().reset(*((IfcSchema::IfcSpecularExponent*)highlight));
 			}
 		}
@@ -126,58 +136,4 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcMate
 		}
 	}
 	return 0;
-}
-
-static std::map<std::string, IfcGeom::SurfaceStyle> default_materials;
-static IfcGeom::SurfaceStyle default_material;
-static bool default_materials_initialized = false;
-
-void InitDefaultMaterials() {
-	default_materials.insert(std::make_pair("IfcSite", IfcGeom::SurfaceStyle("IfcSite")));
-	default_materials["IfcSite"            ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.75, 0.8, 0.65));
-
-	default_materials.insert(std::make_pair("IfcSlab", IfcGeom::SurfaceStyle("IfcSlab")));
-	default_materials["IfcSlab"            ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.4 , 0.4, 0.4 ));
-	
-	default_materials.insert(std::make_pair("IfcWallStandardCase", IfcGeom::SurfaceStyle("IfcWallStandardCase")));
-	default_materials["IfcWallStandardCase"].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.9 , 0.9, 0.9 ));
-	
-	default_materials.insert(std::make_pair("IfcWall", IfcGeom::SurfaceStyle("IfcWall")));
-	default_materials["IfcWall"            ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.9 , 0.9, 0.9 ));
-	
-	default_materials.insert(std::make_pair("IfcWindow", IfcGeom::SurfaceStyle("IfcWindow")));
-	default_materials["IfcWindow"          ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.75, 0.8, 0.75));
-	default_materials["IfcWindow"          ].Transparency().reset(0.3);
-	
-	default_materials.insert(std::make_pair("IfcDoor", IfcGeom::SurfaceStyle("IfcDoor")));
-	default_materials["IfcDoor"            ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.55, 0.3, 0.15));
-	
-	default_materials.insert(std::make_pair("IfcBeam", IfcGeom::SurfaceStyle("IfcBeam")));
-	default_materials["IfcBeam"            ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.75, 0.7, 0.7 ));
-	
-	default_materials.insert(std::make_pair("IfcRailing", IfcGeom::SurfaceStyle("IfcRailing")));
-	default_materials["IfcRailing"         ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.65, 0.6, 0.6 ));
-	
-	default_materials.insert(std::make_pair("IfcMember", IfcGeom::SurfaceStyle("IfcMember")));
-	default_materials["IfcMember"          ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.65, 0.6, 0.6 ));
-	
-	default_materials.insert(std::make_pair("IfcPlate", IfcGeom::SurfaceStyle("IfcPlate")));
-	default_materials["IfcPlate"           ].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.8 , 0.8, 0.8 ));
-
-	default_material = IfcGeom::SurfaceStyle("DefaultMaterial");
-	default_material.Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.7, 0.7, 0.7));
-
-	default_materials_initialized = true;
-}
-
-const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
-	if (!default_materials_initialized) InitDefaultMaterials();
-	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find(s);
-	if (it == default_materials.end()) {
-		default_materials.insert(std::make_pair(s, IfcGeom::SurfaceStyle(s)));
-		default_materials[s].Diffuse().reset(*default_material.Diffuse());
-		it = default_materials.find(s);
-	}
-	const IfcGeom::SurfaceStyle& surface_style = it->second;
-	return &surface_style;
 }

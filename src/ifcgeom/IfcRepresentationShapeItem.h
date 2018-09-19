@@ -23,7 +23,7 @@
 #include <gp_GTrsf.hxx>
 #include <TopoDS_Shape.hxx>
 
-#include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
 
 namespace IfcGeom {	
 	class IFC_GEOM_API IfcRepresentationShapeItem {

@@ -27,25 +27,27 @@ if tuple(map(int, platform.python_version_tuple())) < (2, 7):
     
 # According to ISO 10303-11 7.1.2: Letters: "... The case of 
 # letters is significant only within explicit string literals."
+class OrderedCaseInsensitiveDict_KeyObject(str):
+    def __eq__(self, other):
+        return self.lower() == other.lower()
+    def __hash__(self):
+        return hash(self.lower())
+
+
 class OrderedCaseInsensitiveDict(collections.OrderedDict):
-    class KeyObject(str):
-        def __eq__(self, other):
-            return self.lower() == other.lower()
-        def __hash__(self):
-            return hash(self.lower())
-            
     def __init__(self, *args, **kwargs):
         collections.OrderedDict.__init__(self)
         for key, value in collections.OrderedDict(*args, **kwargs).items():
-            self[OrderedCaseInsensitiveDict.KeyObject(key)] = value
+            self[OrderedCaseInsensitiveDict_KeyObject(key)] = value
     def __setitem__(self, key, value):
-        return collections.OrderedDict.__setitem__(self, OrderedCaseInsensitiveDict.KeyObject(key), value)
+        return collections.OrderedDict.__setitem__(self, OrderedCaseInsensitiveDict_KeyObject(key), value)
     def __getitem__(self, key):
-        return collections.OrderedDict.__getitem__(self, OrderedCaseInsensitiveDict.KeyObject(key))
+        return collections.OrderedDict.__getitem__(self, OrderedCaseInsensitiveDict_KeyObject(key))
     def get(self, key, *args, **kwargs):
-        return collections.OrderedDict.get(self, OrderedCaseInsensitiveDict.KeyObject(key), *args, **kwargs)
+        return collections.OrderedDict.get(self, OrderedCaseInsensitiveDict_KeyObject(key), *args, **kwargs)
     def __contains__(self, key):
-        return collections.OrderedDict.__contains__(self, OrderedCaseInsensitiveDict.KeyObject(key))
+        return collections.OrderedDict.__contains__(self, OrderedCaseInsensitiveDict_KeyObject(key))
+
 
 class Schema:
     def is_enumeration(self, v):
@@ -58,6 +60,12 @@ class Schema:
         return str(v) in self.types
     def is_entity(self, v):
         return str(v) in self.entities
+    def __len__(self):
+        return len(self.types) + len(self.entities)
+    def __iter__(self):
+        return iter(self.keys)
+    def __getitem__(self, key):
+        return self.types_entities[key]
     def __init__(self, parsetree):
         self.name = parsetree[1]
 
@@ -65,6 +73,9 @@ class Schema:
 
         self.types = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.TypeDeclaration)])
         self.entities = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.EntityDeclaration)])
+        
+        self.keys = list(self.types.keys()) + list(self.entities.keys())
+        self.types_entities = {k: v for d in (self.types, self.entities) for k, v in d.items()}
 
         of_type = lambda *types: sort([(a, b.type.type) for a,b in self.types.items() if any(isinstance(b.type.type, ty) for ty in types)])
 

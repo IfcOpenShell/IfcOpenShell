@@ -83,15 +83,17 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
 	if ( r < ALMOST_ZERO ) { 
-		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
 		return false;
 	}
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
 		IfcGeom::Kernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
@@ -106,7 +108,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	double x = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
 	double y = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
 	if (x < ALMOST_ZERO || y < ALMOST_ZERO) { 
-		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+		Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
 		return false;
 	}
 	// Open Cascade does not allow ellipses of which the minor radius
@@ -116,7 +118,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	const bool rotated = y > x;
 	gp_Trsf trsf;
 	IfcSchema::IfcAxis2Placement* placement = l->Position();
-	if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+	if (placement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
 		convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
 	} else {
 		gp_Trsf2d trsf2d;
@@ -144,7 +146,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& c
 #ifdef USE_IFC4
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
 
-	const bool is_rational = l->is(IfcSchema::Type::IfcRationalBSplineCurveWithKnots);
+	const bool is_rational = l->declaration().is(IfcSchema::IfcRationalBSplineCurveWithKnots::Class());
 
 	const IfcSchema::IfcCartesianPoint::list::ptr cps = l->ControlPointsList();
 	const std::vector<int> mults = l->KnotMultiplicities();

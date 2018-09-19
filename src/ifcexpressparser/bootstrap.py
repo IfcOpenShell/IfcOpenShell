@@ -121,7 +121,7 @@ actions = {
     'general_aggregation_types' : "lambda t: AggregationType(t)",
     'select_type'               : "lambda t: SelectType(t)",
     'binary_type'               : "lambda t: BinaryType(t)",
-    'subtype_declaration'       : "lambda t: SubtypeExpression(t)",
+    'subtype_declaration'       : "lambda t: SubTypeExpression(t)",
     'derive_clause'             : "lambda t: AttributeList('derive', t)",
     'derived_attr'              : "lambda t: DerivedAttribute(t)",
     'inverse_clause'            : "lambda t: AttributeList('inverse', t)",
@@ -170,32 +170,41 @@ for id in to_emit:
         stmt = "Suppress%s" % stmt
     statements.append("%s << %s" % (id, stmt))
 
-print ("""import sys
-from pyparsing import *
-from nodes import *
+print ("""import os
+import sys
+import pickle
 
-%s
+cache_file = sys.argv[1] + ".cache.dat"
+if os.path.exists(cache_file):
+    with open(cache_file, "rb") as f:
+        mapping = pickle.load(f)
+else:
+    from pyparsing import *
+    from nodes import *
+    
+    import schema
+    import mapping
+    
+    %s
 
-import schema
-import mapping
+    syntax.ignore("--" + restOfLine)
+    syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
+    ast = syntax.parseFile(sys.argv[1])
+    schema = schema.Schema(ast)
+    mapping = mapping.Mapping(schema)
+
+    with open(cache_file, "wb") as f:
+        pickle.dump(mapping, f, protocol=0)    
 
 import header
 import enum_header
 import implementation
-import latebound_header
-import latebound_implementation
-
-syntax.ignore("--" + restOfLine)
-syntax.ignore(Regex(r"\((?:\*(?:[^*]*\*+)+?\))"))
-ast = syntax.parseFile(sys.argv[1])
-schema = schema.Schema(ast)
-mapping = mapping.Mapping(schema)
+import schema_class
 
 header.Header(mapping).emit()
 enum_header.EnumHeader(mapping).emit()
 implementation.Implementation(mapping).emit()
-latebound_header.LateBoundHeader(mapping).emit()
-latebound_implementation.LateBoundImplementation(mapping).emit()
+schema_class.SchemaClass(mapping).emit()
 
 sys.stdout.write(schema.name)
-"""%('\n'.join(statements)))
+"""%('\n    '.join(statements)))

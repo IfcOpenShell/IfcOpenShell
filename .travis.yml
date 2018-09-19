@@ -29,7 +29,7 @@ install:
   - sudo apt-get install -y liboce-ocaf-dev
   - sudo apt-get install -y liboce-visualization-dev
   - sudo apt-get install -y liboce-ocaf-lite-dev
-
+  - sudo apt-get install -y libxml2-dev zlib1g liblzma5
   - sudo apt-get install -y libpcre3-dev
 
 script:
@@ -41,29 +41,30 @@ script:
   - mkdir build
   - cd build
   - cmake ..
-  - make
-  - sudo make install
+  - sudo make -j2 install
   - cd ..
   - cd ..
   - pwd
   - cd IfcOpenShell
   - pwd
   - cd cmake
-  - mkdir build-ifc2x3 build-ifc4
-  - cd build-ifc2x3
-  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=False -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_EXECUTABLE=/usr/bin/python2.7 ..
-  - make -j
+  - mkdir build
+  - cd build
+  - |
+    cmake \
+    -DCOLLADA_SUPPORT=True \
+    -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada \
+    -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada \
+    -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+    -DBUILD_IFCPYTHON=True \
+    -DUNICODE_SUPPORT=True \
+    -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+    -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so \
+    -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 \
+    -DPYTHON_EXECUTABLE=/usr/bin/python2.7 \
+    -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
+    -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.a;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5" \
+    ..
   - sudo make install
-  - ./examples/IfcOpenHouse
-  - ./examples/IfcAdvancedHouse
-  - test -f IfcOpenHouse.ifc
-  - test -f IfcAdvancedHouse.ifc
   - cd ../../test
   - /usr/bin/python2.7 tests.py
-  - cd ../cmake/build-ifc4
-  - cmake -DCOLLADA_SUPPORT=True -DOPENCOLLADA_INCLUDE_DIR=/usr/local/include/opencollada -DOPENCOLLADA_LIBRARY_DIR=/usr/local/lib/opencollada -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DUSE_IFC4=True -DBUILD_IFCPYTHON=True -DUNICODE_SUPPORT=True -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu -DPYTHON_LIBRARY=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_EXECUTABLE=/usr/bin/python2.7 ..
-  - make -j
-  - ./examples/IfcOpenHouse
-  - ./examples/IfcAdvancedHouse
-  - test -f IfcOpenHouse.ifc
-  - test -f IfcAdvancedHouse.ifc

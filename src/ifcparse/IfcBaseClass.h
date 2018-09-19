@@ -29,34 +29,43 @@
 #endif
 
 #include "../ifcparse/IfcEntityInstanceData.h"
+#include "../ifcparse/IfcSchema.h"
 
 class Argument;
 
 namespace IfcUtil {
 
 	class IFC_PARSE_API IfcBaseClass {
+    protected:
+		IfcEntityInstanceData* data_;
+        
 	public:
-		virtual ~IfcBaseClass() {}
-		IfcEntityInstanceData* entity;
-		virtual bool is(IfcSchema::Type::Enum v) const = 0;
-		virtual IfcSchema::Type::Enum type() const = 0;
-
-		virtual unsigned int getArgumentCount() const = 0;
-		virtual IfcUtil::ArgumentType getArgumentType(unsigned int i) const = 0;
-		virtual IfcSchema::Type::Enum getArgumentEntity(unsigned int i) const = 0;
-		virtual Argument* getArgument(unsigned int i) const = 0;
-		virtual const char* getArgumentName(unsigned int i) const = 0;
+        IfcBaseClass() : data_(0) {}
+		IfcBaseClass(IfcEntityInstanceData* d) : data_(d) {}
+		virtual ~IfcBaseClass() { delete data_; }
+        
+        const IfcEntityInstanceData& data() const { return *data_; }
+		IfcEntityInstanceData& data() { return *data_; }
+        void data(IfcEntityInstanceData* d);
+        
+        virtual const IfcParse::declaration& declaration() const = 0;
 
 		template <class T>
 		T* as() {
-			return is(T::Class())
+			if (this == 0) {
+				return static_cast<T*>(0);
+			}
+			return declaration().is(T::Class())
 				? static_cast<T*>(this)
 				: static_cast<T*>(0);
 		}
 
 		template <class T>
 		const T* as() const {
-			return is(T::Class())
+			if (this == 0) {
+				return static_cast<const T*>(0);
+			}
+			return declaration().is(T::Class())
 				? static_cast<const T*>(this)
 				: static_cast<const T*>(0);
 		}
@@ -64,19 +73,21 @@ namespace IfcUtil {
 
 	class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
 	public:
-		Argument* getArgumentByName(const std::string& name) const;
-		std::vector<std::string> getAttributeNames() const;
-		std::vector<std::string> getInverseAttributeNames() const;
-		unsigned id() const { return entity->id(); }
+		IfcBaseEntity() : IfcBaseClass() {}
+		IfcBaseEntity(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
+
+		virtual const IfcParse::entity& declaration() const = 0;
+
+		Argument* get(const std::string& name) const;
 	};
 
 	// TODO: Investigate whether these should be template classes instead
-	class IFC_PARSE_API IfcBaseType : public IfcBaseEntity {
+	class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
 	public:
-		unsigned int getArgumentCount() const;
-		Argument* getArgument(unsigned int i) const;
-		const char* getArgumentName(unsigned int i) const;
-		IfcSchema::Type::Enum getArgumentEntity(unsigned int /*i*/) const { return IfcSchema::Type::UNDEFINED; }
+		IfcBaseType() : IfcBaseClass() {}
+		IfcBaseType(IfcEntityInstanceData* d) : IfcBaseClass(d) {}
+
+		virtual const IfcParse::type_declaration& declaration() const = 0;
 	};
 
 }

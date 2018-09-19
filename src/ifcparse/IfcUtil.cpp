@@ -22,12 +22,6 @@
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcEntityList.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4-latebound.h"
-#else
-#include "../ifcparse/Ifc2x3-latebound.h"
-#endif
-
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
 
@@ -63,12 +57,12 @@ void IfcEntityList::remove(IfcUtil::IfcBaseClass* instance) {
 	}
 }
 
-IfcEntityList::ptr IfcEntityList::filtered(const std::set<IfcSchema::Type::Enum>& entities) {
+IfcEntityList::ptr IfcEntityList::filtered(const std::set<const IfcParse::declaration*>& entities) {
 	IfcEntityList::ptr return_value(new IfcEntityList);
 	for (it it = begin(); it != end(); ++it) {
 		bool contained = false;
-		for (std::set<IfcSchema::Type::Enum>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
-			if ((*it)->is(*jt)) {
+		for (std::set<const IfcParse::declaration*>::const_iterator jt = entities.begin(); jt != entities.end(); ++jt) {
+			if ((*it)->declaration().is(**jt)) {
 				contained = true;
 				break;
 			}
@@ -91,12 +85,6 @@ IfcEntityList::ptr IfcEntityList::unique() {
 	}
 	return return_value;
 }
-
-
-unsigned int IfcUtil::IfcBaseType::getArgumentCount() const { return 1; }
-Argument* IfcUtil::IfcBaseType::getArgument(unsigned int i) const { return entity->getArgument(i); }
-const char* IfcUtil::IfcBaseType::getArgumentName(unsigned int i) const { if (i == 0) { return "wrappedValue"; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); } }
-
 
 //Note: some of these methods are overloaded in derived classes
 Argument::operator int() const { throw IfcParse::IfcException("Argument is not an integer"); }
@@ -177,23 +165,78 @@ void IfcUtil::unescape_xml(std::string &str)
     boost::replace_all(str, "&gt;", ">");
 }
 
-std::vector<std::string> IfcUtil::IfcBaseEntity::getAttributeNames() const {
-	std::vector<std::string> return_value;
-	return_value.reserve(getArgumentCount());
-	for (unsigned i = 0; i < getArgumentCount(); ++i) {
-		return_value.push_back(getArgumentName(i));
+Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
+	return data().getArgument(declaration().attribute_index(name));
+}
+
+void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
+	delete data_;
+	data_ = d; 
+}
+
+IfcUtil::ArgumentType IfcUtil::make_aggregate(IfcUtil::ArgumentType elem_type) {
+	if (elem_type == IfcUtil::Argument_INT) {
+		return IfcUtil::Argument_AGGREGATE_OF_INT;
+	} else if (elem_type == IfcUtil::Argument_DOUBLE) {
+		return IfcUtil::Argument_AGGREGATE_OF_DOUBLE;
+	} else if (elem_type == IfcUtil::Argument_STRING) {
+		return IfcUtil::Argument_AGGREGATE_OF_STRING;
+	} else if (elem_type == IfcUtil::Argument_BINARY) {
+		return IfcUtil::Argument_AGGREGATE_OF_BINARY;
+	} else if (elem_type == IfcUtil::Argument_ENTITY_INSTANCE) {
+		return IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE;
+	} else if (elem_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+		return IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
+	} else if (elem_type == IfcUtil::Argument_EMPTY_AGGREGATE) {
+		return IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE;
+	} else {
+		return IfcUtil::Argument_UNKNOWN;
 	}
-	return return_value;
 }
 
-std::vector<std::string> IfcUtil::IfcBaseEntity::getInverseAttributeNames() const {
-	std::vector<std::string> return_value;
-	std::set<std::string> values = IfcSchema::Type::GetInverseAttributeNames(entity->type());
-	std::copy(values.begin(), values.end(), std::back_inserter(return_value));
-	return return_value;
-}
+IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_type* pt) {
+	// TODO: How to detect derived types here without a reference to the refering entity?
 
-Argument* IfcUtil::IfcBaseEntity::getArgumentByName(const std::string& name) const {
-	unsigned int i = IfcSchema::Type::GetAttributeIndex(type(), name);
-	return getArgument(i);
+	const IfcParse::aggregation_type* at = pt->as_aggregation_type();
+	const IfcParse::named_type* nt = pt->as_named_type();
+	const IfcParse::simple_type* st = pt->as_simple_type();
+	
+	if (at) {
+		return make_aggregate(from_parameter_type(at->type_of_element()));
+	} else if (nt) {
+		if (nt->declared_type()->as_entity()) {
+			return IfcUtil::Argument_ENTITY_INSTANCE;
+		} else if (nt->declared_type()->as_enumeration_type()) {
+			return IfcUtil::Argument_ENUMERATION;
+		} else if (nt->declared_type()->as_select_type()) {
+			return IfcUtil::Argument_ENTITY_INSTANCE;
+		} else if (nt->declared_type()->as_type_declaration()) {
+			return from_parameter_type(nt->declared_type()->as_type_declaration()->declared_type());
+		}
+	} else if (st) {
+		switch (st->declared_type()) {
+		case IfcParse::simple_type::binary_type:
+			return IfcUtil::Argument_BINARY;
+		case IfcParse::simple_type::boolean_type:
+			return IfcUtil::Argument_BOOL;
+		case IfcParse::simple_type::integer_type:
+			return IfcUtil::Argument_INT;
+		case IfcParse::simple_type::logical_type:
+			return IfcUtil::Argument_BOOL;
+		case IfcParse::simple_type::number_type:
+			return IfcUtil::Argument_DOUBLE;
+		case IfcParse::simple_type::real_type:
+			return IfcUtil::Argument_DOUBLE;
+		case IfcParse::simple_type::string_type:
+			return IfcUtil::Argument_STRING;
+		case IfcParse::simple_type::datatype_COUNT:
+			throw IfcParse::IfcException("Invalid simple type encountered");
+		}
+	}
+
+	return IfcUtil::Argument_UNKNOWN;
 }

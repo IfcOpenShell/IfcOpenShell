@@ -103,11 +103,13 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
+#define Kernel MAKE_TYPE_NAME(Kernel)
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
 	Handle(Geom_Surface) face_surface;
-	const bool is_face_surface = l->is(IfcSchema::Type::IfcFaceSurface);
+	const bool is_face_surface = l->declaration().is(IfcSchema::IfcFaceSurface::Class());
 
 	if (is_face_surface) {
 		IfcSchema::IfcFaceSurface* fs = (IfcSchema::IfcFaceSurface*) l;
@@ -129,7 +131,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 	for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
 		IfcSchema::IfcFaceBound* bound = *it;
-		if (bound->is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+		if (bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class())) num_outer_bounds ++;
 	}
 
 	// The number of outer bounds should be one according to the schema. Also Open Cascade
@@ -137,7 +139,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	// the face will still be processed as long as there are no holes. A compound of faces
 	// is returned in that case.
 	if (num_bounds > 1 && num_outer_bounds > 1 && num_bounds != num_outer_bounds) {
-		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l->entity);
+		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l);
 		return false;
 	}
 
@@ -163,7 +165,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		
 			bool same_sense = bound->Orientation();
 			const bool is_interior = 
-				!bound->is(IfcSchema::Type::IfcFaceOuterBound) &&
+				!bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class()) &&
 				(num_bounds > 1) &&
 				(num_outer_bounds < num_bounds);
 
@@ -172,14 +174,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		
 			TopoDS_Wire wire;
 			if (!convert_wire(loop, wire)) {
-				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
 				delete mf;
 				return false;
 			}
 
 			/*
 			The approach below does not result in a significant speed-up
-			if (loop->is(IfcSchema::Type::IfcPolyLoop) && processed == 0 && face_surface.IsNull()) {
+			if (loop->declaration().is(IfcSchema::IfcPolyLoop::Class()) && processed == 0 && face_surface.IsNull()) {
 				IfcSchema::IfcPolyLoop* polyloop = (IfcSchema::IfcPolyLoop*) loop;
 				IfcSchema::IfcCartesianPoint::list::ptr points = polyloop->Polygon();
 
@@ -283,7 +285,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					const bool sewing_shells = getValue(GV_MAX_FACES_TO_SEW) > -1;
 
 					if (non_planar && sewing_shells && bounds->size() == 1 && face_surface.IsNull()) {
-						Logger::Message(Logger::LOG_ERROR, "Triangulating face boundary", bound->entity);
+						Logger::Message(Logger::LOG_ERROR, "Triangulating face boundary", bound);
 
 						// When creating a solid, flatting the boundary only postpones the issue to
 						// creating a topological manifold out of the individual faces.
@@ -305,10 +307,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					}
 
 					if (!non_planar || flattened_wire || !flatten_wire(wire)) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound->entity);
+						Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound);
 						return false;
 					} else {
-						Logger::Message(Logger::LOG_ERROR, "Flattening face boundary", bound->entity);
+						Logger::Message(Logger::LOG_ERROR, "Flattening face boundary", bound);
 						flattened_wire = true;
 						goto process_wire;
 					}
@@ -411,7 +413,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleProfileDef* l, TopoDS
 	const double y = l->YDim() / 2.0f * getValue(GV_LENGTH_UNIT);
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -434,7 +436,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l,
 	const double r = l->RoundingRadius() * getValue(GV_LENGTH_UNIT);
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || r < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -465,7 +467,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, 
 	const double r2 = fr2 ? l->InnerFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
 	
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -514,7 +516,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS
 	const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
 
 	if ( x1 < ALMOST_ZERO || w < ALMOST_ZERO || y < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -546,7 +548,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	bool doFillet2 = doFillet1;
 	double x2 = x1, dy2 = dy1, f2 = f1;
 
-	if (l->is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
+	if (l->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
 		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
 		x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
 		doFillet2 = assym->hasTopFlangeFilletRadius();
@@ -559,7 +561,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 	}	
 
 	if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -598,7 +600,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Sh
 	}
 
 	if ( x == 0.0f || y == 0.0f || dx == 0.0f || dy == 0.0f ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -631,7 +633,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Sh
 	}
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -670,7 +672,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Sh
 	}
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -702,7 +704,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Sh
 		const double det = a1*b2 - a2*b1;
 
 		if (ALMOST_THE_SAME(det, 0.)) {
-			Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:",l->entity);
+			Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:",l);
 			return false;
 		}
 
@@ -754,7 +756,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Sh
 	}
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 
@@ -788,7 +790,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 	const double webSlope = hasWebSlope ? (l->WebSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
 
 	if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 	
@@ -836,7 +838,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 		const double det = a1*b2 - a2*b1;
 
 		if (ALMOST_THE_SAME(det, 0.)) {
-			Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:",l->entity);
+			Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:",l);
 			return false;
 		}
 
@@ -865,7 +867,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleProfileDef* l, TopoDS_Shape& face) {
 	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
 	if ( r == 0.0f ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 	
@@ -897,7 +899,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleHollowProfileDef* l, Top
 	const double t = l->WallThickness() * getValue(GV_LENGTH_UNIT);
 	
 	if ( r == 0.0f || t == 0.0f ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 	
@@ -933,7 +935,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_S
 	double ry = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
 
 	if ( rx < ALMOST_ZERO || ry < ALMOST_ZERO ) {
-		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+		Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
 		return false;
 	}
 

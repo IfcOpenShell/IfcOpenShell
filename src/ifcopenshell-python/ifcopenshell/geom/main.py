@@ -71,12 +71,9 @@ class settings(ifcopenshell_wrapper.settings):
                 ifcopenshell_wrapper.settings.set(self, *args)
 
 
-# Hide templating precision to the user by choosing based on Python's
-# internal float type. This is probably always going to be a double.
-for ty in (ifcopenshell_wrapper.iterator_single_precision, ifcopenshell_wrapper.iterator_double_precision):
-    if ty.mantissa_size() == sys.float_info.mant_dig:
-        _iterator = ty
-
+# Assert templated precision to match Python's internal float type
+assert ifcopenshell_wrapper.iterator_double_precision.mantissa_size() == sys.float_info.mant_dig
+_iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):
@@ -91,7 +88,12 @@ class iterator(_iterator):
     if has_occ:
         def get(self):
             return wrap_shape_creation(self.settings, _iterator.get(self))
-
+            
+    def __iter__(self):
+        if self.initialize():
+            while True:
+                yield self.get()
+                if not self.next(): break
 
 class tree(ifcopenshell_wrapper.tree):
 
@@ -185,13 +187,13 @@ def make_shape_function(fn):
     if has_occ:
         import OCC.TopoDS
 
-        def _(string_or_shape, *args):
+        def _(schema, string_or_shape, *args):
             if isinstance(string_or_shape, OCC.TopoDS.TopoDS_Shape):
                 string_or_shape = utils.serialize_shape(string_or_shape)
-            return entity_instance_or_none(fn(string_or_shape, *args))
+            return entity_instance_or_none(fn(schema, string_or_shape, *args))
     else:
-        def _(string, *args):
-            return entity_instance_or_none(fn(string, *args))
+        def _(schema, string, *args):
+            return entity_instance_or_none(fn(schema, string, *args))
     return _
 
 

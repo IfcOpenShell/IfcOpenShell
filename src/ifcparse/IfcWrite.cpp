@@ -28,12 +28,6 @@
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcFile.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4-latebound.h"
-#else
-#include "../ifcparse/Ifc2x3-latebound.h"
-#endif
-
 using namespace IfcWrite;
 
 class SizeVisitor : public boost::static_visitor<int> {
@@ -144,11 +138,11 @@ public:
 		data << "." << i.enumeration_value << ".";
 	}
 	void operator()(const IfcUtil::IfcBaseClass* const& i) { 
-		IfcEntityInstanceData* e = i->entity;
-		if ( IfcSchema::Type::IsSimple(e->type()) ) {
-			data << e->toString(upper);
+		const IfcEntityInstanceData& e = i->data();
+		if (!e.type()->as_entity()) {
+			data << e.toString(upper);
 		} else {
-			data << "#" << e->id();
+			data << "#" << e.id();
 		}
 	}
 	void operator()(const IfcEntityList::ptr& i) { 

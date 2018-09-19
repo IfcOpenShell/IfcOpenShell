@@ -46,6 +46,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <TopTools_ListOfShape.hxx>
 #include <BOPAlgo_Operation.hxx>
 
+#include "../ifcparse/macros.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcBaseClass.h"
 
@@ -53,6 +54,9 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcgeom/IfcGeomRepresentation.h" 
 #include "../ifcgeom/IfcRepresentationShapeItem.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
+
+#include "../ifcgeom_schema_agnostic/Kernel.h"
+
 #include "ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
@@ -66,11 +70,14 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 
 #else
 
-#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->entity->id());\
+#define IN_CACHE(T,E,t,e) std::map<int,t>::const_iterator it = cache.T.find(E->data().id());\
 if ( it != cache.T.end() ) { e = it->second; return true; }
-#define CACHE(T,E,e) cache.T[E->entity->id()] = e;
+#define CACHE(T,E,e) cache.T[E->data().id()] = e;
 
 #endif
+
+#define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x.h)
+#include INCLUDE_PARENT_DIR(IfcSchema)
 
 namespace IfcGeom {
 	class IFC_GEOM_API geometry_exception : public std::exception {
@@ -91,13 +98,13 @@ namespace IfcGeom {
 			: geometry_exception("Too many faces for operation") {}
 	};
 
-class IFC_GEOM_API Cache {
+class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
 public:
 #include "IfcRegisterCreateCache.h"
 	std::map<int, TopoDS_Shape> Shape;
 };
 
-class IFC_GEOM_API Kernel {
+class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::Kernel {
 private:
 
 	double deflection_tolerance;
@@ -110,19 +117,20 @@ private:
 	double dimensionality;
 
 #ifndef NO_CACHE
-	Cache cache;
+	MAKE_TYPE_NAME(Cache) cache;
 #endif
 
 	std::map<int, SurfaceStyle> style_cache;
 
-	const SurfaceStyle* internalize_surface_style(const std::pair<IfcSchema::IfcSurfaceStyle*, IfcSchema::IfcSurfaceStyleShading*>& shading_style);
+	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
 
 	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	IfcSchema::Type::Enum placement_rel_to;
+	const IfcParse::declaration* placement_rel_to;
 
 public:
-	Kernel()
-		: deflection_tolerance(0.001)
+	MAKE_TYPE_NAME(Kernel)()
+		: IfcGeom::Kernel(0)
+		, deflection_tolerance(0.001)
 		, wire_creation_tolerance(0.0001)
 		, point_equality_tolerance(0.00001)
 		, max_faces_to_sew(-1.0)
@@ -130,14 +138,14 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
-		, placement_rel_to(IfcSchema::Type::UNDEFINED)
+		, placement_rel_to(0)
 	{}
 
-	Kernel(const Kernel& other) {
+	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) : IfcGeom::Kernel(0) {
 		*this = other;
 	}
 
-	Kernel& operator=(const Kernel& other) {
+	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
 		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
@@ -149,40 +157,6 @@ public:
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		return *this;
 	}
-
-	// Tolerances and settings for various geometrical operations:
-	enum GeomValue {
-		// Specifies the deflection of the mesher
-		// Default: 0.001m / 1mm
-		GV_DEFLECTION_TOLERANCE, 
-		// Specifies the tolerance of the wire builder, most notably for trimmed curves
-		// Default: 0.0001m / 0.1mm
-		GV_WIRE_CREATION_TOLERANCE,
-		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
-		// Read-only
-		GV_MINIMAL_FACE_AREA,
-		// Specifies the threshold distance under which cartesian points are deemed equal
-		// Default: 0.00001m / 0.01mm
-		GV_POINT_EQUALITY_TOLERANCE,
-		// Specifies maximum number of faces for a shell to be sewed. Sewing shells
-		// that consist of many faces is really detrimental for the performance.
-		// Default: 1000
-		GV_MAX_FACES_TO_SEW,
-		// The length unit used the creation of TopoDS_Shapes, primarily affects the
-		// interpretation of IfcCartesianPoints and IfcVector magnitudes
-		// DefaultL 1.0
-		GV_LENGTH_UNIT,
-		// The plane angle unit used for the creation of TopoDS_Shapes, primarily affects
-		// the interpretation of IfcParamaterValues of IfcTrimmedCurves
-		// Default: -1.0 (= not set, fist try degrees, then radians)
-		GV_PLANEANGLE_UNIT,
-		// The precision used in boolean operations, setting this value too low results
-		// in artefacts and potentially modelling failures
-		// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
-		GV_PRECISION,
-		// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
-		GV_DIMENSIONALITY
-	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
@@ -224,8 +198,7 @@ public:
 	bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
 	bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
 	bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen=0.1);
-	static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
-
+	
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 
 	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
@@ -240,8 +213,6 @@ public:
 	const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
 	bool profile_helper(int numVerts, double* verts, int numFillets, int* filletIndices, double* filletRadii, gp_Trsf2d trsf, TopoDS_Shape& face); 
 	void apply_tolerance(TopoDS_Shape& s, double t);
-	void setValue(GeomValue var, double value);
-	double getValue(GeomValue var) const;
 	bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape);
 	void remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
@@ -267,18 +238,14 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-    static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
-
-    static std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> get_layers(IfcSchema::IfcProduct* prod);
-
-	template <typename P>
-    IfcGeom::BRepElement<P>* create_brep_for_representation_and_product(
+    template <typename P, typename PP>
+    IfcGeom::BRepElement<P, PP>* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
-	template <typename P>
-    IfcGeom::BRepElement<P>* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
-	
+	template <typename P, typename PP>
+    IfcGeom::BRepElement<P, PP>* create_brep_for_processed_representation(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P, PP>*);
+
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
 	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
@@ -289,7 +256,7 @@ public:
 #ifdef USE_IFC4
 		IfcEntityList::ptr style_assignments = si->Styles();
 		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			if (!(*kt)->is(IfcSchema::Type::IfcPresentationStyleAssignment)) {
+			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
 				continue;
 			}
 			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
@@ -301,12 +268,12 @@ public:
 			IfcEntityList::ptr styles = style_assignment->Styles();
 			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
 				IfcUtil::IfcBaseClass* style = *lt;
-				if (style->is(IfcSchema::Type::IfcSurfaceStyle)) {
+				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
 					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
 					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
 						IfcEntityList::ptr styles_elements = surface_style->Styles();
 						for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-							if ((*mt)->is(T::Class())) {
+							if ((*mt)->declaration().is(T::Class())) {
 								return std::make_pair(surface_style, (T*) *mt);
 							}
 						}
@@ -339,18 +306,37 @@ public:
 		// for large files. SurfaceStyles need to be kept at all costs, as they
 		// are read later on when serializing Collada files.
 #ifndef NO_CACHE
-		cache = Cache(); 
+		cache = MAKE_TYPE_NAME(Cache)();
 #endif
 	}
 
-	void set_conversion_placement_rel_to(IfcSchema::Type::Enum type);
+	void set_conversion_placement_rel_to(const IfcParse::declaration* type);
 
 #include "IfcRegisterGeomHeader.h"
 
+	virtual void setValue(GeomValue var, double value);
+	virtual double getValue(GeomValue var) const;
+
+	virtual IfcGeom::BRepElement<double>* convert(
+		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
+		IfcUtil::IfcBaseClass* product)
+	{
+		return create_brep_for_representation_and_product<double, double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
+	}
+
+	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {
+		IfcRepresentationShapeItems items;
+		bool success = convert_shapes(item, items);
+		if (!success) {
+			throw IfcParse::IfcException("Failed to process representation item");
+		}
+		return items;
+	}
+
 };
 
-IFC_GEOM_API IfcSchema::IfcProductDefinitionShape* tesselate(const TopoDS_Shape& shape, double deflection);
-IFC_GEOM_API IfcSchema::IfcProductDefinitionShape* serialise(const TopoDS_Shape& shape, bool advanced);
+IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection);
+IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif

@@ -59,9 +59,12 @@ from .file import file
 from .entity_instance import entity_instance
 
 
-def open(fn=None):
-    return file(ifcopenshell_wrapper.open(os.path.abspath(fn))) if fn else file()
-
+def open(fn):
+    f = ifcopenshell_wrapper.open(os.path.abspath(fn))
+    if f.good():
+        return file(f)
+    else:
+        raise IOError("Unable to open file for reading")
 
 def create_entity(type, *args, **kwargs):
     e = entity_instance(type)

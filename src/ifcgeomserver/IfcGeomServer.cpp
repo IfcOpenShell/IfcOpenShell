@@ -38,7 +38,10 @@
 #include <fcntl.h>
 #endif
 
-#include "../ifcgeom/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcLogger.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -152,7 +155,7 @@ protected:
 	}
 public:
 	const std::string& string() { return str; }
-	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION "-2") {}
+	Hello() : Command(HELLO), str("IfcOpenShell-" IFCOPENSHELL_VERSION "-0") {}
 };
 
 class More : public Command {
@@ -221,7 +224,7 @@ public:
 
 class Entity : public Command {
 private:
-	const IfcGeom::TriangulationElement<float>* geom;
+	const IfcGeom::TriangulationElement<float, double>* geom;
 	bool append_line_data;
 	EntityExtension* eext_;
 protected:
@@ -232,14 +235,14 @@ protected:
 		swrite(s, geom->name());
 		swrite(s, geom->type());
 		swrite<int32_t>(s, geom->parent_id());
-		const std::vector<float>& m = geom->transformation().matrix().data();
-		const float matrix_array[16] = {
+		const std::vector<double>& m = geom->transformation().matrix().data();
+		const double matrix_array[16] = {
 			m[0], m[3], m[6], m[ 9],
 			m[1], m[4], m[7], m[10],
 			m[2], m[5], m[8], m[11],
 			   0,    0,    0,     1
 		};
-		swrite(s, std::string((char*)matrix_array, 16 * sizeof(float)));
+		swrite(s, std::string((char*)matrix_array, 16 * sizeof(double)));
 		
 		// The first bit of the string is always the instance name of the representation.
 		const std::string& representation_id = geom->geometry().id();
@@ -307,7 +310,7 @@ protected:
 		}
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<float>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
+	Entity(const IfcGeom::TriangulationElement<float, double>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
 };
 
 class Next : public Command {
@@ -367,9 +370,9 @@ static const double MAX_WALKABLE_SURFACE_ANGLE_DEGREES = 15.;
 
 class QuantityWriter : public EntityExtension {
 private:
-	const IfcGeom::BRepElement<float>* elem_;
+	const IfcGeom::BRepElement<float, double>* elem_;
 public:
-	QuantityWriter(const IfcGeom::BRepElement<float>* elem) :
+	QuantityWriter(const IfcGeom::BRepElement<float, double>* elem) :
 		elem_(elem)
 	{}
 	void write_contents(std::ostream& s) {
@@ -378,53 +381,47 @@ public:
 		double total_shape_volume = 0.;
 		double walkable_surface_area = 0.;
 
-		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = elem_->geometry().begin(); it != elem_->geometry().end(); ++it) {
-			gp_GTrsf gtrsf = it->Placement();
-			const gp_Trsf& o_trsf = elem_->transformation().data();
-			gtrsf.PreMultiply(o_trsf);
-			const TopoDS_Shape& shp = it->Shape();
-			const TopoDS_Shape moved_shape = IfcGeom::Kernel::apply_transformation(shp, gtrsf);
+		TopoDS_Shape moved_shape = elem_->geometry().as_compound();
 			
-			{
-				GProp_GProps prop_area;
-				BRepGProp::SurfaceProperties(moved_shape, prop_area);
-				total_surface_area += prop_area.Mass();
-			}
+		{
+			GProp_GProps prop_area;
+			BRepGProp::SurfaceProperties(moved_shape, prop_area);
+			total_surface_area += prop_area.Mass();
+		}
 
-			{
-				GProp_GProps prop_volume;
-				BRepGProp::VolumeProperties(moved_shape, prop_volume);
-				total_shape_volume += prop_volume.Mass();
-			}
+		{
+			GProp_GProps prop_volume;
+			BRepGProp::VolumeProperties(moved_shape, prop_volume);
+			total_shape_volume += prop_volume.Mass();
+		}
 
-			if (elem_->type() == "IfcSpace") {
-				TopExp_Explorer exp(moved_shape, TopAbs_FACE);
-				for (; exp.More(); exp.Next()) {
-					const TopoDS_Face& face = TopoDS::Face(exp.Current());
-					Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
+		if (elem_->type() == "IfcSpace") {
+			TopExp_Explorer exp(moved_shape, TopAbs_FACE);
+			for (; exp.More(); exp.Next()) {
+				const TopoDS_Face& face = TopoDS::Face(exp.Current());
+				Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
 
-					// Assume we can only walk on planar surfaces
-					if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-						continue;
-					}
+				// Assume we can only walk on planar surfaces
+				if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+					continue;
+				}
 
-					BRepGProp_Face prop(face);
-					double u0, u1, v0, v1;
-					BRepTools::UVBounds(face, u0, u1, v0, v1);
-					gp_Pnt p;
-					gp_Vec normal_direction;
-					prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
+				BRepGProp_Face prop(face);
+				double u0, u1, v0, v1;
+				BRepTools::UVBounds(face, u0, u1, v0, v1);
+				gp_Pnt p;
+				gp_Vec normal_direction;
+				prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
 
-					gp_Vec normal(0., 0., 0.);
-					if (normal_direction.Magnitude() > ALMOST_ZERO) {
-						normal = gp_Dir(normal_direction.XYZ());
-					}
+				gp_Vec normal(0., 0., 0.);
+				if (normal_direction.Magnitude() > 1.e-5) {
+					normal = gp_Dir(normal_direction.XYZ());
+				}
 
-					if (normal.Angle(gp::DZ()) < (MAX_WALKABLE_SURFACE_ANGLE_DEGREES * M_PI / 180.0)) {
-						GProp_GProps prop_face;
-						BRepGProp::SurfaceProperties(face, prop_face);
-						walkable_surface_area += prop_face.Mass();
-					}
+				if (normal.Angle(gp::DZ()) < (MAX_WALKABLE_SURFACE_ANGLE_DEGREES * M_PI / 180.0)) {
+					GProp_GProps prop_face;
+					BRepGProp::SurfaceProperties(face, prop_face);
+					walkable_surface_area += prop_face.Mass();
 				}
 			}
 		}
@@ -474,7 +471,8 @@ int main () {
 	double deflection = 1.e-3;
 	bool has_more = false;
 
-	IfcGeom::Iterator<float>* iterator = 0;
+	IfcGeom::Iterator<float, double>* iterator = 0;
+	IfcParse::IfcFile* file = 0;
 	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
 	Hello().write(std::cout);
@@ -502,7 +500,8 @@ int main () {
 
 			settings.set_deflection_tolerance(deflection);
 
-			iterator = new IfcGeom::Iterator<float>(settings, data, (int)len);
+			file = new IfcParse::IfcFile(data, (int)len);
+			iterator = new IfcGeom::Iterator<float, double>(settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
@@ -514,7 +513,7 @@ int main () {
 				exit_code = 1;
 				break;
 			}
-			const IfcGeom::TriangulationElement<float>* geom = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator->get());
+			const IfcGeom::TriangulationElement<float, double>* geom = static_cast<const IfcGeom::TriangulationElement<float, double>*>(iterator->get());
 			QuantityWriter eext(iterator->get_native());
 			Entity(geom, &eext).write(std::cout);
 			continue;
@@ -523,7 +522,9 @@ int main () {
 			Next n; n.read(std::cin);
 			has_more = iterator->next() != 0;
 			if (!has_more) {
+				delete file;
 				delete iterator;
+				file = 0;
 				iterator = 0;
 			}
 			More(has_more).write(std::cout);
@@ -531,7 +532,7 @@ int main () {
 		}
 		case GET_LOG: {
 			GetLog gl; gl.read(std::cin);
-			WriteLog(iterator->getLog()).write(std::cout);
+			WriteLog(Logger::GetLog()).write(std::cout);
 			continue;
 		}
 		case BYE: {
