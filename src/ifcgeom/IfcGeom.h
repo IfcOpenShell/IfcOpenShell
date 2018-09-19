@@ -80,7 +80,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include INCLUDE_PARENT_DIR(IfcSchema)
 
 namespace IfcGeom {
-	class IFC_PARSE_API geometry_exception : public std::exception {
+	class IFC_GEOM_API geometry_exception : public std::exception {
 	protected:
 		std::string message;
 	public:
@@ -92,7 +92,7 @@ namespace IfcGeom {
 		}
 	};
 
-	class IFC_PARSE_API too_many_faces_exception : public geometry_exception {
+	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
 	public:
 		too_many_faces_exception()
 			: geometry_exception("Too many faces for operation") {}
