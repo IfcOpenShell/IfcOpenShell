@@ -38,6 +38,10 @@ namespace IfcUtil {
 	class IFC_PARSE_API IfcBaseClass {
     protected:
 		IfcEntityInstanceData* data_;
+
+		static bool is_null(const IfcBaseClass* not_this) {
+			return !not_this;
+		}
         
 	public:
         IfcBaseClass() : data_(0) {}
@@ -52,7 +56,8 @@ namespace IfcUtil {
 
 		template <class T>
 		T* as() {
-			if (this == 0) {
+			// @todo: do not allow this to be null in the first place
+			if (is_null(this)) {
 				return static_cast<T*>(0);
 			}
 			return declaration().is(T::Class())
@@ -62,7 +67,7 @@ namespace IfcUtil {
 
 		template <class T>
 		const T* as() const {
-			if (this == 0) {
+			if (is_null(this)) {
 				return static_cast<const T*>(0);
 			}
 			return declaration().is(T::Class())

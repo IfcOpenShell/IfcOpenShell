@@ -128,6 +128,15 @@ IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBase
 }
 
 namespace {
+
+        // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
+        IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
+                return item->LayerAssignments()->generalize();
+        }
+        IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
+                return item->LayerAssignment()->generalize();
+        }
+
 	template <typename Schema>
 	static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers_impl(typename Schema::IfcProduct* prod) {
 		std::map<std::string, IfcUtil::IfcBaseEntity*> layers;

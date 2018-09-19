@@ -12,16 +12,6 @@
 
 #include <TopExp_Explorer.hxx>
 
-namespace {
-	// LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
-	IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
-		return item->LayerAssignments()->generalize();
-	}
-	IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
-		return item->LayerAssignment()->generalize();
-	}
-}
-
 namespace IfcGeom {
 
 	template <typename P, typename PP>
@@ -89,8 +79,8 @@ namespace IfcGeom {
 			return implementation_->convert(item);
 		}
 
-		virtual bool convert(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
-			return implementation_->convert(item, trsf);
+		virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
+			return implementation_->convert_placement(item, trsf);
 		}
 
 		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
