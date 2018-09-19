@@ -3337,17 +3337,35 @@ namespace {
 		return true;
 	}
 
+	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
+		Bnd_Box A;
+		BRepBndLib::Add(a, A);
+
+		TopTools_ListIteratorOfListOfShape it(b);
+		for (; it.More(); it.Next()) {
+			Bnd_Box B;
+			BRepBndLib::Add(it.Value(), B);
+
+			if (A.Distance(B) < p) {
+				c.Append(it.Value());
+			}
+		}
+	}
 }
 
-bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b_, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
+	TopTools_ListOfShape b;
 	if (op == BOPAlgo_CUT) {
 		builder = new BRepAlgoAPI_Cut();
+		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
 	} else if (op == BOPAlgo_COMMON) {
 		builder = new BRepAlgoAPI_Common();
+		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
 	} else if (op == BOPAlgo_FUSE) {
 		builder = new BRepAlgoAPI_Fuse();
+		b = b_;
 	} else {
 		return false;
 	}
