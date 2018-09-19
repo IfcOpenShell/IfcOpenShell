@@ -1791,6 +1791,7 @@ class IFC2X3_instance_factory : public IfcParse::instance_factory {
 
 
 #if defined(__clang__)
+__attribute__((optnone))
 #elif defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC push_options
 #pragma GCC optimize ("O0")

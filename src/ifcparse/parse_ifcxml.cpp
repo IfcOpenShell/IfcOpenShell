@@ -527,7 +527,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 								instance_to_attribute(inst_or_reference, attr, newinst);
 								state->stack.back().inst()->data().setArgument(idx, attr);
 								state->stack.push_back(stack_node::instance(id_in_file, newinst));
-							} else if (auto select = attribute_type->as_named_type()->declared_type()->as_select_type()) {
+							} else if (attribute_type->as_named_type()->declared_type()->as_select_type()) {
 								// Select types cause an additional indirection, so the current stack node is simply repeated
 								state->stack.push_back(stack_node::select(state->stack.back().inst(), idx));
 							}

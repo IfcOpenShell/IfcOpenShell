@@ -333,6 +333,14 @@ public:
 		return items;
 	}
 
+	virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
+		if (item->as<IfcSchema::IfcObjectPlacement>()) {
+			return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
+		} else {
+			return false;
+		}
+	}
+
 };
 
 IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection);
