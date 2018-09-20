@@ -17,9 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <boost/optional/optional.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
 #include <map>
 
 #include "IfcGeom.h"
+
+namespace pt = boost::property_tree;
 
 bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
 	if (colour != 0) {
@@ -168,6 +174,49 @@ void InitDefaultMaterials() {
 	default_material.Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(0.7, 0.7, 0.7));
 
 	default_materials_initialized = true;
+}
+
+void IfcGeom::set_default_style(const std::string& json_file) {
+  if (default_materials_initialized) {
+    default_materials.clear();
+  }
+
+  pt::ptree root;
+  pt::read_json(json_file, root);
+
+  for (pt::ptree::value_type &material_pair : root) {
+    std::string name = material_pair.first;
+    default_materials.insert(std::make_pair(name, IfcGeom::SurfaceStyle(name)));
+
+    pt::ptree material = material_pair.second;
+    boost::optional<pt::ptree&> diffuse = material.get_child_optional("diffuse");
+    if (diffuse) {
+      double rgb[3];
+      int i = 0;
+      for (pt::ptree::value_type &colour : diffuse.get()) {
+        rgb[i] = colour.second.get_value<double>();
+        i++;
+      }
+      default_materials[name].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
+    }
+    boost::optional<pt::ptree&> specular = material.get_child_optional("specular");
+    if (specular) {
+      double rgb[3];
+      int i = 0;
+      for (pt::ptree::value_type &colour : specular.get()) {
+        rgb[i] = colour.second.get_value<double>();
+        i++;
+      }
+      default_materials[name].Specular().reset(IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
+    }
+    boost::optional<double> specular_roughness = material.get_optional<double>("specular-roughness");
+    if (specular_roughness) {
+      default_materials[name].Specularity().reset(1.0 / specular_roughness.get());
+    }
+    default_materials[name].Transparency() = material.get_optional<double>("transparency");
+  }
+
+  default_materials_initialized = true;
 }
 
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {

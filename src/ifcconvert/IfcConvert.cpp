@@ -34,6 +34,7 @@
 #include "../ifcconvert/SvgSerializer.h"
 
 #include "../ifcgeom/IfcGeomIterator.h"
+#include "../ifcgeom/IfcGeomRenderStyles.h"
 
 #include <IGESControl_Controller.hxx>
 #include <Standard_Version.hxx>
@@ -178,7 +179,8 @@ int main(int argc, char** argv)
     inclusion_traverse_filter include_traverse_filter;
     exclusion_filter exclude_filter;
     exclusion_traverse_filter exclude_traverse_filter;
-	std::string filter_filename;
+    std::string filter_filename;
+    std::string default_material_filename;
 
     po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -259,7 +261,11 @@ int main(int argc, char** argv)
             "Specifies a filter file that describes the used filtering criteria. Supported formats "
             "are '--include=arg GlobalId ...' and 'include arg GlobalId ...'. Spaces and tabs can be used as delimiters."
             "Multiple filters of same type with different values can be inserted on their own lines. "
-            "See --include, --include+, --exclude, and --exclude+ for more details.");
+            "See --include, --include+, --exclude, and --exclude+ for more details.")
+        ("default-material-file", po::value<std::string>(&default_material_filename),
+            "Specifies a material file that describes the material object types will have"
+            "if an object does not have any specified material in the IFC file.");
+
 
     std::string bounds, offset_str;
 #ifdef HAVE_ICU
@@ -489,6 +495,10 @@ int main(int argc, char** argv)
             std::cerr << "[Error] No filters read from '" + filter_filename + "'.\n";
             return EXIT_FAILURE;
         }
+    }
+
+    if (!default_material_filename.empty()) {
+      IfcGeom::set_default_style(default_material_filename);
     }
 
     /// @todo Clean up this filter code further.
