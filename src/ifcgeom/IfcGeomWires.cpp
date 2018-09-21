@@ -115,18 +115,17 @@ namespace {
 		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 
 		bool all_linear = true, single_circle = false, first = true;
-		TopTools_ListOfShape edges;
-		if (map.FindFromKey(v, edges)) {
-			TopTools_ListIteratorOfListOfShape it(edges);
-			for (; it.More(); it.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
-				double _, __;
-				Handle(Geom_Curve) crv = BRep_Tool::Curve(e, _, __);
-				const bool is_line = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
-				const bool is_circle = crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
-				all_linear = all_linear && all_linear;
-				single_circle = first && is_circle;
-			}
+		
+		const TopTools_ListOfShape& edges = map.FindFromKey(v);
+		TopTools_ListIteratorOfListOfShape it(edges);
+		for (; it.More(); it.Next()) {
+			const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+			double _, __;
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(e, _, __);
+			const bool is_line = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+			const bool is_circle = crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
+			all_linear = all_linear && all_linear;
+			single_circle = first && is_circle;
 		}
 
 		if (all_linear) {
