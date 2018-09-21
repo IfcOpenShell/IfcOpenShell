@@ -157,7 +157,7 @@
 #endif
 
 namespace {
-	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
+	void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r) {
 #if OCC_VERSION_HEX < 0x70000
 		TopTools_ListOfShape r;
 		TopTools_ListIteratorOfListOfShape it(l);
@@ -169,7 +169,7 @@ namespace {
 		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
 		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
 		// create copies.
-		return l;
+		r.Assign(l);
 #endif
 	}
 
@@ -3381,7 +3381,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b_, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
-	TopTools_ListOfShape b;
+	TopTools_ListOfShape B, b;
 	if (op == BOPAlgo_CUT) {
 		builder = new BRepAlgoAPI_Cut();
 		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
@@ -3420,7 +3420,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 #endif
 	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
-	builder->SetTools(copy_operand(b));
+	copy_operand(b, B);
+	builder->SetTools(B);
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
