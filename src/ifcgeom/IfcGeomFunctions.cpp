@@ -159,12 +159,10 @@
 namespace {
 	void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r) {
 #if OCC_VERSION_HEX < 0x70000
-		TopTools_ListOfShape r;
 		TopTools_ListIteratorOfListOfShape it(l);
 		for (; it.More(); it.Next()) {
 			r.Append(BRepBuilderAPI_Copy(it.Value()));
 		}
-		return r;
 #else
 		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
 		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
