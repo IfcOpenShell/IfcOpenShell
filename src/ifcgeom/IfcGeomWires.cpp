@@ -43,6 +43,8 @@
 #include <gp_Pln.hxx>
 #include <gp_Circ.hxx>
 
+#include <GC_MakeCircle.hxx>
+
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
@@ -111,14 +113,57 @@ namespace {
 
 	// Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
 	TopoDS_Wire adjust(const TopoDS_Wire& w, const TopoDS_Vertex& v, const gp_Pnt& p) {
-		BRep_Builder b;
-		TopoDS_Vertex v2;
-		b.MakeVertex(v2, p, BRep_Tool::Tolerance(v));
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 
-		ShapeBuild_ReShape reshape;
-		reshape.Replace(v.Oriented(TopAbs_FORWARD), v2);
+		bool all_linear = true, single_circle = false, first = true;
+		TopTools_ListOfShape edges;
+		if (map.FindFromKey(v, edges)) {
+			TopTools_ListIteratorOfListOfShape it(edges);
+			for (; it.More(); it.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+				double _, __;
+				Handle(Geom_Curve) crv = BRep_Tool::Curve(e, _, __);
+				const bool is_line = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+				const bool is_circle = crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
+				all_linear = all_linear && all_linear;
+				single_circle = first && is_circle;
+			}
+		}
 
-		return TopoDS::Wire(reshape.Apply(w));
+		if (all_linear) {
+			BRep_Builder b;
+			TopoDS_Vertex v2;
+			b.MakeVertex(v2, p, BRep_Tool::Tolerance(v));
+
+			ShapeBuild_ReShape reshape;
+			reshape.Replace(v.Oriented(TopAbs_FORWARD), v2);
+
+			return TopoDS::Wire(reshape.Apply(w));
+		} else if (single_circle) {
+			TopoDS_Vertex v1, v2;
+			TopExp::Vertices(w, v1, v2);
+
+			gp_Pnt p1, p2, p3;
+			p1 = v.IsEqual(v1) ? p : BRep_Tool::Pnt(v1);
+			p3 = v.IsEqual(v2) ? p : BRep_Tool::Pnt(v2);
+			
+			double a, b;
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(edges.First()), a, b);
+			crv->D0((a + b) / 2., p2);
+
+			GC_MakeCircle mc(p1, p2, p3);
+			if (!mc.IsDone()) {
+				throw IfcGeom::geometry_exception("Failed to adjust circle");
+			}
+
+			TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(mc.Value(), p1, p3).Edge();
+			BRepBuilderAPI_MakeWire builder;
+			builder.Add(edge);
+			return builder.Wire();
+		} else {
+			throw IfcGeom::geometry_exception("Unexpected wire to adjust");
+		}
 	}
 
 	// A wrapper around BRepBuilderAPI_MakeWire that makes sure segments are connected either by moving end points or by adding intermediate segments
@@ -195,17 +240,20 @@ namespace {
 					const bool is_line1 = c1->DynamicType() == STANDARD_TYPE(Geom_Line);
 					const bool is_line2 = c2->DynamicType() == STANDARD_TYPE(Geom_Line);
 
-					// Adjust the segment that is linear
-					if (is_line1) {
+					const bool is_circle1 = c1->DynamicType() == STANDARD_TYPE(Geom_Circle);
+					const bool is_circle2 = c2->DynamicType() == STANDARD_TYPE(Geom_Circle);
+
+					// Preferably adjust the segment that is linear
+					if (is_line1 || (is_circle1 && !is_line2)) {
 						mw_.Add(adjust(w1, w12, p2));
 						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
-					} else if (is_line2 && !last) {
+					} else if ((is_line2 || is_circle2) && !last) {
 						mw_.Add(w1);
 						override_next_ = true;
 						next_override_ = p1;
 						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 					} else {
-						// If both aren't linear an edge is added
+						// In all other cases an edge is added
 						mw_.Add(w1);
 						mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
 						Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
@@ -722,8 +770,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& resul
 }
 
 #ifdef USE_IFC4
-
-#include <GC_MakeCircle.hxx>
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wire& result) {
 	

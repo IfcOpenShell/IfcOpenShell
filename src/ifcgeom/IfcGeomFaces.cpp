@@ -108,6 +108,11 @@
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
+	// Fail on this early as it can cause issues later on
+	if (bounds->size() == 0) {
+		return false;
+	}
+
 	Handle(Geom_Surface) face_surface;
 	const bool is_face_surface = l->declaration().is(IfcSchema::IfcFaceSurface::Class());
 
