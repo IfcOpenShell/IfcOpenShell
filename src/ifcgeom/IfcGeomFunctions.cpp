@@ -3385,13 +3385,19 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
 	} else if (op == BOPAlgo_COMMON) {
 		builder = new BRepAlgoAPI_Common();
-		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
+		b = b_;
 	} else if (op == BOPAlgo_FUSE) {
 		builder = new BRepAlgoAPI_Fuse();
 		b = b_;
 	} else {
 		return false;
 	}
+
+	if (b.Extent() == 0) {
+		result = a;
+		return true;
+	}
+
 	if (fuzziness < 0.) {
 		fuzziness = getValue(GV_PRECISION);
 	}
