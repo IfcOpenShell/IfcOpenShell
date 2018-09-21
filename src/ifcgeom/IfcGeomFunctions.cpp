@@ -156,6 +156,126 @@
 #endif
 #endif
 
+namespace {
+	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
+#if OCC_VERSION_HEX < 0x70000
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			r.Append(BRepBuilderAPI_Copy(it.Value()));
+		}
+		return r;
+#else
+		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
+		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
+		// create copies.
+		return l;
+#endif
+	}
+
+	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+#if OCC_VERSION_HEX < 0x70000
+		return BRepBuilderAPI_Copy(s);
+#else
+		return s;
+#endif
+	}
+
+	double min_edge_length(const TopoDS_Shape& a) {
+		double min_edge_len = std::numeric_limits<double>::infinity();
+		TopExp_Explorer exp(a, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			GProp_GProps prop;
+			BRepGProp::LinearProperties(exp.Current(), prop);
+			double l = prop.Mass();
+			if (l < min_edge_len) {
+				min_edge_len = l;
+			}
+		}
+		return min_edge_len;
+	}
+
+	double min_vertex_edge_distance(const TopoDS_Shape& a, double t) {
+		TopExp_Explorer exp(a, TopAbs_VERTEX);
+
+		double M = std::numeric_limits<double>::infinity();
+
+		for (; exp.More(); exp.Next()) {
+			if (exp.Current().Orientation() != TopAbs_FORWARD) {
+				continue;
+			}
+
+			const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
+			gp_Pnt p = BRep_Tool::Pnt(v);
+
+			TopExp_Explorer exp2(a, TopAbs_EDGE);
+			for (; exp2.More(); exp2.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(exp2.Current());
+				TopoDS_Vertex v1, v2;
+				TopExp::Vertices(e, v1, v2);
+
+				if (v.IsSame(v1) || v.IsSame(v2)) {
+					continue;
+				}
+
+				BRepAdaptor_Curve crv(e);
+				Extrema_ExtPC ext(p, crv);
+				if (!ext.IsDone()) {
+					continue;
+				}
+
+				for (int i = 1; i <= ext.NbExt(); ++i) {
+					const double m = sqrt(ext.SquareDistance(i));
+					if (m < M && m > t) {
+						M = m;
+					}
+				}
+			}
+		}
+
+		return M;
+	}
+
+	bool is_manifold(const TopoDS_Shape& a) {
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() != 2) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool is_manifold(const TopTools_ListOfShape& l) {
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			if (!is_manifold(it.Value())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
+		Bnd_Box A;
+		BRepBndLib::Add(a, A);
+
+		TopTools_ListIteratorOfListOfShape it(b);
+		for (; it.More(); it.Next()) {
+			Bnd_Box B;
+			BRepBndLib::Add(it.Value(), B);
+
+			if (A.Distance(B) < p) {
+				c.Append(it.Value());
+			}
+		}
+	}
+}
+
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	TopTools_ListOfShape face_list;
 	TopExp_Explorer exp(compound, TopAbs_FACE);
@@ -2937,7 +3057,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
 	
-	const double eps = getValue(GV_PRECISION) * 10.;
+	const double eps = (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 
 	for (int i = 2; i < n; ++i) {
 
@@ -2974,6 +3094,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 				BRep_Tool::Curve(wd->Edge(j + 1), u21, u22)
 			);
 
+			// @todo: extend this to work in case of multiple extrema and curved segments.
 			if ((unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps))) {
 				ecc.Parameters(1, U1, U2);
 			}
@@ -3257,127 +3378,6 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return succesful;
 }
 #else
-
-namespace {
-	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
-#if OCC_VERSION_HEX < 0x70000
-		TopTools_ListOfShape r;
-		TopTools_ListIteratorOfListOfShape it(l);
-		for (; it.More(); it.Next()) {
-			r.Append(BRepBuilderAPI_Copy(it.Value()));
-		}
-		return r;
-#else
-		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
-		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
-		// create copies.
-		return l;
-#endif
-	}
-
-	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
-#if OCC_VERSION_HEX < 0x70000
-		return BRepBuilderAPI_Copy(s);
-#else
-		return s;
-#endif
-	}
-
-	double min_edge_length(const TopoDS_Shape& a) {
-		double min_edge_len = std::numeric_limits<double>::infinity();
-		TopExp_Explorer exp(a, TopAbs_EDGE);
-		for (; exp.More(); exp.Next()) {
-			GProp_GProps prop;
-			BRepGProp::LinearProperties(exp.Current(), prop);
-			double l = prop.Mass();
-			if (l < min_edge_len) {
-				min_edge_len = l;
-			}
-		}
-		return min_edge_len;
-	}
-
-	double min_vertex_edge_distance(const TopoDS_Shape& a, double t) {
-		TopExp_Explorer exp(a, TopAbs_VERTEX);
-
-		double M = std::numeric_limits<double>::infinity();
-
-		for (; exp.More(); exp.Next()) {
-			if (exp.Current().Orientation() != TopAbs_FORWARD) {
-				continue;
-			}
-
-			const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
-			gp_Pnt p = BRep_Tool::Pnt(v);
-
-			TopExp_Explorer exp2(a, TopAbs_EDGE);
-			for (; exp2.More(); exp2.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(exp2.Current());
-				TopoDS_Vertex v1, v2;
-				TopExp::Vertices(e, v1, v2);
-
-				if (v.IsSame(v1) || v.IsSame(v2)) {
-					continue;
-				}
-
-				BRepAdaptor_Curve crv(e);
-				Extrema_ExtPC ext(p, crv);
-				if (!ext.IsDone()) {
-					continue;
-				}
-
-				for (int i = 1; i <= ext.NbExt(); ++i) {
-					const double m = sqrt(ext.SquareDistance(i));
-					if (m < M && m > t) {
-						M = m;
-					}
-				}
-			}
-		}
-
-		return M;
-	}
-
-	bool is_manifold(const TopoDS_Shape& a) {
-		TopTools_IndexedDataMapOfShapeListOfShape map;
-		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
-
-		for (int i = 1; i <= map.Extent(); ++i) {
-			if (map.FindFromIndex(i).Extent() != 2) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	bool is_manifold(const TopTools_ListOfShape& l) {
-		TopTools_ListOfShape r;
-		TopTools_ListIteratorOfListOfShape it(l);
-		for (; it.More(); it.Next()) {
-			if (!is_manifold(it.Value())) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
-		Bnd_Box A;
-		BRepBndLib::Add(a, A);
-
-		TopTools_ListIteratorOfListOfShape it(b);
-		for (; it.More(); it.Next()) {
-			Bnd_Box B;
-			BRepBndLib::Add(it.Value(), B);
-
-			if (A.Distance(B) < p) {
-				c.Append(it.Value());
-			}
-		}
-	}
-}
-
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b_, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
