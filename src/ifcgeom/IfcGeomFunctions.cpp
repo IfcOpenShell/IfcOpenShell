@@ -402,6 +402,9 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 				ShapeFix_Solid solid;
 				solid.SetMaxTolerance(getValue(GV_PRECISION));
 				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(exp.Current()));
+				// @todo: BRepClass3d_SolidClassifier::PerformInfinitePoint() is done by SolidFromShell
+				//        and this is done again, to be able to catch errors during this process.
+				//        This is double work that should be avoided.
 				if (!solid_shape.IsNull()) {
 					try {
 						BRepClass3d_SolidClassifier classifier(solid_shape);
