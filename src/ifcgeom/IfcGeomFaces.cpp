@@ -407,7 +407,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* 
 	}
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
-	face = TopoDS::Face(sfs.Shape());
+	face = sfs.Shape();
 	return true;
 }
 
