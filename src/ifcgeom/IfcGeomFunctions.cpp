@@ -325,10 +325,18 @@ namespace {
 		Bnd_Box A;
 		BRepBndLib::Add(a, A);
 
+		if (A.IsVoid()) {
+			return;
+		}
+
 		TopTools_ListIteratorOfListOfShape it(b);
 		for (; it.More(); it.Next()) {
 			Bnd_Box B;
 			BRepBndLib::Add(it.Value(), B);
+
+			if (B.IsVoid()) {
+				continue;
+			}
 
 			if (A.Distance(B) < p) {
 				c.Append(it.Value());
