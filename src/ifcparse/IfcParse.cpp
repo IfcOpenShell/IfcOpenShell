@@ -1793,17 +1793,16 @@ IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
 
 IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
-	IfcEntityList::ptr return_value;
+	IfcEntityList::ptr ret;
 	if (it != byref.end()) {
+        ret.reset(new IfcEntityList);
+        ret->reserve((unsigned)it->second.size());
 		const std::vector<unsigned>& ids = it->second;
 		for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
-			if (!return_value) {
-				return_value.reset(new IfcEntityList);
-			}
-			return_value->push(entityById(*jt));
+			ret->push(entityById(*jt));
 		}
 	}
-	return return_value;
+	return ret;
 }
 
 IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
