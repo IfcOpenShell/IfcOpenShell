@@ -1795,12 +1795,19 @@ IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
 	IfcEntityList::ptr ret;
 	if (it != byref.end()) {
-        ret.reset(new IfcEntityList);
-        ret->reserve((unsigned)it->second.size());
-		const std::vector<unsigned>& ids = it->second;
-		for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
-			ret->push(entityById(*jt));
-		}
+        ref_map_t::const_iterator cached_it = by_ref_cached_.find(t);
+        if (cached_it != by_ref_cached_.end()) {
+            ret = cached_it->second;
+        }
+        else {
+            ret.reset(new IfcEntityList);
+            ret->reserve((unsigned)it->second.size());
+            const std::vector<unsigned>& ids = it->second;
+            for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
+                ret->push(entityById(*jt));
+            }
+            by_ref_cached_[t] = ret;
+        }
 	}
 	return ret;
 }
