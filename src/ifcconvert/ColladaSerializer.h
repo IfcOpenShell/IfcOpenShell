@@ -69,7 +69,13 @@ private:
 			{}
             void addFloatSource(const std::string& mesh_id, const std::string& suffix,
                 const std::vector<real_t>& floats, const char* coords = "XYZ");
-            void write(std::string mesh_id, std::string default_material_name, std::vector<real_t> positions, std::vector<real_t> normals, std::vector<int> faces, std::vector<int> edges, std::vector<int> material_ids, std::vector<IfcGeom::Material> materials, std::vector<real_t> uvs, std::vector<std::string> material_references);
+            /// @todo pass simply DeferredObject?
+            void write(
+                const std::string &mesh_id, const std::string &default_material_name,
+                const std::vector<real_t>& positions, const std::vector<real_t>& normals,
+                const std::vector<int>& faces, const std::vector<int>& edges,
+                const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
+                const std::vector<real_t>& uvs, const std::vector<std::string>& material_references);
 			void close();
             ColladaSerializer *serializer;
 		};
