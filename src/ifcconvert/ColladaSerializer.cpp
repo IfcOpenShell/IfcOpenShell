@@ -60,7 +60,12 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::addFloatSource(const
 	source.finish();
 }
 
-void ColladaSerializer::ColladaExporter::ColladaGeometries::write(std::string mesh_id, std::string, std::vector<real_t> positions, std::vector<real_t> normals, std::vector<int> faces, std::vector<int> edges, std::vector<int> material_ids, std::vector<IfcGeom::Material> materials, std::vector<real_t> uvs, std::vector<std::string> material_references)
+void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
+    const std::string &mesh_id, const std::string &/**<@todo 'default_material_name' unused, remove? */,
+    const std::vector<real_t>& positions, const std::vector<real_t>& normals,
+    const std::vector<int>& faces, const std::vector<int>& edges,
+    const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& /**<@todo 'materials' unused, remove? */,
+    const std::vector<real_t>& uvs, const std::vector<std::string>& material_references)
 {
 	openMesh(mesh_id);
 	
@@ -217,7 +222,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.addMatrix(matrix_array);
 	COLLADASW::InstanceGeometry instanceGeometry(mSW);
 	instanceGeometry.setUrl("#" + geom_name);
-    BOOST_FOREACH(std::string material_name, material_ids) {
+    BOOST_FOREACH(const std::string &material_name, material_ids) {
 		// Unescape to avoid double escaping beucase OpenCollada's material URI parameter escapes XML internally
     	std::string unescaped = material_name;
     	IfcUtil::unescape_xml(unescaped);
@@ -303,7 +308,8 @@ void ColladaSerializer::ColladaExporter::ColladaScene::write() {
 	}
 }
 
-void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(const IfcGeom::Material &material, const std::string &material_uri)
+void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write(
+    const IfcGeom::Material &material, const std::string &material_uri)
 {
     openEffect(material_uri + "-fx");
 	COLLADASW::EffectProfile effect(mSW);
@@ -354,10 +360,8 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const IfcGeom::Ma
 
 std::string ColladaSerializer::ColladaExporter::ColladaMaterials::getMaterialUri(const IfcGeom::Material& material) {
 	std::vector<IfcGeom::Material>::iterator it = std::find(materials.begin(), materials.end(), material);
-	long index = std::distance(materials.begin(), it);
-
-	std::string material_uri = material_uris.at(static_cast<unsigned long>(index));
-	return material_uri;
+	ptrdiff_t index = std::distance(materials.begin(), it);
+	return material_uris.at(index);
 }
 
 bool ColladaSerializer::ColladaExporter::ColladaMaterials::contains(const IfcGeom::Material& material) {
@@ -463,7 +467,8 @@ void ColladaSerializer::ColladaExporter::endDocument() {
 			continue;
 		}
 		geometries_written.insert(it->representation_id);
-		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges, it->material_ids, it->materials, it->uvs, it->material_references);
+		geometries.write(it->representation_id, it->type, it->vertices, it->normals, it->faces, it->edges,
+            it->material_ids, it->materials, it->uvs, it->material_references);
 	}
 	geometries.close();
 
