@@ -579,6 +579,7 @@ int main(int argc, char** argv)
 
     if (use_element_hierarchy && output_extension != ".dae") {
         std::cerr << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
+        /// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
 		print_usage();
         delete serializer;
@@ -612,6 +613,9 @@ int main(int argc, char** argv)
 	time(&start);
 	
     if (!init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
+        write_log(!quiet);
+        delete serializer;
+        std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
         return EXIT_FAILURE;
     }
 
