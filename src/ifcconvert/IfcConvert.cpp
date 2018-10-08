@@ -39,6 +39,7 @@
 #include <Standard_Version.hxx>
 
 #include <boost/program_options.hpp>
+#include <boost/make_shared.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -540,7 +541,7 @@ int main(int argc, char** argv)
     settings.set_deflection_tolerance(deflection_tolerance);
     settings.precision = precision;
 
-	GeometrySerializer* serializer;
+	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == ".obj") {
         // Do not use temp file for MTL as it's such a small file.
         const std::string mtl_filename = change_extension(output_filename, "mtl");
@@ -548,25 +549,25 @@ int main(int argc, char** argv)
 			Logger::Notice("Using world coords when writing WaveFront OBJ files");
 			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 		}
-		serializer = new WaveFrontOBJSerializer(output_temp_filename, mtl_filename, settings);
+		serializer = boost::make_shared<WaveFrontOBJSerializer>(output_temp_filename, mtl_filename, settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == ".dae") {
-		serializer = new ColladaSerializer(output_temp_filename, settings);
+		serializer = boost::make_shared<ColladaSerializer>(output_temp_filename, settings);
 #endif
 	} else if (output_extension == ".stp") {
-		serializer = new StepSerializer(output_temp_filename, settings);
+		serializer = boost::make_shared<StepSerializer>(output_temp_filename, settings);
 	} else if (output_extension == ".igs") {
 		IGESControl_Controller::Init(); // work around Open Cascade bug
-		serializer = new IgesSerializer(output_temp_filename, settings);
+		serializer = boost::make_shared<IgesSerializer>(output_temp_filename, settings);
 	} else if (output_extension == ".svg") {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-		serializer = new SvgSerializer(output_temp_filename, settings);
+		serializer = boost::make_shared<SvgSerializer>(output_temp_filename, settings);
 		if (vmap.count("section-height") != 0) {
 			Logger::Notice("Overriding section height");
-			static_cast<SvgSerializer*>(serializer)->setSectionHeight(section_height);
+			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
 		}
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
-            static_cast<SvgSerializer*>(serializer)->setBoundingRectangle(bounding_width.get(), bounding_height.get());
+            static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
 		}
 	} else {
         std::cerr << "[Error] Unknown output filename extension '" + output_extension + "'\n";
@@ -575,14 +576,11 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-    // NOTE After this point, make sure to delete serializer upon application exit.
-
     if (use_element_hierarchy && output_extension != ".dae") {
         std::cerr << "[Error] --use-element-hierarchy can be used only with .dae output.\n";
         /// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
 		print_usage();
-        delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
 		return EXIT_FAILURE;
 	}
@@ -603,7 +601,6 @@ int main(int argc, char** argv)
 	}
 
 	if (!serializer->ready()) {
-        delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
 		write_log(!quiet);
 		return EXIT_FAILURE;
@@ -614,7 +611,6 @@ int main(int argc, char** argv)
 	
     if (!init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
         write_log(!quiet);
-        delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
         return EXIT_FAILURE;
     }
@@ -624,7 +620,6 @@ int main(int argc, char** argv)
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Error("No geometrical entities found");
-        delete serializer;
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
         write_log(!quiet);
         return EXIT_FAILURE;
@@ -647,7 +642,6 @@ int main(int argc, char** argv)
         if (center_model) {
 			if (site_local_placement || building_local_placement) {
 				Logger::Error("Cannot use --center-model together with --{site,building}-local-placement");
-				delete serializer;
 				return EXIT_FAILURE;
 			}
 
@@ -662,7 +656,6 @@ int main(int argc, char** argv)
         } else {
             if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
                 std::cerr << "[Error] Invalid use of --model-offset\n";
-                delete serializer;
                 std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
                 print_options(serializer_options);
                 return EXIT_FAILURE;
@@ -736,7 +729,8 @@ int main(int argc, char** argv)
 	}
 
     serializer->finalize();
-	delete serializer;
+    // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
+    serializer.reset();
 
     // Renaming might fail (e.g. maybe the existing file was open in a viewer application)
     // Do not remove the temp file as user can salvage the conversion result from it.
