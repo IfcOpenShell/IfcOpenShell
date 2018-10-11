@@ -176,6 +176,25 @@ void InitDefaultMaterials() {
 	default_materials_initialized = true;
 }
 
+boost::optional<IfcGeom::SurfaceStyle::ColorComponent> read_colour_component(const boost::optional<pt::ptree&> list) {
+	if (!list) {
+		return boost::none;
+	}
+	double rgb[3];
+	int i = 0;
+	for (pt::ptree::value_type &colour : list.get()) {
+		if (3 <= i) {
+			throw std::runtime_error("rgb array over 3 elements large");
+		}
+		rgb[i] = colour.second.get_value<double>();
+		i++;
+	}
+	if (i != 3) {
+		throw std::runtime_error("rgb array less than 3 elements large (was " + std::to_string(i) + ")");
+	}
+	return IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]);
+}
+
 void IfcGeom::set_default_style(const std::string& json_file) {
   if (!default_materials_initialized) InitDefaultMaterials();
   default_materials.clear();
@@ -189,30 +208,17 @@ void IfcGeom::set_default_style(const std::string& json_file) {
 
     pt::ptree material = material_pair.second;
     boost::optional<pt::ptree&> diffuse = material.get_child_optional("diffuse");
-    if (diffuse) {
-      double rgb[3];
-      int i = 0;
-      for (pt::ptree::value_type &colour : diffuse.get()) {
-        rgb[i] = colour.second.get_value<double>();
-        i++;
-      }
-      default_materials[name].Diffuse().reset(IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
-    }
+    default_materials[name].Diffuse() = read_colour_component(diffuse);
+
     boost::optional<pt::ptree&> specular = material.get_child_optional("specular");
-    if (specular) {
-      double rgb[3];
-      int i = 0;
-      for (pt::ptree::value_type &colour : specular.get()) {
-        rgb[i] = colour.second.get_value<double>();
-        i++;
-      }
-      default_materials[name].Specular().reset(IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]));
+    default_materials[name].Specular() = read_colour_component(specular);
+
+    if (material.get_child_optional("specular-roughness")) {
+      default_materials[name].Specularity().reset(1.0 / material.get<double>("specular-roughness"));
     }
-    boost::optional<double> specular_roughness = material.get_optional<double>("specular-roughness");
-    if (specular_roughness) {
-      default_materials[name].Specularity().reset(1.0 / specular_roughness.get());
+    if (material.get_child_optional("transparency")) {
+      default_materials[name].Transparency() = material.get<double>("transparency");
     }
-    default_materials[name].Transparency() = material.get_optional<double>("transparency");
   }
 
 	// Is "*" present? If yes, remove it and make it the default style.

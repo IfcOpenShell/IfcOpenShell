@@ -497,9 +497,15 @@ int main(int argc, char** argv)
         }
     }
 
-    if (!default_material_filename.empty()) {
-      IfcGeom::set_default_style(default_material_filename);
-    }
+		if (!default_material_filename.empty()) {
+			try {
+				IfcGeom::set_default_style(default_material_filename);
+			} catch (const std::exception& e) {
+				std::cerr << "[Error] Could not read default material file " << default_material_filename << ":" << std::endl;
+				std::cerr << e.what() << std::endl;
+				return EXIT_FAILURE;
+			}
+		}
 
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
