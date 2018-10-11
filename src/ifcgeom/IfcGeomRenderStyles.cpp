@@ -177,9 +177,10 @@ void InitDefaultMaterials() {
 }
 
 void IfcGeom::set_default_style(const std::string& json_file) {
-  if (default_materials_initialized) {
-    default_materials.clear();
+  if (!default_materials_initialized) {
+    InitDefaultMaterials();
   }
+  default_materials.clear();
 
   pt::ptree root;
   pt::read_json(json_file, root);
@@ -216,7 +217,6 @@ void IfcGeom::set_default_style(const std::string& json_file) {
     default_materials[name].Transparency() = material.get_optional<double>("transparency");
   }
 
-  default_materials_initialized = true;
 }
 
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
