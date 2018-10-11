@@ -177,9 +177,7 @@ void InitDefaultMaterials() {
 }
 
 void IfcGeom::set_default_style(const std::string& json_file) {
-  if (!default_materials_initialized) {
-    InitDefaultMaterials();
-  }
+  if (!default_materials_initialized) InitDefaultMaterials();
   default_materials.clear();
 
   pt::ptree root;
@@ -217,6 +215,16 @@ void IfcGeom::set_default_style(const std::string& json_file) {
     default_materials[name].Transparency() = material.get_optional<double>("transparency");
   }
 
+	// Is "*" present? If yes, remove it and make it the default style.
+	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find("*");
+	if (it != default_materials.end()) {
+		IfcGeom::SurfaceStyle star = it->second;
+		default_material.Diffuse() = star.Diffuse();
+		default_material.Specular() = star.Specular();
+		default_material.Specularity() = star.Specularity();
+		default_material.Transparency() = star.Transparency();
+		default_materials.erase(it);
+	}
 }
 
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
@@ -224,7 +232,10 @@ const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
 	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find(s);
 	if (it == default_materials.end()) {
 		default_materials.insert(std::make_pair(s, IfcGeom::SurfaceStyle(s)));
-		default_materials[s].Diffuse().reset(*default_material.Diffuse());
+		default_materials[s].Diffuse() = default_material.Diffuse();
+		default_materials[s].Specular() = default_material.Specular();
+		default_materials[s].Specularity() = default_material.Specularity();
+		default_materials[s].Transparency() = default_material.Transparency();
 		it = default_materials.find(s);
 	}
 	const IfcGeom::SurfaceStyle& surface_style = it->second;
