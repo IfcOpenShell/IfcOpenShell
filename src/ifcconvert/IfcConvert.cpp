@@ -499,7 +499,7 @@ int main(int argc, char** argv)
 
 		if (!default_material_filename.empty()) {
 			try {
-				IfcGeom::set_default_style(default_material_filename);
+				IfcGeom::set_default_style_file(default_material_filename);
 			} catch (const std::exception& e) {
 				std::cerr << "[Error] Could not read default material file " << default_material_filename << ":" << std::endl;
 				std::cerr << e.what() << std::endl;
