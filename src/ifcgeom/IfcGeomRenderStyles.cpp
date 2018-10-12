@@ -195,7 +195,7 @@ boost::optional<IfcGeom::SurfaceStyle::ColorComponent> read_colour_component(con
 	return IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]);
 }
 
-void IfcGeom::set_default_style(const std::string& json_file) {
+void IfcGeom::set_default_style_file(const std::string& json_file) {
   if (!default_materials_initialized) InitDefaultMaterials();
   default_materials.clear();
 
