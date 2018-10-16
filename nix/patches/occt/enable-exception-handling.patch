@@ -1,0 +1,17 @@
+Description: Enable exception handling
+ Upstream defaults to no exception handling for performance reasons,
+ but in OCCT's role as a shared library it's better for Debian to
+ enable it.
+Author: Kurt Kremitzki <kkremitzki@gmail.com>
+Last-Update: 2018-06-10
+
+--- a/adm/cmake/occt_defs_flags.cmake
++++ b/adm/cmake/occt_defs_flags.cmake
+@@ -138,5 +138,5 @@
+   set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+ endif()
+ 
+-set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
+-set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
++#set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
++#set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")

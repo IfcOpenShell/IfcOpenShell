@@ -1267,7 +1267,10 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	}
 
 	if (schemas.size() != 1 || schemas[0] != IfcSchema::Identifier) {
-		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
+		Logger::Message(Logger::LOG_ERROR, "File schema encountered ("
+			+ boost::algorithm::join(schemas, ", ") + ") different from expected "
+			+ std::string(IfcSchema::Identifier) + ".");
+		return false;
 	}
 
 	boost::circular_buffer<Token> token_stream(3, Token());
@@ -1732,7 +1735,7 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 			entities_by_ref_t::iterator byref_it = byref.find(name);
 			if (byref_it != byref.end()) {
 				std::vector<unsigned>& ids = byref_it->second;
-				std::remove(ids.begin(), ids.end(), name);
+				ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
 			}
 		}
 	}

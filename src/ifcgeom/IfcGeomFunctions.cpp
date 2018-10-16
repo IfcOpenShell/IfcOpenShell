@@ -44,6 +44,9 @@
 #include <gp_Pln.hxx>
 #include <gp_Circ.hxx>
 
+#include <boost/range/irange.hpp>
+#include <boost/range/algorithm_ext/push_back.hpp>
+
 #include <TColgp_Array1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColStd_Array1OfReal.hxx>
@@ -135,11 +138,15 @@
 
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 
+#include <Extrema_ExtPC.hxx>
+#include <BRepAdaptor_Curve.hxx>
+
 #include <Standard_Version.hxx>
 
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcgeom/IfcGeom.h"
+#include "../ifcgeom/IfcGeomTree.h"
 
 #if OCC_VERSION_HEX < 0x60900
 #ifdef _MSC_VER
@@ -148,6 +155,132 @@
 #warning "You are linking against linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
 #endif
 #endif
+
+namespace {
+	void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r) {
+#if OCC_VERSION_HEX < 0x70000
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			r.Append(BRepBuilderAPI_Copy(it.Value()));
+		}
+#else
+		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
+		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
+		// create copies.
+		r.Assign(l);
+#endif
+	}
+
+	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+#if OCC_VERSION_HEX < 0x70000
+		return BRepBuilderAPI_Copy(s);
+#else
+		return s;
+#endif
+	}
+
+	double min_edge_length(const TopoDS_Shape& a) {
+		double min_edge_len = std::numeric_limits<double>::infinity();
+		TopExp_Explorer exp(a, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			GProp_GProps prop;
+			BRepGProp::LinearProperties(exp.Current(), prop);
+			double l = prop.Mass();
+			if (l < min_edge_len) {
+				min_edge_len = l;
+			}
+		}
+		return min_edge_len;
+	}
+
+	double min_vertex_edge_distance(const TopoDS_Shape& a, double t) {
+		TopExp_Explorer exp(a, TopAbs_VERTEX);
+
+		double M = std::numeric_limits<double>::infinity();
+
+		for (; exp.More(); exp.Next()) {
+			if (exp.Current().Orientation() != TopAbs_FORWARD) {
+				continue;
+			}
+
+			const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
+			gp_Pnt p = BRep_Tool::Pnt(v);
+
+			TopExp_Explorer exp2(a, TopAbs_EDGE);
+			for (; exp2.More(); exp2.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(exp2.Current());
+				TopoDS_Vertex v1, v2;
+				TopExp::Vertices(e, v1, v2);
+
+				if (v.IsSame(v1) || v.IsSame(v2)) {
+					continue;
+				}
+
+				BRepAdaptor_Curve crv(e);
+				Extrema_ExtPC ext(p, crv);
+				if (!ext.IsDone()) {
+					continue;
+				}
+
+				for (int i = 1; i <= ext.NbExt(); ++i) {
+					const double m = sqrt(ext.SquareDistance(i));
+					if (m < M && m > t) {
+						M = m;
+					}
+				}
+			}
+		}
+
+		return M;
+	}
+
+	bool is_manifold(const TopoDS_Shape& a) {
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() != 2) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool is_manifold(const TopTools_ListOfShape& l) {
+		TopTools_ListOfShape r;
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			if (!is_manifold(it.Value())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
+		Bnd_Box A;
+		BRepBndLib::Add(a, A);
+
+		if (A.IsVoid()) {
+			return;
+		}
+
+		TopTools_ListIteratorOfListOfShape it(b);
+		for (; it.More(); it.Next()) {
+			Bnd_Box B;
+			BRepBndLib::Add(it.Value(), B);
+
+			if (B.IsVoid()) {
+				continue;
+			}
+
+			if (A.Distance(B) < p) {
+				c.Append(it.Value());
+			}
+		}
+	}
+}
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	TopTools_ListOfShape face_list;
@@ -167,12 +300,23 @@ bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, T
 bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
 	bool valid_shell = false;
 	
+
+	int max_faces = getValue(GV_MAX_FACES_TO_SEW);
+	if (max_faces == -1) {
+		max_faces = 1000;
+	}
+
+	if (face_list.Extent() > max_faces) {
+		throw too_many_faces_exception();
+	}
+
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
 	BRepOffsetAPI_Sewing builder;
 	builder.SetTolerance(getValue(GV_PRECISION));
 	builder.SetMaxTolerance(getValue(GV_PRECISION));
 	builder.SetMinTolerance(getValue(GV_PRECISION));
+
 	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 		builder.Add(face_iterator.Value());
 	}
@@ -630,8 +774,27 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& fa
 		select_largest(results, wire);
 	}
 
-	ShapeFix_ShapeTolerance FTol;
-	FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+	bool is_2d = true;
+	TopExp_Explorer exp(wire, TopAbs_EDGE);
+	for (; exp.More(); exp.Next()) {
+		double a, b;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			is_2d = false;
+			break;
+		}
+		Handle(Geom_Line) line = Handle(Geom_Line)::DownCast(crv);
+		if (line->Lin().Direction().Z() > ALMOST_ZERO) {
+			is_2d = false;
+			break;
+		}
+	}
+
+	if (!is_2d) {
+		// For 2d wires (e.g. profiles) a higher tolerance for plane fitting is never required.
+		ShapeFix_ShapeTolerance FTol;
+		FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+	}
 
 	BRepBuilderAPI_MakeFace mf(wire, false);
 	BRepBuilderAPI_FaceError er = mf.Error();
@@ -653,10 +816,10 @@ bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, Top
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
 			Logger::Error(e.GetMessageString());
 		} else {
-			Logger::Error("Unknown error convering curve to wire");
+			Logger::Error("Unknown error converting curve to wire");
 		}
 	} catch (...) {
-		Logger::Error("Unknown error convering curve to wire");
+		Logger::Error("Unknown error converting curve to wire");
 	}
 	return false;
 }
@@ -1279,6 +1442,7 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 		}
 
 		IfcGeom::IfcRepresentationShapeItems opened_shapes;
+		bool caught_error = false;
 		try {
 #if OCC_VERSION_HEX < 0x60900
             const bool faster_booleans = settings.get(IteratorSettings::FASTER_BOOLEANS);
@@ -1298,9 +1462,18 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 			} else {
 				convert_openings(product,openings,shapes,trsf,opened_shapes);
 			}
-		} catch(...) { 
+		} catch (const std::exception& e) {
+			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product->entity);
+			caught_error = true;
+		} catch(...) {
 			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product->entity); 
+			caught_error = true;
 		}
+
+		if (caught_error && opened_shapes.size() < shapes.size()) {
+			opened_shapes = shapes;
+		}
+
         if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
 				it->prepend(trsf);
@@ -1558,6 +1731,8 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	std::string unit_name = "METER";
 	double unit_magnitude = 1.;
 
+	bool length_unit_encountered = false, angle_unit_encountered = false;
+
 	try {
 		IfcEntityList::ptr units = unit_assignment->Units();
 		if (!units || !units->size()) {
@@ -1587,8 +1762,10 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 								unit_name = current_unit_name;
 								unit_magnitude = current_unit_magnitude;
 								setValue(IfcGeom::Kernel::GV_LENGTH_UNIT, current_unit_magnitude);
+								length_unit_encountered = true;
 							} else {
 								setValue(IfcGeom::Kernel::GV_PLANEANGLE_UNIT, current_unit_magnitude);
+								angle_unit_encountered = true;
 							}
 						}
 					}
@@ -1599,6 +1776,14 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 		std::stringstream ss;
 		ss << "Failed to determine unit information '" << ex.what() << "'";
 		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+
+	if (!length_unit_encountered) {
+		Logger::Error("No length unit encountered");
+	}
+
+	if (!angle_unit_encountered) {
+		Logger::Error("No plane angle unit encountered");
 	}
 
 	return std::pair<std::string, double>(unit_name, unit_magnitude);
@@ -2517,7 +2702,7 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape
 		return false;
 	}
 
-	// Add a little bit of resulution so that the median is shifted towards the mass
+	// Add a little bit of resolution so that the median is shifted towards the mass
 	// of the curve. This helps to find the parameter ordering for conic surfaces.
 	for (TopExp_Explorer exp(shp, TopAbs_EDGE); exp.More(); exp.Next(), ++vertex_count) {
 		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
@@ -2842,10 +3027,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	}
 
 	int n = count(wire, TopAbs_EDGE);
-	if (n < 3 || n > 128) {
-		if (n > 128) {
-			Logger::Notice("Too many segments for detection of self-intersections");
-		}
+	if (n < 3) {
 		wires.Append(wire);
 		return false;
 	}
@@ -2855,8 +3037,24 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 
 	// ... to be sure to get consecutive edges
 	BRepTools_WireExplorer exp(wire);
+	IfcGeom::impl::tree<int> tree;
+
+	int edge_idx = 0;
 	for (; exp.More(); exp.Next()) {
 		wd->Add(exp.Current());
+		if (n > 64) {
+			// tfk: indices in tree are 0-based vd 1-based in wiredata
+			tree.add(edge_idx++, exp.Current());
+		}
+	}
+
+	if (wd->NbEdges() != n) {
+		// If the number of edges differs, BRepTools_WireExplorer did not
+		// reach every edge, probably due to loops exactly at vertex locations.
+		// This is not supported by this algorithm which only elimates loops
+		// due to edge crossings.
+
+		throw geometry_exception("Invalid loop");
 	}
 	
 	bool intersected = false;
@@ -2864,13 +3062,37 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// tfk: Extrema on infinite curves proved to be more robust.
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
-			
-	for (int i = 2; i < n; ++i) {
-		for (int j = 0; j < i - 1; ++j) {
-			if (i == n - 1 && j == 0) continue;
+	
+	const double eps = (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 
+	for (int i = 2; i < n; ++i) {
+
+		std::vector<int> js;
+		if (n > 64) {
+			Bnd_Box b;
+			BRepBndLib::Add(wd->Edge(i + 1), b);
+			b.Enlarge(eps);
+			js = tree.select_box(b, false);
+		} else {
+			boost::push_back(js, boost::irange(0, i - 1));
+		}
+
+		for(std::vector<int>::const_iterator it = js.begin(); it != js.end(); ++it) {
+            int j = *it;
+
+			if (n > 64) {
+				if (j > i) {
+					continue;
+				}
+				if ((std::max)(i, j) - (std::min)(i, j) <= 1) {
+					continue;
+				}
+			} 
+			
+			// Only check non-consecutive edges
+			if (i == n - 1 && j == 0) continue;
+			
 			bool unbounded_intersects;
-			const double eps = getValue(GV_PRECISION) * 2.;
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
@@ -2878,6 +3100,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 				BRep_Tool::Curve(wd->Edge(j + 1), u21, u22)
 			);
 
+			// @todo: extend this to work in case of multiple extrema and curved segments.
 			if ((unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps))) {
 				ecc.Parameters(1, U1, U2);
 			}
@@ -3006,6 +3229,103 @@ void IfcGeom::Kernel::select_largest(const TopTools_ListOfShape& shapes, TopoDS_
 	}
 }
 
+bool IfcGeom::Kernel::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height) {
+	TopExp_Explorer exp(b, TopAbs_FACE);
+	if (!exp.More()) {
+		return false;
+	}
+
+	TopoDS_Face face = TopoDS::Face(exp.Current());
+	exp.Next();
+
+	if (exp.More()) {
+		return false;
+	}
+
+	Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
+
+	// const gp_XYZ xyz = a.Location().Transformation().TranslationPart();
+	// std::cout << "dz " << xyz.Z() << std::endl;
+
+	if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+		return false;
+	}
+
+	Bnd_Box bb;
+	BRepBndLib::Add(a, bb);
+
+	if (bb.IsVoid()) {
+		return false;
+	}
+
+	double xs[2], ys[2], zs[2];
+	bb.Get(xs[0], ys[0], zs[0], xs[1], ys[1], zs[1]);
+
+	gp_Pln pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
+
+	gp_Pnt P = pln.Position().Location();
+	gp_Vec z = pln.Position().Direction();
+	gp_Vec x = pln.Position().XDirection();
+	gp_Vec y = pln.Position().YDirection();
+
+	if (face.Orientation() != TopAbs_REVERSED) {
+		z.Reverse();
+	}
+
+	double D, Umin, Umax, Vmin, Vmax;
+	D = 0.;
+	Umin = Vmin = +std::numeric_limits<double>::infinity();
+	Umax = Vmax = -std::numeric_limits<double>::infinity();
+
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			for (int k = 0; k < 2; ++k) {
+				gp_Pnt p(xs[i], ys[j], zs[k]);
+				
+				gp_Vec d = p.XYZ() - P.XYZ();
+				const double u = d.Dot(x);
+				const double v = d.Dot(y);
+				const double w = d.Dot(z);
+
+				if (w > D) {
+					D = w;
+				}
+				if (u < Umin) {
+					Umin = u;
+				}
+				if (u > Umax) {
+					Umax = u;
+				}
+				if (v < Vmin) {
+					Vmin = v;
+				}
+				if (v > Vmax) {
+					Vmax = v;
+				}
+			}
+		}
+	}
+
+	const double eps = getValue(GV_PRECISION) * 2.;
+
+	BRepBuilderAPI_MakePolygon poly;
+	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmin + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmin + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmax + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmax + eps));
+	poly.Close();
+
+	BRepBuilderAPI_MakeFace mf(surf, poly.Wire(), true);
+
+	gp_Vec vec = gp_Vec(z.XYZ() * (D + eps));
+
+	BRepPrimAPI_MakePrism mp(mf.Face(), vec);
+	box = mp.Shape();
+	
+	height = D;
+	return true;
+}
+
 #if OCC_VERSION_HEX < 0x60900
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result) {
 	result = a;
@@ -3064,65 +3384,46 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return succesful;
 }
 #else
-
-namespace {
-	TopTools_ListOfShape copy_operand(const TopTools_ListOfShape& l) {
-#if OCC_VERSION_HEX < 0x70000
-		TopTools_ListOfShape r;
-		TopTools_ListIteratorOfListOfShape it(l);
-		for (; it.More(); it.Next()) {
-			r.Append(BRepBuilderAPI_Copy(it.Value()));
-		}
-		return r;
-#else
-		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
-		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
-		// create copies.
-		return l;
-#endif
-	}
-
-	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
-#if OCC_VERSION_HEX < 0x70000
-		return BRepBuilderAPI_Copy(s);
-#else
-		return s;
-#endif
-	}
-
-	double min_edge_length(const TopoDS_Shape& a) {
-		double min_edge_len = std::numeric_limits<double>::infinity();
-		TopExp_Explorer exp(a, TopAbs_EDGE);
-		for (; exp.More(); exp.Next()) {
-			GProp_GProps prop;
-			BRepGProp::LinearProperties(exp.Current(), prop);
-			double l = prop.Mass();
-			if (l < min_edge_len) {
-				min_edge_len = l;
-			}
-		}
-		return min_edge_len;
-	}
-}
-
-bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b_, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
+	TopTools_ListOfShape B, b;
 	if (op == BOPAlgo_CUT) {
 		builder = new BRepAlgoAPI_Cut();
+		bounding_box_overlap(getValue(GV_PRECISION), a, b_, b);
 	} else if (op == BOPAlgo_COMMON) {
 		builder = new BRepAlgoAPI_Common();
+		b = b_;
 	} else if (op == BOPAlgo_FUSE) {
 		builder = new BRepAlgoAPI_Fuse();
+		b = b_;
 	} else {
 		return false;
 	}
+
+	if (b.Extent() == 0) {
+		result = a;
+		return true;
+	}
+
 	if (fuzziness < 0.) {
 		fuzziness = getValue(GV_PRECISION);
 	}
 
-	const double min_edge_len = min_edge_length(a);
-	const double fuzz = (std::min)(min_edge_len / 3., fuzziness);
+	double min_len = (std::min)(min_edge_length(a), min_vertex_edge_distance(a, getValue(GV_PRECISION)));
+	TopTools_ListIteratorOfListOfShape it(b);
+	for (; it.More(); it.Next()) {
+		double d = min_edge_length(it.Value());
+		if (d < min_len) {
+			min_len = d;
+		}
+		d = min_vertex_edge_distance(it.Value(), getValue(GV_PRECISION));
+		if (d < min_len) {
+			min_len = d;
+		}
+	}
+
+	const double fuzz = (std::min)(min_len / 10., fuzziness);
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
@@ -3131,7 +3432,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 #endif
 	builder->SetFuzzyValue(fuzz);
 	builder->SetArguments(s1s);
-	builder->SetTools(copy_operand(b));
+	copy_operand(b, B);
+	builder->SetTools(B);
 	builder->Build();
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
@@ -3150,13 +3452,26 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		success = BRepCheck_Analyzer(r).IsValid() != 0;
 
 		if (success) {
-			result = r;
+
+			success = !is_manifold(a) || is_manifold(r);
+
+			if (success) {
+				
+				// when there are edges or vertex-edge distances close to the used fuzziness, the  
+				// output is not trusted and the operation is attempted with a higher fuzziness.
+				double min_len_check = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION)));
+				success = min_len_check > fuzziness * 10.;
+
+				if (success) {
+					result = r;
+				}
+			}
 		}
 	}
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_edge_len) {
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_len) {
             return boolean_operation(a, b, op, result, new_fuzziness);
         }
 	}

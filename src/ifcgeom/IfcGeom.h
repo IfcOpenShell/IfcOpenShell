@@ -73,6 +73,23 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #endif
 
 namespace IfcGeom {
+	class IFC_GEOM_API geometry_exception : public std::exception {
+	protected:
+		std::string message;
+	public:
+		geometry_exception(const std::string& m)
+			: message(m) {}
+		virtual ~geometry_exception() throw () {}
+		virtual const char* what() const throw() {
+			return message.c_str();
+		}
+	};
+
+	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
+	public:
+		too_many_faces_exception()
+			: geometry_exception("Too many faces for operation") {}
+	};
 
 class IFC_GEOM_API Cache {
 public:
@@ -139,12 +156,12 @@ public:
 		// Default: 0.001m / 1mm
 		GV_DEFLECTION_TOLERANCE, 
 		// Specifies the tolerance of the wire builder, most notably for trimmed curves
-		// Defailt: 0.0001m / 0.1mm
+		// Default: 0.0001m / 0.1mm
 		GV_WIRE_CREATION_TOLERANCE,
 		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
 		// Read-only
 		GV_MINIMAL_FACE_AREA,
-		// Specifies the treshold distance under which cartesian points are deemed equal
+		// Specifies the threshold distance under which cartesian points are deemed equal
 		// Default: 0.00001m / 0.01mm
 		GV_POINT_EQUALITY_TOLERANCE,
 		// Specifies maximum number of faces for a shell to be sewed. Sewing shells
@@ -194,6 +211,8 @@ public:
 	bool boolean_operation(const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 #endif
+
+	bool fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height);
 
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);

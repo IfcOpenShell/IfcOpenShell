@@ -145,6 +145,8 @@ namespace IfcGeom {
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
 				unit_magnitude = length_unit.second;
+			} else {
+				Logger::Error("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
 			}
 		}
 
@@ -285,6 +287,13 @@ namespace IfcGeom {
 			done = 0;
 			total = representations->size();
 
+			return true;
+		}
+
+        /// Computes model's bounding box (bounds_min and bounds_max).
+        /// @note Can take several minutes for large files.
+        void compute_bounds()
+        {
             for (int i = 1; i < 4; ++i) {
                 bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
                 bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
@@ -294,21 +303,21 @@ namespace IfcGeom {
             for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
                 IfcSchema::IfcProduct* product = *iter;
                 if (product->hasObjectPlacement()) {
-					// Use a fresh trsf every time in order to prevent the result to be concatenated
+                    // Use a fresh trsf every time in order to prevent the result to be concatenated
                     gp_Trsf trsf; 
-					bool success = false;
-					
-					try {
-						success = kernel.convert(product->ObjectPlacement(), trsf);
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					} catch (...) {
-						Logger::Error("Failed to construct placement");
-					}
-					
-					if (!success) {
-						continue;
-					}
+                    bool success = false;
+
+                    try {
+                        success = kernel.convert(product->ObjectPlacement(), trsf);
+                    } catch (const std::exception& e) {
+                        Logger::Error(e);
+                    } catch (...) {
+                        Logger::Error("Failed to construct placement");
+                    }
+
+                    if (!success) {
+                        continue;
+                    }
 
                     const gp_XYZ& pos = trsf.TranslationPart();
                     bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
@@ -319,9 +328,7 @@ namespace IfcGeom {
                     bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
                 }
             }
-
-			return true;
-		}
+        }
 
 		int progress() const { return 100 * done / total; }
 
@@ -344,7 +351,7 @@ namespace IfcGeom {
 		// Move to the next IfcRepresentation
 		void _nextShape() {
 			// In order to conserve memory and reduce cache insertion times, the cache is
-			// cleared after an arbitary number of processed representations. This has been
+			// cleared after an arbitrary number of processed representations. This has been
 			// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
 			static const int clear_interval = 64;
 			if (done % clear_interval == clear_interval - 1) {
@@ -398,19 +405,30 @@ namespace IfcGeom {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
-				// Have we reached the end of our list of representations?
 				if ( representation_iterator == representations->end() ) {
 					representations.reset();
-					return 0;
+					return 0; // reached the end of our list of representations
 				}
 				representation = *representation_iterator;
 
-				// Has the list of IfcProducts for this representation been initialized?
 				if (!ifcproducts) {
+					// Init. the list of filtered IfcProducts for this representation
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
 					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel.products_represented_by(representation);
+                    // Include only the desired products for processing.
+                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
+                        IfcSchema::IfcProduct* prod = *jt;
+                        if (boost::all(filters_, filter_match(prod))) {
+                            ifcproducts->push(prod);
+                        }
+                    }
 
-					geometry_reuse_ok_for_current_representation_ = reuse_ok_(unfiltered_products);
+                    if (ifcproducts->size() == 0) {
+                        _nextShape();
+                        continue;
+                    }
+
+                    geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
 
 					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 
@@ -428,13 +446,12 @@ namespace IfcGeom {
 						}
 					}
 
+					// Check if this represenation has (or will be) processed as part its mapped representation
 					bool representation_processed_as_mapped_item = false;
-
-					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
+                    IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
-						// Check if this represenation has (or will be) processed as part its mapped representation
-						representation_processed_as_mapped_item = ok_mapped_representations->contains(representation_mapped_to) ||
-                                reuse_ok_(kernel.products_represented_by(representation_mapped_to));
+                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ ||
+                            ok_mapped_representations->contains(representation_mapped_to);
 					}
 
 					if (representation_processed_as_mapped_item) {
@@ -442,14 +459,6 @@ namespace IfcGeom {
 						_nextShape();
 						continue;
 					}
-
-                    // Filter the products based on the set of entities and/or names being included or excluded for processing.
-                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
-                        IfcSchema::IfcProduct* prod = *jt;
-                        if (boost::all(filters_, filter_match(prod))) {
-                            ifcproducts->push(prod);
-                        }
-                    }
 
 					ifcproduct_iterator = ifcproducts->begin();
 				}

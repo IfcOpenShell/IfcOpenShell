@@ -61,9 +61,10 @@ PROJECT_NAME="IfcOpenShell"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
 # OCCT_HASH="89aebde"
-OCCT_VERSION="7.2.0"
-OCCT_HASH="88af392"
 PYTHON_VERSIONS=["2.7.12", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2"]
+# OCCT_VERSION="7.2.0"
+# OCCT_HASH="88af392"
+OCCT_VERSION="7.3.0"
 BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.39"
 LIBXML_VERSION="2.9.3"
@@ -242,12 +243,13 @@ def __check_output__(cmds, cwd=None):
 
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 ICU_VERSION_UNDERSCORE=ICU_VERSION.replace(".", "_")
-CMAKE_VERSION_2=CMAKE_VERSION[0:3]
+CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
 BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
 OPENCOLLADA_LOCATION="https://github.com/KhronosGroup/OpenCOLLADA.git"
-OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
+#OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
+OPENCOLLADA_COMMIT="v1.6.63"
 
 # Helper functions
 
@@ -467,16 +469,6 @@ build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_a
 build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-%s" % SWIG_VERSION)
 
 if USE_OCCT:
-    long_filenames = ["src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation"]
-    if OCCT_VERSION == "7.2.0":
-        long_filenames += [
-            "src/StepVisual/StepVisual_AnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem",
-            "src/RWStepVisual/RWStepVisual_RWAnnotationCurveOccurrenceAndAnnotationOccurrenceAndGeomReprItemAndReprItemAndStyledItem"
-        ]
-    long_filenames_ext = [("%s.hxx" % fn) for fn in long_filenames] + [("%s.cxx" % fn) for fn in long_filenames]
-    patch_filename = "patches/occt/%s.patch" % OCCT_HASH
-    
-    occt_gitweb = "http://git.dev.opencascade.org/gitweb/?p=occt.git"
     build_dependency(
         name="occt-%s" % OCCT_VERSION,
         mode="cmake",
@@ -485,11 +477,11 @@ if USE_OCCT:
             "-DBUILD_LIBRARY_TYPE=Static",
             "-DBUILD_MODULE_Draw=0",
         ],
-        download_url = "%s;a=snapshot;h=%s;sf=tgz" % (occt_gitweb, OCCT_HASH),
-        additional_files = {fn: "%s;a=blob_plain;hb=%s;f=%s" % (occt_gitweb, OCCT_HASH, fn) for fn in long_filenames_ext},
-        patch = patch_filename,
-        download_name = "occt-%s.tar.gz" % OCCT_HASH,
-        no_append_name = True)
+        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_name = "occt",
+        download_tool=download_tool_git,
+        patch="./patches/occt/enable-exception-handling.patch",
+        revision="V%s" % OCCT_VERSION.replace('.', '_'))
 else:
     build_dependency(name="oce-%s" % (OCE_VERSION,), mode="cmake", build_tool_args=["-DOCE_DISABLE_TKSERVICE_FONT=ON", "-DOCE_TESTING=OFF", "-DOCE_BUILD_SHARED_LIB=OFF", "-DOCE_DISABLE_X11=ON", "-DOCE_VISUALISATION=OFF", "-DOCE_OCAF=OFF", "-DOCE_INSTALL_PREFIX=%s/install/oce-%s" % (DEPS_DIR, OCE_VERSION)], download_url="https://github.com/tpaviot/oce/archive/", download_name="OCE-%s.tar.gz" % (OCE_VERSION,))
         
@@ -566,7 +558,7 @@ run_cmake("", cmake_args=[
 logger.info("\rBuilding executables...   ")
 
 __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=executables_dir)
-__check_call__([make, "install/strip"], cwd=executables_dir)
+__check_call__([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 # On OSX the actual Python library is not linked against.
 ADDITIONAL_ARGS=""

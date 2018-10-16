@@ -106,6 +106,11 @@
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
+	// Fail on this early as it can cause issues later on
+	if (bounds->size() == 0) {
+		return false;
+	}
+
 	Handle(Geom_Surface) face_surface;
 	const bool is_face_surface = l->is(IfcSchema::Type::IfcFaceSurface);
 
@@ -339,7 +344,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				TopoDS_Iterator jt(face, false);
 				for (; jt.More(); jt.Next()) {
 					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
-					if (wire_map.IsBound(w)) {
+					// tfk: @todo if wire_map contains w, I would assume wire_senses also contains w,
+					// this is not the case in github issue #405.
+					if (wire_map.IsBound(w) && wire_senses.IsBound(w)) {
 						const TopTools_ListOfShape& shapes = wire_map.Find(w);
 						TopTools_ListIteratorOfListOfShape it(shapes);
 						for (; it.More(); it.Next()) {
@@ -400,7 +407,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* 
 	}
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
-	face = TopoDS::Face(sfs.Shape());
+	face = sfs.Shape();
 	return true;
 }
 
