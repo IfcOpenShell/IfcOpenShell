@@ -273,9 +273,14 @@ namespace IfcGeom {
 			}
 
             if (representations->size() == 0) {
-                Logger::Message(Logger::LOG_ERROR, "No geometries found");
-                return false;
+                Logger::Message(Logger::LOG_ERROR, "No representations encountered in relevant contexts, using all");
+				representations = ifc_file->entitiesByType<IfcSchema::IfcRepresentation>();
             }
+
+			if (representations->size() == 0) {
+				Logger::Message(Logger::LOG_ERROR, "No representations encountered, aborting");
+				return false;
+			}
 
 			representation_iterator = representations->begin();
 			ifcproducts.reset();
