@@ -425,6 +425,10 @@ IF(MSVC)
 		# Disable overeager and false positives causing C4458 ("declaration of 'indentifier' hides class member"), at least for now.
 		ADD_DEFINITIONS(-wd4458)
 	ENDIF()
+    # Enforce standards-conformance on VS > 2015, older Boost versions fail to compile with this    
+    if (MSVC_VERSION GREATER 1900 AND (Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
+        add_definitions(-permissive-)
+    endif()
 	# Link against the static VC runtime
     # TODO Make this configurable
 	IF("$ENV{CONDA_BUILD}" STREQUAL "")

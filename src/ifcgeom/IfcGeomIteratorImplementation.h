@@ -270,9 +270,14 @@ namespace IfcGeom {
 			}
 
             if (representations->size() == 0) {
-                Logger::Message(Logger::LOG_ERROR, "No geometries found");
-                return false;
+                Logger::Message(Logger::LOG_ERROR, "No representations encountered in relevant contexts, using all");
+				representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
             }
+
+			if (representations->size() == 0) {
+				Logger::Message(Logger::LOG_ERROR, "No representations encountered, aborting");
+				return false;
+			}
 
 			representation_iterator = representations->begin();
 			ifcproducts.reset();
@@ -402,19 +407,30 @@ namespace IfcGeom {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
-				// Have we reached the end of our list of representations?
 				if ( representation_iterator == representations->end() ) {
 					representations.reset();
-					return 0;
+					return 0; // reached the end of our list of representations
 				}
 				representation = *representation_iterator;
 
-				// Has the list of IfcProducts for this representation been initialized?
 				if (!ifcproducts) {
+					// Init. the list of filtered IfcProducts for this representation
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
 					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel.products_represented_by(representation);
+                    // Include only the desired products for processing.
+                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
+                        IfcSchema::IfcProduct* prod = *jt;
+                        if (boost::all(filters_, filter_match(prod))) {
+                            ifcproducts->push(prod);
+                        }
+                    }
 
-					geometry_reuse_ok_for_current_representation_ = reuse_ok_(unfiltered_products);
+                    if (ifcproducts->size() == 0) {
+                        _nextShape();
+                        continue;
+                    }
+
+                    geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
 
 					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 
@@ -432,13 +448,12 @@ namespace IfcGeom {
 						}
 					}
 
+					// Check if this represenation has (or will be) processed as part its mapped representation
 					bool representation_processed_as_mapped_item = false;
-
-					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
+                    IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
-						// Check if this representation has (or will be) processed as part its mapped representation
-						representation_processed_as_mapped_item = ok_mapped_representations->contains(representation_mapped_to) ||
-                                reuse_ok_(kernel.products_represented_by(representation_mapped_to));
+                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ ||
+                            ok_mapped_representations->contains(representation_mapped_to);
 					}
 
 					if (representation_processed_as_mapped_item) {
@@ -446,14 +461,6 @@ namespace IfcGeom {
 						_nextShape();
 						continue;
 					}
-
-                    // Filter the products based on the set of entities and/or names being included or excluded for processing.
-                    for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
-                        IfcSchema::IfcProduct* prod = *jt;
-                        if (boost::all(filters_, filter_match(prod))) {
-                            ifcproducts->push(prod);
-                        }
-                    }
 
 					ifcproduct_iterator = ifcproducts->begin();
 				}

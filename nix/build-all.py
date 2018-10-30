@@ -273,7 +273,8 @@ CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
 BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
 OPENCOLLADA_LOCATION="https://github.com/KhronosGroup/OpenCOLLADA.git"
-OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
+#OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
+OPENCOLLADA_COMMIT="v1.6.63"
 
 # Helper functions
 
