@@ -1320,8 +1320,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 		return;
 	}
 
-	good_ = true;
-
 	tokens = new IfcSpfLexer(stream, this);
 	_header.file(this);
 	_header.tryRead();
@@ -1339,17 +1337,15 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 		} catch (const IfcParse::IfcException& e) {
 			Logger::Error(e);
 		}
-
-		if (schema_ == 0 && schemas.front().substr(0, 4) == "IFC2") {
-			Logger::Message(Logger::LOG_ERROR, schemas.front() + " not supported, using IFC2X3 instead");
-			schema_ = IfcParse::schema_by_name("IFC2X3");
-		}
 	}
 
 	if (schema_ == 0) {
-		schema_ = IfcParse::schema_by_name("IFC4");
-		Logger::Message(Logger::LOG_ERROR, "Unable to deduce schema version from header identifiers, defaulting to IFC4");
+		Logger::Message(Logger::LOG_ERROR, "No support for file schema encountered ("
+			+ boost::algorithm::join(schemas, ", ") + ")");
+		return;
 	}
+
+	good_ = true;
 
 	ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 
