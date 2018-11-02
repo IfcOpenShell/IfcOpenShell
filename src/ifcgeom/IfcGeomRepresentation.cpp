@@ -104,9 +104,9 @@ TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
 
 namespace {
 	void accumulate(const gp_Ax3& ax, const gp_Dir& normal, double area, double& along_x, double& along_y, double& along_z) {
-		along_x += area * ax.XDirection().Dot(normal);
-		along_y += area * ax.YDirection().Dot(normal);
-		along_z += area * ax.Direction().Dot(normal);
+		along_x += area * fabs(ax.XDirection().Dot(normal));
+		along_y += area * fabs(ax.YDirection().Dot(normal));
+		along_z += area * fabs(ax.Direction().Dot(normal));
 	}
 
 	void surface_area_along_direction(double tol, const TopoDS_Shape& s, const gp_Ax3& ax, double& along_x, double& along_y, double& along_z) {
