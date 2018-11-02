@@ -1,6 +1,7 @@
 #include "Kernel.h"
 
 #include <TopExp.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 
 IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
 	if (file != 0) {
