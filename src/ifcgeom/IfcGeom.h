@@ -45,6 +45,8 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <TColgp_SequenceOfPnt.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <BOPAlgo_Operation.hxx>
+#include <BRep_Builder.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
 
 #include "../ifcparse/macros.h"
 #include "../ifcparse/IfcParse.h"
@@ -107,6 +109,82 @@ public:
 class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::Kernel {
 private:
 
+	/*
+	faceset_helper traverses the forward instance references of IfcConnectedFaceSet and then provides a mapping
+	M of (IfcCartesianPoint, IfcCartesianPoint) -> TopoDS_Edge, where M(a, b) is a partner of M(b, a), ie share
+	the same underlying edge but with orientation reversed. This then later speeds op the process of creating a
+	manifold Shell / Solid from this set of faces. Only IfcPolyLoop instances are used. Points within the tolerance
+	threshiold are merged, so consider points a, b, c, distance(a, b) < eps then M(a, b) = Null, M(a, b) = M(a, c).
+	*/
+	class faceset_helper {
+	private:
+		MAKE_TYPE_NAME(Kernel)* kernel_;
+		std::map<int, int> vertex_mapping_;
+		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
+
+		template <typename Fn>
+		void loop_(IfcSchema::IfcCartesianPoint::list::ptr& ps, const Fn& callback) {
+			if (ps->size() < 3) {
+				return;
+			}
+
+			auto a = *(ps->end() - 1);
+			auto A = a->data().id();
+			for (auto& b : *ps) {
+				auto B = b->data().id();
+				auto C = vertex_mapping_[A], D = vertex_mapping_[B];
+				bool fwd = C < D;
+				if (!fwd) {
+					std::swap(C, D);
+				}
+				if (C != D) {
+					callback(C, D, fwd);
+					A = B;
+				}
+			}
+		}
+	public:
+		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
+
+		~faceset_helper();
+
+		bool edge(const IfcSchema::IfcCartesianPoint* a, const IfcSchema::IfcCartesianPoint* b, TopoDS_Edge& e) {
+			int A = vertex_mapping_[a->data().id()];
+			int B = vertex_mapping_[b->data().id()];
+			if (A == B) {
+				return false;
+			}
+
+			return edge(A, B, e);
+		}
+
+		bool edge(int A, int B, TopoDS_Edge& e) {
+			e = edges_[{A, B}];
+			return true;
+		}
+
+		bool wire(const IfcSchema::IfcPolyLoop* loop, TopoDS_Wire& wire) {
+			BRep_Builder builder;
+			builder.MakeWire(wire);
+			bool valid;
+			auto ps = loop->Polygon();
+			loop_(ps, [this, &builder, &wire, &valid](int A, int B, bool fwd) {
+				TopoDS_Edge e;
+				if (edge(A, B, e)) {
+					if (!fwd) {
+						e.Reverse();
+					}
+					builder.Add(wire, e);
+					valid = true;
+				}
+			});
+			if (valid) {
+				wire.Closed(true);
+			}
+			return valid;
+		}
+	};
+
 	double deflection_tolerance;
 	double wire_creation_tolerance;
 	double point_equality_tolerance;
@@ -115,6 +193,7 @@ private:
 	double ifc_planeangle_unit;
 	double modelling_precision;
 	double dimensionality;
+	faceset_helper* faceset_helper_;
 
 #ifndef NO_CACHE
 	MAKE_TYPE_NAME(Cache) cache;
@@ -139,6 +218,7 @@ public:
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
 		, placement_rel_to(0)
+		, faceset_helper_(nullptr)
 	{}
 
 	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) : IfcGeom::Kernel(0) {

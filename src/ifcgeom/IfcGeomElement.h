@@ -171,6 +171,13 @@ namespace IfcGeom {
 			: Element<P, PP>(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}
+
+		bool calculate_projected_surface_area(double& along_x, double& along_y, double& along_z) const {
+			const auto& trsf = this->transformation().data();
+			const gp_Mat& mat = trsf.HVectorialPart();
+			gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
+			return geometry().calculate_projected_surface_area(ax, along_x, along_y, along_z);
+		}
 	private:
 		BRepElement(const BRepElement& other);
 		BRepElement& operator=(const BRepElement& other);		

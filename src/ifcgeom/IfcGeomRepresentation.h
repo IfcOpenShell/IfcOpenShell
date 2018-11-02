@@ -76,6 +76,10 @@ namespace IfcGeom {
 			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return shapes_; }
 			const std::string& id() const { return id_; }
 			TopoDS_Compound as_compound() const;
+
+			bool calculate_volume(double&) const;
+			bool calculate_surface_area(double&) const;
+			bool calculate_projected_surface_area(const gp_Ax3& ax, double& along_x, double& along_y, double& along_z) const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {

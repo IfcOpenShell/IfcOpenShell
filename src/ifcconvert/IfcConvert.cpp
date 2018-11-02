@@ -69,7 +69,7 @@ void print_usage(bool suggest_help = true)
 {
     std::cout << "Usage: IfcConvert [options] <input.ifc> [<output>]\n"
         << "\n"
-        << "Converts the geometry in an IFC file into one of the following formats:\n"
+        << "Converts (the geometry in) an IFC file into one of the following formats:\n"
         << "  .obj   WaveFront OBJ  (a .mtl file is also created)\n"
 #ifdef WITH_OPENCOLLADA
         << "  .dae   Collada        Digital Assets Exchange\n"
@@ -78,7 +78,8 @@ void print_usage(bool suggest_help = true)
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
-        << "\n"
+		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
+		<< "\n"
         << "If no output filename given, <input>." + DEFAULT_EXTENSION + " will be used as the output file.\n";
     if (suggest_help) {
         std::cout << "\nRun 'IfcConvert --help' for more information.";
@@ -120,6 +121,7 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 
 static std::stringstream log_stream;
 void write_log(bool);
+void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
 
 /// @todo make the filters non-global
 IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
@@ -180,8 +182,13 @@ int main(int argc, char** argv)
     exclusion_traverse_filter exclude_traverse_filter;
     std::string filter_filename;
     std::string default_material_filename;
-
-    po::options_description geom_options("Geometry options");
+	
+	po::options_description ifc_options("IFC options");
+	ifc_options.add_options()
+		("calculate-quantities", "Calculate or fix the physical quantity definitions "
+			"based on an interpretation of the geometry when exporting IFC");
+    
+	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("plan",
 			"Specifies whether to include curves in the output result. Typically "
@@ -466,23 +473,44 @@ int main(int argc, char** argv)
 
 	IfcParse::IfcFile* ifc_file = 0;
 
-    if (output_extension == ".xml") {
-        int exit_code = EXIT_FAILURE;
-        try {
-            if (init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
-                XmlSerializer s(ifc_file, output_temp_filename);
-                Logger::Status("Writing XML output...");
-                s.finalize();
-                Logger::Status("Done!");
-                rename_file(output_temp_filename, output_filename);
-                exit_code = EXIT_SUCCESS;
-            }
-        } catch (const std::exception& e) {
+	// @todo clean up serializer selection
+	// @todo detect program options that conflict with the chosen serializer
+	if (output_extension == ".xml") {
+		int exit_code = EXIT_FAILURE;
+		try {
+			if (init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
+				XmlSerializer s(ifc_file, output_temp_filename);
+				Logger::Status("Writing XML output...");
+				s.finalize();
+				Logger::Status("Done!");
+				rename_file(output_temp_filename, output_filename);
+				exit_code = EXIT_SUCCESS;
+			}
+		} catch (const std::exception& e) {
 			Logger::Error(e);
 		}
-        write_log(!quiet);
-        return exit_code;
-    }
+		write_log(!quiet);
+		return exit_code;
+	} else if (output_extension == ".ifc") {
+		int exit_code = EXIT_FAILURE;
+		try {
+			if (init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
+				std::ofstream fs(output_filename.c_str());
+				if (fs.is_open()) {
+					if (vmap.count("calculate-quantities")) {
+						fix_quantities(*ifc_file, no_progress, quiet, stderr_progress);
+					}
+					fs << *ifc_file;
+				} else {
+					Logger::Error("Unable to open output file for writing");
+				}
+			}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
+		write_log(!quiet);
+		return exit_code;
+	}
 
     if (!filter_filename.empty()) {
         size_t num_filters = read_filters_from_file(filter_filename, include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
@@ -983,4 +1011,206 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& fil
     if (!attribute_filter.values.empty()) { filter_funcs.push_back(boost::ref(attribute_filter)); }
 
     return filter_funcs;
+}
+
+namespace latebound_access {
+
+	template <typename T>
+	void set(IfcUtil::IfcBaseClass* inst, const std::string& attr, T t);
+
+	template <typename T>
+	void set_enumeration(IfcUtil::IfcBaseClass*, const std::string&, const IfcParse::enumeration_type*, T) {}
+
+	template <>
+	void set_enumeration(IfcUtil::IfcBaseClass* inst, const std::string& attr, const IfcParse::enumeration_type* enum_type, std::string t) {
+		std::vector<std::string>::const_iterator it = std::find(
+			enum_type->enumeration_items().begin(),
+			enum_type->enumeration_items().end(),
+			t);
+
+		return set(inst, attr, IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
+	}
+
+	template <typename T>
+	void set(IfcUtil::IfcBaseClass* inst, const std::string& attr, T t) {
+		auto decl = inst->declaration().as_entity();
+		auto i = decl->attribute_index(attr);
+
+		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type()) {
+			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
+		}
+
+		IfcWrite::IfcWriteArgument* a = new IfcWrite::IfcWriteArgument;
+		a->set(t);
+		inst->data().attributes()[i] = a;
+	}
+
+	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
+		auto decl = f.schema()->declaration_by_name(entity);
+		auto data = new IfcEntityInstanceData(decl);
+		auto inst = f.schema()->instantiate(data);
+		if (decl->is("IfcRoot")) {
+			IfcParse::IfcGlobalId guid;
+			latebound_access::set(inst, "GlobalId", (std::string) guid);
+		}
+		return f.addEntity(inst);
+	}
+}
+
+void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+	{
+		auto delete_reversed = [&f](const IfcEntityList::ptr& insts) {
+			if (!insts) {
+				return;
+			}
+			// Lists are traversed back to front as the list may be mutated when
+			// instances are removed from the grouping by type.
+			for (auto it = insts->end() - 1; it >= insts->begin(); --it) {
+				IfcUtil::IfcBaseClass* const inst = *it;
+				f.removeEntity(inst);
+			}
+		};
+
+		// Delete quantities
+		auto quantities = f.instances_by_type("IfcPhysicalQuantity");
+		if (quantities) {
+			quantities = quantities->filtered({ f.schema()->declaration_by_name("IfcPhysicalComplexQuantity") });
+			delete_reversed(quantities);
+		}
+
+		// Delete complexes
+		delete_reversed(f.instances_by_type("IfcPhysicalComplexQuantity"));
+
+		auto element_quantities = f.instances_by_type("IfcElementQuantity");
+
+		// Capture relationship nodes
+		std::vector<IfcUtil::IfcBaseClass*> relationships;
+		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
+		for (auto& eq : *element_quantities) {
+			auto rels = eq->data().getInverse(IfcRelDefinesByProperties, -1);
+			for (auto& rel : *rels) {
+				relationships.push_back(rel);
+			}
+		}
+
+		// Delete element quantities
+		delete_reversed(element_quantities);
+
+		// Delete relationship nodes
+		for (auto& rel : relationships) {
+			f.removeEntity(rel);
+		}
+	}
+
+	IfcGeom::IteratorSettings settings;
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
+	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+
+	IfcGeom::Iterator<double> context_iterator(settings, &f);
+
+	if (!context_iterator.initialize()) {
+		return;
+	}
+
+	size_t num_created = 0;
+	int old_progress = quiet ? 0 : -1;
+
+	auto person = latebound_access::create(f, "IfcPerson");
+	latebound_access::set(person, "FamilyName", std::string("IfcOpenShell"));
+	latebound_access::set(person, "GivenName", std::string("IfcOpenShell"));
+	
+	auto org = latebound_access::create(f, "IfcOrganization");
+	latebound_access::set(org, "Name", std::string("IfcOpenShell"));
+	
+	auto pando = latebound_access::create(f, "IfcPersonAndOrganization");
+	latebound_access::set(pando, "ThePerson", person);
+	latebound_access::set(pando, "TheOrganization", org);
+	
+	auto application = latebound_access::create(f, "IfcApplication");
+	latebound_access::set(application, "ApplicationDeveloper", org);
+	latebound_access::set(application, "Version", std::string(IFCOPENSHELL_VERSION));
+	latebound_access::set(application, "ApplicationFullName", std::string("IfcConvert"));
+	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert" IFCOPENSHELL_VERSION));
+	
+	auto ownerhist = latebound_access::create(f, "IfcOwnerHistory");
+	latebound_access::set(ownerhist, "OwningUser", pando);
+	latebound_access::set(ownerhist, "OwningApplication", application);
+	latebound_access::set(ownerhist, "ChangeAction", std::string("MODIFIED"));
+	latebound_access::set(ownerhist, "CreationDate", (int)time(0));
+
+	IfcUtil::IfcBaseClass* quantity = nullptr;
+	IfcEntityList::ptr objects;
+	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
+
+	do {
+		IfcGeom::BRepElement<double>* geom_object = context_iterator.get_native();
+
+		if (geom_object->geometry_pointer() == previous_geometry_pointer) {
+			objects->push(geom_object->product());
+		} else {
+			if (quantity) {
+				auto rel = latebound_access::create(f, "IfcRelDefinesByProperties");
+				latebound_access::set(rel, "OwnerHistory", ownerhist);
+				latebound_access::set(rel, "RelatedObjects", objects);
+				latebound_access::set(rel, "RelatingPropertyDefinition", quantity);
+			}
+
+			IfcEntityList::ptr quantities(new IfcEntityList);
+
+			double a, b, c;
+			if (geom_object->geometry().calculate_surface_area(a)) {
+				auto quantity_area = latebound_access::create(f, "IfcQuantityArea");
+				latebound_access::set(quantity_area, "Name", std::string("Total Surface Area"));
+				latebound_access::set(quantity_area, "AreaValue", a);
+				quantities->push(quantity_area);
+			}
+			
+			if (geom_object->geometry().calculate_volume(a)) {
+				auto quantity_volume = latebound_access::create(f, "IfcQuantityVolume");
+				latebound_access::set(quantity_volume, "Name", std::string("Volume"));
+				latebound_access::set(quantity_volume, "VolumeValue", a);
+				quantities->push(quantity_volume);
+			}
+
+			if (geom_object->calculate_projected_surface_area(a, b, c)) {
+				auto quantity_area = latebound_access::create(f, "IfcQuantityArea");
+				latebound_access::set(quantity_area, "Name", std::string("Footprint Area"));
+				latebound_access::set(quantity_area, "AreaValue", c);
+				quantities->push(quantity_area);
+			}
+
+			if (quantities->size()) {
+				quantity = latebound_access::create(f, "IfcElementQuantity");
+				latebound_access::set(quantity, "OwnerHistory", ownerhist);
+				latebound_access::set(quantity, "Quantities", quantities);
+			}
+
+			objects.reset(new IfcEntityList);
+			objects->push(geom_object->product());
+		}
+
+		previous_geometry_pointer = geom_object->geometry_pointer();
+
+		if (!no_progress) {
+			if (quiet) {
+				const int progress = context_iterator.progress();
+				for (; old_progress < progress; ++old_progress) {
+					std::cout << ".";
+					if (stderr_progress)
+						std::cerr << ".";
+				}
+				std::cout << std::flush;
+				if (stderr_progress)
+					std::cerr << std::flush;
+			} else {
+				const int progress = context_iterator.progress() / 2;
+				if (old_progress != progress) Logger::ProgressBar(progress);
+				old_progress = progress;
+			}
+		}
+	} while (++num_created, context_iterator.next());
 }
