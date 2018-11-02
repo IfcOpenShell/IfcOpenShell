@@ -297,30 +297,6 @@ namespace {
 		return M;
 	}
 
-	bool is_manifold(const TopoDS_Shape& a) {
-		TopTools_IndexedDataMapOfShapeListOfShape map;
-		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
-
-		for (int i = 1; i <= map.Extent(); ++i) {
-			if (map.FindFromIndex(i).Extent() != 2) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	bool is_manifold(const TopTools_ListOfShape& l) {
-		TopTools_ListOfShape r;
-		TopTools_ListIteratorOfListOfShape it(l);
-		for (; it.More(); it.Next()) {
-			if (!is_manifold(it.Value())) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
 		Bnd_Box A;
 		BRepBndLib::Add(a, A);
@@ -3081,8 +3057,6 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			// Only check non-consecutive edges
 			if (i == n - 1 && j == 0) continue;
 			
-			bool unbounded_intersects;
-
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
 				BRep_Tool::Curve(wd->Edge(i + 1), u11, u12),
@@ -3090,87 +3064,89 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			);
 
 			// @todo: extend this to work in case of multiple extrema and curved segments.
-			if ((unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps))) {
+			const bool unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
+			if (unbounded_intersects) {
 				ecc.Parameters(1, U1, U2);
-			}
 
-			if (u11 > u12) {
-				std::swap(u11, u12);
-			}
-			if (u21 > u22) {
-				std::swap(u21, u22);
-			}
-
-			/// @todo: tfk: probably need different thresholds on non-linear curves
-			u11 -= eps;
-			u12 += eps;
-			u21 -= eps;
-			u22 += eps;
-
-			// tfk: code below is for ShapeAnalysis_Wire::CheckIntersectingEdges()
-			// IntRes2d_SequenceOfIntersectionPoint points2d;
-			// TColgp_SequenceOfPnt points3d;
-			// TColStd_SequenceOfReal errors;
-			// if (saw.CheckIntersectingEdges(i + 1, j + 1, points2d, points3d, errors)) {
-
-			if (unbounded_intersects &&	u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
-
-				intersected = true;
-
-				// Explore a forward and backward cycle from the intersection point
-				for (int fb = 0; fb <= 1; ++fb) {
-					const bool forward = fb == 0;
-
-					BRepBuilderAPI_MakeWire mw;
-					bool first = true;
-
-					for (bounded_int k(j, n);;) {
-						bool intersecting = k == j || k == i;
-						if (intersecting) {
-							TopoDS_Edge e = wd->Edge(k + 1);
-							
-							TopoDS_Vertex v1, v2;
-							TopExp::Vertices(e, v1, v2);
-							const TopoDS_Vertex* v = first == forward ? &v2 : &v1;
-
-							// gp_Pnt p2 = points3d.Value(1);
-							
-							gp_Pnt p1 = BRep_Tool::Pnt(*v);
-							gp_Pnt pp1, pp2;
-							ecc.Points(1, pp1, pp2);
-							const gp_Pnt& p2 = k == i ? pp1 : pp2;
-							
-							// Substitute with a new edge from/to the intersection point
-							if (p1.Distance(p2) > getValue(GV_PRECISION) * 2) {
-								double _, __;
-								Handle_Geom_Curve crv = BRep_Tool::Curve(e, _, __);
-								BRepBuilderAPI_MakeEdge me(crv, p1, p2);
-								TopoDS_Edge ed = me.Edge();
-								mw.Add(ed);
-							}
-
-							first = false;
-						} else {
-							// Re-use original edge
-							mw.Add(wd->Edge(k+1));
-						}
-
-						if (k == i) {
-							break;
-						}
-
-						if (forward) {
-							++k;
-						} else {
-							--k;
-						}
-					}
-
-					// Recursively process both cuts
-					wire_intersections(mw.Wire(), wires);
+				if (u11 > u12) {
+					std::swap(u11, u12);
+				}
+				if (u21 > u22) {
+					std::swap(u21, u22);
 				}
 
-				return true;
+				/// @todo: tfk: probably need different thresholds on non-linear curves
+				u11 -= eps;
+				u12 += eps;
+				u21 -= eps;
+				u22 += eps;
+
+				// tfk: code below is for ShapeAnalysis_Wire::CheckIntersectingEdges()
+				// IntRes2d_SequenceOfIntersectionPoint points2d;
+				// TColgp_SequenceOfPnt points3d;
+				// TColStd_SequenceOfReal errors;
+				// if (saw.CheckIntersectingEdges(i + 1, j + 1, points2d, points3d, errors)) {
+
+				if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
+
+					intersected = true;
+
+					// Explore a forward and backward cycle from the intersection point
+					for (int fb = 0; fb <= 1; ++fb) {
+						const bool forward = fb == 0;
+
+						BRepBuilderAPI_MakeWire mw;
+						bool first = true;
+
+						for (bounded_int k(j, n);;) {
+							bool intersecting = k == j || k == i;
+							if (intersecting) {
+								TopoDS_Edge e = wd->Edge(k + 1);
+
+								TopoDS_Vertex v1, v2;
+								TopExp::Vertices(e, v1, v2);
+								const TopoDS_Vertex* v = first == forward ? &v2 : &v1;
+
+								// gp_Pnt p2 = points3d.Value(1);
+
+								gp_Pnt p1 = BRep_Tool::Pnt(*v);
+								gp_Pnt pp1, pp2;
+								ecc.Points(1, pp1, pp2);
+								const gp_Pnt& p2 = k == i ? pp1 : pp2;
+
+								// Substitute with a new edge from/to the intersection point
+								if (p1.Distance(p2) > getValue(GV_PRECISION) * 2) {
+									double _, __;
+									Handle_Geom_Curve crv = BRep_Tool::Curve(e, _, __);
+									BRepBuilderAPI_MakeEdge me(crv, p1, p2);
+									TopoDS_Edge ed = me.Edge();
+									mw.Add(ed);
+								}
+
+								first = false;
+							} else {
+								// Re-use original edge
+								mw.Add(wd->Edge(k + 1));
+							}
+
+							if (k == i) {
+								break;
+							}
+
+							if (forward) {
+								++k;
+							} else {
+								--k;
+							}
+						}
+
+						// Recursively process both cuts
+						wire_intersections(mw.Wire(), wires);
+					}
+
+					return true;
+				}
+
 			}
 		}
 	}
@@ -3473,3 +3449,78 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return boolean_operation(a, bs, op, result, fuzziness);
 }
 #endif
+
+namespace {
+	void find_neighbours(IfcGeom::impl::tree<int>& tree, std::vector<gp_Pnt>& pnts, std::set<int>& visited, int p, double eps) {
+		visited.insert(p);
+
+		Bnd_Box b;
+		b.Set(pnts[p]);
+		b.Enlarge(eps);
+
+		std::vector<int> js = tree.select_box(b, false);
+		for (int j : js) {
+			if (visited.find(j) == visited.end()) {
+				find_neighbours(tree, pnts, visited, j, eps);
+			}
+		}
+	}
+}
+
+IfcGeom::Kernel::faceset_helper::~faceset_helper() {
+	kernel_->faceset_helper_ = nullptr;
+}
+
+IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema::IfcConnectedFaceSet* l)
+	: kernel_(kernel) 
+{
+	kernel->faceset_helper_ = this;
+
+	IfcSchema::IfcCartesianPoint::list::ptr points = IfcParse::traverse((IfcUtil::IfcBaseClass*) l)->as<IfcSchema::IfcCartesianPoint>();
+	std::vector<gp_Pnt> pnts(std::distance(points->begin(), points->end()));
+	std::vector<TopoDS_Vertex> vertices(pnts.size());
+
+	BRep_Builder B;
+
+	const double eps = kernel->getValue(GV_PRECISION);
+	IfcGeom::impl::tree<int> tree;
+	{
+		int i = 0;
+		for (auto& pt : *points) {
+			if (kernel->convert(pt, pnts[i])) {
+				B.MakeVertex(vertices[i], pnts[i], Precision::Confusion());
+				tree.add(i, vertices[i]);
+				i++;
+			}
+		}
+	}
+
+	std::map<std::pair<int, int>, int> edge_use;
+
+	for (int i = 0; i < pnts.size(); ++i) {
+		std::set<int> vs;
+		find_neighbours(tree, pnts, vs, i, eps);
+
+		for (int v : vs) {
+			if (v <= i) {
+				auto pt = *(points->begin() + v);
+				vertex_mapping_.insert({pt->data().id(), i});
+			}
+		}
+	}
+
+	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
+
+	for (auto& loop : *loops) {
+		auto ps = loop->Polygon();
+		loop_(ps, [&edge_use](int C, int D, bool) {
+			edge_use[{C, D}] ++;
+		});
+	}
+
+	for (auto& p : edge_use) {
+		int a, b;
+		std::tie(a, b) = p.first;
+		edges_[p.first] = BRepBuilderAPI_MakeEdge(vertices[a], vertices[b]);
+	}
+}

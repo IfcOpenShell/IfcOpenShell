@@ -1,5 +1,7 @@
 #include "Kernel.h"
 
+#include <TopExp.hxx>
+
 IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
 	if (file != 0) {
 		if (file->schema() == 0) {
@@ -172,3 +174,15 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUt
 	}
 }
 
+bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
+	TopTools_IndexedDataMapOfShapeListOfShape map;
+	TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+	for (int i = 1; i <= map.Extent(); ++i) {
+		if (map.FindFromIndex(i).Extent() != 2) {
+			return false;
+		}
+	}
+
+	return true;
+}

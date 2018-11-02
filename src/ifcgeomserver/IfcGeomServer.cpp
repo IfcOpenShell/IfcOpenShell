@@ -51,7 +51,11 @@
 #include <BRepGProp.hxx>
 #include <Geom_Plane.hxx>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+
 using namespace boost;
+using boost::property_tree::ptree;
 
 template <typename T>
 union data_field {
@@ -358,15 +362,16 @@ protected:
 		swrite(s, value_);
 	}
 public:
-	Setting(uint32_t k = 0, uint32_t v = 0) : Command(DEFLECTION), id_(k), value_(v) {};
+	Setting(uint32_t k = 0, uint32_t v = 0) : Command(SETTING), id_(k), value_(v) {};
 	uint32_t id() const { return id_; }
 	uint32_t value() const { return value_; }
 };
 
 static const std::string TOTAL_SURFACE_AREA = "TOTAL_SURFACE_AREA";
 static const std::string TOTAL_SHAPE_VOLUME = "TOTAL_SHAPE_VOLUME";
-static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
-static const double MAX_WALKABLE_SURFACE_ANGLE_DEGREES = 15.;
+static const std::string SURFACE_AREA_ALONG_X = "SURFACE_AREA_ALONG_X";
+static const std::string SURFACE_AREA_ALONG_Y = "SURFACE_AREA_ALONG_Y";
+static const std::string SURFACE_AREA_ALONG_Z = "SURFACE_AREA_ALONG_Z";
 
 class QuantityWriter : public EntityExtension {
 private:
@@ -376,73 +381,25 @@ public:
 		elem_(elem)
 	{}
 	void write_contents(std::ostream& s) {
-		
-		double total_surface_area = 0.;
-		double total_shape_volume = 0.;
-		double walkable_surface_area = 0.;
+		ptree pt;
+		double a, b, c;
 
-		TopoDS_Shape moved_shape = elem_->geometry().as_compound();
-			
-		{
-			GProp_GProps prop_area;
-			BRepGProp::SurfaceProperties(moved_shape, prop_area);
-			total_surface_area += prop_area.Mass();
+		if (elem_->geometry().calculate_surface_area(a)) {
+			pt.put(TOTAL_SURFACE_AREA, a);
 		}
 
-		{
-			GProp_GProps prop_volume;
-			BRepGProp::VolumeProperties(moved_shape, prop_volume);
-			total_shape_volume += prop_volume.Mass();
+		if (elem_->geometry().calculate_volume(a)) {
+			pt.put(TOTAL_SHAPE_VOLUME, a);
 		}
 
-		if (elem_->type() == "IfcSpace") {
-			TopExp_Explorer exp(moved_shape, TopAbs_FACE);
-			for (; exp.More(); exp.Next()) {
-				const TopoDS_Face& face = TopoDS::Face(exp.Current());
-				Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
-
-				// Assume we can only walk on planar surfaces
-				if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-					continue;
-				}
-
-				BRepGProp_Face prop(face);
-				double u0, u1, v0, v1;
-				BRepTools::UVBounds(face, u0, u1, v0, v1);
-				gp_Pnt p;
-				gp_Vec normal_direction;
-				prop.Normal((u0 + u1) / 2., (v0 + v1) / 2., p, normal_direction);
-
-				gp_Vec normal(0., 0., 0.);
-				if (normal_direction.Magnitude() > 1.e-5) {
-					normal = gp_Dir(normal_direction.XYZ());
-				}
-
-				if (normal.Angle(gp::DZ()) < (MAX_WALKABLE_SURFACE_ANGLE_DEGREES * M_PI / 180.0)) {
-					GProp_GProps prop_face;
-					BRepGProp::SurfaceProperties(face, prop_face);
-					walkable_surface_area += prop_face.Mass();
-				}
-			}
+		if (elem_->calculate_projected_surface_area(a, b, c)) {
+			pt.put(SURFACE_AREA_ALONG_X, a);
+			pt.put(SURFACE_AREA_ALONG_X, b);
+			pt.put(SURFACE_AREA_ALONG_X, c);
 		}
-		
-		// TODO: Manual JSON formatting is always a bad idea
+
 		std::ostringstream ss;
-		ss.write("{", 1);
-		ss << format_json(TOTAL_SURFACE_AREA);
-		ss.write(":", 1);
-		ss << format_json(total_surface_area);
-		ss.write(",", 1);
-		ss << format_json(TOTAL_SHAPE_VOLUME);
-		ss.write(":", 1);
-		ss << format_json(total_shape_volume);
-		if (elem_->type() == "IfcSpace") {
-			ss.write(",", 1);
-			ss << format_json(WALKABLE_SURFACE_AREA);
-			ss.write(":", 1);
-			ss << format_json(walkable_surface_area);
-		}
-		ss.write("}", 1);
+		boost::property_tree::write_json(ss, pt, false);
 
 		// We do a 4-byte manual alignment
 		std::string payload = ss.str();
@@ -460,6 +417,8 @@ int main () {
 	stdout_redir = oss.rdbuf();
 	stdout_orig = std::cout.rdbuf();
 	std::cout.rdbuf(stdout_redir);
+
+	bool emit_quantities = false;
 
 #ifdef SET_BINARY_STREAMS
 	_setmode(_fileno(stdout), _O_BINARY);
@@ -496,6 +455,11 @@ int main () {
 			std::vector< std::pair<uint32_t, uint32_t> >::const_iterator it = setting_pairs.begin();
 			for (; it != setting_pairs.end(); ++it) {
 				settings.set(it->first, it->second != 0);
+				if (it->first == IfcGeom::IteratorSettings::SEW_SHELLS && it->second) {
+					// Quantities (especially volume) can be emitted if there are proper
+					// topologically valid geometries being created.
+					emit_quantities = true;
+				}
 			}
 
 			settings.set_deflection_tolerance(deflection);
@@ -514,8 +478,11 @@ int main () {
 				break;
 			}
 			const IfcGeom::TriangulationElement<float, double>* geom = static_cast<const IfcGeom::TriangulationElement<float, double>*>(iterator->get());
-			QuantityWriter eext(iterator->get_native());
-			Entity(geom, &eext).write(std::cout);
+			std::unique_ptr<QuantityWriter> eext;
+			if (emit_quantities) {
+				eext = std::make_unique<QuantityWriter>(iterator->get_native());
+			}
+			Entity(geom, eext.get()).write(std::cout);
 			continue;
 		}
 		case NEXT: {

@@ -178,35 +178,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			if (is_interior == !process_interior) continue;
 		
 			TopoDS_Wire wire;
-			if (!convert_wire(loop, wire)) {
+			if (faceset_helper_ && loop->as<IfcSchema::IfcPolyLoop>()) {
+				faceset_helper_->wire(loop->as<IfcSchema::IfcPolyLoop>(), wire);
+			} else if (!convert_wire(loop, wire)) {
 				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
 				delete mf;
 				return false;
 			}
-
-			/*
-			The approach below does not result in a significant speed-up
-			if (loop->declaration().is(IfcSchema::IfcPolyLoop::Class()) && processed == 0 && face_surface.IsNull()) {
-				IfcSchema::IfcPolyLoop* polyloop = (IfcSchema::IfcPolyLoop*) loop;
-				IfcSchema::IfcCartesianPoint::list::ptr points = polyloop->Polygon();
-
-				if (points->size() == 3) {
-					// Help Open Cascade by finding the plane more efficiently
-					IfcSchema::IfcCartesianPoint::list::it point_iterator = points->begin();
-					gp_Pnt a, b, c;
-					convert(*point_iterator++, a);
-					convert(*point_iterator++, b);
-					convert(*point_iterator++, c);
-					const gp_XYZ ab = (b.XYZ() - a.XYZ());
-					const gp_XYZ ac = (c.XYZ() - a.XYZ());
-					const gp_Vec cross = ab.Crossed(ac);
-					if (cross.SquareMagnitude() > ALMOST_ZERO) {
-						const gp_Dir n = cross;
-						face_surface = new Geom_Plane(a, n);
+			
+			// The approach below does not result in a significant speed-up
+			if (loop->as<IfcSchema::IfcPolyLoop>() && processed == 0 && face_surface.IsNull()) {
+				TopExp_Explorer exp(wire, TopAbs_EDGE);
+				int count = 0;
+				TopoDS_Edge edges[2];
+				for (; exp.More(); exp.Next(), count++) {
+					if (count < 2) {
+						edges[count] = TopoDS::Edge(exp.Current());
 					}
 				}
+				
+				if (count == 3) {
+					// Help Open Cascade by finding the plane more efficiently
+					double _, __;
+					Handle(Geom_Line) c1 = Handle(Geom_Line)::DownCast(BRep_Tool::Curve(edges[0], _, __));
+					Handle(Geom_Line) c2 = Handle(Geom_Line)::DownCast(BRep_Tool::Curve(edges[1], _, __));
+
+					const gp_Vec ab = c1->Position().Direction();
+					const gp_Vec ac = c2->Position().Direction();					
+					const gp_Vec cross = ab.Crossed(ac);
+
+					if (cross.SquareMagnitude() > ALMOST_ZERO) {
+						const gp_Dir n = cross;
+						face_surface = new Geom_Plane(c1->Position().Location(), n);
+					}
+				} else {
+					gp_Pln pln;
+					approximate_plane_through_wire(wire, pln);
+					face_surface = new Geom_Plane(pln);
+				}
 			}
-			*/
 		
 			if (!same_sense) {
 				wire.Reverse();
@@ -297,16 +307,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						TopTools_ListOfShape face_list;
 						triangulate_wire(wire, face_list);
 
-						TopoDS_Compound compound;
-						BRep_Builder builder;
-						builder.MakeCompound(compound);
+						TopoDS_Compound triangulation_compound;
+						BRep_Builder triangulation_builder;
+						triangulation_builder.MakeCompound(triangulation_compound);
 
 						TopTools_ListIteratorOfListOfShape face_iterator;
 						for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-							builder.Add(compound, face_iterator.Value());
+							triangulation_builder.Add(triangulation_compound, face_iterator.Value());
 						}
 
-						face = compound;
+						face = triangulation_compound;
 
 						return true;
 					}

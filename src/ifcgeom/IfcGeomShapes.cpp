@@ -103,6 +103,8 @@
 
 #include "../ifcgeom/IfcGeom.h"
 
+#include <memory>
+
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
@@ -592,6 +594,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
+	std::unique_ptr<faceset_helper> helper_scope;
+
+	if (getValue(GV_MAX_FACES_TO_SEW) != -1) {
+		helper_scope.reset(new faceset_helper(this, l));
+	}
+
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 
 	TopTools_ListOfShape face_list;
