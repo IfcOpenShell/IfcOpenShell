@@ -322,7 +322,7 @@ int main(int argc, char** argv)
             " and any other value means that 6 or 7 decimals are used.");
 
     po::options_description cmdline_options;
-	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(serializer_options);
+	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(ifc_options).add(serializer_options);
 
     po::positional_options_description positional_options;
 	positional_options.add("input-file", 1);
