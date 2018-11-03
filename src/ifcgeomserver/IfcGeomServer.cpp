@@ -482,7 +482,7 @@ int main () {
 			const IfcGeom::TriangulationElement<float, double>* geom = static_cast<const IfcGeom::TriangulationElement<float, double>*>(iterator->get());
 			std::unique_ptr<QuantityWriter> eext;
 			if (emit_quantities) {
-				eext = std::make_unique<QuantityWriter>(iterator->get_native());
+				eext.reset(new QuantityWriter(iterator->get_native()));
 			}
 			Entity(geom, eext.get()).write(std::cout);
 			continue;
