@@ -1511,6 +1511,10 @@ void IfcFile::addEntities(IfcEntityList::ptr es) {
 }
 
 IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity) {
+	if (entity->declaration().schema() != schema()) {
+		throw IfcParse::IfcException("Unabled to add instance from " + entity->declaration().schema()->name() + " schema to file with " + schema()->name() + " schema");
+	}
+
 	// If this instance has been inserted before, return
 	// a reference to the copy that was created from it.
 	entity_entity_map_t::iterator mit = entity_file_map.find(entity);
