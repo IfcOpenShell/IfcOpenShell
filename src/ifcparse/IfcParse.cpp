@@ -1857,10 +1857,22 @@ IfcFile::type_iterator IfcFile::types_incl_super_end() const {
 	return bytype.end();
 }
 
+namespace {
+	struct id_instance_pair_sorter {
+		bool operator()(const IfcParse::IfcFile::entity_by_id_t::value_type& a, const IfcParse::IfcFile::entity_by_id_t::value_type& b) const {
+			return a.first < b.first;
+		}
+	};
+}
+
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	f.header().write(os);
 
-	for ( IfcFile::entity_by_id_t::const_iterator it = f.begin(); it != f.end(); ++ it ) {
+	typedef std::vector<std::pair<unsigned int, IfcUtil::IfcBaseClass*> > vector_t;
+	vector_t sorted(f.begin(), f.end());
+	std::sort(sorted.begin(), sorted.end(), id_instance_pair_sorter());
+
+	for (vector_t::const_iterator it = sorted.begin(); it != sorted.end(); ++ it) {
 		const IfcUtil::IfcBaseClass* e = it->second;
 		if (!IfcSchema::Type::IsSimple(e->type())) {
 			os << e->entity->toString(true) << ";" << std::endl;
