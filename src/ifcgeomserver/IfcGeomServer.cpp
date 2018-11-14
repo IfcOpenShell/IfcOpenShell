@@ -396,8 +396,8 @@ public:
 
 		if (elem_->calculate_projected_surface_area(a, b, c)) {
 			pt.put(SURFACE_AREA_ALONG_X, a);
-			pt.put(SURFACE_AREA_ALONG_X, b);
-			pt.put(SURFACE_AREA_ALONG_X, c);
+			pt.put(SURFACE_AREA_ALONG_Y, b);
+			pt.put(SURFACE_AREA_ALONG_Z, c);
 		}
 
 		std::ostringstream ss;
