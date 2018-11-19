@@ -91,6 +91,10 @@
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 
+#include <BRepAdaptor_CompCurve.hxx>
+#include <BRepAdaptor_HCompCurve.hxx>
+#include <Approx_Curve3d.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 namespace {
@@ -419,7 +423,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	double parameterFactor = isConic ? getValue(GV_PLANEANGLE_UNIT) : getValue(GV_LENGTH_UNIT);
 	
 	Handle(Geom_Curve) curve;
-	if ( !convert_curve(basis_curve,curve) ) return false;
+	if (shape_type(basis_curve) == ST_CURVE) {
+		if (!convert_curve(basis_curve, curve)) return false;
+	} else if (shape_type(basis_curve) == ST_WIRE) {
+		Logger::Warning("Approximating BasisCurve due to possible discontinuities", l->entity);
+		TopoDS_Wire w;
+		if (!convert_wire(basis_curve, w)) return false;
+		BRepAdaptor_CompCurve cc(w, true);
+		Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
+		// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
+		Approx_Curve3d approx(hcc, getValue(GV_PRECISION), GeomAbs_C0, 10, 10);
+		curve = approx.Curve();
+	} else {
+		Logger::Error("Unknown BasisCurve", l->entity);
+		return false;
+	}
 	
 	bool trim_cartesian = l->MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
 	IfcEntityList::ptr trims1 = l->Trim1();
