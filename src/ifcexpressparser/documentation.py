@@ -31,7 +31,7 @@ import re
 import os
 import csv
 
-from schema import OrderedCaseInsensitiveDict 
+from schema import OrderedCaseInsensitiveDict
 
 try: from html.entities import entitydefs
 except: from htmlentitydefs import entitydefs
@@ -47,7 +47,7 @@ regices = list(zip([re.compile(s,re.M) for s in [r'<[\w\n=" \-/\.;_\t:%#,\?\(\)]
 definition_files = ['DocEntity.csv', 'DocEnumeration.csv', 'DocDefined.csv', 'DocSelect.csv']
 definition_files = map(make_absolute, definition_files)
 for fn in definition_files:
-    with open(fn) as f:
+    with open(fn,'r', encoding='mac_roman', newline='') as f:
         for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
             name_to_oid[name] = oid
             oid_to_name[oid] = name
