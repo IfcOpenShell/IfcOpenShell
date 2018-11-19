@@ -62,6 +62,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	const IfcParse::parameter_type* pt = 0;
 	if (inst->declaration().as_entity()) {
 		pt = inst->declaration().as_entity()->attribute_by_index(i)->type_of_attribute();
+		if (inst->declaration().as_entity()->derived()[i]) {
+			return IfcUtil::Argument_DERIVED;
+		}
 	} else if (inst->declaration().as_type_declaration() && i == 0) {
 		pt = inst->declaration().as_type_declaration()->declared_type();
 	}
