@@ -1818,9 +1818,15 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 	}
 
 	IfcSchema::IfcRepresentation* body_representation = find_representation(product, "Body");
-	IfcSchema::IfcRepresentation* axis_representation = find_representation(product, "Axis");
+
+	if (!body_representation) {
+		Logger::Warning("No body representation for product", product->entity);
+		return false;
+	}
 
 	if (product->is(IfcSchema::Type::IfcWall)) {
+		IfcSchema::IfcRepresentation* axis_representation = find_representation(product, "Axis");
+
 		if (!axis_representation) {
 			Logger::Message(Logger::LOG_WARNING, "No axis representation for:", product->entity);
 			return false;
@@ -2190,10 +2196,16 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 
 		gp_Trsf other;
 		if (!convert(other_wall->ObjectPlacement(), other)) {
+			Logger::Error("Failed to convert placement", other_wall->entity);
 			continue;
 		}
 
 		IfcSchema::IfcRepresentation* axis_representation = find_representation(other_wall, "Axis");
+
+		if (!axis_representation) {
+			Logger::Warning("Joined wall has no axis representation", other_wall->entity);
+			continue;
+		}
 		
 		IfcRepresentationShapeItems axis_items;
 		{
