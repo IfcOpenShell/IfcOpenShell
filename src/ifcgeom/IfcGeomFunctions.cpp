@@ -3329,13 +3329,13 @@ bool IfcGeom::Kernel::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b
 		}
 	}
 
-	const double eps = getValue(GV_PRECISION) * 2.;
+	const double eps = getValue(GV_PRECISION) * 1000.;
 
 	BRepBuilderAPI_MakePolygon poly;
-	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmin + eps));
-	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmin + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umin - eps) + y.XYZ() * (Vmin - eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmin - eps));
 	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmax + eps));
-	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmax + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umin - eps) + y.XYZ() * (Vmax + eps));
 	poly.Close();
 
 	BRepBuilderAPI_MakeFace mf(surf, poly.Wire(), true);
