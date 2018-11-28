@@ -85,6 +85,10 @@ FOR %%i IN (powershell git cmake) DO (
     where.exe %%i 1> NUL 2> NUL || call cecho.cmd 0 12 "Required tool `'%%i`' not installed or not added to PATH" && goto :ErrorAndPrintUsage
 )
 
+:: Check powershell version
+powershell -c "exit $PSVersionTable.PSVersion.Major -lt 5"
+IF NOT %ERRORLEVEL%==0 call cecho.cmd 0 12 "Powershell version 5 or higher required" && goto :ErrorAndPrintUsage
+
 cmake --version | findstr version > temp.txt
 set /p CMAKE_VERSION=<temp.txt
 del temp.txt
@@ -547,7 +551,7 @@ exit /b %RET%
 :: PrintUsage - Prints usage information
 :PrintUsage
 call "%~dp0\utils\cecho.cmd" 0 10 "Requirements for a successful execution:"
-echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
+echo  1. Install PowerShell (preinstalled in Windows ^>= 7) version 5 or higher and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - https://git-for-windows.github.io/
