@@ -51,13 +51,7 @@
 #include <BRepGProp.hxx>
 #include <Geom_Plane.hxx>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
 #include <memory>
-
-using namespace boost;
-using boost::property_tree::ptree;
 
 template <typename T>
 union data_field {
@@ -224,8 +218,40 @@ public:
 };
 
 class EntityExtension {
+protected:
+	bool trailing_, opened_;
+	std::stringstream json_;
+
+	template <typename T>
+	void put_json(const std::string& k, T v) {
+		if (!opened_) {
+			json_ << "{";
+			opened_ = true;
+		}
+		if (trailing_) {
+			json_ << ",";
+		}
+		json_ << format_json(k) << ":" << format_json(v);
+		trailing_ = true;
+	}
 public:
-	virtual void write_contents(std::ostream& s) = 0;
+	EntityExtension()
+		: trailing_(false)
+		, opened_(false)
+	{}
+
+	void write_contents(std::ostream& s) {
+		if (opened_) {
+			json_ << "}";
+		}
+
+		// We do a 4-byte manual alignment
+		std::string payload = json_.str();
+		s << payload;
+		if (payload.size() % 4) {
+			s << std::string(4 - (payload.size() % 4), ' ');
+		}
+	}
 };
 
 class Entity : public Command {
@@ -374,40 +400,44 @@ static const std::string TOTAL_SHAPE_VOLUME = "TOTAL_SHAPE_VOLUME";
 static const std::string SURFACE_AREA_ALONG_X = "SURFACE_AREA_ALONG_X";
 static const std::string SURFACE_AREA_ALONG_Y = "SURFACE_AREA_ALONG_Y";
 static const std::string SURFACE_AREA_ALONG_Z = "SURFACE_AREA_ALONG_Z";
+static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
 
-class QuantityWriter : public EntityExtension {
+class QuantityWriter_v0 : public EntityExtension {
 private:
 	const IfcGeom::BRepElement<float, double>* elem_;
 public:
-	QuantityWriter(const IfcGeom::BRepElement<float, double>* elem) :
+	QuantityWriter_v0(const IfcGeom::BRepElement<float, double>* elem) :
+		elem_(elem) 
+	{
+		put_json(TOTAL_SURFACE_AREA, 0.);
+		put_json(TOTAL_SHAPE_VOLUME, 0.);
+		if (elem_->type() == "IfcSpace") {
+			put_json(WALKABLE_SURFACE_AREA, 0.);
+		}	
+	}
+};
+
+class QuantityWriter_v1 : public EntityExtension {
+private:
+	const IfcGeom::BRepElement<float, double>* elem_;
+public:
+	QuantityWriter_v1(const IfcGeom::BRepElement<float, double>* elem) :
 		elem_(elem)
-	{}
-	void write_contents(std::ostream& s) {
-		ptree pt;
+	{
 		double a, b, c;
 
 		if (elem_->geometry().calculate_surface_area(a)) {
-			pt.put(TOTAL_SURFACE_AREA, a);
+			put_json(TOTAL_SURFACE_AREA, a);
 		}
 
 		if (elem_->geometry().calculate_volume(a)) {
-			pt.put(TOTAL_SHAPE_VOLUME, a);
+			put_json(TOTAL_SHAPE_VOLUME, a);
 		}
 
 		if (elem_->calculate_projected_surface_area(a, b, c)) {
-			pt.put(SURFACE_AREA_ALONG_X, a);
-			pt.put(SURFACE_AREA_ALONG_Y, b);
-			pt.put(SURFACE_AREA_ALONG_Z, c);
-		}
-
-		std::ostringstream ss;
-		boost::property_tree::write_json(ss, pt, false);
-
-		// We do a 4-byte manual alignment
-		std::string payload = ss.str();
-		s << payload;
-		if (payload.size() % 4) {
-			s << std::string(4 - (payload.size() % 4), ' ');
+			put_json(SURFACE_AREA_ALONG_X, a);
+			put_json(SURFACE_AREA_ALONG_Y, b);
+			put_json(SURFACE_AREA_ALONG_Z, c);
 		}
 	}
 };
@@ -480,9 +510,11 @@ int main () {
 				break;
 			}
 			const IfcGeom::TriangulationElement<float, double>* geom = static_cast<const IfcGeom::TriangulationElement<float, double>*>(iterator->get());
-			std::unique_ptr<QuantityWriter> eext;
+			std::unique_ptr<EntityExtension> eext;
 			if (emit_quantities) {
-				eext.reset(new QuantityWriter(iterator->get_native()));
+				eext.reset(new QuantityWriter_v1(iterator->get_native()));
+			} else {
+				eext.reset(new QuantityWriter_v0(iterator->get_native()));
 			}
 			Entity(geom, eext.get()).write(std::cout);
 			continue;
