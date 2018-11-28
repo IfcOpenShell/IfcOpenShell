@@ -748,22 +748,31 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	return true;
 }
 #else
-bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
-	
-	TopTools_ListOfShape opening_shapelist;
-	
-	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
+
+namespace {
+	struct opening_sorter {
+		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
+			return a.first > b.first;
+		}
+	};
+}
+
+bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings,
+	const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
+
+	std::vector< std::pair<double, TopoDS_Shape> > opening_vector;
+
+	for (IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++it) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
 		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
+		if (fes->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
 			if (!fes->hasRepresentation()) continue;
 
 			// Convert the IfcRepresentation of the IfcOpeningElement
 			gp_Trsf opening_trsf;
 			if (fes->hasObjectPlacement()) {
 				try {
-					convert(fes->ObjectPlacement(),opening_trsf);
+					convert(fes->ObjectPlacement(), opening_trsf);
 				} catch (const std::exception& e) {
 					Logger::Error(e);
 				} catch (...) {
@@ -778,23 +787,25 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 
 			IfcGeom::IfcRepresentationShapeItems opening_shapes;
-						
-			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				convert_shapes(*it2,opening_shapes);
+
+			for (IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++it2) {
+				convert_shapes(*it2, opening_shapes);
 			}
 
-			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
+			for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
 				TopoDS_Shape opening_shape_solid;
 				const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(opening_shapes[i].Shape(), opening_shape_solid);
 
 				gp_GTrsf gtrsf = opening_shapes[i].Placement();
 				gtrsf.PreMultiply(opening_trsf);
 				TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, gtrsf);
-				opening_shapelist.Append(opening_shape);
+				opening_vector.push_back(std::make_pair(min_edge_length(opening_shape), opening_shape));
 			}
 
 		}
 	}
+
+	std::sort(opening_vector.begin(), opening_vector.end(), opening_sorter());
 
 	// Iterate over the shapes of the IfcProduct
 	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
@@ -806,13 +817,35 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 		}
 		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
 
-		TopoDS_Shape result;
-		if (boolean_operation(entity_shape, opening_shapelist, BOPAlgo_CUT, result)) {
-			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(result, &it3->Style()));
-		} else {
-			Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed:", entity);
-			cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(entity_shape, &it3->Style()));
+		TopoDS_Shape result = entity_shape;
+		
+		auto it = opening_vector.begin();
+		auto jt = it;
+
+		for (;; ++it) {
+			if (it == opening_vector.end() || jt->first / it->first > 10.) {
+
+				TopTools_ListOfShape opening_list;
+				for (auto kt = jt; kt < it; ++kt) {
+					opening_list.Append(kt->second);
+				}
+
+				TopoDS_Shape intermediate_result;
+				if (boolean_operation(result, opening_list, BOPAlgo_CUT, intermediate_result)) {
+					result = intermediate_result;
+				} else {
+					Logger::Message(Logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
+				}
+
+				jt = it;
+			}
+
+			if (it == opening_vector.end()) {
+				break;
+			}
 		}
+
+		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(result, &it3->Style()));
 	}
 	return true;
 }
@@ -1781,9 +1814,15 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 	}
 
 	IfcSchema::IfcRepresentation* body_representation = find_representation(product, "Body");
-	IfcSchema::IfcRepresentation* axis_representation = find_representation(product, "Axis");
+
+	if (!body_representation) {
+		Logger::Warning("No body representation for product", product);
+		return false;
+	}
 
 	if (product->declaration().is(IfcSchema::IfcWall::Class())) {
+		IfcSchema::IfcRepresentation* axis_representation = find_representation(product, "Axis");
+
 		if (!axis_representation) {
 			Logger::Message(Logger::LOG_WARNING, "No axis representation for:", product);
 			return false;
@@ -2144,10 +2183,16 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 
 		gp_Trsf other;
 		if (!convert(other_wall->ObjectPlacement(), other)) {
+			Logger::Error("Failed to convert placement", other_wall);
 			continue;
 		}
 
 		IfcSchema::IfcRepresentation* axis_representation = find_representation(other_wall, "Axis");
+
+		if (!axis_representation) {
+			Logger::Warning("Joined wall has no axis representation", other_wall);
+			continue;
+		}
 		
 		IfcRepresentationShapeItems axis_items;
 		{
@@ -3271,13 +3316,13 @@ bool IfcGeom::Kernel::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b
 		}
 	}
 
-	const double eps = getValue(GV_PRECISION) * 2.;
+	const double eps = getValue(GV_PRECISION) * 1000.;
 
 	BRepBuilderAPI_MakePolygon poly;
-	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmin + eps));
-	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmin + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umin - eps) + y.XYZ() * (Vmin - eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmin - eps));
 	poly.Add(P.XYZ() + x.XYZ() * (Umax + eps) + y.XYZ() * (Vmax + eps));
-	poly.Add(P.XYZ() + x.XYZ() * (Umin + eps) + y.XYZ() * (Vmax + eps));
+	poly.Add(P.XYZ() + x.XYZ() * (Umin - eps) + y.XYZ() * (Vmax + eps));
 	poly.Close();
 
 	BRepBuilderAPI_MakeFace mf(surf, poly.Wire(), true);
