@@ -166,22 +166,24 @@ private:
 		bool wire(const IfcSchema::IfcPolyLoop* loop, TopoDS_Wire& wire) {
 			BRep_Builder builder;
 			builder.MakeWire(wire);
-			bool valid;
+			int count = 0;
 			auto ps = loop->Polygon();
-			loop_(ps, [this, &builder, &wire, &valid](int A, int B, bool fwd) {
+			loop_(ps, [this, &builder, &wire, &count](int A, int B, bool fwd) {
 				TopoDS_Edge e;
 				if (edge(A, B, e)) {
 					if (!fwd) {
 						e.Reverse();
 					}
 					builder.Add(wire, e);
-					valid = true;
+					count += 1;
 				}
 			});
-			if (valid) {
+			if (count >= 3) {
 				wire.Closed(true);
+				return true;
+			} else {
+				return false;
 			}
-			return valid;
 		}
 	};
 

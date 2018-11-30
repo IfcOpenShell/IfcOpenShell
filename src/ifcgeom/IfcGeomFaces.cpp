@@ -179,7 +179,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		
 			TopoDS_Wire wire;
 			if (faceset_helper_ && loop->as<IfcSchema::IfcPolyLoop>()) {
-				faceset_helper_->wire(loop->as<IfcSchema::IfcPolyLoop>(), wire);
+				if (!faceset_helper_->wire(loop->as<IfcSchema::IfcPolyLoop>(), wire)) {
+					Logger::Message(Logger::LOG_WARNING, "Face boundary loop not included", loop);
+					delete mf;
+					return false;
+				}
 			} else if (!convert_wire(loop, wire)) {
 				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
 				delete mf;
