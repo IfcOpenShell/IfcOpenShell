@@ -3506,6 +3506,8 @@ namespace {
 		std::vector<int> js = tree.select_box(b, false);
 		for (int j : js) {
 			if (visited.find(j) == visited.end()) {
+				// @todo, making this recursive removes the dependence on the initial ordering, but will
+				// likely result in empty results when all vertices are within 1 eps from another point.
 				find_neighbours(tree, pnts, visited, j, eps);
 			}
 		}
@@ -3527,7 +3529,7 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 
 	BRep_Builder B;
 
-	const double eps = kernel->getValue(GV_PRECISION);
+	const double eps = kernel->getValue(GV_PRECISION) * 10.;
 	IfcGeom::impl::tree<int> tree;
 	{
 		int i = 0;
@@ -3549,23 +3551,44 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		for (int v : vs) {
 			if (v <= i) {
 				auto pt = *(points->begin() + v);
-				vertex_mapping_.insert({pt->data().id(), i});
+				vertex_mapping_[pt->data().id()] = i;
 			}
 		}
 	}
 
 	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
 
+	size_t loops_removed = 0, non_manifold = 0;
+
 	for (auto& loop : *loops) {
 		auto ps = loop->Polygon();
-		loop_(ps, [&edge_use](int C, int D, bool) {
-			edge_use[{C, D}] ++;
+
+		std::vector<std::pair<int, int> > segments;
+
+		loop_(ps, [&segments](int C, int D, bool) {
+			segments.push_back({ C, D });
 		});
+
+		if (segments.size() >= 3) {
+			for (auto& p : segments) {
+				edge_use[p] ++;
+			}
+		} else {
+			loops_removed += 1;
+		}
 	}
 
 	for (auto& p : edge_use) {
 		int a, b;
 		std::tie(a, b) = p.first;
 		edges_[p.first] = BRepBuilderAPI_MakeEdge(vertices[a], vertices[b]);
+
+		if (p.second != 2) {
+			non_manifold += 1;
+		}		
+	}
+
+	if (loops_removed || non_manifold) {
+		Logger::Error(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
 	}
 }
