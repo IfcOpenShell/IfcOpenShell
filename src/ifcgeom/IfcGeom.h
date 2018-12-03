@@ -159,7 +159,11 @@ private:
 		}
 
 		bool edge(int A, int B, TopoDS_Edge& e) {
-			e = edges_[{A, B}];
+			auto it = edges_.find({A, B});
+			if (it == edges_.end()) {
+				return false;
+			}
+			e = it->second;
 			return true;
 		}
 
