@@ -417,6 +417,31 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 	return true;
 }
 
+namespace {
+
+	/*
+	Below is code to deduce the formula below in SageMath
+
+	| R, b = var('R b')
+	| 
+	| Bxy = R * cos(b), R * sin(b)
+	| Cxy = R * cos(b/2), R * sin(b/2)
+	| 
+	| def dot(v, w):
+	|     return v[0] * w[0] + v[1] * w[1]
+	| 
+	| def norm(v):
+	|     l = sqrt(v[0]^2 + v[1]^2)
+	|     return v[0] / l, v[1] / l
+	| 
+	| (R - R*dot(norm(Cxy), norm(Bxy))).full_simplify()
+	*/
+
+	double deflection_for_approximating_circle(double radius, double param) {
+		return -radius * cos(1 / 2 * param)*cos(param) - radius * sin(1 / 2 * param)*sin(param) + radius;
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& wire) {
 	IfcSchema::IfcCurve* basis_curve = l->BasisCurve();
 	bool isConic = basis_curve->is(IfcSchema::Type::IfcConic);
@@ -449,7 +474,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
 	
-	BRepBuilderAPI_MakeWire w;
+	TopoDS_Edge e;
+
 	for ( IfcEntityList::it it = trims1->begin(); it != trims1->end(); it ++ ) {
 		IfcUtil::IfcBaseClass* i = *it;
 		if ( i->is(IfcSchema::Type::IfcCartesianPoint) ) {
@@ -486,15 +512,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		TopoDS_Vertex v2 = BRepBuilderAPI_MakeVertex(pnts[1]);
 		FTol.SetTolerance(v1, getValue(GV_PRECISION), TopAbs_VERTEX);
 		FTol.SetTolerance(v2, getValue(GV_PRECISION), TopAbs_VERTEX);
-		BRepBuilderAPI_MakeEdge e (curve,v1,v2);
-		if ( ! e.IsDone() ) {
-			BRepBuilderAPI_EdgeError err = e.Error();
+		BRepBuilderAPI_MakeEdge me (curve,v1,v2);
+		if (!me.IsDone()) {
+			BRepBuilderAPI_EdgeError err = me.Error();
 			if ( err == BRepBuilderAPI_PointProjectionFailed ) {
 				Logger::Message(Logger::LOG_WARNING,"Point projection failed for:",l->entity);
 				trim_cartesian_failed = true;
 			}
 		} else {
-			w.Add(e.Edge());
+			e = me.Edge();
 		}
 	}
 
@@ -519,14 +545,37 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			}
 		}
 		if ( isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.),0.) ) {
-			w.Add(BRepBuilderAPI_MakeEdge(curve));
+			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
-			BRepBuilderAPI_MakeEdge e (curve,flts[0],flts[1]);
-			w.Add(e.Edge());
+			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
+			e = me.Edge();
 		}			
 	} else if ( trim_cartesian_failed && (has_pnts[0] && has_pnts[1]) ) {
-		w.Add(BRepBuilderAPI_MakeEdge(pnts[0],pnts[1]));
+		e = BRepBuilderAPI_MakeEdge(pnts[0], pnts[1]).Edge();
 	}
+
+	if (isConic) {
+		// Tiny circle segnments can cause issues later on, for example
+		// when the comp curve is used as the sweeping directrix.
+		double a, b;
+		Handle(Geom_Curve) crv = BRep_Tool::Curve(e, a, b);
+		double radius = -1.;
+		if (crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+			radius = Handle(Geom_Circle)::DownCast(crv)->Radius();
+		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse)) {
+			// The formula above is for circles, but probably good enough
+			radius = Handle(Geom_Ellipse)::DownCast(crv)->MajorRadius();
+		}
+		if (radius > 0. && deflection_for_approximating_circle(radius, b - a) < getValue(GV_PRECISION)) {
+			TopoDS_Vertex v0, v1;
+			TopExp::Vertices(e, v0, v1);
+			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
+			Logger::Warning("Subsituted edge with linear approximation", l->entity);
+		}
+	}
+
+	BRepBuilderAPI_MakeWire w;
+	w.Add(e);
 
 	if (w.IsDone()) {
 		wire = w.Wire();
