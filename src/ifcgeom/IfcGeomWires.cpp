@@ -438,7 +438,7 @@ namespace {
 	*/
 
 	double deflection_for_approximating_circle(double radius, double param) {
-		return -radius * cos(1 / 2 * param)*cos(param) - radius * sin(1 / 2 * param)*sin(param) + radius;
+		return -radius * std::cos(1. / 2. * param) * std::cos(param) - radius * std::sin(1. / 2. * param) * std::sin(param) + radius;
 	}
 }
 
