@@ -114,8 +114,6 @@ namespace {
 
 		bool meshed = false;
 
-		// todo check whether manifold and divide by 2
-
 		TopExp_Explorer exp(s, TopAbs_FACE);
 		for (; exp.More(); exp.Next()) {
 			const TopoDS_Face& face = TopoDS::Face(exp.Current());
@@ -167,17 +165,20 @@ namespace {
 						const gp_Vec v1 = pt2 - pt1;
 						const gp_Vec v2 = pt3 - pt2;
 						const gp_Vec v3 = pt1 - pt3;
-						gp_Dir normal = gp_Dir(v1^v2);
+						const gp_Vec normal_vector = v1 ^ v2;
+						if (normal_vector.Magnitude() > ALMOST_ZERO) {
+							gp_Dir normal = gp_Dir();
 
-						double edge_lengths[3] = { v1.Magnitude(), v2.Magnitude(), v3.Magnitude() };
-						std::sort(&edge_lengths[0], &edge_lengths[2]);
+							double edge_lengths[3] = { v1.Magnitude(), v2.Magnitude(), v3.Magnitude() };
+							std::sort(&edge_lengths[0], &edge_lengths[2]);
 
-						const double& a = edge_lengths[0];
-						const double& b = edge_lengths[1];
-						const double& c = edge_lengths[2];
+							const double& a = edge_lengths[0];
+							const double& b = edge_lengths[1];
+							const double& c = edge_lengths[2];
 
-						const double area = 0.25 * sqrt((a + (b + c))*(c - (a - b))*(c + (a - b))*(a + (b - c)));
-						accumulate(ax, normal, area, along_x, along_y, along_z);
+							const double area = 0.25 * sqrt((a + (b + c))*(c - (a - b))*(c + (a - b))*(a + (b - c)));
+							accumulate(ax, normal, area, along_x, along_y, along_z);
+						}
 					}
 				}
 			}
@@ -186,50 +187,65 @@ namespace {
 }
 
 bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
-	area = 0.;
-	
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
-		GProp_GProps prop;
-		BRepGProp::SurfaceProperties(it->Shape(), prop);
-		area += prop.Mass();
-	}
+	try {
+		area = 0.;
 
-	return true;
+		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
+			GProp_GProps prop;
+			BRepGProp::SurfaceProperties(it->Shape(), prop);
+			area += prop.Mass();
+		}
+
+		return true;
+	} catch (...) {
+		Logger::Error("Error during calculation of surface area");
+		return false;
+	}
 }
 
 bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
-	volume = 0.;
+	try {
+		volume = 0.;
 
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
-		if (Kernel::is_manifold(it->Shape())) {
-			GProp_GProps prop;
-			BRepGProp::VolumeProperties(it->Shape(), prop);
-			volume += prop.Mass();
-		} else {
-			return false;
+		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
+			if (Kernel::is_manifold(it->Shape())) {
+				GProp_GProps prop;
+				BRepGProp::VolumeProperties(it->Shape(), prop);
+				volume += prop.Mass();
+			} else {
+				return false;
+			}
 		}
+
+		return true;
+	} catch (...) {
+		Logger::Error("Error during calculation of volume");
+		return false;
 	}
-	
-	return true;
 }
 
 bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const gp_Ax3 & ax, double & along_x, double & along_y, double & along_z) const {
-	along_x = along_y = along_z = 0.;
+	try {
+		along_x = along_y = along_z = 0.;
 
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
-		double x, y, z;
-		surface_area_along_direction(settings().deflection_tolerance(), it->Shape(), ax, x, y, z);
+		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
+			double x, y, z;
+			surface_area_along_direction(settings().deflection_tolerance(), it->Shape(), ax, x, y, z);
 
-		if (Kernel::is_manifold(it->Shape())) {
-			x /= 2.;
-			y /= 2.;
-			z /= 2.;
+			if (Kernel::is_manifold(it->Shape())) {
+				x /= 2.;
+				y /= 2.;
+				z /= 2.;
+			}
+
+			along_x += x;
+			along_y += y;
+			along_z += z;
 		}
 
-		along_x += x;
-		along_y += y;
-		along_z += z;
+		return true;
+	} catch (...) {
+		Logger::Error("Error during calculation of projected surface area");
+		return false;
 	}
-
-	return true;	
 }
