@@ -31,15 +31,16 @@ namespace IfcGeom {
 		gp_GTrsf placement;
 		TopoDS_Shape shape;
 		const SurfaceStyle* style;
+		int id;
 	public:
-		IfcRepresentationShapeItem(const gp_GTrsf& placement, const TopoDS_Shape& shape, const SurfaceStyle* style)
-			: placement(placement), shape(shape), style(style) {}
-		IfcRepresentationShapeItem(const gp_GTrsf& placement, const TopoDS_Shape& shape)
-			: placement(placement), shape(shape), style(0) {}
-		IfcRepresentationShapeItem(const TopoDS_Shape& shape, const SurfaceStyle* style)
-			: shape(shape), style(style) {}
-		IfcRepresentationShapeItem(const TopoDS_Shape& shape)
-			: shape(shape), style(0) {}
+		IfcRepresentationShapeItem(int id, const gp_GTrsf& placement, const TopoDS_Shape& shape, const SurfaceStyle* style)
+			: id(id), placement(placement), shape(shape), style(style) {}
+		IfcRepresentationShapeItem(int id, const gp_GTrsf& placement, const TopoDS_Shape& shape)
+			: id(id), placement(placement), shape(shape), style(0) {}
+		IfcRepresentationShapeItem(int id, const TopoDS_Shape& shape, const SurfaceStyle* style)
+			: id(id), shape(shape), style(style) {}
+		IfcRepresentationShapeItem(int id, const TopoDS_Shape& shape)
+			: id(id), shape(shape), style(0) {}
 		void append(const gp_GTrsf& trsf) { placement.Multiply(trsf); }
 		void prepend(const gp_GTrsf& trsf) { placement.PreMultiply(trsf); }
 		const TopoDS_Shape& Shape() const { return shape; }
@@ -47,6 +48,7 @@ namespace IfcGeom {
 		bool hasStyle() const { return style != 0; }
 		const SurfaceStyle& Style() const { return *style; }
 		void setStyle(const SurfaceStyle* style) { this->style = style; }
+		int ItemId() const { return id; }
 	};
 	typedef std::vector<IfcRepresentationShapeItem> IfcRepresentationShapeItems;
 }

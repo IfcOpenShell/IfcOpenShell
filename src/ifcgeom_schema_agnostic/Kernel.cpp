@@ -15,13 +15,19 @@ IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
 	}
 }
 
-int IfcGeom::Kernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t) {
-	int i = 0;
-	TopExp_Explorer exp(s, t);
-	for (; exp.More(); exp.Next()) {
-		++i;
+int IfcGeom::Kernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
+	if (unique) {
+		TopTools_IndexedMapOfShape map;
+		TopExp::MapShapes(s, t, map);
+		return map.Extent();
+	} else {
+		int i = 0;
+		TopExp_Explorer exp(s, t);
+		for (; exp.More(); exp.Next()) {
+			++i;
+		}
+		return i;
 	}
-	return i;
 }
 
 IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementations() {

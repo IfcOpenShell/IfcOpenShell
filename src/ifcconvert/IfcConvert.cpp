@@ -270,7 +270,8 @@ int main(int argc, char** argv)
 			"Not guaranteed to work properly if used with --weld-vertices.")
         ("default-material-file", po::value<std::string>(&default_material_filename),
             "Specifies a material file that describes the material object types will have"
-            "if an object does not have any specified material in the IFC file.");
+            "if an object does not have any specified material in the IFC file.")
+		("validate", "Checks whether geometrical output conforms to the included explicit quantities.");
 
     std::string bounds, offset_str;
 #ifdef HAVE_ICU
@@ -501,6 +502,7 @@ int main(int argc, char** argv)
 						fix_quantities(*ifc_file, no_progress, quiet, stderr_progress);
 					}
 					fs << *ifc_file;
+					exit_code = EXIT_SUCCESS;
 				} else {
 					Logger::Error("Unable to open output file for writing");
 				}
@@ -1087,15 +1089,18 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		// Capture relationship nodes
 		std::vector<IfcUtil::IfcBaseClass*> relationships;
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
-		for (auto& eq : *element_quantities) {
-			auto rels = eq->data().getInverse(IfcRelDefinesByProperties, -1);
-			for (auto& rel : *rels) {
-				relationships.push_back(rel);
+		if (element_quantities) {
+			for (auto& eq : *element_quantities) {
+				auto rels = eq->data().getInverse(IfcRelDefinesByProperties, -1);
+				for (auto& rel : *rels) {
+					relationships.push_back(rel);
+				}
 			}
+
+			// Delete element quantities
+			delete_reversed(element_quantities);
 		}
 
-		// Delete element quantities
-		delete_reversed(element_quantities);
 
 		// Delete relationship nodes
 		for (auto& rel : relationships) {
@@ -1183,6 +1188,27 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				quantities->push(quantity_area);
 			}
 
+			for (auto& part : geom_object->geometry()) {
+				auto quantity_complex = latebound_access::create(f, "IfcPhysicalComplexQuantity");
+				latebound_access::set(quantity_complex, "Name", std::string("Shape validation properties"));
+				latebound_access::set(quantity_complex, "Discrimination", '#' + boost::lexical_cast<std::string>(part.ItemId()));
+
+				IfcEntityList::ptr quantities_2(new IfcEntityList);
+				
+				int nv = IfcGeom::Kernel::count(part.Shape(), TopAbs_VERTEX, true);
+				int ne = IfcGeom::Kernel::count(part.Shape(), TopAbs_EDGE, true);
+				int nf = IfcGeom::Kernel::count(part.Shape(), TopAbs_FACE, true);
+
+				const int euler = nv - ne + nf;
+				const int genus = (2 - euler) / 2;
+
+				auto quantity_area = latebound_access::create(f, "IfcQuantityCount");
+				latebound_access::set(quantity_area, "Name", std::string("Surface genus"));
+				latebound_access::set(quantity_area, "CountValue", genus);
+
+				latebound_access::set(quantity_complex, "HasQuantities", quantities_2);
+			}
+
 			if (quantities->size()) {
 				quantity = latebound_access::create(f, "IfcElementQuantity");
 				latebound_access::set(quantity, "OwnerHistory", ownerhist);
@@ -1213,4 +1239,19 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 			}
 		}
 	} while (++num_created, context_iterator.next());
+
+	if (!no_progress && quiet) {
+		for (; old_progress < 100; ++old_progress) {
+			std::cout << ".";
+			if (stderr_progress)
+				std::cerr << ".";
+		}
+		std::cout << std::flush;
+		if (stderr_progress)
+			std::cerr << std::flush;
+	} else {
+		Logger::Status("\rDone writing quantities for " + boost::lexical_cast<std::string>(num_created) +
+			" objects                                ");
+	}
+
 }

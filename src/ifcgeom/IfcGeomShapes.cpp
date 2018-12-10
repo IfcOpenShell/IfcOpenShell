@@ -391,7 +391,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 			}
 		}
 
-		shape.push_back(IfcRepresentationShapeItem(s, indiv_style ? indiv_style : collective_style));
+		shape.push_back(IfcRepresentationShapeItem(l->data().id(), s, indiv_style ? indiv_style : collective_style));
 		return true;
 	}
 	return false;
@@ -405,7 +405,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcR
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = get_style(*it);
 		if (convert_shape(*it,s)) {
-			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
+			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
 			part_success |= true;
 		}
 	}
@@ -469,7 +469,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
 		}
 		if (convert_shape(*it,s)) {
-			shapes.push_back(IfcRepresentationShapeItem(s, shell_style ? shell_style : collective_style));
+			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
 		}
 	}
 	return true;
@@ -725,7 +725,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 			} else {
 				TopoDS_Shape s;
 				if (convert_shape(representation_item,s)) {
-					shapes.push_back(IfcRepresentationShapeItem(s, get_style(representation_item)));
+					shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, get_style(representation_item)));
 					part_succes |= true;
 				}
 			}
@@ -752,7 +752,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 			} else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
 				style = get_style((IfcSchema::IfcSurface*) element);
 			}
-			shapes.push_back(IfcRepresentationShapeItem(s, style ? style : parent_style));
+			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
 		}
 	}
 	return part_succes;
