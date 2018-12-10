@@ -149,6 +149,8 @@
 #include "../ifcgeom/IfcGeom.h"
 #include "../ifcgeom/IfcGeomTree.h"
 
+#include <memory>
+
 #if OCC_VERSION_HEX < 0x60900
 #ifdef _MSC_VER
 #pragma message("warning: You are linking against Open CASCADE version " OCC_VERSION_COMPLETE ". Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade.")
@@ -3496,20 +3498,23 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 #endif
 
 namespace {
-	void find_neighbours(IfcGeom::impl::tree<int>& tree, std::vector<gp_Pnt>& pnts, std::set<int>& visited, int p, double eps) {
+	void find_neighbours(IfcGeom::impl::tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
 		visited.insert(p);
 
 		Bnd_Box b;
-		b.Set(pnts[p]);
+		b.Set(*pnts[p].get());
 		b.Enlarge(eps);
 
 		std::vector<int> js = tree.select_box(b, false);
 		for (int j : js) {
+			visited.insert(j);
+#ifdef FACESET_HELPER_RECURSIVE
 			if (visited.find(j) == visited.end()) {
 				// @todo, making this recursive removes the dependence on the initial ordering, but will
 				// likely result in empty results when all vertices are within 1 eps from another point.
 				find_neighbours(tree, pnts, visited, j, eps);
 			}
+#endif
 		}
 	}
 }
@@ -3524,34 +3529,39 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	kernel->faceset_helper_ = this;
 
 	IfcSchema::IfcCartesianPoint::list::ptr points = IfcParse::traverse((IfcUtil::IfcBaseClass*) l)->as<IfcSchema::IfcCartesianPoint>();
-	std::vector<gp_Pnt> pnts(std::distance(points->begin(), points->end()));
+	std::vector<std::unique_ptr<gp_Pnt>> pnts(std::distance(points->begin(), points->end()));
 	std::vector<TopoDS_Vertex> vertices(pnts.size());
+
+	IfcGeom::impl::tree<int> tree;
 
 	BRep_Builder B;
 
-	const double eps = kernel->getValue(GV_PRECISION) * 10.;
-	IfcGeom::impl::tree<int> tree;
-	{
-		int i = 0;
-		for (auto& pt : *points) {
-			if (kernel->convert(pt, pnts[i])) {
-				B.MakeVertex(vertices[i], pnts[i], Precision::Confusion());
-				tree.add(i, vertices[i]);
-				i++;
-			}
-		}
+	Bnd_Box box;
+	for (size_t i = 0; i < points->size(); ++i) {
+		gp_Pnt* p = new gp_Pnt();
+		if (kernel->convert(*(points->begin() + i), *p)) {
+			pnts[i].reset(p);
+			B.MakeVertex(vertices[i], *p, Precision::Confusion());
+			tree.add(i, vertices[i]);
+			box.Add(*p);
+		} else {
+			delete p;
+		}		
 	}
+
+	const double eps = kernel->getValue(GV_PRECISION) * 10. * std::sqrt(box.SquareExtent());
 
 	std::map<std::pair<int, int>, int> edge_use;
 
 	for (int i = 0; i < pnts.size(); ++i) {
-		std::set<int> vs;
-		find_neighbours(tree, pnts, vs, i, eps);
+		if (pnts[i]) {
+			std::set<int> vs;
+			find_neighbours(tree, pnts, vs, i, eps);
 
-		for (int v : vs) {
-			if (v <= i) {
+			for (int v : vs) {
 				auto pt = *(points->begin() + v);
-				vertex_mapping_[pt->data().id()] = i;
+				// NB: insert() ignores duplicate keys
+				vertex_mapping_.insert({ pt->data().id() , i });
 			}
 		}
 	}
