@@ -2,6 +2,7 @@
 
 #include <TopExp.hxx>
 #include <TopTools_ListOfShape.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 
 IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
