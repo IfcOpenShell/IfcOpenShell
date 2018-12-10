@@ -842,24 +842,32 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCsgSolid* l, TopoDS_Shape& sha
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_Shape& face) {
 	gp_Pln pln;
-	IfcGeom::Kernel::convert(l->BasisSurface(), pln);
+	if (!IfcGeom::Kernel::convert(l->BasisSurface(), pln)) {
+		return false;
+	}
 
 	gp_Trsf trsf;
 	trsf.SetTransformation(pln.Position(), gp::XOY());
 	
 	TopoDS_Wire outer;
-	convert_wire(l->OuterBoundary(), outer);
+	if (!convert_wire(l->OuterBoundary(), outer)) {
+		return false;
+	}
 	
-	BRepBuilderAPI_MakeFace mf (outer);
-	mf.Add(outer);
+	BRepBuilderAPI_MakeFace mf(outer);
 
+	if (!mf.IsDone() || mf.Shape().IsNull()) {
+		Logger::Error("Invalid outer boundary:", l->OuterBoundary());
+		return false;
+	}
+	
 	IfcSchema::IfcCurve::list::ptr boundaries = l->InnerBoundaries();
 
 	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
 		TopoDS_Wire inner;
-		convert_wire(*it, inner);
-		
-		mf.Add(inner);
+		if (convert_wire(*it, inner)) {
+			mf.Add(inner);
+		}
 	}
 
 	ShapeFix_Shape sfs(mf.Face());

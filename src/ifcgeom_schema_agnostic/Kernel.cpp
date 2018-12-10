@@ -177,14 +177,24 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUt
 }
 
 bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
-	TopTools_IndexedDataMapOfShapeListOfShape map;
-	TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
-
-	for (int i = 1; i <= map.Extent(); ++i) {
-		if (map.FindFromIndex(i).Extent() != 2) {
-			return false;
+	if (a.ShapeType() == TopAbs_COMPOUND) {
+		TopoDS_Iterator it(a);
+		for (; it.More(); it.Next()) {
+			if (!is_manifold(it.Value())) {
+				return false;
+			}
 		}
-	}
+		return true;
+	} else {
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
 
-	return true;
+		for (int i = 1; i <= map.Extent(); ++i) {
+			if (map.FindFromIndex(i).Extent() != 2) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }
