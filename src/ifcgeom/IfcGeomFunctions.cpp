@@ -661,7 +661,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			}
 
 		}
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(entity_shape, &it3->Style()));
+		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), it3->Placement(), entity_shape, &it3->Style()));
 	}
 
 	return true;
@@ -735,7 +735,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			BRepCheck_Analyzer analyser(brep_cut_result);
 			is_valid = analyser.IsValid() != 0;
 			if ( is_valid ) {
-				cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(brep_cut_result, &it3->Style()));
+				cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), brep_cut_result, &it3->Style()));
 			}
 		}
 		if ( !is_valid ) {
@@ -847,7 +847,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			}
 		}
 
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(result, &it3->Style()));
+		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
 	}
 	return true;
 }
@@ -2442,8 +2442,8 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
 			if (split_solid_by_shell(it->Shape(), shells[0], a, b)) {
-				result.push_back(IfcRepresentationShapeItem(it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
-				result.push_back(IfcRepresentationShapeItem(it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
 			} else {
 				continue;
 			}
@@ -2485,7 +2485,7 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 		for(; it1 != items.end(); ++it1, ++it2) {
 			std::vector<const SurfaceStyle*>::const_iterator it4 = styles.begin();
 			for (temp_t::value_type::const_iterator it3 = it2->begin(); it3 != it2->end(); ++it3, ++it4) {
-				result.push_back(IfcRepresentationShapeItem(it1->Placement(), *it3, (*it4) ? (*it4) : &it1->Style()));
+				result.push_back(IfcRepresentationShapeItem(it1->ItemId(), it1->Placement(), *it3, (*it4) ? (*it4) : &it1->Style()));
 			}
 		}
 
@@ -2505,8 +2505,8 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
 			if (split_solid_by_surface(it->Shape(), surfaces[1], a, b)) {
-				result.push_back(IfcRepresentationShapeItem(it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
-				result.push_back(IfcRepresentationShapeItem(it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
+				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
 			} else {
 				continue;
 			}
@@ -2578,7 +2578,7 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 		for(; it1 != items.end(); ++it1, ++it2) {
 			std::vector<const SurfaceStyle*>::const_iterator it4 = styles.begin();
 			for (temp_t::value_type::const_iterator it3 = it2->begin(); it3 != it2->end(); ++it3, ++it4) {
-				result.push_back(IfcRepresentationShapeItem(it1->Placement(), *it3, (*it4) ? (*it4) : &it1->Style()));
+				result.push_back(IfcRepresentationShapeItem(it1->ItemId(), it1->Placement(), *it3, (*it4) ? (*it4) : &it1->Style()));
 			}
 		}
 

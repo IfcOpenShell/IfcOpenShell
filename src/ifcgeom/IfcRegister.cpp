@@ -28,7 +28,7 @@ bool IfcGeom::Kernel::convert_shapes(const IfcBaseClass* l, IfcRepresentationSha
 	if (shape_type(l) != ST_SHAPELIST) {
 		TopoDS_Shape shp;
 		if (convert_shape(l, shp)) {
-			r.push_back(IfcGeom::IfcRepresentationShapeItem(shp, get_style(l->as<IfcSchema::IfcRepresentationItem>())));
+			r.push_back(IfcGeom::IfcRepresentationShapeItem(l->data().id(), shp, get_style(l->as<IfcSchema::IfcRepresentationItem>())));
 			return true;
 		}
 		return false;
