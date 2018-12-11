@@ -158,7 +158,7 @@ set BOOST_VERSION=1.67.0
 set BOOST_VER=%BOOST_VERSION:.=_%
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
 set DEPENDENCY_NAME=Boost %BOOST_VERSION%
-set DEPENDENCY_DIR="%DEPS_DIR%\boost_%BOOST_VER%"
+set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
 set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%VS_PLATFORM%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
