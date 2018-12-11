@@ -991,9 +991,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		TopExp::Vertices(wire, v0, v1);
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
-		TopTools_ListOfShape edges;
-		if (map.FindFromKey(v0, edges) && edges.Extent() == 1) {
-			edge = TopoDS::Edge(edges.First());
+		if (map.Contains(v0) &&  map.FindFromKey(v0).Extent() == 1) {
+			edge = TopoDS::Edge(map.FindFromKey(v0).First());
 		} else {
 			Logger::Error("Unable to locate first edge of:", l->Directrix()->entity);
 			return false;
