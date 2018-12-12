@@ -40,9 +40,9 @@ script:
   - cd input
   - |
     (for i in *.ifc; do \
-    echo $i | tee -a log \
-    timeout 1m /usr/local/bin/IfcConvert -yv "$i" "$i.dae" --validate >> log 2>&1 \
-    echo $i $? >> statuses \
+    echo $i | tee -a log; \
+    timeout 1m /usr/local/bin/IfcConvert -yv "$i" "$i.dae" --validate >> log 2>&1; \
+    echo $i $? >> statuses; \
     done) || true
   - cat log
   - echo Failed
