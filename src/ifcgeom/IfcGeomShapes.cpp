@@ -725,7 +725,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 			} else {
 				TopoDS_Shape s;
 				if (convert_shape(representation_item,s)) {
-					shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, get_style(representation_item)));
+					shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), s, get_style(representation_item)));
 					part_succes |= true;
 				}
 			}

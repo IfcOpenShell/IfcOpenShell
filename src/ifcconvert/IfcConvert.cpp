@@ -379,6 +379,7 @@ int main(int argc, char** argv)
 	const bool site_local_placement = vmap.count("site-local-placement") != 0;
 	const bool building_local_placement = vmap.count("building-local-placement") != 0;
 	const bool generate_uvs = vmap.count("generate-uvs") != 0;
+	const bool validate = vmap.count("validate") != 0;
 
 	if (!quiet || vmap.count("version")) {
 		print_version();
@@ -571,7 +572,7 @@ int main(int argc, char** argv)
 	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
-
+	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -784,6 +785,11 @@ int main(int argc, char** argv)
         Logger::Error("Unable to write output file '" + output_filename + "', see '" +
             output_temp_filename + "' for the conversion result.");
     }
+
+	if (validate && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
+		Logger::Error("Errors encountered during proccessing.");
+		successful = false;
+	}
 
 	write_log(!quiet);
 
@@ -1151,10 +1157,17 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	IfcEntityList::ptr objects;
 	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
 
-	do {
-		IfcGeom::BRepElement<double>* geom_object = context_iterator.get_native();
+	for (;; ++num_created) {
+		bool has_more = true;
+		if (num_created) {
+			has_more = context_iterator.next();
+		}
+		IfcGeom::BRepElement<double>* geom_object = nullptr;
+		if (has_more) {
+			geom_object = context_iterator.get_native();
+		}
 
-		if (geom_object->geometry_pointer() == previous_geometry_pointer) {
+		if (geom_object && geom_object->geometry_pointer() == previous_geometry_pointer) {
 			objects->push(geom_object->product());
 		} else {
 			if (quantity) {
@@ -1162,6 +1175,10 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				latebound_access::set(rel, "OwnerHistory", ownerhist);
 				latebound_access::set(rel, "RelatedObjects", objects);
 				latebound_access::set(rel, "RelatingPropertyDefinition", quantity);
+			}
+
+			if (!geom_object) {
+				break;
 			}
 
 			IfcEntityList::ptr quantities(new IfcEntityList);
@@ -1188,26 +1205,22 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				quantities->push(quantity_area);
 			}
 
-			for (auto& part : geom_object->geometry()) {
-				auto quantity_complex = latebound_access::create(f, "IfcPhysicalComplexQuantity");
-				latebound_access::set(quantity_complex, "Name", std::string("Shape validation properties"));
-				latebound_access::set(quantity_complex, "Discrimination", '#' + boost::lexical_cast<std::string>(part.ItemId()));
+			auto quantity_complex = latebound_access::create(f, "IfcPhysicalComplexQuantity");
+			latebound_access::set(quantity_complex, "Name", std::string("Shape Validation Properties"));
+			quantities->push(quantity_complex);
 
-				IfcEntityList::ptr quantities_2(new IfcEntityList);
-				
-				int nv = IfcGeom::Kernel::count(part.Shape(), TopAbs_VERTEX, true);
-				int ne = IfcGeom::Kernel::count(part.Shape(), TopAbs_EDGE, true);
-				int nf = IfcGeom::Kernel::count(part.Shape(), TopAbs_FACE, true);
+			IfcEntityList::ptr quantities_2(new IfcEntityList);
 
-				const int euler = nv - ne + nf;
-				const int genus = (2 - euler) / 2;
+			for (auto& part : geom_object->geometry()) {				
+				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
+				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
+				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
+				latebound_access::set(quantity_count, "CountValue", IfcGeom::Kernel::surface_genus(part.Shape()));
 
-				auto quantity_area = latebound_access::create(f, "IfcQuantityCount");
-				latebound_access::set(quantity_area, "Name", std::string("Surface genus"));
-				latebound_access::set(quantity_area, "CountValue", genus);
-
-				latebound_access::set(quantity_complex, "HasQuantities", quantities_2);
+				quantities_2->push(quantity_count);				
 			}
+
+			latebound_access::set(quantity_complex, "HasQuantities", quantities_2);
 
 			if (quantities->size()) {
 				quantity = latebound_access::create(f, "IfcElementQuantity");
@@ -1238,7 +1251,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				old_progress = progress;
 			}
 		}
-	} while (++num_created, context_iterator.next());
+	}
 
 	if (!no_progress && quiet) {
 		for (; old_progress < 100; ++old_progress) {

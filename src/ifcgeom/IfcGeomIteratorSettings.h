@@ -84,8 +84,10 @@ namespace IfcGeom
 			SITE_LOCAL_PLACEMENT = 1 << 15,
 			///
 			BUILDING_LOCAL_PLACEMENT = 1 << 16,
+			///
+			VALIDATE_QUANTITIES = 1 << 17,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 16
+			NUM_SETTINGS = 17
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
