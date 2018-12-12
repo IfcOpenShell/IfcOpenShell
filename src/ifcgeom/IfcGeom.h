@@ -199,7 +199,6 @@ private:
 	double ifc_planeangle_unit;
 	double modelling_precision;
 	double dimensionality;
-	faceset_helper* faceset_helper_;
 
 #ifndef NO_CACHE
 	MAKE_TYPE_NAME(Cache) cache;
@@ -211,6 +210,8 @@ private:
 
 	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
 	const IfcParse::declaration* placement_rel_to;
+
+	faceset_helper* faceset_helper_;
 
 public:
 	MAKE_TYPE_NAME(Kernel)()

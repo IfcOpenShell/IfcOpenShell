@@ -28,10 +28,10 @@
 namespace IfcGeom {	
 	class IFC_GEOM_API IfcRepresentationShapeItem {
 	private:
+		int id;
 		gp_GTrsf placement;
 		TopoDS_Shape shape;
 		const SurfaceStyle* style;
-		int id;
 	public:
 		IfcRepresentationShapeItem(int id, const gp_GTrsf& placement, const TopoDS_Shape& shape, const SurfaceStyle* style)
 			: id(id), placement(placement), shape(shape), style(style) {}
