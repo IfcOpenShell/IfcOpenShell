@@ -1,5 +1,7 @@
 #define BOOST_RESULT_OF_USE_DECLTYPE
 
+#ifdef WITH_IFCXML
+
 #include "IfcFile.h"
 
 #include <libxml/parser.h>
@@ -623,3 +625,5 @@ IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filen
 	return state.file;
 }
 #endif
+
+#endif // WITH_IFCXML
