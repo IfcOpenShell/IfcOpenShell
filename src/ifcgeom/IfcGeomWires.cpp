@@ -128,7 +128,7 @@ namespace {
 			Handle(Geom_Curve) crv = BRep_Tool::Curve(e, _, __);
 			const bool is_line = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 			const bool is_circle = crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
-			all_linear = all_linear && all_linear;
+			all_linear = all_linear && is_line;
 			single_circle = first && is_circle;
 		}
 
@@ -209,7 +209,7 @@ namespace {
 
 			double dist = p1.Distance(p2);
 
-			// Distance is within 2p, this is fine
+			// Distance is within tolerance, this is fine
 			if (dist < p_) {
 				mw_.Add(w1);
 				goto check;
@@ -402,8 +402,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 	BRepBuilderAPI_MakeWire w;
 	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
-
-	const double precision_sq_2 = 2 * getValue(GV_PRECISION) * getValue(GV_PRECISION);
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
