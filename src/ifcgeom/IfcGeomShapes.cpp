@@ -993,8 +993,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	{
 		gp_Pnt directrix_origin;
 		gp_Vec directrix_tangent;
-		TopExp_Explorer exp(wire, TopAbs_EDGE);
-		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+
+		TopoDS_Edge edge;
+
+		// Find first edge
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
+		if (map.Contains(v0) &&  map.FindFromKey(v0).Extent() == 1) {
+			edge = TopoDS::Edge(map.FindFromKey(v0).First());
+		} else {
+			Logger::Error("Unable to locate first edge of:", l->Directrix());
+			return false;
+		}
+
 		double u0, u1;
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
