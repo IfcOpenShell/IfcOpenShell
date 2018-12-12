@@ -69,11 +69,13 @@ private:
 			{}
             void addFloatSource(const std::string& mesh_id, const std::string& suffix,
                 const std::vector<real_t>& floats, const char* coords = "XYZ");
-            void write(const std::string &mesh_id, const std::string& default_material_name,
+            /// @todo pass simply DeferredObject?
+            void write(
+                const std::string &mesh_id, const std::string &default_material_name,
                 const std::vector<real_t>& positions, const std::vector<real_t>& normals,
                 const std::vector<int>& faces, const std::vector<int>& edges,
-                const std::vector<int> material_ids, const std::vector<IfcGeom::Material>& materials,
-                const std::vector<real_t>& uvs);
+                const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
+                const std::vector<real_t>& uvs, const std::vector<std::string>& material_references);
 			void close();
             ColladaSerializer *serializer;
 		};
@@ -115,11 +117,12 @@ private:
 				explicit ColladaEffects(COLLADASW::StreamWriter& stream)
 					: COLLADASW::LibraryEffects(&stream)
 				{}
-				void write(const IfcGeom::Material& material);
+				void write(const IfcGeom::Material &material, const std::string &material_uri);
 				void close();
                 ColladaSerializer *serializer;
 			};
 			std::vector<IfcGeom::Material> materials;
+			std::vector<std::string> material_uris;
 		public:
 			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryMaterials(&stream)
@@ -127,6 +130,7 @@ private:
 		                , effects(stream)
 			{}
 			void add(const IfcGeom::Material& material);
+			std::string getMaterialUri(const IfcGeom::Material& material);
 			bool contains(const IfcGeom::Material& material);
 			void write();
             ColladaSerializer *serializer;

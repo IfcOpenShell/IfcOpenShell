@@ -724,8 +724,8 @@ namespace IfcGeom {
 		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
 			: settings(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, filters_(filters)
+			, owns_ifc_file(false)
 		{
 			_initialize();
 		}

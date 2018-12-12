@@ -1493,6 +1493,9 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 			}
 		}
 	}
+    else {
+        Logger::Warning("Object '" + product->GlobalId() + "' has no material!");
+    }
 
 	if (material_style_applied) {
 		representation_id_builder << "-material-" << single_material->data().id();

@@ -135,5 +135,6 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcMate
 			}
 		}
 	}
-	return 0;
+	IfcGeom::SurfaceStyle material_style = IfcGeom::SurfaceStyle(material->id(), material->Name());
+	return &(style_cache[material->id()] = material_style);
 }
