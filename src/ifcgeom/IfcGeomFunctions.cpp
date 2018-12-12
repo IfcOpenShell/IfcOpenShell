@@ -1591,17 +1591,83 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		context_string = representation->ContextOfItems()->ContextType();
 	}
 
-	return new BRepElement<P, PP>(
+	auto elem = new BRepElement<P, PP>(
 		product->data().id(),
 		parent_id,
-		name, 
+		name,
 		product_type,
 		guid,
 		context_string,
 		trsf,
 		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
-        product
+		product
 	);
+
+	if (settings.get(IteratorSettings::VALIDATE_QUANTITIES)) {
+		auto rels = product->IsDefinedBy();
+		for (auto& rel : *rels) {
+			if (rel->as<IfcSchema::IfcRelDefinesByProperties>()) {
+				auto pdef = rel->as<IfcSchema::IfcRelDefinesByProperties>()->RelatingPropertyDefinition();
+				if (pdef->as<IfcSchema::IfcElementQuantity>()) {
+					if (pdef->as<IfcSchema::IfcElementQuantity>()->OwnerHistory()->OwningApplication()->ApplicationDeveloper()->Name() == "IfcOpenShell") {
+						auto qs = pdef->as<IfcSchema::IfcElementQuantity>()->Quantities();
+						for (auto& q : *qs) {
+							if (q->as<IfcSchema::IfcQuantityArea>() && q->Name() == "Total Surface Area") {
+								double a_calc;
+								double a_file = q->as<IfcSchema::IfcQuantityArea>()->AreaValue();
+								if (elem->geometry().calculate_surface_area(a_calc)) {
+									double diff = std::abs(a_calc - a_file);
+									if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
+										Logger::Error("Validation of surface area failed for:", product);
+									} else {
+										Logger::Notice("Validation of surface area succeeded for:", product);
+									}
+								} else {
+									Logger::Error("Validation of surface area failed for:", product);
+								}
+							} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
+								double v_calc;
+								double v_file = q->as<IfcSchema::IfcQuantityVolume>()->VolumeValue();
+								if (elem->geometry().calculate_volume(v_calc)) {
+									double diff = std::abs(v_calc - v_file);
+									if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
+										Logger::Error("Validation of volume failed for:", product);
+									} else {
+										Logger::Notice("Validation of volume succeeded for:", product);
+									}
+								} else {
+									Logger::Error("Validation of volume failed for:", product);
+								}
+							} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
+								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
+								bool all_succeeded = qs2->size() > 0;
+								for (auto& q2 : *qs2) {
+									if (q2->as<IfcSchema::IfcQuantityCount>() && q2->Name() == "Surface Genus" && q2->hasDescription()) {
+										int item_id = boost::lexical_cast<int>(q2->Description().substr(1));
+										int genus = q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
+										for (auto& part : elem->geometry()) {
+											if (part.ItemId() == item_id) {
+												if (surface_genus(part.Shape()) != genus) {
+													all_succeeded = false;
+												}
+											}
+										}
+									}
+								}
+								if (!all_succeeded) {
+									Logger::Error("Validation of surface genus failed for:", product);
+								} else {
+									Logger::Notice("Validation of surface genus succeeded for:", product);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return elem;
 }
 
 IfcSchema::IfcRepresentation* IfcGeom::Kernel::representation_mapped_to(const IfcSchema::IfcRepresentation* representation) {

@@ -84,6 +84,7 @@ namespace IfcGeom {
 		}
 
 		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique=false);
+		static int surface_genus(const TopoDS_Shape&);
 
 		static bool is_manifold(const TopoDS_Shape& a);
 		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*);

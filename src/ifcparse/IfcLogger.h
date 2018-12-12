@@ -44,6 +44,7 @@ private:
 	static Severity verbosity;
 	static Format format;
 	static boost::optional<IfcUtil::IfcBaseClass*> current_product;
+	static Severity max_severity;
 public:
 
 	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
@@ -56,6 +57,7 @@ public:
 	/// Determines the types of log messages to get logged
 	static void Verbosity(Severity v);
 	static Severity Verbosity();
+	static Severity MaxSeverity();
 
 	/// Determines output format: plain text or sequence of JSON objects
 	static void OutputFormat(Format f);

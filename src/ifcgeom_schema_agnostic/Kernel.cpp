@@ -31,6 +31,18 @@ int IfcGeom::Kernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool uniqu
 	}
 }
 
+
+int IfcGeom::Kernel::surface_genus(const TopoDS_Shape& s) {
+	int nv = count(s, TopAbs_VERTEX, true);
+	int ne = count(s, TopAbs_EDGE, true);
+	int nf = count(s, TopAbs_FACE, true);
+
+	const int euler = nv - ne + nf;
+	const int genus = (2 - euler) / 2;
+
+	return genus;
+}
+
 IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementations() {
 	static KernelFactoryImplementation impl;
 	return impl;

@@ -76,6 +76,9 @@ void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	if (type > max_severity) {
+		max_severity = type;
+	}
     if (log2 && type >= verbosity) {
 		if (format == FMT_PLAIN) {
 			plain_text_message(*log2, current_product, type, message, instance);
@@ -110,6 +113,8 @@ std::string Logger::GetLog() {
 void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
 Logger::Severity Logger::Verbosity() { return verbosity; }
 
+Logger::Severity Logger::MaxSeverity() { return max_severity; }
+
 void Logger::OutputFormat(Format f) { format = f; }
 Logger::Format Logger::OutputFormat() { return format; }
 
@@ -117,5 +122,6 @@ std::ostream* Logger::log1 = 0;
 std::ostream* Logger::log2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
+Logger::Severity Logger::max_severity = Logger::LOG_NOTICE;
 Logger::Format Logger::format = Logger::FMT_PLAIN;
 boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product;
