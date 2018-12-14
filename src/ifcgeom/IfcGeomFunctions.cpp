@@ -3618,7 +3618,18 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		}		
 	}
 
-	const double eps = kernel->getValue(GV_PRECISION) * 10. * std::sqrt(box.SquareExtent());
+	// Find the minimal bounding box edge
+	double bmin[3], bmax[3];
+	box.Get(bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2]);
+	double bdiff = std::numeric_limits<double>::infinity();
+	for (size_t i = 0; i < 3; ++i) {
+		const double d = bmax[i] - bmin[i];
+		if (d > kernel->getValue(GV_PRECISION) * 10. && d < bdiff) {
+			bdiff = d;
+		}
+	}
+
+	const double eps = kernel->getValue(GV_PRECISION) * 10. * bdiff;
 
 	std::map<std::pair<int, int>, int> edge_use;
 
