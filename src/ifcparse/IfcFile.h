@@ -41,7 +41,7 @@ public:
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
-	class type_iterator : public entities_by_type_t::const_iterator {
+	class type_iterator : private entities_by_type_t::const_iterator {
 	public:
 		type_iterator() : entities_by_type_t::const_iterator() {};
 
@@ -53,12 +53,16 @@ public:
 			return &entities_by_type_t::const_iterator::operator->()->first;
 		}
 
-		const entities_by_type_t::key_type& operator*() const {
+		entities_by_type_t::key_type const & operator*() const {
 			return entities_by_type_t::const_iterator::operator*().first;
 		}
 
-		const std::string& as_string() const {
-			return IfcSchema::Type::ToString(**this);
+		type_iterator& operator++() { 
+			entities_by_type_t::const_iterator::operator++(); return *this; 
+		}
+
+		bool operator!=(const type_iterator& other) const {
+			return entities_by_type_t::const_iterator::operator!=(other);
 		}
 	};
 
@@ -173,6 +177,17 @@ public:
 	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
 };
 
+}
+
+namespace std {
+	template <>
+	struct iterator_traits<IfcParse::IfcFile::type_iterator> {
+		typedef ptrdiff_t difference_type;
+		typedef const IfcSchema::Type::Enum value_type;
+		typedef const IfcSchema::Type::Enum& reference;
+		typedef const IfcSchema::Type::Enum* pointer;
+		typedef std::forward_iterator_tag iterator_category;
+	};
 }
 
 #endif
