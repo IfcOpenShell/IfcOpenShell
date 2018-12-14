@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <iterator>
 #include <boost/unordered_map.hpp>
 
 #include "ifc_parse_api.h"
@@ -227,13 +228,15 @@ IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
 
 }
 
-template <>
-struct std::iterator_traits<IfcParse::IfcFile::type_iterator> {
-	typedef ptrdiff_t difference_type;
-	typedef const IfcParse::declaration* value_type;
-	typedef const IfcParse::declaration*& reference;
-	typedef const IfcParse::declaration** pointer;
-	typedef std::forward_iterator_tag iterator_category;
-};
+namespace std {
+	template <>
+	struct iterator_traits<IfcParse::IfcFile::type_iterator> {
+		typedef ptrdiff_t difference_type;
+		typedef const IfcParse::declaration* value_type;
+		typedef const IfcParse::declaration*& reference;
+		typedef const IfcParse::declaration** pointer;
+		typedef std::forward_iterator_tag iterator_category;
+	};
+}
 
 #endif
