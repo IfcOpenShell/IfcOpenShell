@@ -340,7 +340,14 @@ bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, T
 
 bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
 	bool valid_shell = false;
-	
+
+	if (face_list.Extent() == 1) {
+		shape = face_list.First();
+		// A bit dubious what to return here.
+		return true;
+	} else if (face_list.Extent() == 0) {
+		return false;
+	}
 
 	int max_faces = getValue(GV_MAX_FACES_TO_SEW);
 	if (max_faces == -1) {
@@ -3678,7 +3685,7 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		}		
 	}
 
-	if (loops_removed || non_manifold) {
+	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
 		Logger::Error(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
 	}
 }
