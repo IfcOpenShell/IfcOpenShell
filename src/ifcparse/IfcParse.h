@@ -142,17 +142,30 @@ namespace IfcParse {
 	Token OperatorTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
 	Token GeneralTokenPtr(IfcSpfLexer* tokens, unsigned start, unsigned end);
 	Token NoneTokenPtr();
-
+/* gcc doesn't know _Thread_local from C11 yet */
+#ifdef __GNUC__
+# define thread_local __thread
+#elif __STDC_VERSION__ >= 201112L
+# define thread_local _Thread_local
+#elif defined(_MSC_VER)
+# define thread_local __declspec(thread)
+#else
+# error Cannot define thread_local
+#endif
 	/// A stream of tokens to be read from a IfcSpfStream.
 	class IFC_PARSE_API IfcSpfLexer {
 	private:
 		IfcCharacterDecoder* decoder;
 		//storage for temporary string without allocation
-		mutable std::string _tempString;
+        //		mutable std::string _tempString;
 		unsigned int skipWhitespace();
 		unsigned int skipComment();
 	public:
-		std::string &GetTempString() const { return _tempString; }
+	//	std::string &GetTempString() const { return _tempString; }
+		std::string &GetTempString() const {
+			static thread_local std::string s;
+			return s; 
+		}
 		IfcSpfStream* stream;
 		IfcFile* file;
 		IfcSpfLexer(IfcSpfStream* s, IfcFile* f);
