@@ -27,6 +27,8 @@
 #include <cassert>
 #include <algorithm>
 
+#include <Standard_Version.hxx>
+
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Dir.hxx>
@@ -143,8 +145,6 @@
 
 #include <Extrema_ExtPC.hxx>
 #include <BRepAdaptor_Curve.hxx>
-
-#include <Standard_Version.hxx>
 
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
