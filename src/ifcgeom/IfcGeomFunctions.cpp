@@ -2748,7 +2748,19 @@ bool IfcGeom::Kernel::split_solid_by_shell(const TopoDS_Shape& input, const Topo
 }
 
 bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
-	ShapeAnalysis_Surface sas(srf);
+	// @todo std::unique_ptr for C++11
+	ShapeAnalysis_Surface* sas = 0;
+	Handle(Geom_Plane) pln;
+
+	if (srf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+		// Optimize projection for specific cases
+		pln = Handle(Geom_Plane)::DownCast(srf);
+	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+		// For an offset planar surface the projected UV coords are the same as the basis surface
+		pln = Handle(Geom_Plane)::DownCast(Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface());
+	} else {
+		sas = new ShapeAnalysis_Surface(srf);
+	}
 
 	u1 = v1 = +std::numeric_limits<double>::infinity();
 	u2 = v2 = -std::numeric_limits<double>::infinity();
@@ -2759,7 +2771,14 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape
 		gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()));
 		median.ChangeCoord() += p.XYZ();
 
-		const gp_Pnt2d uv = sas.ValueOfUV(p, 1e-3);
+		gp_Pnt2d uv;
+		if (sas) {
+			uv = sas->ValueOfUV(p, 1e-3);
+		} else {
+			gp_Vec d = p.XYZ() - pln->Position().Location().XYZ();
+			uv.SetX(d.Dot(pln->Position().XDirection()));
+			uv.SetY(d.Dot(pln->Position().YDirection()));
+		}
 		
 		if (uv.X() < u1) u1 = uv.X();
 		if (uv.Y() < v1) v1 = uv.Y();
@@ -2767,36 +2786,44 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape
 		if (uv.Y() > v2) v2 = uv.Y();
 	}
 
-	if (vertex_count == 0) {
-		return false;
+	if (vertex_count > 0) {
+
+		// Add a little bit of resolution so that the median is shifted towards the mass
+		// of the curve. This helps to find the parameter ordering for conic surfaces.
+		for (TopExp_Explorer exp(shp, TopAbs_EDGE); exp.More(); exp.Next(), ++vertex_count) {
+			const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
+
+			double a, b;
+			Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
+			gp_Pnt p;
+			crv->D0((a + b) / 2., p);
+
+			median.ChangeCoord() += p.XYZ();
+		}
+
+		median.ChangeCoord().Divide(vertex_count);
+		gp_Pnt2d uv;
+		if (sas) {
+			uv = sas->ValueOfUV(median, 1e-3);
+		} else {
+			gp_Vec d = median.XYZ() - pln->Position().Location().XYZ();
+			uv.SetX(d.Dot(pln->Position().XDirection()));
+			uv.SetY(d.Dot(pln->Position().YDirection()));
+		}
+
+		if (uv.X() < u1 || uv.X() > u2) {
+			std::swap(u1, u2);
+		}
+
+		u1 -= widen;
+		u2 += widen;
+		v1 -= widen;
+		v2 += widen;
+
 	}
 
-	// Add a little bit of resolution so that the median is shifted towards the mass
-	// of the curve. This helps to find the parameter ordering for conic surfaces.
-	for (TopExp_Explorer exp(shp, TopAbs_EDGE); exp.More(); exp.Next(), ++vertex_count) {
-		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
-		
-		double a, b;
-		Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
-		gp_Pnt p;
-		crv->D0((a + b) / 2., p);
-
-		median.ChangeCoord() += p.XYZ();
-	}
-	
-	median.ChangeCoord().Divide(vertex_count);
-	const gp_Pnt2d uv = sas.ValueOfUV(median, 1e-3);
-	
-	if (uv.X() < u1 || uv.X() > u2) {
-		std::swap(u1, u2);
-	}
-
-	u1 -= widen;
-	u2 += widen;
-	v1 -= widen;
-	v2 += widen;
-	
-	return true;
+	delete sas;	
+	return vertex_count > 0;
 }
 
 const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item) {
