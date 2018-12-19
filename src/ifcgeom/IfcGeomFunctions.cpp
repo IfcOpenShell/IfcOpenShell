@@ -1394,7 +1394,9 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 	if (associated_materials->size() == 1) {
 		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
 		single_material = associated_material->as<IfcSchema::IfcMaterial>();
-		// TODO: Should this check for APPLY_LAYERSETS setting?
+
+		// NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
+		// in accordance with other viewers.
 		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
 			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
 			if (layerset->MaterialLayers()->size() == 1) {
@@ -1478,9 +1480,17 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 				material_style_applied = true;
 			}
 		}
-	}
-    else {
-        Logger::Warning("Object '" + product->GlobalId() + "' has no material!");
+	} else {
+		bool some_items_without_style = false;
+		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+			if (!it->hasStyle()) {
+				some_items_without_style = true;
+				break;
+			}
+		}
+		if (some_items_without_style) {
+			Logger::Warning("No material and surface styles for:", product->entity);
+		}
     }
 
 	if (material_style_applied) {
