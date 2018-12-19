@@ -1429,13 +1429,23 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_representation_and_pro
 						}
 					}
 					
-					if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
-						if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
-							std::swap(shapes, shapes2);
+					if (styles.size() > 1) {
+						// If there's only a single layer there is no need to manipulate geometries.
+						bool success = true;
+						if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
+							if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
+								std::swap(shapes, shapes2);
+								success = true;
+							}
+						} else {
+							if (apply_layerset(shapes, layers, styles, shapes2)) {
+								std::swap(shapes, shapes2);
+								success = true;
+							}
 						}
-					} else {
-						if (apply_layerset(shapes, layers, styles, shapes2)) {
-							std::swap(shapes, shapes2);
+
+						if (!success) {
+							Logger::Error("Failed processing layerset");
 						}
 					}
 				}
