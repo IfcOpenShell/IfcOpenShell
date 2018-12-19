@@ -196,22 +196,33 @@ namespace {
 		return min_edge_len;
 	}
 
-	double min_vertex_edge_distance(const TopoDS_Shape& a, double t) {
-		TopExp_Explorer exp(a, TopAbs_VERTEX);
-
+	double min_vertex_edge_distance(const TopoDS_Shape& a, double min_search, double max_search) {
 		double M = std::numeric_limits<double>::infinity();
 
-		for (; exp.More(); exp.Next()) {
-			if (exp.Current().Orientation() != TopAbs_FORWARD) {
-				continue;
-			}
+		TopTools_IndexedMapOfShape vertices, edges;
 
-			const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
+		TopExp::MapShapes(a, TopAbs_VERTEX, vertices);
+		TopExp::MapShapes(a, TopAbs_EDGE, edges);
+
+		IfcGeom::impl::tree<int> tree;
+
+		// Add edges to tree
+		for (int i = 1; i <= edges.Extent(); ++i) {
+			tree.add(i, edges(i));
+		}
+
+		for (int j = 1; j <= vertices.Extent(); ++j) {
+			const TopoDS_Vertex& v = TopoDS::Vertex(vertices(j));
 			gp_Pnt p = BRep_Tool::Pnt(v);
 
-			TopExp_Explorer exp2(a, TopAbs_EDGE);
-			for (; exp2.More(); exp2.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(exp2.Current());
+			Bnd_Box b;
+			b.Add(p);
+			b.Enlarge(max_search);
+
+			std::vector<int> edge_idxs = tree.select_box(b, false);
+			std::vector<int>::const_iterator it = edge_idxs.begin();
+			for (; it != edge_idxs.end(); ++it) {
+				const TopoDS_Edge& e = TopoDS::Edge(edges(*it));
 				TopoDS_Vertex v1, v2;
 				TopExp::Vertices(e, v1, v2);
 
@@ -227,7 +238,7 @@ namespace {
 
 				for (int i = 1; i <= ext.NbExt(); ++i) {
 					const double m = sqrt(ext.SquareDistance(i));
-					if (m < M && m > t) {
+					if (m < M && m > min_search) {
 						M = m;
 					}
 				}
@@ -3607,14 +3618,17 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		fuzziness = getValue(GV_PRECISION);
 	}
 
-	double min_len = (std::min)(min_edge_length(a), min_vertex_edge_distance(a, getValue(GV_PRECISION)));
+	// Find a sensible value for the fuzziness, based on precision
+	// and limited by edge lengths and vertex-edge distances.
+	const double len_a = min_edge_length(a);
+	double min_len = (std::min)(len_a, min_vertex_edge_distance(a, getValue(GV_PRECISION), len_a));
 	TopTools_ListIteratorOfListOfShape it(b);
 	for (; it.More(); it.Next()) {
 		double d = min_edge_length(it.Value());
 		if (d < min_len) {
 			min_len = d;
 		}
-		d = min_vertex_edge_distance(it.Value(), getValue(GV_PRECISION));
+		d = min_vertex_edge_distance(it.Value(), getValue(GV_PRECISION), d);
 		if (d < min_len) {
 			min_len = d;
 		}
@@ -3656,7 +3670,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 				
 				// when there are edges or vertex-edge distances close to the used fuzziness, the  
 				// output is not trusted and the operation is attempted with a higher fuzziness.
-				double min_len_check = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION)));
+				double min_len_check = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.));
 				success = min_len_check > fuzziness * 10.;
 
 				if (success) {
