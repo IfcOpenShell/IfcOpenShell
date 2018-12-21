@@ -121,6 +121,7 @@ private:
 		MAKE_TYPE_NAME(Kernel)* kernel_;
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
+		double eps_;
 
 		template <typename Fn>
 		void loop_(IfcSchema::IfcCartesianPoint::list::ptr& ps, const Fn& callback) {
@@ -184,10 +185,21 @@ private:
 			});
 			if (count >= 3) {
 				wire.Closed(true);
+
+				TopTools_ListOfShape results;
+				if (kernel_->wire_intersections(wire, results)) {
+					Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
+					kernel_->select_largest(results, wire);
+				}
+
 				return true;
 			} else {
 				return false;
 			}
+		}
+
+		double epsilon() const {
+			return eps_;
 		}
 	};
 

@@ -3300,7 +3300,9 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
 	
-	const double eps = (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
+	const double eps = faceset_helper_
+		? faceset_helper_->epsilon()
+		: (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 
 	for (int i = 2; i < n; ++i) {
 
@@ -3788,14 +3790,14 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		}
 	}
 
-	const double eps = kernel->getValue(GV_PRECISION) * 10. * bdiff;
+	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
 
 	std::map<std::pair<int, int>, int> edge_use;
 
 	for (int i = 0; i < pnts.size(); ++i) {
 		if (pnts[i]) {
 			std::set<int> vs;
-			find_neighbours(tree, pnts, vs, i, eps);
+			find_neighbours(tree, pnts, vs, i, eps_);
 
 			for (int v : vs) {
 				auto pt = *(points->begin() + v);
