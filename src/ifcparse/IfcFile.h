@@ -146,6 +146,10 @@ public:
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
+	/// Marks entity as modified so that potential cache for it is invalidated.
+	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
+	void mark_entity_as_modified(int id);
+
 #ifdef USE_MMAP
 	bool Init(const std::string& fn, bool mmap=false);
 #else
