@@ -1940,8 +1940,11 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		if (true) { /**< @todo Why always true? */
 			if (axis_curve->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 				Handle_Geom_Line axis_line = Handle_Geom_Line::DownCast(axis_curve);
+				// @todo note that this creates an offset into the wrong order, the cross product arguments should be
+				// reversed. This causes some inversions later on, e.g. if(positive) { reverse(); }
 				reference_surface = new Geom_Plane(axis_line->Lin().Location(), axis_line->Lin().Direction() ^ gp::DZ());
 			} else if (axis_curve->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+				// @todo note that in this branch this inversion does not seem to take place.
 				Handle_Geom_Circle axis_line = Handle_Geom_Circle::DownCast(axis_curve);
 				reference_surface = new Geom_CylindricalSurface(axis_line->Position(), axis_line->Radius());
 			} else {
