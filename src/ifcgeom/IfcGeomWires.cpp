@@ -402,6 +402,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 
 	}
 
+	if (converted_segments.Extent() == 0) {
+		Logger::Message(Logger::LOG_ERROR, "No segment succesfully converted:", l);
+		return false;
+	}
+
 	BRepBuilderAPI_MakeWire w;
 	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
 
