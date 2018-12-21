@@ -1213,7 +1213,9 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 	if (this->file) {
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(copy).apply(visitor);
-	}	
+
+		this->file->mark_entity_as_modified(id_);
+	}
 
 	if (i < attributes_.size()) {
 		attributes_[i] = copy;
@@ -1427,6 +1429,11 @@ IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_l
 /// @note: for backwards compatibility
 IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
 	return IfcParse::traverse(instance, max_level);
+}
+
+void IfcFile::mark_entity_as_modified(int /*id*/)
+{
+	by_ref_cached_.clear();
 }
 
 void IfcFile::addEntities(IfcEntityList::ptr es) {
