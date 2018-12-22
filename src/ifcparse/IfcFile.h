@@ -62,7 +62,9 @@ public:
 		}
 
 		bool operator!=(const type_iterator& other) const {
-			return entities_by_type_t::const_iterator::operator!=(other);
+			const entities_by_type_t::const_iterator& self_ = *this;
+			const entities_by_type_t::const_iterator& other_ = other;
+			return self_ != other_;
 		}
 	};
 
