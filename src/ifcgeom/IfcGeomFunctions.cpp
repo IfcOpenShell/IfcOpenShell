@@ -3381,7 +3381,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 								TopoDS_Edge e = wd->Edge(k + 1);
 
 								TopoDS_Vertex v1, v2;
-								TopExp::Vertices(e, v1, v2);
+								TopExp::Vertices(e, v1, v2, true);
 								const TopoDS_Vertex* v = first == forward ? &v2 : &v1;
 
 								// gp_Pnt p2 = points3d.Value(1);
