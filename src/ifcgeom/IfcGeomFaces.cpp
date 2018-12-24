@@ -218,11 +218,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			process_wire:
 
 				if (face_surface.IsNull()) {
-					if (count(wire, TopAbs_EDGE) > 128) {
+					gp_Pln pln;
+					if (count(wire, TopAbs_EDGE) > 128 && approximate_plane_through_wire(wire, pln)) {
 						// tfk: optimization find the underlying surface ourselves since it's going
 						// to be planar in IFC if no explicit surface is given. Should we always do this?
-						gp_Pln pln;
-						approximate_plane_through_wire(wire, pln);
 						mf = new BRepBuilderAPI_MakeFace(pln, wire, true);
 					} else {
 						mf = new BRepBuilderAPI_MakeFace(wire);
@@ -245,7 +244,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 					// In case of (non-planar) face surface, p-curves need to be computed.
 					// For planar faces, Open Cascade generates p-curves on the fly.
-					if (!face_surface.IsNull()) {
+					if (!face_surface.IsNull() && face_surface->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
 						TopExp_Explorer exp(outer_face_bound, TopAbs_EDGE);
 						for (; exp.More(); exp.Next()) {
 							const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
