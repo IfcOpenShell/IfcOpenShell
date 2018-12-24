@@ -198,6 +198,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				for (; exp.More(); exp.Next(), count++) {
 					if (count < 2) {
 						edges[count] = TopoDS::Edge(exp.Current());
+					} else {
+						break;
 					}
 				}
 				
@@ -217,8 +219,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					}
 				} else {
 					gp_Pln pln;
-					approximate_plane_through_wire(wire, pln);
-					face_surface = new Geom_Plane(pln);
+					if (approximate_plane_through_wire(wire, pln)) {
+						face_surface = new Geom_Plane(pln);
+					}
 				}
 			}
 		
@@ -238,6 +241,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					if (count(wire, TopAbs_EDGE) > 128 && approximate_plane_through_wire(wire, pln)) {
 						// tfk: optimization find the underlying surface ourselves since it's going
 						// to be planar in IFC if no explicit surface is given. Should we always do this?
+						// @todo is this still relevant considering the code above
 						mf = new BRepBuilderAPI_MakeFace(pln, wire, true);
 					} else {
 						mf = new BRepBuilderAPI_MakeFace(wire);
