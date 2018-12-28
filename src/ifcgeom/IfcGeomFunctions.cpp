@@ -249,7 +249,7 @@ namespace {
 	}
 
 	bool is_manifold(const TopoDS_Shape& a) {
-		if (a.ShapeType() == TopAbs_COMPOUND) {
+		if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
 			TopoDS_Iterator it(a);
 			for (; it.More(); it.Next()) {
 				if (!is_manifold(it.Value())) {
@@ -3634,20 +3634,20 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	// Find a sensible value for the fuzziness, based on precision
 	// and limited by edge lengths and vertex-edge distances.
 	const double len_a = min_edge_length(a);
-	double min_len = (std::min)(len_a, min_vertex_edge_distance(a, getValue(GV_PRECISION), len_a));
+	double min_length_orig = (std::min)(len_a, min_vertex_edge_distance(a, getValue(GV_PRECISION), len_a));
 	TopTools_ListIteratorOfListOfShape it(b);
 	for (; it.More(); it.Next()) {
 		double d = min_edge_length(it.Value());
-		if (d < min_len) {
-			min_len = d;
+		if (d < min_length_orig) {
+			min_length_orig = d;
 		}
 		d = min_vertex_edge_distance(it.Value(), getValue(GV_PRECISION), d);
-		if (d < min_len) {
-			min_len = d;
+		if (d < min_length_orig) {
+			min_length_orig = d;
 		}
 	}
 
-	const double fuzz = (std::min)(min_len / 10., fuzziness);
+	const double fuzz = (std::min)(min_length_orig / 10., fuzziness);
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
@@ -3683,19 +3683,31 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 				
 				// when there are edges or vertex-edge distances close to the used fuzziness, the  
 				// output is not trusted and the operation is attempted with a higher fuzziness.
-				double min_len_check = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.));
-				success = min_len_check > fuzziness * 10.;
+				double min_lengh_result = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.));
+				success = min_lengh_result <= min_length_orig || min_lengh_result > fuzziness * 10.;
 
 				if (success) {
 					result = r;
+				} else {
+					std::stringstream str;
+					str << "Boolean operation result failing interference check, with fuzziness " << fuzziness << " min length " << min_lengh_result << " originally " << min_length_orig;
+					Logger::Notice(str.str());
 				}
+			} else {
+				Logger::Notice("Boolean operation yields non-manifold result");
 			}
+		} else {
+			Logger::Notice("Boolean operation yields invalid result");
 		}
+	} else {
+		std::stringstream str;
+		builder->DumpErrors(str);
+		Logger::Notice(str.str());
 	}
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_len) {
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_length_orig) {
             return boolean_operation(a, b, op, result, new_fuzziness);
         }
 	}
