@@ -496,39 +496,24 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 }
 
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
-
-	throw std::runtime_error("todo");
-
-	/*
 	file = f;
-	IfcSchema::IfcBuildingStorey::list::ptr storeys = f->entitiesByType<IfcSchema::IfcBuildingStorey>();
+
+	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (!storeys || storeys->size() == 0) {
 		
-		IfcGeom::Kernel kernel;
+		IfcGeom::Kernel kernel(f);
 		
-		IfcSchema::IfcProject::list::ptr projects = f->entitiesByType<IfcSchema::IfcProject>();
-		if (projects->size() == 1) {
-			IfcSchema::IfcProject* project = *projects->begin();
-			std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
-		} else {
-			Logger::Error("No single project encountered, output might be invalid or missing");
-			return;
-		}
-		
-		std::vector<IfcSchema::Type::Enum> to_derive_from;
-		to_derive_from.push_back(IfcSchema::Type::IfcBuilding);
-		to_derive_from.push_back(IfcSchema::Type::IfcSite);
-		std::vector<IfcSchema::Type::Enum>::const_iterator it;
-		for (it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
-			IfcEntityList::ptr untyped = f->entitiesByType(*it);
-			if (untyped) {
-				IfcSchema::IfcProduct::list::ptr insts = untyped->as<IfcSchema::IfcProduct>();
-				IfcSchema::IfcProduct::list::it jt;
-				for (jt = insts->begin(); jt != insts->end(); ++jt) {
-					IfcSchema::IfcProduct* product = *jt;
-					if (product->hasObjectPlacement()) {
+		std::vector<const IfcParse::declaration*> to_derive_from;
+		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
+		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
+		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
+			IfcEntityList::ptr insts = f->instances_by_type(*it);
+			if (insts) {
+				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
+					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
+					if (!product->get("ObjectPlacement")->isNull()) {
 						gp_Trsf trsf;
-						if (kernel.convert(product->ObjectPlacement(), trsf)) {
+						if (kernel.convert_placement(*product->get("ObjectPlacement"), trsf)) {
 							setSectionHeight(trsf.TranslationPart().Z() + 1.);
 							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;
@@ -540,5 +525,4 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 		Logger::Error("No building storeys encountered, output might be invalid or missing");
 	}
-	*/
 }

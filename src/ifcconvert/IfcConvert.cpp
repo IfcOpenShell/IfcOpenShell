@@ -682,8 +682,6 @@ int main(int argc, char** argv)
 				return EXIT_FAILURE;
 			}
 
-			throw std::runtime_error("needs more work");
-            
             if (!quiet) Logger::Status("Computing bounds...");
             context_iterator.compute_bounds();
             if (!quiet) Logger::Status("Done!");
