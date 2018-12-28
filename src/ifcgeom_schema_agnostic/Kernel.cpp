@@ -196,7 +196,7 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUt
 }
 
 bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
-	if (a.ShapeType() == TopAbs_COMPOUND) {
+	if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
 		TopoDS_Iterator it(a);
 		for (; it.More(); it.Next()) {
 			if (!is_manifold(it.Value())) {
