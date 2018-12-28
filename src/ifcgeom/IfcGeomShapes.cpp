@@ -595,10 +595,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Shape& shape) {
 	std::unique_ptr<faceset_helper> helper_scope;
-
-	if (getValue(GV_MAX_FACES_TO_SEW) != -1) {
-		helper_scope.reset(new faceset_helper(this, l));
-	}
+	helper_scope.reset(new faceset_helper(this, l));
 
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 
@@ -652,7 +649,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		return false;
 	}
 
-	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_SEW) || !create_solid_from_faces(face_list, shape)) {
+	if (!create_solid_from_faces(face_list, shape)) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
@@ -1151,37 +1148,36 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	
 	bool valid_shell = false;
 
-	if (faces.size() < getValue(GV_MAX_FACES_TO_SEW)) {
-		BRepOffsetAPI_Sewing builder;
-		builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-		builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	// @todo Do this more efficiently by creating proper half-edge pairs.
+	BRepOffsetAPI_Sewing builder;
+	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		
-		for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
-			builder.Add(*it);
-		}
+	for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
+		builder.Add(*it);
+	}
 
+	try {
+		builder.Perform();
+		shape = builder.SewedShape();
+		valid_shell = BRepCheck_Analyzer(shape).IsValid();
+	} catch(...) {}
+
+	if (valid_shell) {
 		try {
-			builder.Perform();
-			shape = builder.SewedShape();
-			valid_shell = BRepCheck_Analyzer(shape).IsValid();
+			ShapeFix_Solid solid;
+			solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+			TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
+			if (!solid_shape.IsNull()) {
+				try {
+					BRepClass3d_SolidClassifier classifier(solid_shape);
+					shape = solid_shape;
+				} catch (...) {}
+			}
 		} catch(...) {}
-
-		if (valid_shell) {
-			try {
-				ShapeFix_Solid solid;
-				solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
-				if (!solid_shape.IsNull()) {
-					try {
-						BRepClass3d_SolidClassifier classifier(solid_shape);
-						shape = solid_shape;
-					} catch (...) {}
-				}
-			} catch(...) {}
-		} else {
-			Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", l);
-		}
+	} else {
+		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", l);
 	}
 
 	if (!valid_shell) {

@@ -262,7 +262,6 @@ namespace IfcGeom {
 			IfcGeom::IteratorSettings settings_ = settings;
 			settings_.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 			settings_.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
-			settings_.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 
 			IfcGeom::Iterator<double> it(settings_, &f);
 

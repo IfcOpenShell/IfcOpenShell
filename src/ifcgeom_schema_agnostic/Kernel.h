@@ -36,10 +36,6 @@ namespace IfcGeom {
 			// Specifies the threshold distance under which cartesian points are deemed equal
 			// Default: 0.00001m / 0.01mm
 			GV_POINT_EQUALITY_TOLERANCE,
-			// Specifies maximum number of faces for a shell to be sewed. Sewing shells
-			// that consist of many faces is really detrimental for the performance.
-			// Default: 1000
-			GV_MAX_FACES_TO_SEW,
 			// The length unit used the creation of TopoDS_Shapes, primarily affects the
 			// interpretation of IfcCartesianPoints and IfcVector magnitudes
 			// DefaultL 1.0
