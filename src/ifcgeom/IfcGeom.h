@@ -248,7 +248,6 @@ public:
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
 		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
-		setValue(GV_MAX_FACES_TO_SEW,         other.getValue(GV_MAX_FACES_TO_SEW));
 		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
 		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
 		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));

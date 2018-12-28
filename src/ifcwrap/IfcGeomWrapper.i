@@ -289,7 +289,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcParse::IfcFile* file = instance->data().file;
 			
 		IfcGeom::Kernel kernel(file);
-		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? 1000 : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 			
 		if (instance->declaration().is(Schema::IfcProduct::Class())) {

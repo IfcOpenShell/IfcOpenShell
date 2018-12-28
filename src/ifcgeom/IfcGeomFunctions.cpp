@@ -363,15 +363,6 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 		return false;
 	}
 
-	int max_faces = getValue(GV_MAX_FACES_TO_SEW);
-	if (max_faces == -1) {
-		max_faces = 1000;
-	}
-
-	if (face_list.Extent() > max_faces) {
-		throw too_many_faces_exception();
-	}
-
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
 	BRepOffsetAPI_Sewing builder;
@@ -1087,9 +1078,6 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_POINT_EQUALITY_TOLERANCE:
 		point_equality_tolerance = value;
 		break;
-	case GV_MAX_FACES_TO_SEW:
-		max_faces_to_sew = value;
-		break;
 	case GV_LENGTH_UNIT:
 		ifc_length_unit = value;
 		break;
@@ -1119,8 +1107,6 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return modelling_precision * modelling_precision / 2.;
 	case GV_POINT_EQUALITY_TOLERANCE:
 		return point_equality_tolerance;
-	case GV_MAX_FACES_TO_SEW:
-		return max_faces_to_sew;
 	case GV_LENGTH_UNIT:
 		return ifc_length_unit;
 		break;
