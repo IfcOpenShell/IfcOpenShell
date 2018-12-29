@@ -715,7 +715,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 	const bool is_bounded = l->EdgeGeometry()->is(IfcSchema::Type::IfcBoundedCurve);
 
 	if (!is_bounded && convert_curve(l->EdgeGeometry(), crv)) {
-		mw.Add(BRepBuilderAPI_MakeEdge(crv, p1, p2));
+		BRepBuilderAPI_MakeEdge me(crv, p1, p2);
+		if (!me.IsDone()) {
+			return false;
+		}
+		mw.Add(me.Edge());
 		result = mw;
 		return true;
 	} else if (is_bounded && convert_wire(l->EdgeGeometry(), result)) {
@@ -745,7 +749,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 				ecrv->D0(u1, a);
 				b = p2;
 			} else {
-				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, u1, u2));
+				BRepBuilderAPI_MakeEdge me(ecrv, u1, u2);
+				if (!me.IsDone()) {
+					return false;
+				}
+				mw.Add(me.Edge());
 				first = false;
 				continue;
 			}
@@ -776,7 +784,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeLoop* l, TopoDS_Wire& resu
 			mw.Add(TopoDS::Edge(TopoDS_Iterator(w).Value()));
 		}
 	}
-	result = mw;
+	if (!mw.IsDone()) {
+		return false;
+	}
+	result = mw.Wire();
 	return true;
 }
 
