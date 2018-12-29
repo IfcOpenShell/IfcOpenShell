@@ -221,7 +221,7 @@ namespace {
 			if (dist > 1000. * p_) {
 				mw_.Add(w1);
 				mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-				Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+				Logger::Warning("Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 				goto check;
 			}
 
@@ -249,17 +249,17 @@ namespace {
 					// Preferably adjust the segment that is linear
 					if (is_line1 || (is_circle1 && !is_line2)) {
 						mw_.Add(adjust(w1, w12, p2));
-						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+						Logger::Notice("Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 					} else if ((is_line2 || is_circle2) && !last) {
 						mw_.Add(w1);
 						override_next_ = true;
 						next_override_ = p1;
-						Logger::Message(Logger::LOG_ERROR, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+						Logger::Notice("Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 					} else {
 						// In all other cases an edge is added
 						mw_.Add(w1);
 						mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-						Logger::Message(Logger::LOG_ERROR, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+						Logger::Warning("Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 					}
 				} else {
 					Logger::Error("Internal error, inconsistent wire segments", inst_);
