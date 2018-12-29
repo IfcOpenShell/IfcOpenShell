@@ -338,6 +338,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 			} else {
 				mf->Add(wire);
+
+				// Same as above:
+				// In case of (non-planar) face surface, p-curves need to be computed.
+				if (BRep_Tool::Surface(mf->Face())->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+					TopExp_Explorer exp(wire, TopAbs_EDGE);
+					for (; exp.More(); exp.Next()) {
+						const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
+						ShapeFix_Edge fix_edge;
+						fix_edge.FixAddPCurve(edge, mf->Face(), false, getValue(GV_PRECISION));
+					}
+				}
 			}
 			processed ++;
 		}
