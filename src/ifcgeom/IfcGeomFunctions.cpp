@@ -177,7 +177,7 @@ namespace {
 					std::pair<std::string, double> unit_info = k->initializeUnits(project->UnitsInContext());
 					unit_magnitude = unit_info.second;
 				} else {
-					Logger::Error("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
+					Logger::Warning("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
 				}
 
 				// Set precision from file
@@ -451,7 +451,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 					B.MakeCompound(C);
 					B.Add(C, complete_shape);
 					complete_shape = C;
-					Logger::Message(Logger::LOG_ERROR, "Multiple components in IfcConnectedFaceSet");
+					Logger::Warning("Multiple components in IfcConnectedFaceSet");
 				}
 				B.Add(complete_shape, result_shape);
 			}
@@ -466,7 +466,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 				B.MakeCompound(C);
 				B.Add(C, complete_shape);
 				complete_shape = C;
-				Logger::Message(Logger::LOG_ERROR, "Loose faces in IfcConnectedFaceSet");
+				Logger::Warning("Loose faces in IfcConnectedFaceSet");
 			}
 			B.Add(complete_shape, loose_faces.Current());
 		}
@@ -474,7 +474,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 		shape = complete_shape;
 
 	} else {
-		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset");
+		Logger::Error("Failed to sew faceset");
 	}
 	
 	return valid_shell;
@@ -651,7 +651,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 						fix.Perform();
 						brep_cut_result = fix.Shape();
 					} catch (...) {
-						Logger::Message(Logger::LOG_WARNING, "Shape healing failed on opening subtraction result", entity);
+						Logger::Error("Shape healing failed on opening subtraction result", entity);
 					}
 					
 					BRepCheck_Analyzer analyser(brep_cut_result);
@@ -870,7 +870,7 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& fa
 	
 	TopTools_ListOfShape results;
 	if (wire_intersections(wire, results)) {
-		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+		Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 		select_largest(results, wire);
 	}
 
@@ -951,7 +951,7 @@ bool IfcGeom::Kernel::profile_helper(int numVerts, double* verts, int numFillets
 		if (fillet.IsDone()) {
 			face = TopoDS::Face(fillet.Shape());
 		} else {
-			Logger::Message(Logger::LOG_WARNING, "Failed to process profile fillets");
+			Logger::Error("Failed to process profile fillets");
 		}
 	}
 
@@ -1841,7 +1841,7 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	try {
 		IfcEntityList::ptr units = unit_assignment->Units();
 		if (!units || !units->size()) {
-			Logger::Message(Logger::LOG_ERROR, "No unit information found");
+			Logger::Warning("No unit information found");
 		} else {
 			for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
 				IfcUtil::IfcBaseClass* base = *it;
@@ -1884,11 +1884,11 @@ std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUn
 	}
 
 	if (!length_unit_encountered) {
-		Logger::Error("No length unit encountered");
+		Logger::Warning("No length unit encountered");
 	}
 
 	if (!angle_unit_encountered) {
-		Logger::Error("No plane angle unit encountered");
+		Logger::Warning("No plane angle unit encountered");
 	}
 
 	return std::pair<std::string, double>(unit_name, unit_magnitude);
@@ -3590,7 +3590,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 				fix.Perform();
 				result = fix.Shape();
 			} catch (...) {
-				Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+				Logger::Error("Shape healing failed on boolean result");
 			}
 
 		} else {
@@ -3677,7 +3677,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 			fix.Perform();
 			r = fix.Shape();
 		} catch (...) {
-			Logger::Message(Logger::LOG_WARNING, "Shape healing failed on boolean result");
+			Logger::Error("Shape healing failed on boolean result");
 		}
 
 		success = BRepCheck_Analyzer(r).IsValid() != 0;
@@ -3841,6 +3841,6 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	}
 
 	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
-		Logger::Error(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
+		Logger::Warning(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
 	}
 }
