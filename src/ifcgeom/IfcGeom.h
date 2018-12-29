@@ -188,7 +188,7 @@ private:
 
 				TopTools_ListOfShape results;
 				if (kernel_->wire_intersections(wire, results)) {
-					Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
+					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
 					kernel_->select_largest(results, wire);
 				}
 
