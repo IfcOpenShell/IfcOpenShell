@@ -656,7 +656,7 @@ int main(int argc, char** argv)
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
-        Logger::Error("No geometrical entities found");
+        Logger::Notice("No geometrical elements found or none succesfully converted");
         std::remove(output_temp_filename.c_str()); /**< @todo Windows Unicode support */
         write_log(!quiet);
         return EXIT_FAILURE;

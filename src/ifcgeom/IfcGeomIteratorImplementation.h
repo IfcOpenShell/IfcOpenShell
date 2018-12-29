@@ -149,7 +149,7 @@ namespace IfcGeom {
 				unit_name = length_unit.first;
 				unit_magnitude = length_unit.second;
 			} else {
-				Logger::Error("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
+				Logger::Warning("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
 			}
 		}
 
@@ -211,7 +211,7 @@ namespace IfcGeom {
 						boost::to_lower(context_type);
 
 						if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-							Logger::Message(Logger::LOG_ERROR, std::string("ContextType '") + context->ContextType() + "' not allowed:", context);
+							Logger::Warning(std::string("ContextType '") + context->ContextType() + "' not allowed:", context);
 						}
 						if (context_types.find(context_type) != context_types.end()) {
 							filtered_contexts->push(context);
@@ -270,12 +270,12 @@ namespace IfcGeom {
 			}
 
             if (representations->size() == 0) {
-                Logger::Message(Logger::LOG_ERROR, "No representations encountered in relevant contexts, using all");
+                Logger::Warning("No representations encountered in relevant contexts, using all");
 				representations = ifc_file->instances_by_type<IfcSchema::IfcRepresentation>();
             }
 
 			if (representations->size() == 0) {
-				Logger::Message(Logger::LOG_ERROR, "No representations encountered, aborting");
+				Logger::Warning("No representations encountered, aborting");
 				return false;
 			}
 
