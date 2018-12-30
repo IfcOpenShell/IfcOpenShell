@@ -2532,7 +2532,7 @@ namespace {
 					}
 				}
 
-				if (idx < slices.size()) {
+				if (idx < (int) slices.size()) {
 					if (slices[idx].IsNull()) {
 						slices[idx] = sit.Value();
 						continue;
@@ -3223,13 +3223,13 @@ namespace {
 		operator int() { return i; }
 	};
 
-	std::string format_pnt(const gp_Pnt& p) {
+	inline std::string format_pnt(const gp_Pnt& p) {
 		std::stringstream ss;
 		ss << std::fixed << std::setprecision(4) << p.X() << " " << p.Y() << " " << p.Z();
 		return ss.str();
 	}
 
-	std::string format_edge(const TopoDS_Edge& e) {
+	inline std::string format_edge(const TopoDS_Edge& e) {
 		std::stringstream ss;
 		TopoDS_Vertex v1, v2;
 		TopExp::Vertices(e, v1, v2);
