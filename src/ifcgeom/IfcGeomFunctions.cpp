@@ -3795,7 +3795,7 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 
 	std::map<std::pair<int, int>, int> edge_use;
 
-	for (int i = 0; i < pnts.size(); ++i) {
+	for (int i = 0; i < (int) pnts.size(); ++i) {
 		if (pnts[i]) {
 			std::set<int> vs;
 			find_neighbours(tree, pnts, vs, i, eps_);
