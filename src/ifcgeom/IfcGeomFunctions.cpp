@@ -1639,7 +1639,12 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 			if (rel->as<IfcSchema::IfcRelDefinesByProperties>()) {
 				auto pdef = rel->as<IfcSchema::IfcRelDefinesByProperties>()->RelatingPropertyDefinition();
 				if (pdef->as<IfcSchema::IfcElementQuantity>()) {
-					if (pdef->as<IfcSchema::IfcElementQuantity>()->OwnerHistory()->OwningApplication()->ApplicationDeveloper()->Name() == "IfcOpenShell") {
+					std::string organization_name;
+					try {
+						// A couple of files are not according to the schema here.
+						organization_name = pdef->as<IfcSchema::IfcElementQuantity>()->OwnerHistory()->OwningApplication()->ApplicationDeveloper()->Name();
+					} catch (...) {}
+					if (organization_name == "IfcOpenShell") {
 						auto qs = pdef->as<IfcSchema::IfcElementQuantity>()->Quantities();
 						for (auto& q : *qs) {
 							if (q->as<IfcSchema::IfcQuantityArea>() && q->Name() == "Total Surface Area") {
