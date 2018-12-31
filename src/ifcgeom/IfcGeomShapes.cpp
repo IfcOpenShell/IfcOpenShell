@@ -970,6 +970,45 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	return true;
 }
 
+namespace {
+	bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol) {
+		// NB Note that c0 continuity is NOT checked!
+
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
+		for (int i = 1; i <= map.Extent(); ++i) {
+			const auto& li = map.FindFromIndex(i);
+			if (li.Extent() == 2) {
+				const TopoDS_Vertex& v = TopoDS::Vertex(map.FindKey(i));
+
+				const TopoDS_Edge& e0 = TopoDS::Edge(li.First());
+				const TopoDS_Edge& e1 = TopoDS::Edge(li.Last());
+
+				double u0 = BRep_Tool::Parameter(v, e0);
+				double u1 = BRep_Tool::Parameter(v, e1);
+
+				double _, __;
+				Handle(Geom_Curve) c0 = BRep_Tool::Curve(e0, _, __);
+				Handle(Geom_Curve) c1 = BRep_Tool::Curve(e1, _, __);
+
+				gp_Pnt p;
+				gp_Vec v0, v1;
+				c0->D1(u0, p, v0);
+				c1->D1(u1, p, v1);
+
+				std::cout << "v0 " << v0.X() << " " << v0.Y() << " " << v0.Z() << std::endl;
+				std::cout << "v1 " << v1.X() << " " << v1.Y() << " " << v1.Z() << std::endl;
+				std::cout << "Dot " << v0.Normalized().Dot(v1.Normalized()) << std::endl;
+
+				if (1. - std::abs(v0.Normalized().Dot(v1.Normalized())) > tol) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
 	TopoDS_Wire wire, section1, section2;
 
@@ -1019,6 +1058,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		}
 	}
 
+	const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
+
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
@@ -1027,7 +1068,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	// of directrices encountered, which do not necessarily conform to a surface.
 	{ BRepOffsetAPI_MakePipeShell builder(wire);
 	builder.Add(section1);
-	builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+	if (!is_continuous) {
+		// Only perform round corners on wires that are not c1 continuous
+		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+	}
 	builder.Build();
 	builder.MakeSolid();
 	shape = builder.Shape(); }
@@ -1035,7 +1079,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	if (hasInnerRadius) {
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section2);
-		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+		if (!is_continuous) {
+			builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+		}
 		builder.Build();
 		builder.MakeSolid();
 		TopoDS_Shape inner = builder.Shape();
