@@ -3713,8 +3713,12 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 		}
 	} else {
 		std::stringstream str;
+#if OCC_VERSION_HEX >= 0x70000
 		builder->DumpErrors(str);
-		Logger::Notice(str.str());
+#else
+		str << "Error code :" << builder->ErrorStatus();
+#endif
+	Logger::Notice(str.str());
 	}
 	delete builder;
 	if (!success) {
