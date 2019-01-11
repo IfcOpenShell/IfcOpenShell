@@ -1530,8 +1530,8 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 
 	int parent_id = -1;
 	try {
-		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product)->as<IfcSchema::IfcObjectDefinition>();
-		if (parent_object) {
+		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
+		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
 			parent_id = parent_object->data().id();
 		}
 	} catch (const std::exception& e) {
@@ -1777,8 +1777,8 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_represen
 {
 	int parent_id = -1;
 	try {
-		IfcSchema::IfcObjectDefinition* parent_object = get_decomposing_entity(product)->as<IfcSchema::IfcObjectDefinition>();
-		if (parent_object) {
+		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
+		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
 			parent_id = parent_object->data().id();
 		}
 	} catch (const std::exception& e) {
