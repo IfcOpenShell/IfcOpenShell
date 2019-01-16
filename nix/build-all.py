@@ -282,10 +282,14 @@ OPENCOLLADA_COMMIT="v1.6.63"
 
 def run_autoconf(arg1, configure_args, cwd):
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
+    install_dir = os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1))
+    if not os.path.exists(install_dir):
+        # Some (MPFR) need to have prefix dir manually created
+        os.mkdir(install_dir)
     if not os.path.exists(configure_path):
         run([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
     # Using `sh` over `bash` fixes issues with building swig 
-    run(["/bin/sh", "../configure"]+configure_args+["--prefix=%s" % (os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1)),)], cwd=cwd)
+    run(["/bin/sh", "../configure"]+configure_args+["--prefix=%s" % install_dir], cwd=cwd)
 
 def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if cmake_dir is None:
@@ -647,9 +651,15 @@ if "icu" in targets:
     )
 
 if "cgal" in targets:
-    build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
-    build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
-    build_dependency(name="cgal-master", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
+    build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-pic"], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
+    build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
+    
+    OLD_BUILD_CFG = BUILD_CFG
+    if BUILD_CFG != "Debug":
+        # CGAL only supports Debug and Release for CMAKE_BUILD_TYPE
+        BUILD_CFG = "Release"
+    build_dependency(name="cgal", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal/" % (DEPS_DIR,)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
+    BUILD_CFG = OLD_BUILD_CFG
 
 cecho("Building IfcOpenShell:", GREEN)
 
