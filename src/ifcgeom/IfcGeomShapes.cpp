@@ -1003,10 +1003,6 @@ namespace {
 				c0->D1(u0, p, v0);
 				c1->D1(u1, p, v1);
 
-				std::cout << "v0 " << v0.X() << " " << v0.Y() << " " << v0.Z() << std::endl;
-				std::cout << "v1 " << v1.X() << " " << v1.Y() << " " << v1.Z() << std::endl;
-				std::cout << "Dot " << v0.Normalized().Dot(v1.Normalized()) << std::endl;
-
 				if (1. - std::abs(v0.Normalized().Dot(v1.Normalized())) > tol) {
 					return false;
 				}

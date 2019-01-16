@@ -908,6 +908,27 @@ bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& fa
 	return true;
 }
 
+void IfcGeom::Kernel::assert_closed_wire(TopoDS_Wire& wire) {
+	if (wire.Closed() == 0) {
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+
+		gp_Pnt p1 = BRep_Tool::Pnt(v0);
+		gp_Pnt p2 = BRep_Tool::Pnt(v1);
+
+		if (p1.Distance(p2) > getValue(GV_PRECISION)) {
+
+			BRepBuilderAPI_MakeWire mw;
+			mw.Add(wire);
+			mw.Add(BRepBuilderAPI_MakeEdge(v0, v1).Edge());
+			wire = mw.Wire();
+
+		}
+
+		Logger::Warning("Wire not closed:");
+	}
+}
+
 bool IfcGeom::Kernel::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
 	try {
 		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
