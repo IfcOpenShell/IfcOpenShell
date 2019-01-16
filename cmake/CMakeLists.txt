@@ -536,7 +536,7 @@ if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
 endif()
 
-set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom Serializers_ifc2x3 Serializers_ifc4 Serializers Serializers_ifc2x3 Serializers_ifc4 Serializers)
+set(IFCOPENSHELL_LIBRARIES IfcParse IfcGeom IfcGeom IfcGeom_CGAL Serializers Serializers)
 
 # IfcParse
 file(GLOB IFCPARSE_H_FILES ../src/ifcparse/*.h)
@@ -554,29 +554,51 @@ ENDIF()
 
 if (BUILD_IFCGEOM)
 
-# IfcGeom
+### OCCT
+
+# IfcGeom, schema dependent, OCCT
 file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom_ifc2x3 ${IFCGEOM_FILES})
-add_library(IfcGeom_ifc4 ${IFCGEOM_FILES})
-
-set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3")
-# TODO: Detect based on IfcSchema
-set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4")
-
-TARGET_LINK_LIBRARIES(IfcGeom_ifc2x3 IfcParse ${OPENCASCADE_LIBRARIES})
-TARGET_LINK_LIBRARIES(IfcGeom_ifc4 IfcParse ${OPENCASCADE_LIBRARIES})
-
-# IfcGeom (schema agnostic)
+# IfcGeom, schema agnostic, OCCT
 file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom_schema_agnostic/*.h)
 file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom_schema_agnostic/*.cpp)
 set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
+foreach(schema 2x3 4)
+add_library(IfcGeom_ifc${schema} ${IFCGEOM_FILES})
+set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
+TARGET_LINK_LIBRARIES(IfcGeom_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
+list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
+endforeach()
+
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
-TARGET_LINK_LIBRARIES(IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4)
+TARGET_LINK_LIBRARIES(IfcGeom ${IfcGeom_libraries})
+
+### CGAL
+
+# IfcGeom, schema dependent, OCCT
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/cgal/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/cgal/*.cpp)
+set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
+
+# IfcGeom, schema agnostic, OCCT
+file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom_schema_agnostic_cgal/*.h)
+file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom_schema_agnostic_cgal/*.cpp)
+set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
+
+foreach(schema 2x3 4)
+add_library(IfcGeom_ifc${schema} ${IFCGEOM_FILES})
+set_target_properties(IfcGeom_CGAL_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
+TARGET_LINK_LIBRARIES(IfcGeom_CGAL_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
+list(APPEND IfcGeom_CGAL_libraries IfcGeom_CGAL_ifc${schema})
+endforeach()
+
+add_library(IfcGeom_CGAL ${SCHEMA_AGNOSTIC_FILES})
+set_target_properties(IfcGeom_CGAL PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+TARGET_LINK_LIBRARIES(IfcGeom_CGAL ${IfcGeom_CGAL_libraries})
 
 endif(BUILD_IFCGEOM)
 
