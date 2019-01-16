@@ -653,7 +653,7 @@ if "icu" in targets:
 
 if "cgal" in targets:
     build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-pic"], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
-    build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-current/", download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
+    build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-%s/" % (MPFR_VERSION,), download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
     
     OLD_BUILD_CFG = BUILD_CFG
     if BUILD_CFG != "Debug":
