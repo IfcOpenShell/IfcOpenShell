@@ -184,7 +184,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('icu',  'boost',  'libxml2'),
-    'IfcGeom': ('IfcParse',  'occ'),
+    'IfcGeom': ('IfcParse',  'occ',  'cgal'),
     'IfcConvert': ('IfcGeom',  'OpenCOLLADA'),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom',),
