@@ -196,6 +196,7 @@ dependency_tree = {
     'python': (),
     'swig': (),
     'occ': (),
+    'cgal': (),
     'pcre': ()
 }
 
@@ -285,7 +286,7 @@ def run_autoconf(arg1, configure_args, cwd):
     install_dir = os.path.realpath("%s/install/%s" % (DEPS_DIR, arg1))
     if not os.path.exists(install_dir):
         # Some (MPFR) need to have prefix dir manually created
-        os.mkdir(install_dir)
+        os.makedirs(install_dir)
     if not os.path.exists(configure_path):
         run([bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))) # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
     # Using `sh` over `bash` fixes issues with building swig 
