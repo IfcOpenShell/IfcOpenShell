@@ -25,8 +25,8 @@
 
 #include "../ifcparse/IfcGlobalId.h"
 
-#include "../ifcgeom/IfcGeomRepresentation.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
 #include "ifc_geom_api.h"
 
 namespace IfcGeom {
@@ -36,7 +36,7 @@ namespace IfcGeom {
 	private:
 		std::vector<P> _data;
 	public:
-		Matrix(const ElementSettings& settings, const gp_Trsf& trsf) {
+		Matrix(const ElementSettings& settings, const ConversionResultPlacement* trsf) {
 			// Convert the gp_Trsf into a 4x3 Matrix
 			// Note that in case the CONVERT_BACK_UNITS setting is enabled
 			// the translation component of the matrix needs to be divided
@@ -44,7 +44,7 @@ namespace IfcGeom {
 			// internally in IfcOpenShell everything is measured in meters.
 			for(int i = 1; i < 5; ++i) {
 				for (int j = 1; j < 4; ++j) {
-					const double trsf_value = trsf.Value(j,i);
+					const double trsf_value = trsf->Value(j,i);
                     const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
 						? trsf_value / settings.unit_magnitude()
 						: trsf_value;
@@ -59,23 +59,23 @@ namespace IfcGeom {
 	class Transformation {
 	private:
 		ElementSettings settings_;
-		gp_Trsf trsf_;
+		ConversionResultPlacement* trsf_;
 		Matrix<P> matrix_;
 	public:
-		Transformation(const ElementSettings& settings, const gp_Trsf& trsf)
+		Transformation(const ElementSettings& settings, const ConversionResultPlacement* trsf)
 			: settings_(settings)
-			, trsf_(trsf)
+			, trsf_(trsf->clone())
 			, matrix_(settings, trsf) 
 		{}
-		const gp_Trsf& data() const { return trsf_; }
+		const ConversionResultPlacement* data() const { return trsf_; }
 		const Matrix<P>& matrix() const { return matrix_; }
 
 		Transformation inverted() const {
-			return Transformation(settings_, trsf_.Inverted());
+			return Transformation(settings_, trsf_->inverted());
 		}
 
 		Transformation multiplied(const Transformation& other) const {
-			return Transformation(settings_, trsf_.Multiplied(other.data()));
+			return Transformation(settings_, trsf_->multiplied(other.data()));
 		}
 	};
 
@@ -129,7 +129,7 @@ namespace IfcGeom {
 		void SetParents(std::vector<const IfcGeom::Element<P, PP>*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const gp_Trsf& trsf, IfcUtil::IfcBaseEntity* product)
+            const std::string& guid, const std::string& context, const ConversionResultPlacement* trsf, IfcUtil::IfcBaseEntity* product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -159,28 +159,25 @@ namespace IfcGeom {
 	};
 
 	template <typename P = double, typename PP = P>
-	class BRepElement : public Element<P, PP> {
+	class NativeElement : public Element<P, PP> {
 	private:
 		boost::shared_ptr<Representation::BRep> _geometry;
 	public:
 		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const Representation::BRep& geometry() const { return *_geometry; }
-		BRepElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const gp_Trsf& trsf, const boost::shared_ptr<Representation::BRep>& geometry,
+		NativeElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
+            const std::string& context, const ConversionResultPlacement* trsf, const boost::shared_ptr<Representation::BRep>& geometry,
 			IfcUtil::IfcBaseEntity* product)
 			: Element<P, PP>(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
 		{}
 
 		bool calculate_projected_surface_area(double& along_x, double& along_y, double& along_z) const {
-			const auto& trsf = this->transformation().data();
-			const gp_Mat& mat = trsf.HVectorialPart();
-			gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
-			return geometry().calculate_projected_surface_area(ax, along_x, along_y, along_z);
+			return geometry().calculate_projected_surface_area(this->transformation().data(), along_x, along_y, along_z);
 		}
 	private:
-		BRepElement(const BRepElement& other);
-		BRepElement& operator=(const BRepElement& other);		
+		NativeElement(const NativeElement& other);
+		NativeElement& operator=(const NativeElement& other);		
 	};
 
 	template <typename P = double, typename PP = P>
@@ -190,7 +187,7 @@ namespace IfcGeom {
 	public:
 		const Representation::Triangulation<P>& geometry() const { return *_geometry; }
 		const boost::shared_ptr< Representation::Triangulation<P> >& geometry_pointer() const { return _geometry; }
-		TriangulationElement(const BRepElement<P, PP>& shape_model)
+		TriangulationElement(const NativeElement<P, PP>& shape_model)
 			: Element<P, PP>(shape_model)
 			, _geometry(boost::shared_ptr<Representation::Triangulation<P> >(new Representation::Triangulation<P>(shape_model.geometry())))
 		{}
@@ -209,7 +206,7 @@ namespace IfcGeom {
 		Representation::Serialization* _geometry;
 	public:
 		const Representation::Serialization& geometry() const { return *_geometry; }
-		SerializedElement(const BRepElement<P, PP>& shape_model)
+		SerializedElement(const NativeElement<P, PP>& shape_model)
 			: Element<P, PP>(shape_model)
 			, _geometry(new Representation::Serialization(shape_model.geometry()))
 		{}

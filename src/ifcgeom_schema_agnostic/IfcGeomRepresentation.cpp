@@ -26,16 +26,16 @@
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
-
 #include "IfcGeomRepresentation.h"
+#include "../ifcgeom/OpenCascadeConversionResult.h"
+#include "../ifcgeom_schema_agnostic/Kernel.h"
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
 	, id_(brep.id())
 {
 	TopoDS_Compound compound = brep.as_compound();
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
+	for (IfcGeom::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		if (it->hasStyle() && it->Style().Diffuse()) {
 			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
 			surface_styles_.push_back(clr.R());
@@ -57,7 +57,7 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	brep_data_ = sstream.str();
 }
 
-// todo copied from kernel
+// @todo copied from kernel
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 
@@ -86,9 +86,13 @@ TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
-	for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
-		const TopoDS_Shape& s = it->Shape();
-		gp_GTrsf trsf = it->Placement();
+
+	for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+		const TopoDS_Shape& s = *(OpenCascadeShape*) it->Shape();
+		gp_GTrsf trsf;
+		if (it->Placement()) {
+			trsf = ((OpenCascadePlacement*)it->Placement())->trsf();
+		}
 
 		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
@@ -166,7 +170,7 @@ namespace {
 						const gp_Vec v2 = pt3 - pt2;
 						const gp_Vec v3 = pt1 - pt3;
 						const gp_Vec normal_vector = v1 ^ v2;
-						if (normal_vector.Magnitude() > ALMOST_ZERO) {
+						if (normal_vector.Magnitude() > 1.e-9) {
 							gp_Dir normal = gp_Dir();
 
 							double edge_lengths[3] = { v1.Magnitude(), v2.Magnitude(), v3.Magnitude() };
@@ -190,9 +194,9 @@ bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
 	try {
 		area = 0.;
 
-		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
+		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			GProp_GProps prop;
-			BRepGProp::SurfaceProperties(it->Shape(), prop);
+			BRepGProp::SurfaceProperties(*(OpenCascadeShape*)it->Shape(), prop);
 			area += prop.Mass();
 		}
 
@@ -207,10 +211,10 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 	try {
 		volume = 0.;
 
-		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
-			if (Kernel::is_manifold(it->Shape())) {
+		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+			if (Kernel::is_manifold(*(OpenCascadeShape*)it->Shape())) {
 				GProp_GProps prop;
-				BRepGProp::VolumeProperties(it->Shape(), prop);
+				BRepGProp::VolumeProperties(*(OpenCascadeShape*)it->Shape(), prop);
 				volume += prop.Mass();
 			} else {
 				return false;
@@ -224,15 +228,19 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 	}
 }
 
-bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const gp_Ax3 & ax, double & along_x, double & along_y, double & along_z) const {
+bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ConversionResultPlacement* place, double & along_x, double & along_y, double & along_z) const {
 	try {
+		gp_Trsf trsf = ((OpenCascadePlacement*)place)->trsf().Trsf();
+		gp_Mat mat = trsf.HVectorialPart();
+		gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
+
 		along_x = along_y = along_z = 0.;
 
-		for (IfcGeom::IfcRepresentationShapeItems::const_iterator it = begin(); it != end(); ++it) {
+		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			double x, y, z;
-			surface_area_along_direction(settings().deflection_tolerance(), it->Shape(), ax, x, y, z);
+			surface_area_along_direction(settings().deflection_tolerance(), *(OpenCascadeShape*)it->Shape(), ax, x, y, z);
 
-			if (Kernel::is_manifold(it->Shape())) {
+			if (Kernel::is_manifold(*(OpenCascadeShape*)it->Shape())) {
 				x /= 2.;
 				y /= 2.;
 				z /= 2.;

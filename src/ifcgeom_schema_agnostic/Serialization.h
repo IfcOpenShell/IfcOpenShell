@@ -1,4 +1,4 @@
-#include "../ifcgeom/ifc_geom_api.h"
+#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 #include "../ifcparse/IfcBaseClass.h"
 
 #include <TopoDS_Shape.hxx>

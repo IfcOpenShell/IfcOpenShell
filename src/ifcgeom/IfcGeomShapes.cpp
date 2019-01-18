@@ -366,7 +366,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 	return !shape.IsNull();
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepresentationShapeItems& shape) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, ConversionResults& shape) {
 	TopoDS_Shape s;
 	const SurfaceStyle* collective_style = get_style(l);
 	if (convert_shape(l->Outer(),s) ) {
@@ -391,13 +391,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 			}
 		}
 
-		shape.push_back(IfcRepresentationShapeItem(l->data().id(), s, indiv_style ? indiv_style : collective_style));
+		shape.push_back(ConversionResult(l->data().id(), new OpenCascadeShape(s), indiv_style ? indiv_style : collective_style));
 		return true;
 	}
 	return false;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, ConversionResults& shapes) {
 	bool part_success = false;
 	IfcSchema::IfcConnectedFaceSet::list::ptr facesets = l->FbsmFaces();
 	const SurfaceStyle* collective_style = get_style(l);
@@ -405,7 +405,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, IfcR
 		TopoDS_Shape s;
 		const SurfaceStyle* shell_style = get_style(*it);
 		if (convert_shape(*it,s)) {
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
+			shapes.push_back(ConversionResult(l->data().id(), new OpenCascadeShape(s), shell_style ? shell_style : collective_style));
 			part_success |= true;
 		}
 	}
@@ -459,7 +459,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalBoundedHalfSpace* l, 
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, ConversionResults& shapes) {
 	IfcEntityList::ptr shells = l->SbsmBoundary();
 	const SurfaceStyle* collective_style = get_style(l);
 	for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
@@ -469,7 +469,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 			shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
 		}
 		if (convert_shape(*it,s)) {
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, shell_style ? shell_style : collective_style));
+			shapes.push_back(ConversionResult(l->data().id(), new OpenCascadeShape(s), shell_style ? shell_style : collective_style));
 		}
 	}
 	return true;
@@ -478,7 +478,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 
 	TopoDS_Shape s1, s2;
-	IfcRepresentationShapeItems items1, items2;
+	ConversionResults items1, items2;
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
@@ -664,7 +664,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 	return true;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, ConversionResults& shapes) {
 	gp_GTrsf gtrsf;
 	IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
 	if ( transform->declaration().is(IfcSchema::IfcCartesianTransformationOperator3DnonUniform::Class()) ) {
@@ -699,7 +699,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	bool b = convert_shapes(map->MappedRepresentation(), shapes);
 	
 	for (size_t i = previous_size; i < shapes.size(); ++ i ) {
-		shapes[i].prepend(gtrsf);
+		OpenCascadePlacement p(gtrsf);
+		shapes[i].prepend(&p);
 
 		// Apply styles assigned to the mapped item only if on
 		// a more granular level no styles have been applied
@@ -711,7 +712,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcMappedItem* l, IfcRepresentati
 	return b;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, ConversionResults& shapes) {
 	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
 	bool part_succes = false;
 	if ( items->size() ) {
@@ -722,7 +723,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 			} else {
 				TopoDS_Shape s;
 				if (convert_shape(representation_item,s)) {
-					shapes.push_back(IfcRepresentationShapeItem(representation_item->data().id(), s, get_style(representation_item)));
+					shapes.push_back(ConversionResult(representation_item->data().id(), new OpenCascadeShape(s), get_style(representation_item)));
 					part_succes |= true;
 				}
 			}
@@ -731,7 +732,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRepresentation* l, IfcRepresen
 	return part_succes;
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresentationShapeItems& shapes) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, ConversionResults& shapes) {
 	IfcEntityList::ptr elements = l->Elements();
 	if ( !elements->size() ) return false;
 	bool part_succes = false;
@@ -749,7 +750,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcGeometricSet* l, IfcRepresenta
 			} else if (element->declaration().is(IfcSchema::IfcSurface::Class())) {
 				style = get_style((IfcSchema::IfcSurface*) element);
 			}
-			shapes.push_back(IfcRepresentationShapeItem(l->data().id(), s, style ? style : parent_style));
+			shapes.push_back(ConversionResult(l->data().id(), new OpenCascadeShape(s), style ? style : parent_style));
 		}
 	}
 	return part_succes;

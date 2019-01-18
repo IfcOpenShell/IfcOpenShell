@@ -283,14 +283,14 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* st
 	return p;
 }
 
-void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
+void SvgSerializer::write(const IfcGeom::NativeElement<real_t>* o)
 {
 	IfcUtil::IfcBaseEntity* storey = storey_;
 	boost::optional<double> storey_elevation = boost::none;
 
 	/*
 
-	TODO: based on BRepElement::parent()
+	TODO: based on NativeElement::parent()
 	
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 

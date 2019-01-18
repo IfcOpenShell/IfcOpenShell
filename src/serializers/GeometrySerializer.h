@@ -28,7 +28,7 @@ typedef float real_t;
 
 #include "../serializers/Serializer.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 
 class SerializerSettings : public IfcGeom::IteratorSettings
 {
@@ -77,7 +77,7 @@ public:
 
 	virtual bool isTesselated() const = 0;
 	virtual void write(const IfcGeom::TriangulationElement<real_t>* o) = 0;
-	virtual void write(const IfcGeom::BRepElement<real_t>* o) = 0;
+	virtual void write(const IfcGeom::NativeElement<real_t>* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
     const SerializerSettings& settings() const { return settings_; }

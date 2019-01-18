@@ -2,8 +2,8 @@
 #define ITERATOR_KERNEL_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/ConversionResult.h"
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/Ifc4.h"
@@ -15,7 +15,7 @@
 namespace IfcGeom {
 
 	template <typename P, typename PP>
-	class BRepElement;
+	class NativeElement;
 
 	class Kernel {
 	private:
@@ -64,14 +64,14 @@ namespace IfcGeom {
 			return implementation_->getValue(var);
 		}
 
-		virtual BRepElement<double, double>* convert(
+		virtual NativeElement<double, double>* convert(
 			const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 			IfcUtil::IfcBaseClass* product)
 		{
 			return implementation_->convert(settings, representation, product);
 		}
 
-		virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {
+		virtual ConversionResults convert(IfcUtil::IfcBaseClass* item) {
 			return implementation_->convert(item);
 		}
 

@@ -119,7 +119,7 @@ namespace IfcGeom {
 
 		Element<P, PP>* get() { return implementation_->get(); }
 
-		BRepElement<P, PP>* get_native() { return implementation_->get_native(); }
+		NativeElement<P, PP>* get_native() { return implementation_->get_native(); }
 
 		const Element<P, PP>* get_object(int id) { return implementation_->get_object(id); }
 

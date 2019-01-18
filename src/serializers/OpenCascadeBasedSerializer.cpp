@@ -34,7 +34,7 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
+void OpenCascadeBasedSerializer::write(const IfcGeom::NativeElement<real_t>* o) {
 	TopoDS_Shape compound = o->geometry().as_compound();
 
 	if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
@@ -44,7 +44,8 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 		compound = BRepBuilderAPI_Transform(compound, scale, true).Shape();
 	}
 
-	writeShape(compound);
+	IfcGeom::OpenCascadeShape s(compound);
+	writeShape(&s);
 }
 
 #define RATHER_SMALL (1e-3)

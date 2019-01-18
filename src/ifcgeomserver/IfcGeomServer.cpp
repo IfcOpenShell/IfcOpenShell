@@ -39,7 +39,7 @@
 #endif
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
 
@@ -404,9 +404,9 @@ static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
-	const IfcGeom::BRepElement<float, double>* elem_;
+	const IfcGeom::NativeElement<float, double>* elem_;
 public:
-	QuantityWriter_v0(const IfcGeom::BRepElement<float, double>* elem) :
+	QuantityWriter_v0(const IfcGeom::NativeElement<float, double>* elem) :
 		elem_(elem) 
 	{
 		put_json(TOTAL_SURFACE_AREA, 0.);
@@ -419,9 +419,9 @@ public:
 
 class QuantityWriter_v1 : public EntityExtension {
 private:
-	const IfcGeom::BRepElement<float, double>* elem_;
+	const IfcGeom::NativeElement<float, double>* elem_;
 public:
-	QuantityWriter_v1(const IfcGeom::BRepElement<float, double>* elem) :
+	QuantityWriter_v1(const IfcGeom::NativeElement<float, double>* elem) :
 		elem_(elem)
 	{
 		double a, b, c;
