@@ -507,13 +507,13 @@ const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Sha
 }
 
 bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
+							   const IfcGeom::ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 
 	// TODO: Refactor convert_openings() convert_openings_fast() and convert(IfcBooleanResult) to use
 	// the same code base and conform to the same checks and logging messages.
 
 	// Iterate over IfcOpeningElements
-	IfcGeom::IfcRepresentationShapeItems opening_shapes;
+	IfcGeom::ConversionResults opening_shapes;
 	unsigned int last_size = 0;
 	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
 		IfcSchema::IfcRelVoidsElement* v = *it;
@@ -545,30 +545,26 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 
 			const unsigned int current_size = (const unsigned int) opening_shapes.size();
 			for ( unsigned int i = last_size; i < current_size; ++ i ) {
-				opening_shapes[i].prepend(opening_trsf);
+				OpenCascadePlacement p((gp_GTrsf)opening_trsf);
+				opening_shapes[i].prepend(&p);
 			}
 			last_size = current_size;
 		}
 	}
 
 	// Iterate over the shapes of the IfcProduct
-	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+	for ( IfcGeom::ConversionResults::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
 		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
-		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		if ( entity_shape_gtrsf.Form() == gp_Other ) {
-			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
-		}
+		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(*(OpenCascadeShape*) it3->Shape(), entity_shape_solid);
+		const OpenCascadePlacement* entity_shape_gtrsf = (OpenCascadePlacement*) it3->Placement();
+
 		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
 
 		// Iterate over the shapes of the IfcOpeningElements
-		for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
+		for ( IfcGeom::ConversionResults::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
 			TopoDS_Shape opening_shape_solid;
-			const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(it4->Shape(),opening_shape_solid);
-			const gp_GTrsf& opening_shape_gtrsf = it4->Placement();
-			if ( opening_shape_gtrsf.Form() == gp_Other ) {
-				Logger::Message(Logger::LOG_WARNING,"Applying non uniform transformation to opening of:",entity);
-			}
+			const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(*(OpenCascadeShape*) it4->Shape(),opening_shape_solid);
+			const OpenCascadePlacement* opening_shape_gtrsf = (OpenCascadePlacement*)it4->Placement();
 			TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, opening_shape_gtrsf);
 					
 			double opening_volume;
@@ -673,7 +669,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 			}
 
 		}
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), it3->Placement(), entity_shape, &it3->Style()));
+		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), it3->Placement()->clone(), new OpenCascadeShape(entity_shape), &it3->Style()));
 	}
 
 	return true;
@@ -681,7 +677,7 @@ bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, cons
 
 #if OCC_VERSION_HEX < 0x60900
 bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
+							   const IfcGeom::ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 	
 	// Create a compound of all opening shapes in order to speed up the boolean operations
 	TopoDS_Compound opening_compound;
@@ -712,7 +708,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
 			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 
-			IfcGeom::IfcRepresentationShapeItems opening_shapes;
+			IfcGeom::ConversionResults opening_shapes;
 						
 			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
 				convert_shapes(*it2,opening_shapes);
@@ -729,7 +725,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	}
 
 	// Iterate over the shapes of the IfcProduct
-	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+	for ( IfcGeom::ConversionResults::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
 		TopoDS_Shape entity_shape_solid;
 		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
 		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
@@ -747,7 +743,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			BRepCheck_Analyzer analyser(brep_cut_result);
 			is_valid = analyser.IsValid() != 0;
 			if ( is_valid ) {
-				cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), brep_cut_result, &it3->Style()));
+				cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), brep_cut_result, &it3->Style()));
 			}
 		}
 		if ( !is_valid ) {
@@ -772,7 +768,7 @@ namespace {
 }
 
 bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings,
-	const IfcGeom::IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::IfcRepresentationShapeItems& cut_shapes) {
+	const IfcGeom::ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 
 	std::vector< std::pair<double, TopoDS_Shape> > opening_vector;
 
@@ -800,7 +796,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
 			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
 
-			IfcGeom::IfcRepresentationShapeItems opening_shapes;
+			IfcGeom::ConversionResults opening_shapes;
 
 			for (IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++it2) {
 				convert_shapes(*it2, opening_shapes);
@@ -808,9 +804,12 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 
 			for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
 				TopoDS_Shape opening_shape_solid;
-				const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(opening_shapes[i].Shape(), opening_shape_solid);
+				const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(*(OpenCascadeShape*)opening_shapes[i].Shape(), opening_shape_solid);
 
-				gp_GTrsf gtrsf = opening_shapes[i].Placement();
+				gp_GTrsf gtrsf;
+				if (opening_shapes[i].Placement()) {
+					gtrsf = ((OpenCascadePlacement*)opening_shapes[i].Placement())->trsf();
+				}
 				gtrsf.PreMultiply(opening_trsf);
 				TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, gtrsf);
 				opening_vector.push_back(std::make_pair(min_edge_length(opening_shape), opening_shape));
@@ -822,13 +821,10 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	std::sort(opening_vector.begin(), opening_vector.end(), opening_sorter());
 
 	// Iterate over the shapes of the IfcProduct
-	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
+	for ( IfcGeom::ConversionResults::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
 		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
-		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		if (entity_shape_gtrsf.Form() == gp_Other) {
-			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
-		}
+		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(*(OpenCascadeShape*) it3->Shape(),entity_shape_solid);
+		const OpenCascadePlacement* entity_shape_gtrsf = (OpenCascadePlacement*)it3->Placement();
 		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
 
 		TopoDS_Shape result = entity_shape;
@@ -859,7 +855,7 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 			}
 		}
 
-		cut_shapes.push_back(IfcGeom::IfcRepresentationShapeItem(it3->ItemId(), result, &it3->Style()));
+		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), new OpenCascadeShape(result), &it3->Style()));
 	}
 	return true;
 }
@@ -1263,22 +1259,22 @@ bool IfcGeom::Kernel::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& sha
 	return true;
 }
 
-bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse) {
+bool IfcGeom::Kernel::flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse) {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
 
 	result = TopoDS_Shape();
 			
-	for ( IfcGeom::IfcRepresentationShapeItems::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+	for ( IfcGeom::ConversionResults::const_iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
 		TopoDS_Shape merged;
-		const TopoDS_Shape& s = it->Shape();
+		const TopoDS_Shape& s = *(OpenCascadeShape*)it->Shape();
 		if (fuse) {
 			ensure_fit_for_subtraction(s, merged);
 		} else {
 			merged = s;
 		}
-		const gp_GTrsf& trsf = it->Placement();
+		const OpenCascadePlacement* trsf = (const OpenCascadePlacement*) it->Placement();
 		const TopoDS_Shape moved_shape = apply_transformation(merged, trsf);
 
 		if (shapes.size() == 1) {
@@ -1463,7 +1459,7 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 }
 
 template <typename P, typename PP>
-IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and_product(
+IfcGeom::NativeElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and_product(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 {
 	std::stringstream representation_id_builder;
@@ -1471,7 +1467,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 	representation_id_builder << representation->data().id();
 
 	IfcGeom::Representation::BRep* shape;
-	IfcGeom::IfcRepresentationShapeItems shapes, shapes2;
+	IfcGeom::ConversionResults shapes, shapes2;
 
 	if ( !convert_shapes(representation, shapes) ) {
 		return 0;
@@ -1526,7 +1522,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
 	if (single_material) {
 		const IfcGeom::SurfaceStyle* s = get_style(single_material);
-		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+		for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 			if (!it->hasStyle() && s) {
 				it->setStyle(s);
 				material_style_applied = true;
@@ -1534,7 +1530,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		}
 	} else {
 		bool some_items_without_style = false;
-		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+		for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 			if (!it->hasStyle()) {
 				some_items_without_style = true;
 				break;
@@ -1584,7 +1580,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 			representation_id_builder << "-" << (*it)->data().id();
 		}
 
-		IfcGeom::IfcRepresentationShapeItems opened_shapes;
+		IfcGeom::ConversionResults opened_shapes;
 		bool caught_error = false;
 		try {
 #if OCC_VERSION_HEX < 0x60900
@@ -1617,16 +1613,18 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		}
 
         if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-			for ( IfcGeom::IfcRepresentationShapeItems::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-				it->prepend(trsf);
+			for ( IfcGeom::ConversionResults::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
+				OpenCascadePlacement p(trsf);
+				it->prepend(&p);
 			}
 			trsf = gp_Trsf();
 			representation_id_builder << "-world-coords";
 		}
 		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), opened_shapes);
     } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-		for ( IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-			it->prepend(trsf);
+		for ( IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
+			OpenCascadePlacement p(trsf);
+			it->prepend(&p);
 		}
 		trsf = gp_Trsf();
 		representation_id_builder << "-world-coords";
@@ -1642,14 +1640,14 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 		context_string = representation->ContextOfItems()->ContextType();
 	}
 
-	auto elem = new BRepElement<P, PP>(
+	auto elem = new NativeElement<P, PP>(
 		product->data().id(),
 		parent_id,
 		name,
 		product_type,
 		guid,
 		context_string,
-		trsf,
+		new OpenCascadePlacement(trsf),
 		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
 		product
 	);
@@ -1703,7 +1701,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 										int genus = q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
 										for (auto& part : elem->geometry()) {
 											if (part.ItemId() == item_id) {
-												if (surface_genus(part.Shape()) != genus) {
+												if (surface_genus(*(OpenCascadeShape*)part.Shape()) != genus) {
 													all_succeeded = false;
 												}
 											}
@@ -1792,9 +1790,9 @@ IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const 
 }
 
 template <typename P, typename PP>
-IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_representation(
+IfcGeom::NativeElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_representation(
     const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
-    IfcGeom::BRepElement<P, PP>* brep)
+    IfcGeom::NativeElement<P, PP>* brep)
 {
 	int parent_id = -1;
 	try {
@@ -1827,32 +1825,32 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_represen
 
 	const std::string product_type = product->declaration().name();
 
-	return new BRepElement<P, PP>(
+	return new NativeElement<P, PP>(
 		product->data().id(),
 		parent_id,
 		name, 
 		product_type,
 		guid,
 		context_string,
-		trsf,
+		new OpenCascadePlacement(trsf),
 		brep->geometry_pointer(),
         product
 	);
 }
 
-template IFC_GEOM_API IfcGeom::BRepElement<float, float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, float>(
+template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, float>(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IFC_GEOM_API IfcGeom::BRepElement<float, double>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, double>(
+template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, double>(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IFC_GEOM_API IfcGeom::BRepElement<double, double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double, double>(
+template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double, double>(
 	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
 
-template IFC_GEOM_API IfcGeom::BRepElement<float, float>* IfcGeom::Kernel::create_brep_for_processed_representation<float, float>(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<float, float>* brep);
-template IFC_GEOM_API IfcGeom::BRepElement<float, double>* IfcGeom::Kernel::create_brep_for_processed_representation<float, double>(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<float, double>* brep);
-template IFC_GEOM_API IfcGeom::BRepElement<double, double>* IfcGeom::Kernel::create_brep_for_processed_representation<double, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::BRepElement<double, double>* brep);
+template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::Kernel::create_brep_for_processed_representation<float, float>(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, float>* brep);
+template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::Kernel::create_brep_for_processed_representation<float, double>(
+    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, double>* brep);
+template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::Kernel::create_brep_for_processed_representation<double, double>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<double, double>* brep);
 
 std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUnitAssignment* unit_assignment) {
 	// Set default units, set length to meters, angles to undefined
@@ -1952,7 +1950,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 			return false;
 		}
 
-		IfcRepresentationShapeItems axis_items;
+		ConversionResults axis_items;
 		{
 			Kernel temp = *this;
 			temp.setValue(GV_DIMENSIONALITY, -1.);
@@ -2144,7 +2142,7 @@ bool IfcGeom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pn
 		return false;
 	}
 		
-	IfcRepresentationShapeItems items;
+	ConversionResults items;
 	{
 		Kernel temp = *this;
 		temp.setValue(GV_DIMENSIONALITY, -1.);
@@ -2152,8 +2150,8 @@ bool IfcGeom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pn
 	}
 
 	TopoDS_Vertex a, b;
-	for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
-		TopExp_Explorer exp(it->Shape(), TopAbs_VERTEX);
+	for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
+		TopExp_Explorer exp(*(OpenCascadeShape*)it->Shape(), TopAbs_VERTEX);
 		for (; exp.More(); exp.Next()) {
 			b = TopoDS::Vertex(exp.Current());
 			if (a.IsNull()) {
@@ -2172,7 +2170,7 @@ bool IfcGeom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pn
 	return true;
 }
 
-bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
+bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const ConversionResults& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
 	bool folds_made = false;
 	
 	IfcSchema::IfcRelConnectsPathElements::list::ptr connections(new IfcSchema::IfcRelConnectsPathElements::list);
@@ -2321,7 +2319,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			continue;
 		}
 		
-		IfcRepresentationShapeItems axis_items;
+		ConversionResults axis_items;
 		{
 			Kernel temp = *this;
 			temp.setValue(GV_DIMENSIONALITY, -1.);
@@ -2605,7 +2603,7 @@ namespace {
 #endif
 }
 
-bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<const SurfaceStyle*>& styles, IfcRepresentationShapeItems& result) {
+bool IfcGeom::Kernel::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<const SurfaceStyle*>& styles, ConversionResults& result) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false);
@@ -2681,11 +2679,11 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 
 	} else if (shells.Extent() == 1) {
 		
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
-			if (split_solid_by_shell(it->Shape(), shells.First(), a, b)) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
+			if (split_solid_by_shell(*(OpenCascadeShape*)it->Shape(), shells.First(), a, b)) {
+				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(b), styles[0] ? styles[0] : &it->Style()));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(a), styles[1] ? styles[1] : &it->Style()));
 			} else {
 				continue;
 			}
@@ -2695,16 +2693,16 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 
 	} else {
 
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = it->Shape();
+			const TopoDS_Shape& s = *(OpenCascadeShape*)it->Shape();
 			TopoDS_Solid sld;
 			ensure_fit_for_subtraction(s, sld);
 
 			std::vector<TopoDS_Shape> slices;
-			if (split(*this, it->Shape(), shells, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
+			if (split(*this, *(OpenCascadeShape*)it->Shape(), shells, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], styles[i] ? styles[i] : &it->Style()));
+					result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(slices[i]), styles[i] ? styles[i] : &it->Style()));
 				}
 			} else {
 				return false;
@@ -2717,18 +2715,18 @@ bool IfcGeom::Kernel::apply_folded_layerset(const IfcRepresentationShapeItems& i
 
 }
 
-bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<const SurfaceStyle*>& styles, IfcRepresentationShapeItems& result) {
+bool IfcGeom::Kernel::apply_layerset(const ConversionResults& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<const SurfaceStyle*>& styles, ConversionResults& result) {
 	if (surfaces.size() < 3) {
 
 		return false;
 
 	} else if (surfaces.size() == 3) {
 		
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
-			if (split_solid_by_surface(it->Shape(), surfaces[1], a, b)) {
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), b, styles[0] ? styles[0] : &it->Style()));
-				result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), a, styles[1] ? styles[1] : &it->Style()));
+			if (split_solid_by_surface(*(OpenCascadeShape*)it->Shape(), surfaces[1], a, b)) {
+				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(b), styles[0] ? styles[0] : &it->Style()));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(a), styles[1] ? styles[1] : &it->Style()));
 			} else {
 				continue;
 			}
@@ -2742,7 +2740,7 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 		// Determine whether sequence of surfaces is consistent with surface normal, so that
 		// layer operations are applied in the correct order. This seems to be always the case.
 		Bnd_Box bb;
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			BRepBndLib::Add(it->Shape(), bb);
 		}
 
@@ -2767,9 +2765,9 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 		mass.ChangeCoord() += n1.XYZ();
 		*/
 		
-		for (IfcRepresentationShapeItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
-			const TopoDS_Shape& s = it->Shape();
+			const TopoDS_Shape& s = *(OpenCascadeShape*)it->Shape();
 			TopoDS_Solid sld;
 			ensure_fit_for_subtraction(s, sld);
 
@@ -2786,9 +2784,9 @@ bool IfcGeom::Kernel::apply_layerset(const IfcRepresentationShapeItems& items, c
 			}
 
 			std::vector<TopoDS_Shape> slices;
-			if (split(*this, it->Shape(), operands, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
+			if (split(*this, *(OpenCascadeShape*)it->Shape(), operands, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(IfcRepresentationShapeItem(it->ItemId(), it->Placement(), slices[i], styles[i] ? styles[i] : &it->Style()));
+					result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(slices[i]), styles[i] ? styles[i] : &it->Style()));
 				}
 			} else {
 				return false;
@@ -3201,25 +3199,29 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	return true;
 }
 
-TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
-	if (t.Form() == gp_Identity) {
+TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const OpenCascadePlacement* t) {
+	if (t == nullptr) {
 		return s;
 	} else {
-		/// @todo set to 1. and exactly 1. or use epsilon?
-		if (t.ScaleFactor() != 1.) {
-			return BRepBuilderAPI_Transform(s, t, true);
-		} else {
-			return s.Moved(t);
-		}
+		return apply_transformation(s, t->trsf());
 	}
 }
 
 TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 	if (t.Form() == gp_Other) {
+		Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation");
 		return BRepBuilderAPI_GTransform(s, t, true);
 	} else {
-
 		return apply_transformation(s, t.Trsf());
+	}
+}
+
+TopoDS_Shape IfcGeom::Kernel::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
+	/// @todo set to 1. and exactly 1. or use epsilon?
+	if (t.ScaleFactor() != 1.) {
+		return BRepBuilderAPI_Transform(s, t, true);
+	} else {
+		return s.Moved(t);
 	}
 }
 

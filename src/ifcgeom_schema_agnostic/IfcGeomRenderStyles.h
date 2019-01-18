@@ -20,7 +20,7 @@
 #ifndef IFCGEOMRENDERSTYLES_H
 #define IFCGEOMRENDERSTYLES_H
 
-#include "../ifcgeom/ifc_geom_api.h"
+#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/replace.hpp>

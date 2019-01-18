@@ -52,14 +52,15 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcBaseClass.h"
 
-#include "../ifcgeom/IfcGeomElement.h" 
-#include "../ifcgeom/IfcGeomRepresentation.h" 
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h" 
+#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h" 
+#include "../ifcgeom_schema_agnostic/ConversionResult.h"
 #include "../ifcgeom/IfcGeomShapeType.h"
 
 #include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "OpenCascadeConversionResult.h"
 
-#include "ifc_geom_api.h"
+#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
 // benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
@@ -258,21 +259,21 @@ public:
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
-	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
+	bool convert_shapes(const IfcUtil::IfcBaseClass* L, ConversionResults& result);
 	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
 	bool convert_shape(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
-	bool flatten_shape_list(const IfcGeom::IfcRepresentationShapeItems& shapes, TopoDS_Shape& result, bool fuse);
+	bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse);
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
-	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
-	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
+	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
+	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 	void assert_closed_wire(TopoDS_Wire& wire);
 
 	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<const SurfaceStyle*>&, std::vector<double>&);
-	bool apply_layerset(const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
-	bool apply_folded_layerset(const IfcRepresentationShapeItems&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
-	bool fold_layers(const IfcSchema::IfcWall*, const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<double>&, std::vector< std::vector<Handle_Geom_Surface> >&);
+	bool apply_layerset(const ConversionResults&, const std::vector<Handle_Geom_Surface>&, const std::vector<const SurfaceStyle*>&, ConversionResults&);
+	bool apply_folded_layerset(const ConversionResults&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<const SurfaceStyle*>&, ConversionResults&);
+	bool fold_layers(const IfcSchema::IfcWall*, const ConversionResults&, const std::vector<Handle_Geom_Surface>&, const std::vector<double>&, std::vector< std::vector<Handle_Geom_Surface> >&);
 
 	bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&);
 	bool split_solid_by_shell(const TopoDS_Shape&, const TopoDS_Shape& s, TopoDS_Shape&, TopoDS_Shape&);
@@ -326,6 +327,7 @@ public:
 	static double shape_volume(const TopoDS_Shape& s);
 	static double face_area(const TopoDS_Face& f);
 
+	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const OpenCascadePlacement*);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 	
@@ -338,12 +340,12 @@ public:
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
     template <typename P, typename PP>
-    IfcGeom::BRepElement<P, PP>* create_brep_for_representation_and_product(
+    IfcGeom::NativeElement<P, PP>* create_brep_for_representation_and_product(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
 
 	template <typename P, typename PP>
-    IfcGeom::BRepElement<P, PP>* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P, PP>*);
+    IfcGeom::NativeElement<P, PP>* create_brep_for_processed_representation(
+        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::NativeElement<P, PP>*);
 
 	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
@@ -416,15 +418,15 @@ public:
 	virtual void setValue(GeomValue var, double value);
 	virtual double getValue(GeomValue var) const;
 
-	virtual IfcGeom::BRepElement<double>* convert(
+	virtual IfcGeom::NativeElement<double>* convert(
 		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 		IfcUtil::IfcBaseClass* product)
 	{
 		return create_brep_for_representation_and_product<double, double>(settings, (IfcSchema::IfcRepresentation*) representation, (IfcSchema::IfcProduct*) product);
 	}
 
-	virtual IfcRepresentationShapeItems convert(IfcUtil::IfcBaseClass* item) {
-		IfcRepresentationShapeItems items;
+	virtual ConversionResults convert(IfcUtil::IfcBaseClass* item) {
+		ConversionResults items;
 		bool success = convert_shapes(item, items);
 		if (!success) {
 			throw IfcParse::IfcException("Failed to process representation item");

@@ -711,7 +711,7 @@ int main(int argc, char** argv)
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
 	// wrap an iterator of all geometrical products in the Ifc file. 
 	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
-	// -BRepElement pointer, based on current settings. (see IfcGeomIterator.h 
+	// -NativeElement pointer, based on current settings. (see IfcGeomIterator.h 
 	// for definition) IfcGeom::Iterator::next() is used to poll whether more 
 	// geometrical entities are available. None of these functions throw 
 	// exceptions, neither for parsing errors or geometrical errors. Upon 
@@ -729,7 +729,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const IfcGeom::NativeElement<real_t>*>(geom_object));
 		}
 
         if (!no_progress) {
@@ -1152,7 +1152,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::BRepElement<double>* geom_object = nullptr;
+		IfcGeom::NativeElement<double>* geom_object = nullptr;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}
@@ -1205,7 +1205,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
-				latebound_access::set(quantity_count, "CountValue", IfcGeom::Kernel::surface_genus(part.Shape()));
+				latebound_access::set(quantity_count, "CountValue", part.Shape()->surface_genus());
 
 				quantities_2->push(quantity_count);				
 			}

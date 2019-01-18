@@ -369,7 +369,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				}
 			}
 
-			IfcGeom::BRepElement<double>* brep = kernel.convert(settings, ifc_representation, product);
+			IfcGeom::NativeElement<double>* brep = kernel.convert(settings, ifc_representation, product);
 			if (!brep) {
 				throw IfcParse::IfcException("Failed to process shape");
 			}
@@ -387,7 +387,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		} else {
 			if (!representation) {
 				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || instance->declaration().is(Schema::IfcRepresentation::Class())) {
-					IfcGeom::IfcRepresentationShapeItems shapes = kernel.convert(instance);
+					IfcGeom::ConversionResults shapes = kernel.convert(instance);
 
 					IfcGeom::ElementSettings element_settings(settings, kernel.getValue(IfcGeom::Kernel::GV_LENGTH_UNIT), instance->declaration().name());
 					IfcGeom::Representation::BRep brep(element_settings, boost::lexical_cast<std::string>(instance->data().id()), shapes);

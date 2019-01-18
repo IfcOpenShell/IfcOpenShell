@@ -3,7 +3,7 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
 
 #include <gp_XYZ.hxx>
 
@@ -20,7 +20,7 @@ namespace IfcGeom {
 	class Element;
 
 	template <typename P, typename PP>
-	class BRepElement;
+	class NativeElement;
 }
 
 typedef boost::function3<IfcGeom::IteratorImplementation<float, float>*, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_float_float_fn;
@@ -71,7 +71,7 @@ namespace IfcGeom {
 		virtual IfcParse::IfcFile* file() const = 0;
 		virtual IfcUtil::IfcBaseClass* next() = 0;
 		virtual Element<P, PP>* get() = 0;
-		virtual BRepElement<P, PP>* get_native() = 0;
+		virtual NativeElement<P, PP>* get_native() = 0;
 		virtual const Element<P, PP>* get_object(int id) = 0;
 		virtual IfcUtil::IfcBaseClass* create() = 0;
 	};

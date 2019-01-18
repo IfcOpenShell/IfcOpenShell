@@ -62,7 +62,7 @@ public:
     void writeHeader();
     bool ready();
     void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-    void write(const IfcGeom::BRepElement<real_t>* o);
+    void write(const IfcGeom::NativeElement<real_t>* o);
     void write(path_object& p, const TopoDS_Wire& wire);
     path_object& start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id);
     bool isTesselated() const { return false; }

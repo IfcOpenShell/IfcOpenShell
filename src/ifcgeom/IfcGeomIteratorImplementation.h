@@ -76,10 +76,10 @@
 #include "../ifcparse/IfcFile.h"
 
 #include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom/IfcGeomIteratorSettings.h"
-#include "../ifcgeom/IfcRepresentationShapeItem.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../ifcgeom_schema_agnostic/ConversionResult.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
@@ -112,7 +112,7 @@ namespace IfcGeom {
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement<P, PP>* current_triangulation;
-		BRepElement<P, PP>* current_shape_model;
+		NativeElement<P, PP>* current_shape_model;
 		SerializedElement<P, PP>* current_serialization;
 		
 		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *representation_iterator
@@ -403,7 +403,7 @@ namespace IfcGeom {
 			return associated_single_materials.size() == 1;
 		}
 
-		BRepElement<P, PP>* create_shape_model_for_next_entity() {
+		NativeElement<P, PP>* create_shape_model_for_next_entity() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
@@ -474,7 +474,7 @@ namespace IfcGeom {
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
                 Logger::SetProduct(product);
 
-				BRepElement<P, PP>* element;
+				NativeElement<P, PP>* element;
 				if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
 					element = kernel.create_brep_for_representation_and_product<P, PP>(settings, representation, product);
 				} else {
@@ -588,7 +588,7 @@ namespace IfcGeom {
         }
 
 		/// Gets the native (Open Cascade) representation of the current geometrical entity.
-		BRepElement<P, PP>* get_native()
+		NativeElement<P, PP>* get_native()
 		{
 			// TODO: Test settings and throw
 			return current_shape_model;
@@ -646,12 +646,12 @@ namespace IfcGeom {
 
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
 
-			Element<P, PP>* ifc_object = new Element<P, PP>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf, ifc_product);
+			Element<P, PP>* ifc_object = new Element<P, PP>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", new OpenCascadePlacement(trsf), ifc_product);
 			return ifc_object;
 		}
 
 		IfcUtil::IfcBaseClass* create() {
-			IfcGeom::BRepElement<P, PP>* next_shape_model = 0;
+			IfcGeom::NativeElement<P, PP>* next_shape_model = 0;
 			IfcGeom::SerializedElement<P, PP>* next_serialization = 0;
 			IfcGeom::TriangulationElement<P, PP>* next_triangulation = 0;
 

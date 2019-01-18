@@ -21,7 +21,7 @@
 #define IFCGEOMTREE_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom_schema_agnostic/Kernel.h"
 
@@ -267,7 +267,7 @@ namespace IfcGeom {
 
 			if (it.initialize()) {
 				do {
-					IfcGeom::BRepElement<double>* elem = (IfcGeom::BRepElement<double>*)it.get();
+					IfcGeom::NativeElement<double>* elem = (IfcGeom::NativeElement<double>*)it.get();
 					add((IfcUtil::IfcBaseEntity*)f.instance_by_id(elem->id()), elem->geometry().as_compound());
 				} while (it.next());
 			}
