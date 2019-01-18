@@ -1,12 +1,9 @@
 #ifndef ITERATOR_KERNEL_H
 #define ITERATOR_KERNEL_H
 
-#include "../ifcparse/IfcFile.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../ifcgeom_schema_agnostic/ConversionResult.h"
-
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/Ifc4.h"
+#include "../../ifcparse/IfcFile.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/schema_agnostic/ConversionResult.h"
 
 #include <boost/function.hpp>
 

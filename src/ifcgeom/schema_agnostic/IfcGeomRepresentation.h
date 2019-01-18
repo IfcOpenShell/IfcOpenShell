@@ -35,9 +35,9 @@
 #include <GCPnts_QuasiUniformDeflection.hxx>
 #include <Geom_SphericalSurface.hxx>
 
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom_schema_agnostic/ConversionResult.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
+#include "../../ifcgeom/schema_agnostic/ConversionResult.h"
 
 #include <TopoDS_Compound.hxx>
 

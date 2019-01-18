@@ -21,9 +21,9 @@
 #define IFCGEOMITERATORSETTINGS_H
 
 #include "ifc_geom_api.h"
-#include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcBaseClass.h"
-#include "../ifcparse/IfcLogger.h"
+#include "../../ifcparse/IfcException.h"
+#include "../../ifcparse/IfcBaseClass.h"
+#include "../../ifcparse/IfcLogger.h"
 
 namespace IfcGeom
 {

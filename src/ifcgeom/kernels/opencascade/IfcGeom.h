@@ -48,19 +48,19 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
-#include "../ifcparse/macros.h"
-#include "../ifcparse/IfcParse.h"
-#include "../ifcparse/IfcBaseClass.h"
+#include "../../../ifcparse/macros.h"
+#include "../../../ifcparse/IfcParse.h"
+#include "../../../ifcparse/IfcBaseClass.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h" 
-#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h" 
-#include "../ifcgeom_schema_agnostic/ConversionResult.h"
-#include "../ifcgeom/IfcGeomShapeType.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h" 
+#include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h" 
+#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
 
-#include "../ifcgeom_schema_agnostic/Kernel.h"
+#include "../../../ifcgeom/schema_agnostic/Kernel.h"
 #include "OpenCascadeConversionResult.h"
 
-#include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
+#include "../../../ifcgeom/schema_agnostic/ifc_geom_api.h"
 
 // Define this in case you want to conserve memory usage at all cost. This has been
 // benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
@@ -79,8 +79,9 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #endif
 
-#define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x.h)
-#include INCLUDE_PARENT_DIR(IfcSchema)
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../../ifcparse/x.h)
+#include INCLUDE_SCHEMA(IfcSchema)
+#undef INCLUDE_SCHEMA
 
 namespace IfcGeom {
 	class IFC_GEOM_API geometry_exception : public std::exception {
@@ -228,7 +229,7 @@ private:
 
 public:
 	MAKE_TYPE_NAME(Kernel)()
-		: IfcGeom::Kernel(0)
+		: IfcGeom::Kernel("opencascade", 0)
 		, deflection_tolerance(0.001)
 		, wire_creation_tolerance(0.0001)
 		, point_equality_tolerance(0.00001)

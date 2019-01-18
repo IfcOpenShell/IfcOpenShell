@@ -81,7 +81,7 @@
 #include <Geom_BSplineCurve.hxx>
 #endif
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 

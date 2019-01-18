@@ -35,7 +35,16 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #endif
 */
 
-#include "../../../ifcgeom/IfcGeom.h"
+#include "../../../ifcparse/macros.h"
+#include "../../../ifcgeom/schema_agnostic/Kernel.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+
+// @todo create separate shapetype enum?
+#include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
+
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../../ifcparse/x.h)
+#include INCLUDE_SCHEMA(IfcSchema)
+#undef INCLUDE_SCHEMA
 
 typedef void* cgal_shape_t;
 typedef void* cgal_face_t;
@@ -54,6 +63,8 @@ namespace IfcGeom {
 
 	class IFC_GEOM_API MAKE_TYPE_NAME(CgalKernel) : public Kernel {
 	public:
+
+		MAKE_TYPE_NAME(CgalKernel)() : Kernel("cgal") {}
 
 #ifndef NO_CACHE
 		CgalCache cache;
@@ -79,10 +90,15 @@ namespace IfcGeom {
 		}
 
 		virtual bool is_identity_transform(IfcUtil::IfcBaseClass*);
-		virtual IfcGeom::NativeElement<double>* create_brep_for_representation_and_product(
+
+		template <typename P, typename PP>
+		IfcGeom::NativeElement<P, PP>* create_brep_for_representation_and_product(
 			const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
-		virtual IfcGeom::NativeElement<double>* create_brep_for_processed_representation(
-			const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::NativeElement<double>*);
+
+		template <typename P, typename PP>
+		IfcGeom::NativeElement<P, PP>* create_brep_for_processed_representation(
+			const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::NativeElement<P, PP>*);
+
 
 #include "CgalEntityMappingDeclaration.h"
 

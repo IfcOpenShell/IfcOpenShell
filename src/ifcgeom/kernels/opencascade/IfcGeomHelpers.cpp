@@ -75,7 +75,7 @@
 
 #include <TopLoc_Location.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 

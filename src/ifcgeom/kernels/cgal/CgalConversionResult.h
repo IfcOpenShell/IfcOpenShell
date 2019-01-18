@@ -20,7 +20,7 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
-#include "../../../ifcgeom_schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 
 namespace IfcGeom {
 

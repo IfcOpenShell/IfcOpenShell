@@ -58,7 +58,7 @@
 #ifndef IFCGEOMITERATOR_H
 #define IFCGEOMITERATOR_H
 
-#include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
+#include "../../ifcgeom/schema_agnostic/IteratorImplementation.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min

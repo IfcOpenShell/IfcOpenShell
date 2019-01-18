@@ -23,10 +23,11 @@
 #include <string>
 #include <algorithm>
 
-#include "../ifcparse/IfcGlobalId.h"
+#include "../../ifcparse/IfcGlobalId.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+
 #include "ifc_geom_api.h"
 
 namespace IfcGeom {

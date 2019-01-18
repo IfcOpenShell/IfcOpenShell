@@ -95,7 +95,7 @@
 #include <BRepAdaptor_HCompCurve.hxx>
 #include <Approx_Curve3d.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 

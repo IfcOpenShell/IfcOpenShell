@@ -20,8 +20,8 @@
 #ifndef IFCSHAPELIST_H
 #define IFCSHAPELIST_H
 
-#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomRenderStyles.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
 
 namespace IfcGeom {
 

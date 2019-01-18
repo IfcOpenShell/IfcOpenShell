@@ -38,8 +38,8 @@
 #include <fcntl.h>
 #endif
 
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
+#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
 

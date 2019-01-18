@@ -1,7 +1,7 @@
 ﻿#include "OpenCascadeConversionResult.h"
 
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomRepresentation.h"
+#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
 
 #include "IfcGeom.h"
 
