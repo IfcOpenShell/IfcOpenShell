@@ -52,7 +52,7 @@ namespace IfcGeom {
 		std::map<int, cgal_shape_t> Shape;
 	};
 
-	class IFC_GEOM_API CgalKernel : public AbstractKernel {
+	class IFC_GEOM_API MAKE_TYPE_NAME(CgalKernel) : public Kernel {
 	public:
 
 #ifndef NO_CACHE

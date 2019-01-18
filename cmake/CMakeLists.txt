@@ -562,10 +562,10 @@ file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
 foreach(schema 2x3 4)
-add_library(IfcGeom_ifc${schema} ${IFCGEOM_FILES})
-set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
-TARGET_LINK_LIBRARIES(IfcGeom_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
-list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
+add_library(IfcGeom_occt_ifc${schema} ${IFCGEOM_FILES})
+set_target_properties(IfcGeom_occt_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
+TARGET_LINK_LIBRARIES(IfcGeom_occt_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
+list(APPEND IfcGeom_libraries IfcGeom_occt_ifc${schema})
 endforeach()
 
 ### CGAL
@@ -576,10 +576,10 @@ file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/cgal/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
 foreach(schema 2x3 4)
-add_library(IfcGeom_CGAL_ifc${schema} ${IFCGEOM_FILES})
-set_target_properties(IfcGeom_CGAL_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
-TARGET_LINK_LIBRARIES(IfcGeom_CGAL_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
-list(APPEND IfcGeom_CGAL_libraries IfcGeom_CGAL_ifc${schema})
+add_library(IfcGeom_cgal_ifc${schema} ${IFCGEOM_FILES})
+set_target_properties(IfcGeom_cgal_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
+TARGET_LINK_LIBRARIES(IfcGeom_cgal_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
+list(APPEND IfcGeom_libraries IfcGeom_cgal_ifc${schema})
 endforeach()
 
 # IfcGeom, schema and kernel agnostic
@@ -695,7 +695,7 @@ INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
 )
 
-INSTALL(TARGETS IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom
+INSTALL(TARGETS IfcGeom ${IfcGeom_libraries}
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}

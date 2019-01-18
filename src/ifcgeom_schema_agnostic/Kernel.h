@@ -52,7 +52,7 @@ namespace IfcGeom {
 			GV_DIMENSIONALITY
 		};
 
-		Kernel(IfcParse::IfcFile* file_ = 0);
+		Kernel(const std::string& geometry_library, IfcParse::IfcFile* file_ = 0);
 		
 		virtual ~Kernel() {}
 
@@ -85,16 +85,17 @@ namespace IfcGeom {
 		static bool is_manifold(const TopoDS_Shape& a);
 		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*);
 		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+		static IfcEntityList::ptr find_openings(IfcUtil::IfcBaseEntity* product);
 	};
 
 	namespace impl {
 		typedef boost::function1<Kernel*, IfcParse::IfcFile*> kernel_fn;
 
-		class KernelFactoryImplementation : public std::map<std::string, kernel_fn> {
+		class KernelFactoryImplementation : public std::map<std::pair<std::string, std::string>, kernel_fn> {
 		public:
 			KernelFactoryImplementation();
-			void bind(const std::string& schema_name, kernel_fn);
-			Kernel* construct(const std::string& schema_name, IfcParse::IfcFile*);
+			void bind(const std::string& schema_name, const std::string& geometry_library, kernel_fn);
+			Kernel* construct(const std::string& schema_name, const std::string& geometry_library, IfcParse::IfcFile*);
 		};
 
 		KernelFactoryImplementation& kernel_implementations();

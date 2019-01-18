@@ -1,6 +1,8 @@
 #include "CgalKernel.h"
 #include "CgalConversionResult.h"
 
+#define CgalKernel MAKE_TYPE_NAME(CgalKernel)
+
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, ConversionResults& shapes) {
 	IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
 	bool part_succes = false;
@@ -12,7 +14,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 			} else {
 				cgal_shape_t s;
 				if (convert_shape(representation_item, s)) {
-					shapes.push_back(ConversionResult(new CgalShape(s), get_style(representation_item)));
+					shapes.push_back(ConversionResult(representation_item->data().id(), new CgalShape(s)));
 					part_succes |= true;
 				}
 			}
@@ -21,6 +23,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
 	return part_succes;
 }
 
-bool IfcGeom::CgalKernel::convert(const Ifc2x3::IfcExtrudedAreaSolid*, cgal_shape_t&) {
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid*, cgal_shape_t&) {
 	throw std::runtime_error("Not implemented IfcExtrudedAreaSolid");
 }
