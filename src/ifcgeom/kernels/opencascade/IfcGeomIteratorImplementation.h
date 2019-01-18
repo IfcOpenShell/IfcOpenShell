@@ -73,16 +73,16 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
-#include "../ifcparse/IfcFile.h"
+#include "../../../ifcparse/IfcFile.h"
 
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../ifcgeom_schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
-#include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomFilter.h"
+#include "../../../ifcgeom/schema_agnostic/IteratorImplementation.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min

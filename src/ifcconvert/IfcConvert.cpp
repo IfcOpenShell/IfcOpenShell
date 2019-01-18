@@ -33,9 +33,9 @@
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
+#include "../ifcgeom/schema_agnostic/IfcGeomFilter.h"
+#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/schema_agnostic/IfcGeomRenderStyles.h"
 
 #include <Standard_Version.hxx>
 

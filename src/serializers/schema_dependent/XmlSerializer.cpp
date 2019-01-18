@@ -29,7 +29,7 @@
 #include <algorithm>
 
 #include "../../ifcparse/IfcSIPrefix.h"
-#include "../../ifcgeom/IfcGeom.h"
+#include "../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 using boost::property_tree::ptree;
 

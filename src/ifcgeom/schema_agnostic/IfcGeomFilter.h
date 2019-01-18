@@ -23,8 +23,8 @@
 #ifndef IFCGEOMFILTER_H
 #define IFCGEOMFILTER_H
 
-#include "Kernel.h"
-#include "../ifcparse/IfcFile.h"
+#include "../../ifcgeom/schema_agnostic/Kernel.h"
+#include "../../ifcparse/IfcFile.h"
 
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>

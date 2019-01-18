@@ -34,7 +34,7 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
 
-#include "../ifcgeom_schema_agnostic/ConversionResult.h"
+#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 
 namespace IfcGeom {
 

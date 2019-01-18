@@ -101,7 +101,7 @@
 
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 
-#include "../ifcgeom/IfcGeom.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 #include <memory>
 

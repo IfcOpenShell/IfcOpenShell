@@ -20,7 +20,7 @@
 
 #include "WavefrontObjSerializer.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
+#include "../ifcgeom/schema_agnostic/IfcGeomRenderStyles.h"
 
 #include <boost/lexical_cast.hpp>
 #include <iomanip>

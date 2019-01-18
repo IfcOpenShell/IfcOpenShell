@@ -1,9 +1,9 @@
 #ifndef ITERATOR_IMPLEMENTATION_H
 #define ITERATOR_IMPLEMENTATION_H
 
-#include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
-#include "../ifcparse/IfcFile.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcparse/IfcFile.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomFilter.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
 
 #include <gp_XYZ.hxx>
 

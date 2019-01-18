@@ -1,5 +1,8 @@
 #include "Kernel.h"
 
+#include "../../ifcparse/Ifc2x3.h"
+#include "../../ifcparse/Ifc4.h"
+
 #include <TopExp.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>

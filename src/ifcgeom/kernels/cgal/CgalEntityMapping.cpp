@@ -17,9 +17,6 @@
 *                                                                              *
 ********************************************************************************/
 
-#include "../../../ifcgeom/IfcGeomShapeType.h"
-#include "../../../ifcgeom/IfcGeom.h"
-
 #include "CgalKernel.h"
 #include "CgalConversionResult.h"
 

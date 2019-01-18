@@ -44,7 +44,7 @@
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/Serialization.h"
+#include "../ifcgeom/schema_agnostic/Serialization.h"
 
 #if USE_VLD
 #include <vld.h>

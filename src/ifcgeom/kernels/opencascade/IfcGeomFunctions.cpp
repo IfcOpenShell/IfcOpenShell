@@ -146,11 +146,11 @@
 #include <Extrema_ExtPC.hxx>
 #include <BRepAdaptor_Curve.hxx>
 
-#include "../ifcparse/macros.h"
-#include "../ifcparse/IfcSIPrefix.h"
-#include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom/IfcGeomTree.h"
+#include "../../../ifcparse/macros.h"
+#include "../../../ifcparse/IfcSIPrefix.h"
+#include "../../../ifcparse/IfcFile.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
+#include "../../../ifcgeom/kernels/opencascade/IfcGeomTree.h"
 
 #include <memory>
 

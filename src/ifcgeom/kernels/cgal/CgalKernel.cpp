@@ -17,16 +17,13 @@
 *                                                                              *
 ********************************************************************************/
 
-#include "../../../ifcgeom/IfcGeomShapeType.h"
-#include "../../../ifcgeom/IfcGeom.h"
-
 #include "CgalKernel.h"
 #include "CgalConversionResult.h"
 
 namespace {
 	struct MAKE_TYPE_NAME(factory_t) {
 		IfcGeom::Kernel* operator()(IfcParse::IfcFile* file) const {
-			IfcGeom::MAKE_TYPE_NAME(Kernel)* k = new IfcGeom::MAKE_TYPE_NAME(Kernel);
+			IfcGeom::MAKE_TYPE_NAME(CgalKernel)* k = new IfcGeom::MAKE_TYPE_NAME(CgalKernel);
 			return k;
 		}
 	};
@@ -84,7 +81,8 @@ bool IfcGeom::CgalKernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
 	*/
 }
 
-IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representation_and_product(
+template <typename P, typename PP>
+IfcGeom::NativeElement<P, PP>* IfcGeom::CgalKernel::create_brep_for_representation_and_product(
 	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 {
 	IfcGeom::Representation::BRep* shape;
@@ -139,7 +137,7 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 		context_string = representation->ContextOfItems()->ContextType();
 	}
 
-	return new NativeElement<double>(
+	return new NativeElement<P, PP>(
 		product->data().id(),
 		parent_id,
 		name,
@@ -152,9 +150,10 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_representat
 	);
 }
 
-IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_processed_representation(
+template <typename P, typename PP>
+IfcGeom::NativeElement<P, PP>* IfcGeom::CgalKernel::create_brep_for_processed_representation(
 	const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
-	IfcGeom::NativeElement<double>* brep)
+	IfcGeom::NativeElement<P, PP>* brep)
 {
 	int parent_id = -1;
 	try {
@@ -183,7 +182,7 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_processed_r
 
 	const std::string product_type = product->declaration().name();
 
-	return new NativeElement<double>(
+	return new NativeElement<P, PP>(
 		product->data().id(),
 		parent_id,
 		name,
@@ -195,3 +194,17 @@ IfcGeom::NativeElement<double>* IfcGeom::CgalKernel::create_brep_for_processed_r
 		product
 	);
 }
+
+template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::CgalKernel::create_brep_for_representation_and_product<float, float>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
+template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::CgalKernel::create_brep_for_representation_and_product<float, double>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
+template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::CgalKernel::create_brep_for_representation_and_product<double, double>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
+
+template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::CgalKernel::create_brep_for_processed_representation<float, float>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, float>* brep);
+template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::CgalKernel::create_brep_for_processed_representation<float, double>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, double>* brep);
+template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::CgalKernel::create_brep_for_processed_representation<double, double>(
+	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<double, double>* brep);
