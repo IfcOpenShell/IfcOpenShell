@@ -5,14 +5,14 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 
-IfcGeom::Kernel::Kernel(IfcParse::IfcFile* file) {
+IfcGeom::Kernel::Kernel(const std::string& geometry_library, IfcParse::IfcFile* file) {
 	if (file != 0) {
 		if (file->schema() == 0) {
 			throw IfcParse::IfcException("No schema associated with file");
 		}
 
 		const std::string& schema_name = file->schema()->name();
-		implementation_ = impl::kernel_implementations().construct(schema_name, file);
+		implementation_ = impl::kernel_implementations().construct(schema_name, geometry_library, file);
 	}
 }
 
@@ -48,23 +48,27 @@ IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementation
 	return impl;
 }
 
-extern void init_KernelImplementation_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
-extern void init_KernelImplementation_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
+extern void init_KernelImplementation_opencascade_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
+extern void init_KernelImplementation_opencascade_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
+extern void init_KernelImplementation_cgal_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
+extern void init_KernelImplementation_cgal_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
 
 IfcGeom::impl::KernelFactoryImplementation::KernelFactoryImplementation() {
-	init_KernelImplementation_Ifc2x3(this);
-	init_KernelImplementation_Ifc4(this);
+	init_KernelImplementation_opencascade_Ifc2x3(this);
+	init_KernelImplementation_opencascade_Ifc4(this);
+	init_KernelImplementation_cgal_Ifc2x3(this);
+	init_KernelImplementation_cgal_Ifc4(this);
 }
 
-void IfcGeom::impl::KernelFactoryImplementation::bind(const std::string& schema_name, IfcGeom::impl::kernel_fn fn) {
+void IfcGeom::impl::KernelFactoryImplementation::bind(const std::string& schema_name, const std::string& geometry_library, IfcGeom::impl::kernel_fn fn) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-	this->insert(std::make_pair(schema_name_lower, fn));
+	this->insert(std::make_pair(std::make_pair(schema_name_lower, geometry_library), fn));
 }
 
-IfcGeom::Kernel* IfcGeom::impl::KernelFactoryImplementation::construct(const std::string& schema_name, IfcParse::IfcFile* file) {
+IfcGeom::Kernel* IfcGeom::impl::KernelFactoryImplementation::construct(const std::string& schema_name, const std::string& geometry_library, IfcParse::IfcFile* file) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-	std::map<std::string, IfcGeom::impl::kernel_fn>::const_iterator it;
-	it = this->find(schema_name_lower);
+	std::map<std::pair<std::string, std::string>, IfcGeom::impl::kernel_fn>::const_iterator it;
+	it = this->find(std::make_pair(schema_name_lower, geometry_library));
 	if (it == end()) {
 		throw IfcParse::IfcException("No geometry kernel registered for " + schema_name);
 	}
@@ -215,5 +219,43 @@ bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
 		}
 
 		return true;
+	}
+}
+
+namespace {
+	template <typename Schema>
+	IfcEntityList::ptr find_openings_helper(typename Schema::IfcProduct* product) {
+
+		typename IfcEntityList::ptr openings(new IfcEntityList);
+		if (product->declaration().is(Schema::IfcElement::Class()) && !product->declaration().is(Schema::IfcOpeningElement::Class())) {
+			typename Schema::IfcElement* element = (typename Schema::IfcElement*)product;
+			openings = element->HasOpenings()->generalize();
+		}
+
+		// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
+		typename Schema::IfcObjectDefinition* obdef = product->as<typename Schema::IfcObjectDefinition>();
+		for (;;) {
+			auto decomposes = obdef->Decomposes()->generalize();
+			if (decomposes->size() != 1) break;
+			typename Schema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<typename Schema::IfcRelAggregates>()->RelatingObject();
+			if (rel_obdef->declaration().is(Schema::IfcElement::Class()) && !rel_obdef->declaration().is(Schema::IfcOpeningElement::Class())) {
+				typename Schema::IfcElement* element = (typename Schema::IfcElement*)rel_obdef;
+				openings->push(element->HasOpenings()->generalize());
+			}
+
+			obdef = rel_obdef;
+		}
+
+		return openings;
+	}
+}
+
+IfcEntityList::ptr IfcGeom::Kernel::find_openings(IfcUtil::IfcBaseEntity* inst) {
+	if (inst->as<Ifc2x3::IfcProduct>()) {
+		return find_openings_helper<Ifc2x3>(inst->as<Ifc2x3::IfcProduct>());
+	} else if (inst->as<Ifc4::IfcProduct>()) {
+		return find_openings_helper<Ifc4>(inst->as<Ifc4::IfcProduct>());
+	} else {
+		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 	}
 }

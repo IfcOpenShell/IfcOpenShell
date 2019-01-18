@@ -25,7 +25,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../../../ifcparse/IfcUtil.h"
 #include "../../../ifcparse/IfcParse.h"
 
 SHAPES(IfcRepresentation);

@@ -501,7 +501,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (!storeys || storeys->size() == 0) {
 		
-		IfcGeom::Kernel kernel(f);
+		IfcGeom::Kernel kernel("opencascade", f);
 		
 		std::vector<const IfcParse::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));

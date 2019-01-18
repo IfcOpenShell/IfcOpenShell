@@ -20,7 +20,7 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
-#include "../../../ifcgeom/ConversionResult.h"
+#include "../../../ifcgeom_schema_agnostic/ConversionResult.h"
 
 namespace IfcGeom {
 
@@ -37,16 +37,27 @@ namespace IfcGeom {
 			// Get cell from placement as 4x3 matrix as implemented in OCCT. We'll have to check exact semantics.
 			throw std::runtime_error("Not implemented");
 		}
+
 		virtual void Multiply(const ConversionResultPlacement* other) {
 			// Multiply matrix as implemented in OCCT. We'll have to check exact semantics.
 			throw std::runtime_error("Not implemented");
 		}
+
 		virtual void PreMultiply(const ConversionResultPlacement* other) {
 			// PreMultiply matrix as implemented in OCCT. We'll have to check exact semantics.
 			throw std::runtime_error("Not implemented");
 		}
+
 		virtual ConversionResultPlacement* clone() const {
 			return new CgalPlacement(trsf_);
+		}
+
+		virtual ConversionResultPlacement* inverted() const {
+			throw std::runtime_error("Not implemented");
+		}
+
+		virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement*) const {
+			throw std::runtime_error("Not implemented");
 		}
     private:
         cgal_placement_t trsf_;
@@ -61,12 +72,20 @@ namespace IfcGeom {
 		const cgal_shape_t& shape() const { return shape_; }
 		operator const cgal_shape_t& () { return shape_; }
 
+		virtual void Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<float> * t, int surface_style_id) const;
+		
 		virtual void Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const;
+		
 		virtual void Serialize(std::string&) const {
 			throw std::runtime_error("Not implemented");
 		}
+
 		virtual ConversionResultShape* clone() const {
 			return new CgalShape(shape_);
+		}
+
+		virtual int surface_genus() const {
+			throw std::runtime_error("Not implemented");
 		}
     private:
         cgal_shape_t shape_;

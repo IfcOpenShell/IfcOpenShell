@@ -333,8 +333,6 @@ public:
 	
 	bool is_identity_transform(IfcUtil::IfcBaseClass*);
 
-	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
-
 	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);

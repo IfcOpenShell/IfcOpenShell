@@ -216,10 +216,10 @@ namespace {
 	};
 }
 
-void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
+void MAKE_INIT_FN(KernelImplementation_opencascade_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
 	MAKE_TYPE_NAME(factory_t) factory;
-	mapping->bind(schema_name, factory);
+	mapping->bind(schema_name, "opencascade", factory);
 }
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
@@ -1407,35 +1407,6 @@ void IfcGeom::Kernel::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, T
 	w = builder.Wire();	
 }
 
-IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
-	
-	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
-	if ( product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
-		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
-		openings = element->HasOpenings();
-	}
-
-	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-	IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
-	for (;;) {
-#ifdef USE_IFC4
-		IfcSchema::IfcRelAggregates::list::ptr decomposes = obdef->Decomposes();
-#else
-		IfcSchema::IfcRelDecomposes::list::ptr decomposes = obdef->Decomposes();
-#endif
-		if (decomposes->size() != 1) break;
-		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
-		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
-			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
-			openings->push(element->HasOpenings());
-		}
-
-		obdef = rel_obdef;
-	}
-
-	return openings;
-}
-
 const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(const IfcSchema::IfcProduct* product) {
 	IfcSchema::IfcMaterial* single_material = 0;
 	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
@@ -1569,7 +1540,7 @@ IfcGeom::NativeElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_a
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
-	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product);
+	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product)->as<IfcSchema::IfcRelVoidsElement>();
 
 	const std::string product_type = product->declaration().name();
 	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
