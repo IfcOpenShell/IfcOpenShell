@@ -18,7 +18,6 @@
 ********************************************************************************/
 
 #include "CgalKernel.h"
-#include "CgalConversionResult.h"
 
 #define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 

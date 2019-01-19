@@ -1,5 +1,5 @@
 #include "IfcGeomIteratorImplementation.h"
-#include "../../../ifcgeom/schema_agnostic/IteratorImplementation.h"
+#include "../../ifcgeom/schema_agnostic/IteratorImplementation.h"
 
 namespace IfcGeom {
 	template class MAKE_TYPE_NAME(IteratorImplementation_)<float, float>;
@@ -14,8 +14,8 @@ namespace IfcGeom {
 namespace {
 	template <typename P, typename PP>
 	struct MAKE_TYPE_NAME(factory_t) {
-		IfcGeom::IteratorImplementation<P, PP>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters) const {
-			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P, PP>(settings, file, filters);
+		IfcGeom::IteratorImplementation<P, PP>* operator()(const std::string& geometry_engine, const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters) const {
+			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P, PP>(geometry_engine, settings, file, filters);
 		}
 	};
 }

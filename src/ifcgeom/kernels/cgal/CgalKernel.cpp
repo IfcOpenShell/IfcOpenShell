@@ -18,7 +18,6 @@
 ********************************************************************************/
 
 #include "CgalKernel.h"
-#include "CgalConversionResult.h"
 
 namespace {
 	struct MAKE_TYPE_NAME(factory_t) {
@@ -208,3 +207,27 @@ template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::CgalKernel
 	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, double>* brep);
 template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::CgalKernel::create_brep_for_processed_representation<double, double>(
 	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<double, double>* brep);
+
+
+void IfcGeom::CgalKernel::setValue(GeomValue var, double value) {
+	switch (var) {
+	case GV_DEFLECTION_TOLERANCE:
+		deflection_tolerance = value;
+		break;
+	case GV_DIMENSIONALITY:
+		dimensionality = value;
+		break;
+	default:
+		throw std::runtime_error("Not implemented for this kernel");
+	}
+}
+
+double IfcGeom::CgalKernel::getValue(GeomValue var) const {
+	switch (var) {
+	case GV_DEFLECTION_TOLERANCE:
+		return deflection_tolerance;
+	case GV_DIMENSIONALITY:
+		return dimensionality;
+	}
+	throw std::runtime_error("Not implemented for this kernel");
+}

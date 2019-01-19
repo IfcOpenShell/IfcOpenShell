@@ -31,14 +31,14 @@ void IteratorFactoryImplementation<P, PP>::bind(const std::string& schema_name, 
 }
 
 template <typename P, typename PP>
-IfcGeom::IteratorImplementation<P, PP>* IteratorFactoryImplementation<P, PP>::construct(const std::string& schema_name, const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters) {
+IfcGeom::IteratorImplementation<P, PP>* IteratorFactoryImplementation<P, PP>::construct(const std::string& schema_name, const std::string& geometry_library, const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
 	typename std::map<std::string, typename get_factory_type<P, PP>::type>::const_iterator it;
 	it = this->find(schema_name_lower);
 	if (it == this->end()) {
 		throw IfcParse::IfcException("No geometry iterator registered for " + schema_name);
 	}
-	return it->second(settings, file, filters);
+	return it->second(geometry_library, settings, file, filters);
 }
 
 
