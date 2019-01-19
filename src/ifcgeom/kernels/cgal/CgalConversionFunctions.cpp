@@ -1,5 +1,5 @@
 #include "CgalKernel.h"
-#include "CgalConversionResult.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
 
 #define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 

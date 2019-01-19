@@ -20,6 +20,13 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
+typedef void* cgal_shape_t;
+typedef void* cgal_face_t;
+typedef void* cgal_wire_t;
+typedef void* cgal_curve_t;
+typedef void* cgal_placement_t;
+typedef void* cgal_point_t;
+
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 
 namespace IfcGeom {

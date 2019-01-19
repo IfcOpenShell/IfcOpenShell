@@ -3,8 +3,6 @@
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
 
-#include "IfcGeom.h"
-
 #include <TopoDS.hxx>
 
 #include <map>
@@ -198,5 +196,6 @@ void IfcGeom::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings & se
 }
 
 int IfcGeom::OpenCascadeShape::surface_genus() const {
-	return IfcGeom::Kernel::surface_genus(shape_);
+	throw std::runtime_error("Not implemented");
+	// return IfcGeom::Kernel::surface_genus(shape_);
 }

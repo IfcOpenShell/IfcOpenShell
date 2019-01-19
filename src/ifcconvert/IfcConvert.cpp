@@ -652,7 +652,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs);
+    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, "cgal");
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.

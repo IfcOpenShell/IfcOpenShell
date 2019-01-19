@@ -554,6 +554,18 @@ ENDIF()
 
 if (BUILD_IFCGEOM)
 
+foreach(kernel opencascade cgal)
+string(TOUPPER ${kernel} KERNEL_UPPER)
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.cpp)
+set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
+
+add_library(IfcGeom_${kernel} ${IFCGEOM_FILES})
+set_target_properties(IfcGeom_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
+target_link_libraries(IfcGeom_${kernel} IfcParse ${${KERNEL_UPPER}_LIBRARIES})
+list(APPEND IfcGeom_libraries IfcGeom_${kernel})
+endforeach()
+
 foreach(schema 2x3 4)
 
 file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernel_agnostic/*.h)
@@ -566,15 +578,13 @@ target_link_libraries(IfcGeom_ifc${schema} IfcParse)
 list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
 
 foreach(kernel opencascade cgal)
-string(TOUPPER ${kernel} KERNEL_UPPER)
-
 file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
 add_library(IfcGeom_${kernel}_ifc${schema} ${IFCGEOM_FILES})
 set_target_properties(IfcGeom_${kernel}_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
-target_link_libraries(IfcGeom_${kernel}_ifc${schema} IfcGeom_ifc${schema} ${${KERNEL_UPPER}_LIBRARIES})
+target_link_libraries(IfcGeom_${kernel}_ifc${schema} IfcGeom_${kernel} IfcGeom_ifc${schema})
 list(APPEND IfcGeom_libraries IfcGeom_${kernel}_ifc${schema})
 endforeach()
 

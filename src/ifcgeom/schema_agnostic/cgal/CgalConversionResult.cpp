@@ -1,4 +1,3 @@
-#include "CgalKernel.h"
 #include "CgalConversionResult.h"
 
 template <typename Precision>

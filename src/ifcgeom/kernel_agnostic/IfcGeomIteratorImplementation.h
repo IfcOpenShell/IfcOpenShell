@@ -73,16 +73,18 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
-#include "../../../ifcparse/IfcFile.h"
+#include "../../ifcparse/IfcFile.h"
 
-#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
-#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
-#include "../../../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
-#include "../../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
+#include "../../ifcgeom/kernels/opencascade/IfcGeom.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/schema_agnostic/ConversionResult.h"
 
-#include "../../../ifcgeom/schema_agnostic/IfcGeomFilter.h"
-#include "../../../ifcgeom/schema_agnostic/IteratorImplementation.h"
+#include "../../ifcgeom/schema_agnostic/IfcGeomFilter.h"
+#include "../../ifcgeom/schema_agnostic/IteratorImplementation.h"
+
+#include "../../ifcgeom/schema_agnostic/Kernel.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
@@ -101,7 +103,7 @@ namespace IfcGeom {
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
-		MAKE_TYPE_NAME(Kernel) kernel;
+		MAKE_TYPE_NAME(Kernel)* kernel;
 		IteratorSettings settings;
 
 		IfcParse::IfcFile* ifc_file;
@@ -141,29 +143,12 @@ namespace IfcGeom {
             IfcSchema::IfcProduct* product;
         };
 
-		void initUnits() {
-			IfcSchema::IfcProject::list::ptr projects = ifc_file->instances_by_type<IfcSchema::IfcProject>();
-			if (projects->size() == 1) {
-				IfcSchema::IfcProject* project = *projects->begin();
-				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
-				unit_name = length_unit.first;
-				unit_magnitude = length_unit.second;
-			} else {
-				Logger::Warning("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
-			}
-		}
-
         /// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
 		typedef P Precision;
 		typedef PP PlacementPrecision;
 
 		bool initialize() {
-			try {
-				initUnits();
-			} catch (const std::exception& e) {
-				Logger::Error(e);
-			}
 
 			std::set<std::string> allowed_context_types;
 			allowed_context_types.insert("model");
@@ -184,9 +169,6 @@ namespace IfcGeom {
             if (settings.get(IteratorSettings::INCLUDE_CURVES)) {
 				context_types.insert("plan");
 			}			
-
-			double lowest_precision_encountered = std::numeric_limits<double>::infinity();
-			bool any_precision_encountered = false;
 
 			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
             ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
@@ -237,36 +219,13 @@ namespace IfcGeom {
 				IfcSchema::IfcGeometricRepresentationContext* context = *it;
 
 				representations->push(context->RepresentationsInContext());
-				try {
-					if (context->hasPrecision() && context->Precision() < lowest_precision_encountered) {
-						lowest_precision_encountered = context->Precision();
-						any_precision_encountered = true;
-					}
-				} catch (const std::exception& e) {
-					Logger::Error(e);
-				}
-
+				
 				IfcSchema::IfcGeometricRepresentationSubContext::list::ptr sub_contexts = context->HasSubContexts();
 				for (jt = sub_contexts->begin(); jt != sub_contexts->end(); ++jt) {
 					representations->push((*jt)->RepresentationsInContext());
 				}
 				// There is no need for full recursion as the following is governed by the schema:
 				// WR31: The parent context shall not be another geometric representation sub context. 
-			}
-
-			if (any_precision_encountered) {
-				// Some arbitrary factor that has proven to work better for the models in the set of test files.
-				lowest_precision_encountered *= 10.;
-
-				lowest_precision_encountered *= unit_magnitude;
-				if (lowest_precision_encountered < 1.e-7) {
-					Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
-					kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-7);
-				} else {
-					kernel.setValue(IfcGeom::Kernel::GV_PRECISION, lowest_precision_encountered);
-				}
-			} else {
-				kernel.setValue(IfcGeom::Kernel::GV_PRECISION, 1.e-5);
 			}
 
             if (representations->size() == 0) {
@@ -310,7 +269,7 @@ namespace IfcGeom {
                     bool success = false;
 
                     try {
-                        success = kernel.convert(product->ObjectPlacement(), trsf);
+                        success = kernel->convert(product->ObjectPlacement(), trsf);
                     } catch (const std::exception& e) {
                         Logger::Error(e);
                     } catch (...) {
@@ -357,7 +316,7 @@ namespace IfcGeom {
 			// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
 			static const int clear_interval = 64;
 			if (done % clear_interval == clear_interval - 1) {
-				kernel.purge_cache();
+				kernel->purge_cache();
 			}
 			ifcproducts.reset();
 			++ representation_iterator;
@@ -378,7 +337,7 @@ namespace IfcGeom {
 			for (IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it) {
 				IfcSchema::IfcProduct* product = *it;
 
-				if (!settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && kernel.find_openings(product)->size()) {
+				if (!settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && kernel->find_openings(product)->size()) {
 					return false;
 				}
 
@@ -396,7 +355,7 @@ namespace IfcGeom {
 				}
 
 				// Note that this can be a nullptr (!), but the fact that set size should be one still holds
-				associated_single_materials.insert(kernel.get_single_material_association(product));
+				associated_single_materials.insert(kernel->get_single_material_association(product));
                 if (associated_single_materials.size() > 1) return false;
 			}
 
@@ -416,7 +375,7 @@ namespace IfcGeom {
 				if (!ifcproducts) {
 					// Init. the list of filtered IfcProducts for this representation
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
-					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel.products_represented_by(representation);
+					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel->products_represented_by(representation);
                     // Include only the desired products for processing.
                     for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
                         IfcSchema::IfcProduct* prod = *jt;
@@ -450,7 +409,7 @@ namespace IfcGeom {
 
 					// Check if this represenation has (or will be) processed as part its mapped representation
 					bool representation_processed_as_mapped_item = false;
-                    IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
+                    IfcSchema::IfcRepresentation* representation_mapped_to = kernel->representation_mapped_to(representation);
 					if (representation_mapped_to) {
                         representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ ||
                             ok_mapped_representations->contains(representation_mapped_to);
@@ -476,9 +435,9 @@ namespace IfcGeom {
 
 				NativeElement<P, PP>* element;
 				if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
-					element = kernel.create_brep_for_representation_and_product<P, PP>(settings, representation, product);
+					element = kernel->create_brep_for_representation_and_product<P, PP>(settings, representation, product);
 				} else {
-					element = kernel.create_brep_for_processed_representation(settings, representation, product, current_shape_model);
+					element = kernel->create_brep_for_processed_representation(settings, representation, product, current_shape_model);
 				}
 
 				Logger::SetProduct(boost::none);
@@ -614,7 +573,7 @@ namespace IfcGeom {
 					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
-						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product)->template as<IfcSchema::IfcObjectDefinition>();
+						IfcSchema::IfcObjectDefinition* parent_object = kernel->get_decomposing_entity(ifc_product)->template as<IfcSchema::IfcObjectDefinition>();
 						if (parent_object) {
 							parent_id = parent_object->data().id();
 						}
@@ -625,7 +584,7 @@ namespace IfcGeom {
 					}
 
 					try {
-						kernel.convert(ifc_product->ObjectPlacement(), trsf);
+						kernel->convert(ifc_product->ObjectPlacement(), trsf);
 					} catch (const std::exception& e) {
 						Logger::Error(e);
 					} catch (...) {
@@ -706,26 +665,28 @@ namespace IfcGeom {
 			unit_name = "METER";
 			unit_magnitude = 1.f;
 
-            kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
+            kernel->setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
 				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
 				}
-				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcBuilding::Class());
+				kernel->set_conversion_placement_rel_to(&IfcSchema::IfcBuilding::Class());
 			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
-				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
+				kernel->set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
 			}
 		}
 
 		bool owns_ifc_file;
 	public:
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
 			: settings(settings)
 			, ifc_file(file)
 			, filters_(filters)
 			, owns_ifc_file(false)
 		{
+			kernel = (MAKE_TYPE_NAME(Kernel)*) impl::kernel_implementations().construct(file->schema()->name(), geometry_library, file);
+			// kernel = new Kernel(geometry_library, file);
 			_initialize();
 		}
 

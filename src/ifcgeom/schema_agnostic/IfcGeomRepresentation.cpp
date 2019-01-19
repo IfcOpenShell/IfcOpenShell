@@ -27,7 +27,7 @@
 #include <BRepGProp.hxx>
 
 #include "IfcGeomRepresentation.h"
-#include "../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
 #include "../../ifcgeom/schema_agnostic/Kernel.h"
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)

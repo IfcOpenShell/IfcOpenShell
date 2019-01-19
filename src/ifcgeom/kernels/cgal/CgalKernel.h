@@ -38,6 +38,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include "../../../ifcparse/macros.h"
 #include "../../../ifcgeom/schema_agnostic/Kernel.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
 
 // @todo create separate shapetype enum?
 #include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
@@ -45,13 +46,6 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../../ifcparse/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
-
-typedef void* cgal_shape_t;
-typedef void* cgal_face_t;
-typedef void* cgal_wire_t;
-typedef void* cgal_curve_t;
-typedef void* cgal_placement_t;
-typedef void* cgal_point_t;
 
 namespace IfcGeom {
 
@@ -78,6 +72,9 @@ namespace IfcGeom {
 		bool convert_curve(const IfcUtil::IfcBaseClass* L, cgal_curve_t& result);
 		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
 
+		virtual void setValue(GeomValue var, double value);
+		virtual double getValue(GeomValue var) const;
+
 		// bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 
 		void purge_cache() {
@@ -102,6 +99,9 @@ namespace IfcGeom {
 
 #include "CgalEntityMappingDeclaration.h"
 
+	private:
+		double deflection_tolerance;
+		double dimensionality;
 	};
 
 }
