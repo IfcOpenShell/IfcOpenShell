@@ -356,10 +356,13 @@ extern entity* IFC4_IfcIShapeProfileDef_type;
 extern entity* IFC4_IfcImageTexture_type;
 extern entity* IFC4_IfcIndexedColourMap_type;
 extern entity* IFC4_IfcIndexedPolyCurve_type;
+extern entity* IFC4_IfcIndexedPolygonalFace_type;
+extern entity* IFC4_IfcIndexedPolygonalFaceWithVoids_type;
 extern entity* IFC4_IfcIndexedTextureMap_type;
 extern entity* IFC4_IfcIndexedTriangleTextureMap_type;
 extern entity* IFC4_IfcInterceptor_type;
 extern entity* IFC4_IfcInterceptorType_type;
+extern entity* IFC4_IfcIntersectionCurve_type;
 extern entity* IFC4_IfcInventory_type;
 extern entity* IFC4_IfcIrregularTimeSeries_type;
 extern entity* IFC4_IfcIrregularTimeSeriesValue_type;
@@ -469,6 +472,7 @@ extern entity* IFC4_IfcPointOnCurve_type;
 extern entity* IFC4_IfcPointOnSurface_type;
 extern entity* IFC4_IfcPolyLoop_type;
 extern entity* IFC4_IfcPolygonalBoundedHalfSpace_type;
+extern entity* IFC4_IfcPolygonalFaceSet_type;
 extern entity* IFC4_IfcPolyline_type;
 extern entity* IFC4_IfcPort_type;
 extern entity* IFC4_IfcPostalAddress_type;
@@ -619,6 +623,7 @@ extern entity* IFC4_IfcSIUnit_type;
 extern entity* IFC4_IfcSanitaryTerminal_type;
 extern entity* IFC4_IfcSanitaryTerminalType_type;
 extern entity* IFC4_IfcSchedulingTime_type;
+extern entity* IFC4_IfcSeamCurve_type;
 extern entity* IFC4_IfcSectionProperties_type;
 extern entity* IFC4_IfcSectionReinforcementProperties_type;
 extern entity* IFC4_IfcSectionedSpine_type;
@@ -652,6 +657,7 @@ extern entity* IFC4_IfcSpatialStructureElementType_type;
 extern entity* IFC4_IfcSpatialZone_type;
 extern entity* IFC4_IfcSpatialZoneType_type;
 extern entity* IFC4_IfcSphere_type;
+extern entity* IFC4_IfcSphericalSurface_type;
 extern entity* IFC4_IfcStackTerminal_type;
 extern entity* IFC4_IfcStackTerminalType_type;
 extern entity* IFC4_IfcStair_type;
@@ -702,6 +708,7 @@ extern entity* IFC4_IfcSubContractResource_type;
 extern entity* IFC4_IfcSubContractResourceType_type;
 extern entity* IFC4_IfcSubedge_type;
 extern entity* IFC4_IfcSurface_type;
+extern entity* IFC4_IfcSurfaceCurve_type;
 extern entity* IFC4_IfcSurfaceCurveSweptAreaSolid_type;
 extern entity* IFC4_IfcSurfaceFeature_type;
 extern entity* IFC4_IfcSurfaceOfLinearExtrusion_type;
@@ -756,6 +763,7 @@ extern entity* IFC4_IfcTimeSeries_type;
 extern entity* IFC4_IfcTimeSeriesValue_type;
 extern entity* IFC4_IfcTopologicalRepresentationItem_type;
 extern entity* IFC4_IfcTopologyRepresentation_type;
+extern entity* IFC4_IfcToroidalSurface_type;
 extern entity* IFC4_IfcTransformer_type;
 extern entity* IFC4_IfcTransformerType_type;
 extern entity* IFC4_IfcTransportElement_type;
@@ -912,7 +920,6 @@ extern type_declaration* IFC4_IfcSoundPressureMeasure_type;
 extern type_declaration* IFC4_IfcSpecificHeatCapacityMeasure_type;
 extern type_declaration* IFC4_IfcSpecularExponent_type;
 extern type_declaration* IFC4_IfcSpecularRoughness_type;
-extern type_declaration* IFC4_IfcStrippedOptional_type;
 extern type_declaration* IFC4_IfcTemperatureGradientMeasure_type;
 extern type_declaration* IFC4_IfcTemperatureRateOfChangeMeasure_type;
 extern type_declaration* IFC4_IfcText_type;
@@ -1307,8 +1314,8 @@ Ifc4::IfcBuildingElementPartTypeEnum::Value Ifc4::IfcBuildingElementPartTypeEnum
 }
 
 const char* Ifc4::IfcBuildingElementProxyTypeEnum::ToString(Value v) {
-    if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
-    const char* names[] = { "COMPLEX", "ELEMENT", "PARTIAL", "PROVISIONFORVOID", "USERDEFINED", "NOTDEFINED" };
+    if ( v < 0 || v >= 7 ) throw IfcException("Unable to find find keyword in schema");
+    const char* names[] = { "COMPLEX", "ELEMENT", "PARTIAL", "PROVISIONFORVOID", "PROVISIONFORSPACE", "USERDEFINED", "NOTDEFINED" };
     return names[v];
 }
 
@@ -1317,6 +1324,7 @@ Ifc4::IfcBuildingElementProxyTypeEnum::Value Ifc4::IfcBuildingElementProxyTypeEn
     if (s == "ELEMENT") return ::Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_ELEMENT;
     if (s == "PARTIAL") return ::Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_PARTIAL;
     if (s == "PROVISIONFORVOID") return ::Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_PROVISIONFORVOID;
+    if (s == "PROVISIONFORSPACE") return ::Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_PROVISIONFORSPACE;
     if (s == "USERDEFINED") return ::Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_USERDEFINED;
     if (s == "NOTDEFINED") return ::Ifc4::IfcBuildingElementProxyTypeEnum::IfcBuildingElementProxyType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
@@ -2447,7 +2455,7 @@ Ifc4::IfcEventTypeEnum::Value Ifc4::IfcEventTypeEnum::FromString(const std::stri
 
 const char* Ifc4::IfcExternalSpatialElementTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 6 ) throw IfcException("Unable to find find keyword in schema");
-    const char* names[] = { "EXTERNAL", "EXTERNAL_EARTH", "EXTERNAL_WATER", "EXTERNAL_FIRE", "USERDEFINED", "NOTDEFIEND" };
+    const char* names[] = { "EXTERNAL", "EXTERNAL_EARTH", "EXTERNAL_WATER", "EXTERNAL_FIRE", "USERDEFINED", "NOTDEFINED" };
     return names[v];
 }
 
@@ -2457,7 +2465,7 @@ Ifc4::IfcExternalSpatialElementTypeEnum::Value Ifc4::IfcExternalSpatialElementTy
     if (s == "EXTERNAL_WATER") return ::Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_EXTERNAL_WATER;
     if (s == "EXTERNAL_FIRE") return ::Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_EXTERNAL_FIRE;
     if (s == "USERDEFINED") return ::Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_USERDEFINED;
-    if (s == "NOTDEFIEND") return ::Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_NOTDEFIEND;
+    if (s == "NOTDEFINED") return ::Ifc4::IfcExternalSpatialElementTypeEnum::IfcExternalSpatialElementType_NOTDEFINED;
     throw IfcException("Unable to find find keyword in schema");
 }
 
@@ -3254,6 +3262,19 @@ Ifc4::IfcPlateTypeEnum::Value Ifc4::IfcPlateTypeEnum::FromString(const std::stri
     throw IfcException("Unable to find find keyword in schema");
 }
 
+const char* Ifc4::IfcPreferredSurfaceCurveRepresentation::ToString(Value v) {
+    if ( v < 0 || v >= 3 ) throw IfcException("Unable to find find keyword in schema");
+    const char* names[] = { "CURVE3D", "PCURVE_S1", "PCURVE_S2" };
+    return names[v];
+}
+
+Ifc4::IfcPreferredSurfaceCurveRepresentation::Value Ifc4::IfcPreferredSurfaceCurveRepresentation::FromString(const std::string& s) {
+    if (s == "CURVE3D") return ::Ifc4::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation_CURVE3D;
+    if (s == "PCURVE_S1") return ::Ifc4::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation_PCURVE_S1;
+    if (s == "PCURVE_S2") return ::Ifc4::IfcPreferredSurfaceCurveRepresentation::IfcPreferredSurfaceCurveRepresentation_PCURVE_S2;
+    throw IfcException("Unable to find find keyword in schema");
+}
+
 const char* Ifc4::IfcProcedureTypeEnum::ToString(Value v) {
     if ( v < 0 || v >= 9 ) throw IfcException("Unable to find find keyword in schema");
     const char* names[] = { "ADVICE_CAUTION", "ADVICE_NOTE", "ADVICE_WARNING", "CALIBRATION", "DIAGNOSTIC", "SHUTDOWN", "STARTUP", "USERDEFINED", "NOTDEFINED" };
@@ -3706,12 +3727,13 @@ Ifc4::IfcSectionTypeEnum::Value Ifc4::IfcSectionTypeEnum::FromString(const std::
 }
 
 const char* Ifc4::IfcSensorTypeEnum::ToString(Value v) {
-    if ( v < 0 || v >= 25 ) throw IfcException("Unable to find find keyword in schema");
-    const char* names[] = { "CO2SENSOR", "CONDUCTANCESENSOR", "CONTACTSENSOR", "FIRESENSOR", "FLOWSENSOR", "FROSTSENSOR", "GASSENSOR", "HEATSENSOR", "HUMIDITYSENSOR", "IDENTIFIERSENSOR", "IONCONCENTRATIONSENSOR", "LEVELSENSOR", "LIGHTSENSOR", "MOISTURESENSOR", "MOVEMENTSENSOR", "PHSENSOR", "PRESSURESENSOR", "RADIATIONSENSOR", "RADIOACTIVITYSENSOR", "SMOKESENSOR", "SOUNDSENSOR", "TEMPERATURESENSOR", "WINDSENSOR", "USERDEFINED", "NOTDEFINED" };
+    if ( v < 0 || v >= 26 ) throw IfcException("Unable to find find keyword in schema");
+    const char* names[] = { "COSENSOR", "CO2SENSOR", "CONDUCTANCESENSOR", "CONTACTSENSOR", "FIRESENSOR", "FLOWSENSOR", "FROSTSENSOR", "GASSENSOR", "HEATSENSOR", "HUMIDITYSENSOR", "IDENTIFIERSENSOR", "IONCONCENTRATIONSENSOR", "LEVELSENSOR", "LIGHTSENSOR", "MOISTURESENSOR", "MOVEMENTSENSOR", "PHSENSOR", "PRESSURESENSOR", "RADIATIONSENSOR", "RADIOACTIVITYSENSOR", "SMOKESENSOR", "SOUNDSENSOR", "TEMPERATURESENSOR", "WINDSENSOR", "USERDEFINED", "NOTDEFINED" };
     return names[v];
 }
 
 Ifc4::IfcSensorTypeEnum::Value Ifc4::IfcSensorTypeEnum::FromString(const std::string& s) {
+    if (s == "COSENSOR") return ::Ifc4::IfcSensorTypeEnum::IfcSensorType_COSENSOR;
     if (s == "CO2SENSOR") return ::Ifc4::IfcSensorTypeEnum::IfcSensorType_CO2SENSOR;
     if (s == "CONDUCTANCESENSOR") return ::Ifc4::IfcSensorTypeEnum::IfcSensorType_CONDUCTANCESENSOR;
     if (s == "CONTACTSENSOR") return ::Ifc4::IfcSensorTypeEnum::IfcSensorType_CONTACTSENSOR;
@@ -5374,13 +5396,6 @@ const IfcParse::type_declaration& Ifc4::IfcSpecularRoughness::declaration() cons
 Ifc4::IfcSpecularRoughness::IfcSpecularRoughness(IfcEntityInstanceData* e) { data_ = e; }
 Ifc4::IfcSpecularRoughness::IfcSpecularRoughness(double v) { data_ = new IfcEntityInstanceData(IFC4_IfcSpecularRoughness_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); data_->setArgument(0, attr);} }
 Ifc4::IfcSpecularRoughness::operator double() const { return *data_->getArgument(0); }
-
-// Function implementations for IfcStrippedOptional
-const IfcParse::type_declaration& Ifc4::IfcStrippedOptional::Class() { return *IFC4_IfcStrippedOptional_type; }
-const IfcParse::type_declaration& Ifc4::IfcStrippedOptional::declaration() const { return *IFC4_IfcStrippedOptional_type; }
-Ifc4::IfcStrippedOptional::IfcStrippedOptional(IfcEntityInstanceData* e) { data_ = e; }
-Ifc4::IfcStrippedOptional::IfcStrippedOptional(bool v) { data_ = new IfcEntityInstanceData(IFC4_IfcStrippedOptional_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v); data_->setArgument(0, attr);} }
-Ifc4::IfcStrippedOptional::operator bool() const { return *data_->getArgument(0); }
 
 // Function implementations for IfcTemperatureGradientMeasure
 const IfcParse::type_declaration& Ifc4::IfcTemperatureGradientMeasure::Class() { return *IFC4_IfcTemperatureGradientMeasure_type; }
@@ -9506,6 +9521,27 @@ const IfcParse::entity& Ifc4::IfcIndexedPolyCurve::Class() { return *IFC4_IfcInd
 Ifc4::IfcIndexedPolyCurve::IfcIndexedPolyCurve(IfcEntityInstanceData* e) : IfcBoundedCurve((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcIndexedPolyCurve_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcIndexedPolyCurve::IfcIndexedPolyCurve(::Ifc4::IfcCartesianPointList* v1_Points, boost::optional< IfcEntityList::ptr > v2_Segments, boost::optional< bool > v3_SelfIntersect) : IfcBoundedCurve((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcIndexedPolyCurve_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Points));data_->setArgument(0,attr);} if (v2_Segments) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Segments));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_SelfIntersect) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_SelfIntersect));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } }
 
+// Function implementations for IfcIndexedPolygonalFace
+std::vector< int > /*[3:?]*/ Ifc4::IfcIndexedPolygonalFace::CoordIndex() const { return *data_->getArgument(0); }
+void Ifc4::IfcIndexedPolygonalFace::setCoordIndex(std::vector< int > /*[3:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
+
+::Ifc4::IfcPolygonalFaceSet::list::ptr Ifc4::IfcIndexedPolygonalFace::ToFaceSet() const { return data_->getInverse(IFC4_IfcPolygonalFaceSet_type, 2)->as<IfcPolygonalFaceSet>(); }
+
+const IfcParse::entity& Ifc4::IfcIndexedPolygonalFace::declaration() const { return *IFC4_IfcIndexedPolygonalFace_type; }
+const IfcParse::entity& Ifc4::IfcIndexedPolygonalFace::Class() { return *IFC4_IfcIndexedPolygonalFace_type; }
+Ifc4::IfcIndexedPolygonalFace::IfcIndexedPolygonalFace(IfcEntityInstanceData* e) : IfcTessellatedItem((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcIndexedPolygonalFace_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcIndexedPolygonalFace::IfcIndexedPolygonalFace(std::vector< int > /*[3:?]*/ v1_CoordIndex) : IfcTessellatedItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcIndexedPolygonalFace_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_CoordIndex));data_->setArgument(0,attr);} }
+
+// Function implementations for IfcIndexedPolygonalFaceWithVoids
+std::vector< std::vector< int > > Ifc4::IfcIndexedPolygonalFaceWithVoids::InnerCoordIndices() const { return *data_->getArgument(1); }
+void Ifc4::IfcIndexedPolygonalFaceWithVoids::setInnerCoordIndices(std::vector< std::vector< int > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
+
+
+const IfcParse::entity& Ifc4::IfcIndexedPolygonalFaceWithVoids::declaration() const { return *IFC4_IfcIndexedPolygonalFaceWithVoids_type; }
+const IfcParse::entity& Ifc4::IfcIndexedPolygonalFaceWithVoids::Class() { return *IFC4_IfcIndexedPolygonalFaceWithVoids_type; }
+Ifc4::IfcIndexedPolygonalFaceWithVoids::IfcIndexedPolygonalFaceWithVoids(IfcEntityInstanceData* e) : IfcIndexedPolygonalFace((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcIndexedPolygonalFaceWithVoids_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcIndexedPolygonalFaceWithVoids::IfcIndexedPolygonalFaceWithVoids(std::vector< int > /*[3:?]*/ v1_CoordIndex, std::vector< std::vector< int > > v2_InnerCoordIndices) : IfcIndexedPolygonalFace((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcIndexedPolygonalFaceWithVoids_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_CoordIndex));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_InnerCoordIndices));data_->setArgument(1,attr);} }
+
 // Function implementations for IfcIndexedTextureMap
 ::Ifc4::IfcTessellatedFaceSet* Ifc4::IfcIndexedTextureMap::MappedTo() const { return (::Ifc4::IfcTessellatedFaceSet*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(1))); }
 void Ifc4::IfcIndexedTextureMap::setMappedTo(::Ifc4::IfcTessellatedFaceSet* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
@@ -9549,6 +9585,14 @@ const IfcParse::entity& Ifc4::IfcInterceptorType::declaration() const { return *
 const IfcParse::entity& Ifc4::IfcInterceptorType::Class() { return *IFC4_IfcInterceptorType_type; }
 Ifc4::IfcInterceptorType::IfcInterceptorType(IfcEntityInstanceData* e) : IfcFlowTreatmentDeviceType((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcInterceptorType_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcInterceptorType::IfcInterceptorType(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc4::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc4::IfcInterceptorTypeEnum::Value v10_PredefinedType) : IfcFlowTreatmentDeviceType((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcInterceptorType_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ApplicableOccurrence) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ApplicableOccurrence));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } if (v6_HasPropertySets) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v6_HasPropertySets)->generalize());data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); } if (v7_RepresentationMaps) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v7_RepresentationMaps)->generalize());data_->setArgument(6,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(6, attr); } if (v8_Tag) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Tag));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } if (v9_ElementType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_ElementType));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v10_PredefinedType,::Ifc4::IfcInterceptorTypeEnum::ToString(v10_PredefinedType))));data_->setArgument(9,attr);} }
+
+// Function implementations for IfcIntersectionCurve
+
+
+const IfcParse::entity& Ifc4::IfcIntersectionCurve::declaration() const { return *IFC4_IfcIntersectionCurve_type; }
+const IfcParse::entity& Ifc4::IfcIntersectionCurve::Class() { return *IFC4_IfcIntersectionCurve_type; }
+Ifc4::IfcIntersectionCurve::IfcIntersectionCurve(IfcEntityInstanceData* e) : IfcSurfaceCurve((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcIntersectionCurve_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcIntersectionCurve::IfcIntersectionCurve(::Ifc4::IfcCurve* v1_Curve3D, IfcTemplatedEntityList< ::Ifc4::IfcPcurve >::ptr v2_AssociatedGeometry, ::Ifc4::IfcPreferredSurfaceCurveRepresentation::Value v3_MasterRepresentation) : IfcSurfaceCurve((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcIntersectionCurve_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Curve3D));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_AssociatedGeometry)->generalize());data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v3_MasterRepresentation,::Ifc4::IfcPreferredSurfaceCurveRepresentation::ToString(v3_MasterRepresentation))));data_->setArgument(2,attr);} }
 
 // Function implementations for IfcInventory
 bool Ifc4::IfcInventory::hasPredefinedType() const { return !data_->getArgument(5)->isNull(); }
@@ -11038,6 +11082,22 @@ const IfcParse::entity& Ifc4::IfcPolygonalBoundedHalfSpace::declaration() const 
 const IfcParse::entity& Ifc4::IfcPolygonalBoundedHalfSpace::Class() { return *IFC4_IfcPolygonalBoundedHalfSpace_type; }
 Ifc4::IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(IfcEntityInstanceData* e) : IfcHalfSpaceSolid((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcPolygonalBoundedHalfSpace_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcPolygonalBoundedHalfSpace::IfcPolygonalBoundedHalfSpace(::Ifc4::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, ::Ifc4::IfcAxis2Placement3D* v3_Position, ::Ifc4::IfcBoundedCurve* v4_PolygonalBoundary) : IfcHalfSpaceSolid((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcPolygonalBoundedHalfSpace_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_BaseSurface));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_AgreementFlag));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Position));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_PolygonalBoundary));data_->setArgument(3,attr);} }
+
+// Function implementations for IfcPolygonalFaceSet
+bool Ifc4::IfcPolygonalFaceSet::hasClosed() const { return !data_->getArgument(1)->isNull(); }
+bool Ifc4::IfcPolygonalFaceSet::Closed() const { return *data_->getArgument(1); }
+void Ifc4::IfcPolygonalFaceSet::setClosed(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
+IfcTemplatedEntityList< ::Ifc4::IfcIndexedPolygonalFace >::ptr Ifc4::IfcPolygonalFaceSet::Faces() const { IfcEntityList::ptr es = *data_->getArgument(2); return es->as< ::Ifc4::IfcIndexedPolygonalFace >(); }
+void Ifc4::IfcPolygonalFaceSet::setFaces(IfcTemplatedEntityList< ::Ifc4::IfcIndexedPolygonalFace >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(2,attr);} }
+bool Ifc4::IfcPolygonalFaceSet::hasPnIndex() const { return !data_->getArgument(3)->isNull(); }
+std::vector< int > /*[1:?]*/ Ifc4::IfcPolygonalFaceSet::PnIndex() const { return *data_->getArgument(3); }
+void Ifc4::IfcPolygonalFaceSet::setPnIndex(std::vector< int > /*[1:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
+
+
+const IfcParse::entity& Ifc4::IfcPolygonalFaceSet::declaration() const { return *IFC4_IfcPolygonalFaceSet_type; }
+const IfcParse::entity& Ifc4::IfcPolygonalFaceSet::Class() { return *IFC4_IfcPolygonalFaceSet_type; }
+Ifc4::IfcPolygonalFaceSet::IfcPolygonalFaceSet(IfcEntityInstanceData* e) : IfcTessellatedFaceSet((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcPolygonalFaceSet_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcPolygonalFaceSet::IfcPolygonalFaceSet(::Ifc4::IfcCartesianPointList3D* v1_Coordinates, boost::optional< bool > v2_Closed, IfcTemplatedEntityList< ::Ifc4::IfcIndexedPolygonalFace >::ptr v3_Faces, boost::optional< std::vector< int > /*[1:?]*/ > v4_PnIndex) : IfcTessellatedFaceSet((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcPolygonalFaceSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Coordinates));data_->setArgument(0,attr);} if (v2_Closed) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Closed));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Faces)->generalize());data_->setArgument(2,attr);} if (v4_PnIndex) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_PnIndex));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } }
 
 // Function implementations for IfcPolyline
 IfcTemplatedEntityList< ::Ifc4::IfcCartesianPoint >::ptr Ifc4::IfcPolyline::Points() const { IfcEntityList::ptr es = *data_->getArgument(0); return es->as< ::Ifc4::IfcCartesianPoint >(); }
@@ -13060,6 +13120,14 @@ const IfcParse::entity& Ifc4::IfcSchedulingTime::Class() { return *IFC4_IfcSched
 Ifc4::IfcSchedulingTime::IfcSchedulingTime(IfcEntityInstanceData* e) : IfcUtil::IfcBaseEntity() { if (!e) return; if (e->type() != IFC4_IfcSchedulingTime_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcSchedulingTime::IfcSchedulingTime(boost::optional< std::string > v1_Name, boost::optional< ::Ifc4::IfcDataOriginEnum::Value > v2_DataOrigin, boost::optional< std::string > v3_UserDefinedDataOrigin) : IfcUtil::IfcBaseEntity() {data_ = new IfcEntityInstanceData(IFC4_IfcSchedulingTime_type);  if (v1_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v1_Name));data_->setArgument(0,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(0, attr); } if (v2_DataOrigin) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(*v2_DataOrigin,::Ifc4::IfcDataOriginEnum::ToString(*v2_DataOrigin))));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_UserDefinedDataOrigin) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_UserDefinedDataOrigin));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } }
 
+// Function implementations for IfcSeamCurve
+
+
+const IfcParse::entity& Ifc4::IfcSeamCurve::declaration() const { return *IFC4_IfcSeamCurve_type; }
+const IfcParse::entity& Ifc4::IfcSeamCurve::Class() { return *IFC4_IfcSeamCurve_type; }
+Ifc4::IfcSeamCurve::IfcSeamCurve(IfcEntityInstanceData* e) : IfcSurfaceCurve((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcSeamCurve_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcSeamCurve::IfcSeamCurve(::Ifc4::IfcCurve* v1_Curve3D, IfcTemplatedEntityList< ::Ifc4::IfcPcurve >::ptr v2_AssociatedGeometry, ::Ifc4::IfcPreferredSurfaceCurveRepresentation::Value v3_MasterRepresentation) : IfcSurfaceCurve((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcSeamCurve_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Curve3D));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_AssociatedGeometry)->generalize());data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v3_MasterRepresentation,::Ifc4::IfcPreferredSurfaceCurveRepresentation::ToString(v3_MasterRepresentation))));data_->setArgument(2,attr);} }
+
 // Function implementations for IfcSectionProperties
 ::Ifc4::IfcSectionTypeEnum::Value Ifc4::IfcSectionProperties::SectionType() const { return ::Ifc4::IfcSectionTypeEnum::FromString(*data_->getArgument(0)); }
 void Ifc4::IfcSectionProperties::setSectionType(::Ifc4::IfcSectionTypeEnum::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4::IfcSectionTypeEnum::ToString(v)));data_->setArgument(0,attr);} }
@@ -13473,6 +13541,16 @@ const IfcParse::entity& Ifc4::IfcSphere::declaration() const { return *IFC4_IfcS
 const IfcParse::entity& Ifc4::IfcSphere::Class() { return *IFC4_IfcSphere_type; }
 Ifc4::IfcSphere::IfcSphere(IfcEntityInstanceData* e) : IfcCsgPrimitive3D((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcSphere_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcSphere::IfcSphere(::Ifc4::IfcAxis2Placement3D* v1_Position, double v2_Radius) : IfcCsgPrimitive3D((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcSphere_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Position));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_Radius));data_->setArgument(1,attr);} }
+
+// Function implementations for IfcSphericalSurface
+double Ifc4::IfcSphericalSurface::Radius() const { return *data_->getArgument(1); }
+void Ifc4::IfcSphericalSurface::setRadius(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
+
+
+const IfcParse::entity& Ifc4::IfcSphericalSurface::declaration() const { return *IFC4_IfcSphericalSurface_type; }
+const IfcParse::entity& Ifc4::IfcSphericalSurface::Class() { return *IFC4_IfcSphericalSurface_type; }
+Ifc4::IfcSphericalSurface::IfcSphericalSurface(IfcEntityInstanceData* e) : IfcElementarySurface((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcSphericalSurface_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcSphericalSurface::IfcSphericalSurface(::Ifc4::IfcAxis2Placement3D* v1_Position, double v2_Radius) : IfcElementarySurface((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcSphericalSurface_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Position));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_Radius));data_->setArgument(1,attr);} }
 
 // Function implementations for IfcStackTerminal
 bool Ifc4::IfcStackTerminal::hasPredefinedType() const { return !data_->getArgument(8)->isNull(); }
@@ -14086,6 +14164,20 @@ const IfcParse::entity& Ifc4::IfcSurface::Class() { return *IFC4_IfcSurface_type
 Ifc4::IfcSurface::IfcSurface(IfcEntityInstanceData* e) : IfcGeometricRepresentationItem((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcSurface_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcSurface::IfcSurface() : IfcGeometricRepresentationItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcSurface_type);  }
 
+// Function implementations for IfcSurfaceCurve
+::Ifc4::IfcCurve* Ifc4::IfcSurfaceCurve::Curve3D() const { return (::Ifc4::IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
+void Ifc4::IfcSurfaceCurve::setCurve3D(::Ifc4::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
+IfcTemplatedEntityList< ::Ifc4::IfcPcurve >::ptr Ifc4::IfcSurfaceCurve::AssociatedGeometry() const { IfcEntityList::ptr es = *data_->getArgument(1); return es->as< ::Ifc4::IfcPcurve >(); }
+void Ifc4::IfcSurfaceCurve::setAssociatedGeometry(IfcTemplatedEntityList< ::Ifc4::IfcPcurve >::ptr v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v->generalize());data_->setArgument(1,attr);} }
+::Ifc4::IfcPreferredSurfaceCurveRepresentation::Value Ifc4::IfcSurfaceCurve::MasterRepresentation() const { return ::Ifc4::IfcPreferredSurfaceCurveRepresentation::FromString(*data_->getArgument(2)); }
+void Ifc4::IfcSurfaceCurve::setMasterRepresentation(::Ifc4::IfcPreferredSurfaceCurveRepresentation::Value v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,::Ifc4::IfcPreferredSurfaceCurveRepresentation::ToString(v)));data_->setArgument(2,attr);} }
+
+
+const IfcParse::entity& Ifc4::IfcSurfaceCurve::declaration() const { return *IFC4_IfcSurfaceCurve_type; }
+const IfcParse::entity& Ifc4::IfcSurfaceCurve::Class() { return *IFC4_IfcSurfaceCurve_type; }
+Ifc4::IfcSurfaceCurve::IfcSurfaceCurve(IfcEntityInstanceData* e) : IfcCurve((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcSurfaceCurve_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcSurfaceCurve::IfcSurfaceCurve(::Ifc4::IfcCurve* v1_Curve3D, IfcTemplatedEntityList< ::Ifc4::IfcPcurve >::ptr v2_AssociatedGeometry, ::Ifc4::IfcPreferredSurfaceCurveRepresentation::Value v3_MasterRepresentation) : IfcCurve((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcSurfaceCurve_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Curve3D));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_AssociatedGeometry)->generalize());data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v3_MasterRepresentation,::Ifc4::IfcPreferredSurfaceCurveRepresentation::ToString(v3_MasterRepresentation))));data_->setArgument(2,attr);} }
+
 // Function implementations for IfcSurfaceCurveSweptAreaSolid
 ::Ifc4::IfcCurve* Ifc4::IfcSurfaceCurveSweptAreaSolid::Directrix() const { return (::Ifc4::IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(2))); }
 void Ifc4::IfcSurfaceCurveSweptAreaSolid::setDirectrix(::Ifc4::IfcCurve* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
@@ -14681,25 +14773,19 @@ void Ifc4::IfcTendonType::setNominalDiameter(double v) { {IfcWrite::IfcWriteArgu
 bool Ifc4::IfcTendonType::hasCrossSectionArea() const { return !data_->getArgument(11)->isNull(); }
 double Ifc4::IfcTendonType::CrossSectionArea() const { return *data_->getArgument(11); }
 void Ifc4::IfcTendonType::setCrossSectionArea(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(11,attr);} }
-bool Ifc4::IfcTendonType::hasSheethDiameter() const { return !data_->getArgument(12)->isNull(); }
-double Ifc4::IfcTendonType::SheethDiameter() const { return *data_->getArgument(12); }
-void Ifc4::IfcTendonType::setSheethDiameter(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(12,attr);} }
+bool Ifc4::IfcTendonType::hasSheathDiameter() const { return !data_->getArgument(12)->isNull(); }
+double Ifc4::IfcTendonType::SheathDiameter() const { return *data_->getArgument(12); }
+void Ifc4::IfcTendonType::setSheathDiameter(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(12,attr);} }
 
 
 const IfcParse::entity& Ifc4::IfcTendonType::declaration() const { return *IFC4_IfcTendonType_type; }
 const IfcParse::entity& Ifc4::IfcTendonType::Class() { return *IFC4_IfcTendonType_type; }
 Ifc4::IfcTendonType::IfcTendonType(IfcEntityInstanceData* e) : IfcReinforcingElementType((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcTendonType_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-Ifc4::IfcTendonType::IfcTendonType(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc4::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc4::IfcTendonTypeEnum::Value v10_PredefinedType, boost::optional< double > v11_NominalDiameter, boost::optional< double > v12_CrossSectionArea, boost::optional< double > v13_SheethDiameter) : IfcReinforcingElementType((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTendonType_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ApplicableOccurrence) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ApplicableOccurrence));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } if (v6_HasPropertySets) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v6_HasPropertySets)->generalize());data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); } if (v7_RepresentationMaps) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v7_RepresentationMaps)->generalize());data_->setArgument(6,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(6, attr); } if (v8_Tag) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Tag));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } if (v9_ElementType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_ElementType));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v10_PredefinedType,::Ifc4::IfcTendonTypeEnum::ToString(v10_PredefinedType))));data_->setArgument(9,attr);} if (v11_NominalDiameter) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v11_NominalDiameter));data_->setArgument(10,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(10, attr); } if (v12_CrossSectionArea) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v12_CrossSectionArea));data_->setArgument(11,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(11, attr); } if (v13_SheethDiameter) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v13_SheethDiameter));data_->setArgument(12,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(12, attr); } }
+Ifc4::IfcTendonType::IfcTendonType(std::string v1_GlobalId, ::Ifc4::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< IfcTemplatedEntityList< ::Ifc4::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< IfcTemplatedEntityList< ::Ifc4::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc4::IfcTendonTypeEnum::Value v10_PredefinedType, boost::optional< double > v11_NominalDiameter, boost::optional< double > v12_CrossSectionArea, boost::optional< double > v13_SheathDiameter) : IfcReinforcingElementType((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTendonType_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_GlobalId));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_OwnerHistory));data_->setArgument(1,attr);} if (v3_Name) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Name));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } if (v4_Description) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v4_Description));data_->setArgument(3,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(3, attr); } if (v5_ApplicableOccurrence) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_ApplicableOccurrence));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } if (v6_HasPropertySets) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v6_HasPropertySets)->generalize());data_->setArgument(5,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(5, attr); } if (v7_RepresentationMaps) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v7_RepresentationMaps)->generalize());data_->setArgument(6,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(6, attr); } if (v8_Tag) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v8_Tag));data_->setArgument(7,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(7, attr); } if (v9_ElementType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v9_ElementType));data_->setArgument(8,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(8, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v10_PredefinedType,::Ifc4::IfcTendonTypeEnum::ToString(v10_PredefinedType))));data_->setArgument(9,attr);} if (v11_NominalDiameter) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v11_NominalDiameter));data_->setArgument(10,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(10, attr); } if (v12_CrossSectionArea) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v12_CrossSectionArea));data_->setArgument(11,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(11, attr); } if (v13_SheathDiameter) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v13_SheathDiameter));data_->setArgument(12,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(12, attr); } }
 
 // Function implementations for IfcTessellatedFaceSet
 ::Ifc4::IfcCartesianPointList3D* Ifc4::IfcTessellatedFaceSet::Coordinates() const { return (::Ifc4::IfcCartesianPointList3D*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }
 void Ifc4::IfcTessellatedFaceSet::setCoordinates(::Ifc4::IfcCartesianPointList3D* v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(0,attr);} }
-bool Ifc4::IfcTessellatedFaceSet::hasNormals() const { return !data_->getArgument(1)->isNull(); }
-std::vector< std::vector< double > > Ifc4::IfcTessellatedFaceSet::Normals() const { return *data_->getArgument(1); }
-void Ifc4::IfcTessellatedFaceSet::setNormals(std::vector< std::vector< double > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
-bool Ifc4::IfcTessellatedFaceSet::hasClosed() const { return !data_->getArgument(2)->isNull(); }
-bool Ifc4::IfcTessellatedFaceSet::Closed() const { return *data_->getArgument(2); }
-void Ifc4::IfcTessellatedFaceSet::setClosed(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 
 ::Ifc4::IfcIndexedColourMap::list::ptr Ifc4::IfcTessellatedFaceSet::HasColours() const { return data_->getInverse(IFC4_IfcIndexedColourMap_type, 0)->as<IfcIndexedColourMap>(); }
 ::Ifc4::IfcIndexedTextureMap::list::ptr Ifc4::IfcTessellatedFaceSet::HasTextures() const { return data_->getInverse(IFC4_IfcIndexedTextureMap_type, 1)->as<IfcIndexedTextureMap>(); }
@@ -14707,7 +14793,7 @@ void Ifc4::IfcTessellatedFaceSet::setClosed(bool v) { {IfcWrite::IfcWriteArgumen
 const IfcParse::entity& Ifc4::IfcTessellatedFaceSet::declaration() const { return *IFC4_IfcTessellatedFaceSet_type; }
 const IfcParse::entity& Ifc4::IfcTessellatedFaceSet::Class() { return *IFC4_IfcTessellatedFaceSet_type; }
 Ifc4::IfcTessellatedFaceSet::IfcTessellatedFaceSet(IfcEntityInstanceData* e) : IfcTessellatedItem((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcTessellatedFaceSet_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-Ifc4::IfcTessellatedFaceSet::IfcTessellatedFaceSet(::Ifc4::IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed) : IfcTessellatedItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTessellatedFaceSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Coordinates));data_->setArgument(0,attr);} if (v2_Normals) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Normals));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_Closed) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Closed));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); } }
+Ifc4::IfcTessellatedFaceSet::IfcTessellatedFaceSet(::Ifc4::IfcCartesianPointList3D* v1_Coordinates) : IfcTessellatedItem((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTessellatedFaceSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Coordinates));data_->setArgument(0,attr);} }
 
 // Function implementations for IfcTessellatedItem
 
@@ -14946,6 +15032,18 @@ const IfcParse::entity& Ifc4::IfcTopologyRepresentation::Class() { return *IFC4_
 Ifc4::IfcTopologyRepresentation::IfcTopologyRepresentation(IfcEntityInstanceData* e) : IfcShapeModel((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcTopologyRepresentation_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
 Ifc4::IfcTopologyRepresentation::IfcTopologyRepresentation(::Ifc4::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, IfcTemplatedEntityList< ::Ifc4::IfcRepresentationItem >::ptr v4_Items) : IfcShapeModel((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTopologyRepresentation_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_ContextOfItems));data_->setArgument(0,attr);} if (v2_RepresentationIdentifier) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_RepresentationIdentifier));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_RepresentationType) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_RepresentationType));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_Items)->generalize());data_->setArgument(3,attr);} }
 
+// Function implementations for IfcToroidalSurface
+double Ifc4::IfcToroidalSurface::MajorRadius() const { return *data_->getArgument(1); }
+void Ifc4::IfcToroidalSurface::setMajorRadius(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
+double Ifc4::IfcToroidalSurface::MinorRadius() const { return *data_->getArgument(2); }
+void Ifc4::IfcToroidalSurface::setMinorRadius(double v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
+
+
+const IfcParse::entity& Ifc4::IfcToroidalSurface::declaration() const { return *IFC4_IfcToroidalSurface_type; }
+const IfcParse::entity& Ifc4::IfcToroidalSurface::Class() { return *IFC4_IfcToroidalSurface_type; }
+Ifc4::IfcToroidalSurface::IfcToroidalSurface(IfcEntityInstanceData* e) : IfcElementarySurface((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcToroidalSurface_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
+Ifc4::IfcToroidalSurface::IfcToroidalSurface(::Ifc4::IfcAxis2Placement3D* v1_Position, double v2_MajorRadius, double v3_MinorRadius) : IfcElementarySurface((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcToroidalSurface_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Position));data_->setArgument(0,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v2_MajorRadius));data_->setArgument(1,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_MinorRadius));data_->setArgument(2,attr);} }
+
 // Function implementations for IfcTransformer
 bool Ifc4::IfcTransformer::hasPredefinedType() const { return !data_->getArgument(8)->isNull(); }
 ::Ifc4::IfcTransformerTypeEnum::Value Ifc4::IfcTransformer::PredefinedType() const { return ::Ifc4::IfcTransformerTypeEnum::FromString(*data_->getArgument(8)); }
@@ -15005,17 +15103,23 @@ Ifc4::IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(IfcEntityInstanceData* e) :
 Ifc4::IfcTrapeziumProfileDef::IfcTrapeziumProfileDef(::Ifc4::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc4::IfcAxis2Placement2D* v3_Position, double v4_BottomXDim, double v5_TopXDim, double v6_YDim, double v7_TopXOffset) : IfcParameterizedProfileDef((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTrapeziumProfileDef_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(v1_ProfileType,::Ifc4::IfcProfileTypeEnum::ToString(v1_ProfileType))));data_->setArgument(0,attr);} if (v2_ProfileName) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_ProfileName));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v3_Position));data_->setArgument(2,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_BottomXDim));data_->setArgument(3,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v5_TopXDim));data_->setArgument(4,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v6_YDim));data_->setArgument(5,attr);}{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v7_TopXOffset));data_->setArgument(6,attr);} }
 
 // Function implementations for IfcTriangulatedFaceSet
+bool Ifc4::IfcTriangulatedFaceSet::hasNormals() const { return !data_->getArgument(1)->isNull(); }
+std::vector< std::vector< double > > Ifc4::IfcTriangulatedFaceSet::Normals() const { return *data_->getArgument(1); }
+void Ifc4::IfcTriangulatedFaceSet::setNormals(std::vector< std::vector< double > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(1,attr);} }
+bool Ifc4::IfcTriangulatedFaceSet::hasClosed() const { return !data_->getArgument(2)->isNull(); }
+bool Ifc4::IfcTriangulatedFaceSet::Closed() const { return *data_->getArgument(2); }
+void Ifc4::IfcTriangulatedFaceSet::setClosed(bool v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(2,attr);} }
 std::vector< std::vector< int > > Ifc4::IfcTriangulatedFaceSet::CoordIndex() const { return *data_->getArgument(3); }
 void Ifc4::IfcTriangulatedFaceSet::setCoordIndex(std::vector< std::vector< int > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(3,attr);} }
-bool Ifc4::IfcTriangulatedFaceSet::hasNormalIndex() const { return !data_->getArgument(4)->isNull(); }
-std::vector< std::vector< int > > Ifc4::IfcTriangulatedFaceSet::NormalIndex() const { return *data_->getArgument(4); }
-void Ifc4::IfcTriangulatedFaceSet::setNormalIndex(std::vector< std::vector< int > > v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
+bool Ifc4::IfcTriangulatedFaceSet::hasPnIndex() const { return !data_->getArgument(4)->isNull(); }
+std::vector< int > /*[1:?]*/ Ifc4::IfcTriangulatedFaceSet::PnIndex() const { return *data_->getArgument(4); }
+void Ifc4::IfcTriangulatedFaceSet::setPnIndex(std::vector< int > /*[1:?]*/ v) { {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(v);data_->setArgument(4,attr);} }
 
 
 const IfcParse::entity& Ifc4::IfcTriangulatedFaceSet::declaration() const { return *IFC4_IfcTriangulatedFaceSet_type; }
 const IfcParse::entity& Ifc4::IfcTriangulatedFaceSet::Class() { return *IFC4_IfcTriangulatedFaceSet_type; }
 Ifc4::IfcTriangulatedFaceSet::IfcTriangulatedFaceSet(IfcEntityInstanceData* e) : IfcTessellatedFaceSet((IfcEntityInstanceData*)0) { if (!e) return; if (e->type() != IFC4_IfcTriangulatedFaceSet_type) throw IfcException("Unable to find find keyword in schema"); data_ = e; }
-Ifc4::IfcTriangulatedFaceSet::IfcTriangulatedFaceSet(::Ifc4::IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, boost::optional< std::vector< std::vector< int > > > v5_NormalIndex) : IfcTessellatedFaceSet((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTriangulatedFaceSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Coordinates));data_->setArgument(0,attr);} if (v2_Normals) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Normals));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_Closed) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Closed));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_CoordIndex));data_->setArgument(3,attr);} if (v5_NormalIndex) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_NormalIndex));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } }
+Ifc4::IfcTriangulatedFaceSet::IfcTriangulatedFaceSet(::Ifc4::IfcCartesianPointList3D* v1_Coordinates, boost::optional< std::vector< std::vector< double > > > v2_Normals, boost::optional< bool > v3_Closed, std::vector< std::vector< int > > v4_CoordIndex, boost::optional< std::vector< int > /*[1:?]*/ > v5_PnIndex) : IfcTessellatedFaceSet((IfcEntityInstanceData*)0) {data_ = new IfcEntityInstanceData(IFC4_IfcTriangulatedFaceSet_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v1_Coordinates));data_->setArgument(0,attr);} if (v2_Normals) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v2_Normals));data_->setArgument(1,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(1, attr); } if (v3_Closed) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v3_Closed));data_->setArgument(2,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(2, attr); }{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((v4_CoordIndex));data_->setArgument(3,attr);} if (v5_PnIndex) {{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((*v5_PnIndex));data_->setArgument(4,attr);} } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(4, attr); } }
 
 // Function implementations for IfcTrimmedCurve
 ::Ifc4::IfcCurve* Ifc4::IfcTrimmedCurve::BasisCurve() const { return (::Ifc4::IfcCurve*)((IfcUtil::IfcBaseClass*)(*data_->getArgument(0))); }

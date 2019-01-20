@@ -178,6 +178,7 @@ cache_file = sys.argv[1] + ".cache.dat"
 if os.path.exists(cache_file):
     with open(cache_file, "rb") as f:
         mapping = pickle.load(f)
+        schema = mapping.schema
 else:
     from pyparsing import *
     from nodes import *
