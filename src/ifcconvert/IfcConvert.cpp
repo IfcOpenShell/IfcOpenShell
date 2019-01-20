@@ -182,6 +182,7 @@ int main(int argc, char** argv)
     exclusion_traverse_filter exclude_traverse_filter;
     std::string filter_filename;
     std::string default_material_filename;
+	std::string geometry_kernel;
 	
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
@@ -190,6 +191,8 @@ int main(int argc, char** argv)
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
+		("kernel", po::value<std::string>(&geometry_kernel)->default_value("opencascade"), 
+			"Geometry kernel to use (opencascade or cgal).")
 		("plan",
 			"Specifies whether to include curves in the output result. Typically "
 			"these are representations of type Plan or Axis. Excluded by default.")
@@ -652,7 +655,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, "cgal");
+    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, geometry_kernel);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.

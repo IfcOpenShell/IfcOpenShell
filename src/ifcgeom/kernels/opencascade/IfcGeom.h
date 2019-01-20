@@ -52,6 +52,8 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../../../ifcparse/IfcParse.h"
 #include "../../../ifcparse/IfcBaseClass.h"
 
+#include "../../../ifcgeom/kernel_agnostic/AbstractKernel.h" 
+
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h" 
 #include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h" 
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
@@ -108,7 +110,7 @@ public:
 	std::map<int, TopoDS_Shape> Shape;
 };
 
-class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::Kernel {
+class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::MAKE_TYPE_NAME(AbstractKernel) {
 private:
 
 	/*
@@ -203,46 +205,23 @@ private:
 		double epsilon() const {
 			return eps_;
 		}
-	};
-
-	double deflection_tolerance;
-	double wire_creation_tolerance;
-	double point_equality_tolerance;
-	double max_faces_to_sew;
-	double ifc_length_unit;
-	double ifc_planeangle_unit;
-	double modelling_precision;
-	double dimensionality;
+	};	
 
 #ifndef NO_CACHE
 	MAKE_TYPE_NAME(Cache) cache;
 #endif
 
-	std::map<int, SurfaceStyle> style_cache;
-
-	const SurfaceStyle* internalize_surface_style(const std::pair<IfcUtil::IfcBaseClass*, IfcUtil::IfcBaseClass*>& shading_style);
-
-	 // For stopping PlacementRelTo recursion in convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf)
-	const IfcParse::declaration* placement_rel_to;
-
 	faceset_helper* faceset_helper_;
 
 public:
 	MAKE_TYPE_NAME(Kernel)()
-		: IfcGeom::Kernel("opencascade", 0)
-		, deflection_tolerance(0.001)
-		, wire_creation_tolerance(0.0001)
-		, point_equality_tolerance(0.00001)
-		, max_faces_to_sew(-1.0)
-		, ifc_length_unit(1.0)
-		, ifc_planeangle_unit(-1.0)
-		, modelling_precision(0.00001)
-		, dimensionality(1.)
-		, placement_rel_to(0)
+		: IfcGeom::MAKE_TYPE_NAME(AbstractKernel)("opencascade")
 		, faceset_helper_(nullptr)
 	{}
 
-	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) : IfcGeom::Kernel(0) {
+	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) 
+		: IfcGeom::MAKE_TYPE_NAME(AbstractKernel)("opencascade") 
+	{
 		*this = other;
 	}
 
@@ -267,8 +246,7 @@ public:
 	bool convert_wire(const IfcUtil::IfcBaseClass* L, TopoDS_Wire& result);
 	bool convert_curve(const IfcUtil::IfcBaseClass* L, Handle(Geom_Curve)& result);
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
-	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
-	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
+	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const ConversionResultPlacement* entity_trsf, ConversionResults& cut_shapes);
 	void assert_closed_wire(TopoDS_Wire& wire);
 
 	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<const SurfaceStyle*>&, std::vector<double>&);
@@ -302,8 +280,6 @@ public:
 	
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 
-	IfcSchema::IfcSurfaceStyleShading* get_surface_style(IfcSchema::IfcRepresentationItem* item);
-	const IfcSchema::IfcRepresentationItem* find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item);
 	bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid);
 	bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid);
 	bool is_compound(const TopoDS_Shape& shape);
@@ -332,90 +308,24 @@ public:
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 	static TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 	
-	bool is_identity_transform(IfcUtil::IfcBaseClass*);
+	virtual bool is_identity_transform(const IfcUtil::IfcBaseClass*);
+	virtual bool apply_layerset(const IfcSchema::IfcProduct* product, IfcGeom::ConversionResults& shapes);
+	virtual bool validate_quantities(const IfcSchema::IfcProduct* product, const IfcGeom::Representation::BRep& brep);
 
 	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
-
+	
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-    template <typename P, typename PP>
-    IfcGeom::NativeElement<P, PP>* create_brep_for_representation_and_product(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
-
-	template <typename P, typename PP>
-    IfcGeom::NativeElement<P, PP>* create_brep_for_processed_representation(
-        const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::NativeElement<P, PP>*);
-
-	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
-	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
-	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
-	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
-	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
-	
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
-#ifdef USE_IFC4
-		IfcEntityList::ptr style_assignments = si->Styles();
-		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
-				continue;
-			}
-			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
-#else
-		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
-		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
-#endif
-			IfcEntityList::ptr styles = style_assignment->Styles();
-			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
-				IfcUtil::IfcBaseClass* style = *lt;
-				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
-					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-						IfcEntityList::ptr styles_elements = surface_style->Styles();
-						for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-							if ((*mt)->declaration().is(T::Class())) {
-								return std::make_pair(surface_style, (T*) *mt);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
-  		// For certain representation items, most notably boolean operands,
-		// a style definition might reside on one of its operands.
-		representation_item = find_item_carrying_style(representation_item);
-
-		if (representation_item->as<IfcSchema::IfcStyledItem>()) {
-			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
-		}
-		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-		if (styled_items->size()) {
-			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
-			return _get_surface_style<T>(*styled_items->begin());
-		}
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
-	void purge_cache() { 
+    void purge_cache() { 
 		// Rather hack-ish, but a stopgap solution to keep memory under control
 		// for large files. SurfaceStyles need to be kept at all costs, as they
 		// are read later on when serializing Collada files.
 #ifndef NO_CACHE
 		cache = MAKE_TYPE_NAME(Cache)();
 #endif
-	}
-
-	void set_conversion_placement_rel_to(const IfcParse::declaration* type);
+	}	
 
 #include "IfcRegisterGeomHeader.h"
-
-	virtual void setValue(GeomValue var, double value);
-	virtual double getValue(GeomValue var) const;
 
 	virtual IfcGeom::NativeElement<double>* convert(
 		const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
@@ -433,12 +343,15 @@ public:
 		return items;
 	}
 
-	virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
+	virtual bool convert_placement(IfcUtil::IfcBaseClass* item, ConversionResultPlacement*& trsf) {
 		if (item->as<IfcSchema::IfcObjectPlacement>()) {
-			return convert(item->as<IfcSchema::IfcObjectPlacement>(), trsf);
-		} else {
-			return false;
+			gp_Trsf occt_trsf;
+			if (convert(item->as<IfcSchema::IfcObjectPlacement>(), occt_trsf)) {
+				trsf = new OpenCascadePlacement(occt_trsf);
+				return true;
+			}
 		}
+		return false;
 	}
 
 };

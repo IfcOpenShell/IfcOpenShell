@@ -512,9 +512,11 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
 					if (!product->get("ObjectPlacement")->isNull()) {
-						gp_Trsf trsf;
+						IfcGeom::ConversionResultPlacement* trsf;
 						if (kernel.convert_placement(*product->get("ObjectPlacement"), trsf)) {
-							setSectionHeight(trsf.TranslationPart().Z() + 1.);
+							double X, Y, Z;
+							trsf->TranslationPart(X, Y, Z);
+							setSectionHeight(Z + 1.);
 							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;
 						}

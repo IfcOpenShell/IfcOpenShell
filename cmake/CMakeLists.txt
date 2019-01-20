@@ -427,7 +427,8 @@ IF(MSVC)
 	ENDIF()
     # Enforce standards-conformance on VS > 2015, older Boost versions fail to compile with this    
     if (MSVC_VERSION GREATER 1900 AND (Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
-        add_definitions(-permissive-)
+		# @todo currently fails
+        # add_definitions(-permissive-)
     endif()
 	# Link against the static VC runtime
     # TODO Make this configurable
