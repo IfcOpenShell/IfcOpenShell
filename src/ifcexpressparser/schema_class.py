@@ -109,7 +109,8 @@ __attribute__((optnone))
             try:
                 declared_type = get_declared_type(type, emitted)
             except UnmetDependenciesException:
-                print("Unmet", repr(name))
+                # @todo?
+                # print("Unmet", repr(name))
                 return False
 
             statements.append('    %(schema_name)s_%(name)s_type = new type_declaration("%(name)s", %%(index_in_schema_%(name)s)d, %(declared_type)s);' % locals())
