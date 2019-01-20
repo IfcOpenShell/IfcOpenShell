@@ -72,7 +72,7 @@ namespace IfcGeom {
 			return implementation_->convert(item);
 		}
 
-		virtual bool convert_placement(IfcUtil::IfcBaseClass* item, gp_Trsf& trsf) {
+		virtual bool convert_placement(IfcUtil::IfcBaseClass* item, ConversionResultPlacement*& trsf) {
 			return implementation_->convert_placement(item, trsf);
 		}
 

@@ -73,9 +73,9 @@
 #include <gp_Trsf.hxx>
 #include <gp_Trsf2d.hxx>
 
+#include "../../ifcparse/macros.h"
 #include "../../ifcparse/IfcFile.h"
 
-#include "../../ifcgeom/kernels/opencascade/IfcGeom.h"
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
 #include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
@@ -84,7 +84,11 @@
 #include "../../ifcgeom/schema_agnostic/IfcGeomFilter.h"
 #include "../../ifcgeom/schema_agnostic/IteratorImplementation.h"
 
-#include "../../ifcgeom/schema_agnostic/Kernel.h"
+#include "../../ifcgeom/kernel_agnostic/AbstractKernel.h"
+
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
+#include INCLUDE_SCHEMA(IfcSchema)
+#undef INCLUDE_SCHEMA
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
@@ -103,7 +107,7 @@ namespace IfcGeom {
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
-		MAKE_TYPE_NAME(Kernel)* kernel;
+		MAKE_TYPE_NAME(AbstractKernel)* kernel;
 		IteratorSettings settings;
 
 		IfcParse::IfcFile* ifc_file;
@@ -265,11 +269,11 @@ namespace IfcGeom {
                 IfcSchema::IfcProduct* product = *iter;
                 if (product->hasObjectPlacement()) {
                     // Use a fresh trsf every time in order to prevent the result to be concatenated
-                    gp_Trsf trsf; 
+                    ConversionResultPlacement* trsf; 
                     bool success = false;
 
                     try {
-                        success = kernel->convert(product->ObjectPlacement(), trsf);
+                        success = kernel->convert_placement(product->ObjectPlacement(), trsf);
                     } catch (const std::exception& e) {
                         Logger::Error(e);
                     } catch (...) {
@@ -280,13 +284,14 @@ namespace IfcGeom {
                         continue;
                     }
 
-                    const gp_XYZ& pos = trsf.TranslationPart();
-                    bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
-                    bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
-                    bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
-                    bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
-                    bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
-                    bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
+					double X, Y, Z;
+                    trsf->TranslationPart(X, Y, Z);
+                    bounds_min_.SetX(std::min(bounds_min_.X(), X));
+                    bounds_min_.SetY(std::min(bounds_min_.Y(), Y));
+                    bounds_min_.SetZ(std::min(bounds_min_.Z(), Z));
+                    bounds_max_.SetX(std::max(bounds_max_.X(), X));
+                    bounds_max_.SetY(std::max(bounds_max_.Y(), Y));
+                    bounds_max_.SetZ(std::max(bounds_max_.Z(), Z));
                 }
             }
         }
@@ -311,13 +316,6 @@ namespace IfcGeom {
 	private:
 		// Move to the next IfcRepresentation
 		void _nextShape() {
-			// In order to conserve memory and reduce cache insertion times, the cache is
-			// cleared after an arbitrary number of processed representations. This has been
-			// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
-			static const int clear_interval = 64;
-			if (done % clear_interval == clear_interval - 1) {
-				kernel->purge_cache();
-			}
 			ifcproducts.reset();
 			++ representation_iterator;
 			++ done;
@@ -554,7 +552,7 @@ namespace IfcGeom {
 		}
 
 		const Element<P, PP>* get_object(int id) {
-			gp_Trsf trsf;
+			ConversionResultPlacement* trsf;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
             IfcSchema::IfcProduct* ifc_product = 0;
@@ -584,7 +582,7 @@ namespace IfcGeom {
 					}
 
 					try {
-						kernel->convert(ifc_product->ObjectPlacement(), trsf);
+						kernel->convert_placement(ifc_product->ObjectPlacement(), trsf);
 					} catch (const std::exception& e) {
 						Logger::Error(e);
 					} catch (...) {
@@ -605,7 +603,7 @@ namespace IfcGeom {
 
 			ElementSettings element_settings(settings, unit_magnitude, instance_type);
 
-			Element<P, PP>* ifc_object = new Element<P, PP>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", new OpenCascadePlacement(trsf), ifc_product);
+			Element<P, PP>* ifc_object = new Element<P, PP>(element_settings, id, parent_id, product_name, instance_type, product_guid, "", trsf, ifc_product);
 			return ifc_object;
 		}
 
@@ -685,7 +683,7 @@ namespace IfcGeom {
 			, filters_(filters)
 			, owns_ifc_file(false)
 		{
-			kernel = (MAKE_TYPE_NAME(Kernel)*) impl::kernel_implementations().construct(file->schema()->name(), geometry_library, file);
+			kernel = (MAKE_TYPE_NAME(AbstractKernel)*) impl::kernel_implementations().construct(file->schema()->name(), geometry_library, file);
 			// kernel = new Kernel(geometry_library, file);
 			_initialize();
 		}

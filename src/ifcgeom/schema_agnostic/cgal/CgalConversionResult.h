@@ -66,6 +66,10 @@ namespace IfcGeom {
 		virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement*) const {
 			throw std::runtime_error("Not implemented");
 		}
+
+		virtual void TranslationPart(double& X, double& Y, double& Z) const {
+			throw std::runtime_error("Not implemented");
+		}
     private:
         cgal_placement_t trsf_;
     };

@@ -362,10 +362,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement2D* l, gp_Trsf2d
 	return true;
 }
 
-void IfcGeom::Kernel::set_conversion_placement_rel_to(const IfcParse::declaration* type) {
-	placement_rel_to = type;
-}
-
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& trsf) {
 	IN_CACHE(IfcObjectPlacement,l,gp_Trsf,trsf)
 	if ( ! l->declaration().is(IfcSchema::IfcLocalPlacement::Class()) ) {

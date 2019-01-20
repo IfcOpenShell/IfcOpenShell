@@ -36,7 +36,7 @@ void MAKE_INIT_FN(KernelImplementation_cgal_)(IfcGeom::impl::KernelFactoryImplem
 
 #define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 
-bool IfcGeom::CgalKernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
+bool IfcGeom::CgalKernel::is_identity_transform(const IfcUtil::IfcBaseClass* l) {
 	Logger::Message(Logger::LOG_ERROR, "Not implemented is_identity_transform()");
 	return false;
 	/*
@@ -80,154 +80,15 @@ bool IfcGeom::CgalKernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
 	*/
 }
 
-template <typename P, typename PP>
-IfcGeom::NativeElement<P, PP>* IfcGeom::CgalKernel::create_brep_for_representation_and_product(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
-{
-	IfcGeom::Representation::BRep* shape;
-	IfcGeom::ConversionResults shapes, shapes2;
-
-	if (!convert_shapes(representation, shapes)) {
-		return 0;
-	}
-
-	if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
-		Logger::Message(Logger::LOG_ERROR, "Not implemented APPLY_LAYERSETS");
-	}
-
-	int parent_id = -1;
-	try {
-		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
-		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
-			parent_id = parent_object->data().id();
-		}
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	}
-
-	const std::string name = product->hasName() ? product->Name() : "";
-	const std::string guid = product->GlobalId();
-
-	cgal_placement_t trsf;
-	try {
-		// convert(product->ObjectPlacement(), trsf);
-	} catch (...) {}
-
-	std::stringstream representation_id_builder;
-	representation_id_builder << representation->data().id();
-
-	// Does the IfcElement have any IfcOpenings?
-	// Note that openings for IfcOpeningElements are not processed
-	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product)->as<IfcSchema::IfcRelVoidsElement>();
-
-	const std::string product_type = product->declaration().name();
-	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
-
-	if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
-		Logger::Message(Logger::LOG_ERROR, "Not implemented opening subtractions");
-	}
-	
-	shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
-	
-	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
-	}
-
-	return new NativeElement<P, PP>(
-		product->data().id(),
-		parent_id,
-		name,
-		product_type,
-		guid,
-		context_string,
-		new CgalPlacement(trsf),
-		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
-		product
-	);
+bool IfcGeom::CgalKernel::apply_layerset(const IfcSchema::IfcProduct* product, IfcGeom::ConversionResults& shapes) {
+	throw std::runtime_error("not implemented");
 }
 
-template <typename P, typename PP>
-IfcGeom::NativeElement<P, PP>* IfcGeom::CgalKernel::create_brep_for_processed_representation(
-	const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
-	IfcGeom::NativeElement<P, PP>* brep)
-{
-	int parent_id = -1;
-	try {
-		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
-		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
-			parent_id = parent_object->data().id();
-		}
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	}
-
-	const std::string name = product->hasName() ? product->Name() : "";
-	const std::string guid = product->GlobalId();
-
-	cgal_placement_t trsf;
-	try {
-		// convert(product->ObjectPlacement(), trsf);
-	} catch (...) {}
-
-	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
-	}
-
-	const std::string product_type = product->declaration().name();
-
-	return new NativeElement<P, PP>(
-		product->data().id(),
-		parent_id,
-		name,
-		product_type,
-		guid,
-		context_string,
-		new CgalPlacement(trsf),
-		brep->geometry_pointer(),
-		product
-	);
+bool IfcGeom::CgalKernel::validate_quantities(const IfcSchema::IfcProduct* product, const IfcGeom::Representation::BRep& brep) {
+	throw std::runtime_error("not implemented");
 }
 
-template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::CgalKernel::create_brep_for_representation_and_product<float, float>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::CgalKernel::create_brep_for_representation_and_product<float, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::CgalKernel::create_brep_for_representation_and_product<double, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-
-template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::CgalKernel::create_brep_for_processed_representation<float, float>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, float>* brep);
-template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::CgalKernel::create_brep_for_processed_representation<float, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, double>* brep);
-template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::CgalKernel::create_brep_for_processed_representation<double, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<double, double>* brep);
-
-
-void IfcGeom::CgalKernel::setValue(GeomValue var, double value) {
-	switch (var) {
-	case GV_DEFLECTION_TOLERANCE:
-		deflection_tolerance = value;
-		break;
-	case GV_DIMENSIONALITY:
-		dimensionality = value;
-		break;
-	default:
-		throw std::runtime_error("Not implemented for this kernel");
-	}
+bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& shapes, const IfcGeom::ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes) {
+	throw std::runtime_error("not implemented");
 }
 
-double IfcGeom::CgalKernel::getValue(GeomValue var) const {
-	switch (var) {
-	case GV_DEFLECTION_TOLERANCE:
-		return deflection_tolerance;
-	case GV_DIMENSIONALITY:
-		return dimensionality;
-	}
-	throw std::runtime_error("Not implemented for this kernel");
-}

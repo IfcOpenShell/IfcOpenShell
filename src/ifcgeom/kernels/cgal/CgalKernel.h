@@ -36,6 +36,9 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 */
 
 #include "../../../ifcparse/macros.h"
+
+#include "../../../ifcgeom/kernel_agnostic/AbstractKernel.h"
+
 #include "../../../ifcgeom/schema_agnostic/Kernel.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
@@ -55,10 +58,11 @@ namespace IfcGeom {
 		std::map<int, cgal_shape_t> Shape;
 	};
 
-	class IFC_GEOM_API MAKE_TYPE_NAME(CgalKernel) : public Kernel {
+	class IFC_GEOM_API MAKE_TYPE_NAME(CgalKernel) : public MAKE_TYPE_NAME(AbstractKernel) {
 	public:
 
-		MAKE_TYPE_NAME(CgalKernel)() : Kernel("cgal") {}
+		MAKE_TYPE_NAME(CgalKernel)()
+			: MAKE_TYPE_NAME(AbstractKernel)("cgal") {}
 
 #ifndef NO_CACHE
 		CgalCache cache;
@@ -72,9 +76,6 @@ namespace IfcGeom {
 		bool convert_curve(const IfcUtil::IfcBaseClass* L, cgal_curve_t& result);
 		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
 
-		virtual void setValue(GeomValue var, double value);
-		virtual double getValue(GeomValue var) const;
-
 		// bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, ConversionResults& cut_shapes);
 
 		void purge_cache() {
@@ -86,16 +87,10 @@ namespace IfcGeom {
 #endif
 		}
 
-		virtual bool is_identity_transform(IfcUtil::IfcBaseClass*);
-
-		template <typename P, typename PP>
-		IfcGeom::NativeElement<P, PP>* create_brep_for_representation_and_product(
-			const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*);
-
-		template <typename P, typename PP>
-		IfcGeom::NativeElement<P, PP>* create_brep_for_processed_representation(
-			const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::NativeElement<P, PP>*);
-
+		virtual bool is_identity_transform(const IfcUtil::IfcBaseClass*);
+		virtual bool apply_layerset(const IfcSchema::IfcProduct* product, IfcGeom::ConversionResults& shapes);
+		virtual bool validate_quantities(const IfcSchema::IfcProduct* product, const IfcGeom::Representation::BRep& brep);
+		virtual bool convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& shapes, const ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes);
 
 #include "CgalEntityMappingDeclaration.h"
 

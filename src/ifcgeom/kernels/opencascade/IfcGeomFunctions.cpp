@@ -506,259 +506,6 @@ const TopoDS_Shape& IfcGeom::Kernel::ensure_fit_for_subtraction(const TopoDS_Sha
 	return solid;
 }
 
-bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcGeom::ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
-
-	// TODO: Refactor convert_openings() convert_openings_fast() and convert(IfcBooleanResult) to use
-	// the same code base and conform to the same checks and logging messages.
-
-	// Iterate over IfcOpeningElements
-	IfcGeom::ConversionResults opening_shapes;
-	unsigned int last_size = 0;
-	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
-		IfcSchema::IfcRelVoidsElement* v = *it;
-		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
-			if (!fes->hasRepresentation()) continue;
-
-			// Convert the IfcRepresentation of the IfcOpeningElement
-			gp_Trsf opening_trsf;
-			if (fes->hasObjectPlacement()) {
-				try {
-					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (const std::exception& e) {
-					Logger::Error(e);
-				} catch (...) {
-					Logger::Error("Failed to construct placement");
-				}
-			}
-
-			// Move the opening into the coordinate system of the IfcProduct
-			opening_trsf.PreMultiply(entity_trsf.Inverted());
-
-			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
-						
-			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				convert_shapes(*it2,opening_shapes);
-			}
-
-			const unsigned int current_size = (const unsigned int) opening_shapes.size();
-			for ( unsigned int i = last_size; i < current_size; ++ i ) {
-				OpenCascadePlacement p((gp_GTrsf)opening_trsf);
-				opening_shapes[i].prepend(&p);
-			}
-			last_size = current_size;
-		}
-	}
-
-	// Iterate over the shapes of the IfcProduct
-	for ( IfcGeom::ConversionResults::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
-		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(*(OpenCascadeShape*) it3->Shape(), entity_shape_solid);
-		const OpenCascadePlacement* entity_shape_gtrsf = (OpenCascadePlacement*) it3->Placement();
-
-		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
-
-		// Iterate over the shapes of the IfcOpeningElements
-		for ( IfcGeom::ConversionResults::const_iterator it4 = opening_shapes.begin(); it4 != opening_shapes.end(); ++ it4 ) {
-			TopoDS_Shape opening_shape_solid;
-			const TopoDS_Shape& opening_shape_unlocated = ensure_fit_for_subtraction(*(OpenCascadeShape*) it4->Shape(),opening_shape_solid);
-			const OpenCascadePlacement* opening_shape_gtrsf = (OpenCascadePlacement*)it4->Placement();
-			TopoDS_Shape opening_shape = apply_transformation(opening_shape_unlocated, opening_shape_gtrsf);
-					
-			double opening_volume;
-			if (Logger::LOG_WARNING >= Logger::Verbosity()) {
-				opening_volume = shape_volume(opening_shape);
-				if ( opening_volume <= ALMOST_ZERO )
-					Logger::Message(Logger::LOG_WARNING,"Empty opening for:",entity);
-			}
-
-			if (entity_shape.ShapeType() == TopAbs_COMPSOLID) {
-
-				// For compound solids process the subtraction for the constituent
-				// solids individually and write the result back as a compound solid.
-
-				TopoDS_CompSolid compound;
-				BRep_Builder builder;
-				builder.MakeCompSolid(compound);
-
-				TopExp_Explorer exp(entity_shape, TopAbs_SOLID);
-
-				for (; exp.More(); exp.Next()) {
-
-#if OCC_VERSION_HEX < 0x60900
-					BRepAlgoAPI_Cut brep_cut(exp.Current(), opening_shape);
-#else
-					BRepAlgoAPI_Cut brep_cut;
-					TopTools_ListOfShape s1s;
-					s1s.Append(exp.Current());
-					TopTools_ListOfShape s2s;
-					s2s.Append(opening_shape);
-					brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
-					brep_cut.SetArguments(s1s);
-					brep_cut.SetTools(s2s);
-					brep_cut.Build();
-#endif
-
-					bool added = false;
-					if ( brep_cut.IsDone() ) {
-						TopoDS_Shape brep_cut_result = brep_cut;
-						BRepCheck_Analyzer analyser(brep_cut_result);
-						bool is_valid = analyser.IsValid() != 0;
-						if (is_valid) {
-							TopExp_Explorer exp2(brep_cut_result, TopAbs_SOLID);
-							for (; exp2.More(); exp2.Next()) {
-								builder.Add(compound, exp2.Current());
-								added = true;
-							}
-						}
-					}
-					if (!added) {
-						// Add the original in case subtraction fails
-						builder.Add(compound, exp.Current());
-					} else {
-						Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity);
-					}
-				}
-
-				entity_shape = compound;
-
-			} else {
-#if OCC_VERSION_HEX < 0x60900
-				BRepAlgoAPI_Cut brep_cut(entity_shape,opening_shape);
-#else
-				BRepAlgoAPI_Cut brep_cut;
-				TopTools_ListOfShape s1s;
-				s1s.Append(entity_shape);
-				TopTools_ListOfShape s2s;
-				s2s.Append(opening_shape);
-				brep_cut.SetFuzzyValue(getValue(GV_PRECISION));
-				brep_cut.SetArguments(s1s);
-				brep_cut.SetTools(s2s);
-				brep_cut.Build();
-#endif
-
-				if ( brep_cut.IsDone() ) {
-					TopoDS_Shape brep_cut_result = brep_cut;
-
-					ShapeFix_Shape fix(brep_cut_result);
-					try {
-						fix.Perform();
-						brep_cut_result = fix.Shape();
-					} catch (...) {
-						Logger::Error("Shape healing failed on opening subtraction result", entity);
-					}
-					
-					BRepCheck_Analyzer analyser(brep_cut_result);
-					bool is_valid = analyser.IsValid() != 0;
-					if ( is_valid ) {
-						entity_shape = brep_cut_result;
-						if (Logger::LOG_WARNING >= Logger::Verbosity()) {
-							const double volume_after_subtraction = shape_volume(entity_shape);
-							double original_shape_volume = shape_volume(entity_shape);
-							if ( ALMOST_THE_SAME(original_shape_volume,volume_after_subtraction) )
-								Logger::Message(Logger::LOG_WARNING,"Subtraction yields unchanged volume:",entity);
-						}
-					} else {
-						Logger::Message(Logger::LOG_ERROR,"Invalid result from subtraction:",entity);
-					}
-				} else {
-					Logger::Message(Logger::LOG_ERROR,"Failed to process subtraction:",entity);
-				}
-			}
-
-		}
-		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), it3->Placement()->clone(), new OpenCascadeShape(entity_shape), &it3->Style()));
-	}
-
-	return true;
-}
-
-#if OCC_VERSION_HEX < 0x60900
-bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, 
-							   const IfcGeom::ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
-	
-	// Create a compound of all opening shapes in order to speed up the boolean operations
-	TopoDS_Compound opening_compound;
-	BRep_Builder builder;
-	builder.MakeCompound(opening_compound);
-
-	for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
-		IfcSchema::IfcRelVoidsElement* v = *it;
-		IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-		if ( fes->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
-			if (!fes->hasRepresentation()) continue;
-
-			// Convert the IfcRepresentation of the IfcOpeningElement
-			gp_Trsf opening_trsf;
-			if (fes->hasObjectPlacement()) {
-				try {
-					convert(fes->ObjectPlacement(),opening_trsf);
-				} catch (const std::exception& e) {
-					Logger::Error(e);
-				} catch (...) {
-					Logger::Error("Failed to construct placement");
-				}
-			}
-
-			// Move the opening into the coordinate system of the IfcProduct
-			opening_trsf.PreMultiply(entity_trsf.Inverted());
-
-			IfcSchema::IfcProductRepresentation* prodrep = fes->Representation();
-			IfcSchema::IfcRepresentation::list::ptr reps = prodrep->Representations();
-
-			IfcGeom::ConversionResults opening_shapes;
-						
-			for ( IfcSchema::IfcRepresentation::list::it it2 = reps->begin(); it2 != reps->end(); ++ it2 ) {
-				convert_shapes(*it2,opening_shapes);
-			}
-
-			for ( unsigned int i = 0; i < opening_shapes.size(); ++ i ) {
-				gp_GTrsf gtrsf = opening_shapes[i].Placement();
-				gtrsf.PreMultiply(opening_trsf);
-				TopoDS_Shape opening_shape = apply_transformation(opening_shapes[i].Shape(), gtrsf);
-				builder.Add(opening_compound, opening_shape);
-			}
-
-		}
-	}
-
-	// Iterate over the shapes of the IfcProduct
-	for ( IfcGeom::ConversionResults::const_iterator it3 = entity_shapes.begin(); it3 != entity_shapes.end(); ++ it3 ) {
-		TopoDS_Shape entity_shape_solid;
-		const TopoDS_Shape& entity_shape_unlocated = ensure_fit_for_subtraction(it3->Shape(),entity_shape_solid);
-		const gp_GTrsf& entity_shape_gtrsf = it3->Placement();
-		if (entity_shape_gtrsf.Form() == gp_Other) {
-			Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation to:", entity);
-		}
-		TopoDS_Shape entity_shape = apply_transformation(entity_shape_unlocated, entity_shape_gtrsf);
-
-		BRepAlgoAPI_Cut brep_cut(entity_shape,opening_compound);
-
-		bool is_valid = false;
-		if ( brep_cut.IsDone() ) {
-			TopoDS_Shape brep_cut_result = brep_cut;
-				
-			BRepCheck_Analyzer analyser(brep_cut_result);
-			is_valid = analyser.IsValid() != 0;
-			if ( is_valid ) {
-				cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), brep_cut_result, &it3->Style()));
-			}
-		}
-		if ( !is_valid ) {
-			// Apparently processing the boolean operation failed or resulted in an invalid result
-			// in which case the original shape without the subtractions is returned instead
-			// we try convert the openings in the original way, one by one.
-			Logger::Message(Logger::LOG_WARNING,"Subtracting combined openings compound failed:",entity);
-			return false;
-		}
-		
-	}
-	return true;
-}
-#else
-
 namespace {
 	struct opening_sorter {
 		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
@@ -767,8 +514,10 @@ namespace {
 	};
 }
 
-bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings,
-	const IfcGeom::ConversionResults& entity_shapes, const gp_Trsf& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
+bool IfcGeom::Kernel::convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings,
+	const IfcGeom::ConversionResults& entity_shapes, const ConversionResultPlacement* entity_place, IfcGeom::ConversionResults& cut_shapes) {
+
+	const gp_Trsf entity_trsf = ((OpenCascadePlacement*)entity_place)->trsf().Trsf();
 
 	std::vector< std::pair<double, TopoDS_Shape> > opening_vector;
 
@@ -859,7 +608,6 @@ bool IfcGeom::Kernel::convert_openings_fast(const IfcSchema::IfcProduct* entity,
 	}
 	return true;
 }
-#endif
 
 bool IfcGeom::Kernel::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face) {
 	TopoDS_Wire wire = w;
@@ -1082,63 +830,6 @@ void IfcGeom::Kernel::apply_tolerance(TopoDS_Shape& s, double t) {
 	(void)s;
 	(void)t;
 #endif
-}
-
-void IfcGeom::Kernel::setValue(GeomValue var, double value) {
-	switch (var) {
-	case GV_DEFLECTION_TOLERANCE:
-		deflection_tolerance = value;
-		break;
-	case GV_WIRE_CREATION_TOLERANCE:
-		wire_creation_tolerance = value;
-		break;
-	case GV_POINT_EQUALITY_TOLERANCE:
-		point_equality_tolerance = value;
-		break;
-	case GV_LENGTH_UNIT:
-		ifc_length_unit = value;
-		break;
-	case GV_PLANEANGLE_UNIT:
-		ifc_planeangle_unit = value;
-		break;
-	case GV_PRECISION:
-		modelling_precision = value;
-		break;
-	case GV_DIMENSIONALITY:
-		dimensionality = value;
-		break;
-	default:
-		assert(!"never reach here");
-	}
-}
-
-double IfcGeom::Kernel::getValue(GeomValue var) const {
-	switch (var) {
-	case GV_DEFLECTION_TOLERANCE:
-		return deflection_tolerance;
-	case GV_WIRE_CREATION_TOLERANCE:
-		return wire_creation_tolerance;
-	case GV_MINIMAL_FACE_AREA:
-		// Considering a right-angled triangle, this about the smallest
-		// area you can obtain without the vertices being confused.
-		return modelling_precision * modelling_precision / 2.;
-	case GV_POINT_EQUALITY_TOLERANCE:
-		return point_equality_tolerance;
-	case GV_LENGTH_UNIT:
-		return ifc_length_unit;
-		break;
-	case GV_PLANEANGLE_UNIT:
-		return ifc_planeangle_unit;
-		break;
-	case GV_PRECISION:
-		return modelling_precision;
-		break;
-	case GV_DIMENSIONALITY:
-		return dimensionality;
-		break;
-	}
-	assert(!"never reach here");
-	return 0;
 }
 
 namespace {
@@ -1406,422 +1097,6 @@ void IfcGeom::Kernel::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, T
 	}
 	w = builder.Wire();	
 }
-
-const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(const IfcSchema::IfcProduct* product) {
-	IfcSchema::IfcMaterial* single_material = 0;
-	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
-	if (associated_materials->size() == 1) {
-		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
-		single_material = associated_material->as<IfcSchema::IfcMaterial>();
-
-		// NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
-		// in accordance with other viewers.
-		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-			if (layerset->MaterialLayers()->size() == 1) {
-				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-				if (layer->hasMaterial()) {
-					single_material = layer->Material();
-				}
-			}
-		}
-	}
-	return single_material;
-}
-
-template <typename P, typename PP>
-IfcGeom::NativeElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and_product(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
-{
-	std::stringstream representation_id_builder;
-
-	representation_id_builder << representation->data().id();
-
-	IfcGeom::Representation::BRep* shape;
-	IfcGeom::ConversionResults shapes, shapes2;
-
-	if ( !convert_shapes(representation, shapes) ) {
-		return 0;
-	}
-
-	if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
-		TopoDS_Shape merge;
-		if (flatten_shape_list(shapes, merge, false)) {
-			if (count(merge, TopAbs_FACE) > 0) {
-				std::vector<double> thickness;
-				std::vector<Handle_Geom_Surface> layers;
-				std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
-				std::vector<const SurfaceStyle*> styles;
-				if (convert_layerset(product, layers, styles, thickness)) {
-
-					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
-					for (IfcSchema::IfcRelAssociates::list::it it = associations->begin(); it != associations->end(); ++it) {
-						IfcSchema::IfcRelAssociatesMaterial* associates_material = (**it).as<IfcSchema::IfcRelAssociatesMaterial>();
-						if (associates_material) {
-							unsigned layerset_id = associates_material->RelatingMaterial()->data().id();
-							representation_id_builder << "-layerset-" << layerset_id;
-							break;
-						}
-					}
-					
-					if (styles.size() > 1) {
-						// If there's only a single layer there is no need to manipulate geometries.
-						bool success = true;
-						if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
-							if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
-								std::swap(shapes, shapes2);
-								success = true;
-							}
-						} else {
-							if (apply_layerset(shapes, layers, styles, shapes2)) {
-								std::swap(shapes, shapes2);
-								success = true;
-							}
-						}
-
-						if (!success) {
-							Logger::Error("Failed processing layerset");
-						}
-					}
-				}
-			}
-		}
-	}
-
-	bool material_style_applied = false;
-
-	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
-	if (single_material) {
-		const IfcGeom::SurfaceStyle* s = get_style(single_material);
-		for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-			if (!it->hasStyle() && s) {
-				it->setStyle(s);
-				material_style_applied = true;
-			}
-		}
-	} else {
-		bool some_items_without_style = false;
-		for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-			if (!it->hasStyle()) {
-				some_items_without_style = true;
-				break;
-			}
-		}
-		if (some_items_without_style) {
-			Logger::Warning("No material and surface styles for:", product);
-		}
-    }
-
-	if (material_style_applied) {
-		representation_id_builder << "-material-" << single_material->data().id();
-	}
-
-	int parent_id = -1;
-	try {
-		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
-		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
-			parent_id = parent_object->data().id();
-		}
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	}
-		
-	const std::string name = product->hasName() ? product->Name() : "";
-	const std::string guid = product->GlobalId();
-		
-	gp_Trsf trsf;
-	try {
-		convert(product->ObjectPlacement(),trsf);
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	} catch (...) {
-		Logger::Error("Failed to construct placement");
-	}
-
-	// Does the IfcElement have any IfcOpenings?
-	// Note that openings for IfcOpeningElements are not processed
-	IfcSchema::IfcRelVoidsElement::list::ptr openings = find_openings(product)->as<IfcSchema::IfcRelVoidsElement>();
-
-	const std::string product_type = product->declaration().name();
-	ElementSettings element_settings(settings, getValue(GV_LENGTH_UNIT), product_type);
-
-    if (!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && openings && openings->size()) {
-		representation_id_builder << "-openings";
-		for (IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++it) {
-			representation_id_builder << "-" << (*it)->data().id();
-		}
-
-		IfcGeom::ConversionResults opened_shapes;
-		bool caught_error = false;
-		try {
-#if OCC_VERSION_HEX < 0x60900
-            const bool faster_booleans = settings.get(IteratorSettings::FASTER_BOOLEANS);
-#else
-			const bool faster_booleans = true;
-#endif
-			if (faster_booleans) {
-				bool success = convert_openings_fast(product,openings,shapes,trsf,opened_shapes);
-#if OCC_VERSION_HEX < 0x60900
-				if (!success) {
-					opened_shapes.clear();
-					convert_openings(product,openings,shapes,trsf,opened_shapes);
-				}
-#else
-				(void)success;
-#endif
-			} else {
-				convert_openings(product,openings,shapes,trsf,opened_shapes);
-			}
-		} catch (const std::exception& e) {
-			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product);
-			caught_error = true;
-		} catch(...) { 
-			Logger::Message(Logger::LOG_ERROR,"Error processing openings for:",product); 
-		}
-
-		if (caught_error && opened_shapes.size() < shapes.size()) {
-			opened_shapes = shapes;
-		}
-
-        if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-			for ( IfcGeom::ConversionResults::iterator it = opened_shapes.begin(); it != opened_shapes.end(); ++ it ) {
-				OpenCascadePlacement p(trsf);
-				it->prepend(&p);
-			}
-			trsf = gp_Trsf();
-			representation_id_builder << "-world-coords";
-		}
-		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), opened_shapes);
-    } else if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
-		for ( IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++ it ) {
-			OpenCascadePlacement p(trsf);
-			it->prepend(&p);
-		}
-		trsf = gp_Trsf();
-		representation_id_builder << "-world-coords";
-		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
-	} else {
-		shape = new IfcGeom::Representation::BRep(element_settings, representation_id_builder.str(), shapes);
-	}
-
-	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
-	}
-
-	auto elem = new NativeElement<P, PP>(
-		product->data().id(),
-		parent_id,
-		name,
-		product_type,
-		guid,
-		context_string,
-		new OpenCascadePlacement(trsf),
-		boost::shared_ptr<IfcGeom::Representation::BRep>(shape),
-		product
-	);
-
-	if (settings.get(IteratorSettings::VALIDATE_QUANTITIES)) {
-		auto rels = product->IsDefinedBy();
-		for (auto& rel : *rels) {
-			if (rel->as<IfcSchema::IfcRelDefinesByProperties>()) {
-				auto pdef = rel->as<IfcSchema::IfcRelDefinesByProperties>()->RelatingPropertyDefinition();
-				if (pdef->as<IfcSchema::IfcElementQuantity>()) {
-					std::string organization_name;
-					try {
-						// A couple of files are not according to the schema here.
-						organization_name = pdef->as<IfcSchema::IfcElementQuantity>()->OwnerHistory()->OwningApplication()->ApplicationDeveloper()->Name();
-					} catch (...) {}
-					if (organization_name == "IfcOpenShell") {
-						auto qs = pdef->as<IfcSchema::IfcElementQuantity>()->Quantities();
-						for (auto& q : *qs) {
-							if (q->as<IfcSchema::IfcQuantityArea>() && q->Name() == "Total Surface Area") {
-								double a_calc;
-								double a_file = q->as<IfcSchema::IfcQuantityArea>()->AreaValue();
-								if (elem->geometry().calculate_surface_area(a_calc)) {
-									double diff = std::abs(a_calc - a_file);
-									if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
-										Logger::Error("Validation of surface area failed for:", product);
-									} else {
-										Logger::Notice("Validation of surface area succeeded for:", product);
-									}
-								} else {
-									Logger::Error("Validation of surface area failed for:", product);
-								}
-							} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
-								double v_calc;
-								double v_file = q->as<IfcSchema::IfcQuantityVolume>()->VolumeValue();
-								if (elem->geometry().calculate_volume(v_calc)) {
-									double diff = std::abs(v_calc - v_file);
-									if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
-										Logger::Error("Validation of volume failed for:", product);
-									} else {
-										Logger::Notice("Validation of volume succeeded for:", product);
-									}
-								} else {
-									Logger::Error("Validation of volume failed for:", product);
-								}
-							} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
-								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
-								bool all_succeeded = qs2->size() > 0;
-								for (auto& q2 : *qs2) {
-									if (q2->as<IfcSchema::IfcQuantityCount>() && q2->Name() == "Surface Genus" && q2->hasDescription()) {
-										int item_id = boost::lexical_cast<int>(q2->Description().substr(1));
-										int genus = q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
-										for (auto& part : elem->geometry()) {
-											if (part.ItemId() == item_id) {
-												if (surface_genus(*(OpenCascadeShape*)part.Shape()) != genus) {
-													all_succeeded = false;
-												}
-											}
-										}
-									}
-								}
-								if (!all_succeeded) {
-									Logger::Error("Validation of surface genus failed for:", product);
-								} else {
-									Logger::Notice("Validation of surface genus succeeded for:", product);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return elem;
-}
-
-IfcSchema::IfcRepresentation* IfcGeom::Kernel::representation_mapped_to(const IfcSchema::IfcRepresentation* representation) {
-	IfcSchema::IfcRepresentation* representation_mapped_to = 0;
-	IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
-	if (items->size() == 1) {
-		IfcSchema::IfcRepresentationItem* item = *items->begin();
-		if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
-			if (item->StyledByItem()->size() == 0) {
-				IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-				if (is_identity_transform(mapped_item->MappingTarget())) {
-					IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
-					if (is_identity_transform(map->MappingOrigin())) {
-						representation_mapped_to = map->MappedRepresentation();
-					}
-				}
-			}
-		}
-	}
-	return representation_mapped_to;
-}
-
-IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const IfcSchema::IfcRepresentation* representation) {
-	IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
-
-	IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
-
-	for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
-		// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
-		// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
-		// It will be changed into an ABSTRACT supertype in future releases of IFC.
-
-		// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
-		// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-		products->push((*it)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>());
-	}
-	
-	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
-	if (maps->size() == 1) {
-		IfcSchema::IfcRepresentationMap* map = *maps->begin();
-		if (is_identity_transform(map->MappingOrigin())) {
-			IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
-			for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
-				IfcSchema::IfcMappedItem* item = *it;
-				if (item->StyledByItem()->size() != 0) continue;
-
-				if (!is_identity_transform(item->MappingTarget())) {
-					continue;
-				}
-
-				IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
-				for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
-					IfcSchema::IfcRepresentation* rep = *jt;
-					if (rep->Items()->size() != 1) continue;
-					IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
-					for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
-						IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
-						products->push(ps);
-					}
-				}
-			}
-		}
-	}
-
-	return products;
-}
-
-template <typename P, typename PP>
-IfcGeom::NativeElement<P, PP>* IfcGeom::Kernel::create_brep_for_processed_representation(
-    const IteratorSettings& /*settings*/, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
-    IfcGeom::NativeElement<P, PP>* brep)
-{
-	int parent_id = -1;
-	try {
-		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
-		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
-			parent_id = parent_object->data().id();
-		}
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	}
-		
-	const std::string name = product->hasName() ? product->Name() : "";
-	const std::string guid = product->GlobalId();
-		
-	gp_Trsf trsf;
-	try {
-		convert(product->ObjectPlacement(),trsf);
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	} catch (...) {
-		Logger::Error("Failed to construct placement");
-	}
-
-	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
-	}
-
-	const std::string product_type = product->declaration().name();
-
-	return new NativeElement<P, PP>(
-		product->data().id(),
-		parent_id,
-		name, 
-		product_type,
-		guid,
-		context_string,
-		new OpenCascadePlacement(trsf),
-		brep->geometry_pointer(),
-        product
-	);
-}
-
-template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, float>(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::Kernel::create_brep_for_representation_and_product<float, double>(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::Kernel::create_brep_for_representation_and_product<double, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product);
-
-template IFC_GEOM_API IfcGeom::NativeElement<float, float>* IfcGeom::Kernel::create_brep_for_processed_representation<float, float>(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, float>* brep);
-template IFC_GEOM_API IfcGeom::NativeElement<float, double>* IfcGeom::Kernel::create_brep_for_processed_representation<float, double>(
-    const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<float, double>* brep);
-template IFC_GEOM_API IfcGeom::NativeElement<double, double>* IfcGeom::Kernel::create_brep_for_processed_representation<double, double>(
-	const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product, IfcGeom::NativeElement<double, double>* brep);
 
 std::pair<std::string, double> IfcGeom::Kernel::initializeUnits(IfcSchema::IfcUnitAssignment* unit_assignment) {
 	// Set default units, set length to meters, angles to undefined
@@ -2951,36 +2226,14 @@ bool IfcGeom::Kernel::project(const Handle_Geom_Surface& srf, const TopoDS_Shape
 	return vertex_count > 0;
 }
 
-const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_style(const IfcSchema::IfcRepresentationItem* item) {
-	if (item->StyledByItem()->size()) {
-		return item;
-	}
+bool IfcGeom::Kernel::is_identity_transform(const IfcUtil::IfcBaseClass* l) {
+	const IfcSchema::IfcAxis2Placement2D* ax2d;
+	const IfcSchema::IfcAxis2Placement3D* ax3d;
 
-	while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
-		// All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
-		// IfcGeometricRepresentationItem
-		item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
-		if (item->StyledByItem()->size()) {
-			return item;
-		}
-	}
-
-	// TODO: Ideally this would be done for other entities (such as IfcCsgSolid) as well.
-	// But neither are these very prevalent, nor does the current IfcOpenShell style
-	// mechanism enable to conveniently style subshapes, which would be necessary for
-	// distinctly styled union operands.
-
-	return item;
-}
-
-bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
-	IfcSchema::IfcAxis2Placement2D* ax2d;
-	IfcSchema::IfcAxis2Placement3D* ax3d;
-
-	IfcSchema::IfcCartesianTransformationOperator2D* op2d;
-	IfcSchema::IfcCartesianTransformationOperator3D* op3d;
-	IfcSchema::IfcCartesianTransformationOperator2DnonUniform* op2dnonu;
-	IfcSchema::IfcCartesianTransformationOperator3DnonUniform* op3dnonu;
+	const IfcSchema::IfcCartesianTransformationOperator2D* op2d;
+	const IfcSchema::IfcCartesianTransformationOperator3D* op3d;
+	const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* op2dnonu;
+	const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* op3dnonu;
 
 	if((op2dnonu = l->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>()) != 0) {
 		gp_GTrsf2d gtrsf2d;
@@ -3845,5 +3098,113 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 
 	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
 		Logger::Warning(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
+	}
+}
+
+bool IfcGeom::Kernel::apply_layerset(const IfcSchema::IfcProduct* product, IfcGeom::ConversionResults& shapes) {
+	IfcGeom::ConversionResults shapes2;
+
+	bool success = false;
+
+	TopoDS_Shape merge;
+	if (flatten_shape_list(shapes, merge, false)) {
+		if (count(merge, TopAbs_FACE) > 0) {
+			std::vector<double> thickness;
+			std::vector<Handle_Geom_Surface> layers;
+			std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
+			std::vector<const SurfaceStyle*> styles;
+			if (convert_layerset(product, layers, styles, thickness)) {
+				if (styles.size() > 1) {
+					// If there's only a single layer there is no need to manipulate geometries.
+					success = true;
+					if (product->as<IfcSchema::IfcWall>() && fold_layers(product->as<IfcSchema::IfcWall>(), shapes, layers, thickness, folded_layers)) {
+						if (apply_folded_layerset(shapes, folded_layers, styles, shapes2)) {
+							std::swap(shapes, shapes2);
+							success = true;
+						}
+					} else {
+						if (apply_layerset(shapes, layers, styles, shapes2)) {
+							std::swap(shapes, shapes2);
+							success = true;
+						}
+					}
+
+					if (!success) {
+						Logger::Error("Failed processing layerset");
+					}
+				}
+			}
+		}
+	}
+
+	return success;
+}
+
+bool IfcGeom::Kernel::validate_quantities(const IfcSchema::IfcProduct* product, const IfcGeom::Representation::BRep& brep) {
+	auto rels = product->IsDefinedBy();
+	for (auto& rel : *rels) {
+		if (rel->as<IfcSchema::IfcRelDefinesByProperties>()) {
+			auto pdef = rel->as<IfcSchema::IfcRelDefinesByProperties>()->RelatingPropertyDefinition();
+			if (pdef->as<IfcSchema::IfcElementQuantity>()) {
+				std::string organization_name;
+				try {
+					// A couple of files are not according to the schema here.
+					organization_name = pdef->as<IfcSchema::IfcElementQuantity>()->OwnerHistory()->OwningApplication()->ApplicationDeveloper()->Name();
+				} catch (...) {}
+				if (organization_name == "IfcOpenShell") {
+					auto qs = pdef->as<IfcSchema::IfcElementQuantity>()->Quantities();
+					for (auto& q : *qs) {
+						if (q->as<IfcSchema::IfcQuantityArea>() && q->Name() == "Total Surface Area") {
+							double a_calc;
+							double a_file = q->as<IfcSchema::IfcQuantityArea>()->AreaValue();
+							if (brep.calculate_surface_area(a_calc)) {
+								double diff = std::abs(a_calc - a_file);
+								if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
+									Logger::Error("Validation of surface area failed for:", product);
+								} else {
+									Logger::Notice("Validation of surface area succeeded for:", product);
+								}
+							} else {
+								Logger::Error("Validation of surface area failed for:", product);
+							}
+						} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
+							double v_calc;
+							double v_file = q->as<IfcSchema::IfcQuantityVolume>()->VolumeValue();
+							if (brep.calculate_volume(v_calc)) {
+								double diff = std::abs(v_calc - v_file);
+								if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
+									Logger::Error("Validation of volume failed for:", product);
+								} else {
+									Logger::Notice("Validation of volume succeeded for:", product);
+								}
+							} else {
+								Logger::Error("Validation of volume failed for:", product);
+							}
+						} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
+							auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
+							bool all_succeeded = qs2->size() > 0;
+							for (auto& q2 : *qs2) {
+								if (q2->as<IfcSchema::IfcQuantityCount>() && q2->Name() == "Surface Genus" && q2->hasDescription()) {
+									int item_id = boost::lexical_cast<int>(q2->Description().substr(1));
+									int genus = q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
+									for (auto& part : brep) {
+										if (part.ItemId() == item_id) {
+											if (surface_genus(*(OpenCascadeShape*)part.Shape()) != genus) {
+												all_succeeded = false;
+											}
+										}
+									}
+								}
+							}
+							if (!all_succeeded) {
+								Logger::Error("Validation of surface genus failed for:", product);
+							} else {
+								Logger::Notice("Validation of surface genus succeeded for:", product);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }

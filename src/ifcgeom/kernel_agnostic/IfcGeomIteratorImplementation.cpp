@@ -1,5 +1,4 @@
 #include "IfcGeomIteratorImplementation.h"
-#include "../../ifcgeom/schema_agnostic/IteratorImplementation.h"
 
 namespace IfcGeom {
 	template class MAKE_TYPE_NAME(IteratorImplementation_)<float, float>;

@@ -34,6 +34,7 @@ namespace IfcGeom {
 	public:
 		virtual void Multiply(const ConversionResultPlacement*) = 0;
 		virtual void PreMultiply(const ConversionResultPlacement*) = 0;
+		virtual void TranslationPart(double& X, double& Y, double& Z) const = 0;
 		virtual ConversionResultPlacement* inverted() const = 0;
 		virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement*) const = 0;
 		virtual double Value(int i, int j) const = 0;

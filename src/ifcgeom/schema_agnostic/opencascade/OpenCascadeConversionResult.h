@@ -69,6 +69,12 @@ namespace IfcGeom {
 		virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement* other) const {
 			return new OpenCascadePlacement(trsf_.Multiplied(((OpenCascadePlacement*)other)->trsf_));
 		}
+
+		virtual void TranslationPart(double& X, double& Y, double& Z) const {
+			X = trsf_.TranslationPart().X();
+			Y = trsf_.TranslationPart().Y();
+			Z = trsf_.TranslationPart().Z();
+		}
     private:
         gp_GTrsf trsf_;
     };
