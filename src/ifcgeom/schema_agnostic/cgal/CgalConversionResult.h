@@ -20,12 +20,31 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
-typedef void* cgal_shape_t;
-typedef void* cgal_face_t;
-typedef void* cgal_wire_t;
-typedef void* cgal_curve_t;
-typedef void* cgal_placement_t;
-typedef void* cgal_point_t;
+#include <boost/property_map/property_map.hpp>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Polyhedron_3.h>
+#include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
+#include <CGAL/Polygon_mesh_processing/orientation.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
+
+typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
+
+typedef Kernel::Aff_transformation_3 cgal_placement_t;
+typedef Kernel::Point_3 cgal_point_t;
+typedef Kernel::Vector_3 cgal_direction_t;
+typedef std::vector<Kernel::Point_3> cgal_curve_t;
+typedef std::vector<Kernel::Point_3> cgal_wire_t;
+
+struct cgal_face_t {
+  cgal_wire_t outer;
+  std::vector<cgal_wire_t> inner;
+};
+
+typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::vertex_descriptor cgal_vertex_descriptor_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::face_descriptor cgal_face_descriptor_t;
 
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 
@@ -41,18 +60,19 @@ namespace IfcGeom {
 		operator const cgal_placement_t& () { return trsf_; }
 		
 		virtual double Value(int i, int j) const {
-			// Get cell from placement as 4x3 matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+			// TODO: Check
+//      std::cout << "Getting CgalPlacement with i = " << i << " and j = " << j << std::endl;
+      return CGAL::to_double(trsf_.cartesian(i-1, j-1));
 		}
 
 		virtual void Multiply(const ConversionResultPlacement* other) {
-			// Multiply matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+			// TODO: Check
+      trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
 		}
 
 		virtual void PreMultiply(const ConversionResultPlacement* other) {
-			// PreMultiply matrix as implemented in OCCT. We'll have to check exact semantics.
-			throw std::runtime_error("Not implemented");
+			// TODO: Check
+      trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
 		}
 
 		virtual ConversionResultPlacement* clone() const {
@@ -73,7 +93,7 @@ namespace IfcGeom {
     private:
         cgal_placement_t trsf_;
     };
-    
+  
     class CgalShape : public ConversionResultShape {
     public:
         CgalShape(const cgal_shape_t& shape)

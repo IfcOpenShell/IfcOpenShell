@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -63,7 +63,7 @@ bool IfcGeom::CgalKernel::convert_shape(const IfcBaseClass* l, cgal_shape_t& r) 
 	}
 
 	if ( processed && success ) { 
-		const double precision = getValue(GV_PRECISION);
+//		const double precision = getValue(GV_PRECISION);
 		// apply_tolerance(r, precision);
 #ifndef NO_CACHE
 		cache.Shape[id] = r;
@@ -77,6 +77,79 @@ bool IfcGeom::CgalKernel::convert_shape(const IfcBaseClass* l, cgal_shape_t& r) 
 	return success;
 }
 
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, ConversionResults& shape) {
+  cgal_shape_t s;
+  const SurfaceStyle* collective_style = get_style(l);
+  if (convert_shape(l->Outer(),s) ) {
+    const SurfaceStyle* indiv_style = get_style(l->Outer());
+    
+    IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
+    if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+      voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
+    }
+#ifdef USE_IFC4
+    if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+      voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
+    }
+#endif
+    
+    for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
+//      TopoDS_Shape s2;
+//      /// @todo No extensive shapefixing since shells should be disjoint.
+//      /// @todo Awaiting generalized boolean ops module with appropriate checking
+//      if (convert_shape(l->Outer(), s2)) {
+//        s = BRepAlgoAPI_Cut(s, s2).Shape();
+//      }
+    }
+    
+    shape.push_back(ConversionResult(new CgalShape(s), indiv_style ? indiv_style : collective_style));
+    return true;
+  }
+  return false;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_shape_t& shape) {
+  IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
+
+  std::list<cgal_face_t> face_list;
+  for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
+    bool success = false;
+    cgal_face_t face;
+    
+    try {
+      success = convert_face(*it, face);
+    } catch (...) {}
+
+    if (!success) {
+      Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
+      continue;
+    }
+    
+//    std::cout << "Face in ConnectedFaceSet: " << std::endl;
+//    for (auto &point: face.outer) {
+//      std::cout << "\tPoint(" << point << ")" << std::endl;
+//    }
+    
+    face_list.push_back(face);
+  }
+  
+  // Naive creation
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  PolyhedronBuilder builder(&face_list);
+  polyhedron.delegate(builder);
+  
+  // Stitch edges
+//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
+  if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+    CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+  }
+//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
+  
+  shape = polyhedron;
+  return true;
+}
+
 bool IfcGeom::CgalKernel::convert_wire(const IfcBaseClass* l, cgal_wire_t& r) {
 #include "CgalEntityMappingWire.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:", l);
@@ -87,6 +160,94 @@ bool IfcGeom::CgalKernel::convert_face(const IfcBaseClass* l, cgal_face_t& r) {
 #include "CgalEntityMappingFace.h"
 	Logger::Message(Logger::LOG_ERROR,"No operation defined for:", l);
 	return false;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face) {
+  IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
+
+  int num_outer_bounds = 0;
+
+  for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
+    IfcSchema::IfcFaceBound* bound = *it;
+    if (bound->is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+  }
+  
+  if (num_outer_bounds != 1) {
+    Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l->entity);
+    return false;
+  }
+  
+  cgal_face_t mf;
+
+  for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
+    IfcSchema::IfcFaceBound* bound = *it;
+    IfcSchema::IfcLoop* loop = bound->Bound();
+
+    const bool is_interior = !bound->is(IfcSchema::Type::IfcFaceOuterBound);
+    
+    cgal_wire_t wire;
+    if (!convert_wire(loop, wire)) {
+      Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+      return false;
+    }
+
+    if (!is_interior) {
+      mf.outer = wire;
+    } else {
+      mf.inner.push_back(wire);
+    }
+  }
+  
+  face = mf;
+  
+//  std::cout << "Face: " << std::endl;
+//  for (auto &point: face.outer) {
+//    std::cout << "\tPoint(" << point << ")" << std::endl;
+//  }
+  
+  return true;
+}
+
+bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& result) {
+  IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
+  
+  // Parse and store the points in a sequence
+  cgal_wire_t polygon = std::vector<Kernel::Point_3>();
+  for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
+    cgal_point_t pnt;
+    IfcGeom::CgalKernel::convert(*it, pnt);
+    polygon.push_back(pnt);
+  }
+
+  // A loop should consist of at least three vertices
+  std::size_t original_count = polygon.size();
+  if (original_count < 3) {
+    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+    return false;
+  }
+
+  // TODO: Remove repeated points (and points that are too close to one another?)
+//  remove_duplicate_points_from_loop(polygon, true);
+  
+  std::size_t count = polygon.size();
+  if (original_count - count != 0) {
+    std::stringstream ss; ss << (original_count - count) << " edges removed for:";
+    Logger::Message(Logger::LOG_WARNING, ss.str(), l->entity);
+  }
+
+  if (count < 3) {
+    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+    return false;
+  }
+
+  result = polygon;
+  
+//  std::cout << "PolyLoop: " << std::endl;
+//  for (auto &point: polygon) {
+//    std::cout << "\tPoint(" << point << ")" << std::endl;
+//  }
+  
+  return true;
 }
 
 bool IfcGeom::CgalKernel::convert_curve(const IfcBaseClass* l, cgal_curve_t& r) {
