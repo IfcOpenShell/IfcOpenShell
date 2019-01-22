@@ -12,3 +12,5 @@ __pycache__
 .vscode
 # PyCharm files
 .idea
+# OSX files
+.DS_Store

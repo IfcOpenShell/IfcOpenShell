@@ -50,6 +50,49 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
 
+struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> {
+private:
+  std::list<cgal_face_t> *face_list;
+public:
+  PolyhedronBuilder(std::list<cgal_face_t> *face_list) {
+    this->face_list = face_list;
+  }
+  
+  void operator()(CGAL::Polyhedron_3<Kernel>::HalfedgeDS &hds) {
+    std::list<Kernel::Point_3> points;
+    std::list<std::list<std::size_t>> facet_vertices;
+    CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> builder(hds, true);
+    
+    for (auto &face: *face_list) {
+      facet_vertices.push_back(std::list<std::size_t>());
+      for (auto &point: face.outer) {
+        facet_vertices.back().push_back(points.size());
+        points.push_back(point);
+      }
+    }
+    
+    builder.begin_surface(points.size(), facet_vertices.size());
+    
+    for (auto &point: points) {
+//      std::cout << "Adding point " << point << std::endl;
+      builder.add_vertex(point);
+    }
+    
+    for (auto &facet: facet_vertices) {
+      builder.begin_facet();
+//      std::cout << "Adding facet ";
+      for (auto &vertex: facet) {
+//        std::cout << vertex << " ";
+        builder.add_vertex_to_facet(vertex);
+      }
+//      std::cout << std::endl;
+      builder.end_facet();
+    }
+    
+    builder.end_surface();
+  }
+};
+
 namespace IfcGeom {
 
 	class IFC_GEOM_API CgalCache {
