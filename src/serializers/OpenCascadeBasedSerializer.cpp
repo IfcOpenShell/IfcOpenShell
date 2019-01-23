@@ -35,7 +35,9 @@ bool OpenCascadeBasedSerializer::ready() {
 }
 
 void OpenCascadeBasedSerializer::write(const IfcGeom::NativeElement<real_t>* o) {
-	TopoDS_Shape compound = o->geometry().as_compound();
+	IfcGeom::OpenCascadeShape* occt_shape = ((IfcGeom::OpenCascadeShape*) o->geometry().as_compound());
+        TopoDS_Shape compound = occt_shape->shape();
+        delete occt_shape;
 
 	if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
 		gp_Trsf scale;

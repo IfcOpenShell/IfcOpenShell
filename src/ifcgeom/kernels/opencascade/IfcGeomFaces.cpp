@@ -106,6 +106,19 @@
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
+namespace {
+        int count_occt(const TopoDS_Shape& s, TopAbs_ShapeEnum t) {
+                IfcGeom::OpenCascadeShape Ss(s);
+                return IfcGeom::Kernel::count(&Ss, (int) t);
+        }
+
+        int is_manifold_occt(const TopoDS_Shape& s) {
+                IfcGeom::OpenCascadeShape Ss(s);
+                return IfcGeom::Kernel::is_manifold(&Ss);
+        }
+}
+
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
 
@@ -239,7 +252,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 				if (face_surface.IsNull()) {
 					gp_Pln pln;
-					if (count(wire, TopAbs_EDGE) > 128 && approximate_plane_through_wire(wire, pln)) {
+					if (count_occt(wire, TopAbs_EDGE) > 128 && approximate_plane_through_wire(wire, pln)) {
 						// tfk: optimization find the underlying surface ourselves since it's going
 						// to be planar in IFC if no explicit surface is given. Should we always do this?
 						// @todo is this still relevant considering the code above

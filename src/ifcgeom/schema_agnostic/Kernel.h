@@ -7,8 +7,6 @@
 
 #include <boost/function.hpp>
 
-#include <TopExp_Explorer.hxx>
-
 namespace IfcGeom {
 
 	template <typename P, typename PP>
@@ -76,10 +74,10 @@ namespace IfcGeom {
 			return implementation_->convert_placement(item, trsf);
 		}
 
-		static int count(const TopoDS_Shape&, TopAbs_ShapeEnum, bool unique=false);
-		static int surface_genus(const TopoDS_Shape&);
+		static int count(const ConversionResultShape*, int, bool unique=false);
+		static int surface_genus(const ConversionResultShape*);
 
-		static bool is_manifold(const TopoDS_Shape& a);
+		static bool is_manifold(const ConversionResultShape*);
 		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*);
 		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		static IfcEntityList::ptr find_openings(IfcUtil::IfcBaseEntity* product);

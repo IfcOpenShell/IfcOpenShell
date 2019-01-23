@@ -20,26 +20,9 @@
 #ifndef IFCGEOMREPRESENTATION_H
 #define IFCGEOMREPRESENTATION_H
 
-#include <BRepMesh_IncrementalMesh.hxx>
-#include <BRepGProp_Face.hxx>
-
-#include <Poly_Triangulation.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
-
-#include <TopoDS.hxx>
-#include <BRepTools.hxx>
-#include <TopExp_Explorer.hxx>
-
-#include <BRepAdaptor_Curve.hxx>
-#include <GCPnts_QuasiUniformDeflection.hxx>
-#include <Geom_SphericalSurface.hxx>
-
 #include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
 #include "../../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
 #include "../../ifcgeom/schema_agnostic/ConversionResult.h"
-
-#include <TopoDS_Compound.hxx>
 
 #include <map>
 
@@ -77,7 +60,7 @@ namespace IfcGeom {
 			IfcGeom::ConversionResults::const_iterator end() const { return shapes_.end(); }
 			const IfcGeom::ConversionResults& shapes() const { return shapes_; }
 			const std::string& id() const { return id_; }
-			TopoDS_Compound as_compound() const;
+			ConversionResultShape* as_compound() const;
 
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;

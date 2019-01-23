@@ -19,6 +19,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
+
 #include <string>
 #include <fstream>
 #include <cstdio>
@@ -342,7 +344,10 @@ void SvgSerializer::write(const IfcGeom::NativeElement<real_t>* o)
 
 	path_object& p = start_path(storey, nameElement(o));
 
-	TopoDS_Shape compound = o->geometry().as_compound();
+	IfcGeom::OpenCascadeShape* occt_shape = ((IfcGeom::OpenCascadeShape*) o->geometry().as_compound());
+	TopoDS_Shape compound = occt_shape->shape();
+	delete occt_shape;
+
 	TopoDS_Iterator it(compound);
 
 	// Iterate over components of compound to have better chance of matching section edges to closed wires

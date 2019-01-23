@@ -21,6 +21,9 @@
 
 #define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 
+// @todo two distinct uses of the word Kernel is getting confusing
+typedef Kernel Kernel_;
+
 using namespace IfcUtil;
 
 bool IfcGeom::CgalKernel::convert_shapes(const IfcBaseClass* l, ConversionResults& r) {
@@ -84,11 +87,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
     const SurfaceStyle* indiv_style = get_style(l->Outer());
     
     IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
-    if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+    if (l->as<IfcSchema::IfcFacetedBrepWithVoids>()) {
       voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
     }
 #ifdef USE_IFC4
-    if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+    if (l->as<IfcSchema::IfcAdvancedBrepWithVoids>()) {
       voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
     }
 #endif
@@ -102,7 +105,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
 //      }
     }
     
-    shape.push_back(ConversionResult(new CgalShape(s), indiv_style ? indiv_style : collective_style));
+    shape.push_back(ConversionResult(l->data().id(), new CgalShape(s), indiv_style ? indiv_style : collective_style));
     return true;
   }
   return false;
@@ -121,7 +124,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
     } catch (...) {}
 
     if (!success) {
-      Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
+      Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", *it);
       continue;
     }
     
@@ -134,7 +137,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
   }
   
   // Naive creation
-  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel>();
+  cgal_shape_t polyhedron = CGAL::Polyhedron_3<Kernel_>();
   PolyhedronBuilder builder(&face_list);
   polyhedron.delegate(builder);
   
@@ -169,11 +172,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
 
   for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
     IfcSchema::IfcFaceBound* bound = *it;
-    if (bound->is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+    if (bound->as<IfcSchema::IfcFaceOuterBound>()) num_outer_bounds ++;
   }
   
   if (num_outer_bounds != 1) {
-    Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l);
     return false;
   }
   
@@ -183,11 +186,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
     IfcSchema::IfcFaceBound* bound = *it;
     IfcSchema::IfcLoop* loop = bound->Bound();
 
-    const bool is_interior = !bound->is(IfcSchema::Type::IfcFaceOuterBound);
+    const bool is_interior = !bound->as<IfcSchema::IfcFaceOuterBound>();
     
     cgal_wire_t wire;
     if (!convert_wire(loop, wire)) {
-      Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+      Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
       return false;
     }
 
@@ -212,7 +215,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   IfcSchema::IfcCartesianPoint::list::ptr points = l->Polygon();
   
   // Parse and store the points in a sequence
-  cgal_wire_t polygon = std::vector<Kernel::Point_3>();
+  cgal_wire_t polygon = std::vector<Kernel_::Point_3>();
   for(IfcSchema::IfcCartesianPoint::list::it it = points->begin(); it != points->end(); ++ it) {
     cgal_point_t pnt;
     IfcGeom::CgalKernel::convert(*it, pnt);
@@ -222,7 +225,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   // A loop should consist of at least three vertices
   std::size_t original_count = polygon.size();
   if (original_count < 3) {
-    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l);
     return false;
   }
 
@@ -232,11 +235,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcPolyLoop* l, cgal_wire_t& 
   std::size_t count = polygon.size();
   if (original_count - count != 0) {
     std::stringstream ss; ss << (original_count - count) << " edges removed for:";
-    Logger::Message(Logger::LOG_WARNING, ss.str(), l->entity);
+    Logger::Message(Logger::LOG_WARNING, ss.str(), l);
   }
 
   if (count < 3) {
-    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", l);
     return false;
   }
 
