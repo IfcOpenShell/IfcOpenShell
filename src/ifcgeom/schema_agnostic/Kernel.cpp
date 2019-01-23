@@ -3,6 +3,9 @@
 #include "../../ifcparse/Ifc2x3.h"
 #include "../../ifcparse/Ifc4.h"
 
+// @todo remove
+#include "../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
+
 #include <TopExp.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
@@ -19,7 +22,11 @@ IfcGeom::Kernel::Kernel(const std::string& geometry_library, IfcParse::IfcFile* 
 	}
 }
 
-int IfcGeom::Kernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
+int IfcGeom::Kernel::count(const ConversionResultShape* s_, int t_, bool unique) {
+	// @todo make kernel agnostic
+	const TopoDS_Shape& s = ((OpenCascadeShape*) s_)->shape();
+	TopAbs_ShapeEnum t = (TopAbs_ShapeEnum) t_;
+
 	if (unique) {
 		TopTools_IndexedMapOfShape map;
 		TopExp::MapShapes(s, t, map);
@@ -35,10 +42,14 @@ int IfcGeom::Kernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool uniqu
 }
 
 
-int IfcGeom::Kernel::surface_genus(const TopoDS_Shape& s) {
-	int nv = count(s, TopAbs_VERTEX, true);
-	int ne = count(s, TopAbs_EDGE, true);
-	int nf = count(s, TopAbs_FACE, true);
+int IfcGeom::Kernel::surface_genus(const ConversionResultShape* s_) {
+	// @todo make kernel agnostic
+	const TopoDS_Shape& s = ((OpenCascadeShape*) s_)->shape();
+	OpenCascadeShape Ss(s);
+
+	int nv = count(&Ss, (int) TopAbs_VERTEX, true);
+	int ne = count(&Ss, (int) TopAbs_EDGE, true);
+	int nf = count(&Ss, (int) TopAbs_FACE, true);
 
 	const int euler = nv - ne + nf;
 	const int genus = (2 - euler) / 2;
@@ -202,11 +213,15 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUt
 	}
 }
 
-bool IfcGeom::Kernel::is_manifold(const TopoDS_Shape& a) {
+bool IfcGeom::Kernel::is_manifold(const ConversionResultShape* s_) {
+        // @todo make kernel agnostic
+        const TopoDS_Shape& a = ((OpenCascadeShape*) s_)->shape();
+
 	if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
 		TopoDS_Iterator it(a);
 		for (; it.More(); it.Next()) {
-			if (!is_manifold(it.Value())) {
+			OpenCascadeShape s(it.Value());
+			if (!is_manifold(&s)) {
 				return false;
 			}
 		}

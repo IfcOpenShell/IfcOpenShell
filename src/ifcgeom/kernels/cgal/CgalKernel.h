@@ -35,6 +35,8 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #endif
 */
 
+#define ALMOST_ZERO 1.e-9
+
 #include "../../../ifcparse/macros.h"
 
 #include "../../../ifcgeom/kernel_agnostic/AbstractKernel.h"

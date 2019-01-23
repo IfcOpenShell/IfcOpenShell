@@ -113,7 +113,8 @@ namespace IfcGeom {
 				std::vector<T> ts_filtered;
 
 				const TopoDS_Shape& A = shapes_.find(t)->second;
-				if (IfcGeom::Kernel::count(A, TopAbs_SHELL) == 0) {
+				OpenCascadeShape SA(A);
+				if (IfcGeom::Kernel::count(&SA, (int) TopAbs_SHELL) == 0) {
 					return ts_filtered;
 				}
 
@@ -122,21 +123,24 @@ namespace IfcGeom {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					if (IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0) {
+					OpenCascadeShape SB(B);
+					if (IfcGeom::Kernel::count(&SB, (int) TopAbs_SHELL) == 0) {
 						continue;
 					}
 
 					if (completely_within) {
 						BRepAlgoAPI_Cut cut(B, A);
 						if (cut.IsDone()) {
-							if (IfcGeom::Kernel::count(cut.Shape(), TopAbs_SHELL) == 0) {
+							OpenCascadeShape Sc(cut.Shape());
+							if (IfcGeom::Kernel::count(&Sc, (int) TopAbs_SHELL) == 0) {
 								ts_filtered.push_back(*it);
 							}
 						}
 					} else {
 						BRepAlgoAPI_Common common(A, B);
 						if (common.IsDone()) {
-							if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
+							OpenCascadeShape Sc(common.Shape());
+							if (IfcGeom::Kernel::count(&Sc, (int) TopAbs_SHELL) > 0) {
 								ts_filtered.push_back(*it);
 							}
 						}
@@ -152,7 +156,8 @@ namespace IfcGeom {
 
 				std::vector<T> ts;
 
-				if (IfcGeom::Kernel::count(s, TopAbs_SHELL) == 0) {
+				OpenCascadeShape Ss(s);
+				if (IfcGeom::Kernel::count(&Ss, (int) TopAbs_SHELL) == 0) {
 					return ts;
 				}
 
@@ -169,13 +174,15 @@ namespace IfcGeom {
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
 					
-					if (IfcGeom::Kernel::count(B, TopAbs_SHELL) == 0) {
+					OpenCascadeShape SB(B);
+					if (IfcGeom::Kernel::count(&SB, (int) TopAbs_SHELL) == 0) {
 						continue;
 					}
 
 					BRepAlgoAPI_Common common(s, B);
 					if (common.IsDone()) {
-						if (IfcGeom::Kernel::count(common.Shape(), TopAbs_SHELL) > 0) {
+						OpenCascadeShape Sc(common.Shape());;
+						if (IfcGeom::Kernel::count(&Sc, (int) TopAbs_SHELL) > 0) {
 							ts_filtered.push_back(*it);
 						}
 					}
@@ -268,7 +275,7 @@ namespace IfcGeom {
 			if (it.initialize()) {
 				do {
 					IfcGeom::NativeElement<double>* elem = (IfcGeom::NativeElement<double>*)it.get();
-					add((IfcUtil::IfcBaseEntity*)f.instance_by_id(elem->id()), elem->geometry().as_compound());
+					add((IfcUtil::IfcBaseEntity*)f.instance_by_id(elem->id()), ((OpenCascadeShape*)elem->geometry().as_compound())->shape());
 				} while (it.next());
 			}
 		}

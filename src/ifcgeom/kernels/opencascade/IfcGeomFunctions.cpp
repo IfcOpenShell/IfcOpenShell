@@ -337,6 +337,18 @@ namespace {
 	}
 }
 
+namespace {
+	int count_occt(const TopoDS_Shape& s, TopAbs_ShapeEnum t) {
+		IfcGeom::OpenCascadeShape Ss(s);
+		return IfcGeom::Kernel::count(&Ss, (int) t);
+	}
+
+	int is_manifold_occt(const TopoDS_Shape& s) {
+		IfcGeom::OpenCascadeShape Ss(s);
+		return IfcGeom::Kernel::is_manifold(&Ss);
+	}
+}
+
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
 	TopTools_ListOfShape face_list;
 	TopExp_Explorer exp(compound, TopAbs_FACE);
@@ -388,7 +400,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 		}
 
 		BRepCheck_Analyzer ana(shape);
-		valid_shell = ana.IsValid() != 0 && count(shape, TopAbs_SHELL) > 0;
+		valid_shell = ana.IsValid() != 0 && count_occt(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
 			Logger::Error(e.GetMessageString());
@@ -1899,12 +1911,12 @@ bool IfcGeom::Kernel::apply_folded_layerset(const ConversionResults& items, cons
 				TopoDS_Shape Bn = BRepPrimAPI_MakeHalfSpace(B, jt->second.second).Solid();
 
 				TopoDS_Shape a = BRepAlgoAPI_Cut(A, Bn);
-				if (count(a, TopAbs_FACE) == 1) {
+				if (count_occt(a, TopAbs_FACE) == 1) {
 					A = TopoDS::Face(TopExp_Explorer(a, TopAbs_FACE).Current());
 				}
 
 				TopoDS_Shape b = BRepAlgoAPI_Cut(B, An);
-				if (count(b, TopAbs_FACE) == 1) {
+				if (count_occt(b, TopAbs_FACE) == 1) {
 					B = TopoDS::Face(TopExp_Explorer(b, TopAbs_FACE).Current());
 				}
 			}
@@ -2504,7 +2516,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 		return false;
 	}
 
-	int n = count(wire, TopAbs_EDGE);
+	int n = count_occt(wire, TopAbs_EDGE);
 	if (n < 3) {
 		wires.Append(wire);
 		return false;
@@ -2936,7 +2948,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 
 		if (success) {
 
-			success = !is_manifold(a) || is_manifold(r);
+			success = !is_manifold_occt(a) || is_manifold_occt(r);
 
 			if (success) {
 				
@@ -3108,7 +3120,7 @@ bool IfcGeom::Kernel::apply_layerset(const IfcSchema::IfcProduct* product, IfcGe
 
 	TopoDS_Shape merge;
 	if (flatten_shape_list(shapes, merge, false)) {
-		if (count(merge, TopAbs_FACE) > 0) {
+		if (count_occt(merge, TopAbs_FACE) > 0) {
 			std::vector<double> thickness;
 			std::vector<Handle_Geom_Surface> layers;
 			std::vector< std::vector<Handle_Geom_Surface> > folded_layers;
@@ -3189,7 +3201,7 @@ bool IfcGeom::Kernel::validate_quantities(const IfcSchema::IfcProduct* product, 
 									int genus = q2->as<IfcSchema::IfcQuantityCount>()->CountValue();
 									for (auto& part : brep) {
 										if (part.ItemId() == item_id) {
-											if (surface_genus(*(OpenCascadeShape*)part.Shape()) != genus) {
+											if (surface_genus(part.Shape()) != genus) {
 												all_succeeded = false;
 											}
 										}

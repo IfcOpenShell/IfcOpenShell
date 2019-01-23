@@ -67,7 +67,7 @@ PYTHON_VERSIONS=["2.7.12", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2"]
 # OCCT_VERSION="7.2.0"
 # OCCT_HASH="88af392"
 OCCT_VERSION="7.3.0"
-BOOST_VERSION="1.59.0"
+BOOST_VERSION="1.69.0"
 PCRE_VERSION="8.39"
 LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
@@ -75,6 +75,7 @@ ICU_VERSION="56.1"
 SWIG_VERSION="3.0.12"
 GMP_VERSION="6.1.2"
 MPFR_VERSION="3.1.5"
+CGAL_VERSION="4.13"
 
 # binaries
 cp="cp"
@@ -659,7 +660,7 @@ if "cgal" in targets:
     if BUILD_CFG != "Debug":
         # CGAL only supports Debug and Release for CMAKE_BUILD_TYPE
         BUILD_CFG = "Release"
-    build_dependency(name="cgal", mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal/" % (DEPS_DIR,)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git)
+    build_dependency(name="cgal-{CGAL_VERSION}".format(**locals()), mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal-%s/" % (DEPS_DIR, CGAL_VERSION)], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git, revision="releases/CGAL-{CGAL_VERSION}".format(**locals()))
     BUILD_CFG = OLD_BUILD_CFG
 
 cecho("Building IfcOpenShell:", GREEN)
@@ -701,6 +702,16 @@ elif "occ" in targets:
     cmake_args.extend([
         "-DOCC_INCLUDE_DIR="           +occ_include_dir,
         "-DOCC_LIBRARY_DIR="           +occ_library_dir
+    ])
+
+if "cgal" in targets:
+    cmake_args.extend([
+        "-DCGAL_INCLUDE_DIR="          "{DEPS_DIR}/install/cgal-{CGAL_VERSION}/include".format(**locals()),
+        "-DCGAL_LIBRARY_DIR="          "{DEPS_DIR}/install/cgal-{CGAL_VERSION}/lib".format(**locals()),
+        "-DGMP_INCLUDE_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/include".format(**locals()),
+        "-DGMP_LIBRARY_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib".format(**locals()),
+        "-DMPFR_INCLUDE_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include".format(**locals()),
+        "-DMPFR_LIBRARY_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib".format(**locals())
     ])
 
 if "OpenCOLLADA" in targets:

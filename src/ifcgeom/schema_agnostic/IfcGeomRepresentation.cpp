@@ -21,6 +21,7 @@
 #include <BRepTools.hxx>
 #include <BRep_Builder.hxx>
 
+#include <TopoDS.hxx>
 #include <TopoDS_Compound.hxx>
 #include <Geom_Plane.hxx>
 #include <GProp_GProps.hxx>
@@ -34,7 +35,10 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
 	, id_(brep.id())
 {
-	TopoDS_Compound compound = brep.as_compound();
+	IfcGeom::ConversionResultShape* shape = brep.as_compound();
+	TopoDS_Compound compound = TopoDS::Compound(((OpenCascadeShape*) shape)->shape());
+	delete shape;
+
 	for (IfcGeom::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		if (it->hasStyle() && it->Style().Diffuse()) {
 			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
@@ -82,7 +86,7 @@ TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 	}
 }
 
-TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
+IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound() const {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
@@ -103,7 +107,8 @@ TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
 		const TopoDS_Shape moved_shape = apply_transformation(s, trsf);
 		builder.Add(compound, moved_shape);
 	}
-	return compound;
+
+	return new OpenCascadeShape(compound);
 }
 
 namespace {
@@ -212,7 +217,7 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 		volume = 0.;
 
 		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
-			if (Kernel::is_manifold(*(OpenCascadeShape*)it->Shape())) {
+			if (Kernel::is_manifold(it->Shape())) {
 				GProp_GProps prop;
 				BRepGProp::VolumeProperties(*(OpenCascadeShape*)it->Shape(), prop);
 				volume += prop.Mass();
@@ -240,7 +245,7 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const Conve
 			double x, y, z;
 			surface_area_along_direction(settings().deflection_tolerance(), *(OpenCascadeShape*)it->Shape(), ax, x, y, z);
 
-			if (Kernel::is_manifold(*(OpenCascadeShape*)it->Shape())) {
+			if (Kernel::is_manifold(it->Shape())) {
 				x /= 2.;
 				y /= 2.;
 				z /= 2.;

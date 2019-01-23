@@ -279,8 +279,8 @@ ENDIF()
 IF(NOT libMPFR)
         MESSAGE(FATAL_ERROR "Unable to find MPFR library files, aborting")
 ENDIF()
-list(APPEND CGAL_LIBRARIES "${libGMP}")
 list(APPEND CGAL_LIBRARIES "${libMPFR}")
+list(APPEND CGAL_LIBRARIES "${libGMP}")
 
 
 
