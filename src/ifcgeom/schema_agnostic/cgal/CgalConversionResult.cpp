@@ -17,24 +17,44 @@ void triangulate_helper(const cgal_shape_t& shape_const, const IfcGeom::Iterator
     vertex->point() = vertex->point().transform(trsf);
   }
   
+  if (!s.is_valid()) {
+    Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
+    return;
+  }
+  
   // Triangulate the shape and compute the normals
-  std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
-  boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
+//  std::map<cgal_vertex_descriptor_t, Kernel::Vector_3> vertex_normals;
+//  boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel::Vector_3>> vertex_normals_map(vertex_normals);
   std::map<cgal_face_descriptor_t, Kernel::Vector_3> face_normals;
   boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel::Vector_3>> face_normals_map(face_normals);
 
-  if (CGAL::Polygon_mesh_processing::triangulate_faces(s)) {
-//    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
-  } else {
-    Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
+  bool success = false;
+  try {
+    success = CGAL::Polygon_mesh_processing::triangulate_faces(s);
+  } catch (...) {
+    Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
     return;
   }
-
-  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
-
-  // Iterates over the faces of the shape
-  int num_faces = 0, num_vertices = 0;
+  
+  if (!success) {
+    Logger::Message(Logger::LOG_ERROR,     return;
+"Triangulation failed");
+  }
+  //    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
+  
+  if (!s.is_valid()) {
+    Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
+    return;
+  }
+  
+//  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
+  CGAL::Polygon_mesh_processing::compute_face_normals(s, face_normals_map);
+  
   for (auto &face: faces(s)) {
+    if (!face->is_triangle()) {
+      std::cout << "Warning: non-triangular face!" << std::endl;
+      continue;
+    }
     CGAL::Polyhedron_3<Kernel>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
     do {
       t->addVertex(surface_style_id,
