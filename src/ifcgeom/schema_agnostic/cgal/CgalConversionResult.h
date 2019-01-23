@@ -20,6 +20,13 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
+#include "../../../ifcgeom/schema_agnostic/Kernel.h"
+#include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
+
+// @todo create separate shapetype enum?
+#include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
+
 #include <boost/property_map/property_map.hpp>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
@@ -28,12 +35,16 @@
 #include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include <CGAL/Nef_polyhedron_3.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 
 typedef Kernel::Aff_transformation_3 cgal_placement_t;
 typedef Kernel::Point_3 cgal_point_t;
 typedef Kernel::Vector_3 cgal_direction_t;
+typedef Kernel::Vector_3 cgal_vector_t;
+typedef Kernel::Plane_3 cgal_plane_t;
 typedef std::vector<Kernel::Point_3> cgal_curve_t;
 typedef std::vector<Kernel::Point_3> cgal_wire_t;
 
@@ -60,19 +71,15 @@ namespace IfcGeom {
 		operator const cgal_placement_t& () { return trsf_; }
 		
 		virtual double Value(int i, int j) const {
-			// TODO: Check
-//      std::cout << "Getting CgalPlacement with i = " << i << " and j = " << j << std::endl;
-      return CGAL::to_double(trsf_.cartesian(i-1, j-1));
+			return CGAL::to_double(trsf_.cartesian(i-1, j-1));
 		}
 
 		virtual void Multiply(const ConversionResultPlacement* other) {
-			// TODO: Check
-      trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
+			trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
 		}
 
 		virtual void PreMultiply(const ConversionResultPlacement* other) {
-			// TODO: Check
-      trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
+			trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
 		}
 
 		virtual ConversionResultPlacement* clone() const {
