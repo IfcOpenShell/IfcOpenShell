@@ -1,4 +1,7 @@
 #include "CgalKernel.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
+
+#define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, cgal_face_t& face) {
   cgal_wire_t wire;
@@ -30,7 +33,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cg
   const double y = l->YDim() / 2.0f * getValue(GV_LENGTH_UNIT);
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -41,10 +44,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleProfileDef* l, cg
 #endif
   
   face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3( x, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3( x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3( x,  y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x,  y, 0.0));
   
   if (has_position) {
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
@@ -62,7 +65,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef
   const double r = l->RoundingRadius() * getValue(GV_LENGTH_UNIT);
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO || r < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -76,29 +79,29 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef
   
   if (r == 0.0) {
     face = cgal_face_t();
-    face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-    face.outer.push_back(Kernel::Point_3( x, -y, 0.0));
-    face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
-    face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3( x, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3( x,  y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x,  y, 0.0));
   }
   
   else {
     face = cgal_face_t();
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+r+r*cos(current_angle), y-r+r*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-r+r*cos(current_angle), -y+r+r*sin(current_angle), 0));
     }
   }
   
@@ -124,7 +127,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleHollowProfileDef*
   const double r2 = fr2 ? l->InnerFilletRadius() * getValue(GV_LENGTH_UNIT) : 0.;
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -138,57 +141,57 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangleHollowProfileDef*
   
   if (!fr1 || r1 == 0.0) {
     face = cgal_face_t();
-    face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-    face.outer.push_back(Kernel::Point_3( x, -y, 0.0));
-    face.outer.push_back(Kernel::Point_3( x,  y, 0.0));
-    face.outer.push_back(Kernel::Point_3(-x,  y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3( x, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3( x,  y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x,  y, 0.0));
   }
   
   else {
     face = cgal_face_t();
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-r1+r1*cos(current_angle), y-r1+r1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-r1+r1*cos(current_angle), y-r1+r1*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+r1+r1*cos(current_angle), y-r1+r1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+r1+r1*cos(current_angle), y-r1+r1*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+r1+r1*cos(current_angle), -y+r1+r1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+r1+r1*cos(current_angle), -y+r1+r1*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-r1+r1*cos(current_angle), -y+r1+r1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-r1+r1*cos(current_angle), -y+r1+r1*sin(current_angle), 0));
     }
   }
   
   if (!fr2 || r2 == 0.0) {
     face.inner.push_back(cgal_wire_t());
-    face.inner.back().push_back(Kernel::Point_3(-x+d, -y+d, 0.0));
-    face.inner.back().push_back(Kernel::Point_3( x-d, -y+d, 0.0));
-    face.inner.back().push_back(Kernel::Point_3( x-d,  y-d, 0.0));
-    face.inner.back().push_back(Kernel::Point_3(-x+d,  y-d, 0.0));
+    face.inner.back().push_back(Kernel_::Point_3(-x+d, -y+d, 0.0));
+    face.inner.back().push_back(Kernel_::Point_3( x-d, -y+d, 0.0));
+    face.inner.back().push_back(Kernel_::Point_3( x-d,  y-d, 0.0));
+    face.inner.back().push_back(Kernel_::Point_3(-x+d,  y-d, 0.0));
   }
   
   else {
     face.inner.push_back(cgal_wire_t());
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.inner.back().push_back(Kernel::Point_3(x-d-r1+r1*cos(current_angle), y-d-r1+r1*sin(current_angle), 0));
+      face.inner.back().push_back(Kernel_::Point_3(x-d-r1+r1*cos(current_angle), y-d-r1+r1*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.inner.back().push_back(Kernel::Point_3(-x+d+r1+r1*cos(current_angle), y-d-r1+r1*sin(current_angle), 0));
+      face.inner.back().push_back(Kernel_::Point_3(-x+d+r1+r1*cos(current_angle), y-d-r1+r1*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.inner.back().push_back(Kernel::Point_3(-x+d+r1+r1*cos(current_angle), -y+d+r1+r1*sin(current_angle), 0));
+      face.inner.back().push_back(Kernel_::Point_3(-x+d+r1+r1*cos(current_angle), -y+d+r1+r1*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.inner.back().push_back(Kernel::Point_3(x-d-r1+r1*cos(current_angle), -y+d+r1+r1*sin(current_angle), 0));
+      face.inner.back().push_back(Kernel_::Point_3(x-d-r1+r1*cos(current_angle), -y+d+r1+r1*sin(current_angle), 0));
     }
   }
   
@@ -213,7 +216,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, cg
   const double y = l->YDim() / 2.0f  * getValue(GV_LENGTH_UNIT);
   
   if ( x1 < ALMOST_ZERO || w < ALMOST_ZERO || y < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -224,10 +227,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, cg
 #endif
   
   face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-x1, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(x1, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(dx+w-x1, y, 0.0));
-  face.outer.push_back(Kernel::Point_3(dx-x1, y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x1, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x1, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(dx+w-x1, y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(dx-x1, y, 0.0));
   
   if (has_position) {
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
@@ -242,7 +245,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, cg
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleProfileDef* l, cgal_face_t& face) {
   const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
   if ( r == 0.0f ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -257,7 +260,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleProfileDef* l, cgal_
   face = cgal_face_t();
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face.outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face.outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
   }
   
   if (has_position) {
@@ -275,7 +278,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleHollowProfileDef* l,
   const double t = l->WallThickness() * getValue(GV_LENGTH_UNIT);
   
   if ( r == 0.0f || t == 0.0f ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -290,13 +293,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircleHollowProfileDef* l,
   face = cgal_face_t();
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face.outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face.outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
   }
   
   face.inner.push_back(cgal_wire_t());
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face.inner.back().push_back(Kernel::Point_3((r-t)*cos(current_angle), (r-t)*sin(current_angle), 0));
+    face.inner.back().push_back(Kernel_::Point_3((r-t)*cos(current_angle), (r-t)*sin(current_angle), 0));
   }
   
   if (has_position) {
@@ -318,7 +321,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEllipseProfileDef* l, cgal
   double ry = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
   
   if ( rx < ALMOST_ZERO || ry < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -333,7 +336,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEllipseProfileDef* l, cgal
   face = cgal_face_t();
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face.outer.push_back(Kernel::Point_3(rx*cos(current_angle), ry*sin(current_angle), 0));
+    face.outer.push_back(Kernel_::Point_3(rx*cos(current_angle), ry*sin(current_angle), 0));
   }
   
   if (has_position) {
@@ -353,11 +356,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
   
   for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
     IfcSchema::IfcFaceBound* bound = *it;
-    if (bound->is(IfcSchema::Type::IfcFaceOuterBound)) num_outer_bounds ++;
+    if (bound->as<IfcSchema::IfcFaceOuterBound>()) num_outer_bounds ++;
   }
   
   if (num_outer_bounds != 1) {
-    Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", l);
     return false;
   }
   
@@ -367,11 +370,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFace* l, cgal_face_t& face
     IfcSchema::IfcFaceBound* bound = *it;
     IfcSchema::IfcLoop* loop = bound->Bound();
     
-    const bool is_interior = !bound->is(IfcSchema::Type::IfcFaceOuterBound);
+    const bool is_interior = !bound->as<IfcSchema::IfcFaceOuterBound>();
     
     cgal_wire_t wire;
     if (!convert_wire(loop, wire)) {
-      Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop->entity);
+      Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
       return false;
     }
     
@@ -406,7 +409,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCShapeProfileDef* l, cgal_
   }
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -420,57 +423,57 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCShapeProfileDef* l, cgal_
   
   if (!doFillet || f1 == 0.0) {
     face = cgal_face_t();
-    face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-    face.outer.push_back(Kernel::Point_3(x, -y, 0.0));
-    face.outer.push_back(Kernel::Point_3(x, -y+d2, 0.0));
-    face.outer.push_back(Kernel::Point_3(x-d1, -y+d2, 0.0));
-    face.outer.push_back(Kernel::Point_3(x-d1, -y+d1, 0.0));
-    face.outer.push_back(Kernel::Point_3(-x+d1, -y+d1, 0.0));
-    face.outer.push_back(Kernel::Point_3(-x+d1, y-d1, 0.0));
-    face.outer.push_back(Kernel::Point_3(x-d1, y-d1, 0.0));
-    face.outer.push_back(Kernel::Point_3(x-d1, y-d2, 0.0));
-    face.outer.push_back(Kernel::Point_3(x, y-d2, 0.0));
-    face.outer.push_back(Kernel::Point_3(x, y, 0.0));
-    face.outer.push_back(Kernel::Point_3(-x, y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, -y+d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x-d1, -y+d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x-d1, -y+d1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x+d1, -y+d1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x+d1, y-d1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x-d1, y-d1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x-d1, y-d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, y-d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x, y, 0.0));
   }
   
   else {
     face = cgal_face_t();
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
     }
-    face.outer.push_back(Kernel::Point_3(x, -y+d2, 0.0));
-    face.outer.push_back(Kernel::Point_3(x-d1, -y+d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, -y+d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x-d1, -y+d2, 0.0));
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f1*cos(current_angle), -y+f2+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f1*cos(current_angle), -y+f2+f1*sin(current_angle), 0));
     }
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+f2+f1*cos(current_angle), -y+f2+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+f2+f1*cos(current_angle), -y+f2+f1*sin(current_angle), 0));
     }
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+f2+f1*cos(current_angle), y-f2+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+f2+f1*cos(current_angle), y-f2+f1*sin(current_angle), 0));
     }
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f1*cos(current_angle), y-f2+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f1*cos(current_angle), y-f2+f1*sin(current_angle), 0));
     }
-    face.outer.push_back(Kernel::Point_3(x-d1, y-d2, 0.0));
-    face.outer.push_back(Kernel::Point_3(x, y-d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x-d1, y-d2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, y-d2, 0.0));
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
     }
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
     }
   }
   
@@ -504,7 +507,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcLShapeProfileDef* l, cgal_
   }
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -536,7 +539,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcLShapeProfileDef* l, cgal_
     const double det = a1*b2 - a2*b1;
     
     if (ALMOST_THE_SAME(det, 0.)) {
-      Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:",l->entity);
+      Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:",l);
       return false;
     }
     
@@ -553,30 +556,30 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcLShapeProfileDef* l, cgal_
   const int segments = 3;
   
   face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x, -y, 0.0));
   if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(x, -y+d-dy1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, -y+d-dy1, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), -y+d-dy1-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f2*cos(current_angle), -y+d-dy1-f2+f2*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(xx, xy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(xx, xy, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(xx+f1+f1*cos(current_angle), xy+f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(xx+f1+f1*cos(current_angle), xy+f1+f1*sin(current_angle), 0));
     }
   } if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-x+d-dx1, y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x+d-dx1, y, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+d-dx1-f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+d-dx1-f2+f2*cos(current_angle), y-f2+f2*sin(current_angle), 0));
     }
-  } face.outer.push_back(Kernel::Point_3(-x, y, 0.0));
+  } face.outer.push_back(Kernel_::Point_3(-x, y, 0.0));
   
   if (has_position) {
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
@@ -604,7 +607,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcIShapeProfileDef* l, cgal_
   bool doFillet2 = doFillet1;
   double x2 = x1, dy2 = dy1, f2 = f1;
   
-  if (l->is(IfcSchema::Type::IfcAsymmetricIShapeProfileDef)) {
+  if (l->as<IfcSchema::IfcAsymmetricIShapeProfileDef>()) {
     IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) l;
     x2 = assym->TopFlangeWidth() / 2. * getValue(GV_LENGTH_UNIT);
     doFillet2 = assym->hasTopFlangeFilletRadius();
@@ -617,7 +620,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcIShapeProfileDef* l, cgal_
   }
   
   if ( x1 < ALMOST_ZERO || x2 < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || dy1 < ALMOST_ZERO || dy2 < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -630,36 +633,36 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcIShapeProfileDef* l, cgal_
   const int segments = 3;
   
   face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-x1, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(x1, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(x1, -y+dy1, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x1, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x1, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x1, -y+dy1, 0.0));
   if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(d1, -y+dy1, 0.0));
-    face.outer.push_back(Kernel::Point_3(d1, y-dy2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(d1, -y+dy1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(d1, y-dy2, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(d1+f1+f1*cos(current_angle), -y+dy1+f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(d1+f1+f1*cos(current_angle), -y+dy1+f1+f1*sin(current_angle), 0));
     } for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(d1+f1+f1*cos(current_angle), y-dy2-f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(d1+f1+f1*cos(current_angle), y-dy2-f1+f1*sin(current_angle), 0));
     }
-  } face.outer.push_back(Kernel::Point_3(x2, y-dy2, 0.0));
-  face.outer.push_back(Kernel::Point_3(x2, y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x2, y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x2, y-dy2, 0.0));
+  } face.outer.push_back(Kernel_::Point_3(x2, y-dy2, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x2, y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x2, y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x2, y-dy2, 0.0));
   if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-d1, y-dy2, 0.0));
-    face.outer.push_back(Kernel::Point_3(-d1, -y+dy1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-d1, y-dy2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-d1, -y+dy1, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-d1-f2+f2*cos(current_angle), y-dy2-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-d1-f2+f2*cos(current_angle), y-dy2-f2+f2*sin(current_angle), 0));
     } for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-d1-f2+f2*cos(current_angle), -y+dy1+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-d1-f2+f2*cos(current_angle), -y+dy1+f2+f2*sin(current_angle), 0));
     }
-  } face.outer.push_back(Kernel::Point_3(-x1, -y+dy1, 0.0));
+  } face.outer.push_back(Kernel_::Point_3(-x1, -y+dy1, 0.0));
   
   if (has_position) {
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
@@ -686,7 +689,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTShapeProfileDef* l, cgal_
   const double webSlope = hasWebSlope ? (l->WebSlope() * getValue(GV_PLANEANGLE_UNIT)) : 0.;
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -734,7 +737,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTShapeProfileDef* l, cgal_
     const double det = a1*b2 - a2*b1;
     
     if (ALMOST_THE_SAME(det, 0.)) {
-      Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:",l->entity);
+      Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:",l);
       return false;
     }
     
@@ -755,48 +758,48 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTShapeProfileDef* l, cgal_
   
   face = cgal_face_t();
   if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(d1/2.-dx2, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(d1/2.-dx2, -y, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(d1/2.-dx2-f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(d1/2.-dx2-f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(xx, xy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(xx, xy, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(xx+f1+f1*cos(current_angle), xy-f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(xx+f1+f1*cos(current_angle), xy-f1+f1*sin(current_angle), 0));
     }
   } if (f3 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(x, y-d2+dy2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, y-d2+dy2, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f3+f3*cos(current_angle), y-d2+dy2+f3+f3*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f3+f3*cos(current_angle), y-d2+dy2+f3+f3*sin(current_angle), 0));
     }
-  } face.outer.push_back(Kernel::Point_3(x, y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x, y, 0.0));
+  } face.outer.push_back(Kernel_::Point_3(x, y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x, y, 0.0));
   if (f3 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-x, y-d2+dy2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x, y-d2+dy2, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+f3+f3*cos(current_angle), y-d2+dy2+f3+f3*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+f3+f3*cos(current_angle), y-d2+dy2+f3+f3*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-xx, xy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-xx, xy, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-xx-f1+f1*cos(current_angle), xy-f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-xx-f1+f1*cos(current_angle), xy-f1+f1*sin(current_angle), 0));
     }
   } if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-d1/2.+dx2, -y, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-d1/2.+dx2, -y, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-d1/2.+dx2+f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-d1/2.+dx2+f2+f2*cos(current_angle), -y+f2+f2*sin(current_angle), 0));
     }
   }
   
@@ -839,7 +842,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcUShapeProfileDef* l, cgal_
   }
   
   if ( x < ALMOST_ZERO || y < ALMOST_ZERO || d1 < ALMOST_ZERO || d2 < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -852,38 +855,38 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcUShapeProfileDef* l, cgal_
   const int segments = 3;
   
   face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-x, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x, -y, 0.0));
   if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(x, -y+d2-dy2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, -y+d2-dy2, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), -y+d2-dy2-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f2*cos(current_angle), -y+d2-dy2-f2+f2*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-x+d1, -y+d2+dy1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x+d1, -y+d2+dy1, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+d1+f1+f1*cos(current_angle), -y+d2+dy1+f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+d1+f1+f1*cos(current_angle), -y+d2+dy1+f1+f1*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-x+d1, y-d2-dy1, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x+d1, y-d2-dy1, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 0.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+d1+f1+f1*cos(current_angle), y-d2-dy1-f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+d1+f1+f1*cos(current_angle), y-d2-dy1-f1+f1*sin(current_angle), 0));
     }
   } if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(x,y-d2+dy2, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x,y-d2+dy2, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.5*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), y-d2+dy2+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f2*cos(current_angle), y-d2+dy2+f2+f2*sin(current_angle), 0));
     }
-  } face.outer.push_back(Kernel::Point_3(x,y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x,y, 0.0));
+  } face.outer.push_back(Kernel_::Point_3(x,y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x,y, 0.0));
   
   if (has_position) {
     IfcGeom::CgalKernel::convert(l->Position(), trsf2d);
@@ -915,7 +918,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcZShapeProfileDef* l, cgal_
   }
   
   if ( x == 0.0f || y == 0.0f || dx == 0.0f || dy == 0.0f ) {
-    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l->entity);
+    Logger::Message(Logger::LOG_NOTICE,"Skipping zero sized profile:",l);
     return false;
   }
   
@@ -928,37 +931,37 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcZShapeProfileDef* l, cgal_
   const int segments = 3;
   
   face = cgal_face_t();
-  face.outer.push_back(Kernel::Point_3(-dx, -y, 0.0));
-  face.outer.push_back(Kernel::Point_3(x, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-dx, -y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(x, -y, 0.0));
   if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(x, -y+dy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(x, -y+dy, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(x-f2+f2*cos(current_angle), -y+dy-f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(x-f2+f2*cos(current_angle), -y+dy-f2+f2*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(dx, -y+dy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(dx, -y+dy, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(dx+f1+f1*cos(current_angle), -y+dy+f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(dx+f1+f1*cos(current_angle), -y+dy+f1+f1*sin(current_angle), 0));
     }
-  } face.outer.push_back(Kernel::Point_3(dx, y, 0.0));
-  face.outer.push_back(Kernel::Point_3(-x, y, 0.0));
+  } face.outer.push_back(Kernel_::Point_3(dx, y, 0.0));
+  face.outer.push_back(Kernel_::Point_3(-x, y, 0.0));
   if (f2 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-x, y-dy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-x, y-dy, 0.0));
   } else {
     for (int current_segment = 0; current_segment <= segments; ++current_segment) {
       double current_angle = 1.0*3.141592653589793+current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-x+f2+f2*cos(current_angle), y-dy+f2+f2*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-x+f2+f2*cos(current_angle), y-dy+f2+f2*sin(current_angle), 0));
     }
   } if (f1 == 0.0) {
-    face.outer.push_back(Kernel::Point_3(-dx, y-dy, 0.0));
+    face.outer.push_back(Kernel_::Point_3(-dx, y-dy, 0.0));
   } else {
     for (int current_segment = segments; current_segment >= 0; --current_segment) {
       double current_angle = current_segment*0.5*3.141592653589793/((double)segments);
-      face.outer.push_back(Kernel::Point_3(-dx-f1+f1*cos(current_angle), y-dy-f1+f1*sin(current_angle), 0));
+      face.outer.push_back(Kernel_::Point_3(-dx-f1+f1*cos(current_angle), y-dy-f1+f1*sin(current_angle), 0));
     }
   }
   

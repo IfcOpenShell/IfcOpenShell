@@ -17,28 +17,24 @@
 *                                                                              *
 ********************************************************************************/
 
-#include "../../../ifcgeom/IfcGeomShapeType.h"
-#include "../../../ifcgeom/IfcGeom.h"
-
 #include "CgalKernel.h"
-#include "CgalConversionResult.h"
 
-using namespace IfcSchema;
+#define CgalKernel MAKE_TYPE_NAME(CgalKernel)
+
 using namespace IfcUtil;
-
 
 bool IfcGeom::CgalKernel::convert_shapes(const IfcBaseClass* l, ConversionResults& r) {
 	if (shape_type(l) != ST_SHAPELIST) {
 		cgal_shape_t shp;
 		if (convert_shape(l, shp)) {
-			r.push_back(IfcGeom::ConversionResult(new CgalShape(shp), get_style(l->as<IfcSchema::IfcRepresentationItem>())));
+			r.push_back(IfcGeom::ConversionResult(l->data().id(), new CgalShape(shp), get_style(l->as<IfcSchema::IfcRepresentationItem>())));
 			return true;
 		}
 		return false;
 	}
 
 #include "CgalEntityMappingShapes.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }
 
@@ -48,7 +44,7 @@ IfcGeom::ShapeType IfcGeom::CgalKernel::shape_type(const IfcBaseClass* l) {
 }
 
 bool IfcGeom::CgalKernel::convert_shape(const IfcBaseClass* l, cgal_shape_t& r) {
-	const unsigned int id = l->entity->id();
+	const unsigned int id = l->data().id();
 	bool success = false;
 	bool processed = false;
 	bool ignored = false;
@@ -76,25 +72,25 @@ bool IfcGeom::CgalKernel::convert_shape(const IfcBaseClass* l, cgal_shape_t& r) 
 		const char* const msg = processed
 			? "Failed to convert:"
 			: "No operation defined for:";
-		Logger::Message(Logger::LOG_ERROR, msg, l->entity);
+		Logger::Message(Logger::LOG_ERROR, msg, l);
 	}
 	return success;
 }
 
 bool IfcGeom::CgalKernel::convert_wire(const IfcBaseClass* l, cgal_wire_t& r) {
 #include "CgalEntityMappingWire.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }
 
 bool IfcGeom::CgalKernel::convert_face(const IfcBaseClass* l, cgal_face_t& r) {
 #include "CgalEntityMappingFace.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }
 
 bool IfcGeom::CgalKernel::convert_curve(const IfcBaseClass* l, cgal_curve_t& r) {
 #include "CgalEntityMappingCurve.h"
-	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l->entity);
+	Logger::Message(Logger::LOG_ERROR,"No operation defined for:",l);
 	return false;
 }

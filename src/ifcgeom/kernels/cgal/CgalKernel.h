@@ -35,7 +35,14 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #endif
 */
 
+#include <cmath>
+
 #define ALMOST_ZERO 1.e-9
+
+template <typename T>
+inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMOST_ZERO) {
+        return fabs(a-b) < tolerance;
+}
 
 #include "../../../ifcparse/macros.h"
 
@@ -52,7 +59,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
 
-struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> {
+struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 private:
   std::list<cgal_face_t> *face_list;
 public:
@@ -60,10 +67,10 @@ public:
     this->face_list = face_list;
   }
   
-  void operator()(CGAL::Polyhedron_3<Kernel>::HalfedgeDS &hds) {
-    std::list<Kernel::Point_3> points;
+  void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds) {
+    std::list<Kernel_::Point_3> points;
     std::list<std::list<std::size_t>> facet_vertices;
-    CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel>::HalfedgeDS> builder(hds, true);
+    CGAL::Polyhedron_incremental_builder_3<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> builder(hds, true);
     
     for (auto &face: *face_list) {
       facet_vertices.push_back(std::list<std::size_t>());
@@ -127,11 +134,11 @@ namespace IfcGeom {
 
     bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, ConversionResults& cut_shapes);
     
-//    CGAL::Polyhedron_3<Kernel> triangulate_faces(CGAL::Polyhedron_3<Kernel> &polyhedron);
-    CGAL::Polyhedron_3<Kernel> create_polyhedron(std::list<cgal_face_t> &face_list);
-    CGAL::Polyhedron_3<Kernel> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel> &nef_polyhedron);
-    CGAL::Nef_polyhedron_3<Kernel> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
-    CGAL::Nef_polyhedron_3<Kernel> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel> &polyhedron);
+//    CGAL::Polyhedron_3<Kernel_> triangulate_faces(CGAL::Polyhedron_3<Kernel_> &polyhedron);
+    CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list);
+    CGAL::Polyhedron_3<Kernel_> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
+    CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
+    CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
 
 		void purge_cache() {
 			// Rather hack-ish, but a stopgap solution to keep memory under control

@@ -1,14 +1,17 @@
 #include "CgalKernel.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
+
+#define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircle* l, cgal_curve_t& curve) {
   const double r = l->Radius() * getValue(GV_LENGTH_UNIT);
   if ( r < ALMOST_ZERO ) {
-    Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
     return false;
   }
   cgal_placement_t trsf;
   IfcSchema::IfcAxis2Placement* placement = l->Position();
-  if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+  if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
   } else {
     cgal_placement_t trsf2d;
@@ -21,7 +24,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcCircle* l, cgal_curve_t& c
   curve = cgal_curve_t();
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    curve.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    curve.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
   }
   
   for (auto &vertex: curve) {
@@ -35,12 +38,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEllipse* l, cgal_curve_t& 
   double x = l->SemiAxis1() * getValue(GV_LENGTH_UNIT);
   double y = l->SemiAxis2() * getValue(GV_LENGTH_UNIT);
   if (x < ALMOST_ZERO || y < ALMOST_ZERO) {
-    Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Radius not greater than zero for:", l);
     return false;
   }
   cgal_placement_t trsf;
   IfcSchema::IfcAxis2Placement* placement = l->Position();
-  if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+  if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
     convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
   } else {
     cgal_placement_t trsf2d;
@@ -53,7 +56,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcEllipse* l, cgal_curve_t& 
   curve = cgal_curve_t();
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    curve.push_back(Kernel::Point_3(x*cos(current_angle), y*sin(current_angle), 0));
+    curve.push_back(Kernel_::Point_3(x*cos(current_angle), y*sin(current_angle), 0));
   }
   
   for (auto &vertex: curve) {
