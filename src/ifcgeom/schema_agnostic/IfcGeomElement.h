@@ -45,8 +45,10 @@ namespace IfcGeom {
 			// internally in IfcOpenShell everything is measured in meters.
 			for(int i = 1; i < 5; ++i) {
 				for (int j = 1; j < 4; ++j) {
-					const double trsf_value = trsf->Value(j,i);
-                    const double matrix_value = i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS)
+					const double trsf_value = (trsf == nullptr)
+						? (i == j ? 1. : 0.)
+						: trsf->Value(j,i);
+					const double matrix_value = (i == 4 && settings.get(IteratorSettings::CONVERT_BACK_UNITS))
 						? trsf_value / settings.unit_magnitude()
 						: trsf_value;
 					_data.push_back(static_cast<P>(matrix_value));
@@ -65,7 +67,7 @@ namespace IfcGeom {
 	public:
 		Transformation(const ElementSettings& settings, const ConversionResultPlacement* trsf)
 			: settings_(settings)
-			, trsf_(trsf->clone())
+			, trsf_(trsf ? trsf->clone() : nullptr)
 			, matrix_(settings, trsf) 
 		{}
 		const ConversionResultPlacement* data() const { return trsf_; }
