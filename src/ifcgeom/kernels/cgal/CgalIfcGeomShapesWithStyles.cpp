@@ -1,5 +1,7 @@
 #include "CgalKernel.h"
-#include "CgalConversionResult.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
+
+#define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, ConversionResults& shapes) {
   IfcSchema::IfcRepresentationItem::list::ptr items = l->Items();
@@ -12,7 +14,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRepresentation* l, Convers
       } else {
         cgal_shape_t s;
         if (convert_shape(representation_item, s)) {
-          shapes.push_back(ConversionResult(new CgalShape(s), get_style(representation_item)));
+          shapes.push_back(ConversionResult(representation_item->data().id(), new CgalShape(s), get_style(representation_item)));
           part_succes |= true;
         }
       }
@@ -32,14 +34,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcGeometricSet* l, Conversio
     if (convert_shape(element, s)) {
       part_succes = true;
       const IfcGeom::SurfaceStyle* style = 0;
-      if (element->is(IfcSchema::Type::IfcPoint)) {
+      if (element->as<IfcSchema::IfcPoint>()) {
         style = get_style((IfcSchema::IfcPoint*) element);
-      } else if (element->is(IfcSchema::Type::IfcCurve)) {
+      } else if (element->as<IfcSchema::IfcCurve>()) {
         style = get_style((IfcSchema::IfcCurve*) element);
-      } else if (element->is(IfcSchema::Type::IfcSurface)) {
+      } else if (element->as<IfcSchema::IfcSurface>()) {
         style = get_style((IfcSchema::IfcSurface*) element);
       }
-      shapes.push_back(ConversionResult(new CgalShape(s), style ? style : parent_style));
+      shapes.push_back(ConversionResult(element->data().id(), new CgalShape(s), style ? style : parent_style));
     }
   }
   return part_succes;
@@ -51,11 +53,11 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l,
   for( IfcEntityList::it it = shells->begin(); it != shells->end(); ++ it ) {
     cgal_shape_t s;
     const SurfaceStyle* shell_style = 0;
-    if ((*it)->is(IfcSchema::Type::IfcRepresentationItem)) {
+    if ((*it)->as<IfcSchema::IfcRepresentationItem>()) {
       shell_style = get_style((IfcSchema::IfcRepresentationItem*)*it);
     }
     if (convert_shape(*it,s)) {
-      shapes.push_back(ConversionResult(new CgalShape(s), shell_style ? shell_style : collective_style));
+      shapes.push_back(ConversionResult((*it)->data().id(), new CgalShape(s), shell_style ? shell_style : collective_style));
     }
   }
   return true;
@@ -65,31 +67,28 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
   cgal_shape_t s;
   const SurfaceStyle* collective_style = get_style(l);
   if (convert_shape(l->Outer(),s) ) {
-    CGAL::Nef_polyhedron_3<Kernel> nef_s = create_nef_polyhedron(s);
+    CGAL::Nef_polyhedron_3<Kernel_> nef_s = create_nef_polyhedron(s);
     const SurfaceStyle* indiv_style = get_style(l->Outer());
     
     IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
-    if (l->is(IfcSchema::Type::IfcFacetedBrepWithVoids)) {
+    if (l->as<IfcSchema::IfcFacetedBrepWithVoids>()) {
       voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
     }
 #ifdef USE_IFC4
-    if (l->is(IfcSchema::Type::IfcAdvancedBrepWithVoids)) {
+    if (l->as<IfcSchema::IfcAdvancedBrepWithVoids>()) {
       voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
     }
 #endif
     
     for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
       cgal_shape_t s2;
-      // TODO: This looks weird. Aren't we removing the outer shell again and again?
-      // Maybe it should be
-      // if (convert_shape(*it, s2)) {
-      if (convert_shape(l->Outer(), s2)) {
-        nef_s -= CGAL::Nef_polyhedron_3<Kernel>(s2);
+      if (convert_shape(*it, s2)) {
+        nef_s -= CGAL::Nef_polyhedron_3<Kernel_>(s2);
       }
     }
     
     s = create_polyhedron(nef_s);
-    shape.push_back(ConversionResult(new CgalShape(s), indiv_style ? indiv_style : collective_style));
+    shape.push_back(ConversionResult(l->data().id(), new CgalShape(s), indiv_style ? indiv_style : collective_style));
     return true;
   }
   return false;
@@ -98,19 +97,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcMappedItem* l, ConversionResults& shapes) {
   cgal_placement_t gtrsf;
   IfcSchema::IfcCartesianTransformationOperator* transform = l->MappingTarget();
-  if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3DnonUniform) ) {
+  if ( transform->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>() ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3DnonUniform*)transform,gtrsf);
-  } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2DnonUniform) ) {
+  } else if ( transform->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>() ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator2DnonUniform*)transform,gtrsf);
-  } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator3D) ) {
+  } else if ( transform->as<IfcSchema::IfcCartesianTransformationOperator3D>() ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator3D*)transform,gtrsf);
-  } else if ( transform->is(IfcSchema::Type::IfcCartesianTransformationOperator2D) ) {
+  } else if ( transform->as<IfcSchema::IfcCartesianTransformationOperator2D>() ) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcCartesianTransformationOperator2D*)transform,gtrsf);
   }
   IfcSchema::IfcRepresentationMap* map = l->MappingSource();
   IfcSchema::IfcAxis2Placement* placement = map->MappingOrigin();
   cgal_placement_t trsf;
-  if (placement->is(IfcSchema::Type::IfcAxis2Placement3D)) {
+  if (placement->as<IfcSchema::IfcAxis2Placement3D>()) {
     IfcGeom::CgalKernel::convert((IfcSchema::IfcAxis2Placement3D*)placement,trsf);
   } else {
     cgal_placement_t trsf_2d;
@@ -155,7 +154,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcFaceBasedSurfaceModel* l, 
     cgal_shape_t s;
     const SurfaceStyle* shell_style = get_style(*it);
     if (convert_shape(*it,s)) {
-      shapes.push_back(ConversionResult(new CgalShape(s), shell_style ? shell_style : collective_style));
+      shapes.push_back(ConversionResult((*it)->data().id(), new CgalShape(s), shell_style ? shell_style : collective_style));
       part_success |= true;
     }
   }

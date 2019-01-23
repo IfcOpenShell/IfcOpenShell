@@ -88,13 +88,14 @@ bool IfcGeom::CgalKernel::validate_quantities(const IfcSchema::IfcProduct* produ
 	throw std::runtime_error("not implemented");
 }
 
-bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& shapes, const IfcGeom::ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes) {
+bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& entity_shapes, const IfcGeom::ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes) {
+  const cgal_placement_t& entity_trsf = ((CgalPlacement*) trsf)->trsf();
   std::list<cgal_shape_t> opening_shapelist;
   
   for ( IfcSchema::IfcRelVoidsElement::list::it it = openings->begin(); it != openings->end(); ++ it ) {
     IfcSchema::IfcRelVoidsElement* v = *it;
     IfcSchema::IfcFeatureElementSubtraction* fes = v->RelatedOpeningElement();
-    if ( fes->is(IfcSchema::Type::IfcOpeningElement) ) {
+    if ( fes->as<IfcSchema::IfcOpeningElement>() ) {
       if (!fes->hasRepresentation()) continue;
       
       // Convert the IfcRepresentation of the IfcOpeningElement
@@ -143,13 +144,13 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product,
     cgal_shape_t original_entity_shape(entity_shape);
     
     if (!entity_shape.is_valid()) {
-      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid entity:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid geometry:", product);
       return false;
     }
     
     if (!entity_shape.is_closed()) {
       // TODO: There can be substractions to remove parts of non-volumetric objects. Maybe iterate over all faces of an entity and put them in a Nef_polyhedron_3 through Boolean union? Highly inefficient but maybe desirable...
-      Logger::Message(Logger::LOG_ERROR, "Subtraction of openings not supported for non-closed entity:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Subtraction of openings not supported for non-closed geometry:", product);
       return false;
     }
     
@@ -158,26 +159,26 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product,
     try {
       success = CGAL::Polygon_mesh_processing::triangulate_faces(entity_shape);
     } catch (...) {
-      Logger::Message(Logger::LOG_ERROR, "Triangulation of entity crashed:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Triangulation of geometry crashed:", product);
       return false;
     }
     
     if (!success) {
-      Logger::Message(Logger::LOG_ERROR, "Triangulation of entity failed:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Triangulation of geometry failed:", product);
       return false;
     }
     
     if (CGAL::Polygon_mesh_processing::does_self_intersect(entity_shape)) {
-      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting entity:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting geometry:", product);
       return false;
     }
     
-    CGAL::Nef_polyhedron_3<Kernel> nef_brep_cut_result;
+    CGAL::Nef_polyhedron_3<Kernel_> nef_brep_cut_result;
     
     try {
-      nef_brep_cut_result = CGAL::Nef_polyhedron_3<Kernel>(entity_shape);
+      nef_brep_cut_result = CGAL::Nef_polyhedron_3<Kernel_>(entity_shape);
     } catch (...) {
-      Logger::Message(Logger::LOG_ERROR, "Could not convert entity to Nef:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Could not convert geometry to Nef:", product);
       return false;
     }
     
@@ -185,17 +186,17 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product,
       cgal_shape_t brep_cut_result;
       nef_brep_cut_result.convert_to_polyhedron(brep_cut_result);
     } catch (...) {
-      Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert entity from Nef:", entity->entity);
+      Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert geometry from Nef:", product);
     }
     
     for (auto &opening: opening_shapelist) {
       
       cgal_shape_t original_opening_shape(opening);
       if (!opening.is_valid()) {
-        Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid opening in entity:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid opening in geometry:", product);
         return false;
       } if (!opening.is_closed()) {
-        Logger::Message(Logger::LOG_ERROR, "Subtraction of opening makes no sense. Not closed opening in entity:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Subtraction of opening makes no sense. Not closed opening in geometry:", product);
         return false;
       }
       
@@ -204,25 +205,25 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product,
       try {
         success = CGAL::Polygon_mesh_processing::triangulate_faces(opening);
       } catch (...) {
-        Logger::Message(Logger::LOG_ERROR, "Triangulation of opening of entity crashed:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Triangulation of opening of geometry crashed:", product);
         return false;
       }
       
       if (!success) {
-        Logger::Message(Logger::LOG_ERROR, "Triangulation of opening of entity failed:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Triangulation of opening of geometry failed:", product);
         return false;
       }
       
       if (CGAL::Polygon_mesh_processing::does_self_intersect(entity_shape)) {
-        Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting opening of entity:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting opening of geometry:", product);
       }
       
-      CGAL::Nef_polyhedron_3<Kernel> nef_opening;
+      CGAL::Nef_polyhedron_3<Kernel_> nef_opening;
       
       try {
-        nef_opening = CGAL::Nef_polyhedron_3<Kernel>(opening);
+        nef_opening = CGAL::Nef_polyhedron_3<Kernel_>(opening);
       } catch (...) {
-        Logger::Message(Logger::LOG_ERROR, "Could not convert opening of entity to Nef:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Could not convert opening of geometry to Nef:", product);
         return false;
       }
       
@@ -230,14 +231,14 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product,
         cgal_shape_t opening_shape;
         nef_opening.convert_to_polyhedron(opening_shape);
       } catch (...) {
-        Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert opening of entity from Nef:", entity->entity);
+        Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert opening of geometry from Nef:", product);
         // return false;
       }
       
       try {
         nef_brep_cut_result -= nef_opening;
       } catch (...) {
-        Logger::Message(Logger::LOG_ERROR, "Could not subtract Nef opening of entity:", entity->entity);
+        Logger::Message(Logger::LOG_ERROR, "Could not subtract Nef opening of geometry:", product);
         return false;
       }
     }
@@ -245,11 +246,11 @@ bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product,
     try {
       nef_brep_cut_result.convert_to_polyhedron(entity_shape);
     } catch (...) {
-      Logger::Message(Logger::LOG_ERROR, "Could not convert entity with openings from Nef:", entity->entity);
+      Logger::Message(Logger::LOG_ERROR, "Could not convert geometry with openings from Nef:", product);
       return false;
     }
     
-    cut_shapes.push_back(IfcGeom::ConversionResult(new CgalShape(entity_shape), &it3->Style()));
+    opened_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), new CgalShape(entity_shape), &it3->Style()));
     
   } return true;
 }

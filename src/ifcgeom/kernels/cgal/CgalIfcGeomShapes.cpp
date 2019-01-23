@@ -1,9 +1,12 @@
 #include "CgalKernel.h"
+#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
+
+#define CgalKernel MAKE_TYPE_NAME(CgalKernel)
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal_shape_t &shape) {
   const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
   if (height < getValue(GV_PRECISION)) {
-    Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
     return false;
   }
   
@@ -28,10 +31,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   std::list<cgal_face_t> face_list;
   face_list.push_back(bottom_face);
   
-  for (std::vector<Kernel::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
+  for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
        current_vertex != bottom_face.outer.end();
        ++current_vertex) {
-    std::vector<Kernel::Point_3>::const_iterator next_vertex = current_vertex;
+    std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
     ++next_vertex;
     if (next_vertex == bottom_face.outer.end()) {
       next_vertex = bottom_face.outer.begin();
@@ -44,7 +47,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
   }
   
   cgal_face_t top_face;
-  for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
+  for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
        vertex != bottom_face.outer.rend();
        ++vertex) {
     top_face.outer.push_back(*vertex+height*dir);
@@ -56,7 +59,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     return true;
   }
   
-  CGAL::Nef_polyhedron_3<Kernel> nef_shape = create_nef_polyhedron(face_list);
+  CGAL::Nef_polyhedron_3<Kernel_> nef_shape = create_nef_polyhedron(face_list);
   
   // Inner
   // TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
@@ -69,10 +72,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     remove_duplicate_points_from_loop(hole_bottom_face.outer);
     face_list.push_back(hole_bottom_face);
     
-    for (std::vector<Kernel::Point_3>::const_iterator current_vertex = inner.begin();
+    for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = inner.begin();
          current_vertex != inner.end();
          ++current_vertex) {
-      std::vector<Kernel::Point_3>::const_iterator next_vertex = current_vertex;
+      std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
       ++next_vertex;
       if (next_vertex == inner.end()) {
         next_vertex = inner.begin();
@@ -85,7 +88,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     }
     
     cgal_face_t hole_top_face;
-    for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = inner.rbegin();
+    for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = inner.rbegin();
          vertex != inner.rend();
          ++vertex) {
       hole_top_face.outer.push_back(*vertex+height*dir);
@@ -94,7 +97,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     try {
       nef_shape -= create_nef_polyhedron(face_list);
     } catch (...) {
-      Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:", l->entity);
+      Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:", l);
       return false;
     }
   }
@@ -109,7 +112,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
     nef_shape.convert_to_polyhedron(shape);
     return true;
   } catch (...) {
-    Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:", l);
     return false;
   }
   
@@ -119,7 +122,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolid *l, cgal
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, cgal_shape_t& shape) {
   const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
   if (height < getValue(GV_PRECISION)) {
-    Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l->entity);
+    Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
     return false;
   }
   
@@ -148,12 +151,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
   std::list<cgal_face_t> face_list;
   face_list.push_back(face1);
   
-  std::vector<Kernel::Point_3>::const_iterator current_face1_vertex = face1.outer.begin();
-  std::vector<Kernel::Point_3>::const_iterator current_face2_vertex = face2.outer.begin();
+  std::vector<Kernel_::Point_3>::const_iterator current_face1_vertex = face1.outer.begin();
+  std::vector<Kernel_::Point_3>::const_iterator current_face2_vertex = face2.outer.begin();
   while (current_face1_vertex != face1.outer.end() &&
          current_face2_vertex != face2.outer.end()) {
-    std::vector<Kernel::Point_3>::const_iterator next_face1_vertex = current_face1_vertex;
-    std::vector<Kernel::Point_3>::const_iterator next_face2_vertex = current_face2_vertex;
+    std::vector<Kernel_::Point_3>::const_iterator next_face1_vertex = current_face1_vertex;
+    std::vector<Kernel_::Point_3>::const_iterator next_face2_vertex = current_face2_vertex;
     ++next_face1_vertex;
     ++next_face2_vertex;
     if (next_face1_vertex == face1.outer.end()) next_face1_vertex = face1.outer.begin();
@@ -169,7 +172,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
   }
   
   cgal_face_t top_face;
-  for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = face2.outer.rbegin();
+  for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = face2.outer.rbegin();
        vertex != face2.outer.rend();
        ++vertex) {
     top_face.outer.push_back(*vertex);
@@ -182,14 +185,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
   }
   
 //  std::ofstream f1;
-//  CGAL::Polyhedron_3<Kernel> outer_polyhedron;
+//  CGAL::Polyhedron_3<Kernel_> outer_polyhedron;
 //  PolyhedronBuilder builder(&face_list);
 //  outer_polyhedron.delegate(builder);
 //  f1.open("/Users/ken/Desktop/outer.off");
 //  f1 << outer_polyhedron << std::endl;
 //  f1.close();
   
-  CGAL::Nef_polyhedron_3<Kernel> nef_shape = create_nef_polyhedron(face_list);
+  CGAL::Nef_polyhedron_3<Kernel_> nef_shape = create_nef_polyhedron(face_list);
   
   // Inner
   // TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
@@ -212,8 +215,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
     current_face2_vertex = hole_face2.outer.begin();
     while (current_face1_vertex != hole_face1.outer.end() &&
            current_face2_vertex != hole_face2.outer.end()) {
-      std::vector<Kernel::Point_3>::const_iterator next_face1_vertex = current_face1_vertex;
-      std::vector<Kernel::Point_3>::const_iterator next_face2_vertex = current_face2_vertex;
+      std::vector<Kernel_::Point_3>::const_iterator next_face1_vertex = current_face1_vertex;
+      std::vector<Kernel_::Point_3>::const_iterator next_face2_vertex = current_face2_vertex;
       ++next_face1_vertex;
       ++next_face2_vertex;
       if (next_face1_vertex == hole_face1.outer.end()) next_face1_vertex = hole_face1.outer.begin();
@@ -229,14 +232,14 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* 
     }
     
     cgal_face_t top_hole_face;
-    for (std::vector<Kernel::Point_3>::const_reverse_iterator vertex = hole_face2.outer.rbegin();
+    for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = hole_face2.outer.rbegin();
          vertex != hole_face2.outer.rend();
          ++vertex) {
       top_hole_face.outer.push_back(*vertex);
     } face_list.push_back(top_hole_face);
     
 //    std::ofstream f2;
-//    CGAL::Polyhedron_3<Kernel> inner_polyhedron;
+//    CGAL::Polyhedron_3<Kernel_> inner_polyhedron;
 //    PolyhedronBuilder builder(&face_list);
 //    inner_polyhedron.delegate(builder);
 //    f2.open("/Users/ken/Desktop/inner.off");
@@ -283,7 +286,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcConnectedFaceSet* l, cgal_
     } catch (...) {}
     
     if (!success) {
-      Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it)->entity);
+      Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", (*it));
       continue;
     }
     
@@ -312,45 +315,45 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBlock* l, cgal_shape_t& sh
   
   // x = 0
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, dz));
   
   // x = dx
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, 0));
   
   // y = 0
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, 0));
   
   // y = dy
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, dz));
   
   // z = 0
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, 0));
   
   // z = dz
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, dz));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, dz));
   
   cgal_placement_t trsf;
   IfcGeom::CgalKernel::convert(l->Position(),trsf);
@@ -367,10 +370,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   cgal_wire_t boundary_wire;
   IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
   IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
-  bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
+  bool is_halfspace = operand2->as<IfcSchema::IfcHalfSpaceSolid>();
   
   if ( shape_type(operand1) == ST_SHAPELIST ) {
-    Logger::Message(Logger::LOG_ERROR, "s1: ST_SHAPELIST Unsupported", operand1->entity);
+    Logger::Message(Logger::LOG_ERROR, "s1: ST_SHAPELIST Unsupported", operand1);
 //    if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
       return false;
 //    }
@@ -379,44 +382,44 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
       return false;
     }
   } else {
-    Logger::Message(Logger::LOG_ERROR, "s1: Invalid representation item for boolean operation", operand1->entity);
+    Logger::Message(Logger::LOG_ERROR, "s1: Invalid representation item for boolean operation", operand1);
     return false;
   }
 
 //  const double first_operand_volume = shape_volume(s1);
 //  if ( first_operand_volume <= ALMOST_ZERO )
-//    Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand()->entity);
+//    Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand());
   
   bool shape2_processed = false;
   if ( shape_type(operand2) == ST_SHAPELIST ) {
-    Logger::Message(Logger::LOG_ERROR, "s2: ST_SHAPELIST Unsupported", operand1->entity);
+    Logger::Message(Logger::LOG_ERROR, "s2: ST_SHAPELIST Unsupported", operand1);
 //    shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
   } else if ( shape_type(operand2) == ST_SHAPE ) {
     shape2_processed = convert_shape(operand2,s2);
   } else {
-    Logger::Message(Logger::LOG_ERROR, "s2: Invalid representation item for boolean operation", operand2->entity);
+    Logger::Message(Logger::LOG_ERROR, "s2: Invalid representation item for boolean operation", operand2);
   }
 
   if (!shape2_processed) {
     shape = s1;
-    Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l->entity);
+    Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l);
     return true;
   }
 
 //  if (!is_halfspace) {
 //    const double second_operand_volume = shape_volume(s2);
 //    if ( second_operand_volume <= ALMOST_ZERO )
-//      Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
+//      Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2);
 //  }
   
-  const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
+  const IfcSchema::IfcBooleanOperator::Value op = l->Operator();
   
   if (!s1.is_valid()) {
-    Logger::Message(Logger::LOG_ERROR, "s1: Not valid?", operand1->entity);
+    Logger::Message(Logger::LOG_ERROR, "s1: Not valid?", operand1);
     return false;
   } else {
 //    std::ofstream f1;
-//    CGAL::Polyhedron_3<Kernel> p1;
+//    CGAL::Polyhedron_3<Kernel_> p1;
 //    s1.convert_to_Polyhedron(p1);
 //    f1.open("/Users/ken/Desktop/s1.off");
 //    f1 << p1 << std::endl;
@@ -426,13 +429,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   bool is_plane = false;
   cgal_plane_t plane;
   if (!s2.is_valid()) {
-    Logger::Message(Logger::LOG_ERROR, "s2: Not valid?", operand2->entity);
+    Logger::Message(Logger::LOG_ERROR, "s2: Not valid?", operand2);
     return false;
   } else if (is_halfspace) {
     //    std::cout << "s2: halfspace" << std::endl;
     IfcSchema::IfcHalfSpaceSolid *hss = static_cast<IfcSchema::IfcHalfSpaceSolid *>(operand2);
     IfcSchema::IfcSurface* surface = hss->BaseSurface();
-    if (surface->is(IfcSchema::Type::IfcPlane) ) {
+    if (surface->as<IfcSchema::IfcPlane>() ) {
       is_plane = true;
       IfcGeom::CgalKernel::convert((IfcSchema::IfcPlane *)surface, plane);
       if (hss->AgreementFlag()) plane = plane.opposite();
@@ -453,7 +456,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
     }
   } else {
 //    std::ofstream f2;
-//    CGAL::Polyhedron_3<Kernel> p2;
+//    CGAL::Polyhedron_3<Kernel_> p2;
 //    s2.convert_to_Polyhedron(p2);
 //    f2.open("/Users/ken/Desktop/s2.off");
 //    f2 << p2 << std::endl;
@@ -463,27 +466,27 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
     
 //    std::cout << "Difference" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result;
+    CGAL::Nef_polyhedron_3<Kernel_> nef_result;
     try {
-      nef_result = CGAL::Nef_polyhedron_3<Kernel>(s1);
+      nef_result = CGAL::Nef_polyhedron_3<Kernel_>(s1);
     } catch (...) {
-      Logger::Message(Logger::LOG_ERROR, "s1: cannot convert to Nef?", operand1->entity);
+      Logger::Message(Logger::LOG_ERROR, "s1: cannot convert to Nef?", operand1);
       return false;
     } if (is_halfspace) {
-      if (is_plane) nef_result = nef_result.intersection(plane, CGAL::Nef_polyhedron_3<Kernel>::Intersection_mode::CLOSED_HALFSPACE);
+      if (is_plane) nef_result = nef_result.intersection(plane, CGAL::Nef_polyhedron_3<Kernel_>::Intersection_mode::CLOSED_HALFSPACE);
     } else {
-      CGAL::Nef_polyhedron_3<Kernel> nef_s2;
+      CGAL::Nef_polyhedron_3<Kernel_> nef_s2;
       try {
-        nef_s2 = CGAL::Nef_polyhedron_3<Kernel>(s2);
+        nef_s2 = CGAL::Nef_polyhedron_3<Kernel_>(s2);
       } catch (...) {
-        Logger::Message(Logger::LOG_ERROR, "s2: cannot convert to Nef?", operand2->entity);
+        Logger::Message(Logger::LOG_ERROR, "s2: cannot convert to Nef?", operand2);
       } nef_result -= nef_s2;
     }
     if (!nef_result.is_simple()) {
-      Logger::Message(Logger::LOG_ERROR, "s2: not simple?", operand2->entity);
+      Logger::Message(Logger::LOG_ERROR, "s2: not simple?", operand2);
       return false;
     } else {
-//      CGAL::Polyhedron_3<Kernel> result;
+//      CGAL::Polyhedron_3<Kernel_> result;
 //      nef_result.convert_to_polyhedron(result);
 //      std::ofstream fresult;
 //      fresult.open("/Users/ken/Desktop/result.off");
@@ -500,12 +503,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
 
 //    std::cout << "Union" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result = CGAL::Nef_polyhedron_3<Kernel>(s1)+CGAL::Nef_polyhedron_3<Kernel>(s2);
+    CGAL::Nef_polyhedron_3<Kernel_> nef_result = CGAL::Nef_polyhedron_3<Kernel_>(s1)+CGAL::Nef_polyhedron_3<Kernel_>(s2);
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     } else {
-//      CGAL::Polyhedron_3<Kernel> result;
+//      CGAL::Polyhedron_3<Kernel_> result;
 //      nef_result.convert_to_polyhedron(result);
 //      std::ofstream fresult;
 //      fresult.open("/Users/ken/Desktop/result.off");
@@ -522,12 +525,12 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcBooleanResult* l, cgal_sha
   } else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
 
 //    std::cout << "Intersection" << std::endl;
-    CGAL::Nef_polyhedron_3<Kernel> nef_result = CGAL::Nef_polyhedron_3<Kernel>(s1)*CGAL::Nef_polyhedron_3<Kernel>(s2);
+    CGAL::Nef_polyhedron_3<Kernel_> nef_result = CGAL::Nef_polyhedron_3<Kernel_>(s1)*CGAL::Nef_polyhedron_3<Kernel_>(s2);
     if (!nef_result.is_simple()) {
       std::cout << "Not simple: " << nef_result.number_of_volumes() << " volumes" << std::endl;
       return false;
     } else {
-//      CGAL::Polyhedron_3<Kernel> result;
+//      CGAL::Polyhedron_3<Kernel_> result;
 //      nef_result.convert_to_polyhedron(result);
 //      std::ofstream fresult;
 //      fresult.open("/Users/ken/Desktop/result.off");
@@ -549,19 +552,19 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   // Make icosahedron
   float golden_ratio = (1.0+sqrtf(5.0))/2.0;
   float normalising_factor = sqrtf(golden_ratio*golden_ratio+1.0);
-  std::vector<Kernel::Point_3> icosahedron_vertices;
-  icosahedron_vertices.push_back(Kernel::Point_3(-1.0/normalising_factor,  golden_ratio/normalising_factor, 0.0));
-  icosahedron_vertices.push_back(Kernel::Point_3( 1.0/normalising_factor,  golden_ratio/normalising_factor, 0.0));
-  icosahedron_vertices.push_back(Kernel::Point_3(-1.0/normalising_factor, -golden_ratio/normalising_factor, 0.0));
-  icosahedron_vertices.push_back(Kernel::Point_3( 1.0/normalising_factor, -golden_ratio/normalising_factor, 0.0));
-  icosahedron_vertices.push_back(Kernel::Point_3(0.0, -1.0/normalising_factor,  golden_ratio/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3(0.0,  1.0/normalising_factor,  golden_ratio/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3(0.0, -1.0/normalising_factor, -golden_ratio/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3(0.0,  1.0/normalising_factor, -golden_ratio/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3( golden_ratio/normalising_factor, 0.0, -1.0/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3( golden_ratio/normalising_factor, 0.0,  1.0/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3(-golden_ratio/normalising_factor, 0.0, -1.0/normalising_factor));
-  icosahedron_vertices.push_back(Kernel::Point_3(-golden_ratio/normalising_factor, 0.0,  1.0/normalising_factor));
+  std::vector<Kernel_::Point_3> icosahedron_vertices;
+  icosahedron_vertices.push_back(Kernel_::Point_3(-1.0/normalising_factor,  golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel_::Point_3( 1.0/normalising_factor,  golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel_::Point_3(-1.0/normalising_factor, -golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel_::Point_3( 1.0/normalising_factor, -golden_ratio/normalising_factor, 0.0));
+  icosahedron_vertices.push_back(Kernel_::Point_3(0.0, -1.0/normalising_factor,  golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3(0.0,  1.0/normalising_factor,  golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3(0.0, -1.0/normalising_factor, -golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3(0.0,  1.0/normalising_factor, -golden_ratio/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3( golden_ratio/normalising_factor, 0.0, -1.0/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3( golden_ratio/normalising_factor, 0.0,  1.0/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3(-golden_ratio/normalising_factor, 0.0, -1.0/normalising_factor));
+  icosahedron_vertices.push_back(Kernel_::Point_3(-golden_ratio/normalising_factor, 0.0,  1.0/normalising_factor));
   
   std::list<cgal_face_t> face_list;
   
@@ -669,24 +672,24 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   for (unsigned int current_refinement = 0; current_refinement < refinements; ++current_refinement) {
     std::list<cgal_face_t> refined_face_list;
     for (auto &face: face_list) {
-      Kernel::Point_3 vertex0 = face.outer[0];
-      Kernel::Point_3 vertex1 = face.outer[1];
-      Kernel::Point_3 vertex2 = face.outer[2];
+      Kernel_::Point_3 vertex0 = face.outer[0];
+      Kernel_::Point_3 vertex1 = face.outer[1];
+      Kernel_::Point_3 vertex2 = face.outer[2];
       
-      Kernel::Point_3 midpoint01 = CGAL::midpoint(vertex0, vertex1);
-      Kernel::Point_3 midpoint12 = CGAL::midpoint(vertex1, vertex2);
-      Kernel::Point_3 midpoint20 = CGAL::midpoint(vertex2, vertex0);
+      Kernel_::Point_3 midpoint01 = CGAL::midpoint(vertex0, vertex1);
+      Kernel_::Point_3 midpoint12 = CGAL::midpoint(vertex1, vertex2);
+      Kernel_::Point_3 midpoint20 = CGAL::midpoint(vertex2, vertex0);
       
-      double midpoint01_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint01, Kernel::Point_3(0, 0, 0))));
-      midpoint01 = Kernel::Point_3(midpoint01.x()/midpoint01_distance_to_origin,
+      double midpoint01_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint01, Kernel_::Point_3(0, 0, 0))));
+      midpoint01 = Kernel_::Point_3(midpoint01.x()/midpoint01_distance_to_origin,
                                    midpoint01.y()/midpoint01_distance_to_origin,
                                    midpoint01.z()/midpoint01_distance_to_origin);
-      double midpoint12_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint12, Kernel::Point_3(0, 0, 0))));
-      midpoint12 = Kernel::Point_3(midpoint12.x()/midpoint12_distance_to_origin,
+      double midpoint12_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint12, Kernel_::Point_3(0, 0, 0))));
+      midpoint12 = Kernel_::Point_3(midpoint12.x()/midpoint12_distance_to_origin,
                                    midpoint12.y()/midpoint12_distance_to_origin,
                                    midpoint12.z()/midpoint12_distance_to_origin);
-      double midpoint20_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint20, Kernel::Point_3(0, 0, 0))));
-      midpoint20 = Kernel::Point_3(midpoint20.x()/midpoint20_distance_to_origin,
+      double midpoint20_distance_to_origin = sqrt(CGAL::to_double(CGAL::squared_distance(midpoint20, Kernel_::Point_3(0, 0, 0))));
+      midpoint20 = Kernel_::Point_3(midpoint20.x()/midpoint20_distance_to_origin,
                                    midpoint20.y()/midpoint20_distance_to_origin,
                                    midpoint20.z()/midpoint20_distance_to_origin);
       
@@ -717,7 +720,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcSphere* l, cgal_shape_t& s
   
   shape = create_polyhedron(face_list);
   for (auto &vertex: vertices(shape)) {
-    vertex->point() = Kernel::Point_3(r*vertex->point().x(),
+    vertex->point() = Kernel_::Point_3(r*vertex->point().x(),
                                       r*vertex->point().y(),
                                       r*vertex->point().z());
     vertex->point() = vertex->point().transform(trsf);
@@ -734,31 +737,31 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRectangularPyramid* l, cga
   
   // Base
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, 0));
   
   // Lateral faces
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0.5*dx, 0.5*dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0.5*dx, 0.5*dy, dz));
   
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(0, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0.5*dx, 0.5*dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0.5*dx, 0.5*dy, dz));
   
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(dx, dy, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0.5*dx, 0.5*dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, dy, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0.5*dx, 0.5*dy, dz));
   
   face_list.push_back(cgal_face_t());
-  face_list.back().outer.push_back(Kernel::Point_3(dx, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0, 0, 0));
-  face_list.back().outer.push_back(Kernel::Point_3(0.5*dx, 0.5*dy, dz));
+  face_list.back().outer.push_back(Kernel_::Point_3(dx, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0, 0, 0));
+  face_list.back().outer.push_back(Kernel_::Point_3(0.5*dx, 0.5*dy, dz));
   
   cgal_placement_t trsf;
   IfcGeom::CgalKernel::convert(l->Position(),trsf);
@@ -780,7 +783,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, 
   face_list.push_back(cgal_face_t());
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
   }
   
   // Side faces
@@ -789,17 +792,17 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCylinder* l, 
     int next_segment = (current_segment+1)%segments;
     double next_angle = next_segment*2.0*3.141592653589793/((double)segments);
     face_list.push_back(cgal_face_t());
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(next_angle), r*sin(next_angle), 0));
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), h));
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(next_angle), r*sin(next_angle), h));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(next_angle), r*sin(next_angle), 0));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), h));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(next_angle), r*sin(next_angle), h));
   }
   
   // Top
   face_list.push_back(cgal_face_t());
   for (int current_segment = segments-1; current_segment >= 0; --current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), h));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), h));
   }
   
   cgal_placement_t trsf;
@@ -822,7 +825,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
   face_list.push_back(cgal_face_t());
   for (int current_segment = 0; current_segment < segments; ++current_segment) {
     double current_angle = current_segment*2.0*3.141592653589793/((double)segments);
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
   }
   
   // Side faces
@@ -831,9 +834,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcRightCircularCone* l, cgal
     int next_segment = (current_segment+1)%segments;
     double next_angle = next_segment*2.0*3.141592653589793/((double)segments);
     face_list.push_back(cgal_face_t());
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(next_angle), r*sin(next_angle), 0));
-    face_list.back().outer.push_back(Kernel::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
-    face_list.back().outer.push_back(Kernel::Point_3(0, 0, h));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(next_angle), r*sin(next_angle), 0));
+    face_list.back().outer.push_back(Kernel_::Point_3(r*cos(current_angle), r*sin(current_angle), 0));
+    face_list.back().outer.push_back(Kernel_::Point_3(0, 0, h));
   }
   
   cgal_placement_t trsf;
@@ -853,10 +856,10 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
     const std::vector<double>& coords = *it;
     if (coords.size() != 3) {
-      Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l->entity);
+      Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l);
       return false;
     }
-    points.push_back(Kernel::Point_3(coords[0] * getValue(GV_LENGTH_UNIT),
+    points.push_back(Kernel_::Point_3(coords[0] * getValue(GV_LENGTH_UNIT),
                                      coords[1] * getValue(GV_LENGTH_UNIT),
                                      coords[2] * getValue(GV_LENGTH_UNIT)));
   }
@@ -868,7 +871,7 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
   for(std::vector< std::vector<int> >::const_iterator it = indices.begin(); it != indices.end(); ++ it) {
     const std::vector<int>& tri = *it;
     if (tri.size() != 3) {
-      Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on CoordIndex", l->entity);
+      Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on CoordIndex", l);
       return false;
     }
     
@@ -876,13 +879,13 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
     const int max_index = *std::max_element(tri.begin(), tri.end());
     
     if (min_index < 1 || max_index > (int) points.size()) {
-      Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l->entity);
+      Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l);
       return false;
     }
     
-    const Kernel::Point_3& a = points[tri[0] - 1]; // account for zero- vs
-    const Kernel::Point_3& b = points[tri[1] - 1]; // one-based indices in
-    const Kernel::Point_3& c = points[tri[2] - 1]; // c++ and express
+    const Kernel_::Point_3& a = points[tri[0] - 1]; // account for zero- vs
+    const Kernel_::Point_3& b = points[tri[1] - 1]; // one-based indices in
+    const Kernel_::Point_3& c = points[tri[2] - 1]; // c++ and express
     
     face_list.push_back(cgal_face_t());
     face_list.back().outer.push_back(a);
@@ -897,8 +900,8 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, cg
 
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_shape_t& shape) {
   IfcSchema::IfcSurface* surface = l->BaseSurface();
-  if ( ! surface->is(IfcSchema::Type::IfcPlane) ) {
-    Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface->entity);
+  if ( ! surface->as<IfcSchema::IfcPlane>() ) {
+    Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
     return false;
   }
   cgal_plane_t pln;
@@ -911,6 +914,6 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcHalfSpaceSolid* l, cgal_sh
   
   // TODO: For now we do nothing and process halfspaces in IfcBooleanResult, which likely doesn't capture all cases.
   // Find a better solution later (with an abstract shape class?)
-  shape = CGAL::Polyhedron_3<Kernel>();
+  shape = CGAL::Polyhedron_3<Kernel_>();
   return true;
 }

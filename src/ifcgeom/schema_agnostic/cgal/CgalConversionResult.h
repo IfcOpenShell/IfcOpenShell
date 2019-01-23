@@ -38,24 +38,24 @@
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
 #include <CGAL/Nef_polyhedron_3.h>
 
-typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
+typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel_;
 
-typedef Kernel::Aff_transformation_3 cgal_placement_t;
-typedef Kernel::Point_3 cgal_point_t;
-typedef Kernel::Vector_3 cgal_direction_t;
-typedef Kernel::Vector_3 cgal_vector_t;
-typedef Kernel::Plane_3 cgal_plane_t;
-typedef std::vector<Kernel::Point_3> cgal_curve_t;
-typedef std::vector<Kernel::Point_3> cgal_wire_t;
+typedef Kernel_::Aff_transformation_3 cgal_placement_t;
+typedef Kernel_::Point_3 cgal_point_t;
+typedef Kernel_::Vector_3 cgal_direction_t;
+typedef Kernel_::Vector_3 cgal_vector_t;
+typedef Kernel_::Plane_3 cgal_plane_t;
+typedef std::vector<Kernel_::Point_3> cgal_curve_t;
+typedef std::vector<Kernel_::Point_3> cgal_wire_t;
 
 struct cgal_face_t {
   cgal_wire_t outer;
   std::vector<cgal_wire_t> inner;
 };
 
-typedef CGAL::Polyhedron_3<Kernel> cgal_shape_t;
-typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::vertex_descriptor cgal_vertex_descriptor_t;
-typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel>>::face_descriptor cgal_face_descriptor_t;
+typedef CGAL::Polyhedron_3<Kernel_> cgal_shape_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
+typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::face_descriptor cgal_face_descriptor_t;
 
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 

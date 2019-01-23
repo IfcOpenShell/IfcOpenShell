@@ -183,7 +183,7 @@ namespace {
 		std::map<std::string, IfcUtil::IfcBaseEntity*> layers;
 		if (prod->hasRepresentation()) {
 			IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
-			typename Schema::IfcRepresentation::list::ptr representations = r->as<typename Schema::IfcRepresentation>();
+			typename Schema::IfcRepresentation::list::ptr representations = r->template as<typename Schema::IfcRepresentation>();
 			for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
 				typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
 				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
@@ -191,7 +191,7 @@ namespace {
 				}
 			}
 
-			typename Schema::IfcRepresentationItem::list::ptr items = r->as<typename Schema::IfcRepresentationItem>();
+			typename Schema::IfcRepresentationItem::list::ptr items = r->template as<typename Schema::IfcRepresentationItem>();
 			for (typename Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
 				typename Schema::IfcPresentationLayerAssignment::list::ptr a = getLayerAssignments(*it)->template as<typename Schema::IfcPresentationLayerAssignment>();
 				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
@@ -251,11 +251,11 @@ namespace {
 		}
 
 		// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-		typename Schema::IfcObjectDefinition* obdef = product->as<typename Schema::IfcObjectDefinition>();
+		typename Schema::IfcObjectDefinition* obdef = product->template as<typename Schema::IfcObjectDefinition>();
 		for (;;) {
 			auto decomposes = obdef->Decomposes()->generalize();
 			if (decomposes->size() != 1) break;
-			typename Schema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<typename Schema::IfcRelAggregates>()->RelatingObject();
+			typename Schema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->template as<typename Schema::IfcRelAggregates>()->RelatingObject();
 			if (rel_obdef->declaration().is(Schema::IfcElement::Class()) && !rel_obdef->declaration().is(Schema::IfcOpeningElement::Class())) {
 				typename Schema::IfcElement* element = (typename Schema::IfcElement*)rel_obdef;
 				openings->push(element->HasOpenings()->generalize());
