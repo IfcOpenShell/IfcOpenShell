@@ -66,10 +66,9 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l,
 bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, ConversionResults& shape) {
   cgal_shape_t s;
   const SurfaceStyle* collective_style = get_style(l);
+  const SurfaceStyle* indiv_style = get_style(l->Outer());
+  
   if (convert_shape(l->Outer(),s) ) {
-    CGAL::Nef_polyhedron_3<Kernel_> nef_s = create_nef_polyhedron(s);
-    const SurfaceStyle* indiv_style = get_style(l->Outer());
-    
     IfcSchema::IfcClosedShell::list::ptr voids(new IfcSchema::IfcClosedShell::list);
     if (l->as<IfcSchema::IfcFacetedBrepWithVoids>()) {
       voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
@@ -79,15 +78,20 @@ bool IfcGeom::CgalKernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, Conv
       voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
     }
 #endif
-    
-    for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
-      cgal_shape_t s2;
-      if (convert_shape(*it, s2)) {
-        nef_s -= CGAL::Nef_polyhedron_3<Kernel_>(s2);
+
+    if (voids->size()) {
+      CGAL::Nef_polyhedron_3<Kernel_> nef_s = create_nef_polyhedron(s);
+      
+      for (IfcSchema::IfcClosedShell::list::it it = voids->begin(); it != voids->end(); ++it) {
+        cgal_shape_t s2;
+        if (convert_shape(*it, s2)) {
+          nef_s -= CGAL::Nef_polyhedron_3<Kernel_>(s2);
+        }
       }
+      
+      s = create_polyhedron(nef_s);
     }
     
-    s = create_polyhedron(nef_s);
     shape.push_back(ConversionResult(l->data().id(), new CgalShape(s), indiv_style ? indiv_style : collective_style));
     return true;
   }
