@@ -88,6 +88,17 @@ bool IfcGeom::CgalKernel::validate_quantities(const IfcSchema::IfcProduct* produ
 	throw std::runtime_error("not implemented");
 }
 
+bool IfcGeom::CgalKernel::convert_placement(IfcUtil::IfcBaseClass* item, ConversionResultPlacement*& trsf) {
+    if (item->as<IfcSchema::IfcObjectPlacement>()) {
+        cgal_placement_t cgal_trsf;
+        if (convert(item->as<IfcSchema::IfcObjectPlacement>(), cgal_trsf)) {
+            trsf = new CgalPlacement(cgal_trsf);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool IfcGeom::CgalKernel::convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& entity_shapes, const IfcGeom::ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes) {
   const cgal_placement_t& entity_trsf = ((CgalPlacement*) trsf)->trsf();
   std::list<cgal_shape_t> opening_shapelist;
