@@ -153,6 +153,7 @@ namespace IfcGeom {
 		virtual bool apply_layerset(const IfcSchema::IfcProduct* product, IfcGeom::ConversionResults& shapes);
 		virtual bool validate_quantities(const IfcSchema::IfcProduct* product, const IfcGeom::Representation::BRep& brep);
 		virtual bool convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& shapes, const ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes);
+        virtual bool convert_placement(IfcUtil::IfcBaseClass* item, ConversionResultPlacement*& trsf);
 
 #include "CgalEntityMappingDeclaration.h"
 
