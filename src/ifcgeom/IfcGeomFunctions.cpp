@@ -3822,6 +3822,12 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	}
 
 	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
+	
+	if (eps_ < Precision::Confusion()) {
+		// occt uses some hard coded precision values, don't go smaller than that.
+		// @todo, can be reset though with BRepLib::Precision(double)
+		eps_ = Precision::Confusion();
+	}
 
 	std::map<std::pair<int, int>, int> edge_use;
 
