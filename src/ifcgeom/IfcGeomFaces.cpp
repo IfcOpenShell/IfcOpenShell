@@ -67,6 +67,7 @@
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 
+#include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
@@ -396,28 +397,44 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, TopoDS_Shape& face) {
 	TopoDS_Wire wire;
-	if ( ! convert_wire(l->OuterCurve(),wire) ) return false;
+	if (!convert_wire(l->OuterCurve(), wire)) {
+		return false;
+	}
+
+	assert_closed_wire(wire);
 
 	TopoDS_Face f;
 	bool success = convert_wire_to_face(wire, f);
-	if (success) face = f;
+	if (success) {
+		face = f;
+	}
 	return success;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, TopoDS_Shape& face) {
 	TopoDS_Wire profile;
-	if ( ! convert_wire(l->OuterCurve(),profile) ) return false;
+	if (!convert_wire(l->OuterCurve(), profile)) {
+		return false;
+	}
+
+	assert_closed_wire(profile);
+
 	BRepBuilderAPI_MakeFace mf(profile);
+
 	IfcSchema::IfcCurve::list::ptr voids = l->InnerCurves();
-	for( IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++ it ) {
+
+	for(IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++it) {
 		TopoDS_Wire hole;
-		if ( convert_wire(*it,hole) ) {
+		if (convert_wire(*it, hole)) {
+			assert_closed_wire(hole);
 			mf.Add(hole);
 		}
 	}
+
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
 	face = sfs.Shape();
+
 	return true;
 }
 
