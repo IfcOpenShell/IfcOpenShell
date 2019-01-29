@@ -171,8 +171,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
-            return filter::match(prod, std::bind1st(std::mem_fun(&string_arg_filter::match), this));
+            return filter::match(prod, std::bind(&string_arg_filter::match, this, std::placeholders::_1));
         }
 
         void update_description()
@@ -219,7 +218,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            return filter::match(prod, std::bind1st(std::mem_fun(&layer_filter::match), this));
+            return filter::match(prod, std::bind(&layer_filter::match, this, std::placeholders::_1));
         }
 
         struct wildcards_match
@@ -285,7 +284,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            return filter::match(prod, std::bind1st(std::mem_fun(&entity_filter::match), this));
+            return filter::match(prod, std::bind(&entity_filter::match, this, std::placeholders::_1));
         }
 
         void update_description()
