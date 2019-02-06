@@ -1807,11 +1807,13 @@ IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
             ret = cached_it->second;
         }
         else {
-            ret.reset(new IfcEntityList);
-            ret->reserve((unsigned)it->second.size());
-            const std::vector<unsigned>& ids = it->second;
-            for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
-                ret->push(entityById(*jt));
+            if (it->second.size()) {
+                ret.reset(new IfcEntityList);            
+                ret->reserve((unsigned)it->second.size());
+                const std::vector<unsigned>& ids = it->second;
+                for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
+                    ret->push(entityById(*jt));
+                }
             }
             by_ref_cached_[t] = ret;
         }
