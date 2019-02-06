@@ -169,7 +169,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& 
 	const bool hasRef = l->hasRefDirection();
 
 	if (hasAxis != hasRef) {
-		Logger::Warning("Axis and RefDirection should be specified together", l);
+		Logger::Warning("Axis and RefDirection should be specified together", l->entity);
 	}
 
 	if (hasAxis) {
