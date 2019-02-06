@@ -122,6 +122,7 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 static std::stringstream log_stream;
 void write_log(bool);
 void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
+std::string format_duration(time_t start, time_t end);
 
 /// @todo make the filters non-global
 IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
@@ -475,10 +476,14 @@ int main(int argc, char** argv)
 		int exit_code = EXIT_FAILURE;
 		try {
 			if (init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
+				time_t start, end;
+				time(&start);
 				XmlSerializer s(ifc_file, output_temp_filename);
 				Logger::Status("Writing XML output...");
 				s.finalize();
-				Logger::Status("Done!");
+				time(&end);
+				Logger::Status("Done! Conversion took " +  format_duration(start, end));
+
 				rename_file(output_temp_filename, output_filename);
 				exit_code = EXIT_SUCCESS;
 			}
@@ -786,26 +791,31 @@ int main(int argc, char** argv)
 
 	time(&end);
 
-	if (!quiet) {
-		int seconds = (int)difftime(end, start);
-		std::stringstream msg;
-		int minutes = seconds / 60;
-		seconds = seconds % 60;
-		msg << "\nConversion took";
-		if (minutes > 0) {
-			msg << " " << minutes << " minute";
-			if (minutes > 1) {
-				msg << "s";
-			}
-		}
-		msg << " " << seconds << " second";
-		if (seconds > 1) {
-			msg << "s";
-		}
-		Logger::Status(msg.str());
-	}
+    if (!quiet) {
+        Logger::Status("\nConversion took " +  format_duration(start, end));
+    }
 
     return successful ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+std::string format_duration(time_t start, time_t end)
+{
+    int seconds = (int)difftime(end, start);
+    std::stringstream ss;
+    int minutes = seconds / 60;
+    seconds = seconds % 60;
+    if (minutes > 0) {
+        ss << minutes << " minute";
+        if (minutes == 0 || minutes > 1) {
+            ss << "s";
+        }
+        ss << " ";
+    }
+    ss << seconds << " second";
+    if (seconds == 0 || seconds > 1) {
+        ss << "s";
+    }
+    return ss.str();
 }
 
 void write_log(bool header) {
@@ -821,10 +831,12 @@ void write_log(bool header) {
 #include <boost/algorithm/string/predicate.hpp>
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
+    time_t start, end;
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
     if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
 
+    time(&start);
 #ifdef USE_MMAP
 	ifc_file = new IfcParse::IfcFile(filename, mmap);
 #else
@@ -841,8 +853,10 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
         Logger::Error("Unable to parse input file '" + filename + "'");
         return false;
     }
+    time(&end);
 
     if (no_progress) { Logger::SetOutput(&std::cout, &log_stream); }
+    else {  Logger::Status("Parsing input file took " + format_duration(start, end)); }
 
     return true;
 

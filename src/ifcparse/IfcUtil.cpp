@@ -42,6 +42,7 @@ void IfcEntityList::push(const IfcEntityList::ptr& l) {
 	}
 }
 unsigned int IfcEntityList::size() const { return (unsigned int) ls.size(); }
+void IfcEntityList::reserve(unsigned capacity) { ls.reserve((size_t)capacity); }
 IfcEntityList::it IfcEntityList::begin() { return ls.begin(); }
 IfcEntityList::it IfcEntityList::end() { return ls.end(); }
 IfcUtil::IfcBaseClass* IfcEntityList::operator[] (int i) {

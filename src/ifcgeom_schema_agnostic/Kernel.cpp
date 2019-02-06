@@ -151,15 +151,6 @@ IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBase
 }
 
 namespace {
-
-        // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
-        IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
-                return item->LayerAssignments()->generalize();
-        }
-        IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
-                return item->LayerAssignment()->generalize();
-        }
-
 	template <typename Schema>
 	static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers_impl(typename Schema::IfcProduct* prod) {
 		std::map<std::string, IfcUtil::IfcBaseEntity*> layers;
@@ -168,14 +159,6 @@ namespace {
 			typename Schema::IfcRepresentation::list::ptr representations = r->as<typename Schema::IfcRepresentation>();
 			for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
 				typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-					layers[(*jt)->Name()] = *jt;
-				}
-			}
-
-			typename Schema::IfcRepresentationItem::list::ptr items = r->as<typename Schema::IfcRepresentationItem>();
-			for (typename Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-				typename Schema::IfcPresentationLayerAssignment::list::ptr a = getLayerAssignments(*it)->template as<typename Schema::IfcPresentationLayerAssignment>();
 				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
 					layers[(*jt)->Name()] = *jt;
 				}

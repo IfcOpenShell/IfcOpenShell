@@ -40,6 +40,7 @@ public:
 	it end();
 	IfcUtil::IfcBaseClass* operator[] (int i);
 	unsigned int size() const;
+    void reserve(unsigned capacity);
 	bool contains(IfcUtil::IfcBaseClass*) const;
 	template <class U>
 	typename U::list::ptr as() {
