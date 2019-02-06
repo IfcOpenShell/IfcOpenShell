@@ -401,6 +401,7 @@ static const std::string SURFACE_AREA_ALONG_X = "SURFACE_AREA_ALONG_X";
 static const std::string SURFACE_AREA_ALONG_Y = "SURFACE_AREA_ALONG_Y";
 static const std::string SURFACE_AREA_ALONG_Z = "SURFACE_AREA_ALONG_Z";
 static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
+static const std::string LARGEST_FACE_AREA = "LARGEST_FACE_AREA";
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
@@ -424,7 +425,7 @@ public:
 	QuantityWriter_v1(const IfcGeom::BRepElement<float, double>* elem) :
 		elem_(elem)
 	{
-		double a, b, c;
+		double a, b, c, largest_face_area = 0.;
 
 		if (elem_->geometry().calculate_surface_area(a)) {
 			put_json(TOTAL_SURFACE_AREA, a);
@@ -439,6 +440,20 @@ public:
 			put_json(SURFACE_AREA_ALONG_Y, b);
 			put_json(SURFACE_AREA_ALONG_Z, c);
 		}
+
+		for (auto& part : elem->geometry()) {
+			TopExp_Explorer exp(part.Shape(), TopAbs_FACE);
+			while (exp.More()) {
+				GProp_GProps prop;
+				BRepGProp::SurfaceProperties(exp.Current(), prop);
+				const double area = prop.Mass();
+				if (area > largest_face_area) {
+					largest_face_area = area;
+				}
+			}
+		}
+
+		put_json(LARGEST_FACE_AREA, largest_face_area);
 	}
 };
 
