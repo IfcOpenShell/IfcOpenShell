@@ -443,7 +443,7 @@ public:
 
 		for (auto& part : elem->geometry()) {
 			TopExp_Explorer exp(part.Shape(), TopAbs_FACE);
-			while (exp.More()) {
+			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
 				BRepGProp::SurfaceProperties(exp.Current(), prop);
 				const double area = prop.Mass();
