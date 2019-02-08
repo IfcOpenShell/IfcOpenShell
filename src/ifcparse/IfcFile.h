@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <boost/unordered_map.hpp>
 
 #include "ifc_parse_api.h"
 
@@ -35,12 +36,13 @@ namespace IfcParse {
 class IFC_PARSE_API IfcFile {
 public:
 	typedef std::map<IfcSchema::Type::Enum, IfcEntityList::ptr> entities_by_type_t;
-	typedef std::map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
+	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcSchema::IfcRoot*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
+	typedef std::map<unsigned int, IfcEntityList::ptr> ref_map_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
-	class type_iterator : public entities_by_type_t::const_iterator {
+	class type_iterator : private entities_by_type_t::const_iterator {
 	public:
 		type_iterator() : entities_by_type_t::const_iterator() {};
 
@@ -52,12 +54,18 @@ public:
 			return &entities_by_type_t::const_iterator::operator->()->first;
 		}
 
-		const entities_by_type_t::key_type& operator*() const {
+		entities_by_type_t::key_type const & operator*() const {
 			return entities_by_type_t::const_iterator::operator*().first;
 		}
 
-		const std::string& as_string() const {
-			return IfcSchema::Type::ToString(**this);
+		type_iterator& operator++() { 
+			entities_by_type_t::const_iterator::operator++(); return *this; 
+		}
+
+		bool operator!=(const type_iterator& other) const {
+			const entities_by_type_t::const_iterator& self_ = *this;
+			const entities_by_type_t::const_iterator& other_ = other;
+			return self_ != other_;
 		}
 	};
 
@@ -70,6 +78,7 @@ private:
 	entities_by_type_t bytype;
 	entities_by_type_t bytype_excl;
 	entities_by_ref_t byref;
+	ref_map_t by_ref_cached_;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
 
@@ -139,6 +148,10 @@ public:
 	/// in the first function argument.
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
+	/// Marks entity as modified so that potential cache for it is invalidated.
+	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
+	void mark_entity_as_modified(int id);
+
 #ifdef USE_MMAP
 	bool Init(const std::string& fn, bool mmap=false);
 #else
@@ -172,6 +185,17 @@ public:
 	void unregister_inverse(unsigned, IfcUtil::IfcBaseClass*);
 };
 
+}
+
+namespace std {
+	template <>
+	struct iterator_traits<IfcParse::IfcFile::type_iterator> {
+		typedef ptrdiff_t difference_type;
+		typedef const IfcSchema::Type::Enum value_type;
+		typedef const IfcSchema::Type::Enum& reference;
+		typedef const IfcSchema::Type::Enum* pointer;
+		typedef std::forward_iterator_tag iterator_category;
+	};
 }
 
 #endif

@@ -479,6 +479,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
 	bool is_halfspace = operand2->is(IfcSchema::Type::IfcHalfSpaceSolid);
+	bool is_unbounded_halfspace = is_halfspace && !operand2->is(IfcSchema::Type::IfcPolygonalBoundedHalfSpace);
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
 		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
@@ -524,6 +525,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2->entity);
 	}
 
+	if (is_unbounded_halfspace) {
+		TopoDS_Shape temp;
+		double d;
+		if (fit_halfspace(s1, s2, temp, d)) {
+			if (d < getValue(GV_PRECISION)) {
+				Logger::Message(Logger::LOG_WARNING, "Subtraction yields unchanged volume:", l->entity);
+				shape = s1;
+				return true;
+			} else {
+				s2 = temp;
+			}
+		}
+	}
+
 	const IfcSchema::IfcBooleanOperator::IfcBooleanOperator op = l->Operator();
 
 	/*
@@ -549,7 +564,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		return false;
 	}
 
+#if OCC_VERSION_HEX < 0x60900
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
+#else
+	const double fuzz = is_halfspace ? getValue(GV_PRECISION) * 10. : -1.;
+	bool valid_result = boolean_operation(s1, s2, occ_op, shape, fuzz);
+#endif
 
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 		// In case of a subtraction, a check on volume is performed.
@@ -596,10 +616,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 			continue;
 		}
 
-		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
-			face_list.Append(face);
+		if (face.ShapeType() == TopAbs_COMPOUND) {
+			TopoDS_Iterator face_it(face, false);
+			for (; face_it.More(); face_it.Next()) {
+				if (face_it.Value().ShapeType() == TopAbs_FACE) {
+					// This should really be the case. This is not asserted.
+					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
+					if (face_area(triangle) > getValue(GV_MINIMAL_FACE_AREA)) {
+						face_list.Append(triangle);
+					} else {
+						Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+					}
+				}
+			}
 		} else {
-			Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+			if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+				face_list.Append(face);
+			} else {
+				Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it)->entity);
+			}
 		}
 	}
 
@@ -797,24 +832,32 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCsgSolid* l, TopoDS_Shape& sha
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCurveBoundedPlane* l, TopoDS_Shape& face) {
 	gp_Pln pln;
-	IfcGeom::Kernel::convert(l->BasisSurface(), pln);
+	if (!IfcGeom::Kernel::convert(l->BasisSurface(), pln)) {
+		return false;
+	}
 
 	gp_Trsf trsf;
 	trsf.SetTransformation(pln.Position(), gp::XOY());
 	
 	TopoDS_Wire outer;
-	convert_wire(l->OuterBoundary(), outer);
+	if (!convert_wire(l->OuterBoundary(), outer)) {
+		return false;
+	}
 	
-	BRepBuilderAPI_MakeFace mf (outer);
-	mf.Add(outer);
+	BRepBuilderAPI_MakeFace mf(outer);
 
+	if (!mf.IsDone() || mf.Shape().IsNull()) {
+		Logger::Error("Invalid outer boundary:", l->OuterBoundary()->entity);
+		return false;
+	}
+	
 	IfcSchema::IfcCurve::list::ptr boundaries = l->InnerBoundaries();
 
 	for (IfcSchema::IfcCurve::list::it it = boundaries->begin(); it != boundaries->end(); ++it) {
 		TopoDS_Wire inner;
-		convert_wire(*it, inner);
-		
-		mf.Add(inner);
+		if (convert_wire(*it, inner)) {
+			mf.Add(inner);
+		}
 	}
 
 	ShapeFix_Shape sfs(mf.Face());
@@ -927,6 +970,41 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	return true;
 }
 
+namespace {
+	bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol) {
+		// NB Note that c0 continuity is NOT checked!
+
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
+		for (int i = 1; i <= map.Extent(); ++i) {
+			const auto& li = map.FindFromIndex(i);
+			if (li.Extent() == 2) {
+				const TopoDS_Vertex& v = TopoDS::Vertex(map.FindKey(i));
+
+				const TopoDS_Edge& e0 = TopoDS::Edge(li.First());
+				const TopoDS_Edge& e1 = TopoDS::Edge(li.Last());
+
+				double u0 = BRep_Tool::Parameter(v, e0);
+				double u1 = BRep_Tool::Parameter(v, e1);
+
+				double _, __;
+				Handle(Geom_Curve) c0 = BRep_Tool::Curve(e0, _, __);
+				Handle(Geom_Curve) c1 = BRep_Tool::Curve(e1, _, __);
+
+				gp_Pnt p;
+				gp_Vec v0, v1;
+				c0->D1(u0, p, v0);
+				c1->D1(u1, p, v1);
+
+				if (1. - std::abs(v0.Normalized().Dot(v1.Normalized())) > tol) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
 	TopoDS_Wire wire, section1, section2;
 
@@ -940,8 +1018,21 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	{
 		gp_Pnt directrix_origin;
 		gp_Vec directrix_tangent;
-		TopExp_Explorer exp(wire, TopAbs_EDGE);
-		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+
+		TopoDS_Edge edge;
+
+		// Find first edge
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
+		if (map.Contains(v0) &&  map.FindFromKey(v0).Extent() == 1) {
+			edge = TopoDS::Edge(map.FindFromKey(v0).First());
+		} else {
+			Logger::Error("Unable to locate first edge of:", l->Directrix()->entity);
+			return false;
+		}
+
 		double u0, u1;
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
@@ -963,6 +1054,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		}
 	}
 
+	const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
+
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
@@ -971,7 +1064,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	// of directrices encountered, which do not necessarily conform to a surface.
 	{ BRepOffsetAPI_MakePipeShell builder(wire);
 	builder.Add(section1);
-	builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+	if (!is_continuous) {
+		// Only perform round corners on wires that are not c1 continuous
+		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+	}
 	builder.Build();
 	builder.MakeSolid();
 	shape = builder.Shape(); }
@@ -979,7 +1075,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	if (hasInnerRadius) {
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section2);
-		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+		if (!is_continuous) {
+			builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+		}
 		builder.Build();
 		builder.MakeSolid();
 		TopoDS_Shape inner = builder.Shape();

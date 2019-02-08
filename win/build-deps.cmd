@@ -85,6 +85,18 @@ FOR %%i IN (powershell git cmake) DO (
     where.exe %%i 1> NUL 2> NUL || call cecho.cmd 0 12 "Required tool `'%%i`' not installed or not added to PATH" && goto :ErrorAndPrintUsage
 )
 
+:: Check powershell version
+powershell -c "exit $PSVersionTable.PSVersion.Major -lt 5"
+IF NOT %ERRORLEVEL%==0 call cecho.cmd 0 12 "Powershell version 5 or higher required" && goto :ErrorAndPrintUsage
+
+cmake --version | findstr version > temp.txt
+set /p CMAKE_VERSION=<temp.txt
+del temp.txt
+if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
+    echo "CMake v3.11.4 or higher is required"
+    goto :ErrorAndPrintUsage
+)
+
 :: Print build configuration information
 
 call cecho.cmd 0 10 "Script configuration:"
@@ -121,10 +133,10 @@ call :PrintUsage
 call cecho.cmd 0 14 "Warning: You will need roughly 8 GB of disk space to proceed `(VS 2015 x64 RelWithDebInfo`)."
 echo.
 
-call cecho.cmd black cyan "If you are not ready with the above: type n in the prompt below. Build proceeds on all other inputs!"
+call cecho.cmd black cyan "If you are not ready with the above: type `'n`' in the prompt below. Build proceeds on all other inputs!"
 
 set /p do_continue="> "
-if "%do_continue%"==n goto :Finish
+if "%do_continue%"=="n" goto :Finish
 
 :: Cache last used CMake generator for other scripts to use
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
@@ -137,34 +149,32 @@ echo.
 
 cd "%DEPS_DIR%"
 
-:: Note all of the depedencies have approriate label so that user can easily skip something if wanted
+:: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
-set BOOST_VERSION=1.63.0
-:: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
-set DEPENDENCY_NAME=Boost %BOOST_VERSION%
-set DEPENDENCY_DIR="%DEPS_DIR%\boost"
+:: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
+set BOOST_VERSION=1.67.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
-REM set BOOST_ROOT=%DEPS_DIR%\boost
-REM set BOOST_INCLUDEDIR=%DEPS_DIR%\boost
-set BOOST_LIBRARYDIR=%DEPS_DIR%\boost\stage\%VS_PLATFORM%\lib
+:: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
+set DEPENDENCY_NAME=Boost %BOOST_VERSION%
+set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
+set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%VS_PLATFORM%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
 set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
 
-call :DownloadFile http://downloads.sourceforge.net/project/boost/boost/%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\boost"
+call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: Build Boost build script
-if not exist "%DEPS_DIR%\boost\project-config.jam". (
+if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     cd "%DEPS_DIR%"
-    ren boost_%BOOST_VER% boost
-    IF NOT EXIST "%DEPS_DIR%\boost\boost.css" GOTO :Error
-    cd "%DEPS_DIR%\boost"
+    IF NOT EXIST "%DEPENDENCY_DIR%\boost.css" GOTO :Error
+    cd "%DEPENDENCY_DIR%"
     call cecho.cmd 0 13 "Building Boost build script."
     call bootstrap msvc
     IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -172,10 +182,16 @@ if not exist "%DEPS_DIR%\boost\project-config.jam". (
 
 set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
-cd "%DEPS_DIR%\boost"
+cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
-IF EXIST "%DEPS_DIR%\boost\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
-call .\b2 toolset=msvc runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPS_DIR%\boost\bin.v2\project-cache.jam"
+:: BOOST_VC_VER can be empty (or needs to be) for newer VS versions
+set BOOST_VC_VER=
+if %VS_VER% LSS 2017 (
+    set BOOST_VC_VER=-%VC_VER%.0
+)
+
+call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -185,7 +201,7 @@ set DEPENDENCY_DIR=N/A
 set ICU_VER=58.2
 set ICU_ZIP=icu-%ICU_VER%-vs%VS_VER%.7z
 cd "%DEPS_DIR%"
-call :DownloadFile http://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" %ICU_ZIP%
+call :DownloadFile https://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" %ICU_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %ICU_ZIP% "%DEPS_DIR%" "%INSTALL_DIR%\icu"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -238,10 +254,14 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 if %IFCOS_USE_OCCT%==FALSE goto :OCE
 :OCCT
-set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
-set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCCT_VERSION=7.3.0
+SET OCCT_VER=V%OCCT_VERSION:.=_%
+
+set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 echo OCC_INCLUDE_DIR=%OCC_INCLUDE_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
+
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.6.5
@@ -260,52 +280,24 @@ if not %ERRORLEVEL%==0 goto :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error 
 
-set DEPENDENCY_NAME=Open CASCADE 7.1.0
-set OCCT_FILENAME=occt-89aebde
-set DEPENDENCY_DIR=%DEPS_DIR%\%OCCT_FILENAME%
+set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
+set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
 cd "%DEPS_DIR%"
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=snapshot;h=89aebde;sf=tgz" "%DEPS_DIR%" %OCCT_FILENAME%.tar.gz
+call :GitCloneAndCheckoutRevision https://git.dev.opencascade.org/repos/occt.git "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
-
-if exist "%DEPS_DIR%\%OCCT_FILENAME%" (
-    :: TK: I am having a hard time to reinitialize OCCT, because the directory ends up being recreated by a prior cmake step, even if manually deleted.
-    :: Therefore check if the directory contains a full checkout [using a single file as proxy] and delete the directory tree if it is not.
-    if not exist "%DEPS_DIR%\%OCCT_FILENAME%\OCCT_LGPL_EXCEPTION.txt". rd /s/q "%DEPS_DIR%\%OCCT_FILENAME%"
-)
-
-call :ExtractArchive %OCCT_FILENAME%.tar.gz "%DEPS_DIR%" "%DEPENDENCY_DIR%"
-if not %ERRORLEVEL%==0 goto :Error
-call :ExtractArchive %OCCT_FILENAME%.tar "%DEPS_DIR%" "%DEPENDENCY_DIR%"
-if not %ERRORLEVEL%==0 goto :Error
-
-set DEPENDENCY_NAME=Additional files
-:: Somehow these two files are not present in the downloaded
-:: snapshot. Path names being too long for gitweb snapshot?
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.cxx
-if not %ERRORLEVEL%==0 goto :Error
-call :DownloadFile "http://git.dev.opencascade.org/gitweb/?p=occt.git;a=blob_plain;hb=89aebdea8d6f4d15cfc50e9458cd8e2e25022326;f=src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx" "%OCCT_FILENAME%\src\RWStepVisual" RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation.hxx
-if not %ERRORLEVEL%==0 goto :Error
-set DEPENDENCY_NAME=Open CASCADE 7.1.0
 
 :: Patching always blindly would trigger a rebuild each time
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
-    echo Patching %DEPENDENCY_NAME%'s CMake files
-    REM OCCT insists on finding FreeType DLL even if using static FreeType build + define HAVE_NO_DLL
-    copy /y "%~dp0patches\89aebde_CMakeLists.txt" "%DEPENDENCY_DIR%\CMakeLists.txt"
-    REM Patch OCCT to be built against the static MSVC run-time.
-    copy /y "%~dp0patches\89aebde_adm-cmake-occt_defs_flags.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_defs_flags.cmake"
-    REM OCCT tries to deploy PDBs from the bin directory even if static build is used.
-    copy /y "%~dp0patches\89aebde_adm-cmake-occt_toolkit.cmake" "%DEPENDENCY_DIR%\adm\cmake\occt_toolkit.cmake"
-    REM Patch header file for HAVE_NO_DLL
-    copy /y "%~dp0patches\89aebde_Standard_Macro.hxx" "%DEPENDENCY_DIR%\src\Standard\Standard_Macro.hxx"
-    REM NOTE If adding a new patch, adjust the checks above and below accordingly
+    pushd "%DEPENDENCY_DIR%"
+    git apply ""%~dp0patches\%OCCT_VER%.patch"
+    popd
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
 
 cd "%DEPENDENCY_DIR%"
-call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
+call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
     -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
 if not %ERRORLEVEL%==0 goto :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
@@ -319,13 +311,14 @@ set OCCT_VC_VER=%VC_VER%
 IF %OCCT_VC_VER% GTR 14 (
     set OCCT_VC_VER=14
 )
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
-move /y "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
-rmdir /s /q "%INSTALL_DIR%\opencascade\win%ARCH_BITS%\vc%OCCT_VC_VER%"
+move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libi\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\libd\*.*" "%OCC_LIBRARY_DIR%"
+move /y "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%\lib\*.*" "%OCC_LIBRARY_DIR%"
+rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\vc%OCCT_VC_VER%"
 :: Removed unneeded bits
-rmdir /s /q "%INSTALL_DIR%\opencascade\data"
-rmdir /s /q "%INSTALL_DIR%\opencascade\samples"
-del "%INSTALL_DIR%\opencascade\*.bat"
+rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\data"
+rmdir /s /q "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\samples"
+del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 
 goto :Python
 
@@ -396,12 +389,12 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
-set SWIG_VERSION=3.0.7
+set SWIG_VERSION=3.0.12
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile https://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -457,7 +450,7 @@ exit /b %IFCOS_SCRIPT_RET%
 pushd "%2"
 if not exist "%~3". (
     call cecho.cmd 0 13 "Downloading %DEPENDENCY_NAME% into %~2."
-    powershell -Command "$webClient = new-object System.Net.WebClient; $webClient.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials; $webClient.DownloadFile('%1', '%3')"
+    powershell -Command "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; $webClient = new-object System.Net.WebClient; $webClient.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials; $webClient.DownloadFile('%1', '%3')"
     REM Old wget version in case someone has problem with PowerShell: wget --no-check-certificate %1
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already downloaded. Skipping."
@@ -471,7 +464,7 @@ exit /b %RET%
 :ExtractArchive
 if not exist "%~3". (
     call cecho.cmd 0 13 "Extracting %DEPENDENCY_NAME% into %~2."
-    7za x %1 -y -o%2
+    7za x %1 -y -o%2 > nul
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already extracted into %~3. Skipping."
 )
@@ -558,7 +551,7 @@ exit /b %RET%
 :: PrintUsage - Prints usage information
 :PrintUsage
 call "%~dp0\utils\cecho.cmd" 0 10 "Requirements for a successful execution:"
-echo  1. Install PowerShell (preinstalled in Windows ^>= 7) and make sure 'powershell' is accessible from PATH.
+echo  1. Install PowerShell (preinstalled in Windows ^>= 7) version 5 or higher and make sure 'powershell' is accessible from PATH.
 echo   - https://support.microsoft.com/en-us/kb/968929
 echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - https://git-for-windows.github.io/

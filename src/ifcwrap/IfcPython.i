@@ -72,6 +72,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/IfcGeom.h"
 	#include "../ifcgeom/IfcGeomIterator.h"
+	#include "../ifcgeom/IfcGeomTree.h"
 
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
@@ -84,6 +85,9 @@
 
 	#include <BRepTools_ShapeSet.hxx>
 %}
+
+// Create docstrings for generated python code.
+%feature("autodoc", "1");
 
 %include "utils/type_conversion.i"
 

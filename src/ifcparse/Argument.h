@@ -38,10 +38,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
-#include <boost/foreach.hpp>
-
-#define foreach BOOST_FOREACH
-#define rforeach BOOST_REVERSE_FOREACH
 
 class Argument;
 class IfcEntityList;

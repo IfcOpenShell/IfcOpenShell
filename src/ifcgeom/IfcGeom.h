@@ -73,6 +73,23 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #endif
 
 namespace IfcGeom {
+	class IFC_GEOM_API geometry_exception : public std::exception {
+	protected:
+		std::string message;
+	public:
+		geometry_exception(const std::string& m)
+			: message(m) {}
+		virtual ~geometry_exception() throw () {}
+		virtual const char* what() const throw() {
+			return message.c_str();
+		}
+	};
+
+	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
+	public:
+		too_many_faces_exception()
+			: geometry_exception("Too many faces for operation") {}
+	};
 
 class IFC_GEOM_API Cache {
 public:
@@ -139,12 +156,12 @@ public:
 		// Default: 0.001m / 1mm
 		GV_DEFLECTION_TOLERANCE, 
 		// Specifies the tolerance of the wire builder, most notably for trimmed curves
-		// Defailt: 0.0001m / 0.1mm
+		// Default: 0.0001m / 0.1mm
 		GV_WIRE_CREATION_TOLERANCE,
 		// Specifies the minimal area of a face to be included in an IfcConnectedFaceset
 		// Read-only
 		GV_MINIMAL_FACE_AREA,
-		// Specifies the treshold distance under which cartesian points are deemed equal
+		// Specifies the threshold distance under which cartesian points are deemed equal
 		// Default: 0.00001m / 0.01mm
 		GV_POINT_EQUALITY_TOLERANCE,
 		// Specifies maximum number of faces for a shell to be sewed. Sewing shells
@@ -178,7 +195,8 @@ public:
 	bool convert_face(const IfcUtil::IfcBaseClass* L, TopoDS_Shape& result);
 	bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
 	bool convert_openings_fast(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcRepresentationShapeItems& entity_shapes, const gp_Trsf& entity_trsf, IfcRepresentationShapeItems& cut_shapes);
-	
+	void assert_closed_wire(TopoDS_Wire& wire);
+
 	bool convert_layerset(const IfcSchema::IfcProduct*, std::vector<Handle_Geom_Surface>&, std::vector<const SurfaceStyle*>&, std::vector<double>&);
 	bool apply_layerset(const IfcRepresentationShapeItems&, const std::vector<Handle_Geom_Surface>&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
 	bool apply_folded_layerset(const IfcRepresentationShapeItems&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<const SurfaceStyle*>&, IfcRepresentationShapeItems&);
@@ -195,6 +213,8 @@ public:
 	bool boolean_operation(const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 #endif
 
+	bool fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height);
+
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
 	const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
 	const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
@@ -205,7 +225,7 @@ public:
 	bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
 	bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
 	bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen=0.1);
-	int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
+	static int count(const TopoDS_Shape&, TopAbs_ShapeEnum);
 
 	bool find_wall_end_points(const IfcSchema::IfcWall*, gp_Pnt& start, gp_Pnt& end);
 
@@ -230,6 +250,9 @@ public:
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
 	bool flatten_wire(TopoDS_Wire&);
+	bool triangulate_wire(const TopoDS_Wire&, TopTools_ListOfShape&);
+	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
+	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 
 	static double shape_volume(const TopoDS_Shape& s);
 	static double face_area(const TopoDS_Face& f);
@@ -257,6 +280,9 @@ public:
     IfcGeom::BRepElement<P>* create_brep_for_processed_representation(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement<P>*);
 	
+	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
+	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
+	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
 	const SurfaceStyle* get_style(const IfcSchema::IfcRepresentationItem*);
 	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
 	

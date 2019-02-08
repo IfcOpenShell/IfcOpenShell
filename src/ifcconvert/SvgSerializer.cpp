@@ -26,6 +26,9 @@
 #include <algorithm>
 
 #include <gp_Pln.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_Circ.hxx>
+#include <gp_Elips.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopExp_Explorer.hxx>
@@ -36,12 +39,18 @@
 #include <ShapeAnalysis_FreeBounds.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 
+#include <BRepAdaptor_Curve.hxx>
+#include <GCPnts_QuasiUniformDeflection.hxx>
+
 #include <Geom_Curve.hxx>
 #include <Geom_Line.hxx>
+#include <Geom_Plane.hxx>
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
 #include <Standard_Version.hxx>
+#include <GeomAPI.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -65,14 +74,99 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 
 	bool first = true;
 	util::string_buffer path;
-	path.add("            <path style=\"stroke:black; fill:none;\" d=\"");
 	for (TopExp_Explorer edges(wire, TopAbs_EDGE); edges.More(); edges.Next()) {
 		const TopoDS_Edge& edge = TopoDS::Edge(edges.Current());
 
 		double u1, u2;
 		Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, u1, u2);
+		Handle(Geom2d_Curve) curve2d;
+		if (curve.IsNull()) {
+			TopLoc_Location loc;
+			Handle_Geom_Surface surf;
+			
+			BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
+			
+			if (curve2d.IsNull()) {
+				Logger::Error("Failed to obtain 2d and 3d curve from edge");
+				continue;
+			}
 
-		const bool reversed = edge.Orientation() == TopAbs_REVERSED;
+			Handle(Standard_Type) sty = surf->DynamicType();
+			if (sty != STANDARD_TYPE(Geom_Plane)) {
+				Logger::Error("Non-planar p-curves are not supported by this serializer");
+				continue;
+			}
+
+			gp_Pln pln = Handle(Geom_Plane)::DownCast(surf)->Pln();
+			curve = GeomAPI::To3d(curve2d, pln);
+		}
+
+		Handle(Standard_Type) ty = curve->DynamicType();
+        bool conical = (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse));
+        bool closed = ALMOST_THE_SAME(u1 + PI2, u2);
+
+        if (conical && closed) {
+            if (first) {
+                if (ty == STANDARD_TYPE(Geom_Circle)) {
+                    Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
+                    double r = circle->Radius();
+                    gp_Circ c = circle->Circ();
+                    gp_Pnt center = c.Location();
+                    path.add("            <circle style=\"stroke:black; fill:none;\" r=\"");
+                    radii.push_back(path.add(r));
+                    path.add("\" cx=\"");
+                    xcoords.push_back(path.add(center.X()));
+                    path.add("\" cy=\"");
+                    ycoords.push_back(path.add(center.Y()));
+
+                    growBoundingBox(center.X() - r, center.Y() - r);
+                    growBoundingBox(center.X() + r, center.Y() + r);
+
+                    first = false;
+                    continue;
+                } else if (ty == STANDARD_TYPE(Geom_Ellipse)) {
+                    Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
+                    gp_Elips e = ellipse->Elips();
+                    gp_Pnt center = e.Location();
+
+                    // Write the ellipse with major radius along X axis:
+                    path.add("            <ellipse style=\"stroke:black; fill:none;\" rx=\"");
+                    radii.push_back(path.add(e.MajorRadius()));
+                    path.add("\" ry=\"");
+                    radii.push_back(path.add(e.MinorRadius()));
+                    path.add("\" cx=\"");
+                    xcoords.push_back(path.add(center.X()));
+                    path.add("\" cy=\"");
+                    ycoords.push_back(path.add(center.Y()));
+                    path.add("\"");
+
+                    // Rotate it with "transform":
+                    gp_Ax1 major_axis = e.XAxis();
+                    double z_rotation = major_axis.Direction().AngleWithRef(gp_Dir(1., 0., 0.), gp_Dir(0., 0., 1.));
+                    path.add(" transform=\"rotate(");
+                    path.add(z_rotation);
+                    path.add(" ");
+                    path.add(center.X());
+                    path.add(" ");
+                    path.add(center.Y());
+
+                    // Bounding box:
+                    // More important to have all geometry in bounding box than to be minimal
+                    growBoundingBox(center.X() - e.MajorRadius(), center.Y() - e.MajorRadius());
+                    growBoundingBox(center.X() + e.MajorRadius(), center.Y() + e.MajorRadius());
+
+                    first = false;
+                    continue;
+                }
+            } else {
+                std::stringstream ss;
+                ss << "Skipping full circle/ellipse inside aggregated <path> (id "
+                   << p.first << ")";
+                Logger::Warning(ss.str());
+            }
+        }
+
+        const bool reversed = edge.Orientation() == TopAbs_REVERSED;
 
 		gp_Pnt p1, p2;
 		curve->D0(u1, p1);
@@ -83,6 +177,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 		}
 				
 		if (first) {
+            path.add("            <path style=\"stroke:black; fill:none;\" d=\"");
 			path.add("M");
 			addXCoordinate(path.add(p1.X()));
 			path.add(",");
@@ -93,7 +188,6 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 
 		growBoundingBox(p2.X(), p2.Y());
 
-		Handle(Standard_Type) ty = curve->DynamicType();
 
 		if (ty == STANDARD_TYPE(Geom_Circle) || ty == STANDARD_TYPE(Geom_Ellipse)) {
 			Handle(Geom_Conic) conic = Handle(Geom_Conic)::DownCast(curve);
@@ -108,15 +202,22 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 				// the direction is reversed.
 				positive_direction = !positive_direction;
 			}
-					
+
+			gp_Pnt center;
 			if (ty == STANDARD_TYPE(Geom_Circle)) {
 				Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(curve);
 				r1 = r2 = circle->Radius();
+				center = circle->Location();
 			} else {
 				Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(curve);
 				r1 = ellipse->MajorRadius();
 				r2 = ellipse->MinorRadius();
+				center = ellipse->Location();
 			}
+
+			// Make sure the arc segment is entirely inside bounding box:
+			growBoundingBox(center.X() - r1, center.Y() - r1);
+			growBoundingBox(center.X() + r1, center.Y() + r1);
 					
 			// Calculate the angle between 2d vecs to have signed result
 			const gp_Dir& d = conic->Position().XDirection();
@@ -144,6 +245,19 @@ void SvgSerializer::write(path_object& p, const TopoDS_Wire& wire) {
 			xcoords.push_back(path.add(p2.X()));
 			path.add(",");
 			ycoords.push_back(path.add(p2.Y()));
+		} else if (ty != STANDARD_TYPE(Geom_Line)) {
+			BRepAdaptor_Curve crv(edge);
+			GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
+			// NB: Start at 2: 1-based and skip the first point, assume it coincides with p1.
+			for (int i = 2; i <= tessellater.NbPoints(); ++i) {
+				gp_Pnt pi = tessellater.Value(i);
+				path.add(" L");
+				xcoords.push_back(path.add(pi.X()));
+				path.add(",");
+				ycoords.push_back(path.add(pi.Y()));
+
+				growBoundingBox(pi.X(), pi.Y());
+			}
 		} else {
 			// Either a Geom_Line or something unimplemented,
 			// drawn as a straight line segment.
@@ -168,7 +282,8 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcSchema::IfcBuildingStor
 
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
-	IfcSchema::IfcBuildingStorey* storey = 0;
+	IfcSchema::IfcBuildingStorey* storey = storey_;
+	boost::optional<double> storey_elevation = boost::none;
 	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
 
 #ifndef USE_IFC4
@@ -177,7 +292,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 	typedef IfcSchema::IfcRelAggregates decomposition_element;
 #endif
 
-	for (;;) {
+	for (; storey == 0;) {
 		// Iterate over the decomposing element to find the parent IfcBuildingStorey
 		decomposition_element::list::ptr decomposes = obdef->Decomposes();
 		if (!decomposes->size()) {
@@ -205,11 +320,16 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}
 		if (obdef->is(IfcSchema::Type::IfcBuildingStorey)) {
 			storey = static_cast<IfcSchema::IfcBuildingStorey*>(obdef);
+			if (storey->hasElevation()) {
+				const IfcGeom::ElementSettings& settings = o->geometry().settings();
+				storey_elevation = storey->Elevation() * settings.unit_magnitude();
+			}
 			break;
 		}
 	}
 
-	if (!storey) return;
+	// With a global section height, building storeys are not a requirement.
+	if (!storey && !section_height) return;
 
 	path_object& p = start_path(storey, nameElement(o));
 
@@ -232,16 +352,27 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			if (pnt.Z() < zmin) { zmin = pnt.Z(); }
 			if (pnt.Z() > zmax) { zmax = pnt.Z(); }
 		}}
-
+		
+		// Empty geometry, no vertices encountered
+		if (zmin == inf) continue;
+		
+		// Determine slicing plane z coordinate, priority:
+		// 1) explicitly set global section height
+		// 2) containing building storey elevation + 1m
+		// 3) zmin (from geometry bounding box) + 1m
+		double cut_z;
 		if (section_height) {
-			if (zmin > section_height || zmax < section_height) continue;
+			cut_z = section_height.get();
+		} else if (storey_elevation && !(zmin > *storey_elevation || zmax < *storey_elevation)) {
+			cut_z = storey_elevation.get() + 1.;
 		} else {
-			if (zmin == inf || (zmax - zmin) < 1.) continue;
+			cut_z = zmin + 1.;
 		}
 
-		const double cut_z = section_height.get_value_or(zmin + 1.);
+		// No intersection with bounding box, fail early
+		if (zmin > cut_z || zmax < cut_z) continue;
 
-		// Create a horizontal cross section 1 meter above the bottom point of the shape		
+		// Evaluate cross section geometry
 		TopoDS_Shape result = BRepAlgoAPI_Section(moved_shape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
 
 		Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
@@ -321,7 +452,9 @@ void SvgSerializer::finalize() {
 		first = false;
 	}
 	
-	svg_file << "    </g>\n";
+	if (!first) {
+		svg_file << "    </g>\n";
+	}
 	svg_file << "</svg>" << std::endl;
 }
 
@@ -333,16 +466,62 @@ std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
 {
 	std::ostringstream oss;
 	const std::string type = "product";
-    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
-        ? elem->guid() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
-        ? elem->name() : elem->unique_id()));
+    const std::string name = object_id(elem);
 	oss << "id=\"" << type << "-" << name<< "\"";
 	return oss.str();
 }
 
 std::string SvgSerializer::nameElement(const IfcSchema::IfcProduct* elem) {
+	if (elem == 0) { return ""; }
 	std::ostringstream oss;
 	const std::string type = elem->is(IfcSchema::Type::IfcBuildingStorey) ? "storey" : "product";
-	oss << "id=\"product-" << IfcParse::IfcGlobalId(elem->GlobalId()).formatted() << "\"";
+    const std::string name = (settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+	  ? elem->GlobalId() : (settings().get(SerializerSettings::USE_ELEMENT_NAMES)
+	  ? elem->Name() : IfcParse::IfcGlobalId(elem->GlobalId()).formatted()));
+
+	oss << "id=\"" << type << "-" << name << "\"";
 	return oss.str();
+}
+
+void SvgSerializer::setFile(IfcParse::IfcFile* f) {
+	file = f;
+	IfcSchema::IfcBuildingStorey::list::ptr storeys = f->entitiesByType<IfcSchema::IfcBuildingStorey>();
+	if (!storeys || storeys->size() == 0) {
+		
+		IfcGeom::Kernel kernel;
+		
+		IfcSchema::IfcProject::list::ptr projects = f->entitiesByType<IfcSchema::IfcProject>();
+		if (projects->size() == 1) {
+			IfcSchema::IfcProject* project = *projects->begin();
+			std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
+		} else {
+			Logger::Error("No single project encountered, output might be invalid or missing");
+			return;
+		}
+		
+		std::vector<IfcSchema::Type::Enum> to_derive_from;
+		to_derive_from.push_back(IfcSchema::Type::IfcBuilding);
+		to_derive_from.push_back(IfcSchema::Type::IfcSite);
+		std::vector<IfcSchema::Type::Enum>::const_iterator it;
+		for (it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
+			IfcEntityList::ptr untyped = f->entitiesByType(*it);
+			if (untyped) {
+				IfcSchema::IfcProduct::list::ptr insts = untyped->as<IfcSchema::IfcProduct>();
+				IfcSchema::IfcProduct::list::it jt;
+				for (jt = insts->begin(); jt != insts->end(); ++jt) {
+					IfcSchema::IfcProduct* product = *jt;
+					if (product->hasObjectPlacement()) {
+						gp_Trsf trsf;
+						if (kernel.convert(product->ObjectPlacement(), trsf)) {
+							setSectionHeight(trsf.TranslationPart().Z() + 1.);
+							Logger::Warning("No building storeys encountered, used for reference:", product->entity);
+							return;
+						}
+					}
+				}
+			}
+		}
+
+		Logger::Error("No building storeys encountered, output might be invalid or missing");
+	}
 }

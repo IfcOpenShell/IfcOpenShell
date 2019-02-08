@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import os
@@ -5,11 +7,11 @@ import sys
 import logging
 
 from code import InteractiveConsole
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 try:
-    from PyQt4 import QtWidgets
-except:
+    from PyQt5 import QtWidgets
+except BaseException:
     QtWidgets = QtGui
 
 try:
@@ -22,32 +24,31 @@ try:
     from pyqode.python.backend import server
     from pyqode.python import modes as pymodes, panels as pypanels, widgets
     from pyqode.python.widgets import PyInteractiveConsole
+
     has_pyqode = True
-except:
+except BaseException:
     has_pyqode = False
     CodeEdit = QtWidgets.QPlainTextEdit
-    
-    
-class StdoutRedirector(object):
 
-    '''A class for redirecting stdout to this Text widget.'''
+
+class StdoutRedirector(object):
+    """A class for redirecting stdout to this Text widget."""
 
     def __init__(self, widget):
-       self.widget=widget
-       self.isError = False
+        self.widget = widget
+        self.isError = False
 
-    def write(self,str):
+    def write(self, myStr):
         self.widget.moveCursor(QtGui.QTextCursor.End)
         if self.isError:
             self.widget.setTextColor(QtCore.Qt.red)
         else:
             self.widget.setTextColor(QtCore.Qt.white)
-        self.widget.insertPlainText(str)
+        self.widget.insertPlainText(myStr)
         self.widget.moveCursor(QtGui.QTextCursor.End)
 
 
-class code_edit(QtGui.QWidget):
-
+class code_edit(QtWidgets.QWidget):
     class Console(InteractiveConsole):
         def __init__(*args):
             InteractiveConsole.__init__(*args)
@@ -58,37 +59,34 @@ class code_edit(QtGui.QWidget):
     def runCode(self):
         sys.stdout = StdoutRedirector(self.output)
         sys.stderr = StdoutRedirector(self.output)
-        sys.stderr.isError=True
+        sys.stderr.isError = True
 
         if not self.model:
             print("please load a model first", file=sys.stderr)
         else:
             self.c.enter(str(self.editor.toPlainText()))
-            
+
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-    def select(self,product):
-        self.c = self.Console({'model':self.model, 'viewer':self.viewer, 'selection':product})
+    def select(self, product):
+        self.c = self.Console({'model': self.model, 'viewer': self.viewer, 'selection': product})
 
-    def __init__(self,viewer,snippets=None):
-    
-        self.model=None
+    def __init__(self, viewer, snippets=None):
+        self.model = None
         self.viewer = viewer
-        QtGui.QWidget.__init__(self)
-        self.layout= QtGui.QVBoxLayout(self)
+        QtWidgets.QWidget.__init__(self)
+        self.layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(self.layout)
         self.c = None
-        
-        self.tools = QtGui.QHBoxLayout(self)
+        self.tools = QtWidgets.QHBoxLayout(self)
         self.layout.addLayout(self.tools)
-        
-        self.runbutton = QtGui.QPushButton("Run")
+        self.runbutton = QtWidgets.QPushButton("Run")
         width = self.runbutton.fontMetrics().boundingRect("Run").width() + 20
         self.runbutton.setMaximumWidth(width)
         self.tools.addWidget(self.runbutton)
         self.runbutton.clicked.connect(self.runCode)
-        
+
         editor = CodeEdit()
         if has_pyqode:
             editor.backend.start(server.__file__)
@@ -128,11 +126,10 @@ class code_edit(QtGui.QWidget):
             for snip_name in self.snippets.keys():
                 self.list.addItem(snip_name)
             self.tools.addWidget(self.list)
-            QtCore.QObject.connect(self.list, QtCore.SIGNAL("currentIndexChanged(int)"), self.replace_snippet)
+            self.list.currentIndexChanged[int].connect(self.replace_snippet)
 
         self.layout.addWidget(self.editor)
-
-        self.output = QtGui.QTextEdit()
+        self.output = QtWidgets.QTextEdit()
         self.output.setReadOnly(True)
         self.output.setStyleSheet('font-size: 10pt; font-family: Consolas, Courier; background-color: #444;')
         self.layout.addWidget(self.output)
@@ -148,5 +145,5 @@ class code_edit(QtGui.QWidget):
         output = []
         sys.stdout = StdoutRedirector(self.output)
         self.model = f
-        self.c = self.Console({'model':self.model, 'selection':None, 'viewer':self.viewer})
+        self.c = self.Console({'model': self.model, 'selection': None, 'viewer': self.viewer})
         sys.stdout = sys.__stdout__

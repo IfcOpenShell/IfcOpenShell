@@ -21,5 +21,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import occ_utils as utils
-from .main import *
+from . import ifcopenshell_wrapper
+
+version = ifcopenshell_wrapper.version()
+schema_identifier = ifcopenshell_wrapper.schema_identifier()
+get_supertype = ifcopenshell_wrapper.get_supertype
+get_log = ifcopenshell_wrapper.get_log

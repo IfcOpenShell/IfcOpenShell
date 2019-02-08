@@ -158,15 +158,38 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcVector* l, gp_Vec& v) {
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcAxis2Placement3D* l, gp_Trsf& trsf) {
-	IN_CACHE(IfcAxis2Placement3D,l,gp_Trsf,trsf)
-	gp_Pnt o;gp_Dir axis = gp_Dir(0,0,1);gp_Dir refDirection;
-	IfcGeom::Kernel::convert(l->Location(),o);
-	bool hasRef = l->hasRefDirection();
-	if ( l->hasAxis() ) IfcGeom::Kernel::convert(l->Axis(),axis);
-	if ( hasRef ) IfcGeom::Kernel::convert(l->RefDirection(),refDirection);
-	gp_Ax3 ax3;
-	if ( hasRef ) ax3 = gp_Ax3(o,axis,refDirection);
-	else ax3 = gp_Ax3(o,axis);
+	IN_CACHE(IfcAxis2Placement3D, l, gp_Trsf, trsf)
+
+	gp_Pnt o;
+	gp_Dir axis(0, 0, 1);
+	gp_Dir refDirection;
+
+	IfcGeom::Kernel::convert(l->Location(), o);
+	const bool hasAxis = l->hasAxis();
+	const bool hasRef = l->hasRefDirection();
+
+	if (hasAxis != hasRef) {
+		Logger::Warning("Axis and RefDirection should be specified together", l->entity);
+	}
+
+	if (hasAxis) {
+		IfcGeom::Kernel::convert(l->Axis(), axis);
+	}
+
+	if (hasRef) {
+		IfcGeom::Kernel::convert(l->RefDirection(), refDirection);
+	} else {
+		if (!axis.IsParallel(gp::DX(), 1.e-5)) {
+			refDirection = gp::DX();
+		} else {
+			refDirection = gp::DZ();
+		}
+		gp_Vec Xvec = axis.Dot(refDirection) * axis;
+		gp_Vec Xaxis = refDirection.XYZ() - Xvec.XYZ();
+		refDirection = Xaxis;
+	}
+
+	gp_Ax3 ax3(o, axis, refDirection);
 
 	if (!axis_equal(ax3, (gp_Ax3) gp::XOY(), getValue(GV_PRECISION))) {
 		trsf.SetTransformation(ax3, gp::XOY());

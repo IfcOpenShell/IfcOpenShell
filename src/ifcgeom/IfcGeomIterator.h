@@ -116,6 +116,9 @@ namespace IfcGeom {
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
+
+        IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
+
 		int done;
 		int total;
 
@@ -142,6 +145,8 @@ namespace IfcGeom {
 				std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 				unit_name = length_unit.first;
 				unit_magnitude = length_unit.second;
+			} else {
+				Logger::Error("A single IfcProject is expected (encountered " + boost::lexical_cast<std::string>(projects->size()) + "); unable to read unit information.");
 			}
 		}
 
@@ -150,8 +155,8 @@ namespace IfcGeom {
         Iterator(const IteratorSettings& settings, IfcParse::IfcFile* file, std::vector<IfcGeom::filter_t>& filters)
             : settings(settings)
             , ifc_file(file)
-            , owns_ifc_file(false)
             , filters_(filters)
+			, owns_ifc_file(false)
         {
             _initialize();
         }
@@ -187,6 +192,7 @@ namespace IfcGeom {
 			bool any_precision_encountered = false;
 
 			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
+            ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
 
 			IfcSchema::IfcGeometricRepresentationContext::list::it it;
 			IfcSchema::IfcGeometricRepresentationSubContext::list::it jt;
@@ -267,9 +273,14 @@ namespace IfcGeom {
 			}
 
             if (representations->size() == 0) {
-                Logger::Message(Logger::LOG_ERROR, "No geometries found");
-                return false;
+                Logger::Message(Logger::LOG_ERROR, "No representations encountered in relevant contexts, using all");
+				representations = ifc_file->entitiesByType<IfcSchema::IfcRepresentation>();
             }
+
+			if (representations->size() == 0) {
+				Logger::Message(Logger::LOG_ERROR, "No representations encountered, aborting");
+				return false;
+			}
 
 			representation_iterator = representations->begin();
 			ifcproducts.reset();
@@ -281,6 +292,13 @@ namespace IfcGeom {
 			done = 0;
 			total = representations->size();
 
+			return true;
+		}
+
+        /// Computes model's bounding box (bounds_min and bounds_max).
+        /// @note Can take several minutes for large files.
+        void compute_bounds()
+        {
             for (int i = 1; i < 4; ++i) {
                 bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
                 bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
@@ -290,21 +308,21 @@ namespace IfcGeom {
             for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
                 IfcSchema::IfcProduct* product = *iter;
                 if (product->hasObjectPlacement()) {
-					// Use a fresh trsf every time in order to prevent the result to be concatenated
+                    // Use a fresh trsf every time in order to prevent the result to be concatenated
                     gp_Trsf trsf; 
-					bool success = false;
-					
-					try {
-						success = kernel.convert(product->ObjectPlacement(), trsf);
-					} catch (const std::exception& e) {
-						Logger::Error(e);
-					} catch (...) {
-						Logger::Error("Failed to construct placement");
-					}
-					
-					if (!success) {
-						continue;
-					}
+                    bool success = false;
+
+                    try {
+                        success = kernel.convert(product->ObjectPlacement(), trsf);
+                    } catch (const std::exception& e) {
+                        Logger::Error(e);
+                    } catch (...) {
+                        Logger::Error("Failed to construct placement");
+                    }
+
+                    if (!success) {
+                        continue;
+                    }
 
                     const gp_XYZ& pos = trsf.TranslationPart();
                     bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
@@ -315,9 +333,7 @@ namespace IfcGeom {
                     bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
                 }
             }
-
-			return true;
-		}
+        }
 
 		int progress() const { return 100 * done / total; }
 
@@ -340,7 +356,7 @@ namespace IfcGeom {
 		// Move to the next IfcRepresentation
 		void _nextShape() {
 			// In order to conserve memory and reduce cache insertion times, the cache is
-			// cleared after an arbitary number of processed representations. This has been
+			// cleared after an arbitrary number of processed representations. This has been
 			// benchmarked extensively: https://github.com/IfcOpenShell/IfcOpenShell/pull/47
 			static const int clear_interval = 64;
 			if (done % clear_interval == clear_interval - 1) {
@@ -351,166 +367,103 @@ namespace IfcGeom {
 			++ done;
 		}
 
-		std::set<IfcSchema::IfcRepresentation*> mapped_representations_processed;
-
 		bool geometry_reuse_ok_for_current_representation_;
+
+		bool reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
+			// With world coords enabled, object transformations are directly applied to
+			// the BRep. There is no way to re-use the geometry for multiple products.
+			if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
+				return false;
+			}
+
+			std::set<const IfcSchema::IfcMaterial*> associated_single_materials;
+
+			for (IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it) {
+				IfcSchema::IfcProduct* product = *it;
+
+				if (!settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && kernel.find_openings(product)->size()) {
+					return false;
+				}
+
+				if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
+					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
+					for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
+						IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
+						if (assoc) {
+							if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
+								// TODO: Check whether single layer? 
+								return false;
+							}
+						}
+					}
+				}
+
+				// Note that this can be a nullptr (!), but the fact that set size should be one still holds
+				associated_single_materials.insert(kernel.get_single_material_association(product));
+                if (associated_single_materials.size() > 1) return false;
+			}
+
+			return associated_single_materials.size() == 1;
+		}
 
 		BRepElement<P>* create_shape_model_for_next_entity() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
-				// Have we reached the end of our list of representations?
 				if ( representation_iterator == representations->end() ) {
 					representations.reset();
-					return 0;
+					return 0; // reached the end of our list of representations
 				}
 				representation = *representation_iterator;
 
-				// Has the list of IfcProducts for this representation been initialized?
 				if (!ifcproducts) {
-					
+					// Init. the list of filtered IfcProducts for this representation
 					ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
-					IfcSchema::IfcProduct::list::ptr unfiltered_products(new IfcSchema::IfcProduct::list);
-
-					{
-						IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
-
-						for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
-							if ((*it)->is(IfcSchema::Type::IfcProductDefinitionShape)) {
-								IfcSchema::IfcProductDefinitionShape* pds = (IfcSchema::IfcProductDefinitionShape*)*it;
-								unfiltered_products->push(pds->ShapeOfProduct());
-							}
-							else {
-								// http://buildingsmart-tech.org/ifc/IFC2x3/TC1/html/ifcrepresentationresource/lexical/ifcproductrepresentation.htm
-								// IFC2x Edition 3 NOTE  Users should not instantiate the entity IfcProductRepresentation from IFC2x Edition 3 onwards. 
-								// It will be changed into an ABSTRACT supertype in future releases of IFC.
-
-								// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
-								// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-								unfiltered_products->push((*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>());
-							}
-						}
-					}
-
-					bool has_openings = false;
-					bool has_layers = false;
-
-					for (IfcSchema::IfcProduct::list::it it = unfiltered_products->begin(); it != unfiltered_products->end(); ++it) {
-						if (kernel.find_openings(*it)->size()) {
-							has_openings = true;
-						}
-						IfcSchema::IfcRelAssociates::list::ptr associations = (*it)->HasAssociations();
-						for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
-							IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
-							if (assoc) {
-								if (assoc->RelatingMaterial()->is(IfcSchema::Type::IfcMaterialLayerSetUsage)) {
-									has_layers = true;
-								}
-							}
-						}
-					}
-					
-					// With world coords enabled, object transformations are directly applied to
-					// the BRep. There is no way to re-use the geometry for multiple products.
-					geometry_reuse_ok_for_current_representation_ = !settings.get(IteratorSettings::USE_WORLD_COORDS) &&
-						(!has_openings || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) &&
-						(!has_layers || !settings.get(IteratorSettings::APPLY_LAYERSETS));
-					bool representation_processed_as_mapped_item = false;
-
-					IfcSchema::IfcRepresentation* representation_mapped_to = 0;
-					
-					if (geometry_reuse_ok_for_current_representation_) {
-						IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
-						if (items->size() == 1) {
-							IfcSchema::IfcRepresentationItem* item = *items->begin();
-							if (item->is(IfcSchema::Type::IfcMappedItem)) {
-								if (item->StyledByItem()->size() == 0) {
-									IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-									if (kernel.is_identity_transform(mapped_item->MappingTarget())) {
-										IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
-										if (kernel.is_identity_transform(map->MappingOrigin())) {
-											representation_mapped_to = map->MappedRepresentation();
-											IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation_mapped_to->OfProductRepresentation();
-
-											bool all_product_without_openings = true;
-											IfcSchema::IfcProduct::list::ptr products;
-
-											for (IfcSchema::IfcProductRepresentation::list::it it = prodreps->begin(); it != prodreps->end(); ++it) {
-												IfcSchema::IfcProduct::list::ptr products_of_prodrep = (*it)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
-												products->push(products_of_prodrep);
-												for (IfcSchema::IfcProduct::list::it jt = products_of_prodrep->begin(); jt != products_of_prodrep->end(); ++jt) {
-													if (kernel.find_openings(*jt)->size() > 0 && !settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
-														all_product_without_openings = false;
-														break;
-													}
-												}
-											}
-
-											if (all_product_without_openings) {
-												representation_processed_as_mapped_item = true;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-
-					if (representation_mapped_to) {
-						if (mapped_representations_processed.find(representation_mapped_to) != mapped_representations_processed.end()) {
-							_nextShape();
-							continue;
-						}
-
-						mapped_representations_processed.insert(representation_mapped_to);
-					}
-
-					if (representation_processed_as_mapped_item) {
-						_nextShape();
-						continue;
-					}
-
-					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
-					
-					if (geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
-						IfcSchema::IfcRepresentationMap* map = *maps->begin();
-						if (kernel.is_identity_transform(map->MappingOrigin())) {
-							IfcSchema::IfcMappedItem::list::ptr items = map->MapUsage();
-							for (IfcSchema::IfcMappedItem::list::it it = items->begin(); it != items->end(); ++it) {
-								IfcSchema::IfcMappedItem* item = *it;
-								if (item->StyledByItem()->size() != 0) continue;
-								
-								if (!kernel.is_identity_transform(item->MappingTarget())) {
-									continue;
-								}
-
-								IfcSchema::IfcRepresentation::list::ptr reps = item->entity->getInverse(IfcSchema::Type::IfcRepresentation, -1)->as<IfcSchema::IfcRepresentation>();
-								for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
-									IfcSchema::IfcRepresentation* rep = *jt;
-									if (rep->Items()->size() != 1) continue;
-									IfcSchema::IfcProductRepresentation::list::ptr prodreps = rep->OfProductRepresentation();
-									for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps->begin(); kt != prodreps->end(); ++kt) {
-										IfcSchema::IfcProduct::list::ptr prods = (*kt)->entity->getInverse(IfcSchema::Type::IfcProduct, -1)->as<IfcSchema::IfcProduct>();
-										for (IfcSchema::IfcProduct::list::it lt = prods->begin(); lt != prods->end(); ++lt) {
-											if (kernel.find_openings(*lt)->size() == 0 || settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS)) {
-                                                if (!unfiltered_products->contains(*lt)) {
-                                                    unfiltered_products->push(*lt);
-                                                }
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-
-                    // Filter the products based on the set of entities and/or names being included or excluded for processing.
+					IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel.products_represented_by(representation);
+                    // Include only the desired products for processing.
                     for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt) {
                         IfcSchema::IfcProduct* prod = *jt;
                         if (boost::all(filters_, filter_match(prod))) {
                             ifcproducts->push(prod);
                         }
                     }
+
+                    if (ifcproducts->size() == 0) {
+                        _nextShape();
+                        continue;
+                    }
+
+                    geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
+
+					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+
+					if (!geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
+						// unfiltered_products contains products represented by this representation by means of mapped items.
+						// For example because of openings applied to products, reuse might not be acceptable and then the
+						// products will be processed by means of their immediate representation and not the mapped representation.
+
+						// IfcRepresentationMaps are also used for IfcTypeProducts, so an additional check is performed whether the map
+						// is indeed used by IfcMappedItems.
+						IfcSchema::IfcRepresentationMap* map = *maps->begin();
+						if (map->MapUsage()->size() > 0) {
+							_nextShape();
+							continue;
+						}
+					}
+
+					// Check if this represenation has (or will be) processed as part its mapped representation
+					bool representation_processed_as_mapped_item = false;
+                    IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
+					if (representation_mapped_to) {
+                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ ||
+                            ok_mapped_representations->contains(representation_mapped_to);
+					}
+
+					if (representation_processed_as_mapped_item) {
+                        ok_mapped_representations->push(representation_mapped_to);
+						_nextShape();
+						continue;
+					}
 
 					ifcproduct_iterator = ifcproducts->begin();
 				}
@@ -522,7 +475,6 @@ namespace IfcGeom {
 				}
 
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
-
                 Logger::SetProduct(product);
 
 				BRepElement<P>* element;
@@ -604,7 +556,7 @@ namespace IfcGeom {
 
 					// get the parent 
 					try {
-						parent_object = getObject(parent_object->parent_id());
+						parent_object = getObject(ret->parent_id());
 					} catch (const std::exception& e) {
 						Logger::Error(e);
 						hasParent = false;
@@ -614,7 +566,7 @@ namespace IfcGeom {
 					if (hasParent) parents.insert(parents.begin(), parent_object);
 					
 					// We need to find all the parents
-					while (parent_object != NULL && hasParent)
+					while (parent_object != NULL && hasParent && parent_object->parent_id() != -1)
 					{
 						// Find the next parent
 						try {
@@ -650,14 +602,19 @@ namespace IfcGeom {
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
             IfcSchema::IfcProduct* ifc_product = 0;
+
 			try {
-				const IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
+				IfcUtil::IfcBaseClass* ifc_entity = ifc_file->entityById(id);
 				instance_type = IfcSchema::Type::ToString(ifc_entity->type());
-				if ( ifc_entity->is(IfcSchema::Type::IfcProduct) ) {
-					ifc_product = (IfcSchema::IfcProduct*)ifc_entity;
-					product_guid = ifc_product->GlobalId();
-					product_name = ifc_product->hasName() ? ifc_product->Name() : "";
-					
+
+				if (ifc_entity->is(IfcSchema::Type::IfcRoot)) {
+					IfcSchema::IfcRoot* ifc_root = ifc_entity->as<IfcSchema::IfcRoot>();
+					product_guid = ifc_root->GlobalId();
+					product_name = ifc_root->hasName() ? ifc_root->Name() : "";
+				}
+
+				if (ifc_entity->is(IfcSchema::Type::IfcProduct)) {
+					ifc_product = ifc_entity->as<IfcSchema::IfcProduct>();
 					parent_id = -1;
 					try {
 						IfcSchema::IfcObjectDefinition* parent_object = kernel.get_decomposing_entity(ifc_product);
@@ -755,7 +712,12 @@ namespace IfcGeom {
             kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IteratorSettings::SEW_SHELLS) ? 1000 : -1);
             kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
-			if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
+			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {
+				if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
+					Logger::Message(Logger::LOG_WARNING, "building-local-placement takes precedence over site-local-placement");
+				}
+				kernel.set_conversion_placement_rel_to(IfcSchema::Type::IfcBuilding);
+			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 				kernel.set_conversion_placement_rel_to(IfcSchema::Type::IfcSite);
 			}
 		}

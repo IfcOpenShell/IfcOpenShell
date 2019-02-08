@@ -20,6 +20,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/version.hpp>
+#include <boost/foreach.hpp>
 
 #include "XmlSerializer.h"
 
@@ -134,6 +135,12 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance->getArgumentCount();
 	for (unsigned i = 0; i < n; ++i) {
+		try {
+		    instance->getArgument(i);
+		} catch (const std::exception&) {
+		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance->entity);
+		    break;
+		}		
 		const Argument* argument = instance->getArgument(i);
 		if (argument->isNull()) continue;
 
@@ -258,6 +265,9 @@ ptree& descend(IfcObjectDefinition* product, ptree& tree) {
 			if (pset->is(Type::IfcPropertySet)) {
 				format_entity_instance(pset, child, true);
 			}
+			if (pset->is(Type::IfcElementQuantity)) {
+				format_entity_instance(pset, child, true);
+			}
 		}
 
 #ifdef USE_IFC4
@@ -314,6 +324,18 @@ void format_properties(IfcProperty::list::ptr properties, ptree& node) {
 	}
 }
 
+// Format IfcElementQuantity instances and insert into the DOM.
+void format_quantities(IfcPhysicalQuantity::list::ptr quantities, ptree& node) {
+	for (IfcPhysicalQuantity::list::it it = quantities->begin(); it != quantities->end(); ++it) {
+		IfcPhysicalQuantity* p = *it;
+		ptree& node2 = format_entity_instance(p, node);
+		if (p->is(Type::IfcPhysicalComplexQuantity)) {
+			IfcPhysicalComplexQuantity* complex = (IfcPhysicalComplexQuantity*)p;
+			format_quantities(complex->HasQuantities(), node2);
+		}
+	}
+}
+
 } // ~unnamed namespace
 
 void XmlSerializer::finalize() {
@@ -326,28 +348,70 @@ void XmlSerializer::finalize() {
 	}
 	IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, types, layers, materials;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials;
 	
 	// Write the SPF header as XML nodes.
-	foreach(const std::string& s, file->header().file_description().description()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().author()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_name().organization()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	foreach(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
-	header.put("file_description.implementation_level", file->header().file_description().implementation_level());
-	header.put("file_name.name",                        file->header().file_name().name());
-	header.put("file_name.time_stamp",                  file->header().file_name().time_stamp());
-	header.put("file_name.preprocessor_version",        file->header().file_name().preprocessor_version());
-	header.put("file_name.originating_system",          file->header().file_name().originating_system());
-	header.put("file_name.authorization",               file->header().file_name().authorization());
-	
+	try {
+		header.put("file_description.implementation_level", file->header().file_description().implementation_level());
+	}
+	catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to get ifc file header file_description implementation_level, error: '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+	try {
+		header.put("file_name.name", file->header().file_name().name());
+	}
+	catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to get ifc file header file_name name, error: '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+    try {
+        header.put("file_name.time_stamp", file->header().file_name().time_stamp());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name time_stamp, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+    try {
+        header.put("file_name.preprocessor_version", file->header().file_name().preprocessor_version());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name preprocessor_version, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+    try {
+        header.put("file_name.originating_system", file->header().file_name().originating_system());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name originating_system, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+    try {
+        header.put("file_name.authorization", file->header().file_name().authorization());
+    }
+    catch (const IfcParse::IfcException& ex) {
+        std::stringstream ss;
+        ss << "Failed to get ifc file header file_name authorization, error: '" << ex.what() << "'";
+        Logger::Message(Logger::LOG_ERROR, ss.str());
+    }
+
 	// Descend into the decomposition structure of the IFC file.
 	descend(project, decomposition);
 
@@ -358,6 +422,15 @@ void XmlSerializer::finalize() {
 		ptree& node = format_entity_instance(pset, properties);
 		format_properties(pset->HasProperties(), node);
 	}
+	
+	// Write all quantities and values as XML nodes.
+	IfcElementQuantity::list::ptr qtosets = file->entitiesByType<IfcElementQuantity>();
+	for (IfcElementQuantity::list::it it = qtosets->begin(); it != qtosets->end(); ++it) {
+		IfcElementQuantity* qto = *it;
+		ptree& node = format_entity_instance(qto, quantities);
+		format_quantities(qto->Quantities(), node);
+	}
+
 
 	// Write all type objects as XML nodes.
 	IfcTypeObject::list::ptr type_objects = file->entitiesByType<IfcTypeObject>();
@@ -391,7 +464,7 @@ void XmlSerializer::finalize() {
 
     // Layer assignments. IfcPresentationLayerAssignments don't have GUIDs (only optional Identifier)
     // so use names as the IDs and only insert those with unique names. In case of possible duplicate names/IDs
-    // the first IfcPresentationLayerAssignment occurence takes precedence.
+    // the first IfcPresentationLayerAssignment occurrence takes precedence.
     std::set<std::string> layer_names;
     IfcPresentationLayerAssignment::list::ptr layer_assignments = file->entitiesByType<IfcPresentationLayerAssignment>();
     for (IfcPresentationLayerAssignment::list::it it = layer_assignments->begin(); it != layer_assignments->end(); ++it) {
@@ -412,8 +485,11 @@ void XmlSerializer::finalize() {
 			emitted_materials.insert(mat);
 			ptree node;
 			node.put("<xmlattr>.id", qualify_unrooted_instance(mat));
-			if (mat->as<IfcMaterialLayerSetUsage>()) {
-				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
+			if (mat->as<IfcMaterialLayerSetUsage>() || mat->as<IfcMaterialLayerSet>()) {				
+				IfcMaterialLayerSet* layerset = mat->as<IfcMaterialLayerSet>();
+				if (!layerset) {
+					layerset = mat->as<IfcMaterialLayerSetUsage>()->ForLayerSet();
+				}				
 				if (layerset->hasLayerSetName()) {
 					node.put("<xmlattr>.LayerSetName", layerset->LayerSetName());
 				}
@@ -439,8 +515,9 @@ void XmlSerializer::finalize() {
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.properties",    properties);
+	root.add_child("ifc.quantities",    quantities);
 	root.add_child("ifc.types",         types);
-    root.add_child("ifc.layers",        layers);
+    	root.add_child("ifc.layers",        layers);
 	root.add_child("ifc.materials",     materials);
 	root.add_child("ifc.decomposition", decomposition);
 

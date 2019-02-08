@@ -17,9 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
+#include <boost/optional/optional.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
 #include <map>
 
 #include "IfcGeom.h"
+
+namespace pt = boost::property_tree;
 
 bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
 	if (colour != 0) {
@@ -125,7 +131,8 @@ const IfcGeom::SurfaceStyle* IfcGeom::Kernel::get_style(const IfcSchema::IfcMate
 			}
 		}
 	}
-	return 0;
+	IfcGeom::SurfaceStyle material_style = IfcGeom::SurfaceStyle(material->id(), material->Name());
+	return &(style_cache[material->id()] = material_style);
 }
 
 static std::map<std::string, IfcGeom::SurfaceStyle> default_materials;
@@ -170,12 +177,73 @@ void InitDefaultMaterials() {
 	default_materials_initialized = true;
 }
 
+boost::optional<IfcGeom::SurfaceStyle::ColorComponent> read_colour_component(const boost::optional<pt::ptree&> list) {
+	if (!list) {
+		return boost::none;
+	}
+	double rgb[3];
+	int i = 0;
+	for (pt::ptree::value_type &colour : list.get()) {
+		if (3 <= i) {
+			throw std::runtime_error("rgb array over 3 elements large");
+		}
+		rgb[i] = colour.second.get_value<double>();
+		i++;
+	}
+	if (i != 3) {
+		throw std::runtime_error("rgb array less than 3 elements large (was " + std::to_string(i) + ")");
+	}
+	return IfcGeom::SurfaceStyle::ColorComponent(rgb[0], rgb[1], rgb[2]);
+}
+
+void IfcGeom::set_default_style_file(const std::string& json_file) {
+  if (!default_materials_initialized) InitDefaultMaterials();
+  default_materials.clear();
+
+  // @todo this will probably need to be updated for UTF-8 paths on Windows
+  pt::ptree root;
+  pt::read_json(json_file, root);
+
+  for (pt::ptree::value_type &material_pair : root) {
+    std::string name = material_pair.first;
+    default_materials.insert(std::make_pair(name, IfcGeom::SurfaceStyle(name)));
+
+    pt::ptree material = material_pair.second;
+    boost::optional<pt::ptree&> diffuse = material.get_child_optional("diffuse");
+    default_materials[name].Diffuse() = read_colour_component(diffuse);
+
+    boost::optional<pt::ptree&> specular = material.get_child_optional("specular");
+    default_materials[name].Specular() = read_colour_component(specular);
+
+    if (material.get_child_optional("specular-roughness")) {
+      default_materials[name].Specularity().reset(1.0 / material.get<double>("specular-roughness"));
+    }
+    if (material.get_child_optional("transparency")) {
+      default_materials[name].Transparency() = material.get<double>("transparency");
+    }
+  }
+
+	// Is "*" present? If yes, remove it and make it the default style.
+	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find("*");
+	if (it != default_materials.end()) {
+		IfcGeom::SurfaceStyle star = it->second;
+		default_material.Diffuse() = star.Diffuse();
+		default_material.Specular() = star.Specular();
+		default_material.Specularity() = star.Specularity();
+		default_material.Transparency() = star.Transparency();
+		default_materials.erase(it);
+	}
+}
+
 const IfcGeom::SurfaceStyle* IfcGeom::get_default_style(const std::string& s) {
 	if (!default_materials_initialized) InitDefaultMaterials();
 	std::map<std::string, IfcGeom::SurfaceStyle>::const_iterator it = default_materials.find(s);
 	if (it == default_materials.end()) {
 		default_materials.insert(std::make_pair(s, IfcGeom::SurfaceStyle(s)));
-		default_materials[s].Diffuse().reset(*default_material.Diffuse());
+		default_materials[s].Diffuse() = default_material.Diffuse();
+		default_materials[s].Specular() = default_material.Specular();
+		default_materials[s].Specularity() = default_material.Specularity();
+		default_materials[s].Transparency() = default_material.Transparency();
 		it = default_materials.find(s);
 	}
 	const IfcGeom::SurfaceStyle& surface_style = it->second;

@@ -23,9 +23,67 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/optional.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/version.hpp>
+
 #include <iostream>
 #include <algorithm>
 
+namespace {
+	
+	template <typename T>
+	struct severity_strings {
+		static const std::array<std::basic_string<T>, 3> value;
+	};
+
+	const std::array<std::basic_string<char>, 3> severity_strings<char>::value = { "Notice", "Warning", "Error" };
+	const std::array<std::basic_string<wchar_t>, 3> severity_strings<wchar_t>::value = { L"Notice", L"Warning", L"Error" };
+	
+	template <typename T>
+	void plain_text_message(T& os, const boost::optional<IfcSchema::IfcProduct*>& current_product, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
+		os << "[" << severity_strings<T::char_type>::value[type] << "] ";
+		if (current_product) {
+			os << "{" << (*current_product)->GlobalId().c_str() << "} ";
+		}
+		os << message.c_str() << std::endl;
+		if (entity) {
+			std::string instance_string = entity->toString();
+			if (instance_string.size() > 259) {
+				instance_string = instance_string.substr(0, 256) + "...";
+			}
+			os << instance_string.c_str() << std::endl;
+		}
+	}
+
+	template <typename T>
+	std::basic_string<T> string_as(const std::string& s) {
+		std::basic_string<T> v;
+		v.assign(s.begin(), s.end());
+		return v;
+	}
+
+	template <typename T>
+	void json_message(T& os, const boost::optional<IfcSchema::IfcProduct*>& current_product, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
+		boost::property_tree::basic_ptree<std::basic_string<T::char_type>, std::basic_string<T::char_type> > pt;
+		
+		// @todo this is crazy
+		static const T::char_type level_string[] = { 'l', 'e', 'v', 'e', 'l', 0 };
+		static const T::char_type product_string[] = { 'p', 'r', 'o', 'd', 'u', 'c', 't', 0 };
+		static const T::char_type message_string[] = { 'm', 'e', 's', 's', 'a', 'g', 'e', 0 };
+		static const T::char_type instance_string[] = { 'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0 };
+		
+		pt.put(level_string, severity_strings<T::char_type>::value[type]);
+		if (current_product) {
+			pt.put(product_string, string_as<T::char_type>((**current_product).entity->toString()));
+		}
+		pt.put(message_string, string_as<T::char_type>(message));
+		if (entity) {
+			pt.put(instance_string, string_as<T::char_type>(entity->toString()));
+		}
+		boost::property_tree::write_json(os, pt, false);
+	}
+}
 
 void Logger::SetProduct(boost::optional<IfcSchema::IfcProduct*> product) {
 	current_product = product;
@@ -62,11 +120,19 @@ void Logger::log(T& log2, Logger::Severity type, const std::string& message, Ifc
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
-	if (type >= verbosity) {
-		if (log2) {
-			log(*log2, type, message, entity);
-		} else if (wlog2) {
-			log(*wlog2, type, message, entity);
+	if ((log2 || wlog2) && type >= verbosity) {
+		if (format == FMT_PLAIN) {
+            if (log2) {
+                plain_text_message(*log2, current_product, type, message, entity);
+            } else if (wlog2) {
+                plain_text_message(*wlog2, current_product, type, message, entity);
+            }
+		} else if (format == FMT_JSON) {
+            if (log2) {
+                json_message(*log2, current_product, type, message, entity);
+            } else if (wlog2) {
+                json_message(*wlog2, current_product, type, message, entity);
+            }
 		}
 	}
 }
@@ -104,11 +170,14 @@ std::string Logger::GetLog() {
 void Logger::Verbosity(Logger::Severity v) { verbosity = v; }
 Logger::Severity Logger::Verbosity() { return verbosity; }
 
+void Logger::OutputFormat(Format f) { format = f; }
+Logger::Format Logger::OutputFormat() { return format; }
+
 std::ostream* Logger::log1 = 0;
 std::ostream* Logger::log2 = 0;
 std::wostream* Logger::wlog1 = 0;
 std::wostream* Logger::wlog2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
-const char* Logger::severity_strings[] = { "Notice","Warning","Error" };
+Logger::Format Logger::format = Logger::FMT_PLAIN;
 boost::optional<IfcSchema::IfcProduct*> Logger::current_product;

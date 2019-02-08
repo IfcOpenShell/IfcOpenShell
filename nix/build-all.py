@@ -59,14 +59,18 @@ logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
 OCE_VERSION="0.18"
-OCCT_VERSION="7.1.0"
-OCCT_HASH="89aebde"
-PYTHON_VERSIONS=["2.7.12", "3.2.6", "3.3.6", "3.4.6", "3.5.3"]
+# OCCT_VERSION="7.1.0"
+# OCCT_HASH="89aebde"
+PYTHON_VERSIONS=["2.7.12", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2"]
+# OCCT_VERSION="7.2.0"
+# OCCT_HASH="88af392"
+OCCT_VERSION="7.3.0"
 BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.39"
 LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
 ICU_VERSION="56.1"
+SWIG_VERSION="3.0.12"
 
 # binaries
 cp="cp"
@@ -114,6 +118,13 @@ def get_os():
 
 # Set defaults for missing empty environment variables
 
+USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
+
+TOOLSET = None
+if get_os() == "Darwin":
+    # C++11 features used in OCCT 7+ need a more recent stdlib
+    TOOLSET = "10.9" if USE_OCCT else "10.6"
+   
 try:
     IFCOS_NUM_BUILD_PROCS = os.environ["IFCOS_NUM_BUILD_PROCS"]
 except KeyError:
@@ -131,7 +142,10 @@ CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
 try:
     DEPS_DIR = os.environ["DEPS_DIR"]
 except KeyError:
-    DEPS_DIR = os.path.realpath(os.path.join("..", "build", sp.check_output(uname).strip(), TARGET_ARCH))
+    path = ["..", "build", sp.check_output(uname).strip(), TARGET_ARCH]
+    if TOOLSET:
+        path.append(TOOLSET)
+    DEPS_DIR = os.path.realpath(os.path.join(*path))
     os.environ["DEPS_DIR"] = DEPS_DIR
     if not os.path.exists(DEPS_DIR):
         os.makedirs(DEPS_DIR)
@@ -142,7 +156,6 @@ except KeyError:
     BUILD_CFG="RelWithDebInfo"
     os.environ["BUILD_CFG"]=BUILD_CFG
 
-USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
 
 # Print build configuration information
 
@@ -173,7 +186,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 # Check that required tools are in PATH
 
-for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make]:
+for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "patch"]:
     if which(cmd) is None:
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
@@ -181,14 +194,15 @@ for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make]:
 download_tool_curl="curl"
 download_tool_wget="wget"
 download_tool_git = "git"
-# curl randomly has trouble and fails with return code 6 without further feedback -> prefer wget
+
 if which(wget) != None:
     download_tool_default = download_tool_wget
 elif which(curl) != None:
     download_tool_default = download_tool_curl
 else:
     raise ValueError("No download application found, tried: curl, wget")
-CURL = ["curl", "-sLO"]
+
+CURL = ["curl", "-sL"]
 WGET= ["wget", "-q", "--no-check-certificate"]
 
 # Create log directory and file
@@ -229,12 +243,13 @@ def __check_output__(cmds, cwd=None):
 
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
 ICU_VERSION_UNDERSCORE=ICU_VERSION.replace(".", "_")
-CMAKE_VERSION_2=CMAKE_VERSION[0:3]
+CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
 BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
 OPENCOLLADA_LOCATION="https://github.com/KhronosGroup/OpenCOLLADA.git"
-OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
+#OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
+OPENCOLLADA_COMMIT="v1.6.63"
 
 # Helper functions
 
@@ -273,7 +288,7 @@ def git_clone(clone_url, target_dir, revision=None):
     if revision != None:
         __check_call__([git, "checkout", revision], cwd=target_dir)
 
-def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, additional_files={}):
+def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
     a list which is necessary in order to not mess up quoting of compiler and
@@ -287,16 +302,23 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         os.makedirs(build_dir)
     
     logger.info("\rFetching %s...   " % (name,))
+    
+    if download_tool == download_tool_curl or download_tool == download_tool_wget:
+        if no_append_name:
+            url = download_url
+        else:
+            url = os.path.join(download_url, download_name)
+    
     if download_tool == download_tool_curl:
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            __check_call__(CURL+[download_url, download_name], cwd=build_dir)
+            __check_call__(CURL + ["-o", download_name, url], cwd=build_dir)
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_wget:
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            __check_call__(WGET+[os.path.join(download_url, download_name)], cwd=build_dir)
+            __check_call__(WGET + ["-O", download_name, url], cwd=build_dir)
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_git:
@@ -328,6 +350,14 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     for path, url in additional_files.items():
         if not os.path.exists(path):
             urllib.urlretrieve(url, os.path.join(extract_dir, path))
+            
+    if patch is not None:
+        patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), patch))
+        if os.path.exists(patch_abs):
+            try: __check_call__(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
+            except Exception as e:
+                # Assert that the patch has already been applied
+                __check_call__(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
             
     if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, "build")
@@ -370,7 +400,7 @@ if TARGET_ARCH == "i686" and __check_output__([uname, "-m"]).strip() == "x86_64"
     BOOST_ADDRESS_MODEL=["architecture=x86", "address-model=32"]
 
 if get_os() == "Darwin":
-    ADDITIONAL_ARGS=["-mmacosx-version-min=10.6"]+ADDITIONAL_ARGS
+    ADDITIONAL_ARGS=["-mmacosx-version-min=%s" % TOOLSET]+ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
@@ -387,7 +417,8 @@ try:
     LDFLAGS=os.environ["LDFLAGS"]
 except KeyError:
     LDFLAGS=""
-if sp.call([bash, "-c", "man ld 2> /dev/null | grep gc-sections &> /dev/null"]) == 0:
+
+if sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
     CXXFLAGS_MINIMAL="%s -fPIC %s" % (CXXFLAGS, str.join(" ", ADDITIONAL_ARGS))
     os.environ["CXXFLAGS_MINIMAL"]=CXXFLAGS_MINIMAL
     CFLAGS_MINIMAL="%s -fPIC %s" % (CFLAGS, str.join(" ", ADDITIONAL_ARGS))
@@ -435,11 +466,9 @@ build_dependency(name="pcre-%s" % (PCRE_VERSION,), mode="autoconf", build_tool_a
 
 # An issue exists with swig-1.3 and python >= 3.2
 # Therefore, build a recent copy from source
-build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-3.0.8")
+build_dependency(name="swig", mode="autoconf", build_tool_args=["--with-pcre-prefix=%s/install/pcre-%s" % (DEPS_DIR, PCRE_VERSION)], download_url="https://github.com/swig/swig.git", download_name="swig", download_tool=download_tool_git, revision="rel-%s" % SWIG_VERSION)
 
 if USE_OCCT:
-    long_filename = "src/RWStepVisual/RWStepVisual_RWCharacterizedObjectAndCharacterizedRepresentationAndDraughtingModelAndRepresentation"
-    occt_gitweb = "http://git.dev.opencascade.org/gitweb/?p=occt.git"
     build_dependency(
         name="occt-%s" % OCCT_VERSION,
         mode="cmake",
@@ -448,12 +477,11 @@ if USE_OCCT:
             "-DBUILD_LIBRARY_TYPE=Static",
             "-DBUILD_MODULE_Draw=0",
         ],
-        download_url="%s;a=snapshot;h=%s;sf=tgz" % (occt_gitweb, OCCT_HASH),
-        additional_files = {
-            "%s.hxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.hxx" % (occt_gitweb, OCCT_HASH, long_filename),
-            "%s.cxx" % (long_filename): "%s;a=blob_plain;hb=%s;f=%s.cxx" % (occt_gitweb, OCCT_HASH, long_filename)
-        },
-        download_name="occt-%s.tar.gz" % OCCT_HASH)
+        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_name = "occt",
+        download_tool=download_tool_git,
+        patch="./patches/occt/enable-exception-handling.patch",
+        revision="V%s" % OCCT_VERSION.replace('.', '_'))
 else:
     build_dependency(name="oce-%s" % (OCE_VERSION,), mode="cmake", build_tool_args=["-DOCE_DISABLE_TKSERVICE_FONT=ON", "-DOCE_TESTING=OFF", "-DOCE_BUILD_SHARED_LIB=OFF", "-DOCE_DISABLE_X11=ON", "-DOCE_VISUALISATION=OFF", "-DOCE_OCAF=OFF", "-DOCE_INSTALL_PREFIX=%s/install/oce-%s" % (DEPS_DIR, OCE_VERSION)], download_url="https://github.com/tpaviot/oce/archive/", download_name="OCE-%s.tar.gz" % (OCE_VERSION,))
         
@@ -489,7 +517,7 @@ for PYTHON_VERSION, unicode_conf, abi_tag in PYTHON_VERSION_CONFS():
 os.environ["CXXFLAGS"]=OLD_CXX_FLAGS
 os.environ["CFLAGS"]=OLD_C_FLAGS
 
-str_concat = lambda prefix: lambda postfix: "=".join((prefix, postfix.strip()))
+str_concat = lambda prefix: lambda postfix: "" if postfix.strip() == "" else "=".join((prefix, postfix.strip()))
 build_dependency("boost-%s" % (BOOST_VERSION,), mode="bjam", build_tool_args=["--stagedir=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "--with-system", "--with-program_options", "--with-regex", "--with-thread", "--with-date_time", "--with-iostreams", "link=static"]+BOOST_ADDRESS_MODEL+list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + ["stage", "-s", "NO_BZIP2=1"], download_url="http://downloads.sourceforge.net/project/boost/boost/%s/" % (BOOST_VERSION,), download_name="boost_%s.tar.bz2" % (BOOST_VERSION_UNDERSCORE,))
 
 build_dependency(name="icu-%s" % (ICU_VERSION,), mode="icu", build_tool_args=["--enable-static", "--disable-shared"], download_url="http://download.icu-project.org/files/icu4c/%s/" % (ICU_VERSION,), download_name="icu4c-%s-src.tgz" % (ICU_VERSION_UNDERSCORE,))
@@ -530,7 +558,7 @@ run_cmake("", cmake_args=[
 logger.info("\rBuilding executables...   ")
 
 __check_call__([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=executables_dir)
-__check_call__([make, "install/strip"], cwd=executables_dir)
+__check_call__([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 # On OSX the actual Python library is not linked against.
 ADDITIONAL_ARGS=""

@@ -1,0 +1,4 @@
+[submodule "test/input"]
+	path = test/input
+	url = https://github.com/IfcOpenShell/files
+	ignore = dirty

@@ -25,6 +25,7 @@
 
 #include "IfcGeom.h"
 
+#include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -87,7 +88,7 @@ namespace IfcGeom
         void populate(const std::set<std::string>& patterns)
         {
             values.clear();
-            foreach(const std::string &pattern, patterns) {
+            BOOST_FOREACH(const std::string &pattern, patterns) {
                 values.insert(wildcard_string_to_regex(pattern));
             }
         }
@@ -96,7 +97,7 @@ namespace IfcGeom
 
         static bool match_values(const std::set<boost::regex>& values, const std::string &str)
         {
-            foreach(const boost::regex& r, values) {
+            BOOST_FOREACH(const boost::regex& r, values) {
                 if (boost::regex_match(str, r)) {
                     return true;
                 }
@@ -108,7 +109,7 @@ namespace IfcGeom
         {
             // Escape all non-"*?" regex special chars
             static const std::string special_chars = "\\^.$|()[]+/";
-            foreach(char c, special_chars) {
+            BOOST_FOREACH(char c, special_chars) {
                 std::string char_str(1, c);
                 boost::replace_all(str, char_str, "\\" + char_str);
             }
@@ -170,8 +171,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
-            return filter::match(prod, std::bind1st(std::mem_fun(&string_arg_filter::match), this));
+            return filter::match(prod, std::bind(&string_arg_filter::match, this, std::placeholders::_1));
         }
 
         void update_description()
@@ -180,7 +180,7 @@ namespace IfcGeom
 
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude");
             std::vector<std::string> patterns;
-            foreach(const boost::regex& r, values) {
+            BOOST_FOREACH(const boost::regex& r, values) {
                 patterns.push_back("\"" + r.str() + "\"");
             }
 
@@ -218,7 +218,7 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            return filter::match(prod, std::bind1st(std::mem_fun(&layer_filter::match), this));
+            return filter::match(prod, std::bind(&layer_filter::match, this, std::placeholders::_1));
         }
 
         struct wildcards_match
@@ -237,7 +237,7 @@ namespace IfcGeom
             std::stringstream ss;
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " layers";
             std::vector<std::string> str_values;
-            foreach(const boost::regex& r, values) {
+            BOOST_FOREACH(const boost::regex& r, values) {
                 str_values.push_back(" \"" + r.str() + "\"");
             }
             ss << boost::algorithm::join(str_values, " ");
@@ -259,7 +259,7 @@ namespace IfcGeom
         void populate(const std::set<std::string>& types)
         {
             values.clear();
-            foreach(const std::string& type, types) {
+            BOOST_FOREACH(const std::string& type, types) {
                 IfcSchema::Type::Enum ty;
                 try {
                     ty = IfcSchema::Type::FromString(boost::to_upper_copy(type));
@@ -274,7 +274,7 @@ namespace IfcGeom
         bool match(IfcSchema::IfcProduct* prod) const
         {
             // The set is iterated over to able to filter on subtypes.
-            foreach(IfcSchema::Type::Enum type, values) {
+            BOOST_FOREACH(IfcSchema::Type::Enum type, values) {
                 if (prod->is(type)) {
                     return true;
                 }
@@ -284,14 +284,14 @@ namespace IfcGeom
 
         bool operator()(IfcSchema::IfcProduct* prod) const
         {
-            return filter::match(prod, std::bind1st(std::mem_fun(&entity_filter::match), this));
+            return filter::match(prod, std::bind(&entity_filter::match, this, std::placeholders::_1));
         }
 
         void update_description()
         {
             std::stringstream ss;
             ss << (traverse ? "traverse " : "") << (include ? "include" : "exclude") << " entities";
-            foreach(IfcSchema::Type::Enum type, values) {
+            BOOST_FOREACH(IfcSchema::Type::Enum type, values) {
                 ss << " " << IfcSchema::Type::ToString(type);
             }
             description = ss.str();

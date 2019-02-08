@@ -40,6 +40,7 @@
 class IFC_PARSE_API Logger {
 public:
 	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+	typedef enum { FMT_PLAIN, FMT_JSON } Format;
 private:
 
 	// To both stream variants need to exist at runtime or should this be a 
@@ -53,7 +54,7 @@ private:
 	static std::stringstream log_stream;
 
 	static Severity verbosity;
-	static const char* severity_strings[];
+	static Format format;
 	static boost::optional<IfcSchema::IfcProduct*> current_product;
 
 	template <typename T>
@@ -66,10 +67,14 @@ public:
 	
 	/// Determines to what stream respectively progress and errors are logged
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
-	
+
 	/// Determines the types of log messages to get logged
 	static void Verbosity(Severity v);
 	static Severity Verbosity();
+
+	/// Determines output format: plain text or sequence of JSON objects
+	static void OutputFormat(Format f);
+	static Format OutputFormat();
 	
 	/// Log a message to the output stream
 	static void Message(Severity type, const std::string& message, IfcEntityInstanceData* entity=0);

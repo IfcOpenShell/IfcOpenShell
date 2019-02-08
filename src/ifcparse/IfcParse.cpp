@@ -1208,7 +1208,9 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 	if (this->file) {
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(copy).apply(visitor);
-	}	
+
+		this->file->mark_entity_as_modified(id_);
+	}
 
 	if (i < attributes_.size()) {
 		attributes_[i] = copy;
@@ -1262,7 +1264,10 @@ bool IfcFile::Init(IfcParse::IfcSpfStream* s) {
 	}
 
 	if (schemas.size() != 1 || schemas[0] != IfcSchema::Identifier) {
-		Logger::Message(Logger::LOG_ERROR, std::string("File schema encountered different from expected '") + IfcSchema::Identifier + "'");
+		Logger::Message(Logger::LOG_ERROR, "File schema encountered ("
+			+ boost::algorithm::join(schemas, ", ") + ") different from expected "
+			+ std::string(IfcSchema::Identifier) + ".");
+		return false;
 	}
 
 	boost::circular_buffer<Token> token_stream(3, Token());
@@ -1419,6 +1424,11 @@ IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_l
 /// @note: for backwards compatibility
 IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
 	return IfcParse::traverse(instance, max_level);
+}
+
+void IfcFile::mark_entity_as_modified(int /*id*/)
+{
+	by_ref_cached_.clear();
 }
 
 void IfcFile::addEntities(IfcEntityList::ptr es) {
@@ -1721,12 +1731,13 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
 	for (IfcEntityList::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
 		IfcUtil::IfcBaseClass* entity_attribute = *it;
 		if (entity_attribute == entity) continue;
-		if (entity_attribute->entity->id() != 0) {
-			// Do not update inverses for simple types.
-			const IfcEntityList::ptr attribute_inverses = entitiesByReference(entity_attribute->entity->id());
-
-			if (attribute_inverses) {
-				attribute_inverses->remove(entity);
+		const unsigned int name = entity_attribute->entity->id();
+		// Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
+		if (name != 0) {
+			entities_by_ref_t::iterator byref_it = byref.find(name);
+			if (byref_it != byref.end()) {
+				std::vector<unsigned>& ids = byref_it->second;
+				ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
 			}
 		}
 	}
@@ -1784,23 +1795,31 @@ IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
 
 IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
-	IfcEntityList::ptr return_value;
+	IfcEntityList::ptr ret;
 	if (it != byref.end()) {
-		const std::vector<unsigned>& ids = it->second;
-		for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
-			if (!return_value) {
-				return_value.reset(new IfcEntityList);
-			}
-			return_value->push(entityById(*jt));
-		}
+        ref_map_t::const_iterator cached_it = by_ref_cached_.find(t);
+        if (cached_it != by_ref_cached_.end()) {
+            ret = cached_it->second;
+        }
+        else {
+            if (it->second.size()) {
+                ret.reset(new IfcEntityList);            
+                ret->reserve((unsigned)it->second.size());
+                const std::vector<unsigned>& ids = it->second;
+                for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
+                    ret->push(entityById(*jt));
+                }
+            }
+            by_ref_cached_[t] = ret;
+        }
 	}
-	return return_value;
+	return ret;
 }
 
 IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
 	entity_by_id_t::const_iterator it = byid.find(id);
 	if (it == byid.end()) {
-		throw IfcException("Entity not found");
+		throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
 	}
 	return it->second;
 }
@@ -1808,7 +1827,7 @@ IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {
 IfcSchema::IfcRoot* IfcFile::entityByGuid(const std::string& guid) {
 	entity_by_guid_t::const_iterator it = byguid.find(guid);
 	if ( it == byguid.end() ) {
-		throw IfcException("Entity not found");
+		throw IfcException("Instance with GlobalId '" + guid + "' not found");
 	} else {
 		return it->second;
 	}
@@ -1848,10 +1867,22 @@ IfcFile::type_iterator IfcFile::types_incl_super_end() const {
 	return bytype.end();
 }
 
+namespace {
+	struct id_instance_pair_sorter {
+		bool operator()(const IfcParse::IfcFile::entity_by_id_t::value_type& a, const IfcParse::IfcFile::entity_by_id_t::value_type& b) const {
+			return a.first < b.first;
+		}
+	};
+}
+
 std::ostream& operator<< (std::ostream& os, const IfcParse::IfcFile& f) {
 	f.header().write(os);
 
-	for ( IfcFile::entity_by_id_t::const_iterator it = f.begin(); it != f.end(); ++ it ) {
+	typedef std::vector<std::pair<unsigned int, IfcUtil::IfcBaseClass*> > vector_t;
+	vector_t sorted(f.begin(), f.end());
+	std::sort(sorted.begin(), sorted.end(), id_instance_pair_sorter());
+
+	for (vector_t::const_iterator it = sorted.begin(); it != sorted.end(); ++ it) {
 		const IfcUtil::IfcBaseClass* e = it->second;
 		if (!IfcSchema::Type::IsSimple(e->type())) {
 			os << e->entity->toString(true) << ";" << std::endl;
@@ -1890,15 +1921,20 @@ IfcEntityList::ptr IfcFile::getInverse(int instance_id, IfcSchema::Type::Enum ty
 	for(IfcEntityList::it it = all->begin(); it != all->end(); ++it) {
 		bool valid = type == IfcSchema::Type::UNDEFINED || (*it)->is(type);
 		if (valid && attribute_index >= 0) {
-			Argument* arg = (*it)->entity->getArgument(attribute_index);
-			if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-				valid = instance == *arg;
-			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-				IfcEntityList::ptr li = *arg;
-				valid = li->contains(instance);
-			} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-				IfcEntityListList::ptr li = *arg;
-				valid = li->contains(instance);
+			try {
+				Argument* arg = (*it)->entity->getArgument(attribute_index);
+				if (arg->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+					valid = instance == *arg;
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityList::ptr li = *arg;
+					valid = li->contains(instance);
+				} else if (arg->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+					IfcEntityListList::ptr li = *arg;
+					valid = li->contains(instance);
+				}
+			} catch (const IfcException& e) {
+				valid = false;
+				Logger::Error(e);
 			}
 		}
 		if (valid) {
