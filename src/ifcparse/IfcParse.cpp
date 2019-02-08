@@ -25,10 +25,6 @@
 #include <ctime>
 #include <boost/circular_buffer.hpp>
 
-#ifdef _MSC_VER
-#include <Windows.h>
-#endif
-
 #include <boost/algorithm/string.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
@@ -39,6 +35,7 @@
 #include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
+#include "../ifcparse/utils.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4-latebound.h"
@@ -122,9 +119,8 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 	, eof(false)
 {
 #ifdef _MSC_VER
-	int fn_buffer_size = MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, 0, 0);
-	wchar_t* fn_wide = new wchar_t[fn_buffer_size];
-	MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, fn_wide, fn_buffer_size);
+	std::wstring fn_ws = IfcUtil::path::from_utf8(fn);
+	const wchar_t* fn_wide = fn_ws.c_str();
 
 #ifdef USE_MMAP
 	if (mmap) {
@@ -136,7 +132,6 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 	}
 #endif
 
-	delete[] fn_wide;
 #else
 
 #ifdef USE_MMAP

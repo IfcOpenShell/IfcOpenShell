@@ -32,6 +32,8 @@
 #include <string>
 #include <cmath>
 
+#include "../ifcparse/utils.h"
+
 using namespace IfcSchema;
 
 static std::string& collada_id(std::string& s)
