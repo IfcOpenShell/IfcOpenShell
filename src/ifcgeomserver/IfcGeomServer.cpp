@@ -108,6 +108,20 @@ void swrite(std::ostream& s, std::string t) {
 	while (len++ % 4) s.put(0);
 }
 
+template <typename T, typename U>
+void swrite_array(std::ostream& s, const std::vector<U>& us) {
+	if (std::is_same<T, U>::value) {
+		swrite(s, std::string((char*)us.data(), us.size() * sizeof(U)));
+	} else {
+		std::vector<T> ts;
+		ts.reserve(us.size());
+		for (auto& u : us) {
+			ts.push_back((T)u);
+		}
+		swrite_array<T, T>(s, ts);
+	}
+}
+
 class Command {
 protected:
 	virtual void read_content(std::istream& s) = 0;
@@ -258,7 +272,7 @@ public:
 
 class Entity : public Command {
 private:
-	const IfcGeom::TriangulationElement<float, double>* geom;
+	const IfcGeom::TriangulationElement<double, double>* geom;
 	bool append_line_data;
 	EntityExtension* eext_;
 protected:
@@ -283,8 +297,9 @@ protected:
 		const int integer_representation_id = atoi(representation_id.c_str());
 		swrite<int32_t>(s, (int32_t)integer_representation_id);
 
-		swrite(s, std::string((char*)geom->geometry().verts().data(), geom->geometry().verts().size() * sizeof(float)));
-		swrite(s, std::string((char*)geom->geometry().normals().data(), geom->geometry().normals().size() * sizeof(float)));
+		swrite_array<double>(s, geom->geometry().verts());
+		swrite_array<float>(s, geom->geometry().normals());
+
 		{
 			std::vector<int32_t> indices;
 			const std::vector<int>& faces = geom->geometry().faces();
@@ -292,7 +307,7 @@ protected:
 			for (std::vector<int>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
 				indices.push_back(*it);
 			} 
-			swrite(s, std::string((char*) indices.data(), indices.size() * sizeof(int32_t)));
+			swrite_array<int32_t>(s, indices);
 
 			if (append_line_data) {
 				std::vector<int32_t> lines;
@@ -311,7 +326,7 @@ protected:
 					lines.push_back(i2);
 				}
 
-				swrite(s, std::string((char*) lines.data(), lines.size() * sizeof(int32_t)));
+				swrite_array<int32_t>(s, lines);
 			}
 		}
 		{ std::vector<float> diffuse_color_array;
@@ -344,7 +359,7 @@ protected:
 		}
 	}
 public:
-	Entity(const IfcGeom::TriangulationElement<float, double>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
+	Entity(const IfcGeom::TriangulationElement<double, double>* geom, EntityExtension* eext = 0) : Command(ENTITY), geom(geom), append_line_data(false), eext_(eext) {};
 };
 
 class Next : public Command {
@@ -409,9 +424,9 @@ static const std::array<std::string, 3> XYZ = { "X", "Y", "Z" };
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
-	const IfcGeom::BRepElement<float, double>* elem_;
+	const IfcGeom::BRepElement<double, double>* elem_;
 public:
-	QuantityWriter_v0(const IfcGeom::BRepElement<float, double>* elem) :
+	QuantityWriter_v0(const IfcGeom::BRepElement<double, double>* elem) :
 		elem_(elem) 
 	{
 		put_json(TOTAL_SURFACE_AREA, 0.);
@@ -424,9 +439,9 @@ public:
 
 class QuantityWriter_v1 : public EntityExtension {
 private:
-	const IfcGeom::BRepElement<float, double>* elem_;
+	const IfcGeom::BRepElement<double, double>* elem_;
 public:
-	QuantityWriter_v1(const IfcGeom::BRepElement<float, double>* elem) :
+	QuantityWriter_v1(const IfcGeom::BRepElement<double, double>* elem) :
 		elem_(elem)
 	{
 		double a, b, c, largest_face_area = 0.;
@@ -499,7 +514,7 @@ int main () {
 	double deflection = 1.e-3;
 	bool has_more = false;
 
-	IfcGeom::Iterator<float, double>* iterator = 0;
+	IfcGeom::Iterator<double, double>* iterator = 0;
 	IfcParse::IfcFile* file = 0;
 	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
@@ -534,7 +549,7 @@ int main () {
 			settings.set_deflection_tolerance(deflection);
 
 			file = new IfcParse::IfcFile(data, (int)len);
-			iterator = new IfcGeom::Iterator<float, double>(settings, file);
+			iterator = new IfcGeom::Iterator<double, double>(settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
@@ -546,7 +561,7 @@ int main () {
 				exit_code = 1;
 				break;
 			}
-			const IfcGeom::TriangulationElement<float, double>* geom = static_cast<const IfcGeom::TriangulationElement<float, double>*>(iterator->get());
+			const IfcGeom::TriangulationElement<double, double>* geom = static_cast<const IfcGeom::TriangulationElement<double, double>*>(iterator->get());
 			std::unique_ptr<EntityExtension> eext;
 			if (emit_quantities) {
 				eext.reset(new QuantityWriter_v1(iterator->get_native()));
