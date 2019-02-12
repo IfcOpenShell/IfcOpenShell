@@ -37,12 +37,15 @@ namespace {
 		static const std::array<std::basic_string<T>, 3> value;
 	};
 
+	template <>
 	const std::array<std::basic_string<char>, 3> severity_strings<char>::value = { "Notice", "Warning", "Error" };
+
+	template <>
 	const std::array<std::basic_string<wchar_t>, 3> severity_strings<wchar_t>::value = { L"Notice", L"Warning", L"Error" };
 	
 	template <typename T>
 	void plain_text_message(T& os, const boost::optional<IfcSchema::IfcProduct*>& current_product, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
-		os << "[" << severity_strings<T::char_type>::value[type] << "] ";
+		os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
 		if (current_product) {
 			os << "{" << (*current_product)->GlobalId().c_str() << "} ";
 		}
@@ -65,21 +68,21 @@ namespace {
 
 	template <typename T>
 	void json_message(T& os, const boost::optional<IfcSchema::IfcProduct*>& current_product, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
-		boost::property_tree::basic_ptree<std::basic_string<T::char_type>, std::basic_string<T::char_type> > pt;
+		boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type> > pt;
 		
 		// @todo this is crazy
-		static const T::char_type level_string[] = { 'l', 'e', 'v', 'e', 'l', 0 };
-		static const T::char_type product_string[] = { 'p', 'r', 'o', 'd', 'u', 'c', 't', 0 };
-		static const T::char_type message_string[] = { 'm', 'e', 's', 's', 'a', 'g', 'e', 0 };
-		static const T::char_type instance_string[] = { 'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0 };
+		static const typename T::char_type level_string[] = { 'l', 'e', 'v', 'e', 'l', 0 };
+		static const typename T::char_type product_string[] = { 'p', 'r', 'o', 'd', 'u', 'c', 't', 0 };
+		static const typename T::char_type message_string[] = { 'm', 'e', 's', 's', 'a', 'g', 'e', 0 };
+		static const typename T::char_type instance_string[] = { 'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0 };
 		
-		pt.put(level_string, severity_strings<T::char_type>::value[type]);
+		pt.put(level_string, severity_strings<typename T::char_type>::value[type]);
 		if (current_product) {
-			pt.put(product_string, string_as<T::char_type>((**current_product).entity->toString()));
+			pt.put(product_string, string_as<typename T::char_type>((**current_product).entity->toString()));
 		}
-		pt.put(message_string, string_as<T::char_type>(message));
+		pt.put(message_string, string_as<typename T::char_type>(message));
 		if (entity) {
-			pt.put(instance_string, string_as<T::char_type>(entity->toString()));
+			pt.put(instance_string, string_as<typename T::char_type>(entity->toString()));
 		}
 		boost::property_tree::write_json(os, pt, false);
 	}
@@ -109,7 +112,7 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 
 template <typename T>
 void Logger::log(T& log2, Logger::Severity type, const std::string& message, IfcEntityInstanceData* entity) {
-	log2 << "[" << severity_strings[type] << "] ";
+	log2 << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
 	if (current_product) {
 		log2 << "{" << (*current_product)->GlobalId().c_str() << "} ";
 	}
