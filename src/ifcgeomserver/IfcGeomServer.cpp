@@ -49,6 +49,8 @@
 
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
+#include <BRepBndLib.hxx>
+#include <Bnd_Box.hxx>
 #include <Geom_Plane.hxx>
 
 #include <memory>
@@ -402,6 +404,8 @@ static const std::string SURFACE_AREA_ALONG_Y = "SURFACE_AREA_ALONG_Y";
 static const std::string SURFACE_AREA_ALONG_Z = "SURFACE_AREA_ALONG_Z";
 static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
 static const std::string LARGEST_FACE_AREA = "LARGEST_FACE_AREA";
+static const std::string BOUNDING_BOX_SIZE_ALONG_ = "BOUNDING_BOX_SIZE_ALONG_";
+static const std::array<std::string, 3> XYZ = { "X", "Y", "Z" };
 
 class QuantityWriter_v0 : public EntityExtension {
 private:
@@ -454,6 +458,24 @@ public:
 		}
 
 		put_json(LARGEST_FACE_AREA, largest_face_area);
+
+		{
+			Bnd_Box box;
+			double xyz[6];			
+
+			for (auto& part : elem->geometry()) {
+				BRepBndLib::AddClose(part.Shape(), box);
+			}
+
+			if (!box.IsVoid()) {
+				box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
+				for (int i = 0; i < 3; ++i) {
+					const double bsz = xyz[i + 3] - xyz[i];
+					put_json(BOUNDING_BOX_SIZE_ALONG_ + XYZ[i], bsz);
+				}
+			}
+
+		}
 	}
 };
 
