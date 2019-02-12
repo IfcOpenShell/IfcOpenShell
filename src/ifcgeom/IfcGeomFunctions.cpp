@@ -101,6 +101,7 @@
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Solid.hxx>
+#include <ShapeFix_Shell.hxx>
 
 #include <ShapeAnalysis_Curve.hxx>
 #include <ShapeAnalysis_Wire.hxx>
@@ -363,32 +364,66 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 		return false;
 	}
 
-	TopTools_ListIteratorOfListOfShape face_iterator;
+	TopTools_ListIteratorOfListOfShape face_iterator;	
 
-	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(getValue(GV_PRECISION));
-	builder.SetMaxTolerance(getValue(GV_PRECISION));
-	builder.SetMinTolerance(getValue(GV_PRECISION));
+	bool has_shared_edges = false;
+	TopTools_MapOfShape edge_set;
+
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {		
+		// As soon as is detected one of the edges is shared, the assumption is made no
+		// additional sewing is necessary.
+		if (!has_shared_edges) {
+			TopExp_Explorer exp(face_iterator.Value(), TopAbs_EDGE);
+			for (; exp.More(); exp.Next()) {
+				if (edge_set.Contains(exp.Current())) {
+					has_shared_edges = true;
+					break;
+				}
+				edge_set.Add(exp.Current());
+			}
+		}
+	}
+
+	BRepOffsetAPI_Sewing sewing_builder;
+	sewing_builder.SetTolerance(getValue(GV_PRECISION));
+	sewing_builder.SetMaxTolerance(getValue(GV_PRECISION));
+	sewing_builder.SetMinTolerance(getValue(GV_PRECISION));
+
+	BRep_Builder builder;
+	TopoDS_Shell shell;
+	builder.MakeShell(shell);
 
 	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-		builder.Add(face_iterator.Value());
+		if (has_shared_edges) {
+			builder.Add(shell, face_iterator.Value());
+		} else {
+			sewing_builder.Add(face_iterator.Value());
+		}
 	}
 
 	try {
-		builder.Perform();
-		shape = builder.SewedShape();
+		if (has_shared_edges) {
+			ShapeFix_Shell fix;
+			fix.FixFaceOrientation(shell);
+			shape = fix.Shape();
+		} else {
+			sewing_builder.Perform();
+			shape = sewing_builder.SewedShape();
+		}
+		
+		BRepCheck_Analyzer ana(shape);
+		valid_shell = ana.IsValid();
 
-		{
-			BRepCheck_Analyzer ana(shape);
-			if (!ana.IsValid()) {
-				ShapeFix_Shape sfs(shape);
-				sfs.Perform();
-				shape = sfs.Shape();
-			}
+		if (!valid_shell) {
+			ShapeFix_Shape sfs(shape);
+			sfs.Perform();
+			shape = sfs.Shape();
+
+			BRepCheck_Analyzer reana(shape);
+			valid_shell = reana.IsValid();
 		}
 
-		BRepCheck_Analyzer ana(shape);
-		valid_shell = ana.IsValid() != 0 && count(shape, TopAbs_SHELL) > 0;
+		valid_shell &= count(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
 			Logger::Error(e.GetMessageString());
