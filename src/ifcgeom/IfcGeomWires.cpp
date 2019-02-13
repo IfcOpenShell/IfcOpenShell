@@ -873,45 +873,53 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 
 	BRepBuilderAPI_MakeWire w;
 
-	IfcEntityList::ptr segments = l->Segments();
-	for (IfcEntityList::it it = segments->begin(); it != segments->end(); ++it) {
-		IfcUtil::IfcBaseClass* segment = *it;
-		if (segment->is(IfcSchema::Type::IfcLineIndex)) {
-			IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
-			std::vector<int> indices = *line;
-			gp_Pnt previous;
-			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
-				if (*jt < 1 || *jt > max_index) {
-					throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+	if(l->hasSegments()) {
+		IfcEntityList::ptr segments = l->Segments();
+		for (IfcEntityList::it it = segments->begin(); it != segments->end(); ++it) {
+			IfcUtil::IfcBaseClass* segment = *it;
+			if (segment->is(IfcSchema::Type::IfcLineIndex)) {
+				IfcSchema::IfcLineIndex* line = (IfcSchema::IfcLineIndex*) segment;
+				std::vector<int> indices = *line;
+				gp_Pnt previous;
+				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
+					if (*jt < 1 || *jt > max_index) {
+						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+					}
+					const gp_Pnt& current = points[*jt - 1];
+					if (jt != indices.begin()) {
+						w.Add(BRepBuilderAPI_MakeEdge(previous, current));
+					}
+					previous = current;
 				}
-				const gp_Pnt& current = points[*jt - 1];
-				if (jt != indices.begin()) {
-					w.Add(BRepBuilderAPI_MakeEdge(previous, current));
+			} else if (segment->is(IfcSchema::Type::IfcArcIndex)) {
+				IfcSchema::IfcArcIndex* arc = (IfcSchema::IfcArcIndex*) segment;
+				std::vector<int> indices = *arc;
+				if (indices.size() != 3) {
+					throw IfcParse::IfcException("Invalid IfcArcIndex encountered");
 				}
-				previous = current;
-			}
-		} else if (segment->is(IfcSchema::Type::IfcArcIndex)) {
-			IfcSchema::IfcArcIndex* arc = (IfcSchema::IfcArcIndex*) segment;
-			std::vector<int> indices = *arc;
-			if (indices.size() != 3) {
-				throw IfcParse::IfcException("Invalid IfcArcIndex encountered");
-			}
-			for (int i = 0; i < 3; ++i) {
-				const int& idx = indices[i];
-				if (idx < 1 || idx > max_index) {
-					throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
+				for (int i = 0; i < 3; ++i) {
+					const int& idx = indices[i];
+					if (idx < 1 || idx > max_index) {
+						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
+					}
 				}
+				const gp_Pnt& a = points[indices[0] - 1];
+				const gp_Pnt& b = points[indices[1] - 1];
+				const gp_Pnt& c = points[indices[2] - 1];
+				Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
+				w.Add(BRepBuilderAPI_MakeEdge(circ, a, c));
+			} else {
+				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + IfcSchema::Type::ToString(segment->type()));
 			}
-			const gp_Pnt& a = points[indices[0] - 1];
-			const gp_Pnt& b = points[indices[1] - 1];
-			const gp_Pnt& c = points[indices[2] - 1];
-			Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
-			w.Add(BRepBuilderAPI_MakeEdge(circ, a, c));
-		} else {
-			throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + IfcSchema::Type::ToString(segment->type()));
 		}
-	}
-		
+	} else {
+                std::vector<gp_Pnt>::const_iterator previous = points.begin();
+                for (std::vector<gp_Pnt>::const_iterator current = previous+1; current < points.end(); ++current){
+                        w.Add(BRepBuilderAPI_MakeEdge(*previous, *current));
+                        previous = current;
+                }
+        }
+
 	result = w.Wire();
 	return true;
 }
