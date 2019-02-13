@@ -885,7 +885,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l, TopoDS_Shape& shape) {
-	gp_Trsf directrix, position;
+	gp_Trsf directrix;
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
 
@@ -964,7 +964,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	if (has_position) {
 		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
 		// and therefore has a unit scale factor
-		shape.Move(position);
+		shape.Move(trsf);
 	}
 
 	return true;
