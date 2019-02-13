@@ -912,7 +912,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + IfcSchema::Type::ToString(segment->type()));
 			}
 		}
-	} else {
+	} else if (points.begin() < points.end()) {
                 std::vector<gp_Pnt>::const_iterator previous = points.begin();
                 for (std::vector<gp_Pnt>::const_iterator current = previous+1; current < points.end(); ++current){
                         w.Add(BRepBuilderAPI_MakeEdge(*previous, *current));
