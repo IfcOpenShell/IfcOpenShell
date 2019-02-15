@@ -10,6 +10,33 @@
 	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
 }
 
+%typemap(out) IfcParse::declaration* {
+	if ($1->as_entity()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_entity()), SWIGTYPE_p_IfcParse__entity, 0);
+	} else if ($1->as_type_declaration()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_type_declaration()), SWIGTYPE_p_IfcParse__type_declaration, 0);
+	} else if ($1->as_select_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_select_type()), SWIGTYPE_p_IfcParse__select_type, 0);
+	} else if ($1->as_enumeration_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_enumeration_type()), SWIGTYPE_p_IfcParse__enumeration_type, 0);
+	}
+}
+
+%typemap(out) IfcParse::parameter_type* {
+	if ($1->as_named_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_IfcParse__named_type, 0);
+	} else if ($1->as_simple_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_IfcParse__simple_type, 0);
+	} else if ($1->as_aggregation_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
+	}
+}
+
+%typemap(out) IfcParse::simple_type::data_type {
+	static const char* const data_type_strings[] = {"binary", "boolean", "integer", "logical", "number", "real", "string"};
+	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
+}
+
 %typemap(out) std::pair<IfcUtil::ArgumentType, Argument*> {
 	// The SWIG %exception directive does not take care
 	// of our typemap. So the attribute conversion block
@@ -106,3 +133,6 @@ CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)

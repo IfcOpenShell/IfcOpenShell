@@ -195,52 +195,50 @@ namespace IfcParse {
 		virtual const enumeration_type* as_enumeration_type() const { return this; }
 	};
 
-	class entity : public declaration {
+	class attribute {
+	protected:
+		std::string name_;
+		const parameter_type* type_of_attribute_;
+		bool optional_;
+
 	public:
-		class attribute {
-		protected:
-			std::string name_;
-			const parameter_type* type_of_attribute_;
-			bool optional_;
+		attribute(const std::string& name, parameter_type* type_of_attribute, bool optional)
+			: name_(name)
+			, type_of_attribute_(type_of_attribute)
+			, optional_(optional) {}
 
-		public:
-			attribute(const std::string& name, parameter_type* type_of_attribute, bool optional)
-				: name_(name)
-				, type_of_attribute_(type_of_attribute)
-				, optional_(optional) {}
+		const std::string& name() const { return name_; }
+		const parameter_type* type_of_attribute() const { return type_of_attribute_; }
+		bool optional() const { return optional_; }
+	};
 
-			const std::string& name() const { return name_; }
-			const parameter_type* type_of_attribute() const { return type_of_attribute_; }
-			bool optional() const { return optional_; }
-		};
+	class inverse_attribute {
+	public:
+		typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
+	protected:
+		std::string name_;
+		aggregate_type type_of_aggregation_;
+		int bound1_, bound2_;
+		const entity* entity_reference_;
+		const attribute* attribute_reference_;
+	public:
+		inverse_attribute(const std::string& name, aggregate_type type_of_aggregation, int bound1, int bound2, const entity* entity_reference, const attribute* attribute_reference)
+			: name_(name)
+			, type_of_aggregation_(type_of_aggregation)
+			, bound1_(bound1)
+			, bound2_(bound2)
+			, entity_reference_(entity_reference)
+			, attribute_reference_(attribute_reference) {}
 
-		class inverse_attribute {
-		public:
-			typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
-		protected:
-			std::string name_;
-			aggregate_type type_of_aggregation_;
-			int bound1_, bound2_;
-			const entity* entity_reference_;
-			const attribute* attribute_reference_;
-		public:
-			inverse_attribute(const std::string& name, aggregate_type type_of_aggregation, int bound1, int bound2, const entity* entity_reference, const attribute* attribute_reference)
-				: name_(name)
-				, type_of_aggregation_(type_of_aggregation)
-				, bound1_(bound1)
-				, bound2_(bound2)
-				, entity_reference_(entity_reference)
-				, attribute_reference_(attribute_reference)
-			{}
+		const std::string& name() const { return name_; }
+		aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
+		int bound1() const { return bound1_; }
+		int bound2() const { return bound2_; }
+		const entity* entity_reference() const { return entity_reference_; }
+		const attribute* attribute_reference() const { return attribute_reference_; }
+	};
 
-			const std::string& name() const { return name_; }
-			aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
-			int bound1() const { return bound1_; }
-			int bound2() const { return bound2_; }
-			const entity* entity_reference() const { return entity_reference_; }
-			const attribute* attribute_reference() const { return attribute_reference_; }
-		};
-		
+	class entity : public declaration {
 	protected:
 		const entity* supertype_; /* NB: IFC explicitly allows only single inheritance */
 		std::vector<const entity*> subtypes_;
