@@ -136,8 +136,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 		
 		{
-		const std::vector<const IfcParse::entity::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
-		std::vector<const IfcParse::entity::attribute*>::const_iterator it = attrs.begin();
+		const std::vector<const IfcParse::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
+		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == name) {
 				return 1;
@@ -146,8 +146,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 
 		{
-		const std::vector<const IfcParse::entity::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		std::vector<const IfcParse::entity::inverse_attribute*>::const_iterator it = attrs.begin();
+		const std::vector<const IfcParse::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == name) {
 				return 2;
@@ -178,12 +178,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 			return std::vector<std::string>(1, "wrappedValue");
 		}
 		
-		const std::vector<const IfcParse::entity::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
+		const std::vector<const IfcParse::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
 		
 		std::vector<std::string> attr_names;
 		attr_names.reserve(attrs.size());		
 		
-		std::vector<const IfcParse::entity::attribute*>::const_iterator it = attrs.begin();
+		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
 		}
@@ -196,12 +196,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 			return std::vector<std::string>(0);
 		}
 
-		const std::vector<const IfcParse::entity::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		const std::vector<const IfcParse::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
 		
 		std::vector<std::string> attr_names;
 		attr_names.reserve(attrs.size());		
 		
-		std::vector<const IfcParse::entity::inverse_attribute*>::const_iterator it = attrs.begin();
+		std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
 		}
@@ -260,8 +260,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	IfcEntityList::ptr get_inverse(const std::string& a) {
-		const std::vector<const IfcParse::entity::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		std::vector<const IfcParse::entity::inverse_attribute*>::const_iterator it = attrs.begin();
+		const std::vector<const IfcParse::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == a) {
 				return self->data().getInverse(
@@ -585,6 +585,98 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return schema->instantiate(data);
 	}
 %}
+
+%extend IfcParse::named_type {
+	%pythoncode %{
+		def __repr__(self):
+			return repr(self.declared_type())
+	%}
+}
+
+%extend IfcParse::simple_type {
+	%pythoncode %{
+		def __repr__(self):
+			return "<%s>" % self.declared_type()
+	%}
+}
+
+%extend IfcParse::aggregation_type {
+	std::string type_of_aggregation() const {
+		static const char* const aggr_strings = ["array", "bag", "list", "set"];
+		return aggr_strings[(int) type_of_aggregation_];
+	}
+	%pythoncode %{
+		def __repr__(self):
+			format_bound = lambda i: "?" if i == -1 else str(i)
+			return "<%s [%s:%s] of %r>" % (
+				self.type_of_aggregation(),
+				format_bound(self.bound1()),
+				format_bound(self.bound2()),
+				self.type_of_element()
+			)
+	%}
+}
+
+%extend IfcParse::type_declaration {
+	%pythoncode %{
+		def __repr__(self):
+			return "<type %s: %r>" % (self.name(), self.declared_type())
+	%}
+}
+
+%extend IfcParse::select_type {
+	%pythoncode %{
+		def __repr__(self):
+			return "<select %s: (%s)>" % (self.name(), " | ".join(map(repr, self.select_list())))
+	%}
+}
+
+%extend IfcParse::enumeration_type {
+	%pythoncode %{
+		def __repr__(self):
+			return "<enumeration %s: (%s)>" % (self.name(), ", ".join(self.enumeration_items()))
+	%}
+}
+
+%extend IfcParse::attribute {
+	%pythoncode %{
+		def __repr__(self):
+			return "<attribute %s%s: %s>" % (self.name(), "?" if self.optional() else "", self.type_of_attribute())
+	%}
+}
+
+%extend IfcParse::inverse_attribute {
+	std::string type_of_aggregation() const {
+		static const char* const aggr_strings = ["bag", "set", ""];
+		return aggr_strings[(int) type_of_aggregation_];
+	}
+	%pythoncode %{
+		def __repr__(self):
+			format_bound = lambda i: "?" if i == -1 else str(i)
+			return "<inverse %s: %s [%s:%s] of %r for %r>" % (
+				self.name(),
+				self.type_of_aggregation(),
+				format_bound(self.bound1()),
+				format_bound(self.bound2()),
+				self.entity_reference(),
+				self.attribute_reference()
+			)
+	%}
+}
+
+%extend IfcParse::entity {
+	%pythoncode %{
+		def __repr__(self):
+			return "<entity %s>" % (self.name())
+	%}
+}
+
+%extend IfcParse::schema_definition {
+	%pythoncode %{
+		def __repr__(self):
+			return "<schema %s>" % (self.name())
+	%}
+}
 
 %{
 	static std::stringstream ifcopenshell_log_stream;

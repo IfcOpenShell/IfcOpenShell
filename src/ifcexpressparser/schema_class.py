@@ -23,6 +23,8 @@ import nodes
 import codegen
 import templates
 
+from collections import defaultdict
+
 class SchemaClass(codegen.Base):
     def __init__(self, mapping):
         
@@ -167,11 +169,11 @@ __attribute__((optnone))
             attribute_names = list(map(operator.attrgetter('name'), mapping.arguments(type)))
             
             statements.append('    {')
-            statements.append('        std::vector<const entity::attribute*> attributes; attributes.reserve(%d);' % len(type.attributes))
+            statements.append('        std::vector<const attribute*> attributes; attributes.reserve(%d);' % len(type.attributes))
             for attr in type.attributes:
                 attr_name, optional = attr.name, str(attr.optional).lower()
                 decl_type = get_declared_type(attr.type)
-                statements.append('        attributes.push_back(new entity::attribute("%(attr_name)s", %(decl_type)s, %(optional)s));' % locals())
+                statements.append('        attributes.push_back(new attribute("%(attr_name)s", %(decl_type)s, %(optional)s));' % locals())
             statements.append('        std::vector<bool> derived; derived.reserve(%d);' % len(attribute_names))
             statements.append('        ' + " ".join(map(lambda b: 'derived.push_back(%s);' % str(b in derived).lower(), attribute_names)))
             statements.append('        %(schema_name)s_%(name)s_type->set_attributes(attributes, derived);' % locals())
@@ -180,7 +182,7 @@ __attribute__((optnone))
         for name, type in mapping.schema.entities.items():
             if type.inverse:
                 statements.append('    {')
-                statements.append('        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(%d);' % len(type.inverse.elements))
+                statements.append('        std::vector<const inverse_attribute*> attributes; attributes.reserve(%d);' % len(type.inverse.elements))
                 for attr in type.inverse.elements:
                     if attr.bounds:
                         make_bound = lambda b: -1 if b == '?' else int(b)
@@ -190,9 +192,22 @@ __attribute__((optnone))
                     attr_name, aggr_type, entity_ref = attr.name, attr.type, attr.entity
                     if aggr_type is None: aggr_type = 'unspecified'
                     attribute_entity, attribute_entity_index = find_inverse_name_and_index(entity_ref, attr.attribute)
-                    statements.append('        attributes.push_back(new entity::inverse_attribute("%(attr_name)s", entity::inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(schema_name)s_%(entity_ref)s_type, %(schema_name)s_%(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));' % locals())
+                    statements.append('        attributes.push_back(new inverse_attribute("%(attr_name)s", inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(schema_name)s_%(entity_ref)s_type, %(schema_name)s_%(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));' % locals())
                 statements.append('        %(schema_name)s_%(name)s_type->set_inverse_attributes(attributes);' % locals())
                 statements.append('    }')
+                
+        subtypes = defaultdict(list)
+        
+        for name, type in mapping.schema.entities.items():
+            for ty in type.supertypes:
+                subtypes[ty].append(name)
+                
+        for name, tys in subtypes.items():
+            statements.append('    {')
+            statements.append('        std::vector<const entity*> defs; defs.reserve(%d);' % len(tys))
+            statements.append(('        ' + "".join(map(lambda t: ("defs.push_back(%%(schema_name)s_%s_type);" % t), tys))) % locals())
+            statements.append('        %(schema_name)s_%(name)s_type->set_subtypes(defs);' % locals())
+            statements.append('    }')
             
         statements.append('')
         statements.append('    std::vector<const declaration*> declarations; declarations.reserve(%(num_declarations)d);' % locals())
