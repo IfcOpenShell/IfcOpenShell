@@ -91,6 +91,13 @@ std::string format_json(const std::string& s) {
 	return "\"" + s + "\"";
 }
 
+template <>
+std::string format_json(const gp_Dir& d) {
+	std::stringstream ss;
+	ss << "[" << d.X() << "," << d.Y() << "," << d.Z() << "]";
+	return ss.str();
+}
+
 static std::streambuf *stdout_orig, *stdout_redir;
 
 template <typename T>
@@ -419,6 +426,7 @@ static const std::string SURFACE_AREA_ALONG_Y = "SURFACE_AREA_ALONG_Y";
 static const std::string SURFACE_AREA_ALONG_Z = "SURFACE_AREA_ALONG_Z";
 static const std::string WALKABLE_SURFACE_AREA = "WALKABLE_SURFACE_AREA";
 static const std::string LARGEST_FACE_AREA = "LARGEST_FACE_AREA";
+static const std::string LARGEST_FACE_DIRECTION = "LARGEST_FACE_DIRECTION";
 static const std::string BOUNDING_BOX_SIZE_ALONG_ = "BOUNDING_BOX_SIZE_ALONG_";
 static const std::array<std::string, 3> XYZ = { "X", "Y", "Z" };
 
@@ -442,8 +450,7 @@ private:
 	const IfcGeom::BRepElement<double, double>* elem_;
 public:
 	QuantityWriter_v1(const IfcGeom::BRepElement<double, double>* elem) :
-		elem_(elem)
-	{
+		elem_(elem) {
 		double a, b, c, largest_face_area = 0.;
 
 		if (elem_->geometry().calculate_surface_area(a)) {
@@ -460,19 +467,33 @@ public:
 			put_json(SURFACE_AREA_ALONG_Z, c);
 		}
 
-		for (auto& part : elem->geometry()) {
-			TopExp_Explorer exp(part.Shape(), TopAbs_FACE);
+		boost::optional<gp_Dir> largest_face_dir;
+
+		{
+			TopoDS_Compound compound = elem_->geometry().as_compound();
+			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
 				BRepGProp::SurfaceProperties(exp.Current(), prop);
 				const double area = prop.Mass();
 				if (area > largest_face_area) {
 					largest_face_area = area;
+
+					Handle(Geom_Surface) surf = BRep_Tool::Surface(TopoDS::Face(exp.Current()));
+					if (surf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+						largest_face_dir = Handle(Geom_Plane)::DownCast(surf)->Axis().Direction();
+						if (exp.Current().Orientation() == TopAbs_REVERSED) {
+							largest_face_dir->Reverse();
+						}
+					}
 				}
 			}
 		}
 
-		put_json(LARGEST_FACE_AREA, largest_face_area);
+		if (largest_face_dir) {
+			put_json(LARGEST_FACE_DIRECTION, *largest_face_dir);
+			put_json(LARGEST_FACE_AREA, largest_face_area);
+		}
 
 		{
 			Bnd_Box box;
