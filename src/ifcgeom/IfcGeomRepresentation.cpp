@@ -82,7 +82,7 @@ TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 	}
 }
 
-TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
+TopoDS_Compound IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
@@ -90,7 +90,7 @@ TopoDS_Compound IfcGeom::Representation::BRep::as_compound() const {
 		const TopoDS_Shape& s = it->Shape();
 		gp_GTrsf trsf = it->Placement();
 
-		if (settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
+		if (!force_meters && settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);
