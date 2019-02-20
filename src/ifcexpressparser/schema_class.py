@@ -127,7 +127,8 @@ __attribute__((optnone))
         def write_entity(schema_name, name, type):
             if len(type.supertypes) == 0 or set(map(lambda s: s.lower(), type.supertypes)) < emitted:
                 supertype = '0' if len(type.supertypes) == 0 else '%s_%s_type' % (schema_name, type.supertypes[0])
-                statements.append('    %(schema_name)s_%(name)s_type = new entity("%(name)s", %%(index_in_schema_%(name)s)d, %(supertype)s);' % locals())
+                is_abstract = "true" if type.abstract else "false"
+                statements.append('    %(schema_name)s_%(name)s_type = new entity("%(name)s", %(is_abstract)s, %%(index_in_schema_%(name)s)d, %(supertype)s);' % locals())
             else: return False
                 
         def write_select(schema_name, name, type):

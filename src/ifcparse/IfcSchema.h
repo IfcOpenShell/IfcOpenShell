@@ -240,6 +240,7 @@ namespace IfcParse {
 
 	class entity : public declaration {
 	protected:
+		bool is_abstract_;
 		const entity* supertype_; /* NB: IFC explicitly allows only single inheritance */
 		std::vector<const entity*> subtypes_;
 
@@ -274,8 +275,9 @@ namespace IfcParse {
 		}
 
 	public:
-		entity(const std::string& name, int index_in_schema, entity* supertype)
+		entity(const std::string& name, bool is_abstract, int index_in_schema, entity* supertype)
 			: declaration(name, index_in_schema)
+			, is_abstract_(is_abstract)
 			, supertype_(supertype)
 		{}
 
@@ -290,6 +292,8 @@ namespace IfcParse {
 			else if (supertype_) return supertype_->is(decl);
 			else return false;
 		}
+
+		bool is_abstract() const { return is_abstract_; }
 
 		void set_subtypes(const std::vector<const entity*>& subtypes) {
 			subtypes_ = subtypes;
