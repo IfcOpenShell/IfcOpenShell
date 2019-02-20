@@ -122,6 +122,7 @@ actions = {
     'select_type'               : "lambda t: SelectType(t)",
     'binary_type'               : "lambda t: BinaryType(t)",
     'subtype_declaration'       : "lambda t: SubTypeExpression(t)",
+    'supertype_constraint'      : "lambda t: SuperTypeExpression(t)",
     'derive_clause'             : "lambda t: AttributeList('derive', t)",
     'derived_attr'              : "lambda t: DerivedAttribute(t)",
     'inverse_clause'            : "lambda t: AttributeList('inverse', t)",
