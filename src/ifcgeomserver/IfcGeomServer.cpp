@@ -92,9 +92,17 @@ std::string format_json(const std::string& s) {
 }
 
 template <>
+std::string format_json(const double& d) {
+	std::stringstream ss;
+	ss << std::setprecision(std::numeric_limits<double>::digits10) << d;
+	return ss.str();
+}
+
+template <>
 std::string format_json(const gp_Dir& d) {
 	std::stringstream ss;
-	ss << "[" << d.X() << "," << d.Y() << "," << d.Z() << "]";
+	ss << std::setprecision(std::numeric_limits<double>::digits10) 
+		<< "[" << d.X() << "," << d.Y() << "," << d.Z() << "]";
 	return ss.str();
 }
 
@@ -470,7 +478,7 @@ public:
 		boost::optional<gp_Dir> largest_face_dir;
 
 		{
-			TopoDS_Compound compound = elem_->geometry().as_compound();
+			TopoDS_Compound compound = elem_->geometry().as_compound(true);
 			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
@@ -488,20 +496,11 @@ public:
 					}
 				}
 			}
-		}
 
-		if (largest_face_dir) {
-			put_json(LARGEST_FACE_DIRECTION, *largest_face_dir);
-			put_json(LARGEST_FACE_AREA, largest_face_area);
-		}
-
-		{
 			Bnd_Box box;
-			double xyz[6];			
+			double xyz[6];
 
-			for (auto& part : elem->geometry()) {
-				BRepBndLib::AddClose(part.Shape(), box);
-			}
+			BRepBndLib::AddClose(compound, box);
 
 			if (!box.IsVoid()) {
 				box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
@@ -510,7 +509,11 @@ public:
 					put_json(BOUNDING_BOX_SIZE_ALONG_ + XYZ[i], bsz);
 				}
 			}
+		}
 
+		if (largest_face_dir) {
+			put_json(LARGEST_FACE_DIRECTION, *largest_face_dir);
+			put_json(LARGEST_FACE_AREA, largest_face_area);
 		}
 	}
 };

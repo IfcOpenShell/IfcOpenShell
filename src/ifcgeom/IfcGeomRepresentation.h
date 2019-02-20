@@ -75,7 +75,7 @@ namespace IfcGeom {
 			IfcGeom::IfcRepresentationShapeItems::const_iterator end() const { return shapes_.end(); }
 			const IfcGeom::IfcRepresentationShapeItems& shapes() const { return shapes_; }
 			const std::string& id() const { return id_; }
-			TopoDS_Compound as_compound() const;
+			TopoDS_Compound as_compound(bool force_meters = false) const;
 
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;
