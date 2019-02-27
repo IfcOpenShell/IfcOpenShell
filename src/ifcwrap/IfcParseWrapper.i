@@ -601,15 +601,15 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 }
 
 %extend IfcParse::aggregation_type {
-	std::string type_of_aggregation() const {
-		static const char* const aggr_strings = ["array", "bag", "list", "set"];
-		return aggr_strings[(int) type_of_aggregation_];
+	std::string type_of_aggregation_string() const {
+		static const char* const aggr_strings[] = {"array", "bag", "list", "set"};
+		return aggr_strings[(int) $self->type_of_aggregation()];
 	}
 	%pythoncode %{
 		def __repr__(self):
 			format_bound = lambda i: "?" if i == -1 else str(i)
 			return "<%s [%s:%s] of %r>" % (
-				self.type_of_aggregation(),
+				self.type_of_aggregation_string(),
 				format_bound(self.bound1()),
 				format_bound(self.bound2()),
 				self.type_of_element()
@@ -646,16 +646,16 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 }
 
 %extend IfcParse::inverse_attribute {
-	std::string type_of_aggregation() const {
-		static const char* const aggr_strings = ["bag", "set", ""];
-		return aggr_strings[(int) type_of_aggregation_];
+	std::string type_of_aggregation_string() const {
+		static const char* const aggr_strings[] = {"bag", "set", ""};
+		return aggr_strings[(int) $self->type_of_aggregation()];
 	}
 	%pythoncode %{
 		def __repr__(self):
 			format_bound = lambda i: "?" if i == -1 else str(i)
 			return "<inverse %s: %s [%s:%s] of %r for %r>" % (
 				self.name(),
-				self.type_of_aggregation(),
+				self.type_of_aggregation_string(),
 				format_bound(self.bound1()),
 				format_bound(self.bound2()),
 				self.entity_reference(),
