@@ -1,9 +1,7 @@
 import sys
-import mvdxml_expression
+from  . import mvdxml_expression
 
 from xml.dom.minidom import parse, Element
-
-import sparql
 
 class rule(object):
     """
@@ -183,6 +181,7 @@ class concept_root(object):
 if __name__ == "__main__":
 
     if len(sys.argv) == 3:
+        from . import sparql
         ttlfn, mvdfn = sys.argv[1:]
         sparql.derive_prefix(ttlfn)
         ttlfn = sparql.infer_subtypes(ttlfn)
