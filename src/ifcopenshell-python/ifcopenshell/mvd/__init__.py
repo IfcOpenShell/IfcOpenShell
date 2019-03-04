@@ -27,15 +27,16 @@ class template(object):
         self.concept, self.root, self.params = concept, root, params
         self.rules = rules or []
         self.entity = str(root.attributes['applicableEntity'].value)
-        self.name = root.attributes['name'].value
+        try:
+            self.name = root.attributes['name'].value
+        except:
+            self.name = None
         
     def bind(self, params):
         return template(self.concept, self.root, params, self.rules)
         
     def parse(self):
-        for rules in self.root.childNodes:
-            if not isinstance(rules, Element): continue
-            
+        for rules in self.root.getElementsByTagName("Rules"):
             for r in rules.childNodes:
                 if not isinstance(r, Element): continue
                 self.rules.append(self.parse_rule(r))
@@ -133,7 +134,10 @@ class concept_or_applicability(object):
 
     def rules(self):
         # Get the top most TemplateRule and traverse
-        rules = self.concept_node.getElementsByTagName("TemplateRules")[0]
+        try:
+            rules = self.concept_node.getElementsByTagName("TemplateRules")[0]
+        except:
+            return []
 
         def visit(rules):
             def _():
