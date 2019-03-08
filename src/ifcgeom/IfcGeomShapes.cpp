@@ -924,7 +924,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l, TopoDS_Shape& shape) {
-	gp_Trsf directrix, position;
+	gp_Trsf directrix;
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
 
@@ -1003,7 +1003,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	if (has_position) {
 		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
 		// and therefore has a unit scale factor
-		shape.Move(position);
+		shape.Move(trsf);
 	}
 
 	return true;
@@ -1152,9 +1152,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	
 	// IfcElementarySurface.Position has unit scale factor
 #if OCC_VERSION_HEX < 0x60502
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT))).Face().Moved(trsf);
 #else
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius()), getValue(GV_PRECISION)).Face().Moved(trsf);
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
 #endif
 	return true;
 }

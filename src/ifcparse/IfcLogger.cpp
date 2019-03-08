@@ -32,58 +32,113 @@
 #include <iostream>
 #include <algorithm>
 
-using boost::property_tree::ptree;
-
 namespace {
-	static const char* severity_strings[] = {"Notice", "Warning", "Error"};
+	
+	template <typename T>
+	struct severity_strings {
+		static const std::array<std::basic_string<T>, 3> value;
+	};
 
-	void plain_text_message(std::ostream& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
-		os << "[" << severity_strings[type] << "] ";
+	template <>
+	const std::array<std::basic_string<char>, 3> severity_strings<char>::value = { "Notice", "Warning", "Error" };
+
+	template <>
+	const std::array<std::basic_string<wchar_t>, 3> severity_strings<wchar_t>::value = { L"Notice", L"Warning", L"Error" };
+	
+	template <typename T>
+	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+		os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
 		if (current_product) {
-			std::string global_id = *(**current_product).data().getArgument((**current_product).declaration().as_entity()->attribute_index("GlobalId"));
-			os << "{" << global_id << "} ";
+            std::string global_id = *(**current_product).get("GlobalId"));
+			os << "{" << global_id.c_str() << "} ";
 		}
-		os << message << std::endl;
+		os << message.c_str() << std::endl;
 		if (instance) {
-			std::string instance_string = instance->data().toString();
+			std::string instance_string = entity->data().toString();
 			if (instance_string.size() > 259) {
 				instance_string = instance_string.substr(0, 256) + "...";
 			}
-			os << instance_string << std::endl;
+			os << instance_string.c_str() << std::endl;
 		}
 	}
 
-	void json_message(std::ostream& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
-		ptree pt;
-		pt.put("level", severity_strings[type]);
+	template <typename T>
+	std::basic_string<T> string_as(const std::string& s) {
+		std::basic_string<T> v;
+		v.assign(s.begin(), s.end());
+		return v;
+	}
+
+	template <typename T>
+	void json_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+		boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type> > pt;
+		
+		// @todo this is crazy
+		static const typename T::char_type level_string[] = { 'l', 'e', 'v', 'e', 'l', 0 };
+		static const typename T::char_type product_string[] = { 'p', 'r', 'o', 'd', 'u', 'c', 't', 0 };
+		static const typename T::char_type message_string[] = { 'm', 'e', 's', 's', 'a', 'g', 'e', 0 };
+		static const typename T::char_type instance_string[] = { 'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0 };
+		
+		pt.put(level_string, severity_strings<typename T::char_type>::value[type]);
 		if (current_product) {
-			pt.put("product", (**current_product).data().toString());
+			pt.put(product_string, string_as<typename T::char_type>((**current_product).data().toString()));
 		}
-		pt.put("message", message);
+		pt.put(message_string, string_as<typename T::char_type>(message));
 		if (instance) {
-			pt.put("instance", instance->data().toString());
+			pt.put(instance_string, string_as<typename T::char_type>(instance->data().toString()));
 		}
 		boost::property_tree::write_json(os, pt, false);
 	}
 }
 
-void Logger::SetOutput(std::ostream* l1, std::ostream* l2) { 
+void Logger::SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
+	current_product = product;
+}
+
+void Logger::SetOutput(std::ostream* l1, std::ostream* l2) {
+	wlog1 = wlog2 = 0;
 	log1 = l1; 
 	log2 = l2; 
-	if ( ! log2 ) {
+	if (!log2) {
 		log2 = &log_stream;
 	}
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
-	if (type > max_severity) {
-		max_severity = type;
+void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
+	log1 = log2 = 0;
+	wlog1 = l1;
+	wlog2 = l2;
+	if (!wlog2) {
+		log2 = &log_stream;
 	}
-    if (log2 && type >= verbosity) {
+}
+
+template <typename T>
+void Logger::log(T& log2, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	log2 << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
+	if (current_product) {
+		log2 << "{" << (*current_product)->GlobalId().c_str() << "} ";
+	}
+	log2 << message.c_str() << std::endl;
+	if (instance) {
+		log2 << instance->data().toString().c_str() << std::endl;
+	}
+}
+
+void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	if ((log2 || wlog2) && type >= verbosity) {
 		if (format == FMT_PLAIN) {
-			plain_text_message(*log2, current_product, type, message, instance);
+            if (log2) {
+                plain_text_message(*log2, current_product, type, message, instance);
+            } else if (wlog2) {
+                plain_text_message(*wlog2, current_product, type, message, instance);
+            }
 		} else if (format == FMT_JSON) {
-			json_message(*log2, current_product, type, message, instance);
+            if (log2) {
+                json_message(*log2, current_product, type, message, instance);
+            } else if (wlog2) {
+                json_message(*wlog2, current_product, type, message, instance);
+            }
 		}
 	}
 }
@@ -92,18 +147,26 @@ void Logger::Message(Logger::Severity type, const std::exception& exception, con
 	Message(type, std::string(exception.what()), instance);
 }
 
+template <typename T>
+void status(T& log1, const std::string& message, bool new_line) {
+	log1 << message.c_str();
+	if (new_line) {
+		log1 << std::endl;
+	} else {
+		log1 << std::flush;
+	}
+}
+
 void Logger::Status(const std::string& message, bool new_line) {
 	if (log1) {
-		(*log1) << message;
-		if ( new_line ) (*log1) << std::endl;
-		else (*log1) << std::flush;
+		status(*log1, message, new_line);
+	} else if (wlog1) {
+		status(*wlog1, message, new_line);
 	}
 }
 
 void Logger::ProgressBar(int progress) {
-	if (log1) {
-		Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
-	}
+	Status("\r[" + std::string(progress,'#') + std::string(50 - progress,' ') + "]", false);
 }
 
 std::string Logger::GetLog() {
@@ -120,6 +183,8 @@ Logger::Format Logger::OutputFormat() { return format; }
 
 std::ostream* Logger::log1 = 0;
 std::ostream* Logger::log2 = 0;
+std::wostream* Logger::wlog1 = 0;
+std::wostream* Logger::wlog2 = 0;
 std::stringstream Logger::log_stream;
 Logger::Severity Logger::verbosity = Logger::LOG_NOTICE;
 Logger::Severity Logger::max_severity = Logger::LOG_NOTICE;
