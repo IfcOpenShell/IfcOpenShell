@@ -49,12 +49,12 @@ namespace {
 	void plain_text_message(T& os, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
 		os << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
 		if (current_product) {
-            std::string global_id = *(**current_product).get("GlobalId"));
+            std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
 			os << "{" << global_id.c_str() << "} ";
 		}
 		os << message.c_str() << std::endl;
 		if (instance) {
-			std::string instance_string = entity->data().toString();
+			std::string instance_string = instance->data().toString();
 			if (instance_string.size() > 259) {
 				instance_string = instance_string.substr(0, 256) + "...";
 			}
@@ -110,18 +110,6 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 	wlog2 = l2;
 	if (!wlog2) {
 		log2 = &log_stream;
-	}
-}
-
-template <typename T>
-void Logger::log(T& log2, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
-	log2 << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
-	if (current_product) {
-		log2 << "{" << (*current_product)->GlobalId().c_str() << "} ";
-	}
-	log2 << message.c_str() << std::endl;
-	if (instance) {
-		log2 << instance->data().toString().c_str() << std::endl;
 	}
 }
 

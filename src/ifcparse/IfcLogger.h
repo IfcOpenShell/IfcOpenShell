@@ -53,10 +53,6 @@ private:
 	static Format format;
 	static boost::optional<IfcUtil::IfcBaseClass*> current_product;
 	static Severity max_severity;
-	static boost::optional<IfcSchema::IfcProduct*> current_product;
-
-	template <typename T>
-	static void log(T& log2, Logger::Severity type, const std::string& message, IfcUtil::IfcBaseClass* instance);
 public:
 	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product);
 

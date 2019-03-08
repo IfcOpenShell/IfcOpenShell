@@ -99,7 +99,7 @@ void print_usage(bool suggest_help = true)
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
-        << "If no output filename given, <input>." + IfcUtil::path::from_utf8(DEFAULT_EXTENSION) + " will be used as the output file.\n";
+        << "If no output filename given, <input>." << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
         cout_ << "\nRun 'IfcConvert --help' for more information.";
     }
@@ -209,15 +209,6 @@ int main(int argc, char** argv) {
 #endif
 		("input-file", new po::typed_value<path_t, char_t>(0), "input IFC file")
 		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file");
-		
-
-    double deflection_tolerance;
-	inclusion_filter include_filter;
-    inclusion_traverse_filter include_traverse_filter;
-    exclusion_filter exclude_filter;
-    exclusion_traverse_filter exclude_traverse_filter;
-    std::string filter_filename;
-    std::string default_material_filename;
 	
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
@@ -531,7 +522,7 @@ int main(int argc, char** argv) {
 		STP = IfcUtil::path::from_utf8(".stp"),
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
-		XML = IfcUtil::path::from_utf8(".xml");
+		XML = IfcUtil::path::from_utf8(".xml"),
 		IFC = IfcUtil::path::from_utf8(".ifc");
 
 	// @todo clean up serializer selection
@@ -559,7 +550,7 @@ int main(int argc, char** argv) {
 	} else if (output_extension == IFC) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(input_filename, ifc_file, no_progress || quiet, mmap)) {
+			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
                 time_t start, end;
 				time(&start);
 				std::ofstream fs(output_filename.c_str());
