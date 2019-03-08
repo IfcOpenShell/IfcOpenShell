@@ -22,8 +22,21 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
 
+#include "../ifcparse/utils.h"
+
 #include <boost/lexical_cast.hpp>
 #include <iomanip>
+
+WaveFrontOBJSerializer::WaveFrontOBJSerializer(const std::string& obj_filename, const std::string& mtl_filename, const SerializerSettings& settings)
+	: GeometrySerializer(settings)
+	, mtl_filename(mtl_filename)
+	, obj_stream(IfcUtil::path::from_utf8(obj_filename).c_str())
+	, mtl_stream(IfcUtil::path::from_utf8(mtl_filename).c_str())
+	, vcount_total(1)
+{
+	obj_stream << std::setprecision(settings.precision);
+	mtl_stream << std::setprecision(settings.precision);
+}
 
 bool WaveFrontOBJSerializer::ready() {
 	return obj_stream.is_open() && mtl_stream.is_open();

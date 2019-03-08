@@ -17,8 +17,6 @@
 *                                                                              *
 ********************************************************************************/
 
-#include <map>
-
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/version.hpp>
@@ -30,6 +28,7 @@
 
 #include "../../ifcparse/IfcSIPrefix.h"
 #include "../../ifcgeom/IfcGeom.h"
+#include "../../ifcparse/utils.h"
 
 using boost::property_tree::ptree;
 
@@ -549,5 +548,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 #else
 	boost::property_tree::xml_writer_settings<char> settings('\t', 1);
 #endif
-	boost::property_tree::write_xml(xml_filename, root, std::locale(), settings);
+	
+	std::ofstream f(IfcUtil::path::from_utf8(xml_filename).c_str());
+	boost::property_tree::write_xml(f, root, settings);
 }

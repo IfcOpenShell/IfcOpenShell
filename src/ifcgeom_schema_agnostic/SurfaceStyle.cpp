@@ -72,6 +72,7 @@ void IfcGeom::set_default_style_file(const std::string& json_file) {
 	if (!default_materials_initialized) InitDefaultMaterials();
 	default_materials.clear();
 
+	// @todo this will probably need to be updated for UTF-8 paths on Windows
 	pt::ptree root;
 	pt::read_json(json_file, root);
 

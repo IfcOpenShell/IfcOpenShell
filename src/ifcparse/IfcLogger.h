@@ -38,19 +38,31 @@ public:
 	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
 	typedef enum { FMT_PLAIN, FMT_JSON } Format;
 private:
+
+	// To both stream variants need to exist at runtime or should this be a 
+	// template argument of Logger or controlled using preprocessor directives?
 	static std::ostream* log1;
 	static std::ostream* log2;
+	
+	static std::wostream* wlog1;
+	static std::wostream* wlog2;
+
 	static std::stringstream log_stream;
+
 	static Severity verbosity;
 	static Format format;
 	static boost::optional<IfcUtil::IfcBaseClass*> current_product;
 	static Severity max_severity;
+	static boost::optional<IfcSchema::IfcProduct*> current_product;
+
+	template <typename T>
+	static void log(T& log2, Logger::Severity type, const std::string& message, IfcUtil::IfcBaseClass* instance);
 public:
+	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product);
 
-	static void SetProduct(boost::optional<IfcUtil::IfcBaseClass*> product) {
-		current_product = product;
-	}
-
+	/// Determines to what stream respectively progress and errors are logged
+	static void SetOutput(std::wostream* l1, std::wostream* l2);
+	
 	/// Determines to what stream respectively progress and errors are logged
 	static void SetOutput(std::ostream* l1, std::ostream* l2);
 

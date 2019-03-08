@@ -34,6 +34,8 @@
 #include <string>
 #include <cmath>
 
+#include "../ifcparse/utils.h"
+
 static std::string& collada_id(std::string& s)
 {
     IfcUtil::sanitate_material_name(s);
