@@ -268,7 +268,7 @@ public:
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-    static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*);
+    static IfcSchema::IfcObjectDefinition* get_decomposing_entity(IfcSchema::IfcProduct*, bool include_openings=true);
 
     static std::map<std::string, IfcSchema::IfcPresentationLayerAssignment*> get_layers(IfcSchema::IfcProduct* prod);
 
