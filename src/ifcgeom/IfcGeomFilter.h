@@ -42,13 +42,15 @@ namespace IfcGeom
 
     struct filter
     {
-        filter() : include(false), traverse(false) {}
-        filter(bool incl, bool trav) : include(incl), traverse(trav) {}
+        filter() : include(false), traverse(false), traverse_openings(false) {}
+        filter(bool incl, bool trav, bool trav_openings = false) : include(incl), traverse(trav), traverse_openings(trav_openings) {}
         /// Should the product be included (true) or excluded (false).
         bool include;
         /// If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
         /// children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
         bool traverse;
+		/// Include opening relationships as part of traversal.
+		bool traverse_openings;
         /// Optional description for the filtering criteria of this filter.
         std::string description;
 
@@ -61,10 +63,10 @@ namespace IfcGeom
             return is_match == include;
         }
 
-        static bool traverse_match(IfcSchema::IfcProduct* prod, const filter_t& pred)
+        bool traverse_match(IfcSchema::IfcProduct* prod, const filter_t& pred) const
         {
             IfcSchema::IfcProduct* parent, *current = prod;
-            while ((parent = dynamic_cast<IfcSchema::IfcProduct*>(IfcGeom::Kernel::get_decomposing_entity(current))) != 0) {
+            while ((parent = dynamic_cast<IfcSchema::IfcProduct*>(IfcGeom::Kernel::get_decomposing_entity(current, traverse_openings))) != 0) {
                 if (pred(parent)) {
                     return true;
                 }
@@ -248,11 +250,9 @@ namespace IfcGeom
     struct entity_filter : public filter
     {
         entity_filter() {}
-        entity_filter(bool include, bool traverse/*, const std::set<std::string>& types*/)
+        entity_filter(bool include, bool traverse)
             : filter(include, traverse)
-        {
-            //populate(types);
-        }
+        {}
 
         std::set<IfcSchema::Type::Enum> values;
 

@@ -1739,33 +1739,33 @@ IfcGeom::BRepElement<P>* IfcGeom::Kernel::create_brep_for_processed_representati
 	);
 }
 
-IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchema::IfcProduct* product) {
+IfcSchema::IfcObjectDefinition* IfcGeom::Kernel::get_decomposing_entity(IfcSchema::IfcProduct* product, bool include_openings) {
 	IfcSchema::IfcObjectDefinition* parent = 0;
 
 	// In case of an opening element, parent to the RelatingBuildingElement
-	if ( product->is(IfcSchema::Type::IfcOpeningElement ) ) {
+	if (include_openings && product->is(IfcSchema::Type::IfcOpeningElement)) {
 		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;
 		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();
-		if ( voids->size() ) {
+		if (voids->size()) {
 			IfcSchema::IfcRelVoidsElement* ifc_void = *voids->begin();
 			parent = ifc_void->RelatingBuildingElement();
 		}
-	} else if ( product->is(IfcSchema::Type::IfcElement ) ) {
+	} else if (product->is(IfcSchema::Type::IfcElement)) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();
 		// In case of a RelatedBuildingElement parent to the opening element
-		if ( fills->size() ) {
-			for ( IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it ) {
+		if (fills->size() && include_openings) {
+			for (IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++ it) {
 				IfcSchema::IfcRelFillsElement* fill = *it;
 				IfcSchema::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();
-				if ( product == ifc_objectdef ) continue;
+				if (product == ifc_objectdef) continue;
 				parent = ifc_objectdef;
 			}
 		} 
 		// Else simply parent to the containing structure
 		if (!parent) {
 			IfcSchema::IfcRelContainedInSpatialStructure::list::ptr parents = element->ContainedInStructure();
-			if ( parents->size() ) {
+			if (parents->size()) {
 				IfcSchema::IfcRelContainedInSpatialStructure* container = *parents->begin();
 				parent = container->RelatingStructure();
 			}
