@@ -73,11 +73,11 @@ IfcGeom::Kernel* IfcGeom::impl::KernelFactoryImplementation::construct(const std
 
 #define CREATE_GET_DECOMPOSING_ENTITY(IfcSchema)                                                                 \
                                                                                                                  \
-IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduct* product) {                    \
+IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduct* product, bool include_openings) {\
 	IfcSchema::IfcObjectDefinition* parent = 0;                                                                  \
                                                                                                                  \
 	/* In case of an opening element, parent to the RelatingBuildingElement */                                   \
-	if (product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {                                      \
+	if (include_openings && product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {                  \
 		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;                          \
 		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();                               \
 		if (voids->size()) {                                                                                     \
@@ -88,7 +88,7 @@ IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduc
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;                                        \
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();                                  \
 		/* In case of a RelatedBuildingElement parent to the opening element */                                  \
-		if (fills->size()) {                                                                                     \
+		if (fills->size() && include_openings) {                                                                 \
 			for (IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++it) {        \
 				IfcSchema::IfcRelFillsElement* fill = *it;                                                       \
 				IfcSchema::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();                  \
@@ -140,11 +140,11 @@ namespace {
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4);
 }
 
-IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst) {
+IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
 	if (inst->as<Ifc2x3::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>());
+		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>(), include_openings);
 	} else if (inst->as<Ifc4::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>());
+		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>(), include_openings);
 	} else {
 		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 	}

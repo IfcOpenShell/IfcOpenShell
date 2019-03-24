@@ -83,7 +83,7 @@ namespace IfcGeom {
 		static int surface_genus(const TopoDS_Shape&);
 
 		static bool is_manifold(const TopoDS_Shape& a);
-		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*);
+		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings=true);
 		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 	};
 
