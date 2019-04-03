@@ -11,15 +11,7 @@
 }
 
 %typemap(out) IfcParse::declaration* {
-	if ($1->as_entity()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_entity()), SWIGTYPE_p_IfcParse__entity, 0);
-	} else if ($1->as_type_declaration()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_type_declaration()), SWIGTYPE_p_IfcParse__type_declaration, 0);
-	} else if ($1->as_select_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_select_type()), SWIGTYPE_p_IfcParse__select_type, 0);
-	} else if ($1->as_enumeration_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_enumeration_type()), SWIGTYPE_p_IfcParse__enumeration_type, 0);
-	}
+	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
 }
 
 %typemap(out) IfcParse::parameter_type* {
