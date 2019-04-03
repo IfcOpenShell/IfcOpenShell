@@ -106,6 +106,18 @@
 
 // Conversion functions to convert STL vectors into Python objects
 %{
+	swig_type_info* declaration_type_to_swig(const IfcParse::declaration* t) {
+		if (t->as_entity()) {
+			return SWIGTYPE_p_IfcParse__entity;
+		} else if (t->as_type_declaration()) {
+			return SWIGTYPE_p_IfcParse__type_declaration;
+		} else if (t->as_select_type()) {
+			return SWIGTYPE_p_IfcParse__select_type;
+		} else if (t->as_enumeration_type()) {
+			return SWIGTYPE_p_IfcParse__enumeration_type;
+		}
+	}
+
 	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
@@ -115,7 +127,7 @@
 	PyObject* pythonize(const IfcParse::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__attribute, 0);          }
 	PyObject* pythonize(const IfcParse::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__inverse_attribute, 0); }
 	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }
-	PyObject* pythonize(const IfcParse::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__declaration, 0);        }
+	PyObject* pythonize(const IfcParse::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
 	// NB: This cannot be temporary as a Python object is constructed from a pointer to the address of this object
 	PyObject* pythonize(const IfcGeom::Material& t)     { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_IfcGeom__Material, 0);           }
 	
