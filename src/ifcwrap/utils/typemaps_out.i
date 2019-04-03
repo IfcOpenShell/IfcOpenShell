@@ -98,6 +98,9 @@
 			IfcEntityListList::ptr v = arg;
 			$result = pythonize(v);
 		break; }
+		case IfcUtil::Argument_EMPTY_AGGREGATE: {
+			$result = PyTuple_New(0);
+		break; }
 		case IfcUtil::Argument_UNKNOWN:
 		default:
 			SWIG_exception(SWIG_RuntimeError,"Unknown attribute type");
