@@ -78,28 +78,17 @@ IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()
-        INSTALL(FILES 
-                "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/__init__.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/entity_instance.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/file.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/guid.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/main.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/template.py"
-            DESTINATION "${python_package_dir}/ifcopenshell")
-        INSTALL(FILES
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/__init__.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/app.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/code_editor_pane.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/main.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/geom/occ_utils.py"
-                DESTINATION "${python_package_dir}/ifcopenshell/geom")
-        INSTALL(FILES
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/mvd/__init__.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/mvd/sparql.py"
-                "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/mvd/mvdxml_expression.py"
-                DESTINATION "${python_package_dir}/ifcopenshell/mvd")
-        INSTALL(TARGETS _ifcopenshell_wrapper DESTINATION "${python_package_dir}/ifcopenshell")
+        FILE(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*.py")
+        FOREACH(file ${sourcefiles})
+            FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
+            GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
+			INSTALL(FILES "${file}"
+                    DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+        ENDFOREACH()
+        INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
+                DESTINATION "${python_package_dir}/ifcopenshell")
+        INSTALL(TARGETS _ifcopenshell_wrapper
+                DESTINATION "${python_package_dir}/ifcopenshell")
     ENDIF()
 ELSE()
     MESSAGE(WARNING "No Python interpreter found, unable to install the Python wrapper")
