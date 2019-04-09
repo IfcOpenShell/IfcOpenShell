@@ -304,7 +304,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 					delete mf;
 
 					if (non_planar && bounds->size() == 1 && face_surface.IsNull()) {
-						Logger::Message(Logger::LOG_ERROR, "Triangulating face boundary", bound);
+						Logger::Message(Logger::LOG_WARNING, "Triangulating face boundary", bound);
 
 						// When creating a solid, flatting the boundary only postpones the issue to
 						// creating a topological manifold out of the individual faces.
