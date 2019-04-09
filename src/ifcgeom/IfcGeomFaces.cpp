@@ -199,8 +199,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 				for (; exp.More(); exp.Next(), count++) {
 					if (count < 2) {
 						edges[count] = TopoDS::Edge(exp.Current());
-					} else {
-						break;
 					}
 				}
 				
