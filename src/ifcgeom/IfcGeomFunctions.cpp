@@ -3077,11 +3077,14 @@ bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
 	}
 }
 
-bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane) {
+bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps) {
 	// Newell's Method is used for the normal calculation
 	// as a simple edge cross product can give opposite results
 	// for a concave face boundary.
 	// Reference: Graphics Gems III p. 231
+
+	const double eps_ = eps < 1. ? getValue(GV_PRECISION) : eps;
+	const double eps2 = eps_ * eps_;
 
 	double x = 0, y = 0, z = 0;
 	gp_Pnt current, previous, first;
@@ -3122,8 +3125,18 @@ bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp
 	if (n < 3) {
 		return false;
 	}
-
+	
 	plane = gp_Pln(center / n, gp_Dir(x, y, z));
+
+	exp.Init(wire);
+	for (; exp.More(); exp.Next()) {
+		const TopoDS_Vertex& v = exp.CurrentVertex();
+		current = BRep_Tool::Pnt(v);
+		if (plane.SquareDistance(current) > eps2) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -3161,7 +3174,7 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	typedef std::pair<double, double> uv_node;
 
 	gp_Pln pln;
-	if (!approximate_plane_through_wire(wire, pln)) {
+	if (!approximate_plane_through_wire(wire, pln, std::numeric_limits<double>::infinity())) {
 		return false;
 	}
 
