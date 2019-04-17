@@ -3726,7 +3726,9 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	builder->SetArguments(s1s);
 	copy_operand(b, B);
 	builder->SetTools(B);
-	builder->Build();
+	if(builder->BuilderCanWork()) {
+	 builder->Build();
+	}
 	if (builder->IsDone()) {
 		TopoDS_Shape r = *builder;
 
