@@ -501,19 +501,22 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	bool has_shared_edges = false;
 	TopTools_MapOfShape edge_set;
 
-	if (!faceset_helper_ || !faceset_helper_->non_manifold()) {
-		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-			// As soon as is detected one of the edges is shared, the assumption is made no
-			// additional sewing is necessary.
-			if (!has_shared_edges) {
-				TopExp_Explorer exp(face_iterator.Value(), TopAbs_EDGE);
-				for (; exp.More(); exp.Next()) {
-					if (edge_set.Contains(exp.Current())) {
-						has_shared_edges = true;
-						break;
-					}
-					edge_set.Add(exp.Current());
+	// In case there are wire interesections or failures in non-planar wire triangulations
+	// the idea is to let occt do an exhaustive search of edge partners. But we have not
+	// found a case where this actually improves boolean ops later on.
+	// if (!faceset_helper_ || !faceset_helper_->non_manifold()) {
+
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+		// As soon as is detected one of the edges is shared, the assumption is made no
+		// additional sewing is necessary.
+		if (!has_shared_edges) {
+			TopExp_Explorer exp(face_iterator.Value(), TopAbs_EDGE);
+			for (; exp.More(); exp.Next()) {
+				if (edge_set.Contains(exp.Current())) {
+					has_shared_edges = true;
+					break;
 				}
+				edge_set.Add(exp.Current());
 			}
 		}
 	}
