@@ -108,6 +108,8 @@
 #include <ShapeAnalysis_Surface.hxx>
 #include <ShapeAnalysis_ShapeTolerance.hxx>
 
+#include <ShapeUpgrade_UnifySameDomain.hxx>
+
 #include <BRepFilletAPI_MakeFillet2d.hxx>
 
 #include <TopLoc_Location.hxx>
@@ -140,6 +142,7 @@
 
 #include <GCPnts_AbscissaPoint.hxx>
 
+#include <BRepTopAdaptor_FClass2d.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 
 #include <GeomAPI_ExtremaCurveCurve.hxx>
@@ -314,6 +317,124 @@ namespace {
 		return M;
 	}
 
+	class points_on_planar_face_generator {
+	private:
+		const TopoDS_Face& f_;
+		Handle(Geom_Surface) plane_;
+		BRepTopAdaptor_FClass2d cls_;
+		double u0, u1, v0, v1;
+		int i, j;
+		static const int N = 10;
+
+	public:
+		points_on_planar_face_generator(const TopoDS_Face& f)
+			: f_(f)
+			, plane_(BRep_Tool::Surface(f_))
+			, cls_(f_, BRep_Tool::Tolerance(f_))
+			, i(0), j(0)
+		{
+			BRepTools::UVBounds(f_, u0, u1, v0, v1);
+		}
+
+		void reset() {
+			i = j = 0;
+		}
+
+		bool operator()(gp_Pnt& p) {
+			while (j < N) {
+				double u = u0 + (u1 - u0) * i / N;
+				double v = v0 + (v1 - v0) * j / N;
+				
+				i++;
+				if (i == N) {
+					i = 0;
+					j++;
+				}
+
+				// Specifically does not consider ON
+				if (cls_.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
+					plane_->D0(u, v, p);
+					return true;
+				}
+			}
+
+			return false;
+		}
+	};
+
+	double min_face_face_distance(const TopoDS_Shape& a, double max_search) {
+		/*
+		NB: This is currently only implemented for planar surfaces.
+		*/
+		double M = std::numeric_limits<double>::infinity();
+
+		TopTools_IndexedMapOfShape faces;
+
+		TopExp::MapShapes(a, TopAbs_FACE, faces);
+
+		IfcGeom::impl::tree<int> tree;
+
+		// Add edges to tree
+		for (int i = 1; i <= faces.Extent(); ++i) {
+			if (BRep_Tool::Surface(TopoDS::Face(faces(i)))->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+				tree.add(i, faces(i));
+			}
+		}
+
+		for (int j = 1; j <= faces.Extent(); ++j) {
+			const TopoDS_Face& f = TopoDS::Face(faces(j));
+			const Handle(Geom_Surface)& fs = BRep_Tool::Surface(f);
+
+			if (fs->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				continue;
+			}
+
+			points_on_planar_face_generator pgen(f);
+
+			Bnd_Box b;
+			BRepBndLib::AddClose(f, b);
+			b.Enlarge(max_search);
+
+			std::vector<int> edge_idxs = tree.select_box(b, false);
+			std::vector<int>::const_iterator it = edge_idxs.begin();
+			for (; it != edge_idxs.end(); ++it) {
+				if (*it == j) {
+					continue;
+				}
+
+				const TopoDS_Face& g = TopoDS::Face(faces(*it));
+				const Handle(Geom_Surface)& gs = BRep_Tool::Surface(g);
+
+				auto p0 = Handle(Geom_Plane)::DownCast(fs);
+				auto p1 = Handle(Geom_Plane)::DownCast(gs);
+
+				if (p0->Position().IsCoplanar(p1->Position(), max_search, asin(max_search))) {
+					pgen.reset();
+
+					BRepTopAdaptor_FClass2d cls(g, BRep_Tool::Tolerance(g));
+
+					gp_Pnt test;
+					while (pgen(test)) {						
+						gp_Vec d = test.XYZ() - p1->Position().Location().XYZ();
+						double u = d.Dot(p1->Position().XDirection());
+						double v = d.Dot(p1->Position().YDirection());
+
+						if (cls.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
+							gp_Pnt test2;
+							p1->D0(u, v, test2);
+							double w = gp_Vec(p1->Position().Direction().XYZ()).Dot(test2.XYZ() - test.XYZ());
+							if (w < M) {
+								M = w;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return M;
+	}
+
 	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
 		Bnd_Box A;
 		BRepBndLib::Add(a, A);
@@ -336,6 +457,17 @@ namespace {
 			}
 		}
 	}
+
+#ifdef UNIFY_OPERANDS
+	TopoDS_Shape unify(const TopoDS_Shape& s) {
+		ShapeUpgrade_UnifySameDomain usd(s);
+		usd.SetLinearTolerance(Precision::Confusion() * 10.);
+		usd.SetAngularTolerance(Precision::Angular() * 10.);
+		usd.Build();
+		return usd.Shape();
+	}
+#endif
+
 }
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
@@ -369,17 +501,19 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	bool has_shared_edges = false;
 	TopTools_MapOfShape edge_set;
 
-	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {		
-		// As soon as is detected one of the edges is shared, the assumption is made no
-		// additional sewing is necessary.
-		if (!has_shared_edges) {
-			TopExp_Explorer exp(face_iterator.Value(), TopAbs_EDGE);
-			for (; exp.More(); exp.Next()) {
-				if (edge_set.Contains(exp.Current())) {
-					has_shared_edges = true;
-					break;
+	if (!faceset_helper_ || !faceset_helper_->non_manifold()) {
+		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+			// As soon as is detected one of the edges is shared, the assumption is made no
+			// additional sewing is necessary.
+			if (!has_shared_edges) {
+				TopExp_Explorer exp(face_iterator.Value(), TopAbs_EDGE);
+				for (; exp.More(); exp.Next()) {
+					if (edge_set.Contains(exp.Current())) {
+						has_shared_edges = true;
+						break;
+					}
+					edge_set.Add(exp.Current());
 				}
-				edge_set.Add(exp.Current());
 			}
 		}
 	}
@@ -3169,7 +3303,11 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	// alternatively we use the regular OCCT incremental mesher on a new face 
 	// created from the UV coordinates of the original wire. Pray to our gods 
 	// that the vertex coordinates are unaffected by the meshing algorithm and 
-	// map them back to 3d coordinates when iterating over the mesh triangles. 
+	// map them back to 3d coordinates when iterating over the mesh triangles.
+
+	// In addition, to maintain a manifold shell, we need to make sure that 
+	// every edge from the input wire is used exactly once in the list of 
+	// resulting faces. And that other internal edges are used twice.
 
 	typedef std::pair<double, double> uv_node;
 
@@ -3184,15 +3322,35 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	
 	BRepTools_WireExplorer exp(wire);
 	BRepBuilderAPI_MakePolygon mp;
-	std::map<uv_node, gp_Pnt> mapping;
+	std::map<uv_node, TopoDS_Vertex> mapping;
+	std::map<std::pair<uv_node, uv_node>, TopoDS_Edge> existing_edges, new_edges;
 
 	// Add UV coordinates to a newly created polygon
 	for (; exp.More(); exp.Next()) {
-		gp_Pnt p = BRep_Tool::Pnt(exp.CurrentVertex());
+		// Project onto plane
+		const TopoDS_Vertex& V = exp.CurrentVertex();
+		gp_Pnt p = BRep_Tool::Pnt(V);
 		double u = (p.XYZ() - pnt).Dot(udir);
 		double v = (p.XYZ() - pnt).Dot(vdir);
-		mp.Add(gp_Pnt(u, v, 0));
-		mapping.insert(std::make_pair(std::make_pair(u, v), p));
+		mp.Add(gp_Pnt(u, v, 0.));
+
+		mapping.insert(std::make_pair(std::make_pair(u, v), V));
+
+		// Store existing edges in a map so that triangles can
+		// actually reference the preexisting edges.
+		const TopoDS_Edge& e = exp.Current();
+		TopoDS_Vertex V0, V1;
+		TopExp::Vertices(e, V0, V1, true);
+		gp_Pnt p0 = BRep_Tool::Pnt(V0);
+		gp_Pnt p1 = BRep_Tool::Pnt(V1);
+		double u0 = (p0.XYZ() - pnt).Dot(udir);
+		double v0 = (p0.XYZ() - pnt).Dot(vdir);
+		double u1 = (p1.XYZ() - pnt).Dot(udir);
+		double v1 = (p1.XYZ() - pnt).Dot(vdir);
+		uv_node uv0 = std::make_pair(u0, v0);
+		uv_node uv1 = std::make_pair(u1, v1);
+		existing_edges.insert(std::make_pair(std::make_pair(uv0, uv1), e));
+		existing_edges.insert(std::make_pair(std::make_pair(uv1, uv0), TopoDS::Edge(e.Reversed())));
 	}
 
 	// Not closed by default
@@ -3205,7 +3363,7 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	int n123[3]; 
 	TopLoc_Location loc;
 	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
-	
+
 	if (!tri.IsNull()) {
 		const TColgp_Array1OfPnt& nodes = tri->Nodes();
 
@@ -3216,20 +3374,49 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 			else triangles(i).Get(n123[0], n123[1], n123[2]);
 			
 			// Create polygons from the mesh vertices
-			BRepBuilderAPI_MakePolygon mp2;
+			BRepBuilderAPI_MakeWire mp2;
 			for (int j = 0; j < 3; ++j) {
-				const gp_Pnt& uv = nodes.Value(n123[j]);
-				uv_node key = std::make_pair(uv.X(), uv.Y());
+				
+				uv_node uvnodes[2];
+				TopoDS_Vertex vs[2];
 
-				if (mapping.find(key) == mapping.end()) {
-					Logger::Error("Internal error: unable to unproject uv-mesh");
-					return false;
+				for (int k = 0; k < 2; ++k) {
+					const gp_Pnt& uv = nodes.Value(n123[(j + k) % 3]);
+					uvnodes[k] = std::make_pair(uv.X(), uv.Y());
+
+					auto it = mapping.find(uvnodes[k]);
+					if (it == mapping.end()) {
+						Logger::Error("Internal error: unable to unproject uv-mesh");
+						return false;
+					}
+
+					vs[k] = it->second;
 				}
 
-				const gp_Pnt& p = mapping.find(key)->second;
-				mp2.Add(p);
+				auto it = existing_edges.find(std::make_pair(uvnodes[0], uvnodes[1]));
+				if (it != existing_edges.end()) {
+					// This is a boundary edge, reuse existing edge from wire
+					mp2.Add(it->second);
+				} else {
+					auto jt = new_edges.find(std::make_pair(uvnodes[0], uvnodes[1]));
+					if (jt != new_edges.end()) {
+						// We have already added the reverse as part of another
+						// triangle, reuse this edge.
+						mp2.Add(TopoDS::Edge(jt->second));
+					} else {
+						// This is a new internal edge. Register the reverse
+						// for reuse later. We need to be sure to reuse vertices
+						// for the edge construction because otherwise the wire
+						// builder will use geometrical proximity for vertex
+						// connections in which case the edge will be copied
+						// and no longer partner with other edges from the shell.
+						TopoDS_Edge ne = BRepBuilderAPI_MakeEdge(vs[0], vs[1]);
+						mp2.Add(ne);
+						// Store the reverse to be picked up later.
+						new_edges.insert(std::make_pair(std::make_pair(uvnodes[1], uvnodes[0]), TopoDS::Edge(ne.Reversed())));
+					}
+				}
 			}
-			mp2.Close();
 
 			BRepBuilderAPI_MakeFace mf(mp2.Wire());
 			if (mf.IsDone()) {
@@ -3242,6 +3429,42 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 					}
 				}
 				faces.Append(triangle_face);
+			} else {
+				Logger::Error("Internal error: missing face");
+				return false;
+			}
+		}
+	}
+
+	TopTools_IndexedDataMapOfShapeListOfShape mape, mapn;
+	TopExp::MapShapesAndAncestors(wire, TopAbs_EDGE, TopAbs_WIRE, mape);
+	TopTools_ListIteratorOfListOfShape it(faces);
+	for (; it.More(); it.Next()) {
+		TopExp::MapShapesAndAncestors(it.Value(), TopAbs_EDGE, TopAbs_WIRE, mapn);
+	}
+
+	// Validation
+
+	for (int i = 1; i <= mape.Extent(); ++i) {
+		TopTools_ListOfShape val;
+		if (!mapn.FindFromKey(mape.FindKey(i), val)) {
+			// All existing edges need to exist in the new faces
+			Logger::Error("Internal error, missing edge from triangulation");
+			if (faceset_helper_ != nullptr) {
+				faceset_helper_->non_manifold() = true;
+			}
+		}
+	}
+
+	for (int i = 1; i <= mapn.Extent(); ++i) {
+		const TopoDS_Shape& v = mapn.FindKey(i);
+		int n = mapn.FindFromIndex(i).Extent();
+		// Existing edges are boundaries with use 1
+		// New edges are internal with use 2
+		if (n != (mape.Contains(v) ? 1 : 2)) {
+			Logger::Error("Internal error, non-manifold result from triangulation");
+			if (faceset_helper_ != nullptr) {
+				faceset_helper_->non_manifold() = true;
 			}
 		}
 	}
@@ -3686,7 +3909,23 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return succesful;
 }
 #else
-bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b_, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	
+#ifdef UNIFY_OPERANDS
+	TopoDS_Shape a = unify(a_);
+	TopTools_ListOfShape b_;
+	{
+		TopTools_ListIteratorOfListOfShape it(b__);
+		for (; it.More(); it.Next()) {
+			b_.Append(unify(it.Value()));
+		}
+	}
+#else
+	const TopoDS_Shape& a = a_;
+	const TopTools_ListOfShape& b_ = b__;
+#endif
+		
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
 	TopTools_ListOfShape B, b;
@@ -3764,14 +4003,25 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 				
 				// when there are edges or vertex-edge distances close to the used fuzziness, the  
 				// output is not trusted and the operation is attempted with a higher fuzziness.
-				double min_lengh_result = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.));
-				success = min_lengh_result <= min_length_orig || min_lengh_result > fuzziness * 10.;
-
+				int reason = 0;
+				double v;
+				if ((v = min_edge_length(r)) < fuzziness * 10.) {
+					reason = 0;
+					success = false;
+				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.)) < fuzziness * 10.) {
+					reason = 1;
+					success = false;
+				} else if ((v = min_face_face_distance(r, fuzziness * 10.)) < fuzziness * 10.) {
+					reason = 2;
+					success = false;
+				}
+				
 				if (success) {
 					result = r;
 				} else {
+					static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
 					std::stringstream str;
-					str << "Boolean operation result failing interference check, with fuzziness " << fuzziness << " min length " << min_lengh_result << " originally " << min_length_orig;
+					str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
 					Logger::Notice(str.str());
 				}
 			} else {
@@ -3792,9 +4042,11 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_Li
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_length_orig) {
+        if (new_fuzziness - 1e-15 <= getValue(GV_PRECISION) * 10000. && new_fuzziness < min_length_orig) {
             return boolean_operation(a, b, op, result, new_fuzziness);
-        }
+		} else {
+			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
+		}
 	}
 	return success;
 }
@@ -3834,6 +4086,7 @@ IfcGeom::Kernel::faceset_helper::~faceset_helper() {
 
 IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema::IfcConnectedFaceSet* l)
 	: kernel_(kernel) 
+	, non_manifold_(false)
 {
 	kernel->faceset_helper_ = this;
 
@@ -3857,6 +4110,9 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 			delete p;
 		}		
 	}
+
+	// Use the bbox diagonal to influence local epsilon
+	// double bdiff = std::sqrt(box.SquareExtent());
 
 	// Find the minimal bounding box edge
 	double bmin[3], bmax[3];

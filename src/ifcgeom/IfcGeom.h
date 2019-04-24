@@ -122,6 +122,7 @@ private:
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		double eps_;
+		bool non_manifold_;
 
 		template <typename Fn>
 		void loop_(IfcSchema::IfcCartesianPoint::list::ptr& ps, const Fn& callback) {
@@ -148,6 +149,9 @@ private:
 		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
 
 		~faceset_helper();
+
+		bool non_manifold() const { return non_manifold_; }
+		bool& non_manifold() { return non_manifold_; }
 
 		bool edge(const IfcSchema::IfcCartesianPoint* a, const IfcSchema::IfcCartesianPoint* b, TopoDS_Edge& e) {
 			int A = vertex_mapping_[a->data().id()];
@@ -190,6 +194,7 @@ private:
 				if (kernel_->wire_intersections(wire, results)) {
 					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
 					kernel_->select_largest(results, wire);
+					non_manifold_ = true;
 				}
 
 				return true;
