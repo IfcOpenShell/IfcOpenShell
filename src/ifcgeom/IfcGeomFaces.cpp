@@ -95,6 +95,8 @@
 #include <TopTools_DataMapOfShapeInteger.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 
+#include <BRepLib_FindSurface.hxx>
+
 #ifdef USE_IFC4
 #include <Geom_BSplineSurface.hxx>
 #include <TColgp_Array2OfPnt.hxx>
@@ -243,22 +245,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						// @todo is this still relevant considering the code above
 						mf = new BRepBuilderAPI_MakeFace(pln, wire, true);
 					} else {
-						mf = new BRepBuilderAPI_MakeFace(wire);
+						BRepLib_FindSurface fs(wire, getValue(GV_PRECISION), true, true);
+						if (fs.Found()) {
+							mf = new BRepBuilderAPI_MakeFace(fs.Surface(), wire);
+							ShapeFix_ShapeTolerance ftol;
+							ftol.SetTolerance(wire, fs.ToleranceReached(), TopAbs_WIRE);
+						}
 					}
 				} else {
 					/// @todo check necessity of false here
-					mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false); 
-				}				
+					mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false);
+				}
 
-				/* BRepBuilderAPI_FaceError er = mf->Error();
-				if (er == BRepBuilderAPI_NotPlanar) {
-					ShapeFix_ShapeTolerance FTol;
-					FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
-					delete mf;
-					mf = new BRepBuilderAPI_MakeFace(wire);
-				} */
-
-				if (mf->IsDone()) {
+				if (mf && mf->IsDone()) {
 					TopoDS_Face outer_face_bound = mf->Face();
 
 					// In case of (non-planar) face surface, p-curves need to be computed.
@@ -300,7 +299,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 						success = true;
 					}
 				} else {
-					const bool non_planar = mf->Error() == BRepBuilderAPI_NotPlanar;
+					// if mf == nullptr, it means we failed to find a surface earlier using BRepLib_FindSurface
+					const bool non_planar = mf == nullptr || mf->Error() == BRepBuilderAPI_NotPlanar;
 					delete mf;
 
 					if (non_planar && bounds->size() == 1 && face_surface.IsNull()) {
