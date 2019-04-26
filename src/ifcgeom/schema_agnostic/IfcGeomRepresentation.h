@@ -60,7 +60,7 @@ namespace IfcGeom {
 			IfcGeom::ConversionResults::const_iterator end() const { return shapes_.end(); }
 			const IfcGeom::ConversionResults& shapes() const { return shapes_; }
 			const std::string& id() const { return id_; }
-			ConversionResultShape* as_compound() const;
+			ConversionResultShape* as_compound(bool force_meters = false) const;
 
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;

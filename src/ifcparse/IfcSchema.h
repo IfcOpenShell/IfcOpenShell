@@ -195,53 +195,52 @@ namespace IfcParse {
 		virtual const enumeration_type* as_enumeration_type() const { return this; }
 	};
 
-	class entity : public declaration {
-	public:
-		class attribute {
-		protected:
-			std::string name_;
-			const parameter_type* type_of_attribute_;
-			bool optional_;
-
-		public:
-			attribute(const std::string& name, parameter_type* type_of_attribute, bool optional)
-				: name_(name)
-				, type_of_attribute_(type_of_attribute)
-				, optional_(optional) {}
-
-			const std::string& name() const { return name_; }
-			const parameter_type* type_of_attribute() const { return type_of_attribute_; }
-			bool optional() const { return optional_; }
-		};
-
-		class inverse_attribute {
-		public:
-			typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
-		protected:
-			std::string name_;
-			aggregate_type type_of_aggregation_;
-			int bound1_, bound2_;
-			const entity* entity_reference_;
-			const attribute* attribute_reference_;
-		public:
-			inverse_attribute(const std::string& name, aggregate_type type_of_aggregation, int bound1, int bound2, const entity* entity_reference, const attribute* attribute_reference)
-				: name_(name)
-				, type_of_aggregation_(type_of_aggregation)
-				, bound1_(bound1)
-				, bound2_(bound2)
-				, entity_reference_(entity_reference)
-				, attribute_reference_(attribute_reference)
-			{}
-
-			const std::string& name() const { return name_; }
-			aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
-			int bound1() const { return bound1_; }
-			int bound2() const { return bound2_; }
-			const entity* entity_reference() const { return entity_reference_; }
-			const attribute* attribute_reference() const { return attribute_reference_; }
-		};
-		
+	class attribute {
 	protected:
+		std::string name_;
+		const parameter_type* type_of_attribute_;
+		bool optional_;
+
+	public:
+		attribute(const std::string& name, parameter_type* type_of_attribute, bool optional)
+			: name_(name)
+			, type_of_attribute_(type_of_attribute)
+			, optional_(optional) {}
+
+		const std::string& name() const { return name_; }
+		const parameter_type* type_of_attribute() const { return type_of_attribute_; }
+		bool optional() const { return optional_; }
+	};
+
+	class inverse_attribute {
+	public:
+		typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
+	protected:
+		std::string name_;
+		aggregate_type type_of_aggregation_;
+		int bound1_, bound2_;
+		const entity* entity_reference_;
+		const attribute* attribute_reference_;
+	public:
+		inverse_attribute(const std::string& name, aggregate_type type_of_aggregation, int bound1, int bound2, const entity* entity_reference, const attribute* attribute_reference)
+			: name_(name)
+			, type_of_aggregation_(type_of_aggregation)
+			, bound1_(bound1)
+			, bound2_(bound2)
+			, entity_reference_(entity_reference)
+			, attribute_reference_(attribute_reference) {}
+
+		const std::string& name() const { return name_; }
+		aggregate_type type_of_aggregation() const { return type_of_aggregation_; }
+		int bound1() const { return bound1_; }
+		int bound2() const { return bound2_; }
+		const entity* entity_reference() const { return entity_reference_; }
+		const attribute* attribute_reference() const { return attribute_reference_; }
+	};
+
+	class entity : public declaration {
+	protected:
+		bool is_abstract_;
 		const entity* supertype_; /* NB: IFC explicitly allows only single inheritance */
 		std::vector<const entity*> subtypes_;
 
@@ -276,8 +275,9 @@ namespace IfcParse {
 		}
 
 	public:
-		entity(const std::string& name, int index_in_schema, entity* supertype)
+		entity(const std::string& name, bool is_abstract, int index_in_schema, entity* supertype)
 			: declaration(name, index_in_schema)
+			, is_abstract_(is_abstract)
 			, supertype_(supertype)
 		{}
 
@@ -292,6 +292,8 @@ namespace IfcParse {
 			else if (supertype_) return supertype_->is(decl);
 			else return false;
 		}
+
+		bool is_abstract() const { return is_abstract_; }
 
 		void set_subtypes(const std::vector<const entity*>& subtypes) {
 			subtypes_ = subtypes;

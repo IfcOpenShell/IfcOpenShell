@@ -126,6 +126,7 @@ private:
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		double eps_;
+		bool non_manifold_;
 
 		template <typename Fn>
 		void loop_(IfcSchema::IfcCartesianPoint::list::ptr& ps, const Fn& callback) {
@@ -152,6 +153,9 @@ private:
 		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
 
 		~faceset_helper();
+
+		bool non_manifold() const { return non_manifold_; }
+		bool& non_manifold() { return non_manifold_; }
 
 		bool edge(const IfcSchema::IfcCartesianPoint* a, const IfcSchema::IfcCartesianPoint* b, TopoDS_Edge& e) {
 			int A = vertex_mapping_[a->data().id()];
@@ -194,6 +198,7 @@ private:
 				if (kernel_->wire_intersections(wire, results)) {
 					Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
 					kernel_->select_largest(results, wire);
+					non_manifold_ = true;
 				}
 
 				return true;
@@ -295,7 +300,7 @@ public:
 	void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol=-1.);
 	bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
-	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&);
+	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&, double eps=-1.);
 	bool flatten_wire(TopoDS_Wire&);
 	bool triangulate_wire(const TopoDS_Wire&, TopTools_ListOfShape&);
 	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);

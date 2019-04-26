@@ -91,11 +91,11 @@ IfcGeom::Kernel* IfcGeom::impl::KernelFactoryImplementation::construct(const std
 
 #define CREATE_GET_DECOMPOSING_ENTITY(IfcSchema)                                                                 \
                                                                                                                  \
-IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduct* product) {                    \
+IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduct* product, bool include_openings) {\
 	IfcSchema::IfcObjectDefinition* parent = 0;                                                                  \
                                                                                                                  \
 	/* In case of an opening element, parent to the RelatingBuildingElement */                                   \
-	if (product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {                                      \
+	if (include_openings && product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {                  \
 		IfcSchema::IfcOpeningElement* opening = (IfcSchema::IfcOpeningElement*)product;                          \
 		IfcSchema::IfcRelVoidsElement::list::ptr voids = opening->VoidsElements();                               \
 		if (voids->size()) {                                                                                     \
@@ -106,7 +106,7 @@ IfcSchema::IfcObjectDefinition* get_decomposing_entity_impl(IfcSchema::IfcProduc
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;                                        \
 		IfcSchema::IfcRelFillsElement::list::ptr fills = element->FillsVoids();                                  \
 		/* In case of a RelatedBuildingElement parent to the opening element */                                  \
-		if (fills->size()) {                                                                                     \
+		if (fills->size() && include_openings) {                                                                 \
 			for (IfcSchema::IfcRelFillsElement::list::it it = fills->begin(); it != fills->end(); ++it) {        \
 				IfcSchema::IfcRelFillsElement* fill = *it;                                                       \
 				IfcSchema::IfcObjectDefinition* ifc_objectdef = fill->RelatingOpeningElement();                  \
@@ -158,26 +158,17 @@ namespace {
 	CREATE_GET_DECOMPOSING_ENTITY(Ifc4);
 }
 
-IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst) {
+IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
 	if (inst->as<Ifc2x3::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>());
+		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>(), include_openings);
 	} else if (inst->as<Ifc4::IfcProduct>()) {
-		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>());
+		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>(), include_openings);
 	} else {
 		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 	}
 }
 
 namespace {
-
-        // LayerAssignments renamed from plural to singular, LayerAssignment, so work around that
-        IfcEntityList::ptr getLayerAssignments(Ifc2x3::IfcRepresentationItem* item) {
-                return item->LayerAssignments()->generalize();
-        }
-        IfcEntityList::ptr getLayerAssignments(Ifc4::IfcRepresentationItem* item) {
-                return item->LayerAssignment()->generalize();
-        }
-
 	template <typename Schema>
 	static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers_impl(typename Schema::IfcProduct* prod) {
 		std::map<std::string, IfcUtil::IfcBaseEntity*> layers;
@@ -186,14 +177,6 @@ namespace {
 			typename Schema::IfcRepresentation::list::ptr representations = r->template as<typename Schema::IfcRepresentation>();
 			for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
 				typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-					layers[(*jt)->Name()] = *jt;
-				}
-			}
-
-			typename Schema::IfcRepresentationItem::list::ptr items = r->template as<typename Schema::IfcRepresentationItem>();
-			for (typename Schema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-				typename Schema::IfcPresentationLayerAssignment::list::ptr a = getLayerAssignments(*it)->template as<typename Schema::IfcPresentationLayerAssignment>();
 				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
 					layers[(*jt)->Name()] = *jt;
 				}

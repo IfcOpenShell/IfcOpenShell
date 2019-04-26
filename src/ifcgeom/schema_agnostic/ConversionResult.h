@@ -85,7 +85,7 @@ namespace IfcGeom {
 		const ConversionResultPlacement* Placement() const { return placement; }
 		bool hasStyle() const { return style != 0; }
 		const SurfaceStyle& Style() const { return *style; }
-		void setStyle(const SurfaceStyle* style) { this->style = style; }
+		void setStyle(const SurfaceStyle* newStyle) { style = newStyle; }
 		int ItemId() const { return id; }
 	};
     

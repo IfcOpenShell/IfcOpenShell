@@ -40,14 +40,17 @@ namespace IfcGeom {
     /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
 	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;
 
-	struct filter {
-        filter() : include(false), traverse(false) {}
-        filter(bool incl, bool trav) : include(incl), traverse(trav) {}
+    struct filter
+    {
+        filter() : include(false), traverse(false), traverse_openings(false) {}
+        filter(bool incl, bool trav, bool trav_openings = false) : include(incl), traverse(trav), traverse_openings(trav_openings) {}
         /// Should the product be included (true) or excluded (false).
         bool include;
         /// If traversal requested, traverse to the parents to see if they satisfy the criteria. E.g. we might be looking for
         /// children of a storey named "Level 20", or children of entities that have no representation, e.g. IfcCurtainWall.
         bool traverse;
+		/// Include opening relationships as part of traversal.
+		bool traverse_openings;
         /// Optional description for the filtering criteria of this filter.
         std::string description;
 
@@ -59,9 +62,10 @@ namespace IfcGeom {
             return is_match == include;
         }
 
-		static bool traverse_match(IfcUtil::IfcBaseEntity* prod, const filter_t& pred) {
-			IfcUtil::IfcBaseEntity* parent, *current = prod;
-			while ((parent = IfcGeom::Kernel::get_decomposing_entity(current)) != nullptr) {
+        bool traverse_match(IfcUtil::IfcBaseEntity* prod, const filter_t& pred) const
+        {
+            IfcUtil::IfcBaseEntity* parent, *current = prod;
+            while ((parent = IfcGeom::Kernel::get_decomposing_entity(current, traverse_openings)) != nullptr) {
                 if (pred(parent)) {
                     return true;
                 }
@@ -139,8 +143,7 @@ namespace IfcGeom {
 		}
 
 		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
-            // @note bind1st() and mem_fun() deprecated in C++11, use bind() and mem_fn() when migrating to C++11.
-			return filter::match(prod, std::bind1st(std::mem_fun(&attribute_filter::match), this));
+			return filter::match(prod, std::bind(&attribute_filter::match, this, std::placeholders::_1));
         }
 
 		void update_description() {
@@ -172,7 +175,7 @@ namespace IfcGeom {
         }
 
 		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
-            return filter::match(prod, std::bind1st(std::mem_fun(&layer_filter::match), this));
+            return filter::match(prod, std::bind(&layer_filter::match, this, std::placeholders::_1));
         }
 
 		struct wildcards_match {
@@ -215,7 +218,7 @@ namespace IfcGeom {
         }
 
 		bool operator()(IfcUtil::IfcBaseEntity* prod) const {
-            return filter::match(prod, std::bind1st(std::mem_fun(&entity_filter::match), this));
+            return filter::match(prod, std::bind(&entity_filter::match, this, std::placeholders::_1));
         }
 
 		void update_description() {

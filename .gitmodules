@@ -2,3 +2,6 @@
 	path = test/input
 	url = https://github.com/IfcOpenShell/files
 	ignore = dirty
+[submodule "src/ifcopenshell-python/ifcopenshell/mvd"]
+	path = src/ifcopenshell-python/ifcopenshell/mvd
+	url = https://github.com/opensourceBIM/python-mvdxml/

@@ -482,8 +482,46 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
-	bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
-	bool is_unbounded_halfspace = is_halfspace && !operand2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
+	bool has_halfspace_operand = false;
+	
+	BOPAlgo_Operation occ_op;
+
+	const IfcSchema::IfcBooleanOperator::Value op = l->Operator();
+	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
+		occ_op = BOPAlgo_CUT;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
+		occ_op = BOPAlgo_COMMON;
+	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
+		occ_op = BOPAlgo_FUSE;
+	} else {
+		return false;
+	}
+
+	std::vector<IfcSchema::IfcBooleanOperand*> second_operands;
+	second_operands.push_back(operand2);
+
+	if (occ_op == BOPAlgo_CUT) {
+		bool process_as_list = true;
+		while (true) {
+			auto res1 = operand1->as<IfcSchema::IfcBooleanResult>();
+			if (res1) {
+				if (res1->Operator() == op) {
+					operand1 = res1->FirstOperand();
+					second_operands.push_back(res1->SecondOperand());
+				} else {
+					process_as_list = false;
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+
+		if (!process_as_list) {
+			operand1 = l->FirstOperand();
+			second_operands = { operand2 };
+		}
+	}
 
 	if ( shape_type(operand1) == ST_SHAPELIST ) {
 		if (!(convert_shapes(operand1, items1) && flatten_shape_list(items1, s1, true))) {
@@ -501,49 +539,60 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	}
 
 	const double first_operand_volume = shape_volume(s1);
-	if ( first_operand_volume <= ALMOST_ZERO )
-		Logger::Message(Logger::LOG_WARNING,"Empty solid for:",l->FirstOperand());
-
-	bool shape2_processed = false;
-	if ( shape_type(operand2) == ST_SHAPELIST ) {
-		shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
-	} else if ( shape_type(operand2) == ST_SHAPE ) {
-		shape2_processed = convert_shape(operand2,s2);
-		if (shape2_processed && !is_halfspace) {
-			TopoDS_Solid temp_solid;
-			s2 = ensure_fit_for_subtraction(s2, temp_solid);
-		}
-	} else {
-		Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2);
+	if (first_operand_volume <= ALMOST_ZERO) {
+		Logger::Message(Logger::LOG_WARNING, "Empty solid for:", l->FirstOperand());
 	}
 
-	if (!shape2_processed) {
-		shape = s1;
-		Logger::Message(Logger::LOG_ERROR,"Failed to convert SecondOperand of:",l);
-		return true;
-	}
+	TopTools_ListOfShape second_operand_shapes;
 
-	if (!is_halfspace) {
-		const double second_operand_volume = shape_volume(s2);
-		if ( second_operand_volume <= ALMOST_ZERO )
-			Logger::Message(Logger::LOG_WARNING,"Empty solid for:",operand2);
-	}
+	for (auto& operand2 : second_operands) {
+		bool shape2_processed = false;
 
-	if (is_unbounded_halfspace) {
-		TopoDS_Shape temp;
-		double d;
-		if (fit_halfspace(s1, s2, temp, d)) {
-			if (d < getValue(GV_PRECISION)) {
-				Logger::Message(Logger::LOG_WARNING, "Subtraction yields unchanged volume:", l);
-				shape = s1;
-				return true;
+		bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
+		bool is_unbounded_halfspace = is_halfspace && !operand2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
+		has_halfspace_operand |= is_halfspace;
+
+		{
+			if (shape_type(operand2) == ST_SHAPELIST) {
+				shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
+			} else if (shape_type(operand2) == ST_SHAPE) {
+				shape2_processed = convert_shape(operand2, s2);
+				if (shape2_processed) {
+					TopoDS_Solid temp_solid;
+					s2 = ensure_fit_for_subtraction(s2, temp_solid);
+				}
 			} else {
-				s2 = temp;
+				Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2);
 			}
 		}
-	}
 
-	const IfcSchema::IfcBooleanOperator::Value op = l->Operator();
+		if (is_unbounded_halfspace) {
+			TopoDS_Shape temp;
+			double d;
+			if (fit_halfspace(s1, s2, temp, d)) {
+				if (d < getValue(GV_PRECISION)) {
+					Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", l);
+					continue;
+				} else {
+					s2 = temp;
+				}
+			}
+		}
+
+		if (!shape2_processed) {
+			Logger::Message(Logger::LOG_ERROR, "Failed to convert SecondOperand:", operand2);
+			continue;
+		}
+
+		if (operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class())) {
+			const double second_operand_volume = shape_volume(s2);
+			if (second_operand_volume <= ALMOST_ZERO) {
+				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", operand2);
+			}
+		}
+
+		second_operand_shapes.Append(s2);
+	}
 
 	/*
 	// TK: A little debugging trick to output both operands for visual inspection
@@ -555,24 +604,13 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	builder.Add(compound, s2);
 	shape = compound;
 	return true;
-	*/
-
-	BOPAlgo_Operation occ_op;
-	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
-		occ_op = BOPAlgo_CUT;
-	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
-		occ_op = BOPAlgo_COMMON;
-	} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
-		occ_op = BOPAlgo_FUSE;
-	} else {
-		return false;
-	}
+	*/	
 
 #if OCC_VERSION_HEX < 0x60900
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
 #else
-	const double fuzz = is_halfspace ? getValue(GV_PRECISION) * 10. : -1.;
-	bool valid_result = boolean_operation(s1, s2, occ_op, shape, fuzz);
+	const double fuzz = has_halfspace_operand ? getValue(GV_PRECISION) * 10. : -1.;
+	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape, fuzz);
 #endif
 
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
@@ -893,7 +931,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l, TopoDS_Shape& shape) {
-	gp_Trsf directrix, position;
+	gp_Trsf directrix;
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
 
@@ -972,7 +1010,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	if (has_position) {
 		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
 		// and therefore has a unit scale factor
-		shape.Move(position);
+		shape.Move(trsf);
 	}
 
 	return true;
@@ -1121,9 +1159,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	
 	// IfcElementarySurface.Position has unit scale factor
 #if OCC_VERSION_HEX < 0x60502
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT))).Face().Moved(trsf);
 #else
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius()), getValue(GV_PRECISION)).Face().Moved(trsf);
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
 #endif
 	return true;
 }

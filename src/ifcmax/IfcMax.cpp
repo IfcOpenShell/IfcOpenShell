@@ -24,7 +24,10 @@
 #include <istdplug.h>
 
 #include "IfcMax.h"
-#include "../ifcgeom/IfcGeomIterator.h"
+
+#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
+#include "../ifcgeom/IfcGeomElement.h"
 
 static const int NUM_MATERIAL_SLOTS = 24;
 
@@ -226,7 +229,8 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	const char* fn_mb = name;
 #endif
 
-	IfcGeom::Iterator<float> iterator(settings, fn_mb);
+	IfcParse::IfcFile file(fn_mb);
+	IfcGeom::Iterator<float> iterator(settings, &file);
     delete fn_mb;
 	if (!iterator.initialize()) return false;
 
