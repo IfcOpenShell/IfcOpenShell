@@ -17,6 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "OpenCascadeBasedSerializer.h"
+
+#include "../ifcparse/utils.h"
+
 #include <string>
 #include <fstream>
 #include <cstdio>
@@ -24,13 +28,11 @@
 #include <Standard_Version.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
-#include "OpenCascadeBasedSerializer.h"
-
 bool OpenCascadeBasedSerializer::ready() {
-	std::ofstream test_file(out_filename.c_str(), std::ios_base::binary);
+	std::ofstream test_file(IfcUtil::path::from_utf8(out_filename).c_str(), std::ios_base::binary);
 	bool succeeded = test_file.is_open();
 	test_file.close();
-	remove(out_filename.c_str());
+	IfcUtil::path::delete_file(out_filename);
 	return succeeded;
 }
 

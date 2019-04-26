@@ -290,7 +290,7 @@ if not %ERRORLEVEL%==0 goto :Error
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 (
     pushd "%DEPENDENCY_DIR%"
-    git apply ""%~dp0patches\%OCCT_VER%.patch"
+    git apply --ignore-whitespace ""%~dp0patches\%OCCT_VER%.patch"
     popd
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL

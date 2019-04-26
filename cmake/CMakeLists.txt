@@ -23,6 +23,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)  # not necessary, but encouraged
 
 project (IfcOpenShell)
 
+foreach(max_year RANGE 2014 2030)
+set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
+if (NOT "${max_sdk}" STREQUAL "")
+MESSAGE(STATUS "Autodesk 3ds Max SDK found at ${max_sdk}")
+set(HAS_MAX TRUE)
+endif()
+endforeach()
+
 OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)." ON)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
@@ -35,8 +43,11 @@ OPTION(BUILD_GEOMSERVER "Build IfcGeomServer executable." ON)
 OPTION(BUILD_CONVERT "Build IfcConvert executable." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
-OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
+if (${HAS_MAX})
+OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." ON)
+endif()
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
+
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
 
@@ -106,10 +117,6 @@ UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
-IF(WIN32)
-    UNIFY_ENVVARS_AND_CACHE(THREEDS_MAX_SDK_HOME)
-ENDIF()
-
 
 # Set INSTALL_RPATH for target
 MACRO(SET_INSTALL_RPATHS _target _paths)

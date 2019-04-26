@@ -10,6 +10,25 @@
 	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
 }
 
+%typemap(out) IfcParse::declaration* {
+	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
+}
+
+%typemap(out) IfcParse::parameter_type* {
+	if ($1->as_named_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_IfcParse__named_type, 0);
+	} else if ($1->as_simple_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_IfcParse__simple_type, 0);
+	} else if ($1->as_aggregation_type()) {
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
+	}
+}
+
+%typemap(out) IfcParse::simple_type::data_type {
+	static const char* const data_type_strings[] = {"binary", "boolean", "integer", "logical", "number", "real", "string"};
+	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
+}
+
 %typemap(out) std::pair<IfcUtil::ArgumentType, Argument*> {
 	// The SWIG %exception directive does not take care
 	// of our typemap. So the attribute conversion block
@@ -79,6 +98,9 @@
 			IfcEntityListList::ptr v = arg;
 			$result = pythonize(v);
 		break; }
+		case IfcUtil::Argument_EMPTY_AGGREGATE: {
+			$result = PyTuple_New(0);
+		break; }
 		case IfcUtil::Argument_UNKNOWN:
 		default:
 			SWIG_exception(SWIG_RuntimeError,"Unknown attribute type");
@@ -101,8 +123,13 @@
 	}
 %enddef
 
+CREATE_VECTOR_TYPEMAP_OUT(bool)
 CREATE_VECTOR_TYPEMAP_OUT(int)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
+CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)

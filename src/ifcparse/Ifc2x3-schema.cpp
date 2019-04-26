@@ -3880,162 +3880,162 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
         IFC2X3_IfcWorkControlTypeEnum_type = new enumeration_type("IfcWorkControlTypeEnum", 974, items);
     }
     IFC2X3_IfcYearNumber_type = new type_declaration("IfcYearNumber", 977, new simple_type(simple_type::integer_type));
-    IFC2X3_IfcActorRole_type = new entity("IfcActorRole", 7, 0);
-    IFC2X3_IfcAddress_type = new entity("IfcAddress", 11, 0);
-    IFC2X3_IfcApplication_type = new entity("IfcApplication", 36, 0);
-    IFC2X3_IfcAppliedValue_type = new entity("IfcAppliedValue", 37, 0);
-    IFC2X3_IfcAppliedValueRelationship_type = new entity("IfcAppliedValueRelationship", 38, 0);
-    IFC2X3_IfcApproval_type = new entity("IfcApproval", 40, 0);
-    IFC2X3_IfcApprovalActorRelationship_type = new entity("IfcApprovalActorRelationship", 41, 0);
-    IFC2X3_IfcApprovalPropertyRelationship_type = new entity("IfcApprovalPropertyRelationship", 42, 0);
-    IFC2X3_IfcApprovalRelationship_type = new entity("IfcApprovalRelationship", 43, 0);
-    IFC2X3_IfcBoundaryCondition_type = new entity("IfcBoundaryCondition", 70, 0);
-    IFC2X3_IfcBoundaryEdgeCondition_type = new entity("IfcBoundaryEdgeCondition", 71, IFC2X3_IfcBoundaryCondition_type);
-    IFC2X3_IfcBoundaryFaceCondition_type = new entity("IfcBoundaryFaceCondition", 72, IFC2X3_IfcBoundaryCondition_type);
-    IFC2X3_IfcBoundaryNodeCondition_type = new entity("IfcBoundaryNodeCondition", 73, IFC2X3_IfcBoundaryCondition_type);
-    IFC2X3_IfcBoundaryNodeConditionWarping_type = new entity("IfcBoundaryNodeConditionWarping", 74, IFC2X3_IfcBoundaryNodeCondition_type);
-    IFC2X3_IfcCalendarDate_type = new entity("IfcCalendarDate", 97, 0);
-    IFC2X3_IfcClassification_type = new entity("IfcClassification", 113, 0);
-    IFC2X3_IfcClassificationItem_type = new entity("IfcClassificationItem", 114, 0);
-    IFC2X3_IfcClassificationItemRelationship_type = new entity("IfcClassificationItemRelationship", 115, 0);
-    IFC2X3_IfcClassificationNotation_type = new entity("IfcClassificationNotation", 116, 0);
-    IFC2X3_IfcClassificationNotationFacet_type = new entity("IfcClassificationNotationFacet", 117, 0);
-    IFC2X3_IfcColourSpecification_type = new entity("IfcColourSpecification", 126, 0);
-    IFC2X3_IfcConnectionGeometry_type = new entity("IfcConnectionGeometry", 146, 0);
-    IFC2X3_IfcConnectionPointGeometry_type = new entity("IfcConnectionPointGeometry", 148, IFC2X3_IfcConnectionGeometry_type);
-    IFC2X3_IfcConnectionPortGeometry_type = new entity("IfcConnectionPortGeometry", 149, IFC2X3_IfcConnectionGeometry_type);
-    IFC2X3_IfcConnectionSurfaceGeometry_type = new entity("IfcConnectionSurfaceGeometry", 150, IFC2X3_IfcConnectionGeometry_type);
-    IFC2X3_IfcConstraint_type = new entity("IfcConstraint", 152, 0);
-    IFC2X3_IfcConstraintAggregationRelationship_type = new entity("IfcConstraintAggregationRelationship", 153, 0);
-    IFC2X3_IfcConstraintClassificationRelationship_type = new entity("IfcConstraintClassificationRelationship", 154, 0);
-    IFC2X3_IfcConstraintRelationship_type = new entity("IfcConstraintRelationship", 156, 0);
-    IFC2X3_IfcCoordinatedUniversalTimeOffset_type = new entity("IfcCoordinatedUniversalTimeOffset", 171, 0);
-    IFC2X3_IfcCostValue_type = new entity("IfcCostValue", 175, IFC2X3_IfcAppliedValue_type);
-    IFC2X3_IfcCurrencyRelationship_type = new entity("IfcCurrencyRelationship", 188, 0);
-    IFC2X3_IfcCurveStyleFont_type = new entity("IfcCurveStyleFont", 198, 0);
-    IFC2X3_IfcCurveStyleFontAndScaling_type = new entity("IfcCurveStyleFontAndScaling", 199, 0);
-    IFC2X3_IfcCurveStyleFontPattern_type = new entity("IfcCurveStyleFontPattern", 200, 0);
-    IFC2X3_IfcDateAndTime_type = new entity("IfcDateAndTime", 205, 0);
-    IFC2X3_IfcDerivedUnit_type = new entity("IfcDerivedUnit", 213, 0);
-    IFC2X3_IfcDerivedUnitElement_type = new entity("IfcDerivedUnitElement", 214, 0);
-    IFC2X3_IfcDimensionalExponents_type = new entity("IfcDimensionalExponents", 218, 0);
-    IFC2X3_IfcDocumentElectronicFormat_type = new entity("IfcDocumentElectronicFormat", 241, 0);
-    IFC2X3_IfcDocumentInformation_type = new entity("IfcDocumentInformation", 242, 0);
-    IFC2X3_IfcDocumentInformationRelationship_type = new entity("IfcDocumentInformationRelationship", 243, 0);
-    IFC2X3_IfcDraughtingCalloutRelationship_type = new entity("IfcDraughtingCalloutRelationship", 258, 0);
-    IFC2X3_IfcEnvironmentalImpactValue_type = new entity("IfcEnvironmentalImpactValue", 314, IFC2X3_IfcAppliedValue_type);
-    IFC2X3_IfcExternalReference_type = new entity("IfcExternalReference", 326, 0);
-    IFC2X3_IfcExternallyDefinedHatchStyle_type = new entity("IfcExternallyDefinedHatchStyle", 322, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcExternallyDefinedSurfaceStyle_type = new entity("IfcExternallyDefinedSurfaceStyle", 323, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcExternallyDefinedSymbol_type = new entity("IfcExternallyDefinedSymbol", 324, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcExternallyDefinedTextFont_type = new entity("IfcExternallyDefinedTextFont", 325, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcGridAxis_type = new entity("IfcGridAxis", 399, 0);
-    IFC2X3_IfcIrregularTimeSeriesValue_type = new entity("IfcIrregularTimeSeriesValue", 423, 0);
-    IFC2X3_IfcLibraryInformation_type = new entity("IfcLibraryInformation", 436, 0);
-    IFC2X3_IfcLibraryReference_type = new entity("IfcLibraryReference", 437, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcLightDistributionData_type = new entity("IfcLightDistributionData", 440, 0);
-    IFC2X3_IfcLightIntensityDistribution_type = new entity("IfcLightIntensityDistribution", 445, 0);
-    IFC2X3_IfcLocalTime_type = new entity("IfcLocalTime", 460, 0);
-    IFC2X3_IfcMaterial_type = new entity("IfcMaterial", 476, 0);
-    IFC2X3_IfcMaterialClassificationRelationship_type = new entity("IfcMaterialClassificationRelationship", 477, 0);
-    IFC2X3_IfcMaterialLayer_type = new entity("IfcMaterialLayer", 479, 0);
-    IFC2X3_IfcMaterialLayerSet_type = new entity("IfcMaterialLayerSet", 480, 0);
-    IFC2X3_IfcMaterialLayerSetUsage_type = new entity("IfcMaterialLayerSetUsage", 481, 0);
-    IFC2X3_IfcMaterialList_type = new entity("IfcMaterialList", 482, 0);
-    IFC2X3_IfcMaterialProperties_type = new entity("IfcMaterialProperties", 483, 0);
-    IFC2X3_IfcMeasureWithUnit_type = new entity("IfcMeasureWithUnit", 486, 0);
-    IFC2X3_IfcMechanicalMaterialProperties_type = new entity("IfcMechanicalMaterialProperties", 490, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcMechanicalSteelMaterialProperties_type = new entity("IfcMechanicalSteelMaterialProperties", 491, IFC2X3_IfcMechanicalMaterialProperties_type);
-    IFC2X3_IfcMetric_type = new entity("IfcMetric", 495, IFC2X3_IfcConstraint_type);
-    IFC2X3_IfcMonetaryUnit_type = new entity("IfcMonetaryUnit", 506, 0);
-    IFC2X3_IfcNamedUnit_type = new entity("IfcNamedUnit", 511, 0);
-    IFC2X3_IfcObjectPlacement_type = new entity("IfcObjectPlacement", 519, 0);
-    IFC2X3_IfcObjective_type = new entity("IfcObjective", 517, IFC2X3_IfcConstraint_type);
-    IFC2X3_IfcOpticalMaterialProperties_type = new entity("IfcOpticalMaterialProperties", 529, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcOrganization_type = new entity("IfcOrganization", 531, 0);
-    IFC2X3_IfcOrganizationRelationship_type = new entity("IfcOrganizationRelationship", 532, 0);
-    IFC2X3_IfcOwnerHistory_type = new entity("IfcOwnerHistory", 537, 0);
-    IFC2X3_IfcPerson_type = new entity("IfcPerson", 545, 0);
-    IFC2X3_IfcPersonAndOrganization_type = new entity("IfcPersonAndOrganization", 546, 0);
-    IFC2X3_IfcPhysicalQuantity_type = new entity("IfcPhysicalQuantity", 550, 0);
-    IFC2X3_IfcPhysicalSimpleQuantity_type = new entity("IfcPhysicalSimpleQuantity", 551, IFC2X3_IfcPhysicalQuantity_type);
-    IFC2X3_IfcPostalAddress_type = new entity("IfcPostalAddress", 580, IFC2X3_IfcAddress_type);
-    IFC2X3_IfcPreDefinedItem_type = new entity("IfcPreDefinedItem", 585, 0);
-    IFC2X3_IfcPreDefinedSymbol_type = new entity("IfcPreDefinedSymbol", 587, IFC2X3_IfcPreDefinedItem_type);
-    IFC2X3_IfcPreDefinedTerminatorSymbol_type = new entity("IfcPreDefinedTerminatorSymbol", 588, IFC2X3_IfcPreDefinedSymbol_type);
-    IFC2X3_IfcPreDefinedTextFont_type = new entity("IfcPreDefinedTextFont", 589, IFC2X3_IfcPreDefinedItem_type);
-    IFC2X3_IfcPresentationLayerAssignment_type = new entity("IfcPresentationLayerAssignment", 591, 0);
-    IFC2X3_IfcPresentationLayerWithStyle_type = new entity("IfcPresentationLayerWithStyle", 592, IFC2X3_IfcPresentationLayerAssignment_type);
-    IFC2X3_IfcPresentationStyle_type = new entity("IfcPresentationStyle", 593, 0);
-    IFC2X3_IfcPresentationStyleAssignment_type = new entity("IfcPresentationStyleAssignment", 594, 0);
-    IFC2X3_IfcProductRepresentation_type = new entity("IfcProductRepresentation", 602, 0);
-    IFC2X3_IfcProductsOfCombustionProperties_type = new entity("IfcProductsOfCombustionProperties", 603, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcProfileDef_type = new entity("IfcProfileDef", 604, 0);
-    IFC2X3_IfcProfileProperties_type = new entity("IfcProfileProperties", 605, 0);
-    IFC2X3_IfcProperty_type = new entity("IfcProperty", 615, 0);
-    IFC2X3_IfcPropertyConstraintRelationship_type = new entity("IfcPropertyConstraintRelationship", 617, 0);
-    IFC2X3_IfcPropertyDependencyRelationship_type = new entity("IfcPropertyDependencyRelationship", 619, 0);
-    IFC2X3_IfcPropertyEnumeration_type = new entity("IfcPropertyEnumeration", 621, 0);
-    IFC2X3_IfcQuantityArea_type = new entity("IfcQuantityArea", 634, IFC2X3_IfcPhysicalSimpleQuantity_type);
-    IFC2X3_IfcQuantityCount_type = new entity("IfcQuantityCount", 635, IFC2X3_IfcPhysicalSimpleQuantity_type);
-    IFC2X3_IfcQuantityLength_type = new entity("IfcQuantityLength", 636, IFC2X3_IfcPhysicalSimpleQuantity_type);
-    IFC2X3_IfcQuantityTime_type = new entity("IfcQuantityTime", 637, IFC2X3_IfcPhysicalSimpleQuantity_type);
-    IFC2X3_IfcQuantityVolume_type = new entity("IfcQuantityVolume", 638, IFC2X3_IfcPhysicalSimpleQuantity_type);
-    IFC2X3_IfcQuantityWeight_type = new entity("IfcQuantityWeight", 639, IFC2X3_IfcPhysicalSimpleQuantity_type);
-    IFC2X3_IfcReferencesValueDocument_type = new entity("IfcReferencesValueDocument", 657, 0);
-    IFC2X3_IfcReinforcementBarProperties_type = new entity("IfcReinforcementBarProperties", 660, 0);
-    IFC2X3_IfcRelaxation_type = new entity("IfcRelaxation", 687, 0);
-    IFC2X3_IfcRepresentation_type = new entity("IfcRepresentation", 718, 0);
-    IFC2X3_IfcRepresentationContext_type = new entity("IfcRepresentationContext", 719, 0);
-    IFC2X3_IfcRepresentationItem_type = new entity("IfcRepresentationItem", 720, 0);
-    IFC2X3_IfcRepresentationMap_type = new entity("IfcRepresentationMap", 721, 0);
-    IFC2X3_IfcRibPlateProfileProperties_type = new entity("IfcRibPlateProfileProperties", 726, IFC2X3_IfcProfileProperties_type);
-    IFC2X3_IfcRoot_type = new entity("IfcRoot", 732, 0);
-    IFC2X3_IfcSIUnit_type = new entity("IfcSIUnit", 765, IFC2X3_IfcNamedUnit_type);
-    IFC2X3_IfcSectionProperties_type = new entity("IfcSectionProperties", 745, 0);
-    IFC2X3_IfcSectionReinforcementProperties_type = new entity("IfcSectionReinforcementProperties", 746, 0);
-    IFC2X3_IfcShapeAspect_type = new entity("IfcShapeAspect", 755, 0);
-    IFC2X3_IfcShapeModel_type = new entity("IfcShapeModel", 756, IFC2X3_IfcRepresentation_type);
-    IFC2X3_IfcShapeRepresentation_type = new entity("IfcShapeRepresentation", 757, IFC2X3_IfcShapeModel_type);
-    IFC2X3_IfcSimpleProperty_type = new entity("IfcSimpleProperty", 761, IFC2X3_IfcProperty_type);
-    IFC2X3_IfcStructuralConnectionCondition_type = new entity("IfcStructuralConnectionCondition", 806, 0);
-    IFC2X3_IfcStructuralLoad_type = new entity("IfcStructuralLoad", 814, 0);
-    IFC2X3_IfcStructuralLoadStatic_type = new entity("IfcStructuralLoadStatic", 822, IFC2X3_IfcStructuralLoad_type);
-    IFC2X3_IfcStructuralLoadTemperature_type = new entity("IfcStructuralLoadTemperature", 823, IFC2X3_IfcStructuralLoadStatic_type);
-    IFC2X3_IfcStyleModel_type = new entity("IfcStyleModel", 841, IFC2X3_IfcRepresentation_type);
-    IFC2X3_IfcStyledItem_type = new entity("IfcStyledItem", 839, IFC2X3_IfcRepresentationItem_type);
-    IFC2X3_IfcStyledRepresentation_type = new entity("IfcStyledRepresentation", 840, IFC2X3_IfcStyleModel_type);
-    IFC2X3_IfcSurfaceStyle_type = new entity("IfcSurfaceStyle", 850, IFC2X3_IfcPresentationStyle_type);
-    IFC2X3_IfcSurfaceStyleLighting_type = new entity("IfcSurfaceStyleLighting", 852, 0);
-    IFC2X3_IfcSurfaceStyleRefraction_type = new entity("IfcSurfaceStyleRefraction", 853, 0);
-    IFC2X3_IfcSurfaceStyleShading_type = new entity("IfcSurfaceStyleShading", 855, 0);
-    IFC2X3_IfcSurfaceStyleWithTextures_type = new entity("IfcSurfaceStyleWithTextures", 856, 0);
-    IFC2X3_IfcSurfaceTexture_type = new entity("IfcSurfaceTexture", 857, 0);
-    IFC2X3_IfcSymbolStyle_type = new entity("IfcSymbolStyle", 864, IFC2X3_IfcPresentationStyle_type);
-    IFC2X3_IfcTable_type = new entity("IfcTable", 868, 0);
-    IFC2X3_IfcTableRow_type = new entity("IfcTableRow", 869, 0);
-    IFC2X3_IfcTelecomAddress_type = new entity("IfcTelecomAddress", 873, IFC2X3_IfcAddress_type);
-    IFC2X3_IfcTextStyle_type = new entity("IfcTextStyle", 887, IFC2X3_IfcPresentationStyle_type);
-    IFC2X3_IfcTextStyleFontModel_type = new entity("IfcTextStyleFontModel", 888, IFC2X3_IfcPreDefinedTextFont_type);
-    IFC2X3_IfcTextStyleForDefinedFont_type = new entity("IfcTextStyleForDefinedFont", 889, 0);
-    IFC2X3_IfcTextStyleTextModel_type = new entity("IfcTextStyleTextModel", 891, 0);
-    IFC2X3_IfcTextStyleWithBoxCharacteristics_type = new entity("IfcTextStyleWithBoxCharacteristics", 892, 0);
-    IFC2X3_IfcTextureCoordinate_type = new entity("IfcTextureCoordinate", 894, 0);
-    IFC2X3_IfcTextureCoordinateGenerator_type = new entity("IfcTextureCoordinateGenerator", 895, IFC2X3_IfcTextureCoordinate_type);
-    IFC2X3_IfcTextureMap_type = new entity("IfcTextureMap", 896, IFC2X3_IfcTextureCoordinate_type);
-    IFC2X3_IfcTextureVertex_type = new entity("IfcTextureVertex", 897, 0);
-    IFC2X3_IfcThermalMaterialProperties_type = new entity("IfcThermalMaterialProperties", 903, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcTimeSeries_type = new entity("IfcTimeSeries", 908, 0);
-    IFC2X3_IfcTimeSeriesReferenceRelationship_type = new entity("IfcTimeSeriesReferenceRelationship", 910, 0);
-    IFC2X3_IfcTimeSeriesValue_type = new entity("IfcTimeSeriesValue", 913, 0);
-    IFC2X3_IfcTopologicalRepresentationItem_type = new entity("IfcTopologicalRepresentationItem", 915, IFC2X3_IfcRepresentationItem_type);
-    IFC2X3_IfcTopologyRepresentation_type = new entity("IfcTopologyRepresentation", 916, IFC2X3_IfcShapeModel_type);
-    IFC2X3_IfcUnitAssignment_type = new entity("IfcUnitAssignment", 937, 0);
-    IFC2X3_IfcVertex_type = new entity("IfcVertex", 946, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcVertexBasedTextureMap_type = new entity("IfcVertexBasedTextureMap", 947, 0);
-    IFC2X3_IfcVertexPoint_type = new entity("IfcVertexPoint", 949, IFC2X3_IfcVertex_type);
-    IFC2X3_IfcVirtualGridIntersection_type = new entity("IfcVirtualGridIntersection", 953, 0);
-    IFC2X3_IfcWaterProperties_type = new entity("IfcWaterProperties", 964, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcActorRole_type = new entity("IfcActorRole", false, 7, 0);
+    IFC2X3_IfcAddress_type = new entity("IfcAddress", true, 11, 0);
+    IFC2X3_IfcApplication_type = new entity("IfcApplication", false, 36, 0);
+    IFC2X3_IfcAppliedValue_type = new entity("IfcAppliedValue", true, 37, 0);
+    IFC2X3_IfcAppliedValueRelationship_type = new entity("IfcAppliedValueRelationship", false, 38, 0);
+    IFC2X3_IfcApproval_type = new entity("IfcApproval", false, 40, 0);
+    IFC2X3_IfcApprovalActorRelationship_type = new entity("IfcApprovalActorRelationship", false, 41, 0);
+    IFC2X3_IfcApprovalPropertyRelationship_type = new entity("IfcApprovalPropertyRelationship", false, 42, 0);
+    IFC2X3_IfcApprovalRelationship_type = new entity("IfcApprovalRelationship", false, 43, 0);
+    IFC2X3_IfcBoundaryCondition_type = new entity("IfcBoundaryCondition", true, 70, 0);
+    IFC2X3_IfcBoundaryEdgeCondition_type = new entity("IfcBoundaryEdgeCondition", false, 71, IFC2X3_IfcBoundaryCondition_type);
+    IFC2X3_IfcBoundaryFaceCondition_type = new entity("IfcBoundaryFaceCondition", false, 72, IFC2X3_IfcBoundaryCondition_type);
+    IFC2X3_IfcBoundaryNodeCondition_type = new entity("IfcBoundaryNodeCondition", false, 73, IFC2X3_IfcBoundaryCondition_type);
+    IFC2X3_IfcBoundaryNodeConditionWarping_type = new entity("IfcBoundaryNodeConditionWarping", false, 74, IFC2X3_IfcBoundaryNodeCondition_type);
+    IFC2X3_IfcCalendarDate_type = new entity("IfcCalendarDate", false, 97, 0);
+    IFC2X3_IfcClassification_type = new entity("IfcClassification", false, 113, 0);
+    IFC2X3_IfcClassificationItem_type = new entity("IfcClassificationItem", false, 114, 0);
+    IFC2X3_IfcClassificationItemRelationship_type = new entity("IfcClassificationItemRelationship", false, 115, 0);
+    IFC2X3_IfcClassificationNotation_type = new entity("IfcClassificationNotation", false, 116, 0);
+    IFC2X3_IfcClassificationNotationFacet_type = new entity("IfcClassificationNotationFacet", false, 117, 0);
+    IFC2X3_IfcColourSpecification_type = new entity("IfcColourSpecification", true, 126, 0);
+    IFC2X3_IfcConnectionGeometry_type = new entity("IfcConnectionGeometry", true, 146, 0);
+    IFC2X3_IfcConnectionPointGeometry_type = new entity("IfcConnectionPointGeometry", false, 148, IFC2X3_IfcConnectionGeometry_type);
+    IFC2X3_IfcConnectionPortGeometry_type = new entity("IfcConnectionPortGeometry", false, 149, IFC2X3_IfcConnectionGeometry_type);
+    IFC2X3_IfcConnectionSurfaceGeometry_type = new entity("IfcConnectionSurfaceGeometry", false, 150, IFC2X3_IfcConnectionGeometry_type);
+    IFC2X3_IfcConstraint_type = new entity("IfcConstraint", true, 152, 0);
+    IFC2X3_IfcConstraintAggregationRelationship_type = new entity("IfcConstraintAggregationRelationship", false, 153, 0);
+    IFC2X3_IfcConstraintClassificationRelationship_type = new entity("IfcConstraintClassificationRelationship", false, 154, 0);
+    IFC2X3_IfcConstraintRelationship_type = new entity("IfcConstraintRelationship", false, 156, 0);
+    IFC2X3_IfcCoordinatedUniversalTimeOffset_type = new entity("IfcCoordinatedUniversalTimeOffset", false, 171, 0);
+    IFC2X3_IfcCostValue_type = new entity("IfcCostValue", false, 175, IFC2X3_IfcAppliedValue_type);
+    IFC2X3_IfcCurrencyRelationship_type = new entity("IfcCurrencyRelationship", false, 188, 0);
+    IFC2X3_IfcCurveStyleFont_type = new entity("IfcCurveStyleFont", false, 198, 0);
+    IFC2X3_IfcCurveStyleFontAndScaling_type = new entity("IfcCurveStyleFontAndScaling", false, 199, 0);
+    IFC2X3_IfcCurveStyleFontPattern_type = new entity("IfcCurveStyleFontPattern", false, 200, 0);
+    IFC2X3_IfcDateAndTime_type = new entity("IfcDateAndTime", false, 205, 0);
+    IFC2X3_IfcDerivedUnit_type = new entity("IfcDerivedUnit", false, 213, 0);
+    IFC2X3_IfcDerivedUnitElement_type = new entity("IfcDerivedUnitElement", false, 214, 0);
+    IFC2X3_IfcDimensionalExponents_type = new entity("IfcDimensionalExponents", false, 218, 0);
+    IFC2X3_IfcDocumentElectronicFormat_type = new entity("IfcDocumentElectronicFormat", false, 241, 0);
+    IFC2X3_IfcDocumentInformation_type = new entity("IfcDocumentInformation", false, 242, 0);
+    IFC2X3_IfcDocumentInformationRelationship_type = new entity("IfcDocumentInformationRelationship", false, 243, 0);
+    IFC2X3_IfcDraughtingCalloutRelationship_type = new entity("IfcDraughtingCalloutRelationship", false, 258, 0);
+    IFC2X3_IfcEnvironmentalImpactValue_type = new entity("IfcEnvironmentalImpactValue", false, 314, IFC2X3_IfcAppliedValue_type);
+    IFC2X3_IfcExternalReference_type = new entity("IfcExternalReference", true, 326, 0);
+    IFC2X3_IfcExternallyDefinedHatchStyle_type = new entity("IfcExternallyDefinedHatchStyle", false, 322, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcExternallyDefinedSurfaceStyle_type = new entity("IfcExternallyDefinedSurfaceStyle", false, 323, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcExternallyDefinedSymbol_type = new entity("IfcExternallyDefinedSymbol", false, 324, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcExternallyDefinedTextFont_type = new entity("IfcExternallyDefinedTextFont", false, 325, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcGridAxis_type = new entity("IfcGridAxis", false, 399, 0);
+    IFC2X3_IfcIrregularTimeSeriesValue_type = new entity("IfcIrregularTimeSeriesValue", false, 423, 0);
+    IFC2X3_IfcLibraryInformation_type = new entity("IfcLibraryInformation", false, 436, 0);
+    IFC2X3_IfcLibraryReference_type = new entity("IfcLibraryReference", false, 437, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcLightDistributionData_type = new entity("IfcLightDistributionData", false, 440, 0);
+    IFC2X3_IfcLightIntensityDistribution_type = new entity("IfcLightIntensityDistribution", false, 445, 0);
+    IFC2X3_IfcLocalTime_type = new entity("IfcLocalTime", false, 460, 0);
+    IFC2X3_IfcMaterial_type = new entity("IfcMaterial", false, 476, 0);
+    IFC2X3_IfcMaterialClassificationRelationship_type = new entity("IfcMaterialClassificationRelationship", false, 477, 0);
+    IFC2X3_IfcMaterialLayer_type = new entity("IfcMaterialLayer", false, 479, 0);
+    IFC2X3_IfcMaterialLayerSet_type = new entity("IfcMaterialLayerSet", false, 480, 0);
+    IFC2X3_IfcMaterialLayerSetUsage_type = new entity("IfcMaterialLayerSetUsage", false, 481, 0);
+    IFC2X3_IfcMaterialList_type = new entity("IfcMaterialList", false, 482, 0);
+    IFC2X3_IfcMaterialProperties_type = new entity("IfcMaterialProperties", true, 483, 0);
+    IFC2X3_IfcMeasureWithUnit_type = new entity("IfcMeasureWithUnit", false, 486, 0);
+    IFC2X3_IfcMechanicalMaterialProperties_type = new entity("IfcMechanicalMaterialProperties", false, 490, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcMechanicalSteelMaterialProperties_type = new entity("IfcMechanicalSteelMaterialProperties", false, 491, IFC2X3_IfcMechanicalMaterialProperties_type);
+    IFC2X3_IfcMetric_type = new entity("IfcMetric", false, 495, IFC2X3_IfcConstraint_type);
+    IFC2X3_IfcMonetaryUnit_type = new entity("IfcMonetaryUnit", false, 506, 0);
+    IFC2X3_IfcNamedUnit_type = new entity("IfcNamedUnit", true, 511, 0);
+    IFC2X3_IfcObjectPlacement_type = new entity("IfcObjectPlacement", true, 519, 0);
+    IFC2X3_IfcObjective_type = new entity("IfcObjective", false, 517, IFC2X3_IfcConstraint_type);
+    IFC2X3_IfcOpticalMaterialProperties_type = new entity("IfcOpticalMaterialProperties", false, 529, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcOrganization_type = new entity("IfcOrganization", false, 531, 0);
+    IFC2X3_IfcOrganizationRelationship_type = new entity("IfcOrganizationRelationship", false, 532, 0);
+    IFC2X3_IfcOwnerHistory_type = new entity("IfcOwnerHistory", false, 537, 0);
+    IFC2X3_IfcPerson_type = new entity("IfcPerson", false, 545, 0);
+    IFC2X3_IfcPersonAndOrganization_type = new entity("IfcPersonAndOrganization", false, 546, 0);
+    IFC2X3_IfcPhysicalQuantity_type = new entity("IfcPhysicalQuantity", true, 550, 0);
+    IFC2X3_IfcPhysicalSimpleQuantity_type = new entity("IfcPhysicalSimpleQuantity", true, 551, IFC2X3_IfcPhysicalQuantity_type);
+    IFC2X3_IfcPostalAddress_type = new entity("IfcPostalAddress", false, 580, IFC2X3_IfcAddress_type);
+    IFC2X3_IfcPreDefinedItem_type = new entity("IfcPreDefinedItem", true, 585, 0);
+    IFC2X3_IfcPreDefinedSymbol_type = new entity("IfcPreDefinedSymbol", true, 587, IFC2X3_IfcPreDefinedItem_type);
+    IFC2X3_IfcPreDefinedTerminatorSymbol_type = new entity("IfcPreDefinedTerminatorSymbol", false, 588, IFC2X3_IfcPreDefinedSymbol_type);
+    IFC2X3_IfcPreDefinedTextFont_type = new entity("IfcPreDefinedTextFont", true, 589, IFC2X3_IfcPreDefinedItem_type);
+    IFC2X3_IfcPresentationLayerAssignment_type = new entity("IfcPresentationLayerAssignment", false, 591, 0);
+    IFC2X3_IfcPresentationLayerWithStyle_type = new entity("IfcPresentationLayerWithStyle", false, 592, IFC2X3_IfcPresentationLayerAssignment_type);
+    IFC2X3_IfcPresentationStyle_type = new entity("IfcPresentationStyle", true, 593, 0);
+    IFC2X3_IfcPresentationStyleAssignment_type = new entity("IfcPresentationStyleAssignment", false, 594, 0);
+    IFC2X3_IfcProductRepresentation_type = new entity("IfcProductRepresentation", false, 602, 0);
+    IFC2X3_IfcProductsOfCombustionProperties_type = new entity("IfcProductsOfCombustionProperties", false, 603, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcProfileDef_type = new entity("IfcProfileDef", true, 604, 0);
+    IFC2X3_IfcProfileProperties_type = new entity("IfcProfileProperties", true, 605, 0);
+    IFC2X3_IfcProperty_type = new entity("IfcProperty", true, 615, 0);
+    IFC2X3_IfcPropertyConstraintRelationship_type = new entity("IfcPropertyConstraintRelationship", false, 617, 0);
+    IFC2X3_IfcPropertyDependencyRelationship_type = new entity("IfcPropertyDependencyRelationship", false, 619, 0);
+    IFC2X3_IfcPropertyEnumeration_type = new entity("IfcPropertyEnumeration", false, 621, 0);
+    IFC2X3_IfcQuantityArea_type = new entity("IfcQuantityArea", false, 634, IFC2X3_IfcPhysicalSimpleQuantity_type);
+    IFC2X3_IfcQuantityCount_type = new entity("IfcQuantityCount", false, 635, IFC2X3_IfcPhysicalSimpleQuantity_type);
+    IFC2X3_IfcQuantityLength_type = new entity("IfcQuantityLength", false, 636, IFC2X3_IfcPhysicalSimpleQuantity_type);
+    IFC2X3_IfcQuantityTime_type = new entity("IfcQuantityTime", false, 637, IFC2X3_IfcPhysicalSimpleQuantity_type);
+    IFC2X3_IfcQuantityVolume_type = new entity("IfcQuantityVolume", false, 638, IFC2X3_IfcPhysicalSimpleQuantity_type);
+    IFC2X3_IfcQuantityWeight_type = new entity("IfcQuantityWeight", false, 639, IFC2X3_IfcPhysicalSimpleQuantity_type);
+    IFC2X3_IfcReferencesValueDocument_type = new entity("IfcReferencesValueDocument", false, 657, 0);
+    IFC2X3_IfcReinforcementBarProperties_type = new entity("IfcReinforcementBarProperties", false, 660, 0);
+    IFC2X3_IfcRelaxation_type = new entity("IfcRelaxation", false, 687, 0);
+    IFC2X3_IfcRepresentation_type = new entity("IfcRepresentation", false, 718, 0);
+    IFC2X3_IfcRepresentationContext_type = new entity("IfcRepresentationContext", false, 719, 0);
+    IFC2X3_IfcRepresentationItem_type = new entity("IfcRepresentationItem", true, 720, 0);
+    IFC2X3_IfcRepresentationMap_type = new entity("IfcRepresentationMap", false, 721, 0);
+    IFC2X3_IfcRibPlateProfileProperties_type = new entity("IfcRibPlateProfileProperties", false, 726, IFC2X3_IfcProfileProperties_type);
+    IFC2X3_IfcRoot_type = new entity("IfcRoot", true, 732, 0);
+    IFC2X3_IfcSIUnit_type = new entity("IfcSIUnit", false, 765, IFC2X3_IfcNamedUnit_type);
+    IFC2X3_IfcSectionProperties_type = new entity("IfcSectionProperties", false, 745, 0);
+    IFC2X3_IfcSectionReinforcementProperties_type = new entity("IfcSectionReinforcementProperties", false, 746, 0);
+    IFC2X3_IfcShapeAspect_type = new entity("IfcShapeAspect", false, 755, 0);
+    IFC2X3_IfcShapeModel_type = new entity("IfcShapeModel", true, 756, IFC2X3_IfcRepresentation_type);
+    IFC2X3_IfcShapeRepresentation_type = new entity("IfcShapeRepresentation", false, 757, IFC2X3_IfcShapeModel_type);
+    IFC2X3_IfcSimpleProperty_type = new entity("IfcSimpleProperty", true, 761, IFC2X3_IfcProperty_type);
+    IFC2X3_IfcStructuralConnectionCondition_type = new entity("IfcStructuralConnectionCondition", true, 806, 0);
+    IFC2X3_IfcStructuralLoad_type = new entity("IfcStructuralLoad", true, 814, 0);
+    IFC2X3_IfcStructuralLoadStatic_type = new entity("IfcStructuralLoadStatic", true, 822, IFC2X3_IfcStructuralLoad_type);
+    IFC2X3_IfcStructuralLoadTemperature_type = new entity("IfcStructuralLoadTemperature", false, 823, IFC2X3_IfcStructuralLoadStatic_type);
+    IFC2X3_IfcStyleModel_type = new entity("IfcStyleModel", true, 841, IFC2X3_IfcRepresentation_type);
+    IFC2X3_IfcStyledItem_type = new entity("IfcStyledItem", false, 839, IFC2X3_IfcRepresentationItem_type);
+    IFC2X3_IfcStyledRepresentation_type = new entity("IfcStyledRepresentation", false, 840, IFC2X3_IfcStyleModel_type);
+    IFC2X3_IfcSurfaceStyle_type = new entity("IfcSurfaceStyle", false, 850, IFC2X3_IfcPresentationStyle_type);
+    IFC2X3_IfcSurfaceStyleLighting_type = new entity("IfcSurfaceStyleLighting", false, 852, 0);
+    IFC2X3_IfcSurfaceStyleRefraction_type = new entity("IfcSurfaceStyleRefraction", false, 853, 0);
+    IFC2X3_IfcSurfaceStyleShading_type = new entity("IfcSurfaceStyleShading", false, 855, 0);
+    IFC2X3_IfcSurfaceStyleWithTextures_type = new entity("IfcSurfaceStyleWithTextures", false, 856, 0);
+    IFC2X3_IfcSurfaceTexture_type = new entity("IfcSurfaceTexture", true, 857, 0);
+    IFC2X3_IfcSymbolStyle_type = new entity("IfcSymbolStyle", false, 864, IFC2X3_IfcPresentationStyle_type);
+    IFC2X3_IfcTable_type = new entity("IfcTable", false, 868, 0);
+    IFC2X3_IfcTableRow_type = new entity("IfcTableRow", false, 869, 0);
+    IFC2X3_IfcTelecomAddress_type = new entity("IfcTelecomAddress", false, 873, IFC2X3_IfcAddress_type);
+    IFC2X3_IfcTextStyle_type = new entity("IfcTextStyle", false, 887, IFC2X3_IfcPresentationStyle_type);
+    IFC2X3_IfcTextStyleFontModel_type = new entity("IfcTextStyleFontModel", false, 888, IFC2X3_IfcPreDefinedTextFont_type);
+    IFC2X3_IfcTextStyleForDefinedFont_type = new entity("IfcTextStyleForDefinedFont", false, 889, 0);
+    IFC2X3_IfcTextStyleTextModel_type = new entity("IfcTextStyleTextModel", false, 891, 0);
+    IFC2X3_IfcTextStyleWithBoxCharacteristics_type = new entity("IfcTextStyleWithBoxCharacteristics", false, 892, 0);
+    IFC2X3_IfcTextureCoordinate_type = new entity("IfcTextureCoordinate", true, 894, 0);
+    IFC2X3_IfcTextureCoordinateGenerator_type = new entity("IfcTextureCoordinateGenerator", false, 895, IFC2X3_IfcTextureCoordinate_type);
+    IFC2X3_IfcTextureMap_type = new entity("IfcTextureMap", false, 896, IFC2X3_IfcTextureCoordinate_type);
+    IFC2X3_IfcTextureVertex_type = new entity("IfcTextureVertex", false, 897, 0);
+    IFC2X3_IfcThermalMaterialProperties_type = new entity("IfcThermalMaterialProperties", false, 903, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcTimeSeries_type = new entity("IfcTimeSeries", true, 908, 0);
+    IFC2X3_IfcTimeSeriesReferenceRelationship_type = new entity("IfcTimeSeriesReferenceRelationship", false, 910, 0);
+    IFC2X3_IfcTimeSeriesValue_type = new entity("IfcTimeSeriesValue", false, 913, 0);
+    IFC2X3_IfcTopologicalRepresentationItem_type = new entity("IfcTopologicalRepresentationItem", true, 915, IFC2X3_IfcRepresentationItem_type);
+    IFC2X3_IfcTopologyRepresentation_type = new entity("IfcTopologyRepresentation", false, 916, IFC2X3_IfcShapeModel_type);
+    IFC2X3_IfcUnitAssignment_type = new entity("IfcUnitAssignment", false, 937, 0);
+    IFC2X3_IfcVertex_type = new entity("IfcVertex", false, 946, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcVertexBasedTextureMap_type = new entity("IfcVertexBasedTextureMap", false, 947, 0);
+    IFC2X3_IfcVertexPoint_type = new entity("IfcVertexPoint", false, 949, IFC2X3_IfcVertex_type);
+    IFC2X3_IfcVirtualGridIntersection_type = new entity("IfcVirtualGridIntersection", false, 953, 0);
+    IFC2X3_IfcWaterProperties_type = new entity("IfcWaterProperties", false, 964, IFC2X3_IfcMaterialProperties_type);
     {
         std::vector<const declaration*> items; items.reserve(3);
         items.push_back(IFC2X3_IfcOrganization_type);
@@ -4258,132 +4258,132 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
         items.push_back(IFC2X3_IfcNamedUnit_type);
         IFC2X3_IfcUnit_type = new select_type("IfcUnit", 934, items);
     }
-    IFC2X3_IfcAnnotationOccurrence_type = new entity("IfcAnnotationOccurrence", 31, IFC2X3_IfcStyledItem_type);
-    IFC2X3_IfcAnnotationSurfaceOccurrence_type = new entity("IfcAnnotationSurfaceOccurrence", 33, IFC2X3_IfcAnnotationOccurrence_type);
-    IFC2X3_IfcAnnotationSymbolOccurrence_type = new entity("IfcAnnotationSymbolOccurrence", 34, IFC2X3_IfcAnnotationOccurrence_type);
-    IFC2X3_IfcAnnotationTextOccurrence_type = new entity("IfcAnnotationTextOccurrence", 35, IFC2X3_IfcAnnotationOccurrence_type);
-    IFC2X3_IfcArbitraryClosedProfileDef_type = new entity("IfcArbitraryClosedProfileDef", 44, IFC2X3_IfcProfileDef_type);
-    IFC2X3_IfcArbitraryOpenProfileDef_type = new entity("IfcArbitraryOpenProfileDef", 45, IFC2X3_IfcProfileDef_type);
-    IFC2X3_IfcArbitraryProfileDefWithVoids_type = new entity("IfcArbitraryProfileDefWithVoids", 46, IFC2X3_IfcArbitraryClosedProfileDef_type);
-    IFC2X3_IfcBlobTexture_type = new entity("IfcBlobTexture", 61, IFC2X3_IfcSurfaceTexture_type);
-    IFC2X3_IfcCenterLineProfileDef_type = new entity("IfcCenterLineProfileDef", 104, IFC2X3_IfcArbitraryOpenProfileDef_type);
-    IFC2X3_IfcClassificationReference_type = new entity("IfcClassificationReference", 119, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcColourRgb_type = new entity("IfcColourRgb", 125, IFC2X3_IfcColourSpecification_type);
-    IFC2X3_IfcComplexProperty_type = new entity("IfcComplexProperty", 131, IFC2X3_IfcProperty_type);
-    IFC2X3_IfcCompositeProfileDef_type = new entity("IfcCompositeProfileDef", 134, IFC2X3_IfcProfileDef_type);
-    IFC2X3_IfcConnectedFaceSet_type = new entity("IfcConnectedFaceSet", 144, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcConnectionCurveGeometry_type = new entity("IfcConnectionCurveGeometry", 145, IFC2X3_IfcConnectionGeometry_type);
-    IFC2X3_IfcConnectionPointEccentricity_type = new entity("IfcConnectionPointEccentricity", 147, IFC2X3_IfcConnectionPointGeometry_type);
-    IFC2X3_IfcContextDependentUnit_type = new entity("IfcContextDependentUnit", 162, IFC2X3_IfcNamedUnit_type);
-    IFC2X3_IfcConversionBasedUnit_type = new entity("IfcConversionBasedUnit", 166, IFC2X3_IfcNamedUnit_type);
-    IFC2X3_IfcCurveStyle_type = new entity("IfcCurveStyle", 197, IFC2X3_IfcPresentationStyle_type);
-    IFC2X3_IfcDerivedProfileDef_type = new entity("IfcDerivedProfileDef", 212, IFC2X3_IfcProfileDef_type);
-    IFC2X3_IfcDimensionCalloutRelationship_type = new entity("IfcDimensionCalloutRelationship", 219, IFC2X3_IfcDraughtingCalloutRelationship_type);
-    IFC2X3_IfcDimensionPair_type = new entity("IfcDimensionPair", 225, IFC2X3_IfcDraughtingCalloutRelationship_type);
-    IFC2X3_IfcDocumentReference_type = new entity("IfcDocumentReference", 244, IFC2X3_IfcExternalReference_type);
-    IFC2X3_IfcDraughtingPreDefinedTextFont_type = new entity("IfcDraughtingPreDefinedTextFont", 261, IFC2X3_IfcPreDefinedTextFont_type);
-    IFC2X3_IfcEdge_type = new entity("IfcEdge", 269, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcEdgeCurve_type = new entity("IfcEdgeCurve", 270, IFC2X3_IfcEdge_type);
-    IFC2X3_IfcExtendedMaterialProperties_type = new entity("IfcExtendedMaterialProperties", 321, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcFace_type = new entity("IfcFace", 328, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcFaceBound_type = new entity("IfcFaceBound", 330, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcFaceOuterBound_type = new entity("IfcFaceOuterBound", 331, IFC2X3_IfcFaceBound_type);
-    IFC2X3_IfcFaceSurface_type = new entity("IfcFaceSurface", 332, IFC2X3_IfcFace_type);
-    IFC2X3_IfcFailureConnectionCondition_type = new entity("IfcFailureConnectionCondition", 335, IFC2X3_IfcStructuralConnectionCondition_type);
-    IFC2X3_IfcFillAreaStyle_type = new entity("IfcFillAreaStyle", 343, IFC2X3_IfcPresentationStyle_type);
-    IFC2X3_IfcFuelProperties_type = new entity("IfcFuelProperties", 380, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcGeneralMaterialProperties_type = new entity("IfcGeneralMaterialProperties", 387, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcGeneralProfileProperties_type = new entity("IfcGeneralProfileProperties", 388, IFC2X3_IfcProfileProperties_type);
-    IFC2X3_IfcGeometricRepresentationContext_type = new entity("IfcGeometricRepresentationContext", 391, IFC2X3_IfcRepresentationContext_type);
-    IFC2X3_IfcGeometricRepresentationItem_type = new entity("IfcGeometricRepresentationItem", 392, IFC2X3_IfcRepresentationItem_type);
-    IFC2X3_IfcGeometricRepresentationSubContext_type = new entity("IfcGeometricRepresentationSubContext", 393, IFC2X3_IfcGeometricRepresentationContext_type);
-    IFC2X3_IfcGeometricSet_type = new entity("IfcGeometricSet", 394, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcGridPlacement_type = new entity("IfcGridPlacement", 400, IFC2X3_IfcObjectPlacement_type);
-    IFC2X3_IfcHalfSpaceSolid_type = new entity("IfcHalfSpaceSolid", 402, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcHygroscopicMaterialProperties_type = new entity("IfcHygroscopicMaterialProperties", 411, IFC2X3_IfcMaterialProperties_type);
-    IFC2X3_IfcImageTexture_type = new entity("IfcImageTexture", 414, IFC2X3_IfcSurfaceTexture_type);
-    IFC2X3_IfcIrregularTimeSeries_type = new entity("IfcIrregularTimeSeries", 422, IFC2X3_IfcTimeSeries_type);
-    IFC2X3_IfcLightSource_type = new entity("IfcLightSource", 446, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcLightSourceAmbient_type = new entity("IfcLightSourceAmbient", 447, IFC2X3_IfcLightSource_type);
-    IFC2X3_IfcLightSourceDirectional_type = new entity("IfcLightSourceDirectional", 448, IFC2X3_IfcLightSource_type);
-    IFC2X3_IfcLightSourceGoniometric_type = new entity("IfcLightSourceGoniometric", 449, IFC2X3_IfcLightSource_type);
-    IFC2X3_IfcLightSourcePositional_type = new entity("IfcLightSourcePositional", 450, IFC2X3_IfcLightSource_type);
-    IFC2X3_IfcLightSourceSpot_type = new entity("IfcLightSourceSpot", 451, IFC2X3_IfcLightSourcePositional_type);
-    IFC2X3_IfcLocalPlacement_type = new entity("IfcLocalPlacement", 459, IFC2X3_IfcObjectPlacement_type);
-    IFC2X3_IfcLoop_type = new entity("IfcLoop", 463, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcMappedItem_type = new entity("IfcMappedItem", 471, IFC2X3_IfcRepresentationItem_type);
-    IFC2X3_IfcMaterialDefinitionRepresentation_type = new entity("IfcMaterialDefinitionRepresentation", 478, IFC2X3_IfcProductRepresentation_type);
-    IFC2X3_IfcMechanicalConcreteMaterialProperties_type = new entity("IfcMechanicalConcreteMaterialProperties", 487, IFC2X3_IfcMechanicalMaterialProperties_type);
-    IFC2X3_IfcObjectDefinition_type = new entity("IfcObjectDefinition", 516, IFC2X3_IfcRoot_type);
-    IFC2X3_IfcOneDirectionRepeatFactor_type = new entity("IfcOneDirectionRepeatFactor", 526, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcOpenShell_type = new entity("IfcOpenShell", 528, IFC2X3_IfcConnectedFaceSet_type);
-    IFC2X3_IfcOrientedEdge_type = new entity("IfcOrientedEdge", 534, IFC2X3_IfcEdge_type);
-    IFC2X3_IfcParameterizedProfileDef_type = new entity("IfcParameterizedProfileDef", 538, IFC2X3_IfcProfileDef_type);
-    IFC2X3_IfcPath_type = new entity("IfcPath", 540, IFC2X3_IfcTopologicalRepresentationItem_type);
-    IFC2X3_IfcPhysicalComplexQuantity_type = new entity("IfcPhysicalComplexQuantity", 548, IFC2X3_IfcPhysicalQuantity_type);
-    IFC2X3_IfcPixelTexture_type = new entity("IfcPixelTexture", 559, IFC2X3_IfcSurfaceTexture_type);
-    IFC2X3_IfcPlacement_type = new entity("IfcPlacement", 560, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcPlanarExtent_type = new entity("IfcPlanarExtent", 562, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcPoint_type = new entity("IfcPoint", 569, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcPointOnCurve_type = new entity("IfcPointOnCurve", 570, IFC2X3_IfcPoint_type);
-    IFC2X3_IfcPointOnSurface_type = new entity("IfcPointOnSurface", 571, IFC2X3_IfcPoint_type);
-    IFC2X3_IfcPolyLoop_type = new entity("IfcPolyLoop", 575, IFC2X3_IfcLoop_type);
-    IFC2X3_IfcPolygonalBoundedHalfSpace_type = new entity("IfcPolygonalBoundedHalfSpace", 573, IFC2X3_IfcHalfSpaceSolid_type);
-    IFC2X3_IfcPreDefinedColour_type = new entity("IfcPreDefinedColour", 582, IFC2X3_IfcPreDefinedItem_type);
-    IFC2X3_IfcPreDefinedCurveFont_type = new entity("IfcPreDefinedCurveFont", 583, IFC2X3_IfcPreDefinedItem_type);
-    IFC2X3_IfcPreDefinedDimensionSymbol_type = new entity("IfcPreDefinedDimensionSymbol", 584, IFC2X3_IfcPreDefinedSymbol_type);
-    IFC2X3_IfcPreDefinedPointMarkerSymbol_type = new entity("IfcPreDefinedPointMarkerSymbol", 586, IFC2X3_IfcPreDefinedSymbol_type);
-    IFC2X3_IfcProductDefinitionShape_type = new entity("IfcProductDefinitionShape", 601, IFC2X3_IfcProductRepresentation_type);
-    IFC2X3_IfcPropertyBoundedValue_type = new entity("IfcPropertyBoundedValue", 616, IFC2X3_IfcSimpleProperty_type);
-    IFC2X3_IfcPropertyDefinition_type = new entity("IfcPropertyDefinition", 618, IFC2X3_IfcRoot_type);
-    IFC2X3_IfcPropertyEnumeratedValue_type = new entity("IfcPropertyEnumeratedValue", 620, IFC2X3_IfcSimpleProperty_type);
-    IFC2X3_IfcPropertyListValue_type = new entity("IfcPropertyListValue", 622, IFC2X3_IfcSimpleProperty_type);
-    IFC2X3_IfcPropertyReferenceValue_type = new entity("IfcPropertyReferenceValue", 623, IFC2X3_IfcSimpleProperty_type);
-    IFC2X3_IfcPropertySetDefinition_type = new entity("IfcPropertySetDefinition", 625, IFC2X3_IfcPropertyDefinition_type);
-    IFC2X3_IfcPropertySingleValue_type = new entity("IfcPropertySingleValue", 626, IFC2X3_IfcSimpleProperty_type);
-    IFC2X3_IfcPropertyTableValue_type = new entity("IfcPropertyTableValue", 628, IFC2X3_IfcSimpleProperty_type);
-    IFC2X3_IfcRectangleProfileDef_type = new entity("IfcRectangleProfileDef", 654, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcRegularTimeSeries_type = new entity("IfcRegularTimeSeries", 659, IFC2X3_IfcTimeSeries_type);
-    IFC2X3_IfcReinforcementDefinitionProperties_type = new entity("IfcReinforcementDefinitionProperties", 661, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcRelationship_type = new entity("IfcRelationship", 686, IFC2X3_IfcRoot_type);
-    IFC2X3_IfcRoundedRectangleProfileDef_type = new entity("IfcRoundedRectangleProfileDef", 737, IFC2X3_IfcRectangleProfileDef_type);
-    IFC2X3_IfcSectionedSpine_type = new entity("IfcSectionedSpine", 743, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcServiceLifeFactor_type = new entity("IfcServiceLifeFactor", 752, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcShellBasedSurfaceModel_type = new entity("IfcShellBasedSurfaceModel", 760, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcSlippageConnectionCondition_type = new entity("IfcSlippageConnectionCondition", 771, IFC2X3_IfcStructuralConnectionCondition_type);
-    IFC2X3_IfcSolidModel_type = new entity("IfcSolidModel", 773, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcSoundProperties_type = new entity("IfcSoundProperties", 776, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcSoundValue_type = new entity("IfcSoundValue", 778, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcSpaceThermalLoadProperties_type = new entity("IfcSpaceThermalLoadProperties", 783, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcStructuralLoadLinearForce_type = new entity("IfcStructuralLoadLinearForce", 816, IFC2X3_IfcStructuralLoadStatic_type);
-    IFC2X3_IfcStructuralLoadPlanarForce_type = new entity("IfcStructuralLoadPlanarForce", 817, IFC2X3_IfcStructuralLoadStatic_type);
-    IFC2X3_IfcStructuralLoadSingleDisplacement_type = new entity("IfcStructuralLoadSingleDisplacement", 818, IFC2X3_IfcStructuralLoadStatic_type);
-    IFC2X3_IfcStructuralLoadSingleDisplacementDistortion_type = new entity("IfcStructuralLoadSingleDisplacementDistortion", 819, IFC2X3_IfcStructuralLoadSingleDisplacement_type);
-    IFC2X3_IfcStructuralLoadSingleForce_type = new entity("IfcStructuralLoadSingleForce", 820, IFC2X3_IfcStructuralLoadStatic_type);
-    IFC2X3_IfcStructuralLoadSingleForceWarping_type = new entity("IfcStructuralLoadSingleForceWarping", 821, IFC2X3_IfcStructuralLoadSingleForce_type);
-    IFC2X3_IfcStructuralProfileProperties_type = new entity("IfcStructuralProfileProperties", 830, IFC2X3_IfcGeneralProfileProperties_type);
-    IFC2X3_IfcStructuralSteelProfileProperties_type = new entity("IfcStructuralSteelProfileProperties", 833, IFC2X3_IfcStructuralProfileProperties_type);
-    IFC2X3_IfcSubedge_type = new entity("IfcSubedge", 843, IFC2X3_IfcEdge_type);
-    IFC2X3_IfcSurface_type = new entity("IfcSurface", 844, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcSurfaceStyleRendering_type = new entity("IfcSurfaceStyleRendering", 854, IFC2X3_IfcSurfaceStyleShading_type);
-    IFC2X3_IfcSweptAreaSolid_type = new entity("IfcSweptAreaSolid", 859, IFC2X3_IfcSolidModel_type);
-    IFC2X3_IfcSweptDiskSolid_type = new entity("IfcSweptDiskSolid", 860, IFC2X3_IfcSolidModel_type);
-    IFC2X3_IfcSweptSurface_type = new entity("IfcSweptSurface", 861, IFC2X3_IfcSurface_type);
-    IFC2X3_IfcTShapeProfileDef_type = new entity("IfcTShapeProfileDef", 928, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcTerminatorSymbol_type = new entity("IfcTerminatorSymbol", 878, IFC2X3_IfcAnnotationSymbolOccurrence_type);
-    IFC2X3_IfcTextLiteral_type = new entity("IfcTextLiteral", 884, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcTextLiteralWithExtent_type = new entity("IfcTextLiteralWithExtent", 885, IFC2X3_IfcTextLiteral_type);
-    IFC2X3_IfcTrapeziumProfileDef_type = new entity("IfcTrapeziumProfileDef", 924, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcTwoDirectionRepeatFactor_type = new entity("IfcTwoDirectionRepeatFactor", 931, IFC2X3_IfcOneDirectionRepeatFactor_type);
-    IFC2X3_IfcTypeObject_type = new entity("IfcTypeObject", 932, IFC2X3_IfcObjectDefinition_type);
-    IFC2X3_IfcTypeProduct_type = new entity("IfcTypeProduct", 933, IFC2X3_IfcTypeObject_type);
-    IFC2X3_IfcUShapeProfileDef_type = new entity("IfcUShapeProfileDef", 939, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcVector_type = new entity("IfcVector", 944, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcVertexLoop_type = new entity("IfcVertexLoop", 948, IFC2X3_IfcLoop_type);
-    IFC2X3_IfcWindowLiningProperties_type = new entity("IfcWindowLiningProperties", 966, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcWindowPanelProperties_type = new entity("IfcWindowPanelProperties", 969, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcWindowStyle_type = new entity("IfcWindowStyle", 970, IFC2X3_IfcTypeProduct_type);
-    IFC2X3_IfcZShapeProfileDef_type = new entity("IfcZShapeProfileDef", 979, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcAnnotationOccurrence_type = new entity("IfcAnnotationOccurrence", true, 31, IFC2X3_IfcStyledItem_type);
+    IFC2X3_IfcAnnotationSurfaceOccurrence_type = new entity("IfcAnnotationSurfaceOccurrence", false, 33, IFC2X3_IfcAnnotationOccurrence_type);
+    IFC2X3_IfcAnnotationSymbolOccurrence_type = new entity("IfcAnnotationSymbolOccurrence", false, 34, IFC2X3_IfcAnnotationOccurrence_type);
+    IFC2X3_IfcAnnotationTextOccurrence_type = new entity("IfcAnnotationTextOccurrence", false, 35, IFC2X3_IfcAnnotationOccurrence_type);
+    IFC2X3_IfcArbitraryClosedProfileDef_type = new entity("IfcArbitraryClosedProfileDef", false, 44, IFC2X3_IfcProfileDef_type);
+    IFC2X3_IfcArbitraryOpenProfileDef_type = new entity("IfcArbitraryOpenProfileDef", false, 45, IFC2X3_IfcProfileDef_type);
+    IFC2X3_IfcArbitraryProfileDefWithVoids_type = new entity("IfcArbitraryProfileDefWithVoids", false, 46, IFC2X3_IfcArbitraryClosedProfileDef_type);
+    IFC2X3_IfcBlobTexture_type = new entity("IfcBlobTexture", false, 61, IFC2X3_IfcSurfaceTexture_type);
+    IFC2X3_IfcCenterLineProfileDef_type = new entity("IfcCenterLineProfileDef", false, 104, IFC2X3_IfcArbitraryOpenProfileDef_type);
+    IFC2X3_IfcClassificationReference_type = new entity("IfcClassificationReference", false, 119, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcColourRgb_type = new entity("IfcColourRgb", false, 125, IFC2X3_IfcColourSpecification_type);
+    IFC2X3_IfcComplexProperty_type = new entity("IfcComplexProperty", false, 131, IFC2X3_IfcProperty_type);
+    IFC2X3_IfcCompositeProfileDef_type = new entity("IfcCompositeProfileDef", false, 134, IFC2X3_IfcProfileDef_type);
+    IFC2X3_IfcConnectedFaceSet_type = new entity("IfcConnectedFaceSet", false, 144, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcConnectionCurveGeometry_type = new entity("IfcConnectionCurveGeometry", false, 145, IFC2X3_IfcConnectionGeometry_type);
+    IFC2X3_IfcConnectionPointEccentricity_type = new entity("IfcConnectionPointEccentricity", false, 147, IFC2X3_IfcConnectionPointGeometry_type);
+    IFC2X3_IfcContextDependentUnit_type = new entity("IfcContextDependentUnit", false, 162, IFC2X3_IfcNamedUnit_type);
+    IFC2X3_IfcConversionBasedUnit_type = new entity("IfcConversionBasedUnit", false, 166, IFC2X3_IfcNamedUnit_type);
+    IFC2X3_IfcCurveStyle_type = new entity("IfcCurveStyle", false, 197, IFC2X3_IfcPresentationStyle_type);
+    IFC2X3_IfcDerivedProfileDef_type = new entity("IfcDerivedProfileDef", false, 212, IFC2X3_IfcProfileDef_type);
+    IFC2X3_IfcDimensionCalloutRelationship_type = new entity("IfcDimensionCalloutRelationship", false, 219, IFC2X3_IfcDraughtingCalloutRelationship_type);
+    IFC2X3_IfcDimensionPair_type = new entity("IfcDimensionPair", false, 225, IFC2X3_IfcDraughtingCalloutRelationship_type);
+    IFC2X3_IfcDocumentReference_type = new entity("IfcDocumentReference", false, 244, IFC2X3_IfcExternalReference_type);
+    IFC2X3_IfcDraughtingPreDefinedTextFont_type = new entity("IfcDraughtingPreDefinedTextFont", false, 261, IFC2X3_IfcPreDefinedTextFont_type);
+    IFC2X3_IfcEdge_type = new entity("IfcEdge", false, 269, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcEdgeCurve_type = new entity("IfcEdgeCurve", false, 270, IFC2X3_IfcEdge_type);
+    IFC2X3_IfcExtendedMaterialProperties_type = new entity("IfcExtendedMaterialProperties", false, 321, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcFace_type = new entity("IfcFace", false, 328, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcFaceBound_type = new entity("IfcFaceBound", false, 330, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcFaceOuterBound_type = new entity("IfcFaceOuterBound", false, 331, IFC2X3_IfcFaceBound_type);
+    IFC2X3_IfcFaceSurface_type = new entity("IfcFaceSurface", false, 332, IFC2X3_IfcFace_type);
+    IFC2X3_IfcFailureConnectionCondition_type = new entity("IfcFailureConnectionCondition", false, 335, IFC2X3_IfcStructuralConnectionCondition_type);
+    IFC2X3_IfcFillAreaStyle_type = new entity("IfcFillAreaStyle", false, 343, IFC2X3_IfcPresentationStyle_type);
+    IFC2X3_IfcFuelProperties_type = new entity("IfcFuelProperties", false, 380, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcGeneralMaterialProperties_type = new entity("IfcGeneralMaterialProperties", false, 387, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcGeneralProfileProperties_type = new entity("IfcGeneralProfileProperties", false, 388, IFC2X3_IfcProfileProperties_type);
+    IFC2X3_IfcGeometricRepresentationContext_type = new entity("IfcGeometricRepresentationContext", false, 391, IFC2X3_IfcRepresentationContext_type);
+    IFC2X3_IfcGeometricRepresentationItem_type = new entity("IfcGeometricRepresentationItem", true, 392, IFC2X3_IfcRepresentationItem_type);
+    IFC2X3_IfcGeometricRepresentationSubContext_type = new entity("IfcGeometricRepresentationSubContext", false, 393, IFC2X3_IfcGeometricRepresentationContext_type);
+    IFC2X3_IfcGeometricSet_type = new entity("IfcGeometricSet", false, 394, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcGridPlacement_type = new entity("IfcGridPlacement", false, 400, IFC2X3_IfcObjectPlacement_type);
+    IFC2X3_IfcHalfSpaceSolid_type = new entity("IfcHalfSpaceSolid", false, 402, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcHygroscopicMaterialProperties_type = new entity("IfcHygroscopicMaterialProperties", false, 411, IFC2X3_IfcMaterialProperties_type);
+    IFC2X3_IfcImageTexture_type = new entity("IfcImageTexture", false, 414, IFC2X3_IfcSurfaceTexture_type);
+    IFC2X3_IfcIrregularTimeSeries_type = new entity("IfcIrregularTimeSeries", false, 422, IFC2X3_IfcTimeSeries_type);
+    IFC2X3_IfcLightSource_type = new entity("IfcLightSource", true, 446, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcLightSourceAmbient_type = new entity("IfcLightSourceAmbient", false, 447, IFC2X3_IfcLightSource_type);
+    IFC2X3_IfcLightSourceDirectional_type = new entity("IfcLightSourceDirectional", false, 448, IFC2X3_IfcLightSource_type);
+    IFC2X3_IfcLightSourceGoniometric_type = new entity("IfcLightSourceGoniometric", false, 449, IFC2X3_IfcLightSource_type);
+    IFC2X3_IfcLightSourcePositional_type = new entity("IfcLightSourcePositional", false, 450, IFC2X3_IfcLightSource_type);
+    IFC2X3_IfcLightSourceSpot_type = new entity("IfcLightSourceSpot", false, 451, IFC2X3_IfcLightSourcePositional_type);
+    IFC2X3_IfcLocalPlacement_type = new entity("IfcLocalPlacement", false, 459, IFC2X3_IfcObjectPlacement_type);
+    IFC2X3_IfcLoop_type = new entity("IfcLoop", false, 463, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcMappedItem_type = new entity("IfcMappedItem", false, 471, IFC2X3_IfcRepresentationItem_type);
+    IFC2X3_IfcMaterialDefinitionRepresentation_type = new entity("IfcMaterialDefinitionRepresentation", false, 478, IFC2X3_IfcProductRepresentation_type);
+    IFC2X3_IfcMechanicalConcreteMaterialProperties_type = new entity("IfcMechanicalConcreteMaterialProperties", false, 487, IFC2X3_IfcMechanicalMaterialProperties_type);
+    IFC2X3_IfcObjectDefinition_type = new entity("IfcObjectDefinition", true, 516, IFC2X3_IfcRoot_type);
+    IFC2X3_IfcOneDirectionRepeatFactor_type = new entity("IfcOneDirectionRepeatFactor", false, 526, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcOpenShell_type = new entity("IfcOpenShell", false, 528, IFC2X3_IfcConnectedFaceSet_type);
+    IFC2X3_IfcOrientedEdge_type = new entity("IfcOrientedEdge", false, 534, IFC2X3_IfcEdge_type);
+    IFC2X3_IfcParameterizedProfileDef_type = new entity("IfcParameterizedProfileDef", true, 538, IFC2X3_IfcProfileDef_type);
+    IFC2X3_IfcPath_type = new entity("IfcPath", false, 540, IFC2X3_IfcTopologicalRepresentationItem_type);
+    IFC2X3_IfcPhysicalComplexQuantity_type = new entity("IfcPhysicalComplexQuantity", false, 548, IFC2X3_IfcPhysicalQuantity_type);
+    IFC2X3_IfcPixelTexture_type = new entity("IfcPixelTexture", false, 559, IFC2X3_IfcSurfaceTexture_type);
+    IFC2X3_IfcPlacement_type = new entity("IfcPlacement", true, 560, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcPlanarExtent_type = new entity("IfcPlanarExtent", false, 562, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcPoint_type = new entity("IfcPoint", true, 569, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcPointOnCurve_type = new entity("IfcPointOnCurve", false, 570, IFC2X3_IfcPoint_type);
+    IFC2X3_IfcPointOnSurface_type = new entity("IfcPointOnSurface", false, 571, IFC2X3_IfcPoint_type);
+    IFC2X3_IfcPolyLoop_type = new entity("IfcPolyLoop", false, 575, IFC2X3_IfcLoop_type);
+    IFC2X3_IfcPolygonalBoundedHalfSpace_type = new entity("IfcPolygonalBoundedHalfSpace", false, 573, IFC2X3_IfcHalfSpaceSolid_type);
+    IFC2X3_IfcPreDefinedColour_type = new entity("IfcPreDefinedColour", true, 582, IFC2X3_IfcPreDefinedItem_type);
+    IFC2X3_IfcPreDefinedCurveFont_type = new entity("IfcPreDefinedCurveFont", true, 583, IFC2X3_IfcPreDefinedItem_type);
+    IFC2X3_IfcPreDefinedDimensionSymbol_type = new entity("IfcPreDefinedDimensionSymbol", false, 584, IFC2X3_IfcPreDefinedSymbol_type);
+    IFC2X3_IfcPreDefinedPointMarkerSymbol_type = new entity("IfcPreDefinedPointMarkerSymbol", false, 586, IFC2X3_IfcPreDefinedSymbol_type);
+    IFC2X3_IfcProductDefinitionShape_type = new entity("IfcProductDefinitionShape", false, 601, IFC2X3_IfcProductRepresentation_type);
+    IFC2X3_IfcPropertyBoundedValue_type = new entity("IfcPropertyBoundedValue", false, 616, IFC2X3_IfcSimpleProperty_type);
+    IFC2X3_IfcPropertyDefinition_type = new entity("IfcPropertyDefinition", true, 618, IFC2X3_IfcRoot_type);
+    IFC2X3_IfcPropertyEnumeratedValue_type = new entity("IfcPropertyEnumeratedValue", false, 620, IFC2X3_IfcSimpleProperty_type);
+    IFC2X3_IfcPropertyListValue_type = new entity("IfcPropertyListValue", false, 622, IFC2X3_IfcSimpleProperty_type);
+    IFC2X3_IfcPropertyReferenceValue_type = new entity("IfcPropertyReferenceValue", false, 623, IFC2X3_IfcSimpleProperty_type);
+    IFC2X3_IfcPropertySetDefinition_type = new entity("IfcPropertySetDefinition", true, 625, IFC2X3_IfcPropertyDefinition_type);
+    IFC2X3_IfcPropertySingleValue_type = new entity("IfcPropertySingleValue", false, 626, IFC2X3_IfcSimpleProperty_type);
+    IFC2X3_IfcPropertyTableValue_type = new entity("IfcPropertyTableValue", false, 628, IFC2X3_IfcSimpleProperty_type);
+    IFC2X3_IfcRectangleProfileDef_type = new entity("IfcRectangleProfileDef", false, 654, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcRegularTimeSeries_type = new entity("IfcRegularTimeSeries", false, 659, IFC2X3_IfcTimeSeries_type);
+    IFC2X3_IfcReinforcementDefinitionProperties_type = new entity("IfcReinforcementDefinitionProperties", false, 661, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcRelationship_type = new entity("IfcRelationship", true, 686, IFC2X3_IfcRoot_type);
+    IFC2X3_IfcRoundedRectangleProfileDef_type = new entity("IfcRoundedRectangleProfileDef", false, 737, IFC2X3_IfcRectangleProfileDef_type);
+    IFC2X3_IfcSectionedSpine_type = new entity("IfcSectionedSpine", false, 743, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcServiceLifeFactor_type = new entity("IfcServiceLifeFactor", false, 752, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcShellBasedSurfaceModel_type = new entity("IfcShellBasedSurfaceModel", false, 760, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcSlippageConnectionCondition_type = new entity("IfcSlippageConnectionCondition", false, 771, IFC2X3_IfcStructuralConnectionCondition_type);
+    IFC2X3_IfcSolidModel_type = new entity("IfcSolidModel", true, 773, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcSoundProperties_type = new entity("IfcSoundProperties", false, 776, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcSoundValue_type = new entity("IfcSoundValue", false, 778, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcSpaceThermalLoadProperties_type = new entity("IfcSpaceThermalLoadProperties", false, 783, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcStructuralLoadLinearForce_type = new entity("IfcStructuralLoadLinearForce", false, 816, IFC2X3_IfcStructuralLoadStatic_type);
+    IFC2X3_IfcStructuralLoadPlanarForce_type = new entity("IfcStructuralLoadPlanarForce", false, 817, IFC2X3_IfcStructuralLoadStatic_type);
+    IFC2X3_IfcStructuralLoadSingleDisplacement_type = new entity("IfcStructuralLoadSingleDisplacement", false, 818, IFC2X3_IfcStructuralLoadStatic_type);
+    IFC2X3_IfcStructuralLoadSingleDisplacementDistortion_type = new entity("IfcStructuralLoadSingleDisplacementDistortion", false, 819, IFC2X3_IfcStructuralLoadSingleDisplacement_type);
+    IFC2X3_IfcStructuralLoadSingleForce_type = new entity("IfcStructuralLoadSingleForce", false, 820, IFC2X3_IfcStructuralLoadStatic_type);
+    IFC2X3_IfcStructuralLoadSingleForceWarping_type = new entity("IfcStructuralLoadSingleForceWarping", false, 821, IFC2X3_IfcStructuralLoadSingleForce_type);
+    IFC2X3_IfcStructuralProfileProperties_type = new entity("IfcStructuralProfileProperties", false, 830, IFC2X3_IfcGeneralProfileProperties_type);
+    IFC2X3_IfcStructuralSteelProfileProperties_type = new entity("IfcStructuralSteelProfileProperties", false, 833, IFC2X3_IfcStructuralProfileProperties_type);
+    IFC2X3_IfcSubedge_type = new entity("IfcSubedge", false, 843, IFC2X3_IfcEdge_type);
+    IFC2X3_IfcSurface_type = new entity("IfcSurface", true, 844, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcSurfaceStyleRendering_type = new entity("IfcSurfaceStyleRendering", false, 854, IFC2X3_IfcSurfaceStyleShading_type);
+    IFC2X3_IfcSweptAreaSolid_type = new entity("IfcSweptAreaSolid", true, 859, IFC2X3_IfcSolidModel_type);
+    IFC2X3_IfcSweptDiskSolid_type = new entity("IfcSweptDiskSolid", false, 860, IFC2X3_IfcSolidModel_type);
+    IFC2X3_IfcSweptSurface_type = new entity("IfcSweptSurface", true, 861, IFC2X3_IfcSurface_type);
+    IFC2X3_IfcTShapeProfileDef_type = new entity("IfcTShapeProfileDef", false, 928, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcTerminatorSymbol_type = new entity("IfcTerminatorSymbol", false, 878, IFC2X3_IfcAnnotationSymbolOccurrence_type);
+    IFC2X3_IfcTextLiteral_type = new entity("IfcTextLiteral", false, 884, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcTextLiteralWithExtent_type = new entity("IfcTextLiteralWithExtent", false, 885, IFC2X3_IfcTextLiteral_type);
+    IFC2X3_IfcTrapeziumProfileDef_type = new entity("IfcTrapeziumProfileDef", false, 924, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcTwoDirectionRepeatFactor_type = new entity("IfcTwoDirectionRepeatFactor", false, 931, IFC2X3_IfcOneDirectionRepeatFactor_type);
+    IFC2X3_IfcTypeObject_type = new entity("IfcTypeObject", false, 932, IFC2X3_IfcObjectDefinition_type);
+    IFC2X3_IfcTypeProduct_type = new entity("IfcTypeProduct", false, 933, IFC2X3_IfcTypeObject_type);
+    IFC2X3_IfcUShapeProfileDef_type = new entity("IfcUShapeProfileDef", false, 939, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcVector_type = new entity("IfcVector", false, 944, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcVertexLoop_type = new entity("IfcVertexLoop", false, 948, IFC2X3_IfcLoop_type);
+    IFC2X3_IfcWindowLiningProperties_type = new entity("IfcWindowLiningProperties", false, 966, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcWindowPanelProperties_type = new entity("IfcWindowPanelProperties", false, 969, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcWindowStyle_type = new entity("IfcWindowStyle", false, 970, IFC2X3_IfcTypeProduct_type);
+    IFC2X3_IfcZShapeProfileDef_type = new entity("IfcZShapeProfileDef", false, 979, IFC2X3_IfcParameterizedProfileDef_type);
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IFC2X3_IfcClassificationNotation_type);
@@ -4474,144 +4474,144 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
         items.push_back(IFC2X3_IfcSimpleValue_type);
         IFC2X3_IfcValue_type = new select_type("IfcValue", 940, items);
     }
-    IFC2X3_IfcAnnotationCurveOccurrence_type = new entity("IfcAnnotationCurveOccurrence", 28, IFC2X3_IfcAnnotationOccurrence_type);
-    IFC2X3_IfcAnnotationFillArea_type = new entity("IfcAnnotationFillArea", 29, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcAnnotationFillAreaOccurrence_type = new entity("IfcAnnotationFillAreaOccurrence", 30, IFC2X3_IfcAnnotationOccurrence_type);
-    IFC2X3_IfcAnnotationSurface_type = new entity("IfcAnnotationSurface", 32, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcAxis1Placement_type = new entity("IfcAxis1Placement", 52, IFC2X3_IfcPlacement_type);
-    IFC2X3_IfcAxis2Placement2D_type = new entity("IfcAxis2Placement2D", 54, IFC2X3_IfcPlacement_type);
-    IFC2X3_IfcAxis2Placement3D_type = new entity("IfcAxis2Placement3D", 55, IFC2X3_IfcPlacement_type);
-    IFC2X3_IfcBooleanResult_type = new entity("IfcBooleanResult", 69, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcBoundedSurface_type = new entity("IfcBoundedSurface", 76, IFC2X3_IfcSurface_type);
-    IFC2X3_IfcBoundingBox_type = new entity("IfcBoundingBox", 77, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcBoxedHalfSpace_type = new entity("IfcBoxedHalfSpace", 79, IFC2X3_IfcHalfSpaceSolid_type);
-    IFC2X3_IfcCShapeProfileDef_type = new entity("IfcCShapeProfileDef", 186, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcCartesianPoint_type = new entity("IfcCartesianPoint", 98, IFC2X3_IfcPoint_type);
-    IFC2X3_IfcCartesianTransformationOperator_type = new entity("IfcCartesianTransformationOperator", 99, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcCartesianTransformationOperator2D_type = new entity("IfcCartesianTransformationOperator2D", 100, IFC2X3_IfcCartesianTransformationOperator_type);
-    IFC2X3_IfcCartesianTransformationOperator2DnonUniform_type = new entity("IfcCartesianTransformationOperator2DnonUniform", 101, IFC2X3_IfcCartesianTransformationOperator2D_type);
-    IFC2X3_IfcCartesianTransformationOperator3D_type = new entity("IfcCartesianTransformationOperator3D", 102, IFC2X3_IfcCartesianTransformationOperator_type);
-    IFC2X3_IfcCartesianTransformationOperator3DnonUniform_type = new entity("IfcCartesianTransformationOperator3DnonUniform", 103, IFC2X3_IfcCartesianTransformationOperator3D_type);
-    IFC2X3_IfcCircleProfileDef_type = new entity("IfcCircleProfileDef", 112, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcClosedShell_type = new entity("IfcClosedShell", 120, IFC2X3_IfcConnectedFaceSet_type);
-    IFC2X3_IfcCompositeCurveSegment_type = new entity("IfcCompositeCurveSegment", 133, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcCraneRailAShapeProfileDef_type = new entity("IfcCraneRailAShapeProfileDef", 180, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcCraneRailFShapeProfileDef_type = new entity("IfcCraneRailFShapeProfileDef", 181, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcCsgPrimitive3D_type = new entity("IfcCsgPrimitive3D", 183, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcCsgSolid_type = new entity("IfcCsgSolid", 185, IFC2X3_IfcSolidModel_type);
-    IFC2X3_IfcCurve_type = new entity("IfcCurve", 193, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcCurveBoundedPlane_type = new entity("IfcCurveBoundedPlane", 194, IFC2X3_IfcBoundedSurface_type);
-    IFC2X3_IfcDefinedSymbol_type = new entity("IfcDefinedSymbol", 209, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcDimensionCurve_type = new entity("IfcDimensionCurve", 221, IFC2X3_IfcAnnotationCurveOccurrence_type);
-    IFC2X3_IfcDimensionCurveTerminator_type = new entity("IfcDimensionCurveTerminator", 223, IFC2X3_IfcTerminatorSymbol_type);
-    IFC2X3_IfcDirection_type = new entity("IfcDirection", 226, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcDoorLiningProperties_type = new entity("IfcDoorLiningProperties", 248, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcDoorPanelProperties_type = new entity("IfcDoorPanelProperties", 251, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcDoorStyle_type = new entity("IfcDoorStyle", 252, IFC2X3_IfcTypeProduct_type);
-    IFC2X3_IfcDraughtingCallout_type = new entity("IfcDraughtingCallout", 256, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcDraughtingPreDefinedColour_type = new entity("IfcDraughtingPreDefinedColour", 259, IFC2X3_IfcPreDefinedColour_type);
-    IFC2X3_IfcDraughtingPreDefinedCurveFont_type = new entity("IfcDraughtingPreDefinedCurveFont", 260, IFC2X3_IfcPreDefinedCurveFont_type);
-    IFC2X3_IfcEdgeLoop_type = new entity("IfcEdgeLoop", 272, IFC2X3_IfcLoop_type);
-    IFC2X3_IfcElementQuantity_type = new entity("IfcElementQuantity", 304, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcElementType_type = new entity("IfcElementType", 305, IFC2X3_IfcTypeProduct_type);
-    IFC2X3_IfcElementarySurface_type = new entity("IfcElementarySurface", 298, IFC2X3_IfcSurface_type);
-    IFC2X3_IfcEllipseProfileDef_type = new entity("IfcEllipseProfileDef", 307, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcEnergyProperties_type = new entity("IfcEnergyProperties", 311, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcExtrudedAreaSolid_type = new entity("IfcExtrudedAreaSolid", 327, IFC2X3_IfcSweptAreaSolid_type);
-    IFC2X3_IfcFaceBasedSurfaceModel_type = new entity("IfcFaceBasedSurfaceModel", 329, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcFillAreaStyleHatching_type = new entity("IfcFillAreaStyleHatching", 344, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcFillAreaStyleTileSymbolWithStyle_type = new entity("IfcFillAreaStyleTileSymbolWithStyle", 347, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcFillAreaStyleTiles_type = new entity("IfcFillAreaStyleTiles", 345, IFC2X3_IfcGeometricRepresentationItem_type);
-    IFC2X3_IfcFluidFlowProperties_type = new entity("IfcFluidFlowProperties", 372, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcFurnishingElementType_type = new entity("IfcFurnishingElementType", 382, IFC2X3_IfcElementType_type);
-    IFC2X3_IfcFurnitureType_type = new entity("IfcFurnitureType", 384, IFC2X3_IfcFurnishingElementType_type);
-    IFC2X3_IfcGeometricCurveSet_type = new entity("IfcGeometricCurveSet", 389, IFC2X3_IfcGeometricSet_type);
-    IFC2X3_IfcIShapeProfileDef_type = new entity("IfcIShapeProfileDef", 424, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcLShapeProfileDef_type = new entity("IfcLShapeProfileDef", 464, IFC2X3_IfcParameterizedProfileDef_type);
-    IFC2X3_IfcLine_type = new entity("IfcLine", 452, IFC2X3_IfcCurve_type);
-    IFC2X3_IfcManifoldSolidBrep_type = new entity("IfcManifoldSolidBrep", 470, IFC2X3_IfcSolidModel_type);
-    IFC2X3_IfcObject_type = new entity("IfcObject", 515, IFC2X3_IfcObjectDefinition_type);
-    IFC2X3_IfcOffsetCurve2D_type = new entity("IfcOffsetCurve2D", 524, IFC2X3_IfcCurve_type);
-    IFC2X3_IfcOffsetCurve3D_type = new entity("IfcOffsetCurve3D", 525, IFC2X3_IfcCurve_type);
-    IFC2X3_IfcPermeableCoveringProperties_type = new entity("IfcPermeableCoveringProperties", 543, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcPlanarBox_type = new entity("IfcPlanarBox", 561, IFC2X3_IfcPlanarExtent_type);
-    IFC2X3_IfcPlane_type = new entity("IfcPlane", 564, IFC2X3_IfcElementarySurface_type);
-    IFC2X3_IfcProcess_type = new entity("IfcProcess", 599, IFC2X3_IfcObject_type);
-    IFC2X3_IfcProduct_type = new entity("IfcProduct", 600, IFC2X3_IfcObject_type);
-    IFC2X3_IfcProject_type = new entity("IfcProject", 607, IFC2X3_IfcObject_type);
-    IFC2X3_IfcProjectionCurve_type = new entity("IfcProjectionCurve", 609, IFC2X3_IfcAnnotationCurveOccurrence_type);
-    IFC2X3_IfcPropertySet_type = new entity("IfcPropertySet", 624, IFC2X3_IfcPropertySetDefinition_type);
-    IFC2X3_IfcProxy_type = new entity("IfcProxy", 631, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcRectangleHollowProfileDef_type = new entity("IfcRectangleHollowProfileDef", 653, IFC2X3_IfcRectangleProfileDef_type);
-    IFC2X3_IfcRectangularPyramid_type = new entity("IfcRectangularPyramid", 655, IFC2X3_IfcCsgPrimitive3D_type);
-    IFC2X3_IfcRectangularTrimmedSurface_type = new entity("IfcRectangularTrimmedSurface", 656, IFC2X3_IfcBoundedSurface_type);
-    IFC2X3_IfcRelAssigns_type = new entity("IfcRelAssigns", 668, IFC2X3_IfcRelationship_type);
-    IFC2X3_IfcRelAssignsToActor_type = new entity("IfcRelAssignsToActor", 670, IFC2X3_IfcRelAssigns_type);
-    IFC2X3_IfcRelAssignsToControl_type = new entity("IfcRelAssignsToControl", 671, IFC2X3_IfcRelAssigns_type);
-    IFC2X3_IfcRelAssignsToGroup_type = new entity("IfcRelAssignsToGroup", 672, IFC2X3_IfcRelAssigns_type);
-    IFC2X3_IfcRelAssignsToProcess_type = new entity("IfcRelAssignsToProcess", 673, IFC2X3_IfcRelAssigns_type);
-    IFC2X3_IfcRelAssignsToProduct_type = new entity("IfcRelAssignsToProduct", 674, IFC2X3_IfcRelAssigns_type);
-    IFC2X3_IfcRelAssignsToProjectOrder_type = new entity("IfcRelAssignsToProjectOrder", 675, IFC2X3_IfcRelAssignsToControl_type);
-    IFC2X3_IfcRelAssignsToResource_type = new entity("IfcRelAssignsToResource", 676, IFC2X3_IfcRelAssigns_type);
-    IFC2X3_IfcRelAssociates_type = new entity("IfcRelAssociates", 677, IFC2X3_IfcRelationship_type);
-    IFC2X3_IfcRelAssociatesAppliedValue_type = new entity("IfcRelAssociatesAppliedValue", 678, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesApproval_type = new entity("IfcRelAssociatesApproval", 679, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesClassification_type = new entity("IfcRelAssociatesClassification", 680, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesConstraint_type = new entity("IfcRelAssociatesConstraint", 681, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesDocument_type = new entity("IfcRelAssociatesDocument", 682, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesLibrary_type = new entity("IfcRelAssociatesLibrary", 683, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesMaterial_type = new entity("IfcRelAssociatesMaterial", 684, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelAssociatesProfileProperties_type = new entity("IfcRelAssociatesProfileProperties", 685, IFC2X3_IfcRelAssociates_type);
-    IFC2X3_IfcRelConnects_type = new entity("IfcRelConnects", 688, IFC2X3_IfcRelationship_type);
-    IFC2X3_IfcRelConnectsElements_type = new entity("IfcRelConnectsElements", 689, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelConnectsPathElements_type = new entity("IfcRelConnectsPathElements", 690, IFC2X3_IfcRelConnectsElements_type);
-    IFC2X3_IfcRelConnectsPortToElement_type = new entity("IfcRelConnectsPortToElement", 692, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelConnectsPorts_type = new entity("IfcRelConnectsPorts", 691, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelConnectsStructuralActivity_type = new entity("IfcRelConnectsStructuralActivity", 693, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelConnectsStructuralElement_type = new entity("IfcRelConnectsStructuralElement", 694, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelConnectsStructuralMember_type = new entity("IfcRelConnectsStructuralMember", 695, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelConnectsWithEccentricity_type = new entity("IfcRelConnectsWithEccentricity", 696, IFC2X3_IfcRelConnectsStructuralMember_type);
-    IFC2X3_IfcRelConnectsWithRealizingElements_type = new entity("IfcRelConnectsWithRealizingElements", 697, IFC2X3_IfcRelConnectsElements_type);
-    IFC2X3_IfcRelContainedInSpatialStructure_type = new entity("IfcRelContainedInSpatialStructure", 698, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelCoversBldgElements_type = new entity("IfcRelCoversBldgElements", 699, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelCoversSpaces_type = new entity("IfcRelCoversSpaces", 700, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelDecomposes_type = new entity("IfcRelDecomposes", 701, IFC2X3_IfcRelationship_type);
-    IFC2X3_IfcRelDefines_type = new entity("IfcRelDefines", 702, IFC2X3_IfcRelationship_type);
-    IFC2X3_IfcRelDefinesByProperties_type = new entity("IfcRelDefinesByProperties", 703, IFC2X3_IfcRelDefines_type);
-    IFC2X3_IfcRelDefinesByType_type = new entity("IfcRelDefinesByType", 704, IFC2X3_IfcRelDefines_type);
-    IFC2X3_IfcRelFillsElement_type = new entity("IfcRelFillsElement", 705, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelFlowControlElements_type = new entity("IfcRelFlowControlElements", 706, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelInteractionRequirements_type = new entity("IfcRelInteractionRequirements", 707, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelNests_type = new entity("IfcRelNests", 708, IFC2X3_IfcRelDecomposes_type);
-    IFC2X3_IfcRelOccupiesSpaces_type = new entity("IfcRelOccupiesSpaces", 709, IFC2X3_IfcRelAssignsToActor_type);
-    IFC2X3_IfcRelOverridesProperties_type = new entity("IfcRelOverridesProperties", 710, IFC2X3_IfcRelDefinesByProperties_type);
-    IFC2X3_IfcRelProjectsElement_type = new entity("IfcRelProjectsElement", 711, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelReferencedInSpatialStructure_type = new entity("IfcRelReferencedInSpatialStructure", 712, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelSchedulesCostItems_type = new entity("IfcRelSchedulesCostItems", 713, IFC2X3_IfcRelAssignsToControl_type);
-    IFC2X3_IfcRelSequence_type = new entity("IfcRelSequence", 714, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelServicesBuildings_type = new entity("IfcRelServicesBuildings", 715, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelSpaceBoundary_type = new entity("IfcRelSpaceBoundary", 716, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcRelVoidsElement_type = new entity("IfcRelVoidsElement", 717, IFC2X3_IfcRelConnects_type);
-    IFC2X3_IfcResource_type = new entity("IfcResource", 722, IFC2X3_IfcObject_type);
-    IFC2X3_IfcRevolvedAreaSolid_type = new entity("IfcRevolvedAreaSolid", 724, IFC2X3_IfcSweptAreaSolid_type);
-    IFC2X3_IfcRightCircularCone_type = new entity("IfcRightCircularCone", 727, IFC2X3_IfcCsgPrimitive3D_type);
-    IFC2X3_IfcRightCircularCylinder_type = new entity("IfcRightCircularCylinder", 728, IFC2X3_IfcCsgPrimitive3D_type);
-    IFC2X3_IfcSpatialStructureElement_type = new entity("IfcSpatialStructureElement", 786, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcSpatialStructureElementType_type = new entity("IfcSpatialStructureElementType", 787, IFC2X3_IfcElementType_type);
-    IFC2X3_IfcSphere_type = new entity("IfcSphere", 792, IFC2X3_IfcCsgPrimitive3D_type);
-    IFC2X3_IfcStructuralActivity_type = new entity("IfcStructuralActivity", 802, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcStructuralItem_type = new entity("IfcStructuralItem", 811, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcStructuralMember_type = new entity("IfcStructuralMember", 824, IFC2X3_IfcStructuralItem_type);
-    IFC2X3_IfcStructuralReaction_type = new entity("IfcStructuralReaction", 831, IFC2X3_IfcStructuralActivity_type);
-    IFC2X3_IfcStructuralSurfaceMember_type = new entity("IfcStructuralSurfaceMember", 835, IFC2X3_IfcStructuralMember_type);
-    IFC2X3_IfcStructuralSurfaceMemberVarying_type = new entity("IfcStructuralSurfaceMemberVarying", 836, IFC2X3_IfcStructuralSurfaceMember_type);
-    IFC2X3_IfcStructuredDimensionCallout_type = new entity("IfcStructuredDimensionCallout", 838, IFC2X3_IfcDraughtingCallout_type);
-    IFC2X3_IfcSurfaceCurveSweptAreaSolid_type = new entity("IfcSurfaceCurveSweptAreaSolid", 845, IFC2X3_IfcSweptAreaSolid_type);
-    IFC2X3_IfcSurfaceOfLinearExtrusion_type = new entity("IfcSurfaceOfLinearExtrusion", 846, IFC2X3_IfcSweptSurface_type);
-    IFC2X3_IfcSurfaceOfRevolution_type = new entity("IfcSurfaceOfRevolution", 847, IFC2X3_IfcSweptSurface_type);
-    IFC2X3_IfcSystemFurnitureElementType_type = new entity("IfcSystemFurnitureElementType", 867, IFC2X3_IfcFurnishingElementType_type);
-    IFC2X3_IfcTask_type = new entity("IfcTask", 872, IFC2X3_IfcProcess_type);
-    IFC2X3_IfcTransportElementType_type = new entity("IfcTransportElementType", 922, IFC2X3_IfcElementType_type);
+    IFC2X3_IfcAnnotationCurveOccurrence_type = new entity("IfcAnnotationCurveOccurrence", false, 28, IFC2X3_IfcAnnotationOccurrence_type);
+    IFC2X3_IfcAnnotationFillArea_type = new entity("IfcAnnotationFillArea", false, 29, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcAnnotationFillAreaOccurrence_type = new entity("IfcAnnotationFillAreaOccurrence", false, 30, IFC2X3_IfcAnnotationOccurrence_type);
+    IFC2X3_IfcAnnotationSurface_type = new entity("IfcAnnotationSurface", false, 32, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcAxis1Placement_type = new entity("IfcAxis1Placement", false, 52, IFC2X3_IfcPlacement_type);
+    IFC2X3_IfcAxis2Placement2D_type = new entity("IfcAxis2Placement2D", false, 54, IFC2X3_IfcPlacement_type);
+    IFC2X3_IfcAxis2Placement3D_type = new entity("IfcAxis2Placement3D", false, 55, IFC2X3_IfcPlacement_type);
+    IFC2X3_IfcBooleanResult_type = new entity("IfcBooleanResult", false, 69, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcBoundedSurface_type = new entity("IfcBoundedSurface", false, 76, IFC2X3_IfcSurface_type);
+    IFC2X3_IfcBoundingBox_type = new entity("IfcBoundingBox", false, 77, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcBoxedHalfSpace_type = new entity("IfcBoxedHalfSpace", false, 79, IFC2X3_IfcHalfSpaceSolid_type);
+    IFC2X3_IfcCShapeProfileDef_type = new entity("IfcCShapeProfileDef", false, 186, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcCartesianPoint_type = new entity("IfcCartesianPoint", false, 98, IFC2X3_IfcPoint_type);
+    IFC2X3_IfcCartesianTransformationOperator_type = new entity("IfcCartesianTransformationOperator", true, 99, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcCartesianTransformationOperator2D_type = new entity("IfcCartesianTransformationOperator2D", false, 100, IFC2X3_IfcCartesianTransformationOperator_type);
+    IFC2X3_IfcCartesianTransformationOperator2DnonUniform_type = new entity("IfcCartesianTransformationOperator2DnonUniform", false, 101, IFC2X3_IfcCartesianTransformationOperator2D_type);
+    IFC2X3_IfcCartesianTransformationOperator3D_type = new entity("IfcCartesianTransformationOperator3D", false, 102, IFC2X3_IfcCartesianTransformationOperator_type);
+    IFC2X3_IfcCartesianTransformationOperator3DnonUniform_type = new entity("IfcCartesianTransformationOperator3DnonUniform", false, 103, IFC2X3_IfcCartesianTransformationOperator3D_type);
+    IFC2X3_IfcCircleProfileDef_type = new entity("IfcCircleProfileDef", false, 112, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcClosedShell_type = new entity("IfcClosedShell", false, 120, IFC2X3_IfcConnectedFaceSet_type);
+    IFC2X3_IfcCompositeCurveSegment_type = new entity("IfcCompositeCurveSegment", false, 133, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcCraneRailAShapeProfileDef_type = new entity("IfcCraneRailAShapeProfileDef", false, 180, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcCraneRailFShapeProfileDef_type = new entity("IfcCraneRailFShapeProfileDef", false, 181, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcCsgPrimitive3D_type = new entity("IfcCsgPrimitive3D", true, 183, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcCsgSolid_type = new entity("IfcCsgSolid", false, 185, IFC2X3_IfcSolidModel_type);
+    IFC2X3_IfcCurve_type = new entity("IfcCurve", true, 193, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcCurveBoundedPlane_type = new entity("IfcCurveBoundedPlane", false, 194, IFC2X3_IfcBoundedSurface_type);
+    IFC2X3_IfcDefinedSymbol_type = new entity("IfcDefinedSymbol", false, 209, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcDimensionCurve_type = new entity("IfcDimensionCurve", false, 221, IFC2X3_IfcAnnotationCurveOccurrence_type);
+    IFC2X3_IfcDimensionCurveTerminator_type = new entity("IfcDimensionCurveTerminator", false, 223, IFC2X3_IfcTerminatorSymbol_type);
+    IFC2X3_IfcDirection_type = new entity("IfcDirection", false, 226, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcDoorLiningProperties_type = new entity("IfcDoorLiningProperties", false, 248, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcDoorPanelProperties_type = new entity("IfcDoorPanelProperties", false, 251, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcDoorStyle_type = new entity("IfcDoorStyle", false, 252, IFC2X3_IfcTypeProduct_type);
+    IFC2X3_IfcDraughtingCallout_type = new entity("IfcDraughtingCallout", false, 256, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcDraughtingPreDefinedColour_type = new entity("IfcDraughtingPreDefinedColour", false, 259, IFC2X3_IfcPreDefinedColour_type);
+    IFC2X3_IfcDraughtingPreDefinedCurveFont_type = new entity("IfcDraughtingPreDefinedCurveFont", false, 260, IFC2X3_IfcPreDefinedCurveFont_type);
+    IFC2X3_IfcEdgeLoop_type = new entity("IfcEdgeLoop", false, 272, IFC2X3_IfcLoop_type);
+    IFC2X3_IfcElementQuantity_type = new entity("IfcElementQuantity", false, 304, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcElementType_type = new entity("IfcElementType", true, 305, IFC2X3_IfcTypeProduct_type);
+    IFC2X3_IfcElementarySurface_type = new entity("IfcElementarySurface", true, 298, IFC2X3_IfcSurface_type);
+    IFC2X3_IfcEllipseProfileDef_type = new entity("IfcEllipseProfileDef", false, 307, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcEnergyProperties_type = new entity("IfcEnergyProperties", false, 311, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcExtrudedAreaSolid_type = new entity("IfcExtrudedAreaSolid", false, 327, IFC2X3_IfcSweptAreaSolid_type);
+    IFC2X3_IfcFaceBasedSurfaceModel_type = new entity("IfcFaceBasedSurfaceModel", false, 329, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcFillAreaStyleHatching_type = new entity("IfcFillAreaStyleHatching", false, 344, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcFillAreaStyleTileSymbolWithStyle_type = new entity("IfcFillAreaStyleTileSymbolWithStyle", false, 347, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcFillAreaStyleTiles_type = new entity("IfcFillAreaStyleTiles", false, 345, IFC2X3_IfcGeometricRepresentationItem_type);
+    IFC2X3_IfcFluidFlowProperties_type = new entity("IfcFluidFlowProperties", false, 372, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcFurnishingElementType_type = new entity("IfcFurnishingElementType", false, 382, IFC2X3_IfcElementType_type);
+    IFC2X3_IfcFurnitureType_type = new entity("IfcFurnitureType", false, 384, IFC2X3_IfcFurnishingElementType_type);
+    IFC2X3_IfcGeometricCurveSet_type = new entity("IfcGeometricCurveSet", false, 389, IFC2X3_IfcGeometricSet_type);
+    IFC2X3_IfcIShapeProfileDef_type = new entity("IfcIShapeProfileDef", false, 424, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcLShapeProfileDef_type = new entity("IfcLShapeProfileDef", false, 464, IFC2X3_IfcParameterizedProfileDef_type);
+    IFC2X3_IfcLine_type = new entity("IfcLine", false, 452, IFC2X3_IfcCurve_type);
+    IFC2X3_IfcManifoldSolidBrep_type = new entity("IfcManifoldSolidBrep", true, 470, IFC2X3_IfcSolidModel_type);
+    IFC2X3_IfcObject_type = new entity("IfcObject", true, 515, IFC2X3_IfcObjectDefinition_type);
+    IFC2X3_IfcOffsetCurve2D_type = new entity("IfcOffsetCurve2D", false, 524, IFC2X3_IfcCurve_type);
+    IFC2X3_IfcOffsetCurve3D_type = new entity("IfcOffsetCurve3D", false, 525, IFC2X3_IfcCurve_type);
+    IFC2X3_IfcPermeableCoveringProperties_type = new entity("IfcPermeableCoveringProperties", false, 543, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcPlanarBox_type = new entity("IfcPlanarBox", false, 561, IFC2X3_IfcPlanarExtent_type);
+    IFC2X3_IfcPlane_type = new entity("IfcPlane", false, 564, IFC2X3_IfcElementarySurface_type);
+    IFC2X3_IfcProcess_type = new entity("IfcProcess", true, 599, IFC2X3_IfcObject_type);
+    IFC2X3_IfcProduct_type = new entity("IfcProduct", true, 600, IFC2X3_IfcObject_type);
+    IFC2X3_IfcProject_type = new entity("IfcProject", false, 607, IFC2X3_IfcObject_type);
+    IFC2X3_IfcProjectionCurve_type = new entity("IfcProjectionCurve", false, 609, IFC2X3_IfcAnnotationCurveOccurrence_type);
+    IFC2X3_IfcPropertySet_type = new entity("IfcPropertySet", false, 624, IFC2X3_IfcPropertySetDefinition_type);
+    IFC2X3_IfcProxy_type = new entity("IfcProxy", false, 631, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcRectangleHollowProfileDef_type = new entity("IfcRectangleHollowProfileDef", false, 653, IFC2X3_IfcRectangleProfileDef_type);
+    IFC2X3_IfcRectangularPyramid_type = new entity("IfcRectangularPyramid", false, 655, IFC2X3_IfcCsgPrimitive3D_type);
+    IFC2X3_IfcRectangularTrimmedSurface_type = new entity("IfcRectangularTrimmedSurface", false, 656, IFC2X3_IfcBoundedSurface_type);
+    IFC2X3_IfcRelAssigns_type = new entity("IfcRelAssigns", true, 668, IFC2X3_IfcRelationship_type);
+    IFC2X3_IfcRelAssignsToActor_type = new entity("IfcRelAssignsToActor", false, 670, IFC2X3_IfcRelAssigns_type);
+    IFC2X3_IfcRelAssignsToControl_type = new entity("IfcRelAssignsToControl", false, 671, IFC2X3_IfcRelAssigns_type);
+    IFC2X3_IfcRelAssignsToGroup_type = new entity("IfcRelAssignsToGroup", false, 672, IFC2X3_IfcRelAssigns_type);
+    IFC2X3_IfcRelAssignsToProcess_type = new entity("IfcRelAssignsToProcess", false, 673, IFC2X3_IfcRelAssigns_type);
+    IFC2X3_IfcRelAssignsToProduct_type = new entity("IfcRelAssignsToProduct", false, 674, IFC2X3_IfcRelAssigns_type);
+    IFC2X3_IfcRelAssignsToProjectOrder_type = new entity("IfcRelAssignsToProjectOrder", false, 675, IFC2X3_IfcRelAssignsToControl_type);
+    IFC2X3_IfcRelAssignsToResource_type = new entity("IfcRelAssignsToResource", false, 676, IFC2X3_IfcRelAssigns_type);
+    IFC2X3_IfcRelAssociates_type = new entity("IfcRelAssociates", false, 677, IFC2X3_IfcRelationship_type);
+    IFC2X3_IfcRelAssociatesAppliedValue_type = new entity("IfcRelAssociatesAppliedValue", false, 678, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesApproval_type = new entity("IfcRelAssociatesApproval", false, 679, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesClassification_type = new entity("IfcRelAssociatesClassification", false, 680, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesConstraint_type = new entity("IfcRelAssociatesConstraint", false, 681, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesDocument_type = new entity("IfcRelAssociatesDocument", false, 682, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesLibrary_type = new entity("IfcRelAssociatesLibrary", false, 683, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesMaterial_type = new entity("IfcRelAssociatesMaterial", false, 684, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelAssociatesProfileProperties_type = new entity("IfcRelAssociatesProfileProperties", false, 685, IFC2X3_IfcRelAssociates_type);
+    IFC2X3_IfcRelConnects_type = new entity("IfcRelConnects", true, 688, IFC2X3_IfcRelationship_type);
+    IFC2X3_IfcRelConnectsElements_type = new entity("IfcRelConnectsElements", false, 689, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelConnectsPathElements_type = new entity("IfcRelConnectsPathElements", false, 690, IFC2X3_IfcRelConnectsElements_type);
+    IFC2X3_IfcRelConnectsPortToElement_type = new entity("IfcRelConnectsPortToElement", false, 692, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelConnectsPorts_type = new entity("IfcRelConnectsPorts", false, 691, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelConnectsStructuralActivity_type = new entity("IfcRelConnectsStructuralActivity", false, 693, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelConnectsStructuralElement_type = new entity("IfcRelConnectsStructuralElement", false, 694, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelConnectsStructuralMember_type = new entity("IfcRelConnectsStructuralMember", false, 695, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelConnectsWithEccentricity_type = new entity("IfcRelConnectsWithEccentricity", false, 696, IFC2X3_IfcRelConnectsStructuralMember_type);
+    IFC2X3_IfcRelConnectsWithRealizingElements_type = new entity("IfcRelConnectsWithRealizingElements", false, 697, IFC2X3_IfcRelConnectsElements_type);
+    IFC2X3_IfcRelContainedInSpatialStructure_type = new entity("IfcRelContainedInSpatialStructure", false, 698, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelCoversBldgElements_type = new entity("IfcRelCoversBldgElements", false, 699, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelCoversSpaces_type = new entity("IfcRelCoversSpaces", false, 700, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelDecomposes_type = new entity("IfcRelDecomposes", true, 701, IFC2X3_IfcRelationship_type);
+    IFC2X3_IfcRelDefines_type = new entity("IfcRelDefines", true, 702, IFC2X3_IfcRelationship_type);
+    IFC2X3_IfcRelDefinesByProperties_type = new entity("IfcRelDefinesByProperties", false, 703, IFC2X3_IfcRelDefines_type);
+    IFC2X3_IfcRelDefinesByType_type = new entity("IfcRelDefinesByType", false, 704, IFC2X3_IfcRelDefines_type);
+    IFC2X3_IfcRelFillsElement_type = new entity("IfcRelFillsElement", false, 705, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelFlowControlElements_type = new entity("IfcRelFlowControlElements", false, 706, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelInteractionRequirements_type = new entity("IfcRelInteractionRequirements", false, 707, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelNests_type = new entity("IfcRelNests", false, 708, IFC2X3_IfcRelDecomposes_type);
+    IFC2X3_IfcRelOccupiesSpaces_type = new entity("IfcRelOccupiesSpaces", false, 709, IFC2X3_IfcRelAssignsToActor_type);
+    IFC2X3_IfcRelOverridesProperties_type = new entity("IfcRelOverridesProperties", false, 710, IFC2X3_IfcRelDefinesByProperties_type);
+    IFC2X3_IfcRelProjectsElement_type = new entity("IfcRelProjectsElement", false, 711, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelReferencedInSpatialStructure_type = new entity("IfcRelReferencedInSpatialStructure", false, 712, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelSchedulesCostItems_type = new entity("IfcRelSchedulesCostItems", false, 713, IFC2X3_IfcRelAssignsToControl_type);
+    IFC2X3_IfcRelSequence_type = new entity("IfcRelSequence", false, 714, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelServicesBuildings_type = new entity("IfcRelServicesBuildings", false, 715, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelSpaceBoundary_type = new entity("IfcRelSpaceBoundary", false, 716, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcRelVoidsElement_type = new entity("IfcRelVoidsElement", false, 717, IFC2X3_IfcRelConnects_type);
+    IFC2X3_IfcResource_type = new entity("IfcResource", true, 722, IFC2X3_IfcObject_type);
+    IFC2X3_IfcRevolvedAreaSolid_type = new entity("IfcRevolvedAreaSolid", false, 724, IFC2X3_IfcSweptAreaSolid_type);
+    IFC2X3_IfcRightCircularCone_type = new entity("IfcRightCircularCone", false, 727, IFC2X3_IfcCsgPrimitive3D_type);
+    IFC2X3_IfcRightCircularCylinder_type = new entity("IfcRightCircularCylinder", false, 728, IFC2X3_IfcCsgPrimitive3D_type);
+    IFC2X3_IfcSpatialStructureElement_type = new entity("IfcSpatialStructureElement", true, 786, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcSpatialStructureElementType_type = new entity("IfcSpatialStructureElementType", true, 787, IFC2X3_IfcElementType_type);
+    IFC2X3_IfcSphere_type = new entity("IfcSphere", false, 792, IFC2X3_IfcCsgPrimitive3D_type);
+    IFC2X3_IfcStructuralActivity_type = new entity("IfcStructuralActivity", true, 802, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcStructuralItem_type = new entity("IfcStructuralItem", true, 811, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcStructuralMember_type = new entity("IfcStructuralMember", true, 824, IFC2X3_IfcStructuralItem_type);
+    IFC2X3_IfcStructuralReaction_type = new entity("IfcStructuralReaction", true, 831, IFC2X3_IfcStructuralActivity_type);
+    IFC2X3_IfcStructuralSurfaceMember_type = new entity("IfcStructuralSurfaceMember", false, 835, IFC2X3_IfcStructuralMember_type);
+    IFC2X3_IfcStructuralSurfaceMemberVarying_type = new entity("IfcStructuralSurfaceMemberVarying", false, 836, IFC2X3_IfcStructuralSurfaceMember_type);
+    IFC2X3_IfcStructuredDimensionCallout_type = new entity("IfcStructuredDimensionCallout", false, 838, IFC2X3_IfcDraughtingCallout_type);
+    IFC2X3_IfcSurfaceCurveSweptAreaSolid_type = new entity("IfcSurfaceCurveSweptAreaSolid", false, 845, IFC2X3_IfcSweptAreaSolid_type);
+    IFC2X3_IfcSurfaceOfLinearExtrusion_type = new entity("IfcSurfaceOfLinearExtrusion", false, 846, IFC2X3_IfcSweptSurface_type);
+    IFC2X3_IfcSurfaceOfRevolution_type = new entity("IfcSurfaceOfRevolution", false, 847, IFC2X3_IfcSweptSurface_type);
+    IFC2X3_IfcSystemFurnitureElementType_type = new entity("IfcSystemFurnitureElementType", false, 867, IFC2X3_IfcFurnishingElementType_type);
+    IFC2X3_IfcTask_type = new entity("IfcTask", false, 872, IFC2X3_IfcProcess_type);
+    IFC2X3_IfcTransportElementType_type = new entity("IfcTransportElementType", false, 922, IFC2X3_IfcElementType_type);
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IFC2X3_IfcAxis2Placement2D_type);
@@ -4696,139 +4696,139 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
         items.push_back(IFC2X3_IfcVector_type);
         IFC2X3_IfcVectorOrDirection_type = new select_type("IfcVectorOrDirection", 945, items);
     }
-    IFC2X3_IfcActor_type = new entity("IfcActor", 6, IFC2X3_IfcObject_type);
-    IFC2X3_IfcAnnotation_type = new entity("IfcAnnotation", 27, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcAsymmetricIShapeProfileDef_type = new entity("IfcAsymmetricIShapeProfileDef", 51, IFC2X3_IfcIShapeProfileDef_type);
-    IFC2X3_IfcBlock_type = new entity("IfcBlock", 62, IFC2X3_IfcCsgPrimitive3D_type);
-    IFC2X3_IfcBooleanClippingResult_type = new entity("IfcBooleanClippingResult", 66, IFC2X3_IfcBooleanResult_type);
-    IFC2X3_IfcBoundedCurve_type = new entity("IfcBoundedCurve", 75, IFC2X3_IfcCurve_type);
-    IFC2X3_IfcBuilding_type = new entity("IfcBuilding", 82, IFC2X3_IfcSpatialStructureElement_type);
-    IFC2X3_IfcBuildingElementType_type = new entity("IfcBuildingElementType", 89, IFC2X3_IfcElementType_type);
-    IFC2X3_IfcBuildingStorey_type = new entity("IfcBuildingStorey", 90, IFC2X3_IfcSpatialStructureElement_type);
-    IFC2X3_IfcCircleHollowProfileDef_type = new entity("IfcCircleHollowProfileDef", 111, IFC2X3_IfcCircleProfileDef_type);
-    IFC2X3_IfcColumnType_type = new entity("IfcColumnType", 128, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcCompositeCurve_type = new entity("IfcCompositeCurve", 132, IFC2X3_IfcBoundedCurve_type);
-    IFC2X3_IfcConic_type = new entity("IfcConic", 143, IFC2X3_IfcCurve_type);
-    IFC2X3_IfcConstructionResource_type = new entity("IfcConstructionResource", 160, IFC2X3_IfcResource_type);
-    IFC2X3_IfcControl_type = new entity("IfcControl", 163, IFC2X3_IfcObject_type);
-    IFC2X3_IfcCostItem_type = new entity("IfcCostItem", 172, IFC2X3_IfcControl_type);
-    IFC2X3_IfcCostSchedule_type = new entity("IfcCostSchedule", 173, IFC2X3_IfcControl_type);
-    IFC2X3_IfcCoveringType_type = new entity("IfcCoveringType", 178, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcCrewResource_type = new entity("IfcCrewResource", 182, IFC2X3_IfcConstructionResource_type);
-    IFC2X3_IfcCurtainWallType_type = new entity("IfcCurtainWallType", 190, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcDimensionCurveDirectedCallout_type = new entity("IfcDimensionCurveDirectedCallout", 222, IFC2X3_IfcDraughtingCallout_type);
-    IFC2X3_IfcDistributionElementType_type = new entity("IfcDistributionElementType", 236, IFC2X3_IfcElementType_type);
-    IFC2X3_IfcDistributionFlowElementType_type = new entity("IfcDistributionFlowElementType", 238, IFC2X3_IfcDistributionElementType_type);
-    IFC2X3_IfcElectricalBaseProperties_type = new entity("IfcElectricalBaseProperties", 273, IFC2X3_IfcEnergyProperties_type);
-    IFC2X3_IfcElement_type = new entity("IfcElement", 297, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcElementAssembly_type = new entity("IfcElementAssembly", 299, IFC2X3_IfcElement_type);
-    IFC2X3_IfcElementComponent_type = new entity("IfcElementComponent", 301, IFC2X3_IfcElement_type);
-    IFC2X3_IfcElementComponentType_type = new entity("IfcElementComponentType", 302, IFC2X3_IfcElementType_type);
-    IFC2X3_IfcEllipse_type = new entity("IfcEllipse", 306, IFC2X3_IfcConic_type);
-    IFC2X3_IfcEnergyConversionDeviceType_type = new entity("IfcEnergyConversionDeviceType", 309, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcEquipmentElement_type = new entity("IfcEquipmentElement", 315, IFC2X3_IfcElement_type);
-    IFC2X3_IfcEquipmentStandard_type = new entity("IfcEquipmentStandard", 316, IFC2X3_IfcControl_type);
-    IFC2X3_IfcEvaporativeCoolerType_type = new entity("IfcEvaporativeCoolerType", 317, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcEvaporatorType_type = new entity("IfcEvaporatorType", 319, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcFacetedBrep_type = new entity("IfcFacetedBrep", 333, IFC2X3_IfcManifoldSolidBrep_type);
-    IFC2X3_IfcFacetedBrepWithVoids_type = new entity("IfcFacetedBrepWithVoids", 334, IFC2X3_IfcManifoldSolidBrep_type);
-    IFC2X3_IfcFastener_type = new entity("IfcFastener", 338, IFC2X3_IfcElementComponent_type);
-    IFC2X3_IfcFastenerType_type = new entity("IfcFastenerType", 339, IFC2X3_IfcElementComponentType_type);
-    IFC2X3_IfcFeatureElement_type = new entity("IfcFeatureElement", 340, IFC2X3_IfcElement_type);
-    IFC2X3_IfcFeatureElementAddition_type = new entity("IfcFeatureElementAddition", 341, IFC2X3_IfcFeatureElement_type);
-    IFC2X3_IfcFeatureElementSubtraction_type = new entity("IfcFeatureElementSubtraction", 342, IFC2X3_IfcFeatureElement_type);
-    IFC2X3_IfcFlowControllerType_type = new entity("IfcFlowControllerType", 354, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFlowFittingType_type = new entity("IfcFlowFittingType", 357, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFlowMeterType_type = new entity("IfcFlowMeterType", 360, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcFlowMovingDeviceType_type = new entity("IfcFlowMovingDeviceType", 363, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFlowSegmentType_type = new entity("IfcFlowSegmentType", 365, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFlowStorageDeviceType_type = new entity("IfcFlowStorageDeviceType", 367, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFlowTerminalType_type = new entity("IfcFlowTerminalType", 369, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFlowTreatmentDeviceType_type = new entity("IfcFlowTreatmentDeviceType", 371, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcFurnishingElement_type = new entity("IfcFurnishingElement", 381, IFC2X3_IfcElement_type);
-    IFC2X3_IfcFurnitureStandard_type = new entity("IfcFurnitureStandard", 383, IFC2X3_IfcControl_type);
-    IFC2X3_IfcGasTerminalType_type = new entity("IfcGasTerminalType", 385, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcGrid_type = new entity("IfcGrid", 398, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcGroup_type = new entity("IfcGroup", 401, IFC2X3_IfcObject_type);
-    IFC2X3_IfcHeatExchangerType_type = new entity("IfcHeatExchangerType", 404, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcHumidifierType_type = new entity("IfcHumidifierType", 409, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcInventory_type = new entity("IfcInventory", 419, IFC2X3_IfcGroup_type);
-    IFC2X3_IfcJunctionBoxType_type = new entity("IfcJunctionBoxType", 426, IFC2X3_IfcFlowFittingType_type);
-    IFC2X3_IfcLaborResource_type = new entity("IfcLaborResource", 430, IFC2X3_IfcConstructionResource_type);
-    IFC2X3_IfcLampType_type = new entity("IfcLampType", 431, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcLightFixtureType_type = new entity("IfcLightFixtureType", 443, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcLinearDimension_type = new entity("IfcLinearDimension", 453, IFC2X3_IfcDimensionCurveDirectedCallout_type);
-    IFC2X3_IfcMechanicalFastener_type = new entity("IfcMechanicalFastener", 488, IFC2X3_IfcFastener_type);
-    IFC2X3_IfcMechanicalFastenerType_type = new entity("IfcMechanicalFastenerType", 489, IFC2X3_IfcFastenerType_type);
-    IFC2X3_IfcMemberType_type = new entity("IfcMemberType", 493, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcMotorConnectionType_type = new entity("IfcMotorConnectionType", 508, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcMove_type = new entity("IfcMove", 510, IFC2X3_IfcTask_type);
-    IFC2X3_IfcOccupant_type = new entity("IfcOccupant", 522, IFC2X3_IfcActor_type);
-    IFC2X3_IfcOpeningElement_type = new entity("IfcOpeningElement", 527, IFC2X3_IfcFeatureElementSubtraction_type);
-    IFC2X3_IfcOrderAction_type = new entity("IfcOrderAction", 530, IFC2X3_IfcTask_type);
-    IFC2X3_IfcOutletType_type = new entity("IfcOutletType", 535, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcPerformanceHistory_type = new entity("IfcPerformanceHistory", 541, IFC2X3_IfcControl_type);
-    IFC2X3_IfcPermit_type = new entity("IfcPermit", 544, IFC2X3_IfcControl_type);
-    IFC2X3_IfcPipeFittingType_type = new entity("IfcPipeFittingType", 555, IFC2X3_IfcFlowFittingType_type);
-    IFC2X3_IfcPipeSegmentType_type = new entity("IfcPipeSegmentType", 557, IFC2X3_IfcFlowSegmentType_type);
-    IFC2X3_IfcPlateType_type = new entity("IfcPlateType", 567, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcPolyline_type = new entity("IfcPolyline", 574, IFC2X3_IfcBoundedCurve_type);
-    IFC2X3_IfcPort_type = new entity("IfcPort", 576, IFC2X3_IfcProduct_type);
-    IFC2X3_IfcProcedure_type = new entity("IfcProcedure", 597, IFC2X3_IfcProcess_type);
-    IFC2X3_IfcProjectOrder_type = new entity("IfcProjectOrder", 611, IFC2X3_IfcControl_type);
-    IFC2X3_IfcProjectOrderRecord_type = new entity("IfcProjectOrderRecord", 612, IFC2X3_IfcControl_type);
-    IFC2X3_IfcProjectionElement_type = new entity("IfcProjectionElement", 610, IFC2X3_IfcFeatureElementAddition_type);
-    IFC2X3_IfcProtectiveDeviceType_type = new entity("IfcProtectiveDeviceType", 629, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcPumpType_type = new entity("IfcPumpType", 632, IFC2X3_IfcFlowMovingDeviceType_type);
-    IFC2X3_IfcRadiusDimension_type = new entity("IfcRadiusDimension", 641, IFC2X3_IfcDimensionCurveDirectedCallout_type);
-    IFC2X3_IfcRailingType_type = new entity("IfcRailingType", 643, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcRampFlightType_type = new entity("IfcRampFlightType", 647, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcRelAggregates_type = new entity("IfcRelAggregates", 667, IFC2X3_IfcRelDecomposes_type);
-    IFC2X3_IfcRelAssignsTasks_type = new entity("IfcRelAssignsTasks", 669, IFC2X3_IfcRelAssignsToControl_type);
-    IFC2X3_IfcSanitaryTerminalType_type = new entity("IfcSanitaryTerminalType", 738, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcScheduleTimeControl_type = new entity("IfcScheduleTimeControl", 740, IFC2X3_IfcControl_type);
-    IFC2X3_IfcServiceLife_type = new entity("IfcServiceLife", 751, IFC2X3_IfcControl_type);
-    IFC2X3_IfcSite_type = new entity("IfcSite", 764, IFC2X3_IfcSpatialStructureElement_type);
-    IFC2X3_IfcSlabType_type = new entity("IfcSlabType", 769, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcSpace_type = new entity("IfcSpace", 779, IFC2X3_IfcSpatialStructureElement_type);
-    IFC2X3_IfcSpaceHeaterType_type = new entity("IfcSpaceHeaterType", 780, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcSpaceProgram_type = new entity("IfcSpaceProgram", 782, IFC2X3_IfcControl_type);
-    IFC2X3_IfcSpaceType_type = new entity("IfcSpaceType", 784, IFC2X3_IfcSpatialStructureElementType_type);
-    IFC2X3_IfcStackTerminalType_type = new entity("IfcStackTerminalType", 793, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcStairFlightType_type = new entity("IfcStairFlightType", 797, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcStructuralAction_type = new entity("IfcStructuralAction", 801, IFC2X3_IfcStructuralActivity_type);
-    IFC2X3_IfcStructuralConnection_type = new entity("IfcStructuralConnection", 805, IFC2X3_IfcStructuralItem_type);
-    IFC2X3_IfcStructuralCurveConnection_type = new entity("IfcStructuralCurveConnection", 807, IFC2X3_IfcStructuralConnection_type);
-    IFC2X3_IfcStructuralCurveMember_type = new entity("IfcStructuralCurveMember", 808, IFC2X3_IfcStructuralMember_type);
-    IFC2X3_IfcStructuralCurveMemberVarying_type = new entity("IfcStructuralCurveMemberVarying", 809, IFC2X3_IfcStructuralCurveMember_type);
-    IFC2X3_IfcStructuralLinearAction_type = new entity("IfcStructuralLinearAction", 812, IFC2X3_IfcStructuralAction_type);
-    IFC2X3_IfcStructuralLinearActionVarying_type = new entity("IfcStructuralLinearActionVarying", 813, IFC2X3_IfcStructuralLinearAction_type);
-    IFC2X3_IfcStructuralLoadGroup_type = new entity("IfcStructuralLoadGroup", 815, IFC2X3_IfcGroup_type);
-    IFC2X3_IfcStructuralPlanarAction_type = new entity("IfcStructuralPlanarAction", 825, IFC2X3_IfcStructuralAction_type);
-    IFC2X3_IfcStructuralPlanarActionVarying_type = new entity("IfcStructuralPlanarActionVarying", 826, IFC2X3_IfcStructuralPlanarAction_type);
-    IFC2X3_IfcStructuralPointAction_type = new entity("IfcStructuralPointAction", 827, IFC2X3_IfcStructuralAction_type);
-    IFC2X3_IfcStructuralPointConnection_type = new entity("IfcStructuralPointConnection", 828, IFC2X3_IfcStructuralConnection_type);
-    IFC2X3_IfcStructuralPointReaction_type = new entity("IfcStructuralPointReaction", 829, IFC2X3_IfcStructuralReaction_type);
-    IFC2X3_IfcStructuralResultGroup_type = new entity("IfcStructuralResultGroup", 832, IFC2X3_IfcGroup_type);
-    IFC2X3_IfcStructuralSurfaceConnection_type = new entity("IfcStructuralSurfaceConnection", 834, IFC2X3_IfcStructuralConnection_type);
-    IFC2X3_IfcSubContractResource_type = new entity("IfcSubContractResource", 842, IFC2X3_IfcConstructionResource_type);
-    IFC2X3_IfcSwitchingDeviceType_type = new entity("IfcSwitchingDeviceType", 862, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcSystem_type = new entity("IfcSystem", 866, IFC2X3_IfcGroup_type);
-    IFC2X3_IfcTankType_type = new entity("IfcTankType", 870, IFC2X3_IfcFlowStorageDeviceType_type);
-    IFC2X3_IfcTimeSeriesSchedule_type = new entity("IfcTimeSeriesSchedule", 911, IFC2X3_IfcControl_type);
-    IFC2X3_IfcTransformerType_type = new entity("IfcTransformerType", 918, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcTransportElement_type = new entity("IfcTransportElement", 921, IFC2X3_IfcElement_type);
-    IFC2X3_IfcTrimmedCurve_type = new entity("IfcTrimmedCurve", 925, IFC2X3_IfcBoundedCurve_type);
-    IFC2X3_IfcTubeBundleType_type = new entity("IfcTubeBundleType", 929, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcUnitaryEquipmentType_type = new entity("IfcUnitaryEquipmentType", 935, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcValveType_type = new entity("IfcValveType", 941, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcVirtualElement_type = new entity("IfcVirtualElement", 952, IFC2X3_IfcElement_type);
-    IFC2X3_IfcWallType_type = new entity("IfcWallType", 958, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcWasteTerminalType_type = new entity("IfcWasteTerminalType", 962, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcWorkControl_type = new entity("IfcWorkControl", 973, IFC2X3_IfcControl_type);
-    IFC2X3_IfcWorkPlan_type = new entity("IfcWorkPlan", 975, IFC2X3_IfcWorkControl_type);
-    IFC2X3_IfcWorkSchedule_type = new entity("IfcWorkSchedule", 976, IFC2X3_IfcWorkControl_type);
-    IFC2X3_IfcZone_type = new entity("IfcZone", 978, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcActor_type = new entity("IfcActor", false, 6, IFC2X3_IfcObject_type);
+    IFC2X3_IfcAnnotation_type = new entity("IfcAnnotation", false, 27, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcAsymmetricIShapeProfileDef_type = new entity("IfcAsymmetricIShapeProfileDef", false, 51, IFC2X3_IfcIShapeProfileDef_type);
+    IFC2X3_IfcBlock_type = new entity("IfcBlock", false, 62, IFC2X3_IfcCsgPrimitive3D_type);
+    IFC2X3_IfcBooleanClippingResult_type = new entity("IfcBooleanClippingResult", false, 66, IFC2X3_IfcBooleanResult_type);
+    IFC2X3_IfcBoundedCurve_type = new entity("IfcBoundedCurve", true, 75, IFC2X3_IfcCurve_type);
+    IFC2X3_IfcBuilding_type = new entity("IfcBuilding", false, 82, IFC2X3_IfcSpatialStructureElement_type);
+    IFC2X3_IfcBuildingElementType_type = new entity("IfcBuildingElementType", true, 89, IFC2X3_IfcElementType_type);
+    IFC2X3_IfcBuildingStorey_type = new entity("IfcBuildingStorey", false, 90, IFC2X3_IfcSpatialStructureElement_type);
+    IFC2X3_IfcCircleHollowProfileDef_type = new entity("IfcCircleHollowProfileDef", false, 111, IFC2X3_IfcCircleProfileDef_type);
+    IFC2X3_IfcColumnType_type = new entity("IfcColumnType", false, 128, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcCompositeCurve_type = new entity("IfcCompositeCurve", false, 132, IFC2X3_IfcBoundedCurve_type);
+    IFC2X3_IfcConic_type = new entity("IfcConic", true, 143, IFC2X3_IfcCurve_type);
+    IFC2X3_IfcConstructionResource_type = new entity("IfcConstructionResource", true, 160, IFC2X3_IfcResource_type);
+    IFC2X3_IfcControl_type = new entity("IfcControl", true, 163, IFC2X3_IfcObject_type);
+    IFC2X3_IfcCostItem_type = new entity("IfcCostItem", false, 172, IFC2X3_IfcControl_type);
+    IFC2X3_IfcCostSchedule_type = new entity("IfcCostSchedule", false, 173, IFC2X3_IfcControl_type);
+    IFC2X3_IfcCoveringType_type = new entity("IfcCoveringType", false, 178, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcCrewResource_type = new entity("IfcCrewResource", false, 182, IFC2X3_IfcConstructionResource_type);
+    IFC2X3_IfcCurtainWallType_type = new entity("IfcCurtainWallType", false, 190, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcDimensionCurveDirectedCallout_type = new entity("IfcDimensionCurveDirectedCallout", false, 222, IFC2X3_IfcDraughtingCallout_type);
+    IFC2X3_IfcDistributionElementType_type = new entity("IfcDistributionElementType", false, 236, IFC2X3_IfcElementType_type);
+    IFC2X3_IfcDistributionFlowElementType_type = new entity("IfcDistributionFlowElementType", true, 238, IFC2X3_IfcDistributionElementType_type);
+    IFC2X3_IfcElectricalBaseProperties_type = new entity("IfcElectricalBaseProperties", false, 273, IFC2X3_IfcEnergyProperties_type);
+    IFC2X3_IfcElement_type = new entity("IfcElement", true, 297, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcElementAssembly_type = new entity("IfcElementAssembly", false, 299, IFC2X3_IfcElement_type);
+    IFC2X3_IfcElementComponent_type = new entity("IfcElementComponent", true, 301, IFC2X3_IfcElement_type);
+    IFC2X3_IfcElementComponentType_type = new entity("IfcElementComponentType", true, 302, IFC2X3_IfcElementType_type);
+    IFC2X3_IfcEllipse_type = new entity("IfcEllipse", false, 306, IFC2X3_IfcConic_type);
+    IFC2X3_IfcEnergyConversionDeviceType_type = new entity("IfcEnergyConversionDeviceType", true, 309, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcEquipmentElement_type = new entity("IfcEquipmentElement", false, 315, IFC2X3_IfcElement_type);
+    IFC2X3_IfcEquipmentStandard_type = new entity("IfcEquipmentStandard", false, 316, IFC2X3_IfcControl_type);
+    IFC2X3_IfcEvaporativeCoolerType_type = new entity("IfcEvaporativeCoolerType", false, 317, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcEvaporatorType_type = new entity("IfcEvaporatorType", false, 319, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcFacetedBrep_type = new entity("IfcFacetedBrep", false, 333, IFC2X3_IfcManifoldSolidBrep_type);
+    IFC2X3_IfcFacetedBrepWithVoids_type = new entity("IfcFacetedBrepWithVoids", false, 334, IFC2X3_IfcManifoldSolidBrep_type);
+    IFC2X3_IfcFastener_type = new entity("IfcFastener", false, 338, IFC2X3_IfcElementComponent_type);
+    IFC2X3_IfcFastenerType_type = new entity("IfcFastenerType", false, 339, IFC2X3_IfcElementComponentType_type);
+    IFC2X3_IfcFeatureElement_type = new entity("IfcFeatureElement", true, 340, IFC2X3_IfcElement_type);
+    IFC2X3_IfcFeatureElementAddition_type = new entity("IfcFeatureElementAddition", true, 341, IFC2X3_IfcFeatureElement_type);
+    IFC2X3_IfcFeatureElementSubtraction_type = new entity("IfcFeatureElementSubtraction", true, 342, IFC2X3_IfcFeatureElement_type);
+    IFC2X3_IfcFlowControllerType_type = new entity("IfcFlowControllerType", true, 354, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFlowFittingType_type = new entity("IfcFlowFittingType", true, 357, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFlowMeterType_type = new entity("IfcFlowMeterType", false, 360, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcFlowMovingDeviceType_type = new entity("IfcFlowMovingDeviceType", true, 363, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFlowSegmentType_type = new entity("IfcFlowSegmentType", true, 365, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFlowStorageDeviceType_type = new entity("IfcFlowStorageDeviceType", true, 367, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFlowTerminalType_type = new entity("IfcFlowTerminalType", true, 369, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFlowTreatmentDeviceType_type = new entity("IfcFlowTreatmentDeviceType", true, 371, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcFurnishingElement_type = new entity("IfcFurnishingElement", false, 381, IFC2X3_IfcElement_type);
+    IFC2X3_IfcFurnitureStandard_type = new entity("IfcFurnitureStandard", false, 383, IFC2X3_IfcControl_type);
+    IFC2X3_IfcGasTerminalType_type = new entity("IfcGasTerminalType", false, 385, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcGrid_type = new entity("IfcGrid", false, 398, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcGroup_type = new entity("IfcGroup", false, 401, IFC2X3_IfcObject_type);
+    IFC2X3_IfcHeatExchangerType_type = new entity("IfcHeatExchangerType", false, 404, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcHumidifierType_type = new entity("IfcHumidifierType", false, 409, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcInventory_type = new entity("IfcInventory", false, 419, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcJunctionBoxType_type = new entity("IfcJunctionBoxType", false, 426, IFC2X3_IfcFlowFittingType_type);
+    IFC2X3_IfcLaborResource_type = new entity("IfcLaborResource", false, 430, IFC2X3_IfcConstructionResource_type);
+    IFC2X3_IfcLampType_type = new entity("IfcLampType", false, 431, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcLightFixtureType_type = new entity("IfcLightFixtureType", false, 443, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcLinearDimension_type = new entity("IfcLinearDimension", false, 453, IFC2X3_IfcDimensionCurveDirectedCallout_type);
+    IFC2X3_IfcMechanicalFastener_type = new entity("IfcMechanicalFastener", false, 488, IFC2X3_IfcFastener_type);
+    IFC2X3_IfcMechanicalFastenerType_type = new entity("IfcMechanicalFastenerType", false, 489, IFC2X3_IfcFastenerType_type);
+    IFC2X3_IfcMemberType_type = new entity("IfcMemberType", false, 493, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcMotorConnectionType_type = new entity("IfcMotorConnectionType", false, 508, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcMove_type = new entity("IfcMove", false, 510, IFC2X3_IfcTask_type);
+    IFC2X3_IfcOccupant_type = new entity("IfcOccupant", false, 522, IFC2X3_IfcActor_type);
+    IFC2X3_IfcOpeningElement_type = new entity("IfcOpeningElement", false, 527, IFC2X3_IfcFeatureElementSubtraction_type);
+    IFC2X3_IfcOrderAction_type = new entity("IfcOrderAction", false, 530, IFC2X3_IfcTask_type);
+    IFC2X3_IfcOutletType_type = new entity("IfcOutletType", false, 535, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcPerformanceHistory_type = new entity("IfcPerformanceHistory", false, 541, IFC2X3_IfcControl_type);
+    IFC2X3_IfcPermit_type = new entity("IfcPermit", false, 544, IFC2X3_IfcControl_type);
+    IFC2X3_IfcPipeFittingType_type = new entity("IfcPipeFittingType", false, 555, IFC2X3_IfcFlowFittingType_type);
+    IFC2X3_IfcPipeSegmentType_type = new entity("IfcPipeSegmentType", false, 557, IFC2X3_IfcFlowSegmentType_type);
+    IFC2X3_IfcPlateType_type = new entity("IfcPlateType", false, 567, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcPolyline_type = new entity("IfcPolyline", false, 574, IFC2X3_IfcBoundedCurve_type);
+    IFC2X3_IfcPort_type = new entity("IfcPort", true, 576, IFC2X3_IfcProduct_type);
+    IFC2X3_IfcProcedure_type = new entity("IfcProcedure", false, 597, IFC2X3_IfcProcess_type);
+    IFC2X3_IfcProjectOrder_type = new entity("IfcProjectOrder", false, 611, IFC2X3_IfcControl_type);
+    IFC2X3_IfcProjectOrderRecord_type = new entity("IfcProjectOrderRecord", false, 612, IFC2X3_IfcControl_type);
+    IFC2X3_IfcProjectionElement_type = new entity("IfcProjectionElement", false, 610, IFC2X3_IfcFeatureElementAddition_type);
+    IFC2X3_IfcProtectiveDeviceType_type = new entity("IfcProtectiveDeviceType", false, 629, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcPumpType_type = new entity("IfcPumpType", false, 632, IFC2X3_IfcFlowMovingDeviceType_type);
+    IFC2X3_IfcRadiusDimension_type = new entity("IfcRadiusDimension", false, 641, IFC2X3_IfcDimensionCurveDirectedCallout_type);
+    IFC2X3_IfcRailingType_type = new entity("IfcRailingType", false, 643, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcRampFlightType_type = new entity("IfcRampFlightType", false, 647, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcRelAggregates_type = new entity("IfcRelAggregates", false, 667, IFC2X3_IfcRelDecomposes_type);
+    IFC2X3_IfcRelAssignsTasks_type = new entity("IfcRelAssignsTasks", false, 669, IFC2X3_IfcRelAssignsToControl_type);
+    IFC2X3_IfcSanitaryTerminalType_type = new entity("IfcSanitaryTerminalType", false, 738, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcScheduleTimeControl_type = new entity("IfcScheduleTimeControl", false, 740, IFC2X3_IfcControl_type);
+    IFC2X3_IfcServiceLife_type = new entity("IfcServiceLife", false, 751, IFC2X3_IfcControl_type);
+    IFC2X3_IfcSite_type = new entity("IfcSite", false, 764, IFC2X3_IfcSpatialStructureElement_type);
+    IFC2X3_IfcSlabType_type = new entity("IfcSlabType", false, 769, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcSpace_type = new entity("IfcSpace", false, 779, IFC2X3_IfcSpatialStructureElement_type);
+    IFC2X3_IfcSpaceHeaterType_type = new entity("IfcSpaceHeaterType", false, 780, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcSpaceProgram_type = new entity("IfcSpaceProgram", false, 782, IFC2X3_IfcControl_type);
+    IFC2X3_IfcSpaceType_type = new entity("IfcSpaceType", false, 784, IFC2X3_IfcSpatialStructureElementType_type);
+    IFC2X3_IfcStackTerminalType_type = new entity("IfcStackTerminalType", false, 793, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcStairFlightType_type = new entity("IfcStairFlightType", false, 797, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcStructuralAction_type = new entity("IfcStructuralAction", true, 801, IFC2X3_IfcStructuralActivity_type);
+    IFC2X3_IfcStructuralConnection_type = new entity("IfcStructuralConnection", true, 805, IFC2X3_IfcStructuralItem_type);
+    IFC2X3_IfcStructuralCurveConnection_type = new entity("IfcStructuralCurveConnection", false, 807, IFC2X3_IfcStructuralConnection_type);
+    IFC2X3_IfcStructuralCurveMember_type = new entity("IfcStructuralCurveMember", false, 808, IFC2X3_IfcStructuralMember_type);
+    IFC2X3_IfcStructuralCurveMemberVarying_type = new entity("IfcStructuralCurveMemberVarying", false, 809, IFC2X3_IfcStructuralCurveMember_type);
+    IFC2X3_IfcStructuralLinearAction_type = new entity("IfcStructuralLinearAction", false, 812, IFC2X3_IfcStructuralAction_type);
+    IFC2X3_IfcStructuralLinearActionVarying_type = new entity("IfcStructuralLinearActionVarying", false, 813, IFC2X3_IfcStructuralLinearAction_type);
+    IFC2X3_IfcStructuralLoadGroup_type = new entity("IfcStructuralLoadGroup", false, 815, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcStructuralPlanarAction_type = new entity("IfcStructuralPlanarAction", false, 825, IFC2X3_IfcStructuralAction_type);
+    IFC2X3_IfcStructuralPlanarActionVarying_type = new entity("IfcStructuralPlanarActionVarying", false, 826, IFC2X3_IfcStructuralPlanarAction_type);
+    IFC2X3_IfcStructuralPointAction_type = new entity("IfcStructuralPointAction", false, 827, IFC2X3_IfcStructuralAction_type);
+    IFC2X3_IfcStructuralPointConnection_type = new entity("IfcStructuralPointConnection", false, 828, IFC2X3_IfcStructuralConnection_type);
+    IFC2X3_IfcStructuralPointReaction_type = new entity("IfcStructuralPointReaction", false, 829, IFC2X3_IfcStructuralReaction_type);
+    IFC2X3_IfcStructuralResultGroup_type = new entity("IfcStructuralResultGroup", false, 832, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcStructuralSurfaceConnection_type = new entity("IfcStructuralSurfaceConnection", false, 834, IFC2X3_IfcStructuralConnection_type);
+    IFC2X3_IfcSubContractResource_type = new entity("IfcSubContractResource", false, 842, IFC2X3_IfcConstructionResource_type);
+    IFC2X3_IfcSwitchingDeviceType_type = new entity("IfcSwitchingDeviceType", false, 862, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcSystem_type = new entity("IfcSystem", false, 866, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcTankType_type = new entity("IfcTankType", false, 870, IFC2X3_IfcFlowStorageDeviceType_type);
+    IFC2X3_IfcTimeSeriesSchedule_type = new entity("IfcTimeSeriesSchedule", false, 911, IFC2X3_IfcControl_type);
+    IFC2X3_IfcTransformerType_type = new entity("IfcTransformerType", false, 918, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcTransportElement_type = new entity("IfcTransportElement", false, 921, IFC2X3_IfcElement_type);
+    IFC2X3_IfcTrimmedCurve_type = new entity("IfcTrimmedCurve", false, 925, IFC2X3_IfcBoundedCurve_type);
+    IFC2X3_IfcTubeBundleType_type = new entity("IfcTubeBundleType", false, 929, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcUnitaryEquipmentType_type = new entity("IfcUnitaryEquipmentType", false, 935, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcValveType_type = new entity("IfcValveType", false, 941, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcVirtualElement_type = new entity("IfcVirtualElement", false, 952, IFC2X3_IfcElement_type);
+    IFC2X3_IfcWallType_type = new entity("IfcWallType", false, 958, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcWasteTerminalType_type = new entity("IfcWasteTerminalType", false, 962, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcWorkControl_type = new entity("IfcWorkControl", true, 973, IFC2X3_IfcControl_type);
+    IFC2X3_IfcWorkPlan_type = new entity("IfcWorkPlan", false, 975, IFC2X3_IfcWorkControl_type);
+    IFC2X3_IfcWorkSchedule_type = new entity("IfcWorkSchedule", false, 976, IFC2X3_IfcWorkControl_type);
+    IFC2X3_IfcZone_type = new entity("IfcZone", false, 978, IFC2X3_IfcGroup_type);
     {
         std::vector<const declaration*> items; items.reserve(2);
         items.push_back(IFC2X3_IfcBoundedCurve_type);
@@ -4841,5710 +4841,6540 @@ IfcParse::schema_definition* IFC2X3_populate_schema() {
         items.push_back(IFC2X3_IfcStructuralItem_type);
         IFC2X3_IfcStructuralActivityAssignmentSelect_type = new select_type("IfcStructuralActivityAssignmentSelect", 803, items);
     }
-    IFC2X3_Ifc2DCompositeCurve_type = new entity("Ifc2DCompositeCurve", 0, IFC2X3_IfcCompositeCurve_type);
-    IFC2X3_IfcActionRequest_type = new entity("IfcActionRequest", 3, IFC2X3_IfcControl_type);
-    IFC2X3_IfcAirTerminalBoxType_type = new entity("IfcAirTerminalBoxType", 14, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcAirTerminalType_type = new entity("IfcAirTerminalType", 16, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcAirToAirHeatRecoveryType_type = new entity("IfcAirToAirHeatRecoveryType", 18, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcAngularDimension_type = new entity("IfcAngularDimension", 25, IFC2X3_IfcDimensionCurveDirectedCallout_type);
-    IFC2X3_IfcAsset_type = new entity("IfcAsset", 50, IFC2X3_IfcGroup_type);
-    IFC2X3_IfcBSplineCurve_type = new entity("IfcBSplineCurve", 80, IFC2X3_IfcBoundedCurve_type);
-    IFC2X3_IfcBeamType_type = new entity("IfcBeamType", 57, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcBezierCurve_type = new entity("IfcBezierCurve", 60, IFC2X3_IfcBSplineCurve_type);
-    IFC2X3_IfcBoilerType_type = new entity("IfcBoilerType", 63, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcBuildingElement_type = new entity("IfcBuildingElement", 83, IFC2X3_IfcElement_type);
-    IFC2X3_IfcBuildingElementComponent_type = new entity("IfcBuildingElementComponent", 84, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcBuildingElementPart_type = new entity("IfcBuildingElementPart", 85, IFC2X3_IfcBuildingElementComponent_type);
-    IFC2X3_IfcBuildingElementProxy_type = new entity("IfcBuildingElementProxy", 86, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcBuildingElementProxyType_type = new entity("IfcBuildingElementProxyType", 87, IFC2X3_IfcBuildingElementType_type);
-    IFC2X3_IfcCableCarrierFittingType_type = new entity("IfcCableCarrierFittingType", 91, IFC2X3_IfcFlowFittingType_type);
-    IFC2X3_IfcCableCarrierSegmentType_type = new entity("IfcCableCarrierSegmentType", 93, IFC2X3_IfcFlowSegmentType_type);
-    IFC2X3_IfcCableSegmentType_type = new entity("IfcCableSegmentType", 95, IFC2X3_IfcFlowSegmentType_type);
-    IFC2X3_IfcChillerType_type = new entity("IfcChillerType", 108, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcCircle_type = new entity("IfcCircle", 110, IFC2X3_IfcConic_type);
-    IFC2X3_IfcCoilType_type = new entity("IfcCoilType", 121, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcColumn_type = new entity("IfcColumn", 127, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcCompressorType_type = new entity("IfcCompressorType", 136, IFC2X3_IfcFlowMovingDeviceType_type);
-    IFC2X3_IfcCondenserType_type = new entity("IfcCondenserType", 138, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcCondition_type = new entity("IfcCondition", 140, IFC2X3_IfcGroup_type);
-    IFC2X3_IfcConditionCriterion_type = new entity("IfcConditionCriterion", 141, IFC2X3_IfcControl_type);
-    IFC2X3_IfcConstructionEquipmentResource_type = new entity("IfcConstructionEquipmentResource", 157, IFC2X3_IfcConstructionResource_type);
-    IFC2X3_IfcConstructionMaterialResource_type = new entity("IfcConstructionMaterialResource", 158, IFC2X3_IfcConstructionResource_type);
-    IFC2X3_IfcConstructionProductResource_type = new entity("IfcConstructionProductResource", 159, IFC2X3_IfcConstructionResource_type);
-    IFC2X3_IfcCooledBeamType_type = new entity("IfcCooledBeamType", 167, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcCoolingTowerType_type = new entity("IfcCoolingTowerType", 169, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcCovering_type = new entity("IfcCovering", 177, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcCurtainWall_type = new entity("IfcCurtainWall", 189, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcDamperType_type = new entity("IfcDamperType", 202, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcDiameterDimension_type = new entity("IfcDiameterDimension", 217, IFC2X3_IfcDimensionCurveDirectedCallout_type);
-    IFC2X3_IfcDiscreteAccessory_type = new entity("IfcDiscreteAccessory", 228, IFC2X3_IfcElementComponent_type);
-    IFC2X3_IfcDiscreteAccessoryType_type = new entity("IfcDiscreteAccessoryType", 229, IFC2X3_IfcElementComponentType_type);
-    IFC2X3_IfcDistributionChamberElementType_type = new entity("IfcDistributionChamberElementType", 231, IFC2X3_IfcDistributionFlowElementType_type);
-    IFC2X3_IfcDistributionControlElementType_type = new entity("IfcDistributionControlElementType", 234, IFC2X3_IfcDistributionElementType_type);
-    IFC2X3_IfcDistributionElement_type = new entity("IfcDistributionElement", 235, IFC2X3_IfcElement_type);
-    IFC2X3_IfcDistributionFlowElement_type = new entity("IfcDistributionFlowElement", 237, IFC2X3_IfcDistributionElement_type);
-    IFC2X3_IfcDistributionPort_type = new entity("IfcDistributionPort", 239, IFC2X3_IfcPort_type);
-    IFC2X3_IfcDoor_type = new entity("IfcDoor", 247, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcDuctFittingType_type = new entity("IfcDuctFittingType", 262, IFC2X3_IfcFlowFittingType_type);
-    IFC2X3_IfcDuctSegmentType_type = new entity("IfcDuctSegmentType", 264, IFC2X3_IfcFlowSegmentType_type);
-    IFC2X3_IfcDuctSilencerType_type = new entity("IfcDuctSilencerType", 266, IFC2X3_IfcFlowTreatmentDeviceType_type);
-    IFC2X3_IfcEdgeFeature_type = new entity("IfcEdgeFeature", 271, IFC2X3_IfcFeatureElementSubtraction_type);
-    IFC2X3_IfcElectricApplianceType_type = new entity("IfcElectricApplianceType", 276, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcElectricFlowStorageDeviceType_type = new entity("IfcElectricFlowStorageDeviceType", 285, IFC2X3_IfcFlowStorageDeviceType_type);
-    IFC2X3_IfcElectricGeneratorType_type = new entity("IfcElectricGeneratorType", 287, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcElectricHeaterType_type = new entity("IfcElectricHeaterType", 289, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcElectricMotorType_type = new entity("IfcElectricMotorType", 291, IFC2X3_IfcEnergyConversionDeviceType_type);
-    IFC2X3_IfcElectricTimeControlType_type = new entity("IfcElectricTimeControlType", 294, IFC2X3_IfcFlowControllerType_type);
-    IFC2X3_IfcElectricalCircuit_type = new entity("IfcElectricalCircuit", 274, IFC2X3_IfcSystem_type);
-    IFC2X3_IfcElectricalElement_type = new entity("IfcElectricalElement", 275, IFC2X3_IfcElement_type);
-    IFC2X3_IfcEnergyConversionDevice_type = new entity("IfcEnergyConversionDevice", 308, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFanType_type = new entity("IfcFanType", 336, IFC2X3_IfcFlowMovingDeviceType_type);
-    IFC2X3_IfcFilterType_type = new entity("IfcFilterType", 349, IFC2X3_IfcFlowTreatmentDeviceType_type);
-    IFC2X3_IfcFireSuppressionTerminalType_type = new entity("IfcFireSuppressionTerminalType", 351, IFC2X3_IfcFlowTerminalType_type);
-    IFC2X3_IfcFlowController_type = new entity("IfcFlowController", 353, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFlowFitting_type = new entity("IfcFlowFitting", 356, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFlowInstrumentType_type = new entity("IfcFlowInstrumentType", 358, IFC2X3_IfcDistributionControlElementType_type);
-    IFC2X3_IfcFlowMovingDevice_type = new entity("IfcFlowMovingDevice", 362, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFlowSegment_type = new entity("IfcFlowSegment", 364, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFlowStorageDevice_type = new entity("IfcFlowStorageDevice", 366, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFlowTerminal_type = new entity("IfcFlowTerminal", 368, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFlowTreatmentDevice_type = new entity("IfcFlowTreatmentDevice", 370, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcFooting_type = new entity("IfcFooting", 376, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcMember_type = new entity("IfcMember", 492, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcPile_type = new entity("IfcPile", 552, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcPlate_type = new entity("IfcPlate", 566, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcRailing_type = new entity("IfcRailing", 642, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcRamp_type = new entity("IfcRamp", 645, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcRampFlight_type = new entity("IfcRampFlight", 646, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcRationalBezierCurve_type = new entity("IfcRationalBezierCurve", 651, IFC2X3_IfcBezierCurve_type);
-    IFC2X3_IfcReinforcingElement_type = new entity("IfcReinforcingElement", 665, IFC2X3_IfcBuildingElementComponent_type);
-    IFC2X3_IfcReinforcingMesh_type = new entity("IfcReinforcingMesh", 666, IFC2X3_IfcReinforcingElement_type);
-    IFC2X3_IfcRoof_type = new entity("IfcRoof", 730, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcRoundedEdgeFeature_type = new entity("IfcRoundedEdgeFeature", 736, IFC2X3_IfcEdgeFeature_type);
-    IFC2X3_IfcSensorType_type = new entity("IfcSensorType", 748, IFC2X3_IfcDistributionControlElementType_type);
-    IFC2X3_IfcSlab_type = new entity("IfcSlab", 768, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcStair_type = new entity("IfcStair", 795, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcStairFlight_type = new entity("IfcStairFlight", 796, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcStructuralAnalysisModel_type = new entity("IfcStructuralAnalysisModel", 804, IFC2X3_IfcSystem_type);
-    IFC2X3_IfcTendon_type = new entity("IfcTendon", 875, IFC2X3_IfcReinforcingElement_type);
-    IFC2X3_IfcTendonAnchor_type = new entity("IfcTendonAnchor", 876, IFC2X3_IfcReinforcingElement_type);
-    IFC2X3_IfcVibrationIsolatorType_type = new entity("IfcVibrationIsolatorType", 950, IFC2X3_IfcDiscreteAccessoryType_type);
-    IFC2X3_IfcWall_type = new entity("IfcWall", 956, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcWallStandardCase_type = new entity("IfcWallStandardCase", 957, IFC2X3_IfcWall_type);
-    IFC2X3_IfcWindow_type = new entity("IfcWindow", 965, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcActuatorType_type = new entity("IfcActuatorType", 9, IFC2X3_IfcDistributionControlElementType_type);
-    IFC2X3_IfcAlarmType_type = new entity("IfcAlarmType", 20, IFC2X3_IfcDistributionControlElementType_type);
-    IFC2X3_IfcBeam_type = new entity("IfcBeam", 56, IFC2X3_IfcBuildingElement_type);
-    IFC2X3_IfcChamferEdgeFeature_type = new entity("IfcChamferEdgeFeature", 105, IFC2X3_IfcEdgeFeature_type);
-    IFC2X3_IfcControllerType_type = new entity("IfcControllerType", 164, IFC2X3_IfcDistributionControlElementType_type);
-    IFC2X3_IfcDistributionChamberElement_type = new entity("IfcDistributionChamberElement", 230, IFC2X3_IfcDistributionFlowElement_type);
-    IFC2X3_IfcDistributionControlElement_type = new entity("IfcDistributionControlElement", 233, IFC2X3_IfcDistributionElement_type);
-    IFC2X3_IfcElectricDistributionPoint_type = new entity("IfcElectricDistributionPoint", 283, IFC2X3_IfcFlowController_type);
-    IFC2X3_IfcReinforcingBar_type = new entity("IfcReinforcingBar", 662, IFC2X3_IfcReinforcingElement_type);
+    IFC2X3_Ifc2DCompositeCurve_type = new entity("Ifc2DCompositeCurve", false, 0, IFC2X3_IfcCompositeCurve_type);
+    IFC2X3_IfcActionRequest_type = new entity("IfcActionRequest", false, 3, IFC2X3_IfcControl_type);
+    IFC2X3_IfcAirTerminalBoxType_type = new entity("IfcAirTerminalBoxType", false, 14, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcAirTerminalType_type = new entity("IfcAirTerminalType", false, 16, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcAirToAirHeatRecoveryType_type = new entity("IfcAirToAirHeatRecoveryType", false, 18, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcAngularDimension_type = new entity("IfcAngularDimension", false, 25, IFC2X3_IfcDimensionCurveDirectedCallout_type);
+    IFC2X3_IfcAsset_type = new entity("IfcAsset", false, 50, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcBSplineCurve_type = new entity("IfcBSplineCurve", true, 80, IFC2X3_IfcBoundedCurve_type);
+    IFC2X3_IfcBeamType_type = new entity("IfcBeamType", false, 57, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcBezierCurve_type = new entity("IfcBezierCurve", false, 60, IFC2X3_IfcBSplineCurve_type);
+    IFC2X3_IfcBoilerType_type = new entity("IfcBoilerType", false, 63, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcBuildingElement_type = new entity("IfcBuildingElement", true, 83, IFC2X3_IfcElement_type);
+    IFC2X3_IfcBuildingElementComponent_type = new entity("IfcBuildingElementComponent", true, 84, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcBuildingElementPart_type = new entity("IfcBuildingElementPart", false, 85, IFC2X3_IfcBuildingElementComponent_type);
+    IFC2X3_IfcBuildingElementProxy_type = new entity("IfcBuildingElementProxy", false, 86, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcBuildingElementProxyType_type = new entity("IfcBuildingElementProxyType", false, 87, IFC2X3_IfcBuildingElementType_type);
+    IFC2X3_IfcCableCarrierFittingType_type = new entity("IfcCableCarrierFittingType", false, 91, IFC2X3_IfcFlowFittingType_type);
+    IFC2X3_IfcCableCarrierSegmentType_type = new entity("IfcCableCarrierSegmentType", false, 93, IFC2X3_IfcFlowSegmentType_type);
+    IFC2X3_IfcCableSegmentType_type = new entity("IfcCableSegmentType", false, 95, IFC2X3_IfcFlowSegmentType_type);
+    IFC2X3_IfcChillerType_type = new entity("IfcChillerType", false, 108, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcCircle_type = new entity("IfcCircle", false, 110, IFC2X3_IfcConic_type);
+    IFC2X3_IfcCoilType_type = new entity("IfcCoilType", false, 121, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcColumn_type = new entity("IfcColumn", false, 127, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcCompressorType_type = new entity("IfcCompressorType", false, 136, IFC2X3_IfcFlowMovingDeviceType_type);
+    IFC2X3_IfcCondenserType_type = new entity("IfcCondenserType", false, 138, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcCondition_type = new entity("IfcCondition", false, 140, IFC2X3_IfcGroup_type);
+    IFC2X3_IfcConditionCriterion_type = new entity("IfcConditionCriterion", false, 141, IFC2X3_IfcControl_type);
+    IFC2X3_IfcConstructionEquipmentResource_type = new entity("IfcConstructionEquipmentResource", false, 157, IFC2X3_IfcConstructionResource_type);
+    IFC2X3_IfcConstructionMaterialResource_type = new entity("IfcConstructionMaterialResource", false, 158, IFC2X3_IfcConstructionResource_type);
+    IFC2X3_IfcConstructionProductResource_type = new entity("IfcConstructionProductResource", false, 159, IFC2X3_IfcConstructionResource_type);
+    IFC2X3_IfcCooledBeamType_type = new entity("IfcCooledBeamType", false, 167, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcCoolingTowerType_type = new entity("IfcCoolingTowerType", false, 169, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcCovering_type = new entity("IfcCovering", false, 177, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcCurtainWall_type = new entity("IfcCurtainWall", false, 189, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcDamperType_type = new entity("IfcDamperType", false, 202, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcDiameterDimension_type = new entity("IfcDiameterDimension", false, 217, IFC2X3_IfcDimensionCurveDirectedCallout_type);
+    IFC2X3_IfcDiscreteAccessory_type = new entity("IfcDiscreteAccessory", false, 228, IFC2X3_IfcElementComponent_type);
+    IFC2X3_IfcDiscreteAccessoryType_type = new entity("IfcDiscreteAccessoryType", false, 229, IFC2X3_IfcElementComponentType_type);
+    IFC2X3_IfcDistributionChamberElementType_type = new entity("IfcDistributionChamberElementType", false, 231, IFC2X3_IfcDistributionFlowElementType_type);
+    IFC2X3_IfcDistributionControlElementType_type = new entity("IfcDistributionControlElementType", true, 234, IFC2X3_IfcDistributionElementType_type);
+    IFC2X3_IfcDistributionElement_type = new entity("IfcDistributionElement", false, 235, IFC2X3_IfcElement_type);
+    IFC2X3_IfcDistributionFlowElement_type = new entity("IfcDistributionFlowElement", false, 237, IFC2X3_IfcDistributionElement_type);
+    IFC2X3_IfcDistributionPort_type = new entity("IfcDistributionPort", false, 239, IFC2X3_IfcPort_type);
+    IFC2X3_IfcDoor_type = new entity("IfcDoor", false, 247, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcDuctFittingType_type = new entity("IfcDuctFittingType", false, 262, IFC2X3_IfcFlowFittingType_type);
+    IFC2X3_IfcDuctSegmentType_type = new entity("IfcDuctSegmentType", false, 264, IFC2X3_IfcFlowSegmentType_type);
+    IFC2X3_IfcDuctSilencerType_type = new entity("IfcDuctSilencerType", false, 266, IFC2X3_IfcFlowTreatmentDeviceType_type);
+    IFC2X3_IfcEdgeFeature_type = new entity("IfcEdgeFeature", true, 271, IFC2X3_IfcFeatureElementSubtraction_type);
+    IFC2X3_IfcElectricApplianceType_type = new entity("IfcElectricApplianceType", false, 276, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcElectricFlowStorageDeviceType_type = new entity("IfcElectricFlowStorageDeviceType", false, 285, IFC2X3_IfcFlowStorageDeviceType_type);
+    IFC2X3_IfcElectricGeneratorType_type = new entity("IfcElectricGeneratorType", false, 287, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcElectricHeaterType_type = new entity("IfcElectricHeaterType", false, 289, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcElectricMotorType_type = new entity("IfcElectricMotorType", false, 291, IFC2X3_IfcEnergyConversionDeviceType_type);
+    IFC2X3_IfcElectricTimeControlType_type = new entity("IfcElectricTimeControlType", false, 294, IFC2X3_IfcFlowControllerType_type);
+    IFC2X3_IfcElectricalCircuit_type = new entity("IfcElectricalCircuit", false, 274, IFC2X3_IfcSystem_type);
+    IFC2X3_IfcElectricalElement_type = new entity("IfcElectricalElement", false, 275, IFC2X3_IfcElement_type);
+    IFC2X3_IfcEnergyConversionDevice_type = new entity("IfcEnergyConversionDevice", false, 308, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFanType_type = new entity("IfcFanType", false, 336, IFC2X3_IfcFlowMovingDeviceType_type);
+    IFC2X3_IfcFilterType_type = new entity("IfcFilterType", false, 349, IFC2X3_IfcFlowTreatmentDeviceType_type);
+    IFC2X3_IfcFireSuppressionTerminalType_type = new entity("IfcFireSuppressionTerminalType", false, 351, IFC2X3_IfcFlowTerminalType_type);
+    IFC2X3_IfcFlowController_type = new entity("IfcFlowController", false, 353, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFlowFitting_type = new entity("IfcFlowFitting", false, 356, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFlowInstrumentType_type = new entity("IfcFlowInstrumentType", false, 358, IFC2X3_IfcDistributionControlElementType_type);
+    IFC2X3_IfcFlowMovingDevice_type = new entity("IfcFlowMovingDevice", false, 362, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFlowSegment_type = new entity("IfcFlowSegment", false, 364, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFlowStorageDevice_type = new entity("IfcFlowStorageDevice", false, 366, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFlowTerminal_type = new entity("IfcFlowTerminal", false, 368, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFlowTreatmentDevice_type = new entity("IfcFlowTreatmentDevice", false, 370, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcFooting_type = new entity("IfcFooting", false, 376, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcMember_type = new entity("IfcMember", false, 492, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcPile_type = new entity("IfcPile", false, 552, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcPlate_type = new entity("IfcPlate", false, 566, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcRailing_type = new entity("IfcRailing", false, 642, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcRamp_type = new entity("IfcRamp", false, 645, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcRampFlight_type = new entity("IfcRampFlight", false, 646, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcRationalBezierCurve_type = new entity("IfcRationalBezierCurve", false, 651, IFC2X3_IfcBezierCurve_type);
+    IFC2X3_IfcReinforcingElement_type = new entity("IfcReinforcingElement", true, 665, IFC2X3_IfcBuildingElementComponent_type);
+    IFC2X3_IfcReinforcingMesh_type = new entity("IfcReinforcingMesh", false, 666, IFC2X3_IfcReinforcingElement_type);
+    IFC2X3_IfcRoof_type = new entity("IfcRoof", false, 730, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcRoundedEdgeFeature_type = new entity("IfcRoundedEdgeFeature", false, 736, IFC2X3_IfcEdgeFeature_type);
+    IFC2X3_IfcSensorType_type = new entity("IfcSensorType", false, 748, IFC2X3_IfcDistributionControlElementType_type);
+    IFC2X3_IfcSlab_type = new entity("IfcSlab", false, 768, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcStair_type = new entity("IfcStair", false, 795, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcStairFlight_type = new entity("IfcStairFlight", false, 796, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcStructuralAnalysisModel_type = new entity("IfcStructuralAnalysisModel", false, 804, IFC2X3_IfcSystem_type);
+    IFC2X3_IfcTendon_type = new entity("IfcTendon", false, 875, IFC2X3_IfcReinforcingElement_type);
+    IFC2X3_IfcTendonAnchor_type = new entity("IfcTendonAnchor", false, 876, IFC2X3_IfcReinforcingElement_type);
+    IFC2X3_IfcVibrationIsolatorType_type = new entity("IfcVibrationIsolatorType", false, 950, IFC2X3_IfcDiscreteAccessoryType_type);
+    IFC2X3_IfcWall_type = new entity("IfcWall", false, 956, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcWallStandardCase_type = new entity("IfcWallStandardCase", false, 957, IFC2X3_IfcWall_type);
+    IFC2X3_IfcWindow_type = new entity("IfcWindow", false, 965, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcActuatorType_type = new entity("IfcActuatorType", false, 9, IFC2X3_IfcDistributionControlElementType_type);
+    IFC2X3_IfcAlarmType_type = new entity("IfcAlarmType", false, 20, IFC2X3_IfcDistributionControlElementType_type);
+    IFC2X3_IfcBeam_type = new entity("IfcBeam", false, 56, IFC2X3_IfcBuildingElement_type);
+    IFC2X3_IfcChamferEdgeFeature_type = new entity("IfcChamferEdgeFeature", false, 105, IFC2X3_IfcEdgeFeature_type);
+    IFC2X3_IfcControllerType_type = new entity("IfcControllerType", false, 164, IFC2X3_IfcDistributionControlElementType_type);
+    IFC2X3_IfcDistributionChamberElement_type = new entity("IfcDistributionChamberElement", false, 230, IFC2X3_IfcDistributionFlowElement_type);
+    IFC2X3_IfcDistributionControlElement_type = new entity("IfcDistributionControlElement", false, 233, IFC2X3_IfcDistributionElement_type);
+    IFC2X3_IfcElectricDistributionPoint_type = new entity("IfcElectricDistributionPoint", false, 283, IFC2X3_IfcFlowController_type);
+    IFC2X3_IfcReinforcingBar_type = new entity("IfcReinforcingBar", false, 662, IFC2X3_IfcReinforcingElement_type);
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_Ifc2DCompositeCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RequestID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RequestID", new named_type(IFC2X3_IfcIdentifier_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcActionRequest_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("TheActor", new named_type(IFC2X3_IfcActorSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("TheActor", new named_type(IFC2X3_IfcActorSelect_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcActor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Role", new named_type(IFC2X3_IfcRoleEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedRole", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Role", new named_type(IFC2X3_IfcRoleEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedRole", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcActorRole_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcActuatorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcActuatorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcActuatorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Purpose", new named_type(IFC2X3_IfcAddressTypeEnum_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedPurpose", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Purpose", new named_type(IFC2X3_IfcAddressTypeEnum_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("UserDefinedPurpose", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAddress_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcAirTerminalBoxTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcAirTerminalBoxTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAirTerminalBoxType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcAirTerminalTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcAirTerminalTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAirTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcAirToAirHeatRecoveryTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcAirToAirHeatRecoveryTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAirToAirHeatRecoveryType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcAlarmTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcAlarmTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAlarmType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcAngularDimension_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationCurveOccurrence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("OuterBoundary", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("InnerBoundaries", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCurve_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("OuterBoundary", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("InnerBoundaries", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCurve_type)), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationFillArea_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("FillStyleTarget", new named_type(IFC2X3_IfcPoint_type), true));
-        attributes.push_back(new entity::attribute("GlobalOrLocal", new named_type(IFC2X3_IfcGlobalOrLocalEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("FillStyleTarget", new named_type(IFC2X3_IfcPoint_type), true));
+        attributes.push_back(new attribute("GlobalOrLocal", new named_type(IFC2X3_IfcGlobalOrLocalEnum_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationFillAreaOccurrence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationOccurrence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Item", new named_type(IFC2X3_IfcGeometricRepresentationItem_type), false));
-        attributes.push_back(new entity::attribute("TextureCoordinates", new named_type(IFC2X3_IfcTextureCoordinate_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Item", new named_type(IFC2X3_IfcGeometricRepresentationItem_type), false));
+        attributes.push_back(new attribute("TextureCoordinates", new named_type(IFC2X3_IfcTextureCoordinate_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationSurfaceOccurrence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationSymbolOccurrence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAnnotationTextOccurrence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ApplicationDeveloper", new named_type(IFC2X3_IfcOrganization_type), false));
-        attributes.push_back(new entity::attribute("Version", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("ApplicationFullName", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("ApplicationIdentifier", new named_type(IFC2X3_IfcIdentifier_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ApplicationDeveloper", new named_type(IFC2X3_IfcOrganization_type), false));
+        attributes.push_back(new attribute("Version", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("ApplicationFullName", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("ApplicationIdentifier", new named_type(IFC2X3_IfcIdentifier_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcApplication_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("AppliedValue", new named_type(IFC2X3_IfcAppliedValueSelect_type), true));
-        attributes.push_back(new entity::attribute("UnitBasis", new named_type(IFC2X3_IfcMeasureWithUnit_type), true));
-        attributes.push_back(new entity::attribute("ApplicableDate", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("FixedUntilDate", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("AppliedValue", new named_type(IFC2X3_IfcAppliedValueSelect_type), true));
+        attributes.push_back(new attribute("UnitBasis", new named_type(IFC2X3_IfcMeasureWithUnit_type), true));
+        attributes.push_back(new attribute("ApplicableDate", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("FixedUntilDate", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAppliedValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("ComponentOfTotal", new named_type(IFC2X3_IfcAppliedValue_type), false));
-        attributes.push_back(new entity::attribute("Components", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcAppliedValue_type)), false));
-        attributes.push_back(new entity::attribute("ArithmeticOperator", new named_type(IFC2X3_IfcArithmeticOperatorEnum_type), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("ComponentOfTotal", new named_type(IFC2X3_IfcAppliedValue_type), false));
+        attributes.push_back(new attribute("Components", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcAppliedValue_type)), false));
+        attributes.push_back(new attribute("ArithmeticOperator", new named_type(IFC2X3_IfcArithmeticOperatorEnum_type), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAppliedValueRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("ApprovalDateTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
-        attributes.push_back(new entity::attribute("ApprovalStatus", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ApprovalLevel", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ApprovalQualifier", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Identifier", new named_type(IFC2X3_IfcIdentifier_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("ApprovalDateTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        attributes.push_back(new attribute("ApprovalStatus", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ApprovalLevel", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ApprovalQualifier", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Identifier", new named_type(IFC2X3_IfcIdentifier_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcApproval_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Actor", new named_type(IFC2X3_IfcActorSelect_type), false));
-        attributes.push_back(new entity::attribute("Approval", new named_type(IFC2X3_IfcApproval_type), false));
-        attributes.push_back(new entity::attribute("Role", new named_type(IFC2X3_IfcActorRole_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Actor", new named_type(IFC2X3_IfcActorSelect_type), false));
+        attributes.push_back(new attribute("Approval", new named_type(IFC2X3_IfcApproval_type), false));
+        attributes.push_back(new attribute("Role", new named_type(IFC2X3_IfcActorRole_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcApprovalActorRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ApprovedProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
-        attributes.push_back(new entity::attribute("Approval", new named_type(IFC2X3_IfcApproval_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ApprovedProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
+        attributes.push_back(new attribute("Approval", new named_type(IFC2X3_IfcApproval_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcApprovalPropertyRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("RelatedApproval", new named_type(IFC2X3_IfcApproval_type), false));
-        attributes.push_back(new entity::attribute("RelatingApproval", new named_type(IFC2X3_IfcApproval_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("RelatedApproval", new named_type(IFC2X3_IfcApproval_type), false));
+        attributes.push_back(new attribute("RelatingApproval", new named_type(IFC2X3_IfcApproval_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcApprovalRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("OuterCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("OuterCurve", new named_type(IFC2X3_IfcCurve_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcArbitraryClosedProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Curve", new named_type(IFC2X3_IfcBoundedCurve_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Curve", new named_type(IFC2X3_IfcBoundedCurve_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcArbitraryOpenProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("InnerCurves", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCurve_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("InnerCurves", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCurve_type)), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcArbitraryProfileDefWithVoids_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(9);
-        attributes.push_back(new entity::attribute("AssetID", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("OriginalValue", new named_type(IFC2X3_IfcCostValue_type), false));
-        attributes.push_back(new entity::attribute("CurrentValue", new named_type(IFC2X3_IfcCostValue_type), false));
-        attributes.push_back(new entity::attribute("TotalReplacementCost", new named_type(IFC2X3_IfcCostValue_type), false));
-        attributes.push_back(new entity::attribute("Owner", new named_type(IFC2X3_IfcActorSelect_type), false));
-        attributes.push_back(new entity::attribute("User", new named_type(IFC2X3_IfcActorSelect_type), false));
-        attributes.push_back(new entity::attribute("ResponsiblePerson", new named_type(IFC2X3_IfcPerson_type), false));
-        attributes.push_back(new entity::attribute("IncorporationDate", new named_type(IFC2X3_IfcCalendarDate_type), false));
-        attributes.push_back(new entity::attribute("DepreciatedValue", new named_type(IFC2X3_IfcCostValue_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(9);
+        attributes.push_back(new attribute("AssetID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("OriginalValue", new named_type(IFC2X3_IfcCostValue_type), false));
+        attributes.push_back(new attribute("CurrentValue", new named_type(IFC2X3_IfcCostValue_type), false));
+        attributes.push_back(new attribute("TotalReplacementCost", new named_type(IFC2X3_IfcCostValue_type), false));
+        attributes.push_back(new attribute("Owner", new named_type(IFC2X3_IfcActorSelect_type), false));
+        attributes.push_back(new attribute("User", new named_type(IFC2X3_IfcActorSelect_type), false));
+        attributes.push_back(new attribute("ResponsiblePerson", new named_type(IFC2X3_IfcPerson_type), false));
+        attributes.push_back(new attribute("IncorporationDate", new named_type(IFC2X3_IfcCalendarDate_type), false));
+        attributes.push_back(new attribute("DepreciatedValue", new named_type(IFC2X3_IfcCostValue_type), false));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAsset_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("TopFlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("TopFlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("TopFlangeFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("TopFlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("TopFlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("TopFlangeFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAsymmetricIShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Axis", new named_type(IFC2X3_IfcDirection_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Axis", new named_type(IFC2X3_IfcDirection_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAxis1Placement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RefDirection", new named_type(IFC2X3_IfcDirection_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RefDirection", new named_type(IFC2X3_IfcDirection_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAxis2Placement2D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Axis", new named_type(IFC2X3_IfcDirection_type), true));
-        attributes.push_back(new entity::attribute("RefDirection", new named_type(IFC2X3_IfcDirection_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Axis", new named_type(IFC2X3_IfcDirection_type), true));
+        attributes.push_back(new attribute("RefDirection", new named_type(IFC2X3_IfcDirection_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcAxis2Placement3D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Degree", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("ControlPointsList", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
-        attributes.push_back(new entity::attribute("CurveForm", new named_type(IFC2X3_IfcBSplineCurveForm_type), false));
-        attributes.push_back(new entity::attribute("ClosedCurve", new simple_type(simple_type::logical_type), false));
-        attributes.push_back(new entity::attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Degree", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("ControlPointsList", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
+        attributes.push_back(new attribute("CurveForm", new named_type(IFC2X3_IfcBSplineCurveForm_type), false));
+        attributes.push_back(new attribute("ClosedCurve", new simple_type(simple_type::logical_type), false));
+        attributes.push_back(new attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBSplineCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBeam_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcBeamTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcBeamTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBeamType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBezierCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RasterFormat", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("RasterCode", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RasterFormat", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("RasterCode", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBlobTexture_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("XLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("YLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("ZLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("XLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("YLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("ZLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBlock_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcBoilerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcBoilerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoilerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBooleanClippingResult_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Operator", new named_type(IFC2X3_IfcBooleanOperator_type), false));
-        attributes.push_back(new entity::attribute("FirstOperand", new named_type(IFC2X3_IfcBooleanOperand_type), false));
-        attributes.push_back(new entity::attribute("SecondOperand", new named_type(IFC2X3_IfcBooleanOperand_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Operator", new named_type(IFC2X3_IfcBooleanOperator_type), false));
+        attributes.push_back(new attribute("FirstOperand", new named_type(IFC2X3_IfcBooleanOperand_type), false));
+        attributes.push_back(new attribute("SecondOperand", new named_type(IFC2X3_IfcBooleanOperand_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBooleanResult_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcBoundaryCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("LinearStiffnessByLengthX", new named_type(IFC2X3_IfcModulusOfLinearSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearStiffnessByLengthY", new named_type(IFC2X3_IfcModulusOfLinearSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearStiffnessByLengthZ", new named_type(IFC2X3_IfcModulusOfLinearSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalStiffnessByLengthX", new named_type(IFC2X3_IfcModulusOfRotationalSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalStiffnessByLengthY", new named_type(IFC2X3_IfcModulusOfRotationalSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalStiffnessByLengthZ", new named_type(IFC2X3_IfcModulusOfRotationalSubgradeReactionMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("LinearStiffnessByLengthX", new named_type(IFC2X3_IfcModulusOfLinearSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("LinearStiffnessByLengthY", new named_type(IFC2X3_IfcModulusOfLinearSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("LinearStiffnessByLengthZ", new named_type(IFC2X3_IfcModulusOfLinearSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("RotationalStiffnessByLengthX", new named_type(IFC2X3_IfcModulusOfRotationalSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("RotationalStiffnessByLengthY", new named_type(IFC2X3_IfcModulusOfRotationalSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("RotationalStiffnessByLengthZ", new named_type(IFC2X3_IfcModulusOfRotationalSubgradeReactionMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoundaryEdgeCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("LinearStiffnessByAreaX", new named_type(IFC2X3_IfcModulusOfSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearStiffnessByAreaY", new named_type(IFC2X3_IfcModulusOfSubgradeReactionMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearStiffnessByAreaZ", new named_type(IFC2X3_IfcModulusOfSubgradeReactionMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("LinearStiffnessByAreaX", new named_type(IFC2X3_IfcModulusOfSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("LinearStiffnessByAreaY", new named_type(IFC2X3_IfcModulusOfSubgradeReactionMeasure_type), true));
+        attributes.push_back(new attribute("LinearStiffnessByAreaZ", new named_type(IFC2X3_IfcModulusOfSubgradeReactionMeasure_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoundaryFaceCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("LinearStiffnessX", new named_type(IFC2X3_IfcLinearStiffnessMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearStiffnessY", new named_type(IFC2X3_IfcLinearStiffnessMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearStiffnessZ", new named_type(IFC2X3_IfcLinearStiffnessMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalStiffnessX", new named_type(IFC2X3_IfcRotationalStiffnessMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalStiffnessY", new named_type(IFC2X3_IfcRotationalStiffnessMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalStiffnessZ", new named_type(IFC2X3_IfcRotationalStiffnessMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("LinearStiffnessX", new named_type(IFC2X3_IfcLinearStiffnessMeasure_type), true));
+        attributes.push_back(new attribute("LinearStiffnessY", new named_type(IFC2X3_IfcLinearStiffnessMeasure_type), true));
+        attributes.push_back(new attribute("LinearStiffnessZ", new named_type(IFC2X3_IfcLinearStiffnessMeasure_type), true));
+        attributes.push_back(new attribute("RotationalStiffnessX", new named_type(IFC2X3_IfcRotationalStiffnessMeasure_type), true));
+        attributes.push_back(new attribute("RotationalStiffnessY", new named_type(IFC2X3_IfcRotationalStiffnessMeasure_type), true));
+        attributes.push_back(new attribute("RotationalStiffnessZ", new named_type(IFC2X3_IfcRotationalStiffnessMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoundaryNodeCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("WarpingStiffness", new named_type(IFC2X3_IfcWarpingMomentMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("WarpingStiffness", new named_type(IFC2X3_IfcWarpingMomentMeasure_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoundaryNodeConditionWarping_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcBoundedCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcBoundedSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Corner", new named_type(IFC2X3_IfcCartesianPoint_type), false));
-        attributes.push_back(new entity::attribute("XDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("YDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("ZDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Corner", new named_type(IFC2X3_IfcCartesianPoint_type), false));
+        attributes.push_back(new attribute("XDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("YDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("ZDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoundingBox_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Enclosure", new named_type(IFC2X3_IfcBoundingBox_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Enclosure", new named_type(IFC2X3_IfcBoundingBox_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBoxedHalfSpace_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ElevationOfRefHeight", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ElevationOfTerrain", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("BuildingAddress", new named_type(IFC2X3_IfcPostalAddress_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ElevationOfRefHeight", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("ElevationOfTerrain", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("BuildingAddress", new named_type(IFC2X3_IfcPostalAddress_type), true));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuilding_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingElementComponent_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingElementPart_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("CompositionType", new named_type(IFC2X3_IfcElementCompositionEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("CompositionType", new named_type(IFC2X3_IfcElementCompositionEnum_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingElementProxy_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcBuildingElementProxyTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcBuildingElementProxyTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingElementProxyType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Elevation", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Elevation", new named_type(IFC2X3_IfcLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcBuildingStorey_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Width", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WallThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Girth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("InternalFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Width", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WallThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Girth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("InternalFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCableCarrierFittingTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCableCarrierFittingTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCableCarrierFittingType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCableCarrierSegmentTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCableCarrierSegmentTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCableCarrierSegmentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCableSegmentTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCableSegmentTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCableSegmentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("DayComponent", new named_type(IFC2X3_IfcDayInMonthNumber_type), false));
-        attributes.push_back(new entity::attribute("MonthComponent", new named_type(IFC2X3_IfcMonthInYearNumber_type), false));
-        attributes.push_back(new entity::attribute("YearComponent", new named_type(IFC2X3_IfcYearNumber_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("DayComponent", new named_type(IFC2X3_IfcDayInMonthNumber_type), false));
+        attributes.push_back(new attribute("MonthComponent", new named_type(IFC2X3_IfcMonthInYearNumber_type), false));
+        attributes.push_back(new attribute("YearComponent", new named_type(IFC2X3_IfcYearNumber_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCalendarDate_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Coordinates", new aggregation_type(aggregation_type::list_type, 1, 3, new named_type(IFC2X3_IfcLengthMeasure_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Coordinates", new aggregation_type(aggregation_type::list_type, 1, 3, new named_type(IFC2X3_IfcLengthMeasure_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcCartesianPoint_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Axis1", new named_type(IFC2X3_IfcDirection_type), true));
-        attributes.push_back(new entity::attribute("Axis2", new named_type(IFC2X3_IfcDirection_type), true));
-        attributes.push_back(new entity::attribute("LocalOrigin", new named_type(IFC2X3_IfcCartesianPoint_type), false));
-        attributes.push_back(new entity::attribute("Scale", new simple_type(simple_type::real_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Axis1", new named_type(IFC2X3_IfcDirection_type), true));
+        attributes.push_back(new attribute("Axis2", new named_type(IFC2X3_IfcDirection_type), true));
+        attributes.push_back(new attribute("LocalOrigin", new named_type(IFC2X3_IfcCartesianPoint_type), false));
+        attributes.push_back(new attribute("Scale", new simple_type(simple_type::real_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCartesianTransformationOperator_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCartesianTransformationOperator2D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Scale2", new simple_type(simple_type::real_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Scale2", new simple_type(simple_type::real_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCartesianTransformationOperator2DnonUniform_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Axis3", new named_type(IFC2X3_IfcDirection_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Axis3", new named_type(IFC2X3_IfcDirection_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCartesianTransformationOperator3D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Scale2", new simple_type(simple_type::real_type), true));
-        attributes.push_back(new entity::attribute("Scale3", new simple_type(simple_type::real_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Scale2", new simple_type(simple_type::real_type), true));
+        attributes.push_back(new attribute("Scale3", new simple_type(simple_type::real_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCartesianTransformationOperator3DnonUniform_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCenterLineProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Width", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Width", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcChamferEdgeFeature_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcChillerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcChillerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcChillerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCircle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("WallThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("WallThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCircleHollowProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCircleProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Source", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Edition", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("EditionDate", new named_type(IFC2X3_IfcCalendarDate_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Source", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Edition", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("EditionDate", new named_type(IFC2X3_IfcCalendarDate_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcClassification_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Notation", new named_type(IFC2X3_IfcClassificationNotationFacet_type), false));
-        attributes.push_back(new entity::attribute("ItemOf", new named_type(IFC2X3_IfcClassification_type), true));
-        attributes.push_back(new entity::attribute("Title", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Notation", new named_type(IFC2X3_IfcClassificationNotationFacet_type), false));
+        attributes.push_back(new attribute("ItemOf", new named_type(IFC2X3_IfcClassification_type), true));
+        attributes.push_back(new attribute("Title", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcClassificationItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingItem", new named_type(IFC2X3_IfcClassificationItem_type), false));
-        attributes.push_back(new entity::attribute("RelatedItems", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationItem_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingItem", new named_type(IFC2X3_IfcClassificationItem_type), false));
+        attributes.push_back(new attribute("RelatedItems", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationItem_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcClassificationItemRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("NotationFacets", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationNotationFacet_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("NotationFacets", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationNotationFacet_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcClassificationNotation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("NotationValue", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("NotationValue", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcClassificationNotationFacet_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ReferencedSource", new named_type(IFC2X3_IfcClassification_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ReferencedSource", new named_type(IFC2X3_IfcClassification_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcClassificationReference_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcClosedShell_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCoilTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCoilTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCoilType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Red", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
-        attributes.push_back(new entity::attribute("Green", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
-        attributes.push_back(new entity::attribute("Blue", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Red", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
+        attributes.push_back(new attribute("Green", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
+        attributes.push_back(new attribute("Blue", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcColourRgb_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcColourSpecification_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcColumn_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcColumnTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcColumnTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcColumnType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("UsageName", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("HasProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("UsageName", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("HasProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcComplexProperty_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Segments", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcCompositeCurveSegment_type)), false));
-        attributes.push_back(new entity::attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Segments", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcCompositeCurveSegment_type)), false));
+        attributes.push_back(new attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCompositeCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Transition", new named_type(IFC2X3_IfcTransitionCode_type), false));
-        attributes.push_back(new entity::attribute("SameSense", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("ParentCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Transition", new named_type(IFC2X3_IfcTransitionCode_type), false));
+        attributes.push_back(new attribute("SameSense", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("ParentCurve", new named_type(IFC2X3_IfcCurve_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCompositeCurveSegment_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Profiles", new aggregation_type(aggregation_type::set_type, 2, -1, new named_type(IFC2X3_IfcProfileDef_type)), false));
-        attributes.push_back(new entity::attribute("Label", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Profiles", new aggregation_type(aggregation_type::set_type, 2, -1, new named_type(IFC2X3_IfcProfileDef_type)), false));
+        attributes.push_back(new attribute("Label", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCompositeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCompressorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCompressorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCompressorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCondenserTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCondenserTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCondenserType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Criterion", new named_type(IFC2X3_IfcConditionCriterionSelect_type), false));
-        attributes.push_back(new entity::attribute("CriterionDateTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Criterion", new named_type(IFC2X3_IfcConditionCriterionSelect_type), false));
+        attributes.push_back(new attribute("CriterionDateTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConditionCriterion_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcConic_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("CfsFaces", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFace_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("CfsFaces", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFace_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcConnectedFaceSet_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("CurveOnRelatingElement", new named_type(IFC2X3_IfcCurveOrEdgeCurve_type), false));
-        attributes.push_back(new entity::attribute("CurveOnRelatedElement", new named_type(IFC2X3_IfcCurveOrEdgeCurve_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("CurveOnRelatingElement", new named_type(IFC2X3_IfcCurveOrEdgeCurve_type), false));
+        attributes.push_back(new attribute("CurveOnRelatedElement", new named_type(IFC2X3_IfcCurveOrEdgeCurve_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConnectionCurveGeometry_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcConnectionGeometry_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("EccentricityInX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("EccentricityInY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("EccentricityInZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("EccentricityInX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("EccentricityInY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("EccentricityInZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConnectionPointEccentricity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("PointOnRelatingElement", new named_type(IFC2X3_IfcPointOrVertexPoint_type), false));
-        attributes.push_back(new entity::attribute("PointOnRelatedElement", new named_type(IFC2X3_IfcPointOrVertexPoint_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("PointOnRelatingElement", new named_type(IFC2X3_IfcPointOrVertexPoint_type), false));
+        attributes.push_back(new attribute("PointOnRelatedElement", new named_type(IFC2X3_IfcPointOrVertexPoint_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConnectionPointGeometry_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("LocationAtRelatingElement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
-        attributes.push_back(new entity::attribute("LocationAtRelatedElement", new named_type(IFC2X3_IfcAxis2Placement_type), true));
-        attributes.push_back(new entity::attribute("ProfileOfPort", new named_type(IFC2X3_IfcProfileDef_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("LocationAtRelatingElement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        attributes.push_back(new attribute("LocationAtRelatedElement", new named_type(IFC2X3_IfcAxis2Placement_type), true));
+        attributes.push_back(new attribute("ProfileOfPort", new named_type(IFC2X3_IfcProfileDef_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConnectionPortGeometry_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SurfaceOnRelatingElement", new named_type(IFC2X3_IfcSurfaceOrFaceSurface_type), false));
-        attributes.push_back(new entity::attribute("SurfaceOnRelatedElement", new named_type(IFC2X3_IfcSurfaceOrFaceSurface_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SurfaceOnRelatingElement", new named_type(IFC2X3_IfcSurfaceOrFaceSurface_type), false));
+        attributes.push_back(new attribute("SurfaceOnRelatedElement", new named_type(IFC2X3_IfcSurfaceOrFaceSurface_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConnectionSurfaceGeometry_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("ConstraintGrade", new named_type(IFC2X3_IfcConstraintEnum_type), false));
-        attributes.push_back(new entity::attribute("ConstraintSource", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("CreatingActor", new named_type(IFC2X3_IfcActorSelect_type), true));
-        attributes.push_back(new entity::attribute("CreationTime", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedGrade", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("ConstraintGrade", new named_type(IFC2X3_IfcConstraintEnum_type), false));
+        attributes.push_back(new attribute("ConstraintSource", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("CreatingActor", new named_type(IFC2X3_IfcActorSelect_type), true));
+        attributes.push_back(new attribute("CreationTime", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("UserDefinedGrade", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstraint_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
-        attributes.push_back(new entity::attribute("RelatedConstraints", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcConstraint_type)), false));
-        attributes.push_back(new entity::attribute("LogicalAggregator", new named_type(IFC2X3_IfcLogicalOperatorEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
+        attributes.push_back(new attribute("RelatedConstraints", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcConstraint_type)), false));
+        attributes.push_back(new attribute("LogicalAggregator", new named_type(IFC2X3_IfcLogicalOperatorEnum_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstraintAggregationRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ClassifiedConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
-        attributes.push_back(new entity::attribute("RelatedClassifications", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationNotationSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ClassifiedConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
+        attributes.push_back(new attribute("RelatedClassifications", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationNotationSelect_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstraintClassificationRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
-        attributes.push_back(new entity::attribute("RelatedConstraints", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcConstraint_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
+        attributes.push_back(new attribute("RelatedConstraints", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcConstraint_type)), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstraintRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstructionEquipmentResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Suppliers", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcActorSelect_type)), true));
-        attributes.push_back(new entity::attribute("UsageRatio", new named_type(IFC2X3_IfcRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Suppliers", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcActorSelect_type)), true));
+        attributes.push_back(new attribute("UsageRatio", new named_type(IFC2X3_IfcRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstructionMaterialResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstructionProductResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ResourceIdentifier", new named_type(IFC2X3_IfcIdentifier_type), true));
-        attributes.push_back(new entity::attribute("ResourceGroup", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ResourceConsumption", new named_type(IFC2X3_IfcResourceConsumptionEnum_type), true));
-        attributes.push_back(new entity::attribute("BaseQuantity", new named_type(IFC2X3_IfcMeasureWithUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ResourceIdentifier", new named_type(IFC2X3_IfcIdentifier_type), true));
+        attributes.push_back(new attribute("ResourceGroup", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ResourceConsumption", new named_type(IFC2X3_IfcResourceConsumptionEnum_type), true));
+        attributes.push_back(new attribute("BaseQuantity", new named_type(IFC2X3_IfcMeasureWithUnit_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConstructionResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcContextDependentUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcControl_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcControllerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcControllerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcControllerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("ConversionFactor", new named_type(IFC2X3_IfcMeasureWithUnit_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("ConversionFactor", new named_type(IFC2X3_IfcMeasureWithUnit_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcConversionBasedUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCooledBeamTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCooledBeamTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCooledBeamType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCoolingTowerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCoolingTowerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCoolingTowerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("HourOffset", new named_type(IFC2X3_IfcHourInDay_type), false));
-        attributes.push_back(new entity::attribute("MinuteOffset", new named_type(IFC2X3_IfcMinuteInHour_type), true));
-        attributes.push_back(new entity::attribute("Sense", new named_type(IFC2X3_IfcAheadOrBehind_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("HourOffset", new named_type(IFC2X3_IfcHourInDay_type), false));
+        attributes.push_back(new attribute("MinuteOffset", new named_type(IFC2X3_IfcMinuteInHour_type), true));
+        attributes.push_back(new attribute("Sense", new named_type(IFC2X3_IfcAheadOrBehind_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCoordinatedUniversalTimeOffset_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCostItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("SubmittedBy", new named_type(IFC2X3_IfcActorSelect_type), true));
-        attributes.push_back(new entity::attribute("PreparedBy", new named_type(IFC2X3_IfcActorSelect_type), true));
-        attributes.push_back(new entity::attribute("SubmittedOn", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("Status", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("TargetUsers", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcActorSelect_type)), true));
-        attributes.push_back(new entity::attribute("UpdateDate", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("ID", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCostScheduleTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("SubmittedBy", new named_type(IFC2X3_IfcActorSelect_type), true));
+        attributes.push_back(new attribute("PreparedBy", new named_type(IFC2X3_IfcActorSelect_type), true));
+        attributes.push_back(new attribute("SubmittedOn", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("Status", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("TargetUsers", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcActorSelect_type)), true));
+        attributes.push_back(new attribute("UpdateDate", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("ID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCostScheduleTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCostSchedule_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("CostType", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Condition", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("CostType", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Condition", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCostValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCoveringTypeEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCoveringTypeEnum_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCovering_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCoveringTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCoveringTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCoveringType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(12);
-        attributes.push_back(new entity::attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseWidth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("HeadWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("HeadDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("HeadDepth3", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseWidth4", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseDepth1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseDepth3", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(12);
+        attributes.push_back(new attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseWidth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("HeadWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("HeadDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("HeadDepth3", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseWidth4", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseDepth1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseDepth3", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(15);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCraneRailAShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(9);
-        attributes.push_back(new entity::attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("HeadWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("HeadDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("HeadDepth3", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseDepth1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BaseDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(9);
+        attributes.push_back(new attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("HeadWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("HeadDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("HeadDepth3", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseDepth1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BaseDepth2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCraneRailFShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCrewResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcCsgPrimitive3D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("TreeRootExpression", new named_type(IFC2X3_IfcCsgSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("TreeRootExpression", new named_type(IFC2X3_IfcCsgSelect_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcCsgSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("RelatingMonetaryUnit", new named_type(IFC2X3_IfcMonetaryUnit_type), false));
-        attributes.push_back(new entity::attribute("RelatedMonetaryUnit", new named_type(IFC2X3_IfcMonetaryUnit_type), false));
-        attributes.push_back(new entity::attribute("ExchangeRate", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), false));
-        attributes.push_back(new entity::attribute("RateDateTime", new named_type(IFC2X3_IfcDateAndTime_type), false));
-        attributes.push_back(new entity::attribute("RateSource", new named_type(IFC2X3_IfcLibraryInformation_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("RelatingMonetaryUnit", new named_type(IFC2X3_IfcMonetaryUnit_type), false));
+        attributes.push_back(new attribute("RelatedMonetaryUnit", new named_type(IFC2X3_IfcMonetaryUnit_type), false));
+        attributes.push_back(new attribute("ExchangeRate", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), false));
+        attributes.push_back(new attribute("RateDateTime", new named_type(IFC2X3_IfcDateAndTime_type), false));
+        attributes.push_back(new attribute("RateSource", new named_type(IFC2X3_IfcLibraryInformation_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurrencyRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurtainWall_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcCurtainWallTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcCurtainWallTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurtainWallType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("BasisSurface", new named_type(IFC2X3_IfcPlane_type), false));
-        attributes.push_back(new entity::attribute("OuterBoundary", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("InnerBoundaries", new aggregation_type(aggregation_type::set_type, 0, -1, new named_type(IFC2X3_IfcCurve_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("BasisSurface", new named_type(IFC2X3_IfcPlane_type), false));
+        attributes.push_back(new attribute("OuterBoundary", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("InnerBoundaries", new aggregation_type(aggregation_type::set_type, 0, -1, new named_type(IFC2X3_IfcCurve_type)), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurveBoundedPlane_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("CurveFont", new named_type(IFC2X3_IfcCurveFontOrScaledCurveFontSelect_type), true));
-        attributes.push_back(new entity::attribute("CurveWidth", new named_type(IFC2X3_IfcSizeSelect_type), true));
-        attributes.push_back(new entity::attribute("CurveColour", new named_type(IFC2X3_IfcColour_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("CurveFont", new named_type(IFC2X3_IfcCurveFontOrScaledCurveFontSelect_type), true));
+        attributes.push_back(new attribute("CurveWidth", new named_type(IFC2X3_IfcSizeSelect_type), true));
+        attributes.push_back(new attribute("CurveColour", new named_type(IFC2X3_IfcColour_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurveStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("PatternList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcCurveStyleFontPattern_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("PatternList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcCurveStyleFontPattern_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurveStyleFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("CurveFont", new named_type(IFC2X3_IfcCurveStyleFontSelect_type), false));
-        attributes.push_back(new entity::attribute("CurveFontScaling", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("CurveFont", new named_type(IFC2X3_IfcCurveStyleFontSelect_type), false));
+        attributes.push_back(new attribute("CurveFontScaling", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurveStyleFontAndScaling_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("VisibleSegmentLength", new named_type(IFC2X3_IfcLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("InvisibleSegmentLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("VisibleSegmentLength", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        attributes.push_back(new attribute("InvisibleSegmentLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcCurveStyleFontPattern_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcDamperTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcDamperTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDamperType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("DateComponent", new named_type(IFC2X3_IfcCalendarDate_type), false));
-        attributes.push_back(new entity::attribute("TimeComponent", new named_type(IFC2X3_IfcLocalTime_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("DateComponent", new named_type(IFC2X3_IfcCalendarDate_type), false));
+        attributes.push_back(new attribute("TimeComponent", new named_type(IFC2X3_IfcLocalTime_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDateAndTime_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Definition", new named_type(IFC2X3_IfcDefinedSymbolSelect_type), false));
-        attributes.push_back(new entity::attribute("Target", new named_type(IFC2X3_IfcCartesianTransformationOperator2D_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Definition", new named_type(IFC2X3_IfcDefinedSymbolSelect_type), false));
+        attributes.push_back(new attribute("Target", new named_type(IFC2X3_IfcCartesianTransformationOperator2D_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDefinedSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ParentProfile", new named_type(IFC2X3_IfcProfileDef_type), false));
-        attributes.push_back(new entity::attribute("Operator", new named_type(IFC2X3_IfcCartesianTransformationOperator2D_type), false));
-        attributes.push_back(new entity::attribute("Label", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ParentProfile", new named_type(IFC2X3_IfcProfileDef_type), false));
+        attributes.push_back(new attribute("Operator", new named_type(IFC2X3_IfcCartesianTransformationOperator2D_type), false));
+        attributes.push_back(new attribute("Label", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDerivedProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Elements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDerivedUnitElement_type)), false));
-        attributes.push_back(new entity::attribute("UnitType", new named_type(IFC2X3_IfcDerivedUnitEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Elements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDerivedUnitElement_type)), false));
+        attributes.push_back(new attribute("UnitType", new named_type(IFC2X3_IfcDerivedUnitEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDerivedUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcNamedUnit_type), false));
-        attributes.push_back(new entity::attribute("Exponent", new simple_type(simple_type::integer_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcNamedUnit_type), false));
+        attributes.push_back(new attribute("Exponent", new simple_type(simple_type::integer_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDerivedUnitElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDiameterDimension_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDimensionCalloutRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDimensionCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDimensionCurveDirectedCallout_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Role", new named_type(IFC2X3_IfcDimensionExtentUsage_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Role", new named_type(IFC2X3_IfcDimensionExtentUsage_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDimensionCurveTerminator_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDimensionPair_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("LengthExponent", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("MassExponent", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("TimeExponent", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("ElectricCurrentExponent", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("ThermodynamicTemperatureExponent", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("AmountOfSubstanceExponent", new simple_type(simple_type::integer_type), false));
-        attributes.push_back(new entity::attribute("LuminousIntensityExponent", new simple_type(simple_type::integer_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("LengthExponent", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("MassExponent", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("TimeExponent", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("ElectricCurrentExponent", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("ThermodynamicTemperatureExponent", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("AmountOfSubstanceExponent", new simple_type(simple_type::integer_type), false));
+        attributes.push_back(new attribute("LuminousIntensityExponent", new simple_type(simple_type::integer_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDimensionalExponents_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("DirectionRatios", new aggregation_type(aggregation_type::list_type, 2, 3, new simple_type(simple_type::real_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("DirectionRatios", new aggregation_type(aggregation_type::list_type, 2, 3, new simple_type(simple_type::real_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDirection_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDiscreteAccessory_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDiscreteAccessoryType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionChamberElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcDistributionChamberElementTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcDistributionChamberElementTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionChamberElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ControlElementId", new named_type(IFC2X3_IfcIdentifier_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ControlElementId", new named_type(IFC2X3_IfcIdentifier_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionControlElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionControlElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionFlowElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionFlowElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("FlowDirection", new named_type(IFC2X3_IfcFlowDirectionEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("FlowDirection", new named_type(IFC2X3_IfcFlowDirectionEnum_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDistributionPort_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("FileExtension", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("MimeContentType", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("MimeSubtype", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("FileExtension", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("MimeContentType", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("MimeSubtype", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDocumentElectronicFormat_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(17);
-        attributes.push_back(new entity::attribute("DocumentId", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("DocumentReferences", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDocumentReference_type)), true));
-        attributes.push_back(new entity::attribute("Purpose", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("IntendedUse", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Scope", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Revision", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("DocumentOwner", new named_type(IFC2X3_IfcActorSelect_type), true));
-        attributes.push_back(new entity::attribute("Editors", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcActorSelect_type)), true));
-        attributes.push_back(new entity::attribute("CreationTime", new named_type(IFC2X3_IfcDateAndTime_type), true));
-        attributes.push_back(new entity::attribute("LastRevisionTime", new named_type(IFC2X3_IfcDateAndTime_type), true));
-        attributes.push_back(new entity::attribute("ElectronicFormat", new named_type(IFC2X3_IfcDocumentElectronicFormat_type), true));
-        attributes.push_back(new entity::attribute("ValidFrom", new named_type(IFC2X3_IfcCalendarDate_type), true));
-        attributes.push_back(new entity::attribute("ValidUntil", new named_type(IFC2X3_IfcCalendarDate_type), true));
-        attributes.push_back(new entity::attribute("Confidentiality", new named_type(IFC2X3_IfcDocumentConfidentialityEnum_type), true));
-        attributes.push_back(new entity::attribute("Status", new named_type(IFC2X3_IfcDocumentStatusEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(17);
+        attributes.push_back(new attribute("DocumentId", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("DocumentReferences", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDocumentReference_type)), true));
+        attributes.push_back(new attribute("Purpose", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("IntendedUse", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Scope", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Revision", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("DocumentOwner", new named_type(IFC2X3_IfcActorSelect_type), true));
+        attributes.push_back(new attribute("Editors", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcActorSelect_type)), true));
+        attributes.push_back(new attribute("CreationTime", new named_type(IFC2X3_IfcDateAndTime_type), true));
+        attributes.push_back(new attribute("LastRevisionTime", new named_type(IFC2X3_IfcDateAndTime_type), true));
+        attributes.push_back(new attribute("ElectronicFormat", new named_type(IFC2X3_IfcDocumentElectronicFormat_type), true));
+        attributes.push_back(new attribute("ValidFrom", new named_type(IFC2X3_IfcCalendarDate_type), true));
+        attributes.push_back(new attribute("ValidUntil", new named_type(IFC2X3_IfcCalendarDate_type), true));
+        attributes.push_back(new attribute("Confidentiality", new named_type(IFC2X3_IfcDocumentConfidentialityEnum_type), true));
+        attributes.push_back(new attribute("Status", new named_type(IFC2X3_IfcDocumentStatusEnum_type), true));
         std::vector<bool> derived; derived.reserve(17);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDocumentInformation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("RelatingDocument", new named_type(IFC2X3_IfcDocumentInformation_type), false));
-        attributes.push_back(new entity::attribute("RelatedDocuments", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDocumentInformation_type)), false));
-        attributes.push_back(new entity::attribute("RelationshipType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("RelatingDocument", new named_type(IFC2X3_IfcDocumentInformation_type), false));
+        attributes.push_back(new attribute("RelatedDocuments", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDocumentInformation_type)), false));
+        attributes.push_back(new attribute("RelationshipType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDocumentInformationRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDocumentReference_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("OverallWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("OverallWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDoor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(11);
-        attributes.push_back(new entity::attribute("LiningDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("LiningThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThresholdDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThresholdThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("TransomThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("TransomOffset", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("LiningOffset", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThresholdOffset", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CasingThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CasingDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(11);
+        attributes.push_back(new attribute("LiningDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("LiningThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("ThresholdDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("ThresholdThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("TransomThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("TransomOffset", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("LiningOffset", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("ThresholdOffset", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("CasingThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("CasingDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
         std::vector<bool> derived; derived.reserve(15);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDoorLiningProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("PanelDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("PanelOperation", new named_type(IFC2X3_IfcDoorPanelOperationEnum_type), false));
-        attributes.push_back(new entity::attribute("PanelWidth", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("PanelPosition", new named_type(IFC2X3_IfcDoorPanelPositionEnum_type), false));
-        attributes.push_back(new entity::attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("PanelDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("PanelOperation", new named_type(IFC2X3_IfcDoorPanelOperationEnum_type), false));
+        attributes.push_back(new attribute("PanelWidth", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("PanelPosition", new named_type(IFC2X3_IfcDoorPanelPositionEnum_type), false));
+        attributes.push_back(new attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDoorPanelProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("OperationType", new named_type(IFC2X3_IfcDoorStyleOperationEnum_type), false));
-        attributes.push_back(new entity::attribute("ConstructionType", new named_type(IFC2X3_IfcDoorStyleConstructionEnum_type), false));
-        attributes.push_back(new entity::attribute("ParameterTakesPrecedence", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("Sizeable", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("OperationType", new named_type(IFC2X3_IfcDoorStyleOperationEnum_type), false));
+        attributes.push_back(new attribute("ConstructionType", new named_type(IFC2X3_IfcDoorStyleConstructionEnum_type), false));
+        attributes.push_back(new attribute("ParameterTakesPrecedence", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("Sizeable", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDoorStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Contents", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDraughtingCalloutElement_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Contents", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDraughtingCalloutElement_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDraughtingCallout_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("RelatingDraughtingCallout", new named_type(IFC2X3_IfcDraughtingCallout_type), false));
-        attributes.push_back(new entity::attribute("RelatedDraughtingCallout", new named_type(IFC2X3_IfcDraughtingCallout_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("RelatingDraughtingCallout", new named_type(IFC2X3_IfcDraughtingCallout_type), false));
+        attributes.push_back(new attribute("RelatedDraughtingCallout", new named_type(IFC2X3_IfcDraughtingCallout_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDraughtingCalloutRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDraughtingPreDefinedColour_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDraughtingPreDefinedCurveFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcDraughtingPreDefinedTextFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcDuctFittingTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcDuctFittingTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDuctFittingType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcDuctSegmentTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcDuctSegmentTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDuctSegmentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcDuctSilencerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcDuctSilencerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcDuctSilencerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("EdgeStart", new named_type(IFC2X3_IfcVertex_type), false));
-        attributes.push_back(new entity::attribute("EdgeEnd", new named_type(IFC2X3_IfcVertex_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("EdgeStart", new named_type(IFC2X3_IfcVertex_type), false));
+        attributes.push_back(new attribute("EdgeEnd", new named_type(IFC2X3_IfcVertex_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEdge_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("EdgeGeometry", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("SameSense", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("EdgeGeometry", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("SameSense", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEdgeCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("FeatureLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("FeatureLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEdgeFeature_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("EdgeList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcOrientedEdge_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("EdgeList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcOrientedEdge_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcEdgeLoop_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElectricApplianceTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElectricApplianceTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricApplianceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("DistributionPointFunction", new named_type(IFC2X3_IfcElectricDistributionPointFunctionEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedFunction", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("DistributionPointFunction", new named_type(IFC2X3_IfcElectricDistributionPointFunctionEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedFunction", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricDistributionPoint_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElectricFlowStorageDeviceTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElectricFlowStorageDeviceTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricFlowStorageDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElectricGeneratorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElectricGeneratorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricGeneratorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElectricHeaterTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElectricHeaterTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricHeaterType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElectricMotorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElectricMotorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricMotorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElectricTimeControlTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElectricTimeControlTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricTimeControlType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("ElectricCurrentType", new named_type(IFC2X3_IfcElectricCurrentEnum_type), true));
-        attributes.push_back(new entity::attribute("InputVoltage", new named_type(IFC2X3_IfcElectricVoltageMeasure_type), false));
-        attributes.push_back(new entity::attribute("InputFrequency", new named_type(IFC2X3_IfcFrequencyMeasure_type), false));
-        attributes.push_back(new entity::attribute("FullLoadCurrent", new named_type(IFC2X3_IfcElectricCurrentMeasure_type), true));
-        attributes.push_back(new entity::attribute("MinimumCircuitCurrent", new named_type(IFC2X3_IfcElectricCurrentMeasure_type), true));
-        attributes.push_back(new entity::attribute("MaximumPowerInput", new named_type(IFC2X3_IfcPowerMeasure_type), true));
-        attributes.push_back(new entity::attribute("RatedPowerInput", new named_type(IFC2X3_IfcPowerMeasure_type), true));
-        attributes.push_back(new entity::attribute("InputPhase", new simple_type(simple_type::integer_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("ElectricCurrentType", new named_type(IFC2X3_IfcElectricCurrentEnum_type), true));
+        attributes.push_back(new attribute("InputVoltage", new named_type(IFC2X3_IfcElectricVoltageMeasure_type), false));
+        attributes.push_back(new attribute("InputFrequency", new named_type(IFC2X3_IfcFrequencyMeasure_type), false));
+        attributes.push_back(new attribute("FullLoadCurrent", new named_type(IFC2X3_IfcElectricCurrentMeasure_type), true));
+        attributes.push_back(new attribute("MinimumCircuitCurrent", new named_type(IFC2X3_IfcElectricCurrentMeasure_type), true));
+        attributes.push_back(new attribute("MaximumPowerInput", new named_type(IFC2X3_IfcPowerMeasure_type), true));
+        attributes.push_back(new attribute("RatedPowerInput", new named_type(IFC2X3_IfcPowerMeasure_type), true));
+        attributes.push_back(new attribute("InputPhase", new simple_type(simple_type::integer_type), false));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricalBaseProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricalCircuit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElectricalElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Tag", new named_type(IFC2X3_IfcIdentifier_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Tag", new named_type(IFC2X3_IfcIdentifier_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("AssemblyPlace", new named_type(IFC2X3_IfcAssemblyPlaceEnum_type), true));
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcElementAssemblyTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("AssemblyPlace", new named_type(IFC2X3_IfcAssemblyPlaceEnum_type), true));
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcElementAssemblyTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElementAssembly_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElementComponent_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElementComponentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("MethodOfMeasurement", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Quantities", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPhysicalQuantity_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("MethodOfMeasurement", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Quantities", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPhysicalQuantity_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElementQuantity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ElementType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ElementType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcElementarySurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SemiAxis1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("SemiAxis2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SemiAxis1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("SemiAxis2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEllipse_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SemiAxis1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("SemiAxis2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SemiAxis1", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("SemiAxis2", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEllipseProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEnergyConversionDevice_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEnergyConversionDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("EnergySequence", new named_type(IFC2X3_IfcEnergySequenceEnum_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedEnergySequence", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("EnergySequence", new named_type(IFC2X3_IfcEnergySequenceEnum_type), true));
+        attributes.push_back(new attribute("UserDefinedEnergySequence", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEnergyProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ImpactType", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Category", new named_type(IFC2X3_IfcEnvironmentalImpactCategoryEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedCategory", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ImpactType", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Category", new named_type(IFC2X3_IfcEnvironmentalImpactCategoryEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedCategory", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEnvironmentalImpactValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEquipmentElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEquipmentStandard_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcEvaporativeCoolerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcEvaporativeCoolerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEvaporativeCoolerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcEvaporatorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcEvaporatorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcEvaporatorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ExtendedProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ExtendedProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExtendedMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Location", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ItemReference", new named_type(IFC2X3_IfcIdentifier_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Location", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ItemReference", new named_type(IFC2X3_IfcIdentifier_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExternalReference_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExternallyDefinedHatchStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExternallyDefinedSurfaceStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExternallyDefinedSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExternallyDefinedTextFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ExtrudedDirection", new named_type(IFC2X3_IfcDirection_type), false));
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ExtrudedDirection", new named_type(IFC2X3_IfcDirection_type), false));
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcExtrudedAreaSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Bounds", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFaceBound_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Bounds", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFaceBound_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcFace_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("FbsmFaces", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcConnectedFaceSet_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("FbsmFaces", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcConnectedFaceSet_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcFaceBasedSurfaceModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Bound", new named_type(IFC2X3_IfcLoop_type), false));
-        attributes.push_back(new entity::attribute("Orientation", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Bound", new named_type(IFC2X3_IfcLoop_type), false));
+        attributes.push_back(new attribute("Orientation", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFaceBound_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFaceOuterBound_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("FaceSurface", new named_type(IFC2X3_IfcSurface_type), false));
-        attributes.push_back(new entity::attribute("SameSense", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("FaceSurface", new named_type(IFC2X3_IfcSurface_type), false));
+        attributes.push_back(new attribute("SameSense", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFaceSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcFacetedBrep_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Voids", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClosedShell_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Voids", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClosedShell_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFacetedBrepWithVoids_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("TensionFailureX", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("TensionFailureY", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("TensionFailureZ", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("CompressionFailureX", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("CompressionFailureY", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("CompressionFailureZ", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("TensionFailureX", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("TensionFailureY", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("TensionFailureZ", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("CompressionFailureX", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("CompressionFailureY", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("CompressionFailureZ", new named_type(IFC2X3_IfcForceMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFailureConnectionCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcFanTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcFanTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFanType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFastener_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFastenerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFeatureElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFeatureElementAddition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFeatureElementSubtraction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("FillStyles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFillStyleSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("FillStyles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFillStyleSelect_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFillAreaStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("HatchLineAppearance", new named_type(IFC2X3_IfcCurveStyle_type), false));
-        attributes.push_back(new entity::attribute("StartOfNextHatchLine", new named_type(IFC2X3_IfcHatchLineDistanceSelect_type), false));
-        attributes.push_back(new entity::attribute("PointOfReferenceHatchLine", new named_type(IFC2X3_IfcCartesianPoint_type), true));
-        attributes.push_back(new entity::attribute("PatternStart", new named_type(IFC2X3_IfcCartesianPoint_type), true));
-        attributes.push_back(new entity::attribute("HatchLineAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("HatchLineAppearance", new named_type(IFC2X3_IfcCurveStyle_type), false));
+        attributes.push_back(new attribute("StartOfNextHatchLine", new named_type(IFC2X3_IfcHatchLineDistanceSelect_type), false));
+        attributes.push_back(new attribute("PointOfReferenceHatchLine", new named_type(IFC2X3_IfcCartesianPoint_type), true));
+        attributes.push_back(new attribute("PatternStart", new named_type(IFC2X3_IfcCartesianPoint_type), true));
+        attributes.push_back(new attribute("HatchLineAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFillAreaStyleHatching_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Symbol", new named_type(IFC2X3_IfcAnnotationSymbolOccurrence_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Symbol", new named_type(IFC2X3_IfcAnnotationSymbolOccurrence_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcFillAreaStyleTileSymbolWithStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("TilingPattern", new named_type(IFC2X3_IfcOneDirectionRepeatFactor_type), false));
-        attributes.push_back(new entity::attribute("Tiles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFillAreaStyleTileShapeSelect_type)), false));
-        attributes.push_back(new entity::attribute("TilingScale", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("TilingPattern", new named_type(IFC2X3_IfcOneDirectionRepeatFactor_type), false));
+        attributes.push_back(new attribute("Tiles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcFillAreaStyleTileShapeSelect_type)), false));
+        attributes.push_back(new attribute("TilingScale", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFillAreaStyleTiles_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcFilterTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcFilterTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFilterType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcFireSuppressionTerminalTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcFireSuppressionTerminalTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFireSuppressionTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowController_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowControllerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowFitting_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowFittingType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcFlowInstrumentTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcFlowInstrumentTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowInstrumentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcFlowMeterTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcFlowMeterTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowMeterType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowMovingDevice_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowMovingDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowSegment_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowSegmentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowStorageDevice_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowStorageDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowTerminal_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowTreatmentDevice_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFlowTreatmentDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(15);
-        attributes.push_back(new entity::attribute("PropertySource", new named_type(IFC2X3_IfcPropertySourceEnum_type), false));
-        attributes.push_back(new entity::attribute("FlowConditionTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("VelocityTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("FlowrateTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("Fluid", new named_type(IFC2X3_IfcMaterial_type), false));
-        attributes.push_back(new entity::attribute("PressureTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedPropertySource", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("TemperatureSingleValue", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("WetBulbTemperatureSingleValue", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("WetBulbTemperatureTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("TemperatureTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("FlowrateSingleValue", new named_type(IFC2X3_IfcDerivedMeasureValue_type), true));
-        attributes.push_back(new entity::attribute("FlowConditionSingleValue", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("VelocitySingleValue", new named_type(IFC2X3_IfcLinearVelocityMeasure_type), true));
-        attributes.push_back(new entity::attribute("PressureSingleValue", new named_type(IFC2X3_IfcPressureMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(15);
+        attributes.push_back(new attribute("PropertySource", new named_type(IFC2X3_IfcPropertySourceEnum_type), false));
+        attributes.push_back(new attribute("FlowConditionTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("VelocityTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("FlowrateTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("Fluid", new named_type(IFC2X3_IfcMaterial_type), false));
+        attributes.push_back(new attribute("PressureTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("UserDefinedPropertySource", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("TemperatureSingleValue", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("WetBulbTemperatureSingleValue", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("WetBulbTemperatureTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("TemperatureTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("FlowrateSingleValue", new named_type(IFC2X3_IfcDerivedMeasureValue_type), true));
+        attributes.push_back(new attribute("FlowConditionSingleValue", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("VelocitySingleValue", new named_type(IFC2X3_IfcLinearVelocityMeasure_type), true));
+        attributes.push_back(new attribute("PressureSingleValue", new named_type(IFC2X3_IfcPressureMeasure_type), true));
         std::vector<bool> derived; derived.reserve(19);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFluidFlowProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcFootingTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcFootingTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFooting_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("CombustionTemperature", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("CarbonContent", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("LowerHeatingValue", new named_type(IFC2X3_IfcHeatingValueMeasure_type), true));
-        attributes.push_back(new entity::attribute("HigherHeatingValue", new named_type(IFC2X3_IfcHeatingValueMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("CombustionTemperature", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("CarbonContent", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("LowerHeatingValue", new named_type(IFC2X3_IfcHeatingValueMeasure_type), true));
+        attributes.push_back(new attribute("HigherHeatingValue", new named_type(IFC2X3_IfcHeatingValueMeasure_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFuelProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFurnishingElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFurnishingElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFurnitureStandard_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("AssemblyPlace", new named_type(IFC2X3_IfcAssemblyPlaceEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("AssemblyPlace", new named_type(IFC2X3_IfcAssemblyPlaceEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcFurnitureType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcGasTerminalTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcGasTerminalTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGasTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("MolecularWeight", new named_type(IFC2X3_IfcMolecularWeightMeasure_type), true));
-        attributes.push_back(new entity::attribute("Porosity", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("MassDensity", new named_type(IFC2X3_IfcMassDensityMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("MolecularWeight", new named_type(IFC2X3_IfcMolecularWeightMeasure_type), true));
+        attributes.push_back(new attribute("Porosity", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("MassDensity", new named_type(IFC2X3_IfcMassDensityMeasure_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGeneralMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("PhysicalWeight", new named_type(IFC2X3_IfcMassPerLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("Perimeter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("MinimumPlateThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("MaximumPlateThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("PhysicalWeight", new named_type(IFC2X3_IfcMassPerLengthMeasure_type), true));
+        attributes.push_back(new attribute("Perimeter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("MinimumPlateThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("MaximumPlateThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("CrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGeneralProfileProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcGeometricCurveSet_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("CoordinateSpaceDimension", new named_type(IFC2X3_IfcDimensionCount_type), false));
-        attributes.push_back(new entity::attribute("Precision", new simple_type(simple_type::real_type), true));
-        attributes.push_back(new entity::attribute("WorldCoordinateSystem", new named_type(IFC2X3_IfcAxis2Placement_type), false));
-        attributes.push_back(new entity::attribute("TrueNorth", new named_type(IFC2X3_IfcDirection_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("CoordinateSpaceDimension", new named_type(IFC2X3_IfcDimensionCount_type), false));
+        attributes.push_back(new attribute("Precision", new simple_type(simple_type::real_type), true));
+        attributes.push_back(new attribute("WorldCoordinateSystem", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        attributes.push_back(new attribute("TrueNorth", new named_type(IFC2X3_IfcDirection_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGeometricRepresentationContext_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcGeometricRepresentationItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ParentContext", new named_type(IFC2X3_IfcGeometricRepresentationContext_type), false));
-        attributes.push_back(new entity::attribute("TargetScale", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("TargetView", new named_type(IFC2X3_IfcGeometricProjectionEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedTargetView", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ParentContext", new named_type(IFC2X3_IfcGeometricRepresentationContext_type), false));
+        attributes.push_back(new attribute("TargetScale", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("TargetView", new named_type(IFC2X3_IfcGeometricProjectionEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedTargetView", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(true); derived.push_back(true); derived.push_back(true); derived.push_back(true); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGeometricRepresentationSubContext_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Elements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcGeometricSetSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Elements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcGeometricSetSelect_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcGeometricSet_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("UAxes", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcGridAxis_type)), false));
-        attributes.push_back(new entity::attribute("VAxes", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcGridAxis_type)), false));
-        attributes.push_back(new entity::attribute("WAxes", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcGridAxis_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("UAxes", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcGridAxis_type)), false));
+        attributes.push_back(new attribute("VAxes", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcGridAxis_type)), false));
+        attributes.push_back(new attribute("WAxes", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcGridAxis_type)), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGrid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("AxisTag", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("AxisCurve", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("SameSense", new named_type(IFC2X3_IfcBoolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("AxisTag", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("AxisCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("SameSense", new named_type(IFC2X3_IfcBoolean_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGridAxis_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("PlacementLocation", new named_type(IFC2X3_IfcVirtualGridIntersection_type), false));
-        attributes.push_back(new entity::attribute("PlacementRefDirection", new named_type(IFC2X3_IfcVirtualGridIntersection_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("PlacementLocation", new named_type(IFC2X3_IfcVirtualGridIntersection_type), false));
+        attributes.push_back(new attribute("PlacementRefDirection", new named_type(IFC2X3_IfcVirtualGridIntersection_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGridPlacement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcGroup_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("BaseSurface", new named_type(IFC2X3_IfcSurface_type), false));
-        attributes.push_back(new entity::attribute("AgreementFlag", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("BaseSurface", new named_type(IFC2X3_IfcSurface_type), false));
+        attributes.push_back(new attribute("AgreementFlag", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcHalfSpaceSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcHeatExchangerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcHeatExchangerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcHeatExchangerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcHumidifierTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcHumidifierTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcHumidifierType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("UpperVaporResistanceFactor", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("LowerVaporResistanceFactor", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("IsothermalMoistureCapacity", new named_type(IFC2X3_IfcIsothermalMoistureCapacityMeasure_type), true));
-        attributes.push_back(new entity::attribute("VaporPermeability", new named_type(IFC2X3_IfcVaporPermeabilityMeasure_type), true));
-        attributes.push_back(new entity::attribute("MoistureDiffusivity", new named_type(IFC2X3_IfcMoistureDiffusivityMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("UpperVaporResistanceFactor", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("LowerVaporResistanceFactor", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("IsothermalMoistureCapacity", new named_type(IFC2X3_IfcIsothermalMoistureCapacityMeasure_type), true));
+        attributes.push_back(new attribute("VaporPermeability", new named_type(IFC2X3_IfcVaporPermeabilityMeasure_type), true));
+        attributes.push_back(new attribute("MoistureDiffusivity", new named_type(IFC2X3_IfcMoistureDiffusivityMeasure_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcHygroscopicMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("OverallWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("OverallDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("OverallWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("OverallDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcIShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("UrlReference", new named_type(IFC2X3_IfcIdentifier_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("UrlReference", new named_type(IFC2X3_IfcIdentifier_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcImageTexture_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("InventoryType", new named_type(IFC2X3_IfcInventoryTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("Jurisdiction", new named_type(IFC2X3_IfcActorSelect_type), false));
-        attributes.push_back(new entity::attribute("ResponsiblePersons", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPerson_type)), false));
-        attributes.push_back(new entity::attribute("LastUpdateDate", new named_type(IFC2X3_IfcCalendarDate_type), false));
-        attributes.push_back(new entity::attribute("CurrentValue", new named_type(IFC2X3_IfcCostValue_type), true));
-        attributes.push_back(new entity::attribute("OriginalValue", new named_type(IFC2X3_IfcCostValue_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("InventoryType", new named_type(IFC2X3_IfcInventoryTypeEnum_type), false));
+        attributes.push_back(new attribute("Jurisdiction", new named_type(IFC2X3_IfcActorSelect_type), false));
+        attributes.push_back(new attribute("ResponsiblePersons", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPerson_type)), false));
+        attributes.push_back(new attribute("LastUpdateDate", new named_type(IFC2X3_IfcCalendarDate_type), false));
+        attributes.push_back(new attribute("CurrentValue", new named_type(IFC2X3_IfcCostValue_type), true));
+        attributes.push_back(new attribute("OriginalValue", new named_type(IFC2X3_IfcCostValue_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcInventory_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Values", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcIrregularTimeSeriesValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Values", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcIrregularTimeSeriesValue_type)), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcIrregularTimeSeries_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("TimeStamp", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
-        attributes.push_back(new entity::attribute("ListValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("TimeStamp", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        attributes.push_back(new attribute("ListValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcIrregularTimeSeriesValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcJunctionBoxTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcJunctionBoxTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcJunctionBoxType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Width", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("EdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("LegSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Width", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("EdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("LegSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("SkillSet", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("SkillSet", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLaborResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcLampTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcLampTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLampType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Version", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Publisher", new named_type(IFC2X3_IfcOrganization_type), true));
-        attributes.push_back(new entity::attribute("VersionDate", new named_type(IFC2X3_IfcCalendarDate_type), true));
-        attributes.push_back(new entity::attribute("LibraryReference", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcLibraryReference_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Version", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Publisher", new named_type(IFC2X3_IfcOrganization_type), true));
+        attributes.push_back(new attribute("VersionDate", new named_type(IFC2X3_IfcCalendarDate_type), true));
+        attributes.push_back(new attribute("LibraryReference", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcLibraryReference_type)), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLibraryInformation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLibraryReference_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("MainPlaneAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), false));
-        attributes.push_back(new entity::attribute("SecondaryPlaneAngle", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcPlaneAngleMeasure_type)), false));
-        attributes.push_back(new entity::attribute("LuminousIntensity", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLuminousIntensityDistributionMeasure_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("MainPlaneAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), false));
+        attributes.push_back(new attribute("SecondaryPlaneAngle", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcPlaneAngleMeasure_type)), false));
+        attributes.push_back(new attribute("LuminousIntensity", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLuminousIntensityDistributionMeasure_type)), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightDistributionData_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcLightFixtureTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcLightFixtureTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightFixtureType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("LightDistributionCurve", new named_type(IFC2X3_IfcLightDistributionCurveEnum_type), false));
-        attributes.push_back(new entity::attribute("DistributionData", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLightDistributionData_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("LightDistributionCurve", new named_type(IFC2X3_IfcLightDistributionCurveEnum_type), false));
+        attributes.push_back(new attribute("DistributionData", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLightDistributionData_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightIntensityDistribution_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("LightColour", new named_type(IFC2X3_IfcColourRgb_type), false));
-        attributes.push_back(new entity::attribute("AmbientIntensity", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("Intensity", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("LightColour", new named_type(IFC2X3_IfcColourRgb_type), false));
+        attributes.push_back(new attribute("AmbientIntensity", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("Intensity", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightSource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightSourceAmbient_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Orientation", new named_type(IFC2X3_IfcDirection_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Orientation", new named_type(IFC2X3_IfcDirection_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightSourceDirectional_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
-        attributes.push_back(new entity::attribute("ColourAppearance", new named_type(IFC2X3_IfcColourRgb_type), true));
-        attributes.push_back(new entity::attribute("ColourTemperature", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), false));
-        attributes.push_back(new entity::attribute("LuminousFlux", new named_type(IFC2X3_IfcLuminousFluxMeasure_type), false));
-        attributes.push_back(new entity::attribute("LightEmissionSource", new named_type(IFC2X3_IfcLightEmissionSourceEnum_type), false));
-        attributes.push_back(new entity::attribute("LightDistributionDataSource", new named_type(IFC2X3_IfcLightDistributionDataSourceSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
+        attributes.push_back(new attribute("ColourAppearance", new named_type(IFC2X3_IfcColourRgb_type), true));
+        attributes.push_back(new attribute("ColourTemperature", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), false));
+        attributes.push_back(new attribute("LuminousFlux", new named_type(IFC2X3_IfcLuminousFluxMeasure_type), false));
+        attributes.push_back(new attribute("LightEmissionSource", new named_type(IFC2X3_IfcLightEmissionSourceEnum_type), false));
+        attributes.push_back(new attribute("LightDistributionDataSource", new named_type(IFC2X3_IfcLightDistributionDataSourceSelect_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightSourceGoniometric_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcCartesianPoint_type), false));
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("ConstantAttenuation", new named_type(IFC2X3_IfcReal_type), false));
-        attributes.push_back(new entity::attribute("DistanceAttenuation", new named_type(IFC2X3_IfcReal_type), false));
-        attributes.push_back(new entity::attribute("QuadricAttenuation", new named_type(IFC2X3_IfcReal_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcCartesianPoint_type), false));
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("ConstantAttenuation", new named_type(IFC2X3_IfcReal_type), false));
+        attributes.push_back(new attribute("DistanceAttenuation", new named_type(IFC2X3_IfcReal_type), false));
+        attributes.push_back(new attribute("QuadricAttenuation", new named_type(IFC2X3_IfcReal_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightSourcePositional_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Orientation", new named_type(IFC2X3_IfcDirection_type), false));
-        attributes.push_back(new entity::attribute("ConcentrationExponent", new named_type(IFC2X3_IfcReal_type), true));
-        attributes.push_back(new entity::attribute("SpreadAngle", new named_type(IFC2X3_IfcPositivePlaneAngleMeasure_type), false));
-        attributes.push_back(new entity::attribute("BeamWidthAngle", new named_type(IFC2X3_IfcPositivePlaneAngleMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Orientation", new named_type(IFC2X3_IfcDirection_type), false));
+        attributes.push_back(new attribute("ConcentrationExponent", new named_type(IFC2X3_IfcReal_type), true));
+        attributes.push_back(new attribute("SpreadAngle", new named_type(IFC2X3_IfcPositivePlaneAngleMeasure_type), false));
+        attributes.push_back(new attribute("BeamWidthAngle", new named_type(IFC2X3_IfcPositivePlaneAngleMeasure_type), false));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLightSourceSpot_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Pnt", new named_type(IFC2X3_IfcCartesianPoint_type), false));
-        attributes.push_back(new entity::attribute("Dir", new named_type(IFC2X3_IfcVector_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Pnt", new named_type(IFC2X3_IfcCartesianPoint_type), false));
+        attributes.push_back(new attribute("Dir", new named_type(IFC2X3_IfcVector_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLine_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcLinearDimension_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("PlacementRelTo", new named_type(IFC2X3_IfcObjectPlacement_type), true));
-        attributes.push_back(new entity::attribute("RelativePlacement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("PlacementRelTo", new named_type(IFC2X3_IfcObjectPlacement_type), true));
+        attributes.push_back(new attribute("RelativePlacement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLocalPlacement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("HourComponent", new named_type(IFC2X3_IfcHourInDay_type), false));
-        attributes.push_back(new entity::attribute("MinuteComponent", new named_type(IFC2X3_IfcMinuteInHour_type), true));
-        attributes.push_back(new entity::attribute("SecondComponent", new named_type(IFC2X3_IfcSecondInMinute_type), true));
-        attributes.push_back(new entity::attribute("Zone", new named_type(IFC2X3_IfcCoordinatedUniversalTimeOffset_type), true));
-        attributes.push_back(new entity::attribute("DaylightSavingOffset", new named_type(IFC2X3_IfcDaylightSavingHour_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("HourComponent", new named_type(IFC2X3_IfcHourInDay_type), false));
+        attributes.push_back(new attribute("MinuteComponent", new named_type(IFC2X3_IfcMinuteInHour_type), true));
+        attributes.push_back(new attribute("SecondComponent", new named_type(IFC2X3_IfcSecondInMinute_type), true));
+        attributes.push_back(new attribute("Zone", new named_type(IFC2X3_IfcCoordinatedUniversalTimeOffset_type), true));
+        attributes.push_back(new attribute("DaylightSavingOffset", new named_type(IFC2X3_IfcDaylightSavingHour_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcLocalTime_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcLoop_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Outer", new named_type(IFC2X3_IfcClosedShell_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Outer", new named_type(IFC2X3_IfcClosedShell_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcManifoldSolidBrep_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("MappingSource", new named_type(IFC2X3_IfcRepresentationMap_type), false));
-        attributes.push_back(new entity::attribute("MappingTarget", new named_type(IFC2X3_IfcCartesianTransformationOperator_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("MappingSource", new named_type(IFC2X3_IfcRepresentationMap_type), false));
+        attributes.push_back(new attribute("MappingTarget", new named_type(IFC2X3_IfcCartesianTransformationOperator_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMappedItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcMaterial_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("MaterialClassifications", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationNotationSelect_type)), false));
-        attributes.push_back(new entity::attribute("ClassifiedMaterial", new named_type(IFC2X3_IfcMaterial_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("MaterialClassifications", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcClassificationNotationSelect_type)), false));
+        attributes.push_back(new attribute("ClassifiedMaterial", new named_type(IFC2X3_IfcMaterial_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMaterialClassificationRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RepresentedMaterial", new named_type(IFC2X3_IfcMaterial_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RepresentedMaterial", new named_type(IFC2X3_IfcMaterial_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMaterialDefinitionRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Material", new named_type(IFC2X3_IfcMaterial_type), true));
-        attributes.push_back(new entity::attribute("LayerThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("IsVentilated", new named_type(IFC2X3_IfcLogical_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Material", new named_type(IFC2X3_IfcMaterial_type), true));
+        attributes.push_back(new attribute("LayerThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("IsVentilated", new named_type(IFC2X3_IfcLogical_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMaterialLayer_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("MaterialLayers", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcMaterialLayer_type)), false));
-        attributes.push_back(new entity::attribute("LayerSetName", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("MaterialLayers", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcMaterialLayer_type)), false));
+        attributes.push_back(new attribute("LayerSetName", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMaterialLayerSet_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ForLayerSet", new named_type(IFC2X3_IfcMaterialLayerSet_type), false));
-        attributes.push_back(new entity::attribute("LayerSetDirection", new named_type(IFC2X3_IfcLayerSetDirectionEnum_type), false));
-        attributes.push_back(new entity::attribute("DirectionSense", new named_type(IFC2X3_IfcDirectionSenseEnum_type), false));
-        attributes.push_back(new entity::attribute("OffsetFromReferenceLine", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ForLayerSet", new named_type(IFC2X3_IfcMaterialLayerSet_type), false));
+        attributes.push_back(new attribute("LayerSetDirection", new named_type(IFC2X3_IfcLayerSetDirectionEnum_type), false));
+        attributes.push_back(new attribute("DirectionSense", new named_type(IFC2X3_IfcDirectionSenseEnum_type), false));
+        attributes.push_back(new attribute("OffsetFromReferenceLine", new named_type(IFC2X3_IfcLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMaterialLayerSetUsage_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Materials", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcMaterial_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Materials", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcMaterial_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcMaterialList_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Material", new named_type(IFC2X3_IfcMaterial_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Material", new named_type(IFC2X3_IfcMaterial_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ValueComponent", new named_type(IFC2X3_IfcValue_type), false));
-        attributes.push_back(new entity::attribute("UnitComponent", new named_type(IFC2X3_IfcUnit_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ValueComponent", new named_type(IFC2X3_IfcValue_type), false));
+        attributes.push_back(new attribute("UnitComponent", new named_type(IFC2X3_IfcUnit_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMeasureWithUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("CompressiveStrength", new named_type(IFC2X3_IfcPressureMeasure_type), true));
-        attributes.push_back(new entity::attribute("MaxAggregateSize", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("AdmixturesDescription", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Workability", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("ProtectivePoreRatio", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("WaterImpermeability", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("CompressiveStrength", new named_type(IFC2X3_IfcPressureMeasure_type), true));
+        attributes.push_back(new attribute("MaxAggregateSize", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("AdmixturesDescription", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Workability", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("ProtectivePoreRatio", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("WaterImpermeability", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMechanicalConcreteMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("NominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("NominalLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("NominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("NominalLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMechanicalFastener_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMechanicalFastenerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("DynamicViscosity", new named_type(IFC2X3_IfcDynamicViscosityMeasure_type), true));
-        attributes.push_back(new entity::attribute("YoungModulus", new named_type(IFC2X3_IfcModulusOfElasticityMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShearModulus", new named_type(IFC2X3_IfcModulusOfElasticityMeasure_type), true));
-        attributes.push_back(new entity::attribute("PoissonRatio", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalExpansionCoefficient", new named_type(IFC2X3_IfcThermalExpansionCoefficientMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("DynamicViscosity", new named_type(IFC2X3_IfcDynamicViscosityMeasure_type), true));
+        attributes.push_back(new attribute("YoungModulus", new named_type(IFC2X3_IfcModulusOfElasticityMeasure_type), true));
+        attributes.push_back(new attribute("ShearModulus", new named_type(IFC2X3_IfcModulusOfElasticityMeasure_type), true));
+        attributes.push_back(new attribute("PoissonRatio", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("ThermalExpansionCoefficient", new named_type(IFC2X3_IfcThermalExpansionCoefficientMeasure_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMechanicalMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("YieldStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
-        attributes.push_back(new entity::attribute("UltimateStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
-        attributes.push_back(new entity::attribute("UltimateStrain", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("HardeningModule", new named_type(IFC2X3_IfcModulusOfElasticityMeasure_type), true));
-        attributes.push_back(new entity::attribute("ProportionalStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
-        attributes.push_back(new entity::attribute("PlasticStrain", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("Relaxations", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRelaxation_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("YieldStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
+        attributes.push_back(new attribute("UltimateStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
+        attributes.push_back(new attribute("UltimateStrain", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("HardeningModule", new named_type(IFC2X3_IfcModulusOfElasticityMeasure_type), true));
+        attributes.push_back(new attribute("ProportionalStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
+        attributes.push_back(new attribute("PlasticStrain", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("Relaxations", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRelaxation_type)), true));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMechanicalSteelMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMember_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcMemberTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcMemberTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMemberType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Benchmark", new named_type(IFC2X3_IfcBenchmarkEnum_type), false));
-        attributes.push_back(new entity::attribute("ValueSource", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("DataValue", new named_type(IFC2X3_IfcMetricValueSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Benchmark", new named_type(IFC2X3_IfcBenchmarkEnum_type), false));
+        attributes.push_back(new attribute("ValueSource", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("DataValue", new named_type(IFC2X3_IfcMetricValueSelect_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMetric_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Currency", new named_type(IFC2X3_IfcCurrencyEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Currency", new named_type(IFC2X3_IfcCurrencyEnum_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcMonetaryUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcMotorConnectionTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcMotorConnectionTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMotorConnectionType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("MoveFrom", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
-        attributes.push_back(new entity::attribute("MoveTo", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
-        attributes.push_back(new entity::attribute("PunchList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcText_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("MoveFrom", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
+        attributes.push_back(new attribute("MoveTo", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
+        attributes.push_back(new attribute("PunchList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcText_type)), true));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcMove_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Dimensions", new named_type(IFC2X3_IfcDimensionalExponents_type), false));
-        attributes.push_back(new entity::attribute("UnitType", new named_type(IFC2X3_IfcUnitEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Dimensions", new named_type(IFC2X3_IfcDimensionalExponents_type), false));
+        attributes.push_back(new attribute("UnitType", new named_type(IFC2X3_IfcUnitEnum_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcNamedUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ObjectType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ObjectType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcObject_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcObjectDefinition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcObjectPlacement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("BenchmarkValues", new named_type(IFC2X3_IfcMetric_type), true));
-        attributes.push_back(new entity::attribute("ResultValues", new named_type(IFC2X3_IfcMetric_type), true));
-        attributes.push_back(new entity::attribute("ObjectiveQualifier", new named_type(IFC2X3_IfcObjectiveEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedQualifier", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("BenchmarkValues", new named_type(IFC2X3_IfcMetric_type), true));
+        attributes.push_back(new attribute("ResultValues", new named_type(IFC2X3_IfcMetric_type), true));
+        attributes.push_back(new attribute("ObjectiveQualifier", new named_type(IFC2X3_IfcObjectiveEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedQualifier", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcObjective_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcOccupantTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcOccupantTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOccupant_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("Distance", new named_type(IFC2X3_IfcLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("Distance", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        attributes.push_back(new attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOffsetCurve2D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("Distance", new named_type(IFC2X3_IfcLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
-        attributes.push_back(new entity::attribute("RefDirection", new named_type(IFC2X3_IfcDirection_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("Distance", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        attributes.push_back(new attribute("SelfIntersect", new simple_type(simple_type::logical_type), false));
+        attributes.push_back(new attribute("RefDirection", new named_type(IFC2X3_IfcDirection_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOffsetCurve3D_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RepeatFactor", new named_type(IFC2X3_IfcVector_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RepeatFactor", new named_type(IFC2X3_IfcVector_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcOneDirectionRepeatFactor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcOpenShell_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOpeningElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(9);
-        attributes.push_back(new entity::attribute("VisibleTransmittance", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("SolarTransmittance", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalIrTransmittance", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalIrEmissivityBack", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalIrEmissivityFront", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("VisibleReflectanceBack", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("VisibleReflectanceFront", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("SolarReflectanceFront", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("SolarReflectanceBack", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(9);
+        attributes.push_back(new attribute("VisibleTransmittance", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("SolarTransmittance", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("ThermalIrTransmittance", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("ThermalIrEmissivityBack", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("ThermalIrEmissivityFront", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("VisibleReflectanceBack", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("VisibleReflectanceFront", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("SolarReflectanceFront", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("SolarReflectanceBack", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOpticalMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ActionID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ActionID", new named_type(IFC2X3_IfcIdentifier_type), false));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOrderAction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Id", new named_type(IFC2X3_IfcIdentifier_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Roles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcActorRole_type)), true));
-        attributes.push_back(new entity::attribute("Addresses", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcAddress_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Id", new named_type(IFC2X3_IfcIdentifier_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Roles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcActorRole_type)), true));
+        attributes.push_back(new attribute("Addresses", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcAddress_type)), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOrganization_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("RelatingOrganization", new named_type(IFC2X3_IfcOrganization_type), false));
-        attributes.push_back(new entity::attribute("RelatedOrganizations", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcOrganization_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("RelatingOrganization", new named_type(IFC2X3_IfcOrganization_type), false));
+        attributes.push_back(new attribute("RelatedOrganizations", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcOrganization_type)), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOrganizationRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("EdgeElement", new named_type(IFC2X3_IfcEdge_type), false));
-        attributes.push_back(new entity::attribute("Orientation", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("EdgeElement", new named_type(IFC2X3_IfcEdge_type), false));
+        attributes.push_back(new attribute("Orientation", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(true); derived.push_back(true); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOrientedEdge_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcOutletTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcOutletTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOutletType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("OwningUser", new named_type(IFC2X3_IfcPersonAndOrganization_type), false));
-        attributes.push_back(new entity::attribute("OwningApplication", new named_type(IFC2X3_IfcApplication_type), false));
-        attributes.push_back(new entity::attribute("State", new named_type(IFC2X3_IfcStateEnum_type), true));
-        attributes.push_back(new entity::attribute("ChangeAction", new named_type(IFC2X3_IfcChangeActionEnum_type), false));
-        attributes.push_back(new entity::attribute("LastModifiedDate", new named_type(IFC2X3_IfcTimeStamp_type), true));
-        attributes.push_back(new entity::attribute("LastModifyingUser", new named_type(IFC2X3_IfcPersonAndOrganization_type), true));
-        attributes.push_back(new entity::attribute("LastModifyingApplication", new named_type(IFC2X3_IfcApplication_type), true));
-        attributes.push_back(new entity::attribute("CreationDate", new named_type(IFC2X3_IfcTimeStamp_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("OwningUser", new named_type(IFC2X3_IfcPersonAndOrganization_type), false));
+        attributes.push_back(new attribute("OwningApplication", new named_type(IFC2X3_IfcApplication_type), false));
+        attributes.push_back(new attribute("State", new named_type(IFC2X3_IfcStateEnum_type), true));
+        attributes.push_back(new attribute("ChangeAction", new named_type(IFC2X3_IfcChangeActionEnum_type), false));
+        attributes.push_back(new attribute("LastModifiedDate", new named_type(IFC2X3_IfcTimeStamp_type), true));
+        attributes.push_back(new attribute("LastModifyingUser", new named_type(IFC2X3_IfcPersonAndOrganization_type), true));
+        attributes.push_back(new attribute("LastModifyingApplication", new named_type(IFC2X3_IfcApplication_type), true));
+        attributes.push_back(new attribute("CreationDate", new named_type(IFC2X3_IfcTimeStamp_type), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcOwnerHistory_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement2D_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement2D_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcParameterizedProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("EdgeList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcOrientedEdge_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("EdgeList", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcOrientedEdge_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPath_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("LifeCyclePhase", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("LifeCyclePhase", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPerformanceHistory_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("OperationType", new named_type(IFC2X3_IfcPermeableCoveringOperationEnum_type), false));
-        attributes.push_back(new entity::attribute("PanelPosition", new named_type(IFC2X3_IfcWindowPanelPositionEnum_type), false));
-        attributes.push_back(new entity::attribute("FrameDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("FrameThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("OperationType", new named_type(IFC2X3_IfcPermeableCoveringOperationEnum_type), false));
+        attributes.push_back(new attribute("PanelPosition", new named_type(IFC2X3_IfcWindowPanelPositionEnum_type), false));
+        attributes.push_back(new attribute("FrameDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("FrameThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPermeableCoveringProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PermitID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PermitID", new named_type(IFC2X3_IfcIdentifier_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPermit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("Id", new named_type(IFC2X3_IfcIdentifier_type), true));
-        attributes.push_back(new entity::attribute("FamilyName", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("GivenName", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("MiddleNames", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("PrefixTitles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("SuffixTitles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("Roles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcActorRole_type)), true));
-        attributes.push_back(new entity::attribute("Addresses", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcAddress_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("Id", new named_type(IFC2X3_IfcIdentifier_type), true));
+        attributes.push_back(new attribute("FamilyName", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("GivenName", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("MiddleNames", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("PrefixTitles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("SuffixTitles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("Roles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcActorRole_type)), true));
+        attributes.push_back(new attribute("Addresses", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcAddress_type)), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPerson_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ThePerson", new named_type(IFC2X3_IfcPerson_type), false));
-        attributes.push_back(new entity::attribute("TheOrganization", new named_type(IFC2X3_IfcOrganization_type), false));
-        attributes.push_back(new entity::attribute("Roles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcActorRole_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ThePerson", new named_type(IFC2X3_IfcPerson_type), false));
+        attributes.push_back(new attribute("TheOrganization", new named_type(IFC2X3_IfcOrganization_type), false));
+        attributes.push_back(new attribute("Roles", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcActorRole_type)), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPersonAndOrganization_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("HasQuantities", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPhysicalQuantity_type)), false));
-        attributes.push_back(new entity::attribute("Discrimination", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Quality", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Usage", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("HasQuantities", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPhysicalQuantity_type)), false));
+        attributes.push_back(new attribute("Discrimination", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Quality", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Usage", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPhysicalComplexQuantity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPhysicalQuantity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcNamedUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcNamedUnit_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPhysicalSimpleQuantity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcPileTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("ConstructionType", new named_type(IFC2X3_IfcPileConstructionEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcPileTypeEnum_type), false));
+        attributes.push_back(new attribute("ConstructionType", new named_type(IFC2X3_IfcPileConstructionEnum_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPile_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcPipeFittingTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcPipeFittingTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPipeFittingType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcPipeSegmentTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcPipeSegmentTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPipeSegmentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Width", new named_type(IFC2X3_IfcInteger_type), false));
-        attributes.push_back(new entity::attribute("Height", new named_type(IFC2X3_IfcInteger_type), false));
-        attributes.push_back(new entity::attribute("ColourComponents", new named_type(IFC2X3_IfcInteger_type), false));
-        attributes.push_back(new entity::attribute("Pixel", new aggregation_type(aggregation_type::list_type, 1, -1, new simple_type(simple_type::binary_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Width", new named_type(IFC2X3_IfcInteger_type), false));
+        attributes.push_back(new attribute("Height", new named_type(IFC2X3_IfcInteger_type), false));
+        attributes.push_back(new attribute("ColourComponents", new named_type(IFC2X3_IfcInteger_type), false));
+        attributes.push_back(new attribute("Pixel", new aggregation_type(aggregation_type::list_type, 1, -1, new simple_type(simple_type::binary_type)), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPixelTexture_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Location", new named_type(IFC2X3_IfcCartesianPoint_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Location", new named_type(IFC2X3_IfcCartesianPoint_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPlacement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Placement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Placement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPlanarBox_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SizeInX", new named_type(IFC2X3_IfcLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("SizeInY", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SizeInX", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        attributes.push_back(new attribute("SizeInY", new named_type(IFC2X3_IfcLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPlanarExtent_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPlane_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPlate_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcPlateTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcPlateTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPlateType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcPoint_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("PointParameter", new named_type(IFC2X3_IfcParameterValue_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("PointParameter", new named_type(IFC2X3_IfcParameterValue_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPointOnCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("BasisSurface", new named_type(IFC2X3_IfcSurface_type), false));
-        attributes.push_back(new entity::attribute("PointParameterU", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("PointParameterV", new named_type(IFC2X3_IfcParameterValue_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("BasisSurface", new named_type(IFC2X3_IfcSurface_type), false));
+        attributes.push_back(new attribute("PointParameterU", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("PointParameterV", new named_type(IFC2X3_IfcParameterValue_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPointOnSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Polygon", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Polygon", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPolyLoop_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
-        attributes.push_back(new entity::attribute("PolygonalBoundary", new named_type(IFC2X3_IfcBoundedCurve_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
+        attributes.push_back(new attribute("PolygonalBoundary", new named_type(IFC2X3_IfcBoundedCurve_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPolygonalBoundedHalfSpace_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Points", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Points", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPolyline_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPort_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("InternalLocation", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("AddressLines", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("PostalBox", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Town", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Region", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("PostalCode", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Country", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("InternalLocation", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("AddressLines", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("PostalBox", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Town", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Region", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("PostalCode", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Country", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPostalAddress_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedColour_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedCurveFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedDimensionSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedPointMarkerSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedTerminatorSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPreDefinedTextFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("AssignedItems", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcLayeredItem_type)), false));
-        attributes.push_back(new entity::attribute("Identifier", new named_type(IFC2X3_IfcIdentifier_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("AssignedItems", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcLayeredItem_type)), false));
+        attributes.push_back(new attribute("Identifier", new named_type(IFC2X3_IfcIdentifier_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPresentationLayerAssignment_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("LayerOn", new simple_type(simple_type::logical_type), false));
-        attributes.push_back(new entity::attribute("LayerFrozen", new simple_type(simple_type::logical_type), false));
-        attributes.push_back(new entity::attribute("LayerBlocked", new simple_type(simple_type::logical_type), false));
-        attributes.push_back(new entity::attribute("LayerStyles", new aggregation_type(aggregation_type::set_type, 0, -1, new named_type(IFC2X3_IfcPresentationStyleSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("LayerOn", new simple_type(simple_type::logical_type), false));
+        attributes.push_back(new attribute("LayerFrozen", new simple_type(simple_type::logical_type), false));
+        attributes.push_back(new attribute("LayerBlocked", new simple_type(simple_type::logical_type), false));
+        attributes.push_back(new attribute("LayerStyles", new aggregation_type(aggregation_type::set_type, 0, -1, new named_type(IFC2X3_IfcPresentationStyleSelect_type)), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPresentationLayerWithStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPresentationStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Styles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPresentationStyleSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Styles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPresentationStyleSelect_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcPresentationStyleAssignment_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ProcedureID", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("ProcedureType", new named_type(IFC2X3_IfcProcedureTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedProcedureType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ProcedureID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("ProcedureType", new named_type(IFC2X3_IfcProcedureTypeEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedProcedureType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProcedure_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProcess_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ObjectPlacement", new named_type(IFC2X3_IfcObjectPlacement_type), true));
-        attributes.push_back(new entity::attribute("Representation", new named_type(IFC2X3_IfcProductRepresentation_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ObjectPlacement", new named_type(IFC2X3_IfcObjectPlacement_type), true));
+        attributes.push_back(new attribute("Representation", new named_type(IFC2X3_IfcProductRepresentation_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProduct_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProductDefinitionShape_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Representations", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcRepresentation_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Representations", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcRepresentation_type)), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProductRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("SpecificHeatCapacity", new named_type(IFC2X3_IfcSpecificHeatCapacityMeasure_type), true));
-        attributes.push_back(new entity::attribute("N20Content", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("COContent", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("CO2Content", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("SpecificHeatCapacity", new named_type(IFC2X3_IfcSpecificHeatCapacityMeasure_type), true));
+        attributes.push_back(new attribute("N20Content", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("COContent", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("CO2Content", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProductsOfCombustionProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ProfileType", new named_type(IFC2X3_IfcProfileTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("ProfileName", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ProfileType", new named_type(IFC2X3_IfcProfileTypeEnum_type), false));
+        attributes.push_back(new attribute("ProfileName", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ProfileName", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ProfileDefinition", new named_type(IFC2X3_IfcProfileDef_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ProfileName", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ProfileDefinition", new named_type(IFC2X3_IfcProfileDef_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProfileProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("LongName", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Phase", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("RepresentationContexts", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRepresentationContext_type)), false));
-        attributes.push_back(new entity::attribute("UnitsInContext", new named_type(IFC2X3_IfcUnitAssignment_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("LongName", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Phase", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("RepresentationContexts", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRepresentationContext_type)), false));
+        attributes.push_back(new attribute("UnitsInContext", new named_type(IFC2X3_IfcUnitAssignment_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProject_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ID", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcProjectOrderTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("Status", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ID", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcProjectOrderTypeEnum_type), false));
+        attributes.push_back(new attribute("Status", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProjectOrder_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Records", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcRelAssignsToProjectOrder_type)), false));
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcProjectOrderRecordTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Records", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcRelAssignsToProjectOrder_type)), false));
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcProjectOrderRecordTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProjectOrderRecord_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProjectionCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProjectionElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProperty_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("UpperBoundValue", new named_type(IFC2X3_IfcValue_type), true));
-        attributes.push_back(new entity::attribute("LowerBoundValue", new named_type(IFC2X3_IfcValue_type), true));
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("UpperBoundValue", new named_type(IFC2X3_IfcValue_type), true));
+        attributes.push_back(new attribute("LowerBoundValue", new named_type(IFC2X3_IfcValue_type), true));
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyBoundedValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
-        attributes.push_back(new entity::attribute("RelatedProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
+        attributes.push_back(new attribute("RelatedProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyConstraintRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyDefinition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("DependingProperty", new named_type(IFC2X3_IfcProperty_type), false));
-        attributes.push_back(new entity::attribute("DependantProperty", new named_type(IFC2X3_IfcProperty_type), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("Expression", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("DependingProperty", new named_type(IFC2X3_IfcProperty_type), false));
+        attributes.push_back(new attribute("DependantProperty", new named_type(IFC2X3_IfcProperty_type), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("Expression", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyDependencyRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("EnumerationValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
-        attributes.push_back(new entity::attribute("EnumerationReference", new named_type(IFC2X3_IfcPropertyEnumeration_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("EnumerationValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        attributes.push_back(new attribute("EnumerationReference", new named_type(IFC2X3_IfcPropertyEnumeration_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyEnumeratedValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("EnumerationValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("EnumerationValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyEnumeration_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ListValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ListValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyListValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("UsageName", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("PropertyReference", new named_type(IFC2X3_IfcObjectReferenceSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("UsageName", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("PropertyReference", new named_type(IFC2X3_IfcObjectReferenceSelect_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyReferenceValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("HasProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("HasProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertySet_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertySetDefinition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("NominalValue", new named_type(IFC2X3_IfcValue_type), true));
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("NominalValue", new named_type(IFC2X3_IfcValue_type), true));
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertySingleValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("DefiningValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
-        attributes.push_back(new entity::attribute("DefinedValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
-        attributes.push_back(new entity::attribute("Expression", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("DefiningUnit", new named_type(IFC2X3_IfcUnit_type), true));
-        attributes.push_back(new entity::attribute("DefinedUnit", new named_type(IFC2X3_IfcUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("DefiningValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        attributes.push_back(new attribute("DefinedValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        attributes.push_back(new attribute("Expression", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("DefiningUnit", new named_type(IFC2X3_IfcUnit_type), true));
+        attributes.push_back(new attribute("DefinedUnit", new named_type(IFC2X3_IfcUnit_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPropertyTableValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcProtectiveDeviceTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcProtectiveDeviceTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProtectiveDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ProxyType", new named_type(IFC2X3_IfcObjectTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("Tag", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ProxyType", new named_type(IFC2X3_IfcObjectTypeEnum_type), false));
+        attributes.push_back(new attribute("Tag", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcProxy_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcPumpTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcPumpTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcPumpType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("AreaValue", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("AreaValue", new named_type(IFC2X3_IfcAreaMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcQuantityArea_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("CountValue", new named_type(IFC2X3_IfcCountMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("CountValue", new named_type(IFC2X3_IfcCountMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcQuantityCount_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("LengthValue", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("LengthValue", new named_type(IFC2X3_IfcLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcQuantityLength_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("TimeValue", new named_type(IFC2X3_IfcTimeMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("TimeValue", new named_type(IFC2X3_IfcTimeMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcQuantityTime_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("VolumeValue", new named_type(IFC2X3_IfcVolumeMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("VolumeValue", new named_type(IFC2X3_IfcVolumeMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcQuantityVolume_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("WeightValue", new named_type(IFC2X3_IfcMassMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("WeightValue", new named_type(IFC2X3_IfcMassMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcQuantityWeight_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcRadiusDimension_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcRailingTypeEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcRailingTypeEnum_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRailing_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcRailingTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcRailingTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRailingType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ShapeType", new named_type(IFC2X3_IfcRampTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ShapeType", new named_type(IFC2X3_IfcRampTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRamp_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRampFlight_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcRampFlightTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcRampFlightTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRampFlightType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("WeightsData", new aggregation_type(aggregation_type::list_type, 2, -1, new simple_type(simple_type::real_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("WeightsData", new aggregation_type(aggregation_type::list_type, 2, -1, new simple_type(simple_type::real_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRationalBezierCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("WallThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("InnerFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("OuterFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("WallThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("InnerFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("OuterFilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRectangleHollowProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("XDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("YDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("XDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("YDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRectangleProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("XLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("YLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("XLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("YLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRectangularPyramid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("BasisSurface", new named_type(IFC2X3_IfcSurface_type), false));
-        attributes.push_back(new entity::attribute("U1", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("V1", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("U2", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("V2", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("Usense", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("Vsense", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("BasisSurface", new named_type(IFC2X3_IfcSurface_type), false));
+        attributes.push_back(new attribute("U1", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("V1", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("U2", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("V2", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("Usense", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("Vsense", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRectangularTrimmedSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ReferencedDocument", new named_type(IFC2X3_IfcDocumentSelect_type), false));
-        attributes.push_back(new entity::attribute("ReferencingValues", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcAppliedValue_type)), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ReferencedDocument", new named_type(IFC2X3_IfcDocumentSelect_type), false));
+        attributes.push_back(new attribute("ReferencingValues", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcAppliedValue_type)), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcReferencesValueDocument_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("TimeStep", new named_type(IFC2X3_IfcTimeMeasure_type), false));
-        attributes.push_back(new entity::attribute("Values", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcTimeSeriesValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("TimeStep", new named_type(IFC2X3_IfcTimeMeasure_type), false));
+        attributes.push_back(new attribute("Values", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcTimeSeriesValue_type)), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRegularTimeSeries_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("TotalCrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
-        attributes.push_back(new entity::attribute("SteelGrade", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("BarSurface", new named_type(IFC2X3_IfcReinforcingBarSurfaceEnum_type), true));
-        attributes.push_back(new entity::attribute("EffectiveDepth", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("NominalBarDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("BarCount", new named_type(IFC2X3_IfcCountMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("TotalCrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        attributes.push_back(new attribute("SteelGrade", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("BarSurface", new named_type(IFC2X3_IfcReinforcingBarSurfaceEnum_type), true));
+        attributes.push_back(new attribute("EffectiveDepth", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("NominalBarDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("BarCount", new named_type(IFC2X3_IfcCountMeasure_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcReinforcementBarProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("DefinitionType", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ReinforcementSectionDefinitions", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcSectionReinforcementProperties_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("DefinitionType", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ReinforcementSectionDefinitions", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcSectionReinforcementProperties_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcReinforcementDefinitionProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("NominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("CrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
-        attributes.push_back(new entity::attribute("BarLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("BarRole", new named_type(IFC2X3_IfcReinforcingBarRoleEnum_type), false));
-        attributes.push_back(new entity::attribute("BarSurface", new named_type(IFC2X3_IfcReinforcingBarSurfaceEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("NominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("CrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        attributes.push_back(new attribute("BarLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("BarRole", new named_type(IFC2X3_IfcReinforcingBarRoleEnum_type), false));
+        attributes.push_back(new attribute("BarSurface", new named_type(IFC2X3_IfcReinforcingBarSurfaceEnum_type), true));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcReinforcingBar_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("SteelGrade", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("SteelGrade", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcReinforcingElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("MeshLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("MeshWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("LongitudinalBarNominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("TransverseBarNominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("LongitudinalBarCrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
-        attributes.push_back(new entity::attribute("TransverseBarCrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
-        attributes.push_back(new entity::attribute("LongitudinalBarSpacing", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("TransverseBarSpacing", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("MeshLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("MeshWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("LongitudinalBarNominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("TransverseBarNominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("LongitudinalBarCrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        attributes.push_back(new attribute("TransverseBarCrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        attributes.push_back(new attribute("LongitudinalBarSpacing", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("TransverseBarSpacing", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(17);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcReinforcingMesh_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAggregates_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcObjectDefinition_type)), false));
-        attributes.push_back(new entity::attribute("RelatedObjectsType", new named_type(IFC2X3_IfcObjectTypeEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcObjectDefinition_type)), false));
+        attributes.push_back(new attribute("RelatedObjectsType", new named_type(IFC2X3_IfcObjectTypeEnum_type), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssigns_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("TimeForTask", new named_type(IFC2X3_IfcScheduleTimeControl_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("TimeForTask", new named_type(IFC2X3_IfcScheduleTimeControl_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsTasks_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingActor", new named_type(IFC2X3_IfcActor_type), false));
-        attributes.push_back(new entity::attribute("ActingRole", new named_type(IFC2X3_IfcActorRole_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingActor", new named_type(IFC2X3_IfcActor_type), false));
+        attributes.push_back(new attribute("ActingRole", new named_type(IFC2X3_IfcActorRole_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToActor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingControl", new named_type(IFC2X3_IfcControl_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingControl", new named_type(IFC2X3_IfcControl_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToControl_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingGroup", new named_type(IFC2X3_IfcGroup_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingGroup", new named_type(IFC2X3_IfcGroup_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToGroup_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingProcess", new named_type(IFC2X3_IfcProcess_type), false));
-        attributes.push_back(new entity::attribute("QuantityInProcess", new named_type(IFC2X3_IfcMeasureWithUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingProcess", new named_type(IFC2X3_IfcProcess_type), false));
+        attributes.push_back(new attribute("QuantityInProcess", new named_type(IFC2X3_IfcMeasureWithUnit_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToProcess_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingProduct", new named_type(IFC2X3_IfcProduct_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingProduct", new named_type(IFC2X3_IfcProduct_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToProduct_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToProjectOrder_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingResource", new named_type(IFC2X3_IfcResource_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingResource", new named_type(IFC2X3_IfcResource_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssignsToResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRoot_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRoot_type)), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociates_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingAppliedValue", new named_type(IFC2X3_IfcAppliedValue_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingAppliedValue", new named_type(IFC2X3_IfcAppliedValue_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesAppliedValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingApproval", new named_type(IFC2X3_IfcApproval_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingApproval", new named_type(IFC2X3_IfcApproval_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesApproval_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingClassification", new named_type(IFC2X3_IfcClassificationNotationSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingClassification", new named_type(IFC2X3_IfcClassificationNotationSelect_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesClassification_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Intent", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Intent", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("RelatingConstraint", new named_type(IFC2X3_IfcConstraint_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesConstraint_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingDocument", new named_type(IFC2X3_IfcDocumentSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingDocument", new named_type(IFC2X3_IfcDocumentSelect_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesDocument_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingLibrary", new named_type(IFC2X3_IfcLibrarySelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingLibrary", new named_type(IFC2X3_IfcLibrarySelect_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesLibrary_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingMaterial", new named_type(IFC2X3_IfcMaterialSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingMaterial", new named_type(IFC2X3_IfcMaterialSelect_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesMaterial_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("RelatingProfileProperties", new named_type(IFC2X3_IfcProfileProperties_type), false));
-        attributes.push_back(new entity::attribute("ProfileSectionLocation", new named_type(IFC2X3_IfcShapeAspect_type), true));
-        attributes.push_back(new entity::attribute("ProfileOrientation", new named_type(IFC2X3_IfcOrientationSelect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("RelatingProfileProperties", new named_type(IFC2X3_IfcProfileProperties_type), false));
+        attributes.push_back(new attribute("ProfileSectionLocation", new named_type(IFC2X3_IfcShapeAspect_type), true));
+        attributes.push_back(new attribute("ProfileOrientation", new named_type(IFC2X3_IfcOrientationSelect_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelAssociatesProfileProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnects_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ConnectionGeometry", new named_type(IFC2X3_IfcConnectionGeometry_type), true));
-        attributes.push_back(new entity::attribute("RelatingElement", new named_type(IFC2X3_IfcElement_type), false));
-        attributes.push_back(new entity::attribute("RelatedElement", new named_type(IFC2X3_IfcElement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ConnectionGeometry", new named_type(IFC2X3_IfcConnectionGeometry_type), true));
+        attributes.push_back(new attribute("RelatingElement", new named_type(IFC2X3_IfcElement_type), false));
+        attributes.push_back(new attribute("RelatedElement", new named_type(IFC2X3_IfcElement_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsElements_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("RelatingPriorities", new aggregation_type(aggregation_type::list_type, 0, -1, new simple_type(simple_type::integer_type)), false));
-        attributes.push_back(new entity::attribute("RelatedPriorities", new aggregation_type(aggregation_type::list_type, 0, -1, new simple_type(simple_type::integer_type)), false));
-        attributes.push_back(new entity::attribute("RelatedConnectionType", new named_type(IFC2X3_IfcConnectionTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("RelatingConnectionType", new named_type(IFC2X3_IfcConnectionTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("RelatingPriorities", new aggregation_type(aggregation_type::list_type, 0, -1, new simple_type(simple_type::integer_type)), false));
+        attributes.push_back(new attribute("RelatedPriorities", new aggregation_type(aggregation_type::list_type, 0, -1, new simple_type(simple_type::integer_type)), false));
+        attributes.push_back(new attribute("RelatedConnectionType", new named_type(IFC2X3_IfcConnectionTypeEnum_type), false));
+        attributes.push_back(new attribute("RelatingConnectionType", new named_type(IFC2X3_IfcConnectionTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsPathElements_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingPort", new named_type(IFC2X3_IfcPort_type), false));
-        attributes.push_back(new entity::attribute("RelatedElement", new named_type(IFC2X3_IfcElement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingPort", new named_type(IFC2X3_IfcPort_type), false));
+        attributes.push_back(new attribute("RelatedElement", new named_type(IFC2X3_IfcElement_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsPortToElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("RelatingPort", new named_type(IFC2X3_IfcPort_type), false));
-        attributes.push_back(new entity::attribute("RelatedPort", new named_type(IFC2X3_IfcPort_type), false));
-        attributes.push_back(new entity::attribute("RealizingElement", new named_type(IFC2X3_IfcElement_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("RelatingPort", new named_type(IFC2X3_IfcPort_type), false));
+        attributes.push_back(new attribute("RelatedPort", new named_type(IFC2X3_IfcPort_type), false));
+        attributes.push_back(new attribute("RealizingElement", new named_type(IFC2X3_IfcElement_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsPorts_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingElement", new named_type(IFC2X3_IfcStructuralActivityAssignmentSelect_type), false));
-        attributes.push_back(new entity::attribute("RelatedStructuralActivity", new named_type(IFC2X3_IfcStructuralActivity_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingElement", new named_type(IFC2X3_IfcStructuralActivityAssignmentSelect_type), false));
+        attributes.push_back(new attribute("RelatedStructuralActivity", new named_type(IFC2X3_IfcStructuralActivity_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsStructuralActivity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingElement", new named_type(IFC2X3_IfcElement_type), false));
-        attributes.push_back(new entity::attribute("RelatedStructuralMember", new named_type(IFC2X3_IfcStructuralMember_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingElement", new named_type(IFC2X3_IfcElement_type), false));
+        attributes.push_back(new attribute("RelatedStructuralMember", new named_type(IFC2X3_IfcStructuralMember_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsStructuralElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("RelatingStructuralMember", new named_type(IFC2X3_IfcStructuralMember_type), false));
-        attributes.push_back(new entity::attribute("RelatedStructuralConnection", new named_type(IFC2X3_IfcStructuralConnection_type), false));
-        attributes.push_back(new entity::attribute("AppliedCondition", new named_type(IFC2X3_IfcBoundaryCondition_type), true));
-        attributes.push_back(new entity::attribute("AdditionalConditions", new named_type(IFC2X3_IfcStructuralConnectionCondition_type), true));
-        attributes.push_back(new entity::attribute("SupportedLength", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ConditionCoordinateSystem", new named_type(IFC2X3_IfcAxis2Placement3D_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("RelatingStructuralMember", new named_type(IFC2X3_IfcStructuralMember_type), false));
+        attributes.push_back(new attribute("RelatedStructuralConnection", new named_type(IFC2X3_IfcStructuralConnection_type), false));
+        attributes.push_back(new attribute("AppliedCondition", new named_type(IFC2X3_IfcBoundaryCondition_type), true));
+        attributes.push_back(new attribute("AdditionalConditions", new named_type(IFC2X3_IfcStructuralConnectionCondition_type), true));
+        attributes.push_back(new attribute("SupportedLength", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("ConditionCoordinateSystem", new named_type(IFC2X3_IfcAxis2Placement3D_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsStructuralMember_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ConnectionConstraint", new named_type(IFC2X3_IfcConnectionGeometry_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ConnectionConstraint", new named_type(IFC2X3_IfcConnectionGeometry_type), false));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsWithEccentricity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RealizingElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcElement_type)), false));
-        attributes.push_back(new entity::attribute("ConnectionType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RealizingElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcElement_type)), false));
+        attributes.push_back(new attribute("ConnectionType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelConnectsWithRealizingElements_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatedElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProduct_type)), false));
-        attributes.push_back(new entity::attribute("RelatingStructure", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatedElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProduct_type)), false));
+        attributes.push_back(new attribute("RelatingStructure", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelContainedInSpatialStructure_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingBuildingElement", new named_type(IFC2X3_IfcElement_type), false));
-        attributes.push_back(new entity::attribute("RelatedCoverings", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCovering_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingBuildingElement", new named_type(IFC2X3_IfcElement_type), false));
+        attributes.push_back(new attribute("RelatedCoverings", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCovering_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelCoversBldgElements_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatedSpace", new named_type(IFC2X3_IfcSpace_type), false));
-        attributes.push_back(new entity::attribute("RelatedCoverings", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCovering_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatedSpace", new named_type(IFC2X3_IfcSpace_type), false));
+        attributes.push_back(new attribute("RelatedCoverings", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcCovering_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelCoversSpaces_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingObject", new named_type(IFC2X3_IfcObjectDefinition_type), false));
-        attributes.push_back(new entity::attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcObjectDefinition_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingObject", new named_type(IFC2X3_IfcObjectDefinition_type), false));
+        attributes.push_back(new attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcObjectDefinition_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelDecomposes_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcObject_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatedObjects", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcObject_type)), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelDefines_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingPropertyDefinition", new named_type(IFC2X3_IfcPropertySetDefinition_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingPropertyDefinition", new named_type(IFC2X3_IfcPropertySetDefinition_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelDefinesByProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RelatingType", new named_type(IFC2X3_IfcTypeObject_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RelatingType", new named_type(IFC2X3_IfcTypeObject_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelDefinesByType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingOpeningElement", new named_type(IFC2X3_IfcOpeningElement_type), false));
-        attributes.push_back(new entity::attribute("RelatedBuildingElement", new named_type(IFC2X3_IfcElement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingOpeningElement", new named_type(IFC2X3_IfcOpeningElement_type), false));
+        attributes.push_back(new attribute("RelatedBuildingElement", new named_type(IFC2X3_IfcElement_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelFillsElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatedControlElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDistributionControlElement_type)), false));
-        attributes.push_back(new entity::attribute("RelatingFlowElement", new named_type(IFC2X3_IfcDistributionFlowElement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatedControlElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDistributionControlElement_type)), false));
+        attributes.push_back(new attribute("RelatingFlowElement", new named_type(IFC2X3_IfcDistributionFlowElement_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelFlowControlElements_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("DailyInteraction", new named_type(IFC2X3_IfcCountMeasure_type), true));
-        attributes.push_back(new entity::attribute("ImportanceRating", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("LocationOfInteraction", new named_type(IFC2X3_IfcSpatialStructureElement_type), true));
-        attributes.push_back(new entity::attribute("RelatedSpaceProgram", new named_type(IFC2X3_IfcSpaceProgram_type), false));
-        attributes.push_back(new entity::attribute("RelatingSpaceProgram", new named_type(IFC2X3_IfcSpaceProgram_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("DailyInteraction", new named_type(IFC2X3_IfcCountMeasure_type), true));
+        attributes.push_back(new attribute("ImportanceRating", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("LocationOfInteraction", new named_type(IFC2X3_IfcSpatialStructureElement_type), true));
+        attributes.push_back(new attribute("RelatedSpaceProgram", new named_type(IFC2X3_IfcSpaceProgram_type), false));
+        attributes.push_back(new attribute("RelatingSpaceProgram", new named_type(IFC2X3_IfcSpaceProgram_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelInteractionRequirements_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelNests_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelOccupiesSpaces_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("OverridingProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("OverridingProperties", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProperty_type)), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelOverridesProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingElement", new named_type(IFC2X3_IfcElement_type), false));
-        attributes.push_back(new entity::attribute("RelatedFeatureElement", new named_type(IFC2X3_IfcFeatureElementAddition_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingElement", new named_type(IFC2X3_IfcElement_type), false));
+        attributes.push_back(new attribute("RelatedFeatureElement", new named_type(IFC2X3_IfcFeatureElementAddition_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelProjectsElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatedElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProduct_type)), false));
-        attributes.push_back(new entity::attribute("RelatingStructure", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatedElements", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcProduct_type)), false));
+        attributes.push_back(new attribute("RelatingStructure", new named_type(IFC2X3_IfcSpatialStructureElement_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelReferencedInSpatialStructure_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelSchedulesCostItems_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("RelatingProcess", new named_type(IFC2X3_IfcProcess_type), false));
-        attributes.push_back(new entity::attribute("RelatedProcess", new named_type(IFC2X3_IfcProcess_type), false));
-        attributes.push_back(new entity::attribute("TimeLag", new named_type(IFC2X3_IfcTimeMeasure_type), false));
-        attributes.push_back(new entity::attribute("SequenceType", new named_type(IFC2X3_IfcSequenceEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("RelatingProcess", new named_type(IFC2X3_IfcProcess_type), false));
+        attributes.push_back(new attribute("RelatedProcess", new named_type(IFC2X3_IfcProcess_type), false));
+        attributes.push_back(new attribute("TimeLag", new named_type(IFC2X3_IfcTimeMeasure_type), false));
+        attributes.push_back(new attribute("SequenceType", new named_type(IFC2X3_IfcSequenceEnum_type), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelSequence_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingSystem", new named_type(IFC2X3_IfcSystem_type), false));
-        attributes.push_back(new entity::attribute("RelatedBuildings", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcSpatialStructureElement_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingSystem", new named_type(IFC2X3_IfcSystem_type), false));
+        attributes.push_back(new attribute("RelatedBuildings", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcSpatialStructureElement_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelServicesBuildings_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("RelatingSpace", new named_type(IFC2X3_IfcSpace_type), false));
-        attributes.push_back(new entity::attribute("RelatedBuildingElement", new named_type(IFC2X3_IfcElement_type), true));
-        attributes.push_back(new entity::attribute("ConnectionGeometry", new named_type(IFC2X3_IfcConnectionGeometry_type), true));
-        attributes.push_back(new entity::attribute("PhysicalOrVirtualBoundary", new named_type(IFC2X3_IfcPhysicalOrVirtualEnum_type), false));
-        attributes.push_back(new entity::attribute("InternalOrExternalBoundary", new named_type(IFC2X3_IfcInternalOrExternalEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("RelatingSpace", new named_type(IFC2X3_IfcSpace_type), false));
+        attributes.push_back(new attribute("RelatedBuildingElement", new named_type(IFC2X3_IfcElement_type), true));
+        attributes.push_back(new attribute("ConnectionGeometry", new named_type(IFC2X3_IfcConnectionGeometry_type), true));
+        attributes.push_back(new attribute("PhysicalOrVirtualBoundary", new named_type(IFC2X3_IfcPhysicalOrVirtualEnum_type), false));
+        attributes.push_back(new attribute("InternalOrExternalBoundary", new named_type(IFC2X3_IfcInternalOrExternalEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelSpaceBoundary_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelatingBuildingElement", new named_type(IFC2X3_IfcElement_type), false));
-        attributes.push_back(new entity::attribute("RelatedOpeningElement", new named_type(IFC2X3_IfcFeatureElementSubtraction_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelatingBuildingElement", new named_type(IFC2X3_IfcElement_type), false));
+        attributes.push_back(new attribute("RelatedOpeningElement", new named_type(IFC2X3_IfcFeatureElementSubtraction_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelVoidsElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RelaxationValue", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
-        attributes.push_back(new entity::attribute("InitialStress", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RelaxationValue", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
+        attributes.push_back(new attribute("InitialStress", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRelaxation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ContextOfItems", new named_type(IFC2X3_IfcRepresentationContext_type), false));
-        attributes.push_back(new entity::attribute("RepresentationIdentifier", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("RepresentationType", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Items", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRepresentationItem_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ContextOfItems", new named_type(IFC2X3_IfcRepresentationContext_type), false));
+        attributes.push_back(new attribute("RepresentationIdentifier", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("RepresentationType", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Items", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcRepresentationItem_type)), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ContextIdentifier", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ContextType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ContextIdentifier", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ContextType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRepresentationContext_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcRepresentationItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("MappingOrigin", new named_type(IFC2X3_IfcAxis2Placement_type), false));
-        attributes.push_back(new entity::attribute("MappedRepresentation", new named_type(IFC2X3_IfcRepresentation_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("MappingOrigin", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        attributes.push_back(new attribute("MappedRepresentation", new named_type(IFC2X3_IfcRepresentation_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRepresentationMap_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Axis", new named_type(IFC2X3_IfcAxis1Placement_type), false));
-        attributes.push_back(new entity::attribute("Angle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Axis", new named_type(IFC2X3_IfcAxis1Placement_type), false));
+        attributes.push_back(new attribute("Angle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRevolvedAreaSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("RibHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("RibWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("RibSpacing", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("Direction", new named_type(IFC2X3_IfcRibPlateDirectionEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("RibHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("RibWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("RibSpacing", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("Direction", new named_type(IFC2X3_IfcRibPlateDirectionEnum_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRibPlateProfileProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("BottomRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("BottomRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRightCircularCone_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Height", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRightCircularCylinder_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ShapeType", new named_type(IFC2X3_IfcRoofTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ShapeType", new named_type(IFC2X3_IfcRoofTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRoof_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("GlobalId", new named_type(IFC2X3_IfcGloballyUniqueId_type), false));
-        attributes.push_back(new entity::attribute("OwnerHistory", new named_type(IFC2X3_IfcOwnerHistory_type), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("GlobalId", new named_type(IFC2X3_IfcGloballyUniqueId_type), false));
+        attributes.push_back(new attribute("OwnerHistory", new named_type(IFC2X3_IfcOwnerHistory_type), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRoot_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRoundedEdgeFeature_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("RoundingRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("RoundingRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcRoundedRectangleProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Prefix", new named_type(IFC2X3_IfcSIPrefix_type), true));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcSIUnitName_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Prefix", new named_type(IFC2X3_IfcSIPrefix_type), true));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcSIUnitName_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(true); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSIUnit_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSanitaryTerminalTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSanitaryTerminalTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSanitaryTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(18);
-        attributes.push_back(new entity::attribute("ActualStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("EarlyStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("LateStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("ScheduleStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("ActualFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("EarlyFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("LateFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("ScheduleFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("ScheduleDuration", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("ActualDuration", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("RemainingTime", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("FreeFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("TotalFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("IsCritical", new simple_type(simple_type::boolean_type), true));
-        attributes.push_back(new entity::attribute("StatusTime", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("StartFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("FinishFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("Completion", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(18);
+        attributes.push_back(new attribute("ActualStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("EarlyStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("LateStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("ScheduleStart", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("ActualFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("EarlyFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("LateFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("ScheduleFinish", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("ScheduleDuration", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("ActualDuration", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("RemainingTime", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("FreeFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("TotalFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("IsCritical", new simple_type(simple_type::boolean_type), true));
+        attributes.push_back(new attribute("StatusTime", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("StartFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("FinishFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("Completion", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(23);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcScheduleTimeControl_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("SectionType", new named_type(IFC2X3_IfcSectionTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("StartProfile", new named_type(IFC2X3_IfcProfileDef_type), false));
-        attributes.push_back(new entity::attribute("EndProfile", new named_type(IFC2X3_IfcProfileDef_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("SectionType", new named_type(IFC2X3_IfcSectionTypeEnum_type), false));
+        attributes.push_back(new attribute("StartProfile", new named_type(IFC2X3_IfcProfileDef_type), false));
+        attributes.push_back(new attribute("EndProfile", new named_type(IFC2X3_IfcProfileDef_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSectionProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("LongitudinalStartPosition", new named_type(IFC2X3_IfcLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("LongitudinalEndPosition", new named_type(IFC2X3_IfcLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("TransversePosition", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ReinforcementRole", new named_type(IFC2X3_IfcReinforcingBarRoleEnum_type), false));
-        attributes.push_back(new entity::attribute("SectionDefinition", new named_type(IFC2X3_IfcSectionProperties_type), false));
-        attributes.push_back(new entity::attribute("CrossSectionReinforcementDefinitions", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcReinforcementBarProperties_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("LongitudinalStartPosition", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        attributes.push_back(new attribute("LongitudinalEndPosition", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        attributes.push_back(new attribute("TransversePosition", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("ReinforcementRole", new named_type(IFC2X3_IfcReinforcingBarRoleEnum_type), false));
+        attributes.push_back(new attribute("SectionDefinition", new named_type(IFC2X3_IfcSectionProperties_type), false));
+        attributes.push_back(new attribute("CrossSectionReinforcementDefinitions", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcReinforcementBarProperties_type)), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSectionReinforcementProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("SpineCurve", new named_type(IFC2X3_IfcCompositeCurve_type), false));
-        attributes.push_back(new entity::attribute("CrossSections", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcProfileDef_type)), false));
-        attributes.push_back(new entity::attribute("CrossSectionPositions", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcAxis2Placement3D_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("SpineCurve", new named_type(IFC2X3_IfcCompositeCurve_type), false));
+        attributes.push_back(new attribute("CrossSections", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcProfileDef_type)), false));
+        attributes.push_back(new attribute("CrossSectionPositions", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcAxis2Placement3D_type)), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSectionedSpine_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSensorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSensorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSensorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ServiceLifeType", new named_type(IFC2X3_IfcServiceLifeTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("ServiceLifeDuration", new named_type(IFC2X3_IfcTimeMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ServiceLifeType", new named_type(IFC2X3_IfcServiceLifeTypeEnum_type), false));
+        attributes.push_back(new attribute("ServiceLifeDuration", new named_type(IFC2X3_IfcTimeMeasure_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcServiceLife_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcServiceLifeFactorTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("UpperValue", new named_type(IFC2X3_IfcMeasureValue_type), true));
-        attributes.push_back(new entity::attribute("MostUsedValue", new named_type(IFC2X3_IfcMeasureValue_type), false));
-        attributes.push_back(new entity::attribute("LowerValue", new named_type(IFC2X3_IfcMeasureValue_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcServiceLifeFactorTypeEnum_type), false));
+        attributes.push_back(new attribute("UpperValue", new named_type(IFC2X3_IfcMeasureValue_type), true));
+        attributes.push_back(new attribute("MostUsedValue", new named_type(IFC2X3_IfcMeasureValue_type), false));
+        attributes.push_back(new attribute("LowerValue", new named_type(IFC2X3_IfcMeasureValue_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcServiceLifeFactor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("ShapeRepresentations", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcShapeModel_type)), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("ProductDefinitional", new simple_type(simple_type::logical_type), false));
-        attributes.push_back(new entity::attribute("PartOfProductDefinitionShape", new named_type(IFC2X3_IfcProductDefinitionShape_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("ShapeRepresentations", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcShapeModel_type)), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("ProductDefinitional", new simple_type(simple_type::logical_type), false));
+        attributes.push_back(new attribute("PartOfProductDefinitionShape", new named_type(IFC2X3_IfcProductDefinitionShape_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcShapeAspect_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcShapeModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcShapeRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("SbsmBoundary", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcShell_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("SbsmBoundary", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcShell_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcShellBasedSurfaceModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSimpleProperty_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("RefLatitude", new named_type(IFC2X3_IfcCompoundPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("RefLongitude", new named_type(IFC2X3_IfcCompoundPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("RefElevation", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("LandTitleNumber", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("SiteAddress", new named_type(IFC2X3_IfcPostalAddress_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("RefLatitude", new named_type(IFC2X3_IfcCompoundPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("RefLongitude", new named_type(IFC2X3_IfcCompoundPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("RefElevation", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("LandTitleNumber", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("SiteAddress", new named_type(IFC2X3_IfcPostalAddress_type), true));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSite_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSlabTypeEnum_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSlabTypeEnum_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSlab_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSlabTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSlabTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSlabType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("SlippageX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("SlippageY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("SlippageZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("SlippageX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("SlippageY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("SlippageZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSlippageConnectionCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcSolidModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("IsAttenuating", new named_type(IFC2X3_IfcBoolean_type), false));
-        attributes.push_back(new entity::attribute("SoundScale", new named_type(IFC2X3_IfcSoundScaleEnum_type), true));
-        attributes.push_back(new entity::attribute("SoundValues", new aggregation_type(aggregation_type::list_type, 1, 8, new named_type(IFC2X3_IfcSoundValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("IsAttenuating", new named_type(IFC2X3_IfcBoolean_type), false));
+        attributes.push_back(new attribute("SoundScale", new named_type(IFC2X3_IfcSoundScaleEnum_type), true));
+        attributes.push_back(new attribute("SoundValues", new aggregation_type(aggregation_type::list_type, 1, 8, new named_type(IFC2X3_IfcSoundValue_type)), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSoundProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("SoundLevelTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("Frequency", new named_type(IFC2X3_IfcFrequencyMeasure_type), false));
-        attributes.push_back(new entity::attribute("SoundLevelSingleValue", new named_type(IFC2X3_IfcDerivedMeasureValue_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("SoundLevelTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("Frequency", new named_type(IFC2X3_IfcFrequencyMeasure_type), false));
+        attributes.push_back(new attribute("SoundLevelSingleValue", new named_type(IFC2X3_IfcDerivedMeasureValue_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSoundValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("InteriorOrExteriorSpace", new named_type(IFC2X3_IfcInternalOrExternalEnum_type), false));
-        attributes.push_back(new entity::attribute("ElevationWithFlooring", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("InteriorOrExteriorSpace", new named_type(IFC2X3_IfcInternalOrExternalEnum_type), false));
+        attributes.push_back(new attribute("ElevationWithFlooring", new named_type(IFC2X3_IfcLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpace_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSpaceHeaterTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSpaceHeaterTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpaceHeaterType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("SpaceProgramIdentifier", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("MaxRequiredArea", new named_type(IFC2X3_IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("MinRequiredArea", new named_type(IFC2X3_IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("RequestedLocation", new named_type(IFC2X3_IfcSpatialStructureElement_type), true));
-        attributes.push_back(new entity::attribute("StandardRequiredArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("SpaceProgramIdentifier", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("MaxRequiredArea", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        attributes.push_back(new attribute("MinRequiredArea", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        attributes.push_back(new attribute("RequestedLocation", new named_type(IFC2X3_IfcSpatialStructureElement_type), true));
+        attributes.push_back(new attribute("StandardRequiredArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpaceProgram_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(10);
-        attributes.push_back(new entity::attribute("ApplicableValueRatio", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalLoadSource", new named_type(IFC2X3_IfcThermalLoadSourceEnum_type), false));
-        attributes.push_back(new entity::attribute("PropertySource", new named_type(IFC2X3_IfcPropertySourceEnum_type), false));
-        attributes.push_back(new entity::attribute("SourceDescription", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("MaximumValue", new named_type(IFC2X3_IfcPowerMeasure_type), false));
-        attributes.push_back(new entity::attribute("MinimumValue", new named_type(IFC2X3_IfcPowerMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalLoadTimeSeriesValues", new named_type(IFC2X3_IfcTimeSeries_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedThermalLoadSource", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedPropertySource", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ThermalLoadType", new named_type(IFC2X3_IfcThermalLoadTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(10);
+        attributes.push_back(new attribute("ApplicableValueRatio", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("ThermalLoadSource", new named_type(IFC2X3_IfcThermalLoadSourceEnum_type), false));
+        attributes.push_back(new attribute("PropertySource", new named_type(IFC2X3_IfcPropertySourceEnum_type), false));
+        attributes.push_back(new attribute("SourceDescription", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("MaximumValue", new named_type(IFC2X3_IfcPowerMeasure_type), false));
+        attributes.push_back(new attribute("MinimumValue", new named_type(IFC2X3_IfcPowerMeasure_type), true));
+        attributes.push_back(new attribute("ThermalLoadTimeSeriesValues", new named_type(IFC2X3_IfcTimeSeries_type), true));
+        attributes.push_back(new attribute("UserDefinedThermalLoadSource", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("UserDefinedPropertySource", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ThermalLoadType", new named_type(IFC2X3_IfcThermalLoadTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpaceThermalLoadProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSpaceTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSpaceTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpaceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("LongName", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("CompositionType", new named_type(IFC2X3_IfcElementCompositionEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("LongName", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("CompositionType", new named_type(IFC2X3_IfcElementCompositionEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpatialStructureElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSpatialStructureElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSphere_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcStackTerminalTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcStackTerminalTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStackTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ShapeType", new named_type(IFC2X3_IfcStairTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ShapeType", new named_type(IFC2X3_IfcStairTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStair_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("NumberOfRiser", new simple_type(simple_type::integer_type), true));
-        attributes.push_back(new entity::attribute("NumberOfTreads", new simple_type(simple_type::integer_type), true));
-        attributes.push_back(new entity::attribute("RiserHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("TreadLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("NumberOfRiser", new simple_type(simple_type::integer_type), true));
+        attributes.push_back(new attribute("NumberOfTreads", new simple_type(simple_type::integer_type), true));
+        attributes.push_back(new attribute("RiserHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("TreadLength", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStairFlight_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcStairFlightTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcStairFlightTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStairFlightType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("DestabilizingLoad", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("CausedBy", new named_type(IFC2X3_IfcStructuralReaction_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("DestabilizingLoad", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("CausedBy", new named_type(IFC2X3_IfcStructuralReaction_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralAction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("AppliedLoad", new named_type(IFC2X3_IfcStructuralLoad_type), false));
-        attributes.push_back(new entity::attribute("GlobalOrLocal", new named_type(IFC2X3_IfcGlobalOrLocalEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("AppliedLoad", new named_type(IFC2X3_IfcStructuralLoad_type), false));
+        attributes.push_back(new attribute("GlobalOrLocal", new named_type(IFC2X3_IfcGlobalOrLocalEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralActivity_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcAnalysisModelTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("OrientationOf2DPlane", new named_type(IFC2X3_IfcAxis2Placement3D_type), true));
-        attributes.push_back(new entity::attribute("LoadedBy", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcStructuralLoadGroup_type)), true));
-        attributes.push_back(new entity::attribute("HasResults", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcStructuralResultGroup_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcAnalysisModelTypeEnum_type), false));
+        attributes.push_back(new attribute("OrientationOf2DPlane", new named_type(IFC2X3_IfcAxis2Placement3D_type), true));
+        attributes.push_back(new attribute("LoadedBy", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcStructuralLoadGroup_type)), true));
+        attributes.push_back(new attribute("HasResults", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcStructuralResultGroup_type)), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralAnalysisModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("AppliedCondition", new named_type(IFC2X3_IfcBoundaryCondition_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("AppliedCondition", new named_type(IFC2X3_IfcBoundaryCondition_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralConnection_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcStructuralConnectionCondition_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralCurveConnection_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcStructuralCurveTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcStructuralCurveTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralCurveMember_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralCurveMemberVarying_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ProjectedOrTrue", new named_type(IFC2X3_IfcProjectedOrTrueLengthEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ProjectedOrTrue", new named_type(IFC2X3_IfcProjectedOrTrueLengthEnum_type), false));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLinearAction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("VaryingAppliedLoadLocation", new named_type(IFC2X3_IfcShapeAspect_type), false));
-        attributes.push_back(new entity::attribute("SubsequentAppliedLoads", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcStructuralLoad_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("VaryingAppliedLoadLocation", new named_type(IFC2X3_IfcShapeAspect_type), false));
+        attributes.push_back(new attribute("SubsequentAppliedLoads", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcStructuralLoad_type)), false));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLinearActionVarying_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcStructuralLoad_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcLoadGroupTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("ActionType", new named_type(IFC2X3_IfcActionTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("ActionSource", new named_type(IFC2X3_IfcActionSourceTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("Coefficient", new named_type(IFC2X3_IfcRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("Purpose", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcLoadGroupTypeEnum_type), false));
+        attributes.push_back(new attribute("ActionType", new named_type(IFC2X3_IfcActionTypeEnum_type), false));
+        attributes.push_back(new attribute("ActionSource", new named_type(IFC2X3_IfcActionSourceTypeEnum_type), false));
+        attributes.push_back(new attribute("Coefficient", new named_type(IFC2X3_IfcRatioMeasure_type), true));
+        attributes.push_back(new attribute("Purpose", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadGroup_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("LinearForceX", new named_type(IFC2X3_IfcLinearForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearForceY", new named_type(IFC2X3_IfcLinearForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearForceZ", new named_type(IFC2X3_IfcLinearForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearMomentX", new named_type(IFC2X3_IfcLinearMomentMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearMomentY", new named_type(IFC2X3_IfcLinearMomentMeasure_type), true));
-        attributes.push_back(new entity::attribute("LinearMomentZ", new named_type(IFC2X3_IfcLinearMomentMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("LinearForceX", new named_type(IFC2X3_IfcLinearForceMeasure_type), true));
+        attributes.push_back(new attribute("LinearForceY", new named_type(IFC2X3_IfcLinearForceMeasure_type), true));
+        attributes.push_back(new attribute("LinearForceZ", new named_type(IFC2X3_IfcLinearForceMeasure_type), true));
+        attributes.push_back(new attribute("LinearMomentX", new named_type(IFC2X3_IfcLinearMomentMeasure_type), true));
+        attributes.push_back(new attribute("LinearMomentY", new named_type(IFC2X3_IfcLinearMomentMeasure_type), true));
+        attributes.push_back(new attribute("LinearMomentZ", new named_type(IFC2X3_IfcLinearMomentMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadLinearForce_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("PlanarForceX", new named_type(IFC2X3_IfcPlanarForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("PlanarForceY", new named_type(IFC2X3_IfcPlanarForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("PlanarForceZ", new named_type(IFC2X3_IfcPlanarForceMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("PlanarForceX", new named_type(IFC2X3_IfcPlanarForceMeasure_type), true));
+        attributes.push_back(new attribute("PlanarForceY", new named_type(IFC2X3_IfcPlanarForceMeasure_type), true));
+        attributes.push_back(new attribute("PlanarForceZ", new named_type(IFC2X3_IfcPlanarForceMeasure_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadPlanarForce_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("DisplacementX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("DisplacementY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("DisplacementZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalDisplacementRX", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalDisplacementRY", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("RotationalDisplacementRZ", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("DisplacementX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("DisplacementY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("DisplacementZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("RotationalDisplacementRX", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("RotationalDisplacementRY", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("RotationalDisplacementRZ", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadSingleDisplacement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Distortion", new named_type(IFC2X3_IfcCurvatureMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Distortion", new named_type(IFC2X3_IfcCurvatureMeasure_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadSingleDisplacementDistortion_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("ForceX", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("ForceY", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("ForceZ", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("MomentX", new named_type(IFC2X3_IfcTorqueMeasure_type), true));
-        attributes.push_back(new entity::attribute("MomentY", new named_type(IFC2X3_IfcTorqueMeasure_type), true));
-        attributes.push_back(new entity::attribute("MomentZ", new named_type(IFC2X3_IfcTorqueMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("ForceX", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("ForceY", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("ForceZ", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("MomentX", new named_type(IFC2X3_IfcTorqueMeasure_type), true));
+        attributes.push_back(new attribute("MomentY", new named_type(IFC2X3_IfcTorqueMeasure_type), true));
+        attributes.push_back(new attribute("MomentZ", new named_type(IFC2X3_IfcTorqueMeasure_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadSingleForce_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("WarpingMoment", new named_type(IFC2X3_IfcWarpingMomentMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("WarpingMoment", new named_type(IFC2X3_IfcWarpingMomentMeasure_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadSingleForceWarping_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcStructuralLoadStatic_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("DeltaT_Constant", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("DeltaT_Y", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("DeltaT_Z", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("DeltaT_Constant", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("DeltaT_Y", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("DeltaT_Z", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralLoadTemperature_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralMember_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ProjectedOrTrue", new named_type(IFC2X3_IfcProjectedOrTrueLengthEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ProjectedOrTrue", new named_type(IFC2X3_IfcProjectedOrTrueLengthEnum_type), false));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralPlanarAction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("VaryingAppliedLoadLocation", new named_type(IFC2X3_IfcShapeAspect_type), false));
-        attributes.push_back(new entity::attribute("SubsequentAppliedLoads", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcStructuralLoad_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("VaryingAppliedLoadLocation", new named_type(IFC2X3_IfcShapeAspect_type), false));
+        attributes.push_back(new attribute("SubsequentAppliedLoads", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcStructuralLoad_type)), false));
         std::vector<bool> derived; derived.reserve(14);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralPlanarActionVarying_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralPointAction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralPointConnection_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralPointReaction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(16);
-        attributes.push_back(new entity::attribute("TorsionalConstantX", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
-        attributes.push_back(new entity::attribute("MomentOfInertiaYZ", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
-        attributes.push_back(new entity::attribute("MomentOfInertiaY", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
-        attributes.push_back(new entity::attribute("MomentOfInertiaZ", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
-        attributes.push_back(new entity::attribute("WarpingConstant", new named_type(IFC2X3_IfcWarpingConstantMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShearCentreZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShearCentreY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShearDeformationAreaZ", new named_type(IFC2X3_IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShearDeformationAreaY", new named_type(IFC2X3_IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("MaximumSectionModulusY", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
-        attributes.push_back(new entity::attribute("MinimumSectionModulusY", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
-        attributes.push_back(new entity::attribute("MaximumSectionModulusZ", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
-        attributes.push_back(new entity::attribute("MinimumSectionModulusZ", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
-        attributes.push_back(new entity::attribute("TorsionalSectionModulus", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(16);
+        attributes.push_back(new attribute("TorsionalConstantX", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
+        attributes.push_back(new attribute("MomentOfInertiaYZ", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
+        attributes.push_back(new attribute("MomentOfInertiaY", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
+        attributes.push_back(new attribute("MomentOfInertiaZ", new named_type(IFC2X3_IfcMomentOfInertiaMeasure_type), true));
+        attributes.push_back(new attribute("WarpingConstant", new named_type(IFC2X3_IfcWarpingConstantMeasure_type), true));
+        attributes.push_back(new attribute("ShearCentreZ", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("ShearCentreY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("ShearDeformationAreaZ", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        attributes.push_back(new attribute("ShearDeformationAreaY", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        attributes.push_back(new attribute("MaximumSectionModulusY", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
+        attributes.push_back(new attribute("MinimumSectionModulusY", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
+        attributes.push_back(new attribute("MaximumSectionModulusZ", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
+        attributes.push_back(new attribute("MinimumSectionModulusZ", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
+        attributes.push_back(new attribute("TorsionalSectionModulus", new named_type(IFC2X3_IfcSectionModulusMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcLengthMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(23);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralProfileProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralReaction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("TheoryType", new named_type(IFC2X3_IfcAnalysisTheoryTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("ResultForLoadGroup", new named_type(IFC2X3_IfcStructuralLoadGroup_type), true));
-        attributes.push_back(new entity::attribute("IsLinear", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("TheoryType", new named_type(IFC2X3_IfcAnalysisTheoryTypeEnum_type), false));
+        attributes.push_back(new attribute("ResultForLoadGroup", new named_type(IFC2X3_IfcStructuralLoadGroup_type), true));
+        attributes.push_back(new attribute("IsLinear", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralResultGroup_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ShearAreaZ", new named_type(IFC2X3_IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShearAreaY", new named_type(IFC2X3_IfcAreaMeasure_type), true));
-        attributes.push_back(new entity::attribute("PlasticShapeFactorY", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("PlasticShapeFactorZ", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ShearAreaZ", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        attributes.push_back(new attribute("ShearAreaY", new named_type(IFC2X3_IfcAreaMeasure_type), true));
+        attributes.push_back(new attribute("PlasticShapeFactorY", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
+        attributes.push_back(new attribute("PlasticShapeFactorZ", new named_type(IFC2X3_IfcPositiveRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(27);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralSteelProfileProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralSurfaceConnection_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcStructuralSurfaceTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcStructuralSurfaceTypeEnum_type), false));
+        attributes.push_back(new attribute("Thickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralSurfaceMember_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SubsequentThickness", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcPositiveLengthMeasure_type)), false));
-        attributes.push_back(new entity::attribute("VaryingThicknessLocation", new named_type(IFC2X3_IfcShapeAspect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SubsequentThickness", new aggregation_type(aggregation_type::list_type, 2, -1, new named_type(IFC2X3_IfcPositiveLengthMeasure_type)), false));
+        attributes.push_back(new attribute("VaryingThicknessLocation", new named_type(IFC2X3_IfcShapeAspect_type), false));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStructuralSurfaceMemberVarying_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcStructuredDimensionCallout_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStyleModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Item", new named_type(IFC2X3_IfcRepresentationItem_type), true));
-        attributes.push_back(new entity::attribute("Styles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPresentationStyleAssignment_type)), false));
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Item", new named_type(IFC2X3_IfcRepresentationItem_type), true));
+        attributes.push_back(new attribute("Styles", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPresentationStyleAssignment_type)), false));
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStyledItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcStyledRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SubContractor", new named_type(IFC2X3_IfcActorSelect_type), true));
-        attributes.push_back(new entity::attribute("JobDescription", new named_type(IFC2X3_IfcText_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SubContractor", new named_type(IFC2X3_IfcActorSelect_type), true));
+        attributes.push_back(new attribute("JobDescription", new named_type(IFC2X3_IfcText_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSubContractResource_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ParentEdge", new named_type(IFC2X3_IfcEdge_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ParentEdge", new named_type(IFC2X3_IfcEdge_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSubedge_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("Directrix", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("StartParam", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("EndParam", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("ReferenceSurface", new named_type(IFC2X3_IfcSurface_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("Directrix", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("StartParam", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("EndParam", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("ReferenceSurface", new named_type(IFC2X3_IfcSurface_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceCurveSweptAreaSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ExtrudedDirection", new named_type(IFC2X3_IfcDirection_type), false));
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ExtrudedDirection", new named_type(IFC2X3_IfcDirection_type), false));
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceOfLinearExtrusion_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("AxisPosition", new named_type(IFC2X3_IfcAxis1Placement_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("AxisPosition", new named_type(IFC2X3_IfcAxis1Placement_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceOfRevolution_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Side", new named_type(IFC2X3_IfcSurfaceSide_type), false));
-        attributes.push_back(new entity::attribute("Styles", new aggregation_type(aggregation_type::set_type, 1, 5, new named_type(IFC2X3_IfcSurfaceStyleElementSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Side", new named_type(IFC2X3_IfcSurfaceSide_type), false));
+        attributes.push_back(new attribute("Styles", new aggregation_type(aggregation_type::set_type, 1, 5, new named_type(IFC2X3_IfcSurfaceStyleElementSelect_type)), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("DiffuseTransmissionColour", new named_type(IFC2X3_IfcColourRgb_type), false));
-        attributes.push_back(new entity::attribute("DiffuseReflectionColour", new named_type(IFC2X3_IfcColourRgb_type), false));
-        attributes.push_back(new entity::attribute("TransmissionColour", new named_type(IFC2X3_IfcColourRgb_type), false));
-        attributes.push_back(new entity::attribute("ReflectanceColour", new named_type(IFC2X3_IfcColourRgb_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("DiffuseTransmissionColour", new named_type(IFC2X3_IfcColourRgb_type), false));
+        attributes.push_back(new attribute("DiffuseReflectionColour", new named_type(IFC2X3_IfcColourRgb_type), false));
+        attributes.push_back(new attribute("TransmissionColour", new named_type(IFC2X3_IfcColourRgb_type), false));
+        attributes.push_back(new attribute("ReflectanceColour", new named_type(IFC2X3_IfcColourRgb_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceStyleLighting_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RefractionIndex", new named_type(IFC2X3_IfcReal_type), true));
-        attributes.push_back(new entity::attribute("DispersionFactor", new named_type(IFC2X3_IfcReal_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RefractionIndex", new named_type(IFC2X3_IfcReal_type), true));
+        attributes.push_back(new attribute("DispersionFactor", new named_type(IFC2X3_IfcReal_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceStyleRefraction_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("Transparency", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("DiffuseColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
-        attributes.push_back(new entity::attribute("TransmissionColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
-        attributes.push_back(new entity::attribute("DiffuseTransmissionColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
-        attributes.push_back(new entity::attribute("ReflectionColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
-        attributes.push_back(new entity::attribute("SpecularColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
-        attributes.push_back(new entity::attribute("SpecularHighlight", new named_type(IFC2X3_IfcSpecularHighlightSelect_type), true));
-        attributes.push_back(new entity::attribute("ReflectanceMethod", new named_type(IFC2X3_IfcReflectanceMethodEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("Transparency", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("DiffuseColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
+        attributes.push_back(new attribute("TransmissionColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
+        attributes.push_back(new attribute("DiffuseTransmissionColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
+        attributes.push_back(new attribute("ReflectionColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
+        attributes.push_back(new attribute("SpecularColour", new named_type(IFC2X3_IfcColourOrFactor_type), true));
+        attributes.push_back(new attribute("SpecularHighlight", new named_type(IFC2X3_IfcSpecularHighlightSelect_type), true));
+        attributes.push_back(new attribute("ReflectanceMethod", new named_type(IFC2X3_IfcReflectanceMethodEnum_type), false));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceStyleRendering_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("SurfaceColour", new named_type(IFC2X3_IfcColourRgb_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("SurfaceColour", new named_type(IFC2X3_IfcColourRgb_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcSurfaceStyleShading_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Textures", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcSurfaceTexture_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Textures", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcSurfaceTexture_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcSurfaceStyleWithTextures_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("RepeatS", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("RepeatT", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("TextureType", new named_type(IFC2X3_IfcSurfaceTextureEnum_type), false));
-        attributes.push_back(new entity::attribute("TextureTransform", new named_type(IFC2X3_IfcCartesianTransformationOperator2D_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("RepeatS", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("RepeatT", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("TextureType", new named_type(IFC2X3_IfcSurfaceTextureEnum_type), false));
+        attributes.push_back(new attribute("TextureTransform", new named_type(IFC2X3_IfcCartesianTransformationOperator2D_type), true));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSurfaceTexture_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SweptArea", new named_type(IFC2X3_IfcProfileDef_type), false));
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SweptArea", new named_type(IFC2X3_IfcProfileDef_type), false));
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSweptAreaSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("Directrix", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("InnerRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("StartParam", new named_type(IFC2X3_IfcParameterValue_type), false));
-        attributes.push_back(new entity::attribute("EndParam", new named_type(IFC2X3_IfcParameterValue_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("Directrix", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("Radius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("InnerRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("StartParam", new named_type(IFC2X3_IfcParameterValue_type), false));
+        attributes.push_back(new attribute("EndParam", new named_type(IFC2X3_IfcParameterValue_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSweptDiskSolid_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("SweptCurve", new named_type(IFC2X3_IfcProfileDef_type), false));
-        attributes.push_back(new entity::attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("SweptCurve", new named_type(IFC2X3_IfcProfileDef_type), false));
+        attributes.push_back(new attribute("Position", new named_type(IFC2X3_IfcAxis2Placement3D_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSweptSurface_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcSwitchingDeviceTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcSwitchingDeviceTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSwitchingDeviceType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("StyleOfSymbol", new named_type(IFC2X3_IfcSymbolStyleSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("StyleOfSymbol", new named_type(IFC2X3_IfcSymbolStyleSelect_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSymbolStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSystem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcSystemFurnitureElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(10);
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("FlangeEdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("WebEdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("WebSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("FlangeSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(10);
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("FlangeEdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("WebEdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("WebSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("FlangeSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInY", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Name", new simple_type(simple_type::string_type), false));
-        attributes.push_back(new entity::attribute("Rows", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcTableRow_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Name", new simple_type(simple_type::string_type), false));
+        attributes.push_back(new attribute("Rows", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcTableRow_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTable_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RowCells", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
-        attributes.push_back(new entity::attribute("IsHeading", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RowCells", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        attributes.push_back(new attribute("IsHeading", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTableRow_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcTankTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcTankTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTankType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("TaskId", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("Status", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("WorkMethod", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("IsMilestone", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("Priority", new simple_type(simple_type::integer_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("TaskId", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("Status", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("WorkMethod", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("IsMilestone", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("Priority", new simple_type(simple_type::integer_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTask_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("TelephoneNumbers", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("FacsimileNumbers", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("PagerNumber", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("ElectronicMailAddresses", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
-        attributes.push_back(new entity::attribute("WWWHomePageURL", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("TelephoneNumbers", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("FacsimileNumbers", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("PagerNumber", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("ElectronicMailAddresses", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcLabel_type)), true));
+        attributes.push_back(new attribute("WWWHomePageURL", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTelecomAddress_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcTendonTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("NominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("CrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
-        attributes.push_back(new entity::attribute("TensionForce", new named_type(IFC2X3_IfcForceMeasure_type), true));
-        attributes.push_back(new entity::attribute("PreStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
-        attributes.push_back(new entity::attribute("FrictionCoefficient", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("AnchorageSlip", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("MinCurvatureRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcTendonTypeEnum_type), false));
+        attributes.push_back(new attribute("NominalDiameter", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("CrossSectionArea", new named_type(IFC2X3_IfcAreaMeasure_type), false));
+        attributes.push_back(new attribute("TensionForce", new named_type(IFC2X3_IfcForceMeasure_type), true));
+        attributes.push_back(new attribute("PreStress", new named_type(IFC2X3_IfcPressureMeasure_type), true));
+        attributes.push_back(new attribute("FrictionCoefficient", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("AnchorageSlip", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("MinCurvatureRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(17);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTendon_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTendonAnchor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("AnnotatedCurve", new named_type(IFC2X3_IfcAnnotationCurveOccurrence_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("AnnotatedCurve", new named_type(IFC2X3_IfcAnnotationCurveOccurrence_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTerminatorSymbol_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("Literal", new named_type(IFC2X3_IfcPresentableText_type), false));
-        attributes.push_back(new entity::attribute("Placement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
-        attributes.push_back(new entity::attribute("Path", new named_type(IFC2X3_IfcTextPath_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("Literal", new named_type(IFC2X3_IfcPresentableText_type), false));
+        attributes.push_back(new attribute("Placement", new named_type(IFC2X3_IfcAxis2Placement_type), false));
+        attributes.push_back(new attribute("Path", new named_type(IFC2X3_IfcTextPath_type), false));
         std::vector<bool> derived; derived.reserve(3);
         derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextLiteral_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Extent", new named_type(IFC2X3_IfcPlanarExtent_type), false));
-        attributes.push_back(new entity::attribute("BoxAlignment", new named_type(IFC2X3_IfcBoxAlignment_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Extent", new named_type(IFC2X3_IfcPlanarExtent_type), false));
+        attributes.push_back(new attribute("BoxAlignment", new named_type(IFC2X3_IfcBoxAlignment_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextLiteralWithExtent_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("TextCharacterAppearance", new named_type(IFC2X3_IfcCharacterStyleSelect_type), true));
-        attributes.push_back(new entity::attribute("TextStyle", new named_type(IFC2X3_IfcTextStyleSelect_type), true));
-        attributes.push_back(new entity::attribute("TextFontStyle", new named_type(IFC2X3_IfcTextFontSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("TextCharacterAppearance", new named_type(IFC2X3_IfcCharacterStyleSelect_type), true));
+        attributes.push_back(new attribute("TextStyle", new named_type(IFC2X3_IfcTextStyleSelect_type), true));
+        attributes.push_back(new attribute("TextFontStyle", new named_type(IFC2X3_IfcTextFontSelect_type), false));
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("FontFamily", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcTextFontName_type)), true));
-        attributes.push_back(new entity::attribute("FontStyle", new named_type(IFC2X3_IfcFontStyle_type), true));
-        attributes.push_back(new entity::attribute("FontVariant", new named_type(IFC2X3_IfcFontVariant_type), true));
-        attributes.push_back(new entity::attribute("FontWeight", new named_type(IFC2X3_IfcFontWeight_type), true));
-        attributes.push_back(new entity::attribute("FontSize", new named_type(IFC2X3_IfcSizeSelect_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("FontFamily", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcTextFontName_type)), true));
+        attributes.push_back(new attribute("FontStyle", new named_type(IFC2X3_IfcFontStyle_type), true));
+        attributes.push_back(new attribute("FontVariant", new named_type(IFC2X3_IfcFontVariant_type), true));
+        attributes.push_back(new attribute("FontWeight", new named_type(IFC2X3_IfcFontWeight_type), true));
+        attributes.push_back(new attribute("FontSize", new named_type(IFC2X3_IfcSizeSelect_type), false));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextStyleFontModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Colour", new named_type(IFC2X3_IfcColour_type), false));
-        attributes.push_back(new entity::attribute("BackgroundColour", new named_type(IFC2X3_IfcColour_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Colour", new named_type(IFC2X3_IfcColour_type), false));
+        attributes.push_back(new attribute("BackgroundColour", new named_type(IFC2X3_IfcColour_type), true));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextStyleForDefinedFont_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("TextIndent", new named_type(IFC2X3_IfcSizeSelect_type), true));
-        attributes.push_back(new entity::attribute("TextAlign", new named_type(IFC2X3_IfcTextAlignment_type), true));
-        attributes.push_back(new entity::attribute("TextDecoration", new named_type(IFC2X3_IfcTextDecoration_type), true));
-        attributes.push_back(new entity::attribute("LetterSpacing", new named_type(IFC2X3_IfcSizeSelect_type), true));
-        attributes.push_back(new entity::attribute("WordSpacing", new named_type(IFC2X3_IfcSizeSelect_type), true));
-        attributes.push_back(new entity::attribute("TextTransform", new named_type(IFC2X3_IfcTextTransformation_type), true));
-        attributes.push_back(new entity::attribute("LineHeight", new named_type(IFC2X3_IfcSizeSelect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("TextIndent", new named_type(IFC2X3_IfcSizeSelect_type), true));
+        attributes.push_back(new attribute("TextAlign", new named_type(IFC2X3_IfcTextAlignment_type), true));
+        attributes.push_back(new attribute("TextDecoration", new named_type(IFC2X3_IfcTextDecoration_type), true));
+        attributes.push_back(new attribute("LetterSpacing", new named_type(IFC2X3_IfcSizeSelect_type), true));
+        attributes.push_back(new attribute("WordSpacing", new named_type(IFC2X3_IfcSizeSelect_type), true));
+        attributes.push_back(new attribute("TextTransform", new named_type(IFC2X3_IfcTextTransformation_type), true));
+        attributes.push_back(new attribute("LineHeight", new named_type(IFC2X3_IfcSizeSelect_type), true));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextStyleTextModel_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("BoxHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("BoxWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("BoxSlantAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("BoxRotateAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("CharacterSpacing", new named_type(IFC2X3_IfcSizeSelect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("BoxHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("BoxWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("BoxSlantAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("BoxRotateAngle", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("CharacterSpacing", new named_type(IFC2X3_IfcSizeSelect_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextStyleWithBoxCharacteristics_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcTextureCoordinate_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Mode", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Parameter", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcSimpleValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Mode", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Parameter", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcSimpleValue_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTextureCoordinateGenerator_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("TextureMaps", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcVertexBasedTextureMap_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("TextureMaps", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcVertexBasedTextureMap_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcTextureMap_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Coordinates", new aggregation_type(aggregation_type::list_type, 2, 2, new named_type(IFC2X3_IfcParameterValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Coordinates", new aggregation_type(aggregation_type::list_type, 2, 2, new named_type(IFC2X3_IfcParameterValue_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcTextureVertex_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("SpecificHeatCapacity", new named_type(IFC2X3_IfcSpecificHeatCapacityMeasure_type), true));
-        attributes.push_back(new entity::attribute("BoilingPoint", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("FreezingPoint", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
-        attributes.push_back(new entity::attribute("ThermalConductivity", new named_type(IFC2X3_IfcThermalConductivityMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("SpecificHeatCapacity", new named_type(IFC2X3_IfcSpecificHeatCapacityMeasure_type), true));
+        attributes.push_back(new attribute("BoilingPoint", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("FreezingPoint", new named_type(IFC2X3_IfcThermodynamicTemperatureMeasure_type), true));
+        attributes.push_back(new attribute("ThermalConductivity", new named_type(IFC2X3_IfcThermalConductivityMeasure_type), true));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcThermalMaterialProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
-        attributes.push_back(new entity::attribute("Description", new named_type(IFC2X3_IfcText_type), true));
-        attributes.push_back(new entity::attribute("StartTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
-        attributes.push_back(new entity::attribute("EndTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
-        attributes.push_back(new entity::attribute("TimeSeriesDataType", new named_type(IFC2X3_IfcTimeSeriesDataTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("DataOrigin", new named_type(IFC2X3_IfcDataOriginEnum_type), false));
-        attributes.push_back(new entity::attribute("UserDefinedDataOrigin", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("Name", new named_type(IFC2X3_IfcLabel_type), false));
+        attributes.push_back(new attribute("Description", new named_type(IFC2X3_IfcText_type), true));
+        attributes.push_back(new attribute("StartTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        attributes.push_back(new attribute("EndTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        attributes.push_back(new attribute("TimeSeriesDataType", new named_type(IFC2X3_IfcTimeSeriesDataTypeEnum_type), false));
+        attributes.push_back(new attribute("DataOrigin", new named_type(IFC2X3_IfcDataOriginEnum_type), false));
+        attributes.push_back(new attribute("UserDefinedDataOrigin", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Unit", new named_type(IFC2X3_IfcUnit_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTimeSeries_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ReferencedTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), false));
-        attributes.push_back(new entity::attribute("TimeSeriesReferences", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDocumentSelect_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ReferencedTimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), false));
+        attributes.push_back(new attribute("TimeSeriesReferences", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcDocumentSelect_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTimeSeriesReferenceRelationship_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("ApplicableDates", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcDateTimeSelect_type)), true));
-        attributes.push_back(new entity::attribute("TimeSeriesScheduleType", new named_type(IFC2X3_IfcTimeSeriesScheduleTypeEnum_type), false));
-        attributes.push_back(new entity::attribute("TimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("ApplicableDates", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcDateTimeSelect_type)), true));
+        attributes.push_back(new attribute("TimeSeriesScheduleType", new named_type(IFC2X3_IfcTimeSeriesScheduleTypeEnum_type), false));
+        attributes.push_back(new attribute("TimeSeries", new named_type(IFC2X3_IfcTimeSeries_type), false));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTimeSeriesSchedule_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("ListValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("ListValues", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcValue_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcTimeSeriesValue_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcTopologicalRepresentationItem_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(4);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTopologyRepresentation_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcTransformerTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcTransformerTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTransformerType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::attribute("OperationType", new named_type(IFC2X3_IfcTransportElementTypeEnum_type), true));
-        attributes.push_back(new entity::attribute("CapacityByWeight", new named_type(IFC2X3_IfcMassMeasure_type), true));
-        attributes.push_back(new entity::attribute("CapacityByNumber", new named_type(IFC2X3_IfcCountMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new attribute("OperationType", new named_type(IFC2X3_IfcTransportElementTypeEnum_type), true));
+        attributes.push_back(new attribute("CapacityByWeight", new named_type(IFC2X3_IfcMassMeasure_type), true));
+        attributes.push_back(new attribute("CapacityByNumber", new named_type(IFC2X3_IfcCountMeasure_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTransportElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcTransportElementTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcTransportElementTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTransportElementType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("BottomXDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("TopXDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("YDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("TopXOffset", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("BottomXDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("TopXDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("YDim", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("TopXOffset", new named_type(IFC2X3_IfcLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(7);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTrapeziumProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
-        attributes.push_back(new entity::attribute("Trim1", new aggregation_type(aggregation_type::set_type, 1, 2, new named_type(IFC2X3_IfcTrimmingSelect_type)), false));
-        attributes.push_back(new entity::attribute("Trim2", new aggregation_type(aggregation_type::set_type, 1, 2, new named_type(IFC2X3_IfcTrimmingSelect_type)), false));
-        attributes.push_back(new entity::attribute("SenseAgreement", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("MasterRepresentation", new named_type(IFC2X3_IfcTrimmingPreference_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("BasisCurve", new named_type(IFC2X3_IfcCurve_type), false));
+        attributes.push_back(new attribute("Trim1", new aggregation_type(aggregation_type::set_type, 1, 2, new named_type(IFC2X3_IfcTrimmingSelect_type)), false));
+        attributes.push_back(new attribute("Trim2", new aggregation_type(aggregation_type::set_type, 1, 2, new named_type(IFC2X3_IfcTrimmingSelect_type)), false));
+        attributes.push_back(new attribute("SenseAgreement", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("MasterRepresentation", new named_type(IFC2X3_IfcTrimmingPreference_type), false));
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTrimmedCurve_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcTubeBundleTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcTubeBundleTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTubeBundleType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("SecondRepeatFactor", new named_type(IFC2X3_IfcVector_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("SecondRepeatFactor", new named_type(IFC2X3_IfcVector_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTwoDirectionRepeatFactor_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("ApplicableOccurrence", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("HasPropertySets", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPropertySetDefinition_type)), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("ApplicableOccurrence", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("HasPropertySets", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPropertySetDefinition_type)), true));
         std::vector<bool> derived; derived.reserve(6);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTypeObject_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("RepresentationMaps", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcRepresentationMap_type)), true));
-        attributes.push_back(new entity::attribute("Tag", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("RepresentationMaps", new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(IFC2X3_IfcRepresentationMap_type)), true));
+        attributes.push_back(new attribute("Tag", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcTypeProduct_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(8);
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("EdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("FlangeSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
-        attributes.push_back(new entity::attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(8);
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("EdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("FlangeSlope", new named_type(IFC2X3_IfcPlaneAngleMeasure_type), true));
+        attributes.push_back(new attribute("CentreOfGravityInX", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(11);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcUShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("Units", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcUnit_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("Units", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcUnit_type)), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcUnitAssignment_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcUnitaryEquipmentTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcUnitaryEquipmentTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcUnitaryEquipmentType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcValveTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcValveTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcValveType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("Orientation", new named_type(IFC2X3_IfcDirection_type), false));
-        attributes.push_back(new entity::attribute("Magnitude", new named_type(IFC2X3_IfcLengthMeasure_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("Orientation", new named_type(IFC2X3_IfcDirection_type), false));
+        attributes.push_back(new attribute("Magnitude", new named_type(IFC2X3_IfcLengthMeasure_type), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcVector_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(0);
         
         IFC2X3_IfcVertex_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("TextureVertices", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IFC2X3_IfcTextureVertex_type)), false));
-        attributes.push_back(new entity::attribute("TexturePoints", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("TextureVertices", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IFC2X3_IfcTextureVertex_type)), false));
+        attributes.push_back(new attribute("TexturePoints", new aggregation_type(aggregation_type::list_type, 3, -1, new named_type(IFC2X3_IfcCartesianPoint_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcVertexBasedTextureMap_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("LoopVertex", new named_type(IFC2X3_IfcVertex_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("LoopVertex", new named_type(IFC2X3_IfcVertex_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcVertexLoop_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("VertexGeometry", new named_type(IFC2X3_IfcPoint_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("VertexGeometry", new named_type(IFC2X3_IfcPoint_type), false));
         std::vector<bool> derived; derived.reserve(1);
         derived.push_back(false);
         IFC2X3_IfcVertexPoint_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcVibrationIsolatorTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcVibrationIsolatorTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcVibrationIsolatorType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcVirtualElement_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("IntersectingAxes", new aggregation_type(aggregation_type::list_type, 2, 2, new named_type(IFC2X3_IfcGridAxis_type)), false));
-        attributes.push_back(new entity::attribute("OffsetDistances", new aggregation_type(aggregation_type::list_type, 2, 3, new named_type(IFC2X3_IfcLengthMeasure_type)), false));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("IntersectingAxes", new aggregation_type(aggregation_type::list_type, 2, 2, new named_type(IFC2X3_IfcGridAxis_type)), false));
+        attributes.push_back(new attribute("OffsetDistances", new aggregation_type(aggregation_type::list_type, 2, 3, new named_type(IFC2X3_IfcLengthMeasure_type)), false));
         std::vector<bool> derived; derived.reserve(2);
         derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcVirtualGridIntersection_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWall_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWallStandardCase_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcWallTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcWallTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWallType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::attribute("PredefinedType", new named_type(IFC2X3_IfcWasteTerminalTypeEnum_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new attribute("PredefinedType", new named_type(IFC2X3_IfcWasteTerminalTypeEnum_type), false));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWasteTerminalType_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(7);
-        attributes.push_back(new entity::attribute("IsPotable", new simple_type(simple_type::boolean_type), true));
-        attributes.push_back(new entity::attribute("Hardness", new named_type(IFC2X3_IfcIonConcentrationMeasure_type), true));
-        attributes.push_back(new entity::attribute("AlkalinityConcentration", new named_type(IFC2X3_IfcIonConcentrationMeasure_type), true));
-        attributes.push_back(new entity::attribute("AcidityConcentration", new named_type(IFC2X3_IfcIonConcentrationMeasure_type), true));
-        attributes.push_back(new entity::attribute("ImpuritiesContent", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("PHLevel", new named_type(IFC2X3_IfcPHMeasure_type), true));
-        attributes.push_back(new entity::attribute("DissolvedSolidsContent", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(7);
+        attributes.push_back(new attribute("IsPotable", new simple_type(simple_type::boolean_type), true));
+        attributes.push_back(new attribute("Hardness", new named_type(IFC2X3_IfcIonConcentrationMeasure_type), true));
+        attributes.push_back(new attribute("AlkalinityConcentration", new named_type(IFC2X3_IfcIonConcentrationMeasure_type), true));
+        attributes.push_back(new attribute("AcidityConcentration", new named_type(IFC2X3_IfcIonConcentrationMeasure_type), true));
+        attributes.push_back(new attribute("ImpuritiesContent", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("PHLevel", new named_type(IFC2X3_IfcPHMeasure_type), true));
+        attributes.push_back(new attribute("DissolvedSolidsContent", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
         std::vector<bool> derived; derived.reserve(8);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWaterProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("OverallWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new attribute("OverallHeight", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("OverallWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(10);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWindow_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(9);
-        attributes.push_back(new entity::attribute("LiningDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("LiningThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("TransomThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("MullionThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("FirstTransomOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("SecondTransomOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("FirstMullionOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("SecondMullionOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(9);
+        attributes.push_back(new attribute("LiningDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("LiningThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("TransomThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("MullionThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("FirstTransomOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("SecondTransomOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("FirstMullionOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("SecondMullionOffset", new named_type(IFC2X3_IfcNormalisedRatioMeasure_type), true));
+        attributes.push_back(new attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
         std::vector<bool> derived; derived.reserve(13);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWindowLiningProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(5);
-        attributes.push_back(new entity::attribute("OperationType", new named_type(IFC2X3_IfcWindowPanelOperationEnum_type), false));
-        attributes.push_back(new entity::attribute("PanelPosition", new named_type(IFC2X3_IfcWindowPanelPositionEnum_type), false));
-        attributes.push_back(new entity::attribute("FrameDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("FrameThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(5);
+        attributes.push_back(new attribute("OperationType", new named_type(IFC2X3_IfcWindowPanelOperationEnum_type), false));
+        attributes.push_back(new attribute("PanelPosition", new named_type(IFC2X3_IfcWindowPanelPositionEnum_type), false));
+        attributes.push_back(new attribute("FrameDepth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("FrameThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("ShapeAspectStyle", new named_type(IFC2X3_IfcShapeAspect_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWindowPanelProperties_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::attribute("ConstructionType", new named_type(IFC2X3_IfcWindowStyleConstructionEnum_type), false));
-        attributes.push_back(new entity::attribute("OperationType", new named_type(IFC2X3_IfcWindowStyleOperationEnum_type), false));
-        attributes.push_back(new entity::attribute("ParameterTakesPrecedence", new simple_type(simple_type::boolean_type), false));
-        attributes.push_back(new entity::attribute("Sizeable", new simple_type(simple_type::boolean_type), false));
+        std::vector<const attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new attribute("ConstructionType", new named_type(IFC2X3_IfcWindowStyleConstructionEnum_type), false));
+        attributes.push_back(new attribute("OperationType", new named_type(IFC2X3_IfcWindowStyleOperationEnum_type), false));
+        attributes.push_back(new attribute("ParameterTakesPrecedence", new simple_type(simple_type::boolean_type), false));
+        attributes.push_back(new attribute("Sizeable", new simple_type(simple_type::boolean_type), false));
         std::vector<bool> derived; derived.reserve(12);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWindowStyle_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(10);
-        attributes.push_back(new entity::attribute("Identifier", new named_type(IFC2X3_IfcIdentifier_type), false));
-        attributes.push_back(new entity::attribute("CreationDate", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
-        attributes.push_back(new entity::attribute("Creators", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPerson_type)), true));
-        attributes.push_back(new entity::attribute("Purpose", new named_type(IFC2X3_IfcLabel_type), true));
-        attributes.push_back(new entity::attribute("Duration", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("TotalFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
-        attributes.push_back(new entity::attribute("StartTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
-        attributes.push_back(new entity::attribute("FinishTime", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
-        attributes.push_back(new entity::attribute("WorkControlType", new named_type(IFC2X3_IfcWorkControlTypeEnum_type), true));
-        attributes.push_back(new entity::attribute("UserDefinedControlType", new named_type(IFC2X3_IfcLabel_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(10);
+        attributes.push_back(new attribute("Identifier", new named_type(IFC2X3_IfcIdentifier_type), false));
+        attributes.push_back(new attribute("CreationDate", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        attributes.push_back(new attribute("Creators", new aggregation_type(aggregation_type::set_type, 1, -1, new named_type(IFC2X3_IfcPerson_type)), true));
+        attributes.push_back(new attribute("Purpose", new named_type(IFC2X3_IfcLabel_type), true));
+        attributes.push_back(new attribute("Duration", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("TotalFloat", new named_type(IFC2X3_IfcTimeMeasure_type), true));
+        attributes.push_back(new attribute("StartTime", new named_type(IFC2X3_IfcDateTimeSelect_type), false));
+        attributes.push_back(new attribute("FinishTime", new named_type(IFC2X3_IfcDateTimeSelect_type), true));
+        attributes.push_back(new attribute("WorkControlType", new named_type(IFC2X3_IfcWorkControlTypeEnum_type), true));
+        attributes.push_back(new attribute("UserDefinedControlType", new named_type(IFC2X3_IfcLabel_type), true));
         std::vector<bool> derived; derived.reserve(15);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWorkControl_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(15);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWorkPlan_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(15);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcWorkSchedule_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
-        attributes.push_back(new entity::attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
-        attributes.push_back(new entity::attribute("EdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        std::vector<const attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new attribute("Depth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeWidth", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("WebThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FlangeThickness", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), false));
+        attributes.push_back(new attribute("FilletRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
+        attributes.push_back(new attribute("EdgeRadius", new named_type(IFC2X3_IfcPositiveLengthMeasure_type), true));
         std::vector<bool> derived; derived.reserve(9);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcZShapeProfileDef_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::attribute*> attributes; attributes.reserve(0);
+        std::vector<const attribute*> attributes; attributes.reserve(0);
         std::vector<bool> derived; derived.reserve(5);
         derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false); derived.push_back(false);
         IFC2X3_IfcZone_type->set_attributes(attributes, derived);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("IsActingUpon", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToActor_type, IFC2X3_IfcRelAssignsToActor_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("IsActingUpon", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToActor_type, IFC2X3_IfcRelAssignsToActor_type->attributes()[0]));
         IFC2X3_IfcActor_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("OfPerson", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPerson_type, IFC2X3_IfcPerson_type->attributes()[7]));
-        attributes.push_back(new entity::inverse_attribute("OfOrganization", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcOrganization_type, IFC2X3_IfcOrganization_type->attributes()[4]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("OfPerson", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPerson_type, IFC2X3_IfcPerson_type->attributes()[7]));
+        attributes.push_back(new inverse_attribute("OfOrganization", inverse_attribute::set_type, 0, -1, IFC2X3_IfcOrganization_type, IFC2X3_IfcOrganization_type->attributes()[4]));
         IFC2X3_IfcAddress_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ContainedInStructure", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ContainedInStructure", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[0]));
         IFC2X3_IfcAnnotation_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("ValuesReferenced", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcReferencesValueDocument_type, IFC2X3_IfcReferencesValueDocument_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ValueOfComponents", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcAppliedValueRelationship_type, IFC2X3_IfcAppliedValueRelationship_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("IsComponentIn", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcAppliedValueRelationship_type, IFC2X3_IfcAppliedValueRelationship_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("ValuesReferenced", inverse_attribute::set_type, 0, -1, IFC2X3_IfcReferencesValueDocument_type, IFC2X3_IfcReferencesValueDocument_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ValueOfComponents", inverse_attribute::set_type, 0, -1, IFC2X3_IfcAppliedValueRelationship_type, IFC2X3_IfcAppliedValueRelationship_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("IsComponentIn", inverse_attribute::set_type, 0, -1, IFC2X3_IfcAppliedValueRelationship_type, IFC2X3_IfcAppliedValueRelationship_type->attributes()[1]));
         IFC2X3_IfcAppliedValue_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("Actors", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcApprovalActorRelationship_type, IFC2X3_IfcApprovalActorRelationship_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("IsRelatedWith", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcApprovalRelationship_type, IFC2X3_IfcApprovalRelationship_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("Relates", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcApprovalRelationship_type, IFC2X3_IfcApprovalRelationship_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("Actors", inverse_attribute::set_type, 0, -1, IFC2X3_IfcApprovalActorRelationship_type, IFC2X3_IfcApprovalActorRelationship_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("IsRelatedWith", inverse_attribute::set_type, 0, -1, IFC2X3_IfcApprovalRelationship_type, IFC2X3_IfcApprovalRelationship_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("Relates", inverse_attribute::set_type, 0, -1, IFC2X3_IfcApprovalRelationship_type, IFC2X3_IfcApprovalRelationship_type->attributes()[1]));
         IFC2X3_IfcApproval_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("Contains", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcClassificationItem_type, IFC2X3_IfcClassificationItem_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("Contains", inverse_attribute::set_type, 0, -1, IFC2X3_IfcClassificationItem_type, IFC2X3_IfcClassificationItem_type->attributes()[1]));
         IFC2X3_IfcClassification_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("IsClassifiedItemIn", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcClassificationItemRelationship_type, IFC2X3_IfcClassificationItemRelationship_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("IsClassifyingItemIn", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcClassificationItemRelationship_type, IFC2X3_IfcClassificationItemRelationship_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("IsClassifiedItemIn", inverse_attribute::set_type, 0, 1, IFC2X3_IfcClassificationItemRelationship_type, IFC2X3_IfcClassificationItemRelationship_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("IsClassifyingItemIn", inverse_attribute::set_type, 0, 1, IFC2X3_IfcClassificationItemRelationship_type, IFC2X3_IfcClassificationItemRelationship_type->attributes()[0]));
         IFC2X3_IfcClassificationItem_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("UsingCurves", entity::inverse_attribute::set_type, 1, -1, IFC2X3_IfcCompositeCurve_type, IFC2X3_IfcCompositeCurve_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("UsingCurves", inverse_attribute::set_type, 1, -1, IFC2X3_IfcCompositeCurve_type, IFC2X3_IfcCompositeCurve_type->attributes()[0]));
         IFC2X3_IfcCompositeCurveSegment_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(6);
-        attributes.push_back(new entity::inverse_attribute("ClassifiedAs", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintClassificationRelationship_type, IFC2X3_IfcConstraintClassificationRelationship_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("RelatesConstraints", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintRelationship_type, IFC2X3_IfcConstraintRelationship_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("IsRelatedWith", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintRelationship_type, IFC2X3_IfcConstraintRelationship_type->attributes()[3]));
-        attributes.push_back(new entity::inverse_attribute("PropertiesForConstraint", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPropertyConstraintRelationship_type, IFC2X3_IfcPropertyConstraintRelationship_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("Aggregates", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintAggregationRelationship_type, IFC2X3_IfcConstraintAggregationRelationship_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("IsAggregatedIn", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintAggregationRelationship_type, IFC2X3_IfcConstraintAggregationRelationship_type->attributes()[3]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(6);
+        attributes.push_back(new inverse_attribute("ClassifiedAs", inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintClassificationRelationship_type, IFC2X3_IfcConstraintClassificationRelationship_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("RelatesConstraints", inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintRelationship_type, IFC2X3_IfcConstraintRelationship_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("IsRelatedWith", inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintRelationship_type, IFC2X3_IfcConstraintRelationship_type->attributes()[3]));
+        attributes.push_back(new inverse_attribute("PropertiesForConstraint", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPropertyConstraintRelationship_type, IFC2X3_IfcPropertyConstraintRelationship_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("Aggregates", inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintAggregationRelationship_type, IFC2X3_IfcConstraintAggregationRelationship_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("IsAggregatedIn", inverse_attribute::set_type, 0, -1, IFC2X3_IfcConstraintAggregationRelationship_type, IFC2X3_IfcConstraintAggregationRelationship_type->attributes()[3]));
         IFC2X3_IfcConstraint_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("Controls", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToControl_type, IFC2X3_IfcRelAssignsToControl_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("Controls", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToControl_type, IFC2X3_IfcRelAssignsToControl_type->attributes()[0]));
         IFC2X3_IfcControl_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("CoversSpaces", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelCoversSpaces_type, IFC2X3_IfcRelCoversSpaces_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("Covers", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelCoversBldgElements_type, IFC2X3_IfcRelCoversBldgElements_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("CoversSpaces", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelCoversSpaces_type, IFC2X3_IfcRelCoversSpaces_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("Covers", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelCoversBldgElements_type, IFC2X3_IfcRelCoversBldgElements_type->attributes()[1]));
         IFC2X3_IfcCovering_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("AnnotatedBySymbols", entity::inverse_attribute::set_type, 0, 2, IFC2X3_IfcTerminatorSymbol_type, IFC2X3_IfcTerminatorSymbol_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("AnnotatedBySymbols", inverse_attribute::set_type, 0, 2, IFC2X3_IfcTerminatorSymbol_type, IFC2X3_IfcTerminatorSymbol_type->attributes()[0]));
         IFC2X3_IfcDimensionCurve_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("AssignedToFlowElement", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelFlowControlElements_type, IFC2X3_IfcRelFlowControlElements_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("AssignedToFlowElement", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelFlowControlElements_type, IFC2X3_IfcRelFlowControlElements_type->attributes()[0]));
         IFC2X3_IfcDistributionControlElement_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("HasControlElements", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelFlowControlElements_type, IFC2X3_IfcRelFlowControlElements_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("HasControlElements", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelFlowControlElements_type, IFC2X3_IfcRelFlowControlElements_type->attributes()[1]));
         IFC2X3_IfcDistributionFlowElement_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("IsPointedTo", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcDocumentInformationRelationship_type, IFC2X3_IfcDocumentInformationRelationship_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("IsPointer", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcDocumentInformationRelationship_type, IFC2X3_IfcDocumentInformationRelationship_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("IsPointedTo", inverse_attribute::set_type, 0, -1, IFC2X3_IfcDocumentInformationRelationship_type, IFC2X3_IfcDocumentInformationRelationship_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("IsPointer", inverse_attribute::set_type, 0, 1, IFC2X3_IfcDocumentInformationRelationship_type, IFC2X3_IfcDocumentInformationRelationship_type->attributes()[0]));
         IFC2X3_IfcDocumentInformation_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ReferenceToDocument", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcDocumentInformation_type, IFC2X3_IfcDocumentInformation_type->attributes()[3]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ReferenceToDocument", inverse_attribute::set_type, 0, 1, IFC2X3_IfcDocumentInformation_type, IFC2X3_IfcDocumentInformation_type->attributes()[3]));
         IFC2X3_IfcDocumentReference_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("IsRelatedFromCallout", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcDraughtingCalloutRelationship_type, IFC2X3_IfcDraughtingCalloutRelationship_type->attributes()[3]));
-        attributes.push_back(new entity::inverse_attribute("IsRelatedToCallout", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcDraughtingCalloutRelationship_type, IFC2X3_IfcDraughtingCalloutRelationship_type->attributes()[2]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("IsRelatedFromCallout", inverse_attribute::set_type, 0, -1, IFC2X3_IfcDraughtingCalloutRelationship_type, IFC2X3_IfcDraughtingCalloutRelationship_type->attributes()[3]));
+        attributes.push_back(new inverse_attribute("IsRelatedToCallout", inverse_attribute::set_type, 0, -1, IFC2X3_IfcDraughtingCalloutRelationship_type, IFC2X3_IfcDraughtingCalloutRelationship_type->attributes()[2]));
         IFC2X3_IfcDraughtingCallout_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(12);
-        attributes.push_back(new entity::inverse_attribute("HasStructuralMember", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralElement_type, IFC2X3_IfcRelConnectsStructuralElement_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("FillsVoids", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelFillsElement_type, IFC2X3_IfcRelFillsElement_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ConnectedTo", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsElements_type, IFC2X3_IfcRelConnectsElements_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("HasCoverings", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelCoversBldgElements_type, IFC2X3_IfcRelCoversBldgElements_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("HasProjections", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelProjectsElement_type, IFC2X3_IfcRelProjectsElement_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("ReferencedInStructures", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelReferencedInSpatialStructure_type, IFC2X3_IfcRelReferencedInSpatialStructure_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("HasPorts", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsPortToElement_type, IFC2X3_IfcRelConnectsPortToElement_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("HasOpenings", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelVoidsElement_type, IFC2X3_IfcRelVoidsElement_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("IsConnectionRealization", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsWithRealizingElements_type, IFC2X3_IfcRelConnectsWithRealizingElements_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("ProvidesBoundaries", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSpaceBoundary_type, IFC2X3_IfcRelSpaceBoundary_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ConnectedFrom", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsElements_type, IFC2X3_IfcRelConnectsElements_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("ContainedInStructure", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(12);
+        attributes.push_back(new inverse_attribute("HasStructuralMember", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralElement_type, IFC2X3_IfcRelConnectsStructuralElement_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("FillsVoids", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelFillsElement_type, IFC2X3_IfcRelFillsElement_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ConnectedTo", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsElements_type, IFC2X3_IfcRelConnectsElements_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("HasCoverings", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelCoversBldgElements_type, IFC2X3_IfcRelCoversBldgElements_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("HasProjections", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelProjectsElement_type, IFC2X3_IfcRelProjectsElement_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("ReferencedInStructures", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelReferencedInSpatialStructure_type, IFC2X3_IfcRelReferencedInSpatialStructure_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("HasPorts", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsPortToElement_type, IFC2X3_IfcRelConnectsPortToElement_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("HasOpenings", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelVoidsElement_type, IFC2X3_IfcRelVoidsElement_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("IsConnectionRealization", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsWithRealizingElements_type, IFC2X3_IfcRelConnectsWithRealizingElements_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("ProvidesBoundaries", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSpaceBoundary_type, IFC2X3_IfcRelSpaceBoundary_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ConnectedFrom", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsElements_type, IFC2X3_IfcRelConnectsElements_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("ContainedInStructure", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[0]));
         IFC2X3_IfcElement_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ProjectsElements", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelProjectsElement_type, IFC2X3_IfcRelProjectsElement_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ProjectsElements", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelProjectsElement_type, IFC2X3_IfcRelProjectsElement_type->attributes()[1]));
         IFC2X3_IfcFeatureElementAddition_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("VoidsElements", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelVoidsElement_type, IFC2X3_IfcRelVoidsElement_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("VoidsElements", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelVoidsElement_type, IFC2X3_IfcRelVoidsElement_type->attributes()[1]));
         IFC2X3_IfcFeatureElementSubtraction_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("HasSubContexts", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcGeometricRepresentationSubContext_type, IFC2X3_IfcGeometricRepresentationSubContext_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("HasSubContexts", inverse_attribute::set_type, 0, -1, IFC2X3_IfcGeometricRepresentationSubContext_type, IFC2X3_IfcGeometricRepresentationSubContext_type->attributes()[0]));
         IFC2X3_IfcGeometricRepresentationContext_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ContainedInStructure", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ContainedInStructure", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[0]));
         IFC2X3_IfcGrid_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::inverse_attribute("PartOfW", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcGrid_type, IFC2X3_IfcGrid_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("PartOfV", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcGrid_type, IFC2X3_IfcGrid_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("PartOfU", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcGrid_type, IFC2X3_IfcGrid_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("HasIntersections", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcVirtualGridIntersection_type, IFC2X3_IfcVirtualGridIntersection_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new inverse_attribute("PartOfW", inverse_attribute::set_type, 0, 1, IFC2X3_IfcGrid_type, IFC2X3_IfcGrid_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("PartOfV", inverse_attribute::set_type, 0, 1, IFC2X3_IfcGrid_type, IFC2X3_IfcGrid_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("PartOfU", inverse_attribute::set_type, 0, 1, IFC2X3_IfcGrid_type, IFC2X3_IfcGrid_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("HasIntersections", inverse_attribute::set_type, 0, -1, IFC2X3_IfcVirtualGridIntersection_type, IFC2X3_IfcVirtualGridIntersection_type->attributes()[0]));
         IFC2X3_IfcGridAxis_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("IsGroupedBy", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelAssignsToGroup_type, IFC2X3_IfcRelAssignsToGroup_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("IsGroupedBy", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelAssignsToGroup_type, IFC2X3_IfcRelAssignsToGroup_type->attributes()[0]));
         IFC2X3_IfcGroup_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ReferenceIntoLibrary", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcLibraryInformation_type, IFC2X3_IfcLibraryInformation_type->attributes()[4]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ReferenceIntoLibrary", inverse_attribute::set_type, 0, 1, IFC2X3_IfcLibraryInformation_type, IFC2X3_IfcLibraryInformation_type->attributes()[4]));
         IFC2X3_IfcLibraryReference_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("HasRepresentation", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcMaterialDefinitionRepresentation_type, IFC2X3_IfcMaterialDefinitionRepresentation_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("ClassifiedAs", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcMaterialClassificationRelationship_type, IFC2X3_IfcMaterialClassificationRelationship_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("HasRepresentation", inverse_attribute::set_type, 0, 1, IFC2X3_IfcMaterialDefinitionRepresentation_type, IFC2X3_IfcMaterialDefinitionRepresentation_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("ClassifiedAs", inverse_attribute::set_type, 0, 1, IFC2X3_IfcMaterialClassificationRelationship_type, IFC2X3_IfcMaterialClassificationRelationship_type->attributes()[1]));
         IFC2X3_IfcMaterial_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ToMaterialLayerSet", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcMaterialLayerSet_type, IFC2X3_IfcMaterialLayerSet_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ToMaterialLayerSet", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcMaterialLayerSet_type, IFC2X3_IfcMaterialLayerSet_type->attributes()[0]));
         IFC2X3_IfcMaterialLayer_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("IsDefinedBy", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelDefines_type, IFC2X3_IfcRelDefines_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("IsDefinedBy", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelDefines_type, IFC2X3_IfcRelDefines_type->attributes()[0]));
         IFC2X3_IfcObject_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(4);
-        attributes.push_back(new entity::inverse_attribute("HasAssignments", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssigns_type, IFC2X3_IfcRelAssigns_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("IsDecomposedBy", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelDecomposes_type, IFC2X3_IfcRelDecomposes_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("Decomposes", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelDecomposes_type, IFC2X3_IfcRelDecomposes_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("HasAssociations", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssociates_type, IFC2X3_IfcRelAssociates_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(4);
+        attributes.push_back(new inverse_attribute("HasAssignments", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssigns_type, IFC2X3_IfcRelAssigns_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("IsDecomposedBy", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelDecomposes_type, IFC2X3_IfcRelDecomposes_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("Decomposes", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelDecomposes_type, IFC2X3_IfcRelDecomposes_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("HasAssociations", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssociates_type, IFC2X3_IfcRelAssociates_type->attributes()[0]));
         IFC2X3_IfcObjectDefinition_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("PlacesObject", entity::inverse_attribute::set_type, 1, 1, IFC2X3_IfcProduct_type, IFC2X3_IfcProduct_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("ReferencedByPlacements", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcLocalPlacement_type, IFC2X3_IfcLocalPlacement_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("PlacesObject", inverse_attribute::set_type, 1, 1, IFC2X3_IfcProduct_type, IFC2X3_IfcProduct_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("ReferencedByPlacements", inverse_attribute::set_type, 0, -1, IFC2X3_IfcLocalPlacement_type, IFC2X3_IfcLocalPlacement_type->attributes()[0]));
         IFC2X3_IfcObjectPlacement_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("HasFillings", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelFillsElement_type, IFC2X3_IfcRelFillsElement_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("HasFillings", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelFillsElement_type, IFC2X3_IfcRelFillsElement_type->attributes()[0]));
         IFC2X3_IfcOpeningElement_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("IsRelatedBy", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcOrganizationRelationship_type, IFC2X3_IfcOrganizationRelationship_type->attributes()[3]));
-        attributes.push_back(new entity::inverse_attribute("Relates", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcOrganizationRelationship_type, IFC2X3_IfcOrganizationRelationship_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("Engages", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPersonAndOrganization_type, IFC2X3_IfcPersonAndOrganization_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("IsRelatedBy", inverse_attribute::set_type, 0, -1, IFC2X3_IfcOrganizationRelationship_type, IFC2X3_IfcOrganizationRelationship_type->attributes()[3]));
+        attributes.push_back(new inverse_attribute("Relates", inverse_attribute::set_type, 0, -1, IFC2X3_IfcOrganizationRelationship_type, IFC2X3_IfcOrganizationRelationship_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("Engages", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPersonAndOrganization_type, IFC2X3_IfcPersonAndOrganization_type->attributes()[1]));
         IFC2X3_IfcOrganization_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("EngagedIn", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPersonAndOrganization_type, IFC2X3_IfcPersonAndOrganization_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("EngagedIn", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPersonAndOrganization_type, IFC2X3_IfcPersonAndOrganization_type->attributes()[0]));
         IFC2X3_IfcPerson_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("PartOfComplex", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcPhysicalComplexQuantity_type, IFC2X3_IfcPhysicalComplexQuantity_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("PartOfComplex", inverse_attribute::set_type, 0, 1, IFC2X3_IfcPhysicalComplexQuantity_type, IFC2X3_IfcPhysicalComplexQuantity_type->attributes()[0]));
         IFC2X3_IfcPhysicalQuantity_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("ContainedIn", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelConnectsPortToElement_type, IFC2X3_IfcRelConnectsPortToElement_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("ConnectedFrom", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelConnectsPorts_type, IFC2X3_IfcRelConnectsPorts_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ConnectedTo", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelConnectsPorts_type, IFC2X3_IfcRelConnectsPorts_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("ContainedIn", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelConnectsPortToElement_type, IFC2X3_IfcRelConnectsPortToElement_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("ConnectedFrom", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelConnectsPorts_type, IFC2X3_IfcRelConnectsPorts_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ConnectedTo", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelConnectsPorts_type, IFC2X3_IfcRelConnectsPorts_type->attributes()[0]));
         IFC2X3_IfcPort_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("OperatesOn", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToProcess_type, IFC2X3_IfcRelAssignsToProcess_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("IsSuccessorFrom", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSequence_type, IFC2X3_IfcRelSequence_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("IsPredecessorTo", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSequence_type, IFC2X3_IfcRelSequence_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("OperatesOn", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToProcess_type, IFC2X3_IfcRelAssignsToProcess_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("IsSuccessorFrom", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSequence_type, IFC2X3_IfcRelSequence_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("IsPredecessorTo", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSequence_type, IFC2X3_IfcRelSequence_type->attributes()[0]));
         IFC2X3_IfcProcess_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ReferencedBy", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToProduct_type, IFC2X3_IfcRelAssignsToProduct_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ReferencedBy", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToProduct_type, IFC2X3_IfcRelAssignsToProduct_type->attributes()[0]));
         IFC2X3_IfcProduct_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("ShapeOfProduct", entity::inverse_attribute::set_type, 1, 1, IFC2X3_IfcProduct_type, IFC2X3_IfcProduct_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("HasShapeAspects", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcShapeAspect_type, IFC2X3_IfcShapeAspect_type->attributes()[4]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("ShapeOfProduct", inverse_attribute::set_type, 1, 1, IFC2X3_IfcProduct_type, IFC2X3_IfcProduct_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("HasShapeAspects", inverse_attribute::set_type, 0, -1, IFC2X3_IfcShapeAspect_type, IFC2X3_IfcShapeAspect_type->attributes()[4]));
         IFC2X3_IfcProductDefinitionShape_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("PropertyForDependance", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPropertyDependencyRelationship_type, IFC2X3_IfcPropertyDependencyRelationship_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("PropertyDependsOn", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPropertyDependencyRelationship_type, IFC2X3_IfcPropertyDependencyRelationship_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("PartOfComplex", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcComplexProperty_type, IFC2X3_IfcComplexProperty_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("PropertyForDependance", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPropertyDependencyRelationship_type, IFC2X3_IfcPropertyDependencyRelationship_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("PropertyDependsOn", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPropertyDependencyRelationship_type, IFC2X3_IfcPropertyDependencyRelationship_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("PartOfComplex", inverse_attribute::set_type, 0, 1, IFC2X3_IfcComplexProperty_type, IFC2X3_IfcComplexProperty_type->attributes()[1]));
         IFC2X3_IfcProperty_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("HasAssociations", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssociates_type, IFC2X3_IfcRelAssociates_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("HasAssociations", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssociates_type, IFC2X3_IfcRelAssociates_type->attributes()[0]));
         IFC2X3_IfcPropertyDefinition_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("PropertyDefinitionOf", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelDefinesByProperties_type, IFC2X3_IfcRelDefinesByProperties_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("DefinesType", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcTypeObject_type, IFC2X3_IfcTypeObject_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("PropertyDefinitionOf", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelDefinesByProperties_type, IFC2X3_IfcRelDefinesByProperties_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("DefinesType", inverse_attribute::set_type, 0, 1, IFC2X3_IfcTypeObject_type, IFC2X3_IfcTypeObject_type->attributes()[1]));
         IFC2X3_IfcPropertySetDefinition_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("RepresentationMap", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRepresentationMap_type, IFC2X3_IfcRepresentationMap_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("LayerAssignments", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPresentationLayerAssignment_type, IFC2X3_IfcPresentationLayerAssignment_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("OfProductRepresentation", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcProductRepresentation_type, IFC2X3_IfcProductRepresentation_type->attributes()[2]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("RepresentationMap", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRepresentationMap_type, IFC2X3_IfcRepresentationMap_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("LayerAssignments", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPresentationLayerAssignment_type, IFC2X3_IfcPresentationLayerAssignment_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("OfProductRepresentation", inverse_attribute::set_type, 0, 1, IFC2X3_IfcProductRepresentation_type, IFC2X3_IfcProductRepresentation_type->attributes()[2]));
         IFC2X3_IfcRepresentation_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("RepresentationsInContext", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRepresentation_type, IFC2X3_IfcRepresentation_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("RepresentationsInContext", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRepresentation_type, IFC2X3_IfcRepresentation_type->attributes()[0]));
         IFC2X3_IfcRepresentationContext_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("LayerAssignments", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcPresentationLayerAssignment_type, IFC2X3_IfcPresentationLayerAssignment_type->attributes()[2]));
-        attributes.push_back(new entity::inverse_attribute("StyledByItem", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcStyledItem_type, IFC2X3_IfcStyledItem_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("LayerAssignments", inverse_attribute::set_type, 0, -1, IFC2X3_IfcPresentationLayerAssignment_type, IFC2X3_IfcPresentationLayerAssignment_type->attributes()[2]));
+        attributes.push_back(new inverse_attribute("StyledByItem", inverse_attribute::set_type, 0, 1, IFC2X3_IfcStyledItem_type, IFC2X3_IfcStyledItem_type->attributes()[0]));
         IFC2X3_IfcRepresentationItem_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("MapUsage", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcMappedItem_type, IFC2X3_IfcMappedItem_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("MapUsage", inverse_attribute::set_type, 0, -1, IFC2X3_IfcMappedItem_type, IFC2X3_IfcMappedItem_type->attributes()[0]));
         IFC2X3_IfcRepresentationMap_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ResourceOf", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToResource_type, IFC2X3_IfcRelAssignsToResource_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ResourceOf", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelAssignsToResource_type, IFC2X3_IfcRelAssignsToResource_type->attributes()[0]));
         IFC2X3_IfcResource_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ScheduleTimeControlAssigned", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelAssignsTasks_type, IFC2X3_IfcRelAssignsTasks_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ScheduleTimeControlAssigned", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelAssignsTasks_type, IFC2X3_IfcRelAssignsTasks_type->attributes()[0]));
         IFC2X3_IfcScheduleTimeControl_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("OfShapeAspect", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcShapeAspect_type, IFC2X3_IfcShapeAspect_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("OfShapeAspect", inverse_attribute::set_type, 0, 1, IFC2X3_IfcShapeAspect_type, IFC2X3_IfcShapeAspect_type->attributes()[0]));
         IFC2X3_IfcShapeModel_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("HasCoverings", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelCoversSpaces_type, IFC2X3_IfcRelCoversSpaces_type->attributes()[0]));
-        attributes.push_back(new entity::inverse_attribute("BoundedBy", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSpaceBoundary_type, IFC2X3_IfcRelSpaceBoundary_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("HasCoverings", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelCoversSpaces_type, IFC2X3_IfcRelCoversSpaces_type->attributes()[0]));
+        attributes.push_back(new inverse_attribute("BoundedBy", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelSpaceBoundary_type, IFC2X3_IfcRelSpaceBoundary_type->attributes()[0]));
         IFC2X3_IfcSpace_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("HasInteractionReqsFrom", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelInteractionRequirements_type, IFC2X3_IfcRelInteractionRequirements_type->attributes()[3]));
-        attributes.push_back(new entity::inverse_attribute("HasInteractionReqsTo", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelInteractionRequirements_type, IFC2X3_IfcRelInteractionRequirements_type->attributes()[4]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("HasInteractionReqsFrom", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelInteractionRequirements_type, IFC2X3_IfcRelInteractionRequirements_type->attributes()[3]));
+        attributes.push_back(new inverse_attribute("HasInteractionReqsTo", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelInteractionRequirements_type, IFC2X3_IfcRelInteractionRequirements_type->attributes()[4]));
         IFC2X3_IfcSpaceProgram_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(3);
-        attributes.push_back(new entity::inverse_attribute("ReferencesElements", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelReferencedInSpatialStructure_type, IFC2X3_IfcRelReferencedInSpatialStructure_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ServicedBySystems", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelServicesBuildings_type, IFC2X3_IfcRelServicesBuildings_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ContainsElements", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(3);
+        attributes.push_back(new inverse_attribute("ReferencesElements", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelReferencedInSpatialStructure_type, IFC2X3_IfcRelReferencedInSpatialStructure_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ServicedBySystems", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelServicesBuildings_type, IFC2X3_IfcRelServicesBuildings_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ContainsElements", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelContainedInSpatialStructure_type, IFC2X3_IfcRelContainedInSpatialStructure_type->attributes()[1]));
         IFC2X3_IfcSpatialStructureElement_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("AssignedToStructuralItem", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelConnectsStructuralActivity_type, IFC2X3_IfcRelConnectsStructuralActivity_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("AssignedToStructuralItem", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcRelConnectsStructuralActivity_type, IFC2X3_IfcRelConnectsStructuralActivity_type->attributes()[1]));
         IFC2X3_IfcStructuralActivity_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ConnectsStructuralMembers", entity::inverse_attribute::set_type, 1, -1, IFC2X3_IfcRelConnectsStructuralMember_type, IFC2X3_IfcRelConnectsStructuralMember_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ConnectsStructuralMembers", inverse_attribute::set_type, 1, -1, IFC2X3_IfcRelConnectsStructuralMember_type, IFC2X3_IfcRelConnectsStructuralMember_type->attributes()[1]));
         IFC2X3_IfcStructuralConnection_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("AssignedStructuralActivity", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralActivity_type, IFC2X3_IfcRelConnectsStructuralActivity_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("AssignedStructuralActivity", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralActivity_type, IFC2X3_IfcRelConnectsStructuralActivity_type->attributes()[0]));
         IFC2X3_IfcStructuralItem_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("SourceOfResultGroup", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcStructuralResultGroup_type, IFC2X3_IfcStructuralResultGroup_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("LoadGroupFor", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcStructuralAnalysisModel_type, IFC2X3_IfcStructuralAnalysisModel_type->attributes()[2]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("SourceOfResultGroup", inverse_attribute::set_type, 0, 1, IFC2X3_IfcStructuralResultGroup_type, IFC2X3_IfcStructuralResultGroup_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("LoadGroupFor", inverse_attribute::set_type, 0, -1, IFC2X3_IfcStructuralAnalysisModel_type, IFC2X3_IfcStructuralAnalysisModel_type->attributes()[2]));
         IFC2X3_IfcStructuralLoadGroup_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(2);
-        attributes.push_back(new entity::inverse_attribute("ReferencesElement", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralElement_type, IFC2X3_IfcRelConnectsStructuralElement_type->attributes()[1]));
-        attributes.push_back(new entity::inverse_attribute("ConnectedBy", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralMember_type, IFC2X3_IfcRelConnectsStructuralMember_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(2);
+        attributes.push_back(new inverse_attribute("ReferencesElement", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralElement_type, IFC2X3_IfcRelConnectsStructuralElement_type->attributes()[1]));
+        attributes.push_back(new inverse_attribute("ConnectedBy", inverse_attribute::set_type, 0, -1, IFC2X3_IfcRelConnectsStructuralMember_type, IFC2X3_IfcRelConnectsStructuralMember_type->attributes()[0]));
         IFC2X3_IfcStructuralMember_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("Causes", entity::inverse_attribute::set_type, 0, -1, IFC2X3_IfcStructuralAction_type, IFC2X3_IfcStructuralAction_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("Causes", inverse_attribute::set_type, 0, -1, IFC2X3_IfcStructuralAction_type, IFC2X3_IfcStructuralAction_type->attributes()[1]));
         IFC2X3_IfcStructuralReaction_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ResultGroupFor", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcStructuralAnalysisModel_type, IFC2X3_IfcStructuralAnalysisModel_type->attributes()[3]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ResultGroupFor", inverse_attribute::set_type, 0, 1, IFC2X3_IfcStructuralAnalysisModel_type, IFC2X3_IfcStructuralAnalysisModel_type->attributes()[3]));
         IFC2X3_IfcStructuralResultGroup_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ServicesBuildings", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelServicesBuildings_type, IFC2X3_IfcRelServicesBuildings_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ServicesBuildings", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelServicesBuildings_type, IFC2X3_IfcRelServicesBuildings_type->attributes()[0]));
         IFC2X3_IfcSystem_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("OfTable", entity::inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcTable_type, IFC2X3_IfcTable_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("OfTable", inverse_attribute::unspecified_type, -1, -1, IFC2X3_IfcTable_type, IFC2X3_IfcTable_type->attributes()[1]));
         IFC2X3_IfcTableRow_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("AnnotatedSurface", entity::inverse_attribute::set_type, 1, 1, IFC2X3_IfcAnnotationSurface_type, IFC2X3_IfcAnnotationSurface_type->attributes()[1]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("AnnotatedSurface", inverse_attribute::set_type, 1, 1, IFC2X3_IfcAnnotationSurface_type, IFC2X3_IfcAnnotationSurface_type->attributes()[1]));
         IFC2X3_IfcTextureCoordinate_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("DocumentedBy", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcTimeSeriesReferenceRelationship_type, IFC2X3_IfcTimeSeriesReferenceRelationship_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("DocumentedBy", inverse_attribute::set_type, 0, 1, IFC2X3_IfcTimeSeriesReferenceRelationship_type, IFC2X3_IfcTimeSeriesReferenceRelationship_type->attributes()[0]));
         IFC2X3_IfcTimeSeries_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity::inverse_attribute*> attributes; attributes.reserve(1);
-        attributes.push_back(new entity::inverse_attribute("ObjectTypeOf", entity::inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelDefinesByType_type, IFC2X3_IfcRelDefinesByType_type->attributes()[0]));
+        std::vector<const inverse_attribute*> attributes; attributes.reserve(1);
+        attributes.push_back(new inverse_attribute("ObjectTypeOf", inverse_attribute::set_type, 0, 1, IFC2X3_IfcRelDefinesByType_type, IFC2X3_IfcRelDefinesByType_type->attributes()[0]));
         IFC2X3_IfcTypeObject_type->set_inverse_attributes(attributes);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_Ifc2DCompositeCurve_type);
+        IFC2X3_IfcCompositeCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(15);
+        defs.push_back(IFC2X3_IfcActionRequest_type);defs.push_back(IFC2X3_IfcConditionCriterion_type);defs.push_back(IFC2X3_IfcCostItem_type);defs.push_back(IFC2X3_IfcCostSchedule_type);defs.push_back(IFC2X3_IfcEquipmentStandard_type);defs.push_back(IFC2X3_IfcFurnitureStandard_type);defs.push_back(IFC2X3_IfcPerformanceHistory_type);defs.push_back(IFC2X3_IfcPermit_type);defs.push_back(IFC2X3_IfcProjectOrder_type);defs.push_back(IFC2X3_IfcProjectOrderRecord_type);defs.push_back(IFC2X3_IfcScheduleTimeControl_type);defs.push_back(IFC2X3_IfcServiceLife_type);defs.push_back(IFC2X3_IfcSpaceProgram_type);defs.push_back(IFC2X3_IfcTimeSeriesSchedule_type);defs.push_back(IFC2X3_IfcWorkControl_type);
+        IFC2X3_IfcControl_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC2X3_IfcActor_type);defs.push_back(IFC2X3_IfcControl_type);defs.push_back(IFC2X3_IfcGroup_type);defs.push_back(IFC2X3_IfcProcess_type);defs.push_back(IFC2X3_IfcProduct_type);defs.push_back(IFC2X3_IfcProject_type);defs.push_back(IFC2X3_IfcResource_type);
+        IFC2X3_IfcObject_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcActuatorType_type);defs.push_back(IFC2X3_IfcAlarmType_type);defs.push_back(IFC2X3_IfcControllerType_type);defs.push_back(IFC2X3_IfcFlowInstrumentType_type);defs.push_back(IFC2X3_IfcSensorType_type);
+        IFC2X3_IfcDistributionControlElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC2X3_IfcAirTerminalBoxType_type);defs.push_back(IFC2X3_IfcDamperType_type);defs.push_back(IFC2X3_IfcElectricTimeControlType_type);defs.push_back(IFC2X3_IfcFlowMeterType_type);defs.push_back(IFC2X3_IfcProtectiveDeviceType_type);defs.push_back(IFC2X3_IfcSwitchingDeviceType_type);defs.push_back(IFC2X3_IfcValveType_type);
+        IFC2X3_IfcFlowControllerType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(11);
+        defs.push_back(IFC2X3_IfcAirTerminalType_type);defs.push_back(IFC2X3_IfcElectricApplianceType_type);defs.push_back(IFC2X3_IfcElectricHeaterType_type);defs.push_back(IFC2X3_IfcFireSuppressionTerminalType_type);defs.push_back(IFC2X3_IfcGasTerminalType_type);defs.push_back(IFC2X3_IfcLampType_type);defs.push_back(IFC2X3_IfcLightFixtureType_type);defs.push_back(IFC2X3_IfcOutletType_type);defs.push_back(IFC2X3_IfcSanitaryTerminalType_type);defs.push_back(IFC2X3_IfcStackTerminalType_type);defs.push_back(IFC2X3_IfcWasteTerminalType_type);
+        IFC2X3_IfcFlowTerminalType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(18);
+        defs.push_back(IFC2X3_IfcAirToAirHeatRecoveryType_type);defs.push_back(IFC2X3_IfcBoilerType_type);defs.push_back(IFC2X3_IfcChillerType_type);defs.push_back(IFC2X3_IfcCoilType_type);defs.push_back(IFC2X3_IfcCondenserType_type);defs.push_back(IFC2X3_IfcCooledBeamType_type);defs.push_back(IFC2X3_IfcCoolingTowerType_type);defs.push_back(IFC2X3_IfcElectricGeneratorType_type);defs.push_back(IFC2X3_IfcElectricMotorType_type);defs.push_back(IFC2X3_IfcEvaporativeCoolerType_type);defs.push_back(IFC2X3_IfcEvaporatorType_type);defs.push_back(IFC2X3_IfcHeatExchangerType_type);defs.push_back(IFC2X3_IfcHumidifierType_type);defs.push_back(IFC2X3_IfcMotorConnectionType_type);defs.push_back(IFC2X3_IfcSpaceHeaterType_type);defs.push_back(IFC2X3_IfcTransformerType_type);defs.push_back(IFC2X3_IfcTubeBundleType_type);defs.push_back(IFC2X3_IfcUnitaryEquipmentType_type);
+        IFC2X3_IfcEnergyConversionDeviceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcAngularDimension_type);defs.push_back(IFC2X3_IfcDiameterDimension_type);defs.push_back(IFC2X3_IfcLinearDimension_type);defs.push_back(IFC2X3_IfcRadiusDimension_type);
+        IFC2X3_IfcDimensionCurveDirectedCallout_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC2X3_IfcAnnotation_type);defs.push_back(IFC2X3_IfcElement_type);defs.push_back(IFC2X3_IfcGrid_type);defs.push_back(IFC2X3_IfcPort_type);defs.push_back(IFC2X3_IfcProxy_type);defs.push_back(IFC2X3_IfcSpatialStructureElement_type);defs.push_back(IFC2X3_IfcStructuralActivity_type);defs.push_back(IFC2X3_IfcStructuralItem_type);
+        IFC2X3_IfcProduct_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcAnnotationCurveOccurrence_type);defs.push_back(IFC2X3_IfcAnnotationFillAreaOccurrence_type);defs.push_back(IFC2X3_IfcAnnotationSurfaceOccurrence_type);defs.push_back(IFC2X3_IfcAnnotationSymbolOccurrence_type);defs.push_back(IFC2X3_IfcAnnotationTextOccurrence_type);
+        IFC2X3_IfcAnnotationOccurrence_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(28);
+        defs.push_back(IFC2X3_IfcAnnotationFillArea_type);defs.push_back(IFC2X3_IfcAnnotationSurface_type);defs.push_back(IFC2X3_IfcBooleanResult_type);defs.push_back(IFC2X3_IfcBoundingBox_type);defs.push_back(IFC2X3_IfcCartesianTransformationOperator_type);defs.push_back(IFC2X3_IfcCompositeCurveSegment_type);defs.push_back(IFC2X3_IfcCsgPrimitive3D_type);defs.push_back(IFC2X3_IfcCurve_type);defs.push_back(IFC2X3_IfcDefinedSymbol_type);defs.push_back(IFC2X3_IfcDirection_type);defs.push_back(IFC2X3_IfcDraughtingCallout_type);defs.push_back(IFC2X3_IfcFaceBasedSurfaceModel_type);defs.push_back(IFC2X3_IfcFillAreaStyleHatching_type);defs.push_back(IFC2X3_IfcFillAreaStyleTileSymbolWithStyle_type);defs.push_back(IFC2X3_IfcFillAreaStyleTiles_type);defs.push_back(IFC2X3_IfcGeometricSet_type);defs.push_back(IFC2X3_IfcHalfSpaceSolid_type);defs.push_back(IFC2X3_IfcLightSource_type);defs.push_back(IFC2X3_IfcOneDirectionRepeatFactor_type);defs.push_back(IFC2X3_IfcPlacement_type);defs.push_back(IFC2X3_IfcPlanarExtent_type);defs.push_back(IFC2X3_IfcPoint_type);defs.push_back(IFC2X3_IfcSectionedSpine_type);defs.push_back(IFC2X3_IfcShellBasedSurfaceModel_type);defs.push_back(IFC2X3_IfcSolidModel_type);defs.push_back(IFC2X3_IfcSurface_type);defs.push_back(IFC2X3_IfcTextLiteral_type);defs.push_back(IFC2X3_IfcVector_type);
+        IFC2X3_IfcGeometricRepresentationItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcAnnotationOccurrence_type);
+        IFC2X3_IfcStyledItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcArbitraryClosedProfileDef_type);defs.push_back(IFC2X3_IfcArbitraryOpenProfileDef_type);defs.push_back(IFC2X3_IfcCompositeProfileDef_type);defs.push_back(IFC2X3_IfcDerivedProfileDef_type);defs.push_back(IFC2X3_IfcParameterizedProfileDef_type);
+        IFC2X3_IfcProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcArbitraryProfileDefWithVoids_type);
+        IFC2X3_IfcArbitraryClosedProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC2X3_IfcAsset_type);defs.push_back(IFC2X3_IfcCondition_type);defs.push_back(IFC2X3_IfcInventory_type);defs.push_back(IFC2X3_IfcStructuralLoadGroup_type);defs.push_back(IFC2X3_IfcStructuralResultGroup_type);defs.push_back(IFC2X3_IfcSystem_type);defs.push_back(IFC2X3_IfcZone_type);
+        IFC2X3_IfcGroup_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcAsymmetricIShapeProfileDef_type);
+        IFC2X3_IfcIShapeProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcAxis1Placement_type);defs.push_back(IFC2X3_IfcAxis2Placement2D_type);defs.push_back(IFC2X3_IfcAxis2Placement3D_type);
+        IFC2X3_IfcPlacement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcBSplineCurve_type);defs.push_back(IFC2X3_IfcCompositeCurve_type);defs.push_back(IFC2X3_IfcPolyline_type);defs.push_back(IFC2X3_IfcTrimmedCurve_type);
+        IFC2X3_IfcBoundedCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(20);
+        defs.push_back(IFC2X3_IfcBeam_type);defs.push_back(IFC2X3_IfcBuildingElementComponent_type);defs.push_back(IFC2X3_IfcBuildingElementProxy_type);defs.push_back(IFC2X3_IfcColumn_type);defs.push_back(IFC2X3_IfcCovering_type);defs.push_back(IFC2X3_IfcCurtainWall_type);defs.push_back(IFC2X3_IfcDoor_type);defs.push_back(IFC2X3_IfcFooting_type);defs.push_back(IFC2X3_IfcMember_type);defs.push_back(IFC2X3_IfcPile_type);defs.push_back(IFC2X3_IfcPlate_type);defs.push_back(IFC2X3_IfcRailing_type);defs.push_back(IFC2X3_IfcRamp_type);defs.push_back(IFC2X3_IfcRampFlight_type);defs.push_back(IFC2X3_IfcRoof_type);defs.push_back(IFC2X3_IfcSlab_type);defs.push_back(IFC2X3_IfcStair_type);defs.push_back(IFC2X3_IfcStairFlight_type);defs.push_back(IFC2X3_IfcWall_type);defs.push_back(IFC2X3_IfcWindow_type);
+        IFC2X3_IfcBuildingElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(12);
+        defs.push_back(IFC2X3_IfcBeamType_type);defs.push_back(IFC2X3_IfcBuildingElementProxyType_type);defs.push_back(IFC2X3_IfcColumnType_type);defs.push_back(IFC2X3_IfcCoveringType_type);defs.push_back(IFC2X3_IfcCurtainWallType_type);defs.push_back(IFC2X3_IfcMemberType_type);defs.push_back(IFC2X3_IfcPlateType_type);defs.push_back(IFC2X3_IfcRailingType_type);defs.push_back(IFC2X3_IfcRampFlightType_type);defs.push_back(IFC2X3_IfcSlabType_type);defs.push_back(IFC2X3_IfcStairFlightType_type);defs.push_back(IFC2X3_IfcWallType_type);
+        IFC2X3_IfcBuildingElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcBezierCurve_type);
+        IFC2X3_IfcBSplineCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcBlobTexture_type);defs.push_back(IFC2X3_IfcImageTexture_type);defs.push_back(IFC2X3_IfcPixelTexture_type);
+        IFC2X3_IfcSurfaceTexture_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcBlock_type);defs.push_back(IFC2X3_IfcRectangularPyramid_type);defs.push_back(IFC2X3_IfcRightCircularCone_type);defs.push_back(IFC2X3_IfcRightCircularCylinder_type);defs.push_back(IFC2X3_IfcSphere_type);
+        IFC2X3_IfcCsgPrimitive3D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcBooleanClippingResult_type);
+        IFC2X3_IfcBooleanResult_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcBoundaryEdgeCondition_type);defs.push_back(IFC2X3_IfcBoundaryFaceCondition_type);defs.push_back(IFC2X3_IfcBoundaryNodeCondition_type);
+        IFC2X3_IfcBoundaryCondition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcBoundaryNodeConditionWarping_type);
+        IFC2X3_IfcBoundaryNodeCondition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcBoundedCurve_type);defs.push_back(IFC2X3_IfcConic_type);defs.push_back(IFC2X3_IfcLine_type);defs.push_back(IFC2X3_IfcOffsetCurve2D_type);defs.push_back(IFC2X3_IfcOffsetCurve3D_type);
+        IFC2X3_IfcCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcBoundedSurface_type);defs.push_back(IFC2X3_IfcElementarySurface_type);defs.push_back(IFC2X3_IfcSweptSurface_type);
+        IFC2X3_IfcSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcBoxedHalfSpace_type);defs.push_back(IFC2X3_IfcPolygonalBoundedHalfSpace_type);
+        IFC2X3_IfcHalfSpaceSolid_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcBuilding_type);defs.push_back(IFC2X3_IfcBuildingStorey_type);defs.push_back(IFC2X3_IfcSite_type);defs.push_back(IFC2X3_IfcSpace_type);
+        IFC2X3_IfcSpatialStructureElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(10);
+        defs.push_back(IFC2X3_IfcBuildingElement_type);defs.push_back(IFC2X3_IfcDistributionElement_type);defs.push_back(IFC2X3_IfcElectricalElement_type);defs.push_back(IFC2X3_IfcElementAssembly_type);defs.push_back(IFC2X3_IfcElementComponent_type);defs.push_back(IFC2X3_IfcEquipmentElement_type);defs.push_back(IFC2X3_IfcFeatureElement_type);defs.push_back(IFC2X3_IfcFurnishingElement_type);defs.push_back(IFC2X3_IfcTransportElement_type);defs.push_back(IFC2X3_IfcVirtualElement_type);
+        IFC2X3_IfcElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcBuildingElementPart_type);defs.push_back(IFC2X3_IfcReinforcingElement_type);
+        IFC2X3_IfcBuildingElementComponent_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC2X3_IfcBuildingElementType_type);defs.push_back(IFC2X3_IfcDistributionElementType_type);defs.push_back(IFC2X3_IfcElementComponentType_type);defs.push_back(IFC2X3_IfcFurnishingElementType_type);defs.push_back(IFC2X3_IfcSpatialStructureElementType_type);defs.push_back(IFC2X3_IfcTransportElementType_type);
+        IFC2X3_IfcElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(12);
+        defs.push_back(IFC2X3_IfcCShapeProfileDef_type);defs.push_back(IFC2X3_IfcCircleProfileDef_type);defs.push_back(IFC2X3_IfcCraneRailAShapeProfileDef_type);defs.push_back(IFC2X3_IfcCraneRailFShapeProfileDef_type);defs.push_back(IFC2X3_IfcEllipseProfileDef_type);defs.push_back(IFC2X3_IfcIShapeProfileDef_type);defs.push_back(IFC2X3_IfcLShapeProfileDef_type);defs.push_back(IFC2X3_IfcRectangleProfileDef_type);defs.push_back(IFC2X3_IfcTShapeProfileDef_type);defs.push_back(IFC2X3_IfcTrapeziumProfileDef_type);defs.push_back(IFC2X3_IfcUShapeProfileDef_type);defs.push_back(IFC2X3_IfcZShapeProfileDef_type);
+        IFC2X3_IfcParameterizedProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcCableCarrierFittingType_type);defs.push_back(IFC2X3_IfcDuctFittingType_type);defs.push_back(IFC2X3_IfcJunctionBoxType_type);defs.push_back(IFC2X3_IfcPipeFittingType_type);
+        IFC2X3_IfcFlowFittingType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcCableCarrierSegmentType_type);defs.push_back(IFC2X3_IfcCableSegmentType_type);defs.push_back(IFC2X3_IfcDuctSegmentType_type);defs.push_back(IFC2X3_IfcPipeSegmentType_type);
+        IFC2X3_IfcFlowSegmentType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcCartesianPoint_type);defs.push_back(IFC2X3_IfcPointOnCurve_type);defs.push_back(IFC2X3_IfcPointOnSurface_type);
+        IFC2X3_IfcPoint_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcCartesianTransformationOperator2D_type);defs.push_back(IFC2X3_IfcCartesianTransformationOperator3D_type);
+        IFC2X3_IfcCartesianTransformationOperator_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcCartesianTransformationOperator2DnonUniform_type);
+        IFC2X3_IfcCartesianTransformationOperator2D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcCartesianTransformationOperator3DnonUniform_type);
+        IFC2X3_IfcCartesianTransformationOperator3D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcCenterLineProfileDef_type);
+        IFC2X3_IfcArbitraryOpenProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcChamferEdgeFeature_type);defs.push_back(IFC2X3_IfcRoundedEdgeFeature_type);
+        IFC2X3_IfcEdgeFeature_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcCircle_type);defs.push_back(IFC2X3_IfcEllipse_type);
+        IFC2X3_IfcConic_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcCircleHollowProfileDef_type);
+        IFC2X3_IfcCircleProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC2X3_IfcClassificationReference_type);defs.push_back(IFC2X3_IfcDocumentReference_type);defs.push_back(IFC2X3_IfcExternallyDefinedHatchStyle_type);defs.push_back(IFC2X3_IfcExternallyDefinedSurfaceStyle_type);defs.push_back(IFC2X3_IfcExternallyDefinedSymbol_type);defs.push_back(IFC2X3_IfcExternallyDefinedTextFont_type);defs.push_back(IFC2X3_IfcLibraryReference_type);
+        IFC2X3_IfcExternalReference_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcClosedShell_type);defs.push_back(IFC2X3_IfcOpenShell_type);
+        IFC2X3_IfcConnectedFaceSet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcColourRgb_type);
+        IFC2X3_IfcColourSpecification_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcComplexProperty_type);defs.push_back(IFC2X3_IfcSimpleProperty_type);
+        IFC2X3_IfcProperty_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcCompressorType_type);defs.push_back(IFC2X3_IfcFanType_type);defs.push_back(IFC2X3_IfcPumpType_type);
+        IFC2X3_IfcFlowMovingDeviceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC2X3_IfcConnectedFaceSet_type);defs.push_back(IFC2X3_IfcEdge_type);defs.push_back(IFC2X3_IfcFace_type);defs.push_back(IFC2X3_IfcFaceBound_type);defs.push_back(IFC2X3_IfcLoop_type);defs.push_back(IFC2X3_IfcPath_type);defs.push_back(IFC2X3_IfcVertex_type);
+        IFC2X3_IfcTopologicalRepresentationItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcConnectionCurveGeometry_type);defs.push_back(IFC2X3_IfcConnectionPointGeometry_type);defs.push_back(IFC2X3_IfcConnectionPortGeometry_type);defs.push_back(IFC2X3_IfcConnectionSurfaceGeometry_type);
+        IFC2X3_IfcConnectionGeometry_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcConnectionPointEccentricity_type);
+        IFC2X3_IfcConnectionPointGeometry_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC2X3_IfcConstructionEquipmentResource_type);defs.push_back(IFC2X3_IfcConstructionMaterialResource_type);defs.push_back(IFC2X3_IfcConstructionProductResource_type);defs.push_back(IFC2X3_IfcCrewResource_type);defs.push_back(IFC2X3_IfcLaborResource_type);defs.push_back(IFC2X3_IfcSubContractResource_type);
+        IFC2X3_IfcConstructionResource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcConstructionResource_type);
+        IFC2X3_IfcResource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcContextDependentUnit_type);defs.push_back(IFC2X3_IfcConversionBasedUnit_type);defs.push_back(IFC2X3_IfcSIUnit_type);
+        IFC2X3_IfcNamedUnit_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcCostValue_type);defs.push_back(IFC2X3_IfcEnvironmentalImpactValue_type);
+        IFC2X3_IfcAppliedValue_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcCsgSolid_type);defs.push_back(IFC2X3_IfcManifoldSolidBrep_type);defs.push_back(IFC2X3_IfcSweptAreaSolid_type);defs.push_back(IFC2X3_IfcSweptDiskSolid_type);
+        IFC2X3_IfcSolidModel_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcCurveBoundedPlane_type);defs.push_back(IFC2X3_IfcRectangularTrimmedSurface_type);
+        IFC2X3_IfcBoundedSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcCurveStyle_type);defs.push_back(IFC2X3_IfcFillAreaStyle_type);defs.push_back(IFC2X3_IfcSurfaceStyle_type);defs.push_back(IFC2X3_IfcSymbolStyle_type);defs.push_back(IFC2X3_IfcTextStyle_type);
+        IFC2X3_IfcPresentationStyle_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDimensionCalloutRelationship_type);defs.push_back(IFC2X3_IfcDimensionPair_type);
+        IFC2X3_IfcDraughtingCalloutRelationship_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDimensionCurve_type);defs.push_back(IFC2X3_IfcProjectionCurve_type);
+        IFC2X3_IfcAnnotationCurveOccurrence_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDimensionCurveDirectedCallout_type);defs.push_back(IFC2X3_IfcStructuredDimensionCallout_type);
+        IFC2X3_IfcDraughtingCallout_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcDimensionCurveTerminator_type);
+        IFC2X3_IfcTerminatorSymbol_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDiscreteAccessory_type);defs.push_back(IFC2X3_IfcFastener_type);
+        IFC2X3_IfcElementComponent_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDiscreteAccessoryType_type);defs.push_back(IFC2X3_IfcFastenerType_type);
+        IFC2X3_IfcElementComponentType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(9);
+        defs.push_back(IFC2X3_IfcDistributionChamberElement_type);defs.push_back(IFC2X3_IfcEnergyConversionDevice_type);defs.push_back(IFC2X3_IfcFlowController_type);defs.push_back(IFC2X3_IfcFlowFitting_type);defs.push_back(IFC2X3_IfcFlowMovingDevice_type);defs.push_back(IFC2X3_IfcFlowSegment_type);defs.push_back(IFC2X3_IfcFlowStorageDevice_type);defs.push_back(IFC2X3_IfcFlowTerminal_type);defs.push_back(IFC2X3_IfcFlowTreatmentDevice_type);
+        IFC2X3_IfcDistributionFlowElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(9);
+        defs.push_back(IFC2X3_IfcDistributionChamberElementType_type);defs.push_back(IFC2X3_IfcEnergyConversionDeviceType_type);defs.push_back(IFC2X3_IfcFlowControllerType_type);defs.push_back(IFC2X3_IfcFlowFittingType_type);defs.push_back(IFC2X3_IfcFlowMovingDeviceType_type);defs.push_back(IFC2X3_IfcFlowSegmentType_type);defs.push_back(IFC2X3_IfcFlowStorageDeviceType_type);defs.push_back(IFC2X3_IfcFlowTerminalType_type);defs.push_back(IFC2X3_IfcFlowTreatmentDeviceType_type);
+        IFC2X3_IfcDistributionFlowElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDistributionControlElement_type);defs.push_back(IFC2X3_IfcDistributionFlowElement_type);
+        IFC2X3_IfcDistributionElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDistributionControlElementType_type);defs.push_back(IFC2X3_IfcDistributionFlowElementType_type);
+        IFC2X3_IfcDistributionElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcDistributionPort_type);
+        IFC2X3_IfcPort_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(14);
+        defs.push_back(IFC2X3_IfcDoorLiningProperties_type);defs.push_back(IFC2X3_IfcDoorPanelProperties_type);defs.push_back(IFC2X3_IfcElementQuantity_type);defs.push_back(IFC2X3_IfcEnergyProperties_type);defs.push_back(IFC2X3_IfcFluidFlowProperties_type);defs.push_back(IFC2X3_IfcPermeableCoveringProperties_type);defs.push_back(IFC2X3_IfcPropertySet_type);defs.push_back(IFC2X3_IfcReinforcementDefinitionProperties_type);defs.push_back(IFC2X3_IfcServiceLifeFactor_type);defs.push_back(IFC2X3_IfcSoundProperties_type);defs.push_back(IFC2X3_IfcSoundValue_type);defs.push_back(IFC2X3_IfcSpaceThermalLoadProperties_type);defs.push_back(IFC2X3_IfcWindowLiningProperties_type);defs.push_back(IFC2X3_IfcWindowPanelProperties_type);
+        IFC2X3_IfcPropertySetDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcDoorStyle_type);defs.push_back(IFC2X3_IfcElementType_type);defs.push_back(IFC2X3_IfcWindowStyle_type);
+        IFC2X3_IfcTypeProduct_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcDraughtingPreDefinedColour_type);
+        IFC2X3_IfcPreDefinedColour_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcDraughtingPreDefinedCurveFont_type);
+        IFC2X3_IfcPreDefinedCurveFont_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDraughtingPreDefinedTextFont_type);defs.push_back(IFC2X3_IfcTextStyleFontModel_type);
+        IFC2X3_IfcPreDefinedTextFont_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcDuctSilencerType_type);defs.push_back(IFC2X3_IfcFilterType_type);
+        IFC2X3_IfcFlowTreatmentDeviceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcEdgeCurve_type);defs.push_back(IFC2X3_IfcOrientedEdge_type);defs.push_back(IFC2X3_IfcSubedge_type);
+        IFC2X3_IfcEdge_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcEdgeFeature_type);defs.push_back(IFC2X3_IfcOpeningElement_type);
+        IFC2X3_IfcFeatureElementSubtraction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcEdgeLoop_type);defs.push_back(IFC2X3_IfcPolyLoop_type);defs.push_back(IFC2X3_IfcVertexLoop_type);
+        IFC2X3_IfcLoop_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcElectricDistributionPoint_type);
+        IFC2X3_IfcFlowController_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcElectricFlowStorageDeviceType_type);defs.push_back(IFC2X3_IfcTankType_type);
+        IFC2X3_IfcFlowStorageDeviceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcElectricalBaseProperties_type);
+        IFC2X3_IfcEnergyProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcElectricalCircuit_type);defs.push_back(IFC2X3_IfcStructuralAnalysisModel_type);
+        IFC2X3_IfcSystem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(9);
+        defs.push_back(IFC2X3_IfcExtendedMaterialProperties_type);defs.push_back(IFC2X3_IfcFuelProperties_type);defs.push_back(IFC2X3_IfcGeneralMaterialProperties_type);defs.push_back(IFC2X3_IfcHygroscopicMaterialProperties_type);defs.push_back(IFC2X3_IfcMechanicalMaterialProperties_type);defs.push_back(IFC2X3_IfcOpticalMaterialProperties_type);defs.push_back(IFC2X3_IfcProductsOfCombustionProperties_type);defs.push_back(IFC2X3_IfcThermalMaterialProperties_type);defs.push_back(IFC2X3_IfcWaterProperties_type);
+        IFC2X3_IfcMaterialProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcExtrudedAreaSolid_type);defs.push_back(IFC2X3_IfcRevolvedAreaSolid_type);defs.push_back(IFC2X3_IfcSurfaceCurveSweptAreaSolid_type);
+        IFC2X3_IfcSweptAreaSolid_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcFaceOuterBound_type);
+        IFC2X3_IfcFaceBound_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcFaceSurface_type);
+        IFC2X3_IfcFace_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcFacetedBrep_type);defs.push_back(IFC2X3_IfcFacetedBrepWithVoids_type);
+        IFC2X3_IfcManifoldSolidBrep_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcFailureConnectionCondition_type);defs.push_back(IFC2X3_IfcSlippageConnectionCondition_type);
+        IFC2X3_IfcStructuralConnectionCondition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcFeatureElementAddition_type);defs.push_back(IFC2X3_IfcFeatureElementSubtraction_type);
+        IFC2X3_IfcFeatureElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcFurnitureType_type);defs.push_back(IFC2X3_IfcSystemFurnitureElementType_type);
+        IFC2X3_IfcFurnishingElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcGeneralProfileProperties_type);defs.push_back(IFC2X3_IfcRibPlateProfileProperties_type);
+        IFC2X3_IfcProfileProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcGeometricCurveSet_type);
+        IFC2X3_IfcGeometricSet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcGeometricRepresentationContext_type);
+        IFC2X3_IfcRepresentationContext_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcGeometricRepresentationItem_type);defs.push_back(IFC2X3_IfcMappedItem_type);defs.push_back(IFC2X3_IfcStyledItem_type);defs.push_back(IFC2X3_IfcTopologicalRepresentationItem_type);
+        IFC2X3_IfcRepresentationItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcGeometricRepresentationSubContext_type);
+        IFC2X3_IfcGeometricRepresentationContext_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcGridPlacement_type);defs.push_back(IFC2X3_IfcLocalPlacement_type);
+        IFC2X3_IfcObjectPlacement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcIrregularTimeSeries_type);defs.push_back(IFC2X3_IfcRegularTimeSeries_type);
+        IFC2X3_IfcTimeSeries_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcLightSourceAmbient_type);defs.push_back(IFC2X3_IfcLightSourceDirectional_type);defs.push_back(IFC2X3_IfcLightSourceGoniometric_type);defs.push_back(IFC2X3_IfcLightSourcePositional_type);
+        IFC2X3_IfcLightSource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcLightSourceSpot_type);
+        IFC2X3_IfcLightSourcePositional_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcMaterialDefinitionRepresentation_type);defs.push_back(IFC2X3_IfcProductDefinitionShape_type);
+        IFC2X3_IfcProductRepresentation_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcMechanicalConcreteMaterialProperties_type);defs.push_back(IFC2X3_IfcMechanicalSteelMaterialProperties_type);
+        IFC2X3_IfcMechanicalMaterialProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcMechanicalFastener_type);
+        IFC2X3_IfcFastener_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcMechanicalFastenerType_type);
+        IFC2X3_IfcFastenerType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcMetric_type);defs.push_back(IFC2X3_IfcObjective_type);
+        IFC2X3_IfcConstraint_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcMove_type);defs.push_back(IFC2X3_IfcOrderAction_type);
+        IFC2X3_IfcTask_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcObject_type);defs.push_back(IFC2X3_IfcTypeObject_type);
+        IFC2X3_IfcObjectDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcObjectDefinition_type);defs.push_back(IFC2X3_IfcPropertyDefinition_type);defs.push_back(IFC2X3_IfcRelationship_type);
+        IFC2X3_IfcRoot_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcOccupant_type);
+        IFC2X3_IfcActor_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcPhysicalComplexQuantity_type);defs.push_back(IFC2X3_IfcPhysicalSimpleQuantity_type);
+        IFC2X3_IfcPhysicalQuantity_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcPlanarBox_type);
+        IFC2X3_IfcPlanarExtent_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcPlane_type);
+        IFC2X3_IfcElementarySurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcPostalAddress_type);defs.push_back(IFC2X3_IfcTelecomAddress_type);
+        IFC2X3_IfcAddress_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcPreDefinedColour_type);defs.push_back(IFC2X3_IfcPreDefinedCurveFont_type);defs.push_back(IFC2X3_IfcPreDefinedSymbol_type);defs.push_back(IFC2X3_IfcPreDefinedTextFont_type);
+        IFC2X3_IfcPreDefinedItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcPreDefinedDimensionSymbol_type);defs.push_back(IFC2X3_IfcPreDefinedPointMarkerSymbol_type);defs.push_back(IFC2X3_IfcPreDefinedTerminatorSymbol_type);
+        IFC2X3_IfcPreDefinedSymbol_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcPresentationLayerWithStyle_type);
+        IFC2X3_IfcPresentationLayerAssignment_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcProcedure_type);defs.push_back(IFC2X3_IfcTask_type);
+        IFC2X3_IfcProcess_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcProjectionElement_type);
+        IFC2X3_IfcFeatureElementAddition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC2X3_IfcPropertyBoundedValue_type);defs.push_back(IFC2X3_IfcPropertyEnumeratedValue_type);defs.push_back(IFC2X3_IfcPropertyListValue_type);defs.push_back(IFC2X3_IfcPropertyReferenceValue_type);defs.push_back(IFC2X3_IfcPropertySingleValue_type);defs.push_back(IFC2X3_IfcPropertyTableValue_type);
+        IFC2X3_IfcSimpleProperty_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcPropertySetDefinition_type);
+        IFC2X3_IfcPropertyDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC2X3_IfcQuantityArea_type);defs.push_back(IFC2X3_IfcQuantityCount_type);defs.push_back(IFC2X3_IfcQuantityLength_type);defs.push_back(IFC2X3_IfcQuantityTime_type);defs.push_back(IFC2X3_IfcQuantityVolume_type);defs.push_back(IFC2X3_IfcQuantityWeight_type);
+        IFC2X3_IfcPhysicalSimpleQuantity_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcRationalBezierCurve_type);
+        IFC2X3_IfcBezierCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcRectangleHollowProfileDef_type);defs.push_back(IFC2X3_IfcRoundedRectangleProfileDef_type);
+        IFC2X3_IfcRectangleProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC2X3_IfcReinforcingBar_type);defs.push_back(IFC2X3_IfcReinforcingMesh_type);defs.push_back(IFC2X3_IfcTendon_type);defs.push_back(IFC2X3_IfcTendonAnchor_type);
+        IFC2X3_IfcReinforcingElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcRelAggregates_type);defs.push_back(IFC2X3_IfcRelNests_type);
+        IFC2X3_IfcRelDecomposes_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcRelAssigns_type);defs.push_back(IFC2X3_IfcRelAssociates_type);defs.push_back(IFC2X3_IfcRelConnects_type);defs.push_back(IFC2X3_IfcRelDecomposes_type);defs.push_back(IFC2X3_IfcRelDefines_type);
+        IFC2X3_IfcRelationship_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcRelAssignsTasks_type);defs.push_back(IFC2X3_IfcRelAssignsToProjectOrder_type);defs.push_back(IFC2X3_IfcRelSchedulesCostItems_type);
+        IFC2X3_IfcRelAssignsToControl_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC2X3_IfcRelAssignsToActor_type);defs.push_back(IFC2X3_IfcRelAssignsToControl_type);defs.push_back(IFC2X3_IfcRelAssignsToGroup_type);defs.push_back(IFC2X3_IfcRelAssignsToProcess_type);defs.push_back(IFC2X3_IfcRelAssignsToProduct_type);defs.push_back(IFC2X3_IfcRelAssignsToResource_type);
+        IFC2X3_IfcRelAssigns_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC2X3_IfcRelAssociatesAppliedValue_type);defs.push_back(IFC2X3_IfcRelAssociatesApproval_type);defs.push_back(IFC2X3_IfcRelAssociatesClassification_type);defs.push_back(IFC2X3_IfcRelAssociatesConstraint_type);defs.push_back(IFC2X3_IfcRelAssociatesDocument_type);defs.push_back(IFC2X3_IfcRelAssociatesLibrary_type);defs.push_back(IFC2X3_IfcRelAssociatesMaterial_type);defs.push_back(IFC2X3_IfcRelAssociatesProfileProperties_type);
+        IFC2X3_IfcRelAssociates_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(18);
+        defs.push_back(IFC2X3_IfcRelConnectsElements_type);defs.push_back(IFC2X3_IfcRelConnectsPortToElement_type);defs.push_back(IFC2X3_IfcRelConnectsPorts_type);defs.push_back(IFC2X3_IfcRelConnectsStructuralActivity_type);defs.push_back(IFC2X3_IfcRelConnectsStructuralElement_type);defs.push_back(IFC2X3_IfcRelConnectsStructuralMember_type);defs.push_back(IFC2X3_IfcRelContainedInSpatialStructure_type);defs.push_back(IFC2X3_IfcRelCoversBldgElements_type);defs.push_back(IFC2X3_IfcRelCoversSpaces_type);defs.push_back(IFC2X3_IfcRelFillsElement_type);defs.push_back(IFC2X3_IfcRelFlowControlElements_type);defs.push_back(IFC2X3_IfcRelInteractionRequirements_type);defs.push_back(IFC2X3_IfcRelProjectsElement_type);defs.push_back(IFC2X3_IfcRelReferencedInSpatialStructure_type);defs.push_back(IFC2X3_IfcRelSequence_type);defs.push_back(IFC2X3_IfcRelServicesBuildings_type);defs.push_back(IFC2X3_IfcRelSpaceBoundary_type);defs.push_back(IFC2X3_IfcRelVoidsElement_type);
+        IFC2X3_IfcRelConnects_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcRelConnectsPathElements_type);defs.push_back(IFC2X3_IfcRelConnectsWithRealizingElements_type);
+        IFC2X3_IfcRelConnectsElements_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcRelConnectsWithEccentricity_type);
+        IFC2X3_IfcRelConnectsStructuralMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcRelDefinesByProperties_type);defs.push_back(IFC2X3_IfcRelDefinesByType_type);
+        IFC2X3_IfcRelDefines_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcRelOccupiesSpaces_type);
+        IFC2X3_IfcRelAssignsToActor_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcRelOverridesProperties_type);
+        IFC2X3_IfcRelDefinesByProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcShapeModel_type);defs.push_back(IFC2X3_IfcStyleModel_type);
+        IFC2X3_IfcRepresentation_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcShapeRepresentation_type);defs.push_back(IFC2X3_IfcTopologyRepresentation_type);
+        IFC2X3_IfcShapeModel_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcSpaceType_type);
+        IFC2X3_IfcSpatialStructureElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcStructuralAction_type);defs.push_back(IFC2X3_IfcStructuralReaction_type);
+        IFC2X3_IfcStructuralActivity_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcStructuralConnection_type);defs.push_back(IFC2X3_IfcStructuralMember_type);
+        IFC2X3_IfcStructuralItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcStructuralCurveConnection_type);defs.push_back(IFC2X3_IfcStructuralPointConnection_type);defs.push_back(IFC2X3_IfcStructuralSurfaceConnection_type);
+        IFC2X3_IfcStructuralConnection_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcStructuralCurveMember_type);defs.push_back(IFC2X3_IfcStructuralSurfaceMember_type);
+        IFC2X3_IfcStructuralMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralCurveMemberVarying_type);
+        IFC2X3_IfcStructuralCurveMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC2X3_IfcStructuralLinearAction_type);defs.push_back(IFC2X3_IfcStructuralPlanarAction_type);defs.push_back(IFC2X3_IfcStructuralPointAction_type);
+        IFC2X3_IfcStructuralAction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralLinearActionVarying_type);
+        IFC2X3_IfcStructuralLinearAction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC2X3_IfcStructuralLoadLinearForce_type);defs.push_back(IFC2X3_IfcStructuralLoadPlanarForce_type);defs.push_back(IFC2X3_IfcStructuralLoadSingleDisplacement_type);defs.push_back(IFC2X3_IfcStructuralLoadSingleForce_type);defs.push_back(IFC2X3_IfcStructuralLoadTemperature_type);
+        IFC2X3_IfcStructuralLoadStatic_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralLoadSingleDisplacementDistortion_type);
+        IFC2X3_IfcStructuralLoadSingleDisplacement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralLoadSingleForceWarping_type);
+        IFC2X3_IfcStructuralLoadSingleForce_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralLoadStatic_type);
+        IFC2X3_IfcStructuralLoad_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralPlanarActionVarying_type);
+        IFC2X3_IfcStructuralPlanarAction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralPointReaction_type);
+        IFC2X3_IfcStructuralReaction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralProfileProperties_type);
+        IFC2X3_IfcGeneralProfileProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralSteelProfileProperties_type);
+        IFC2X3_IfcStructuralProfileProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStructuralSurfaceMemberVarying_type);
+        IFC2X3_IfcStructuralSurfaceMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcStyledRepresentation_type);
+        IFC2X3_IfcStyleModel_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcSurfaceOfLinearExtrusion_type);defs.push_back(IFC2X3_IfcSurfaceOfRevolution_type);
+        IFC2X3_IfcSweptSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcSurfaceStyleRendering_type);
+        IFC2X3_IfcSurfaceStyleShading_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcTerminatorSymbol_type);
+        IFC2X3_IfcAnnotationSymbolOccurrence_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcTextLiteralWithExtent_type);
+        IFC2X3_IfcTextLiteral_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcTextureCoordinateGenerator_type);defs.push_back(IFC2X3_IfcTextureMap_type);
+        IFC2X3_IfcTextureCoordinate_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcTwoDirectionRepeatFactor_type);
+        IFC2X3_IfcOneDirectionRepeatFactor_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcTypeProduct_type);
+        IFC2X3_IfcTypeObject_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcVertexPoint_type);
+        IFC2X3_IfcVertex_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcVibrationIsolatorType_type);
+        IFC2X3_IfcDiscreteAccessoryType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC2X3_IfcWallStandardCase_type);
+        IFC2X3_IfcWall_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC2X3_IfcWorkPlan_type);defs.push_back(IFC2X3_IfcWorkSchedule_type);
+        IFC2X3_IfcWorkControl_type->set_subtypes(defs);
     }
 
     std::vector<const declaration*> declarations; declarations.reserve(980);

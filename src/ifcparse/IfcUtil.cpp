@@ -17,8 +17,43 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef _MSC_VER
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef NOMSG
+#define NOMSG NOMSG
+#endif
+#ifndef NODRAWTEXT
+#define NODRAWTEXT NODRAWTEXT
+#endif
+#ifndef NOGDI
+#define NOGDI NOGDI
+#endif
+#ifndef NOSERVICE
+#define NOSERVICE NOSERVICE   
+#endif
+#ifndef NOKERNEL
+#define NOKERNEL NOKERNEL
+#endif
+#ifndef NOUSER
+#define NOUSER NOUSER
+#endif
+#ifndef NOMCX
+#define NOMCX NOMCX
+#endif
+#ifndef NOIME
+#define NOIME NOIME
+#endif
+#include <Windows.h>
+#endif
+
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/Argument.h"
+#include "../ifcparse/utils.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcEntityList.h"
 
@@ -42,6 +77,7 @@ void IfcEntityList::push(const IfcEntityList::ptr& l) {
 	}
 }
 unsigned int IfcEntityList::size() const { return (unsigned int) ls.size(); }
+void IfcEntityList::reserve(unsigned capacity) { ls.reserve((size_t)capacity); }
 IfcEntityList::it IfcEntityList::begin() { return ls.begin(); }
 IfcEntityList::it IfcEntityList::end() { return ls.end(); }
 IfcUtil::IfcBaseClass* IfcEntityList::operator[] (int i) {
@@ -240,3 +276,51 @@ IfcUtil::ArgumentType IfcUtil::from_parameter_type(const IfcParse::parameter_typ
 
 	return IfcUtil::Argument_UNKNOWN;
 }
+
+#ifdef _MSC_VER
+std::string IfcUtil::path::to_utf8(const std::wstring& str) {
+	int buffer_size = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, 0, 0, 0, 0);
+	char* buffer = new char[buffer_size];
+	WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, buffer, buffer_size, 0, 0);
+	std::string str_utf8(buffer);
+	delete[] buffer;
+	return str_utf8;
+}
+
+std::wstring IfcUtil::path::from_utf8(const std::string& str) {
+	int buffer_size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, 0, 0);
+	wchar_t* buffer = new wchar_t[buffer_size];
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer, buffer_size);
+	std::wstring str_wide(buffer);
+	delete[] buffer;
+	return str_wide;
+}
+
+IFC_PARSE_API bool IfcUtil::path::rename_file(const std::string& old_filename, const std::string& new_filename) {
+	std::wstring old_filename_w = from_utf8(old_filename);
+	std::wstring new_filename_w = from_utf8(new_filename);
+	delete_file(new_filename);
+	const bool success = !!MoveFileW(old_filename_w.c_str(), new_filename_w.c_str());
+	return success;
+}
+
+IFC_PARSE_API bool IfcUtil::path::delete_file(const std::string& filename) {
+	std::wstring filename_w = from_utf8(filename);
+	const bool success = !!DeleteFileW(filename_w.c_str());
+	return success;
+}
+
+#else
+
+IFC_PARSE_API bool IfcUtil::path::rename_file(const std::string& old_filename, const std::string& new_filename) {
+	// Whether or not rename() replaces an existing file is implementation-specific,
+	// so remove() possible existing file always.
+	delete_file(new_filename);
+	return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
+}
+
+IFC_PARSE_API bool IfcUtil::path::delete_file(const std::string& filename) {
+	return std::remove(filename.c_str());
+}
+
+#endif

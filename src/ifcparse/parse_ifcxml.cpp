@@ -47,7 +47,7 @@ protected:
 	node_type type_;
 	IfcUtil::IfcBaseClass* inst_;
 	int idx_;
-	const IfcParse::entity::inverse_attribute* inv_;
+	const IfcParse::inverse_attribute* inv_;
 	std::string tagname_;
 	std::string id_in_file_;
 	const IfcParse::parameter_type* aggregate_elem_type_;
@@ -92,7 +92,7 @@ public:
 		return n;
 	}
 
-	static stack_node inverse(IfcUtil::IfcBaseClass* inst, const IfcParse::entity::inverse_attribute* inv) {
+	static stack_node inverse(IfcUtil::IfcBaseClass* inst, const IfcParse::inverse_attribute* inv) {
 		stack_node n;
 		n.type_ = node_inverse;
 		n.inst_ = inst;
@@ -125,7 +125,7 @@ public:
 
 	IfcUtil::IfcBaseClass* inst() const { return inst_; }
 	int idx() const { return idx_; }
-	const IfcParse::entity::inverse_attribute* inv_attr() const { return inv_; }
+	const IfcParse::inverse_attribute* inv_attr() const { return inv_; }
 	const std::string& tagname() const { return tagname_; }
 	const std::string& id_in_file() const { return id_in_file_; }
 	const IfcParse::parameter_type* aggregate_elem_type() const { return aggregate_elem_type_; }
@@ -483,7 +483,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 				auto idx = current->attribute_index(tagname);
 				if (idx == -1) {
 					auto inverses = current->all_inverse_attributes();
-					auto found = std::find_if(inverses.begin(), inverses.end(), [&tagname](const IfcParse::entity::inverse_attribute* attr) {
+					auto found = std::find_if(inverses.begin(), inverses.end(), [&tagname](const IfcParse::inverse_attribute* attr) {
 						return attr->name() == tagname;
 					});
 					if (found == inverses.end()) {

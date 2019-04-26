@@ -17,8 +17,6 @@
 *                                                                              *
 ********************************************************************************/
 
-#include <map>
-
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/version.hpp>
@@ -29,6 +27,7 @@
 #include <algorithm>
 
 #include "../../ifcparse/IfcSIPrefix.h"
+#include "../../ifcparse/utils.h"
 #include "../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 using boost::property_tree::ptree;
@@ -36,7 +35,7 @@ using boost::property_tree::ptree;
 #include "XmlSerializer.h"
 
 namespace {
-	struct factory_t {
+	struct MAKE_TYPE_NAME(factory_t) {
 		XmlSerializer* operator()(IfcParse::IfcFile* file, const std::string& xml_filename) const {
 			MAKE_TYPE_NAME(XmlSerializer)* s = new MAKE_TYPE_NAME(XmlSerializer)(file, xml_filename);
 			s->setFile(file);
@@ -47,7 +46,7 @@ namespace {
 
 void MAKE_INIT_FN(XmlSerializer)(XmlSerializerFactory::Factory* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
-	factory_t factory;
+	MAKE_TYPE_NAME(factory_t) factory;
 	mapping->bind(schema_name, factory);
 }
 
@@ -549,5 +548,7 @@ void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
 #else
 	boost::property_tree::xml_writer_settings<char> settings('\t', 1);
 #endif
-	boost::property_tree::write_xml(xml_filename, root, std::locale(), settings);
+	
+	std::ofstream f(IfcUtil::path::from_utf8(xml_filename).c_str());
+	boost::property_tree::write_xml(f, root, settings);
 }

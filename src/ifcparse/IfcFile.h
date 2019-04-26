@@ -41,6 +41,7 @@ public:
 	typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
 	typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
 	typedef std::map<unsigned int, std::vector<unsigned int> > entities_by_ref_t;
+	typedef std::map<unsigned int, IfcEntityList::ptr> ref_map_t;
 	typedef entity_by_id_t::const_iterator const_iterator;
 
 	class type_iterator : private entities_by_type_t::const_iterator {
@@ -86,6 +87,7 @@ private:
 	entities_by_type_t bytype;
 	entities_by_type_t bytype_excl;
 	entities_by_ref_t byref;
+	ref_map_t by_ref_cached_;
 	entity_by_guid_t byguid;
 	entity_entity_map_t entity_file_map;
 
@@ -180,6 +182,10 @@ public:
 	IfcEntityList::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level=-1);
 
 	IfcEntityList::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
+
+	/// Marks entity as modified so that potential cache for it is invalidated.
+	/// @todo Currently the whole cache is invalidated. Implement more fine-grained invalidation.
+	void mark_entity_as_modified(int id);
 
 	unsigned int FreshId() { return ++MaxId; }
 
