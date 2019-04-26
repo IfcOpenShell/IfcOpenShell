@@ -25,10 +25,6 @@
 #include <ctime>
 #include <boost/circular_buffer.hpp>
 
-#ifdef _MSC_VER
-#include <Windows.h>
-#endif
-
 #include <boost/algorithm/string.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
@@ -39,6 +35,7 @@
 #include "../ifcparse/IfcSpfStream.h"
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcSIPrefix.h"
+#include "../ifcparse/utils.h"
 
 #ifdef USE_IFC4
 #include "../ifcparse/Ifc4-latebound.h"
@@ -122,9 +119,8 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 	, eof(false)
 {
 #ifdef _MSC_VER
-	int fn_buffer_size = MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, 0, 0);
-	wchar_t* fn_wide = new wchar_t[fn_buffer_size];
-	MultiByteToWideChar(CP_UTF8, 0, fn.c_str(), -1, fn_wide, fn_buffer_size);
+	std::wstring fn_ws = IfcUtil::path::from_utf8(fn);
+	const wchar_t* fn_wide = fn_ws.c_str();
 
 #ifdef USE_MMAP
 	if (mmap) {
@@ -136,7 +132,6 @@ IfcSpfStream::IfcSpfStream(const std::string& fn)
 	}
 #endif
 
-	delete[] fn_wide;
 #else
 
 #ifdef USE_MMAP
@@ -1213,7 +1208,9 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 	if (this->file) {
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(copy).apply(visitor);
-	}	
+
+		this->file->mark_entity_as_modified(id_);
+	}
 
 	if (i < attributes_.size()) {
 		attributes_[i] = copy;
@@ -1427,6 +1424,11 @@ IfcEntityList::ptr IfcParse::traverse(IfcUtil::IfcBaseClass* instance, int max_l
 /// @note: for backwards compatibility
 IfcEntityList::ptr IfcFile::traverse(IfcUtil::IfcBaseClass* instance, int max_level) {
 	return IfcParse::traverse(instance, max_level);
+}
+
+void IfcFile::mark_entity_as_modified(int /*id*/)
+{
+	by_ref_cached_.clear();
 }
 
 void IfcFile::addEntities(IfcEntityList::ptr es) {
@@ -1793,17 +1795,25 @@ IfcEntityList::ptr IfcFile::entitiesByType(const std::string& t) {
 
 IfcEntityList::ptr IfcFile::entitiesByReference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
-	IfcEntityList::ptr return_value;
+	IfcEntityList::ptr ret;
 	if (it != byref.end()) {
-		const std::vector<unsigned>& ids = it->second;
-		for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
-			if (!return_value) {
-				return_value.reset(new IfcEntityList);
-			}
-			return_value->push(entityById(*jt));
-		}
+        ref_map_t::const_iterator cached_it = by_ref_cached_.find(t);
+        if (cached_it != by_ref_cached_.end()) {
+            ret = cached_it->second;
+        }
+        else {
+            if (it->second.size()) {
+                ret.reset(new IfcEntityList);            
+                ret->reserve((unsigned)it->second.size());
+                const std::vector<unsigned>& ids = it->second;
+                for (std::vector<unsigned>::const_iterator jt = ids.begin(); jt != ids.end(); ++jt) {
+                    ret->push(entityById(*jt));
+                }
+            }
+            by_ref_cached_[t] = ret;
+        }
 	}
-	return return_value;
+	return ret;
 }
 
 IfcUtil::IfcBaseClass* IfcFile::entityById(int id) {

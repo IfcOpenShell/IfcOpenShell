@@ -52,10 +52,6 @@ namespace IfcUtil {
     IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 
 	IFC_PARSE_API bool valid_binary_string(const std::string& s);
-    /// Replaces spaces and potentially other problem causing characters with underscores.
-    IFC_PARSE_API void sanitate_material_name(std::string &str);
-    IFC_PARSE_API void escape_xml(std::string &str);
-    IFC_PARSE_API void unescape_xml(std::string &str);
 }
 
 class IFC_PARSE_API Argument {
