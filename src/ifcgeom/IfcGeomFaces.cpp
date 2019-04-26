@@ -67,6 +67,7 @@
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 
+#include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
@@ -218,11 +219,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 			process_wire:
 
 				if (face_surface.IsNull()) {
-					if (count(wire, TopAbs_EDGE) > 128) {
+					gp_Pln pln;
+					if (count(wire, TopAbs_EDGE) > 128 && approximate_plane_through_wire(wire, pln)) {
 						// tfk: optimization find the underlying surface ourselves since it's going
 						// to be planar in IFC if no explicit surface is given. Should we always do this?
-						gp_Pln pln;
-						approximate_plane_through_wire(wire, pln);
 						mf = new BRepBuilderAPI_MakeFace(pln, wire, true);
 					} else {
 						mf = new BRepBuilderAPI_MakeFace(wire);
@@ -245,7 +245,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 					// In case of (non-planar) face surface, p-curves need to be computed.
 					// For planar faces, Open Cascade generates p-curves on the fly.
-					if (!face_surface.IsNull()) {
+					if (!face_surface.IsNull() && face_surface->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
 						TopExp_Explorer exp(outer_face_bound, TopAbs_EDGE);
 						for (; exp.More(); exp.Next()) {
 							const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
@@ -321,6 +321,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 			} else {
 				mf->Add(wire);
+
+				// Same as above:
+				// In case of (non-planar) face surface, p-curves need to be computed.
+				if (BRep_Tool::Surface(mf->Face())->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+					TopExp_Explorer exp(wire, TopAbs_EDGE);
+					for (; exp.More(); exp.Next()) {
+						const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
+						ShapeFix_Edge fix_edge;
+						fix_edge.FixAddPCurve(edge, mf->Face(), false, getValue(GV_PRECISION));
+					}
+				}
 			}
 			processed ++;
 		}
@@ -386,28 +397,44 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, TopoDS_Shape& face) {
 	TopoDS_Wire wire;
-	if ( ! convert_wire(l->OuterCurve(),wire) ) return false;
+	if (!convert_wire(l->OuterCurve(), wire)) {
+		return false;
+	}
+
+	assert_closed_wire(wire);
 
 	TopoDS_Face f;
 	bool success = convert_wire_to_face(wire, f);
-	if (success) face = f;
+	if (success) {
+		face = f;
+	}
 	return success;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* l, TopoDS_Shape& face) {
 	TopoDS_Wire profile;
-	if ( ! convert_wire(l->OuterCurve(),profile) ) return false;
+	if (!convert_wire(l->OuterCurve(), profile)) {
+		return false;
+	}
+
+	assert_closed_wire(profile);
+
 	BRepBuilderAPI_MakeFace mf(profile);
+
 	IfcSchema::IfcCurve::list::ptr voids = l->InnerCurves();
-	for( IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++ it ) {
+
+	for(IfcSchema::IfcCurve::list::it it = voids->begin(); it != voids->end(); ++it) {
 		TopoDS_Wire hole;
-		if ( convert_wire(*it,hole) ) {
+		if (convert_wire(*it, hole)) {
+			assert_closed_wire(hole);
 			mf.Add(hole);
 		}
 	}
+
 	ShapeFix_Shape sfs(mf.Face());
 	sfs.Perform();
 	face = sfs.Shape();
+
 	return true;
 }
 

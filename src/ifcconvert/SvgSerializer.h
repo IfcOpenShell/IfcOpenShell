@@ -25,6 +25,8 @@
 #include "../ifcconvert/GeometrySerializer.h"
 #include "../ifcconvert/util.h"
 
+#include "../ifcparse/utils.h"
+
 #include <sstream>
 #include <string>
 #include <limits>
@@ -46,7 +48,7 @@ protected:
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
-		, svg_file(out_filename.c_str())
+		, svg_file(IfcUtil::path::from_utf8(out_filename).c_str())
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
 		, xmax(-std::numeric_limits<double>::infinity())
