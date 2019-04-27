@@ -185,11 +185,12 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('icu',  'boost',  'libxml2'),
-    'IfcGeom': ('IfcParse',  'occ',  'cgal'),
+    'IfcGeom': ('IfcParse',  'occ',  'cgal', 'voxel'),
     'IfcConvert': ('IfcGeom',  'OpenCOLLADA'),
     'OpenCOLLADA': ('libxml2',  'pcre'),
-    'IfcGeomServer': ('IfcGeom',),
+    'IfcGeomServer': ('IfcGeom', ),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
+    'voxel': ('occ',),
     'swig': ('pcre',),
     'icu': (),
     'boost': (),
@@ -532,6 +533,8 @@ if USE_OCCT and "occ" in targets:
         patch="./patches/occt/enable-exception-handling.patch",
         revision="V" + OCCT_VERSION.replace('.', '_')
     )
+    occ_include_dir = "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals())
+    occ_library_dir = "{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib".format(**locals())
 elif "occ" in targets:
     build_dependency(
         name="oce-{OCE_VERSION}".format(**locals()),
@@ -548,6 +551,9 @@ elif "occ" in targets:
         download_url="https://github.com/tpaviot/oce/archive/",
         download_name="OCE-{OCE_VERSION}.tar.gz".format(**locals())
     )
+    occ_include_dir = "{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce".format(**locals())
+    occ_library_dir = "{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
+
         
 if "libxml2" in targets:
     build_dependency(
@@ -662,6 +668,23 @@ if "cgal" in targets:
         BUILD_CFG = "Release"
     build_dependency(name="cgal-{CGAL_VERSION}".format(**locals()), mode="cmake", build_tool_args=["-DGMP_LIBRARIES=%s/install/gmp-%s/lib/libgmp.a" % (DEPS_DIR, GMP_VERSION), "-DGMP_INCLUDE_DIR=%s/install/gmp-%s/include" % (DEPS_DIR, GMP_VERSION), "-DMPFR_LIBRARIES=%s/install/mpfr-%s/lib/libmpfr.a" % (DEPS_DIR, MPFR_VERSION), "-DMPFR_INCLUDE_DIR=%s/install/mpfr-%s/include" % (DEPS_DIR, MPFR_VERSION), "-DBoost_INCLUDE_DIR=%s/install/boost-%s" % (DEPS_DIR, BOOST_VERSION), "-DCMAKE_INSTALL_PREFIX=%s/install/cgal-%s/" % (DEPS_DIR, CGAL_VERSION), "-DBUILD_SHARED_LIBS=Off"], download_url="https://github.com/CGAL/cgal.git", download_name="cgal", download_tool=download_tool_git, revision="releases/CGAL-{CGAL_VERSION}".format(**locals()))
     BUILD_CFG = OLD_BUILD_CFG
+    
+if "voxel" in targets:
+    build_dependency(
+        "voxel",
+        "cmake",
+        build_tool_args=[
+            "-IFCSUPPORT=Off",
+            "-DOCC_INCLUDE_DIR="    +occ_include_dir,
+            "-DOCC_LIBRARY_DIR="    +occ_library_dir,
+            "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/voxel".format(**locals()),
+            "-DBOOST_ROOT="        "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals())
+        ],
+        download_url="https://github.com/opensourceBIM/voxel.git",
+        download_name="voxel",
+        download_tool=download_tool_git,
+        revision=master
+    )
 
 cecho("Building IfcOpenShell:", GREEN)
 
@@ -689,16 +712,12 @@ cmake_args=[
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
 ]
 
-if "occ" in targets and USE_OCCT:
-    occ_include_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals())
-    occ_library_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/lib".format(**locals())
+if "occ" in targets:
     cmake_args.extend([
         "-DOCC_INCLUDE_DIR="           +occ_include_dir,
         "-DOCC_LIBRARY_DIR="           +occ_library_dir
     ])
 elif "occ" in targets:
-    occ_include_dir =                  "{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce".format(**locals())
-    occ_library_dir =                  "{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend([
         "-DOCC_INCLUDE_DIR="           +occ_include_dir,
         "-DOCC_LIBRARY_DIR="           +occ_library_dir
