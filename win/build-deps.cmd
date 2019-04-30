@@ -405,6 +405,26 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 )
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
+:voxel
+:: Note OpenCOLLADA has only Release and Debug builds.
+set DEPENDENCY_NAME=voxel
+set DEPENDENCY_DIR=%DEPS_DIR%\voxel
+:: Use a fixed revision in order to prevent introducing breaking changes
+call :GitCloneAndCheckoutRevision https://github.com/opensourceBIM/voxelization_toolkit.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\voxel" ^
+               -DIFC_SUPPORT=Off                            ^
+               -DOCC_INCLUDE_DIR="%OCC_INCLUDE_DIR%"        ^
+               -DOCC_LIBRARY_DIR="%OCC_LIBRARY_DIR%"        ^
+               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"  ^
+               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\voxel.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :Successful
 echo.
 call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."
