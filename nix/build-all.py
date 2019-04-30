@@ -321,6 +321,7 @@ def git_clone(clone_url, target_dir, revision=None):
         logger.info("directory '%s' exists, skipping cloning" % (target_dir,))
     if revision != None:
         run([git, "checkout", revision], cwd=target_dir)
+        run([git, "pull"], cwd=target_dir)
 
 def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False):
     """Handles building of dependencies with different tools (which are
@@ -674,7 +675,7 @@ if "voxel" in targets:
         "voxel",
         "cmake",
         build_tool_args=[
-            "-IFCSUPPORT=Off",
+            "-DIFC_SUPPORT=Off",
             "-DOCC_INCLUDE_DIR="    +occ_include_dir,
             "-DOCC_LIBRARY_DIR="    +occ_library_dir,
             "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/voxel".format(**locals()),
@@ -683,7 +684,7 @@ if "voxel" in targets:
         download_url="https://github.com/opensourceBIM/voxel.git",
         download_name="voxel",
         download_tool=download_tool_git,
-        revision=master
+        revision="master"
     )
 
 cecho("Building IfcOpenShell:", GREEN)
