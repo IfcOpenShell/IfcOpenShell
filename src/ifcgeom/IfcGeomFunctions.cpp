@@ -3449,8 +3449,17 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	// Validation
 
 	for (int i = 1; i <= mape.Extent(); ++i) {
+#if OCC_VERSION_HEX >= 0x70000
 		TopTools_ListOfShape val;
 		if (!mapn.FindFromKey(mape.FindKey(i), val)) {
+#else
+		bool contains = false;
+		try {
+			TopTools_ListOfShape val = mapn.FindFromKey(mape.FindKey(i));
+			contains = true;
+		} catch (Standard_NoSuchObject&) {}
+		if (!contains) {
+#endif
 			// All existing edges need to exist in the new faces
 			Logger::Error("Internal error, missing edge from triangulation");
 			if (faceset_helper_ != nullptr) {
