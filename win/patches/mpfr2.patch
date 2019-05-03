@@ -1,0 +1,5 @@
+--- afn
++++ bfn
+@@ -26 +26 @@
+-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
++    <WindowsTargetPlatformVersion>sdk</WindowsTargetPlatformVersion>
