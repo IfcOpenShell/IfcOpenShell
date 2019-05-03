@@ -73,7 +73,7 @@ IF NOT DEFINED IFCOS_USE_PYTHON2 set IFCOS_USE_PYTHON2=FALSE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
-set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS% /t:%BUILD_TYPE%
+set MSBUILD_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
 REM /clp:ErrorsOnly;WarningsOnly
 :: Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
 set INSTALL_CMD=MSBuild.exe /nologo /m:%IFCOS_NUM_BUILD_PROCS%
@@ -406,10 +406,8 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
 :voxel
-:: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=voxel
 set DEPENDENCY_DIR=%DEPS_DIR%\voxel
-:: Use a fixed revision in order to prevent introducing breaking changes
 call :GitCloneAndCheckoutRevision https://github.com/opensourceBIM/voxelization_toolkit.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
@@ -423,6 +421,47 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\voxel.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:mpir
+set DEPENDENCY_NAME=mpir
+set DEPENDENCY_DIR=%DEPS_DIR%\mpir
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+REM There probably need to be quotes here around the filename
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero
+powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero
+cd msvc
+cd vs%VS_VER:~2,2%
+call .\msbuild.bat gc LIB %VS_PLATFORM% Release
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpir". mkdir "%INSTALL_DIR%\mpir"
+copy ..\..\lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpir"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:mpfr
+set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpfr.git "%DEPENDENCY_DIR%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+for /f "delims=|" %%f in ('dir /s/b build.vc15\*.vcxproj') do (
+    set "full=%%f"
+    set rel=!full:*%DEPENDENCY_DIR%=!
+    set relnix=!rel:\=/!
+    powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"!relnix!\"}" | git apply --unidiff-zero
+    git diff --exit-code -- %%f
+    IF !ERRORLEVEL!==0 (
+        powershell -c "get-content %~dp0patches\mpfr2.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"!relnix!\"}" | git apply --unidiff-zero
+    )
+)
+call :BuildSolution "%DEPENDENCY_DIR%\build.vc15\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
+copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Successful
@@ -516,12 +555,11 @@ if not exist "%~2". (
     call cecho.cmd 0 13 "Cloning %DEPENDENCY_NAME% into %~2."
     pushd "%DEPS_DIR%"
     call git clone %1 %2
-    set RET=%ERRORLEVEL%
-    if not %RET%==0 exit /b %RET%
+    set RET=!ERRORLEVEL!
+    if not !RET!==0 exit /b !RET!
     popd
 ) else (
     call cecho.cmd 0 13 "%DEPENDENCY_NAME% already cloned."
-    set RET=0
 )
 pushd "%2"
 call git fetch
@@ -550,10 +588,15 @@ exit /b %RET%
 :: TODO add BuildCMakeProject which utilizes cmake --build
 
 :: BuildSolution - Builds/Rebuilds/Cleans a solution using MSBuild
-:: Params: %1 solutioName, %2 configuration
+:: Params: %1 solutioName, %2 configuration, %3 individual project name
+:: NOTE: %3 does not account for BUILD_TYPE and probably assumes Build
 :BuildSolution
 call cecho.cmd 0 13 "Building %2 %DEPENDENCY_NAME%. Please be patient, this will take a while."
-%MSBUILD_CMD% %1 /p:configuration=%2;platform=%VS_PLATFORM%
+set TARGET=/t:%BUILD_TYPE%
+IF NOT "%3"=="" (
+    set TARGET=/t:%3
+)
+%MSBUILD_CMD% %1 %TARGET% /p:configuration=%2;platform=%VS_PLATFORM%
 exit /b %ERRORLEVEL%
 
 :: InstallCMakeProject - Builds the INSTALL project of CMake-based project
