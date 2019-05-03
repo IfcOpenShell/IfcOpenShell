@@ -1,0 +1,14 @@
+# We'll use defaults from the LLVM style
+# https://clangformat.com/
+
+BasedOnStyle: llvm
+IndentWidth: 2
+ColumnLimit: 80
+BreakBeforeBraces: Allman
+AlignTrailingComments: true
+
+
+Language: Cpp
+## Force pointers to the type for C++.
+# DerivePointerAlignment: false
+# PointerAlignment: Right
