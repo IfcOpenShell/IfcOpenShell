@@ -34,6 +34,7 @@ endforeach()
 OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)." ON)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
+OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
@@ -111,6 +112,17 @@ UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(LIBXML2_LIBRARIES)
 UNIFY_ENVVARS_AND_CACHE(PCRE_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
+
+if (GLTF_SUPPORT)
+UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
+FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR})
+IF(json_hpp)
+	MESSAGE(STATUS "JSON for Modern C++ header file found")
+ELSE()
+	MESSAGE(FATAL_ERROR "Unable to find JSON for Modern C++ header file, aborting")
+ENDIF()
+add_definitions(-DWITH_GLTF)
+endif()
 
 # Set INSTALL_RPATH for target
 MACRO(SET_INSTALL_RPATHS _target _paths)
@@ -468,7 +480,7 @@ if (IFCCONVERT_DOUBLE_PRECISION)
 endif()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR}
+	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
