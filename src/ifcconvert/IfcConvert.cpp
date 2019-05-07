@@ -27,6 +27,7 @@
  ********************************************************************************/
 
 #include "../serializers/ColladaSerializer.h"
+#include "../serializers/GltfSerializer.h"
 #include "../serializers/IgesSerializer.h"
 #include "../serializers/StepSerializer.h"
 #include "../serializers/WavefrontObjSerializer.h"
@@ -92,6 +93,9 @@ void print_usage(bool suggest_help = true)
         << "  .obj   WaveFront OBJ  (a .mtl file is also created)\n"
 #ifdef WITH_OPENCOLLADA
         << "  .dae   Collada        Digital Assets Exchange\n"
+#endif
+#ifdef WITH_GLTF
+		<< "  .glb   glTF           Binary glTF v2.0\n"
 #endif
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
@@ -519,6 +523,7 @@ int main(int argc, char** argv) {
     const path_t OBJ = IfcUtil::path::from_utf8(".obj"),
 		MTL = IfcUtil::path::from_utf8(".mtl"),
 		DAE = IfcUtil::path::from_utf8(".dae"),
+		GLB = IfcUtil::path::from_utf8(".glb"),
 		STP = IfcUtil::path::from_utf8(".stp"),
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
@@ -644,6 +649,10 @@ int main(int argc, char** argv) {
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == DAE) {
 		serializer = boost::make_shared<ColladaSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+#endif
+#ifdef WITH_GLTF
+	} else if (output_extension == GLB) {
+		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 #endif
 	} else if (output_extension == STP) {
 		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);

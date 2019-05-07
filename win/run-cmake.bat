@@ -79,7 +79,7 @@ set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
 set PYTHON_EXECUTABLE=%PYTHONHOME%\python.exe
 set SWIG_DIR=%INSTALL_DIR%\swigwin
 set PATH=%PATH%;%SWIG_DIR%;%PYTHONHOME%
-set THREEDS_MAX_SDK_HOME=C:\Program Files\Autodesk\3ds Max 2016 SDK\maxsdk
+set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -102,7 +102,7 @@ echo    PYTHON_INCLUDE_DIR      = %PYTHON_INCLUDE_DIR%
 echo    PYTHON_LIBRARY          = %PYTHON_LIBRARY%
 echo    PYTHON_EXECUTABLE       = %PYTHON_EXECUTABLE%
 echo    SWIG_DIR                = %SWIG_DIR%
-echo    THREEDS_MAX_SDK_HOME    = %THREEDS_MAX_SDK_HOME%
+echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.

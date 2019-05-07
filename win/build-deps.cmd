@@ -195,6 +195,11 @@ call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BIT
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
+:JSON
+set DEPENDENCY_NAME=JSON for Modern C++ v3.6.1
+IF NOT EXIST "%INSTALL_DIR%\json\nlohmann". mkdir "%INSTALL_DIR%\json\nlohmann"
+call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
+
 :ICU
 set DEPENDENCY_NAME=ICU
 set DEPENDENCY_DIR=N/A
