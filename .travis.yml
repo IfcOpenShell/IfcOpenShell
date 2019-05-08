@@ -21,7 +21,7 @@ install:
   - sudo sh -c 'curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
   - sudo apt-get update -qq && sudo apt-get install -y dart
   - export PATH=$PATH:/usr/lib/dart/bin:$USER/.pub-cache/bin
-  - git clone https://github.com/KhronosGroup/glTF-Validator && cd glTF-Validator && pub get && pub global activate --source path ./
+  - git clone https://github.com/KhronosGroup/glTF-Validator && pushd glTF-Validator && pub get && pub global activate --source path ./ && popd
 
 script:
   - pwd
