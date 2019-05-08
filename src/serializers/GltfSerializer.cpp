@@ -122,7 +122,7 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 
 	accessor["bufferView"] = N == 1 ? 0 : 1;
 	accessor["byteOffset"] = (size_t)ofs.tellp();
-	accessor["componentType"] = component_type<It::value_type>::value;
+	accessor["componentType"] = component_type<typename It::value_type>::value;
 	accessor["count"] = num;
 
 	std::array<typename It::value_type, N> min, max;
@@ -143,7 +143,7 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	accessor["max"] = max;
 	accessor["type"] = stride_name<N>::value;
 
-	ofs.write((const char*)&*begin, sizeof(It::value_type) * num * N);
+	ofs.write((const char*)&*begin, sizeof(typename It::value_type) * num * N);
 
 	j["accessors"].push_back(accessor);
 
@@ -303,7 +303,7 @@ void GltfSerializer::finalize() {
 	json_["buffers"].push_back({ {"byteLength", binary_length} });
 
 	std::string json_contents = json_.dump();
-	auto json_length = json_contents.size();
+	uint32_t json_length = (uint32_t) json_contents.size();
 
 	uint32_t header[] = { GLTF, 2U, 12 + 8 + json_length + padding_for(json_length) + 8 + binary_length + padding_for(binary_length) };
 	fstream_.write((const char*)header, sizeof(header));
