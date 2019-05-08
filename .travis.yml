@@ -14,7 +14,9 @@ install:
     sudo apt-get install -y \
     libocct-data-exchange-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
     libboost-system-dev libboost-program-options-dev libboost-regex-dev libboost-thread-dev libboost-date-time-dev libboost-iostreams-dev libboost-filesystem-dev \
-    build-essential cmake libicu-dev python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev
+    build-essential cmake libicu-dev python2.7 libpython2.7-dev swig zlib1g liblzma5 opencollada-dev wget
+  - sudo mkdir -p /usr/include/json/nlohmann/
+  - sudo wget https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp -O /usr/include/json/nlohmann/json.hpp
 
 
 script:
@@ -31,6 +33,8 @@ script:
     -DPYTHON_EXECUTABLE=/usr/bin/python2.7 \
     -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
     -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.a;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5" \
+    -DGLTF_SUPPORT=On \
+    -DJSON_INCLUDE_DIR=/usr/include/json \
     ..
   - sudo make -j2 install
     
