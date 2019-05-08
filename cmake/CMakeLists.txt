@@ -115,7 +115,7 @@ UNIFY_ENVVARS_AND_CACHE(PYTHON_EXECUTABLE)
 
 if (GLTF_SUPPORT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR})
+FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
 IF(json_hpp)
 	MESSAGE(STATUS "JSON for Modern C++ header file found")
 ELSE()
