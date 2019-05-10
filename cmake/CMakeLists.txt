@@ -534,8 +534,8 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom_ifc2x3 ${IFCGEOM_FILES})
-add_library(IfcGeom_ifc4 ${IFCGEOM_FILES})
+add_library(IfcGeom_ifc2x3 STATIC ${IFCGEOM_FILES})
+add_library(IfcGeom_ifc4 STATIC ${IFCGEOM_FILES})
 
 set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3")
 # TODO: Detect based on IfcSchema
@@ -565,8 +565,8 @@ file(GLOB SERIALIZERS_S_H_FILES ../src/serializers/schema_dependent/*.h)
 file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
 set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
-add_library(Serializers_ifc2x3 ${SERIALIZERS_S_FILES})
-add_library(Serializers_ifc4 ${SERIALIZERS_S_FILES})
+add_library(Serializers_ifc2x3 STATIC ${SERIALIZERS_S_FILES})
+add_library(Serializers_ifc4 STATIC ${SERIALIZERS_S_FILES})
 
 set_target_properties(Serializers_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3 ${CONVERT_PRECISION}")
 # TODO: Detect based on IfcSchema
