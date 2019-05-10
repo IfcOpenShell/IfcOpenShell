@@ -193,6 +193,7 @@ int main(int argc, char** argv) {
 	exclusion_traverse_filter exclude_traverse_filter;
 	path_t filter_filename;
 	path_t default_material_filename;
+	std::string geometry_kernel;
 	std::string log_format;
 
     po::options_description generic_options("Command line options");
@@ -214,16 +215,6 @@ int main(int argc, char** argv) {
 		("input-file", new po::typed_value<path_t, char_t>(0), "input IFC file")
 		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file");
 		
-
-    double deflection_tolerance;
-	inclusion_filter include_filter;
-    inclusion_traverse_filter include_traverse_filter;
-    exclusion_filter exclude_filter;
-    exclusion_traverse_filter exclude_traverse_filter;
-    std::string filter_filename;
-    std::string default_material_filename;
-	std::string geometry_kernel;
-	
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
 		("calculate-quantities", "Calculate or fix the physical quantity definitions "
