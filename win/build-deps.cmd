@@ -437,6 +437,27 @@ IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
 copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
+:cgal
+set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_DIR=%DEPS_DIR%\cgal
+call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" releases/CGAL-4.13.1
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
+               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
+               -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
+               -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
+               -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
+               -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
+               -DCGAL_BUILD_SHARED_LIBS=Off                   ^
+               -DBUILD_SHARED_LIBS=Off                        ^
+               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
 :Successful
 echo.
 call "%~dp0\utils\cecho.cmd" 0 10 "%PROJECT_NAME% dependencies built."

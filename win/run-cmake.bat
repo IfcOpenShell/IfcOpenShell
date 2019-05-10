@@ -78,6 +78,12 @@ set PYTHON_EXECUTABLE=%PYTHONHOME%\python.exe
 set SWIG_DIR=%INSTALL_DIR%\swigwin
 set PATH=%PATH%;%SWIG_DIR%;%PYTHONHOME%
 set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
+set CGAL_INCLUDE_DIR=%INSTALL_DIR%\cgal\include
+set CGAL_LIBRARY_DIR=%INSTALL_DIR%\cgal\lib
+set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
+set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
+set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
+set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -99,6 +105,12 @@ echo    PYTHON_LIBRARY          = %PYTHON_LIBRARY%
 echo    PYTHON_EXECUTABLE       = %PYTHON_EXECUTABLE%
 echo    SWIG_DIR                = %SWIG_DIR%
 echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
+echo    CGAL_INCLUDE_DIR        = %CGAL_INCLUDE_DIR%
+echo    CGAL_LIBRARY_DIR        = %CGAL_LIBRARY_DIR%
+echo    GMP_INCLUDE_DIR         = %GMP_INCLUDE_DIR%
+echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
+echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
+echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.
