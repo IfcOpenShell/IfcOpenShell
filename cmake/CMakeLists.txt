@@ -593,16 +593,11 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-<<<<<<< HEAD
-add_library(IfcGeom_${kernel} ${IFCGEOM_FILES})
+add_library(IfcGeom_${kernel} STATIC ${IFCGEOM_FILES})
 set_target_properties(IfcGeom_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
 target_link_libraries(IfcGeom_${kernel} IfcParse ${${KERNEL_UPPER}_LIBRARIES})
 list(APPEND IfcGeom_libraries IfcGeom_${kernel})
 endforeach()
-=======
-add_library(IfcGeom_ifc2x3 STATIC ${IFCGEOM_FILES})
-add_library(IfcGeom_ifc4 STATIC ${IFCGEOM_FILES})
->>>>>>> v0.6.0
 
 foreach(schema 2x3 4)
 
@@ -610,7 +605,7 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernel_agnostic/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernel_agnostic/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom_ifc${schema} ${IFCGEOM_FILES})
+add_library(IfcGeom_ifc${schema} STATIC ${IFCGEOM_FILES})
 set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
 target_link_libraries(IfcGeom_ifc${schema} IfcParse)
 list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
@@ -620,7 +615,7 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom_${kernel}_ifc${schema} ${IFCGEOM_FILES})
+add_library(IfcGeom_${kernel}_ifc${schema} STATIC ${IFCGEOM_FILES})
 set_target_properties(IfcGeom_${kernel}_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema} -DUSE_IFC${schema}")
 target_link_libraries(IfcGeom_${kernel}_ifc${schema} IfcGeom_${kernel} IfcGeom_ifc${schema})
 list(APPEND IfcGeom_libraries IfcGeom_${kernel}_ifc${schema})
