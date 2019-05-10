@@ -31,9 +31,9 @@ set(HAS_MAX TRUE)
 endif()
 endforeach()
 
-OPTION(UNICODE_SUPPORT "Build IfcOpenShell with Unicode support (requires ICU)." ON)
 OPTION(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 OPTION(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
+OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 OPTION(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
 OPTION(IFCCONVERT_DOUBLE_PRECISION "IfcConvert: Use double precision floating-point numbers." ON)
 OPTION(BUILD_IFCGEOM "Build IfcGeom." ON)
@@ -103,8 +103,6 @@ ENDMACRO()
 
 UNIFY_ENVVARS_AND_CACHE(OCC_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OCC_LIBRARY_DIR)
-UNIFY_ENVVARS_AND_CACHE(ICU_INCLUDE_DIR)
-UNIFY_ENVVARS_AND_CACHE(ICU_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(OPENCOLLADA_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(LIBXML2_INCLUDE_DIR)
@@ -117,6 +115,17 @@ UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
+
+if (GLTF_SUPPORT)
+UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
+FIND_FILE(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
+IF(json_hpp)
+	MESSAGE(STATUS "JSON for Modern C++ header file found")
+ELSE()
+	MESSAGE(FATAL_ERROR "Unable to find JSON for Modern C++ header file, aborting")
+ENDIF()
+add_definitions(-DWITH_GLTF)
+endif()
 
 # Set INSTALL_RPATH for target
 MACRO(SET_INSTALL_RPATHS _target _paths)
@@ -326,43 +335,6 @@ endif()
 
 endif(BUILD_IFCGEOM)
 
-IF(UNICODE_SUPPORT)
-	# Find ICU 
-	IF("${ICU_INCLUDE_DIR}" STREQUAL "")
-		MESSAGE(STATUS "No ICU include directory specified")
-	ENDIF()
-
-	IF("${ICU_LIBRARY_DIR}" STREQUAL "")
-		MESSAGE(STATUS "No ICU library directory specified")
-		FIND_LIBRARY(icu NAMES icuuc icuucd PATHS ${ICU_LIBRARY_DIR})
-	ELSE()
-		FIND_LIBRARY(icu NAMES icuuc icuucd PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
-	ENDIF()
-
-	IF(icu)
-		GET_FILENAME_COMPONENT(ICU_LIBRARY_DIR ${icu} PATH)
-
-		ADD_DEFINITIONS(-DHAVE_ICU)
-		MESSAGE(STATUS "ICU libraries found")
-		# NOTE icudata appears to be icudt on Windows/MSVC and icudata on others
-		#      dl is included to resolve dlopen and friends symbols
-		IF(WIN32)
-			FIND_LIBRARY(icudt NAMES icudt PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
-			SET(ICU_LIBRARIES ${icu} ${icudt})
-			add_debug_variants(ICU_LIBRARIES "${ICU_LIBRARIES}" d)
-			# TODO MinGW build would appear to be using dynamic ICU regardless of this definition.
-			ADD_DEFINITIONS(-DU_STATIC_IMPLEMENTATION) # required for static ICU
-		ELSE()
-			FIND_LIBRARY(icudt NAMES icudata PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
-			FIND_LIBRARY(icui18n NAMES icui18n PATHS ${ICU_LIBRARY_DIR} NO_DEFAULT_PATH)
-			FIND_LIBRARY(dl NAMES dl)
-			SET(ICU_LIBRARIES ${icu} ${icudt} ${dl} ${icui18n})
-		ENDIF()
-	ELSE()
-		MESSAGE(FATAL_ERROR "UNICODE_SUPPORT enabled, but unable to find ICU. Disable UNICODE_SUPPORT or fix ICU paths to proceed.")
-	ENDIF()
-ENDIF()
-
 IF(COLLADA_SUPPORT AND BUILD_CONVERT)
 	# Find OpenCOLLADA
 	IF("${OPENCOLLADA_INCLUDE_DIR}" STREQUAL "")
@@ -525,7 +497,7 @@ if (IFCCONVERT_DOUBLE_PRECISION)
 endif()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
-	${ICU_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR}
+	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR}
 	${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
 )
 
@@ -613,10 +585,6 @@ set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS)
 
 TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_LIBRARIES})
 
-IF(UNICODE_SUPPORT)
-	TARGET_LINK_LIBRARIES(IfcParse ${ICU_LIBRARIES})
-ENDIF()
-
 if (BUILD_IFCGEOM)
 
 foreach(kernel opencascade cgal)
@@ -625,11 +593,16 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
+<<<<<<< HEAD
 add_library(IfcGeom_${kernel} ${IFCGEOM_FILES})
 set_target_properties(IfcGeom_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
 target_link_libraries(IfcGeom_${kernel} IfcParse ${${KERNEL_UPPER}_LIBRARIES})
 list(APPEND IfcGeom_libraries IfcGeom_${kernel})
 endforeach()
+=======
+add_library(IfcGeom_ifc2x3 STATIC ${IFCGEOM_FILES})
+add_library(IfcGeom_ifc4 STATIC ${IFCGEOM_FILES})
+>>>>>>> v0.6.0
 
 foreach(schema 2x3 4)
 
@@ -675,8 +648,8 @@ file(GLOB SERIALIZERS_S_H_FILES ../src/serializers/schema_dependent/*.h)
 file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
 set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
-add_library(Serializers_ifc2x3 ${SERIALIZERS_S_FILES})
-add_library(Serializers_ifc4 ${SERIALIZERS_S_FILES})
+add_library(Serializers_ifc2x3 STATIC ${SERIALIZERS_S_FILES})
+add_library(Serializers_ifc4 STATIC ${SERIALIZERS_S_FILES})
 
 set_target_properties(Serializers_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3 ${CONVERT_PRECISION}")
 # TODO: Detect based on IfcSchema
@@ -697,13 +670,13 @@ set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 ADD_EXECUTABLE(IfcConvert ${IFCCONVERT_FILES})
 set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${OPENCOLLADA_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     # Only set RPATHs when building shared libraries (i.e. IfcParse and
     # IfcGeom are dynamically linked). Not necessarily a perfect solution
     # but probably a good indication of whether RPATHs are necessary.
-    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR};${ICU_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
 endif()
 
 INSTALL(TARGETS IfcConvert
@@ -721,10 +694,10 @@ file(GLOB CPP_FILES ../src/ifcgeomserver/*.cpp)
 file(GLOB H_FILES ../src/ifcgeomserver/*.h)
 set(SOURCE_FILES ${CPP_FILES} ${H_FILES})
 ADD_EXECUTABLE(IfcGeomServer ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${ICU_LIBRARIES})
+TARGET_LINK_LIBRARIES(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${ICU_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
 endif()
 
 INSTALL(TARGETS IfcGeomServer

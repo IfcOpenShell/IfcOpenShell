@@ -22,8 +22,6 @@ Dependencies
 * [Open Cascade](http://opencascade.org) - *optional*, but required for building IfcGeom
   ([official](http://www.opencascade.org/getocc/download/loadocc/), "OCCT", or [community edition](https://github.com/tpaviot/oce), "OCE")  
   For converting IFC representation items into BRep solids and tesselated meshes
-* [ICU](http://site.icu-project.org/) - *optional*  
-  For handling code pages and Unicode in the parser
 * [OpenCOLLADA](https://github.com/khronosGroup/OpenCOLLADA/) - *optional*  
   For IfcConvert to be able to write tessellated Collada (.dae) files
 * [SWIG](http://www.swig.org/) and [Python](https://www.python.org/) - *optional*  
@@ -85,7 +83,7 @@ Note: where `make -j` is written, add a number roughly equal to the amount of CP
 
 **1)** Install most of the prerequisites and dependencies:
 
-    $ sudo apt-get install git cmake gcc g++ libboost-all-dev libicu-dev
+    $ sudo apt-get install git cmake gcc g++ libboost-all-dev
 
 **2a)** Either use an OCE package from your operating system's software repository
 
