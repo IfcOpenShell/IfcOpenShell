@@ -28,6 +28,9 @@
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
 #                                                                             #
+#   if building with -shared                                                  #
+#     * libgl1-mesa-dev libxext-dev libxmu-dev libxmu-headers libxi-dev       #
+#                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2                 #
 #            libfreetype6-dev mesa-common-dev                                 #
@@ -201,8 +204,19 @@ def v(dep):
      for x in v(d):
        yield x
 
-if len(sys.argv[1:]):
-    targets = set(sum((list(v(target)) for target in sys.argv[1:]), []))
+tgts = [s for s in sys.argv[1:] if not s.startswith("-")]
+flags = set(s for s in sys.argv[1:] if s.startswith("-"))
+
+BUILD_STATIC = not "-shared" in flags
+ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
+DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
+LINK_TYPE = "static" if BUILD_STATIC else "shared"
+LINK_TYPE_UCFIRST = LINK_TYPE[0].upper() + LINK_TYPE[1:]
+LIBRARY_EXT = "a" if BUILD_STATIC else "so"
+PIC = "-fPIC" if BUILD_STATIC else ""
+
+if len(tgts):
+    targets = set(sum((list(v(target)) for target in tgts), []))
 else:
     targets = set(dependency_tree.keys())
 
@@ -419,41 +433,34 @@ if get_os() == "Darwin":
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
 
-try:
-    CXXFLAGS=os.environ["CXXFLAGS"]
-except KeyError:
-    CXXFLAGS=""
-try:
-    CFLAGS=os.environ["CFLAGS"]
-except KeyError:
-    CFLAGS=""
-try:
-    LDFLAGS=os.environ["LDFLAGS"]
-except KeyError:
-    LDFLAGS=""
+CXXFLAGS=os.environ.get("CXXFLAGS", "")
+CFLAGS=os.environ.get("CFLAGS", "")
+LDFLAGS=os.environ.get("LDFLAGS", "")
 
 if sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev/null"]) != 0:
-    CXXFLAGS_MINIMAL="%s -fPIC %s" % (CXXFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CXXFLAGS_MINIMAL"]=CXXFLAGS_MINIMAL
-    CFLAGS_MINIMAL="%s -fPIC %s" % (CFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CFLAGS_MINIMAL"]=CFLAGS_MINIMAL
-    CXXFLAGS="%s -fPIC -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CXXFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CXXFLAGS"]=CXXFLAGS
-    CFLAGS="%s   -fPIC -fdata-sections -ffunction-sections -fvisibility=hidden %s"% (CFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CFLAGS"]=CFLAGS
+    CXXFLAGS_MINIMAL="%s %s %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    CFLAGS_MINIMAL="%s %s %s" % (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    if BUILD_STATIC:
+        CXXFLAGS="%s %s -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+        CFLAGS="%s   %s -fdata-sections -ffunction-sections -fvisibility=hidden %s"% (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    else:
+        CXXFLAGS=CXXFLAGS_MINIMAL
+        CFLAGS=CFLAGS_MINIMAL
     LDFLAGS="%s  -Wl,--gc-sections %s" % (LDFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["LDFLAGS"]=LDFLAGS
 else:
-    CXXFLAGS_MINIMAL="%s -fPIC %s" % (CXXFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CXXFLAGS_MINIMAL"]=CXXFLAGS_MINIMAL
-    CFLAGS_MINIMAL="%s   -fPIC %s" % (CFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CFLAGS_MINIMAL"]=CFLAGS_MINIMAL
-    CXXFLAGS="%s -fPIC -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CXXFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CXXFLAGS"]=CXXFLAGS
-    CFLAGS="%s   -fPIC -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["CFLAGS"]=CFLAGS
+    CXXFLAGS_MINIMAL="%s %s %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    CFLAGS_MINIMAL="%s   %s %s" % (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    if BUILD_STATIC:
+        CXXFLAGS="%s %s -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CXXFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+        CFLAGS="%s   %s -fvisibility=hidden -fvisibility-inlines-hidden %s" % (CFLAGS, PIC, str.join(" ", ADDITIONAL_ARGS))
+    else:
+        CXXFLAGS=CXXFLAGS_MINIMAL
+        CFLAGS=CFLAGS_MINIMAL
     LDFLAGS="%s %s" % (LDFLAGS, str.join(" ", ADDITIONAL_ARGS))
-    os.environ["LDFLAGS"]=LDFLAGS
+    
+os.environ["CXXFLAGS"] = CXXFLAGS
+os.environ["CFLAGS"] = CFLAGS
+os.environ["LDFLAGS"] = LDFLAGS
 
 # Some dependencies need a more recent CMake version than most distros provide
 build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
@@ -480,7 +487,7 @@ if "pcre" in targets:
     build_dependency(
         name="pcre-{PCRE_VERSION}".format(**locals()),
         mode="autoconf",
-        build_tool_args=["--disable-shared"],
+        build_tool_args=[DISABLE_FLAG],
         download_url="https://downloads.sourceforge.net/project/pcre/pcre/{PCRE_VERSION}/".format(**locals()),
         download_name="pcre-{PCRE_VERSION}.tar.bz2".format(**locals())
     )
@@ -504,7 +511,7 @@ if USE_OCCT and "occ" in targets:
         mode="cmake",
         build_tool_args=[
             "-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}".format(**locals()),
-            "-DBUILD_LIBRARY_TYPE=Static",
+            "-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}".format(**locals()),
             "-DBUILD_MODULE_Draw=0",
         ],
         download_url = "https://git.dev.opencascade.org/repos/occt.git",
@@ -536,7 +543,8 @@ if "libxml2" in targets:
         "autoconf",
         build_tool_args=[
             "--without-python",
-            "--disable-shared",
+            ENABLE_FLAG,
+            DISABLE_FLAG,
             "--without-zlib",
             "--without-iconv",
             "--without-lzma"
@@ -551,10 +559,10 @@ if "OpenCOLLADA" in targets:
         "cmake",
         build_tool_args=[
             "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.a".format(**locals()),
+            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
             "-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include".format(**locals()),
-            "-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.a".format(**locals()),
-            "-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.a".format(**locals()),
+            "-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}".format(**locals()),
+            "-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}".format(**locals()),
             "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/".format(**locals())
         ],
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
@@ -611,7 +619,7 @@ if "boost" in targets:
             "--with-thread",
             "--with-date_time",
             "--with-iostreams",
-            "link=static"
+            "link={LINK_TYPE}".format(**locals())
                                                                          ] + \
             BOOST_ADDRESS_MODEL                                            + \
             list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + \
@@ -640,6 +648,7 @@ cmake_args=[
     "-DUSE_MMAP="                      "OFF",
     "-DBUILD_EXAMPLES="                "OFF",
     "-DBUILD_IFCPYTHON="               "OFF",
+    "-DBUILD_SHARED_LIBS="            +OFF_ON[not BUILD_STATIC],
     "-DBUILD_IFCGEOM="                +OFF_ON["IfcGeom" in targets],
     "-DBUILD_GEOMSERVER="             +OFF_ON["IfcGeomServer" in targets],
     "-DBUILD_CONVERT="                +OFF_ON["IfcConvert" in targets],
@@ -676,7 +685,7 @@ if "pcre" in targets:
 if "libxml2" in targets:
     cmake_args.extend([
         "-DLIBXML2_INCLUDE_DIR="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-        "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.a".format(**locals())
+        "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals())
     ])
 
 run_cmake("", cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -711,6 +720,7 @@ if "IfcOpenShell-Python" in targets:
 
         run_cmake("",
             cmake_args=[
+                "-DBUILD_SHARED_LIBS="       "OFF" if BUILD_STATIC else "ON",
                 "-DBOOST_ROOT="              "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
                 "-DOCC_INCLUDE_DIR="         +occ_include_dir,
                 "-DOCC_LIBRARY_DIR="         +occ_library_dir,
@@ -720,7 +730,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
                 "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.a".format(**locals()),
+                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
                 "-DCOLLADA_SUPPORT=OFF"
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
         
