@@ -71,7 +71,6 @@ BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.39"
 LIBXML_VERSION="2.9.3"
 CMAKE_VERSION="3.4.1"
-ICU_VERSION="56.1"
 SWIG_VERSION="3.0.12"
 
 # binaries
@@ -181,14 +180,13 @@ cecho(""" - How many compiler processes may be run in parallel.
 """)
 
 dependency_tree = {
-    'IfcParse': ('icu',  'boost',  'libxml2'),
+    'IfcParse': ('boost',  'libxml2'),
     'IfcGeom': ('IfcParse',  'occ'),
     'IfcConvert': ('IfcGeom',  'OpenCOLLADA'),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom',),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
     'swig': ('pcre',),
-    'icu': (),
     'boost': (),
     'libxml2': (),
     'python': (),
@@ -267,7 +265,6 @@ def run(cmds, cwd=None):
     return stdout.strip()
 
 BOOST_VERSION_UNDERSCORE=BOOST_VERSION.replace(".", "_")
-ICU_VERSION_UNDERSCORE=ICU_VERSION.replace(".", "_")
 CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
@@ -292,12 +289,6 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
         P=cmake_dir
     cmake_path= os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake")
     run([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
-
-def run_icu(arg1, icu_args, cwd):
-    PLATFORM=get_os()
-    if PLATFORM == "Darwin":
-        PLATFORM="MacOSX"
-    run([bash, "../source/runConfigureICU", PLATFORM]+icu_args+["--prefix=%s/install/%s" % (DEPS_DIR, arg1)], cwd=cwd)
 
 def git_clone(clone_url, target_dir, revision=None):
     """Lazily clones the `git` repository denoted by `clone_url` into
@@ -391,9 +382,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         os.makedirs(extract_build_dir)
 
         logger.info("\rConfiguring %s..." % (name,))
-        if mode == "icu":
-            run_icu(name, build_tool_args, cwd=extract_build_dir)
-        elif mode == "autoconf":
+        if mode == "autoconf":
             run_autoconf(name, build_tool_args, cwd=extract_build_dir)
         elif mode == "cmake":
             run_cmake(name, build_tool_args, cwd=extract_build_dir)
@@ -632,18 +621,6 @@ if "boost" in targets:
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
     
-if "icu" in targets:
-    build_dependency(
-        name="icu-{ICU_VERSION}".format(**locals()),
-        mode="icu",
-        build_tool_args=[
-            "--enable-static",
-            "--disable-shared"
-        ],
-        download_url="http://download.icu-project.org/files/icu4c/{ICU_VERSION}/".format(**locals()),
-        download_name="icu4c-{ICU_VERSION_UNDERSCORE}-src.tgz".format(**locals())
-    )
-
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR=os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -689,12 +666,6 @@ if "OpenCOLLADA" in targets:
     cmake_args.extend([
         "-DOPENCOLLADA_INCLUDE_DIR="   "{DEPS_DIR}/install/OpenCOLLADA/include/opencollada".format(**locals()),
         "-DOPENCOLLADA_LIBRARY_DIR="   "{DEPS_DIR}/install/OpenCOLLADA/lib/opencollada".format(**locals())
-    ])
-
-if "icu" in targets:
-    cmake_args.extend([
-        "-DICU_INCLUDE_DIR="           "{DEPS_DIR}/install/icu-{ICU_VERSION}/include".format(**locals()),
-        "-DICU_LIBRARY_DIR="           "{DEPS_DIR}/install/icu-{ICU_VERSION}/lib".format(**locals())
     ])
 
 if "pcre" in targets:
@@ -743,8 +714,6 @@ if "IfcOpenShell-Python" in targets:
                 "-DBOOST_ROOT="              "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
                 "-DOCC_INCLUDE_DIR="         +occ_include_dir,
                 "-DOCC_LIBRARY_DIR="         +occ_library_dir,
-                "-DICU_INCLUDE_DIR="         "{DEPS_DIR}/install/icu-{ICU_VERSION}/include".format(**locals()),
-                "-DICU_LIBRARY_DIR="         "{DEPS_DIR}/install/icu-{ICU_VERSION}/lib".format(**locals()),
                 "-DPYTHON_LIBRARY="          +PYTHON_LIBRARY,
                 "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
