@@ -84,6 +84,8 @@ set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
 set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
 set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
 set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+set VOXEL_INCLUDE_DIR=%INSTALL_DIR%\voxel\include
+set VOXEL_LIBRARY_DIR=%INSTALL_DIR%\voxel\lib
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -111,6 +113,8 @@ echo    GMP_INCLUDE_DIR         = %GMP_INCLUDE_DIR%
 echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
 echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
 echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
+echo    VOXEL_INCLUDE_DIR       = %VOXEL_INCLUDE_DIR%
+echo    VOXEL_LIBRARY_DIR       = %VOXEL_LIBRARY_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.
@@ -119,7 +123,7 @@ set CMAKELISTS_DIR=..\cmake
 :: Delete CMakeCache.txt if command-line options were provided for this batch script.
 if not (%1)==() if exist CMakeCache.txt. del /Q CMakeCache.txt
 call cecho.cmd 0 13 "Running CMake for %PROJECT_NAME%."
-cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" %ARGUMENTS%
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DUSE_VOXELS=On %ARGUMENTS%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 echo.
