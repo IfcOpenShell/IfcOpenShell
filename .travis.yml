@@ -50,6 +50,8 @@ script:
   - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
   - gltf_validator acad2010_walls.glb
   
+  - python -c "from __future__ import print_function; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); print(f[1][0])" | grep "'a' 1m³ ≤ 5m³ ≥ 10m³"
+  
   - |
     (for i in *.ifc; do \
     echo $i | tee -a log; \
