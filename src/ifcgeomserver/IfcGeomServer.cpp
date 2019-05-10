@@ -47,11 +47,15 @@
 #include <vld.h>
 #endif
 
+#include "../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
+
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
 #include <BRepBndLib.hxx>
 #include <Bnd_Box.hxx>
 #include <Geom_Plane.hxx>
+#include <TopoDS.hxx>
+#include <TopoDS_Compound.hxx>
 
 #include <memory>
 
@@ -479,7 +483,7 @@ public:
 		boost::optional<gp_Dir> largest_face_dir;
 
 		{
-			TopoDS_Compound compound = elem_->geometry().as_compound(true);
+			TopoDS_Compound compound = TopoDS::Compound(((IfcGeom::OpenCascadeShape*) elem_->geometry().as_compound(true))->shape());
 			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
