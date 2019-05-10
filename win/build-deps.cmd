@@ -195,37 +195,10 @@ call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BIT
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:ICU
-set DEPENDENCY_NAME=ICU
-set DEPENDENCY_DIR=N/A
-set ICU_VER=58.2
-set ICU_ZIP=icu-%ICU_VER%-vs%VS_VER%.7z
-cd "%DEPS_DIR%"
-call :DownloadFile https://www.npcglib.org/~stathis/downloads/%ICU_ZIP% "%DEPS_DIR%" %ICU_ZIP%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %ICU_ZIP% "%DEPS_DIR%" "%INSTALL_DIR%\icu"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-:: Rename lib and bin directories to predictable form
-IF EXIST "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%". (
-    pushd "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%"
-    IF EXIST bin. ren bin bin%ARCH_BITS%"
-    IF EXIST lib. ren lib lib%ARCH_BITS%"
-    popd
-)
-
-IF EXIST "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\". (
-    robocopy "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\include" "%INSTALL_DIR%\icu\include" /E /IS /njh /njs
-    IF NOT EXIST "%INSTALL_DIR%\icu\lib". mkdir "%INSTALL_DIR%\icu\lib"
-    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicutest%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutest%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicutu%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icutu%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuuc%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuuc%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicudt%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icudt%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuin%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuin%POSTFIX_D%.lib"
-    copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicuio%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icuio%POSTFIX_D%.lib"
-    REM NOTE not available in 58.2 at least, nor needed by us.
-    REM copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\sicule%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\icule%POSTFIX_D%.lib"
-    REM copy /y "%DEPS_DIR%\icu-%ICU_VER%-vs%VS_VER%\lib%ARCH_BITS%\siculx%POSTFIX_D%.lib" "%INSTALL_DIR%\icu\lib\iculx%POSTFIX_D%.lib"
-)
+:JSON
+set DEPENDENCY_NAME=JSON for Modern C++ v3.6.1
+IF NOT EXIST "%INSTALL_DIR%\json\nlohmann". mkdir "%INSTALL_DIR%\json\nlohmann"
+call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
 
 :OpenCOLLADA
 :: Note OpenCOLLADA has only Release and Debug builds.
