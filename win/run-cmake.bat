@@ -64,8 +64,6 @@ set BOOST_VER=%BOOST_VERSION:.=_%
 
 set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
 set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\vs%VS_VER%-%VS_PLATFORM%\lib
-set ICU_INCLUDE_DIR=%INSTALL_DIR%\icu\include
-set ICU_LIBRARY_DIR=%INSTALL_DIR%\icu\lib
 if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
 if not defined OCC_LIBRARY_DIR set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INCLUDE_DIR=%INSTALL_DIR%\OpenCOLLADA\include\opencollada
@@ -89,8 +87,6 @@ echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_ROOT              = %BOOST_ROOT%
 echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
-echo    ICU_INCLUDE_DIR         = %ICU_INCLUDE_DIR%
-echo    ICU_LIBRARY_DIR         = %ICU_LIBRARY_DIR%
 echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
 echo    OPENCOLLADA_INCLUDE_DIR = %OPENCOLLADA_INCLUDE_DIR%

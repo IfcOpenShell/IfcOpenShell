@@ -29,43 +29,27 @@
 
 #include <string>
 #include <sstream>
-
-#ifdef HAVE_ICU
-#include "unicode/ucnv.h"
-#include "unicode/unistr.h"
-#else
-typedef unsigned int UChar32;
-#endif
+#include <codecvt>
 
 #include "../ifcparse/IfcSpfStream.h"
+
+namespace IfcUtil {
+	std::wstring::value_type convert_codepage(int codepage, int c);
+	std::string convert_utf8(const std::wstring& s);
+	std::wstring convert_utf8(const std::string& s);
+}
 
 namespace IfcParse {
 
 	class IFC_PARSE_API IfcCharacterDecoder {
 	private:
 		IfcParse::IfcSpfStream* file;
-#ifdef HAVE_ICU
-		static UConverter* destination;
-		static UConverter* converter;
-		static UConverter* compatibility_converter;
-		static int previous_codepage;
-		static UErrorCode status;
-#endif
-		void addChar(std::stringstream& s,const UChar32& ch);
+		std::wstring builder_;
+		int codepage_;
 	public:
-#ifdef HAVE_ICU
-		enum ConversionMode {DEFAULT,UTF8,LATIN,JSON,PYTHON};
+		enum ConversionMode {SUBSTITUTE, UTF8, ESCAPE};
 		static ConversionMode mode;
-
-		// Many BIM software (eg. Revit, ArchiCAD, ...) has wrong behavior to encode characters.
-		// It just translate to extended string in system default code page, not unicode.
-		// If you want to process these strings, set true.
-		static bool compatibility_mode;
-		static std::string compatibility_charset;
-
-#else
 		static char substitution_character;
-#endif
 		IfcCharacterDecoder(IfcParse::IfcSpfStream* file);
 		~IfcCharacterDecoder();
 		void dryRun();
@@ -78,14 +62,9 @@ namespace IfcWrite {
 
 	class IFC_PARSE_API IfcCharacterEncoder {
 	private:
-		std::string str;
-#ifdef HAVE_ICU
-		static UErrorCode status;
-		static UConverter* converter;
-#endif
+		std::wstring str;
 	public:
 		IfcCharacterEncoder(const std::string& input);
-		~IfcCharacterEncoder();
 		operator std::string();
 	};
 
