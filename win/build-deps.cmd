@@ -149,11 +149,18 @@ echo.
 
 cd "%DEPS_DIR%"
 
+:: Define the version strings at the top in case individual dependencies are skipped
+set BOOST_VERSION=1.67.0
+set BOOST_VER=%BOOST_VERSION:.=_%
+set OCCT_VERSION=7.3.0
+set OCE_VERSION=OCE-0.18
+set PYTHON_VERSION=3.4.3
+set SWIG_VERSION=3.0.12
+
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.67.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
 :: DEPENDENCY_NAME is used for logging and DEPENDENCY_DIR for saving from some redundant typing
@@ -191,7 +198,8 @@ if %VS_VER% LSS 2017 (
     set BOOST_VC_VER=-%VC_VER%.0
 )
 
-call .\b2 toolset=msvc%BOOST_VC_VER% runtime-link=static address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set RUNTIME_LINK_STATIC=runtime-link=static
+call .\b2 toolset=msvc%BOOST_VC_VER% %RUNTIME_LINK_STATIC% address-model=%ARCH_BITS% -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_LIBS% stage --stagedir=stage/vs%VS_VER%-%VS_PLATFORM% 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -216,7 +224,8 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" -DUSE_STATIC_MSVC_RUNTIME=1 -DCMAKE_DEBUG_POSTFIX=d ^
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_1=-DUSE_STATIC_MSVC_RUNTIME=1
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\OpenCOLLADA" %STATIC_RUNTIME_1% -DCMAKE_DEBUG_POSTFIX=d ^
                -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
@@ -227,7 +236,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 if %IFCOS_USE_OCCT%==FALSE goto :OCE
 :OCCT
-set OCCT_VERSION=7.3.0
 SET OCCT_VER=V%OCCT_VERSION:.=_%
 
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
@@ -268,10 +276,11 @@ if not %ERRORLEVEL%==0 (
 )
 findstr IfcOpenShell "%DEPENDENCY_DIR%\CMakeLists.txt">NUL
 if not %ERRORLEVEL%==0 goto :Error
-
+OCCT_USE_STATIC_RUNTIME
 cd "%DEPENDENCY_DIR%"
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_1=-DOCCT_USE_STATIC_RUNTIME=1
 call :RunCMake -DINSTALL_DIR="%INSTALL_DIR%\opencascade-%OCCT_VERSION%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX=d ^
-    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype"
+    -DBUILD_MODULE_Draw=0 -D3RDPARTY_FREETYPE_DIR="%INSTALL_DIR%\freetype" %STATIC_RUNTIME_1%
 if not %ERRORLEVEL%==0 goto :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCCT.sln" %BUILD_CFG%
 if not %ERRORLEVEL%==0 goto :Error
@@ -303,7 +312,6 @@ echo OCC_LIBRARY_DIR=%OCC_LIBRARY_DIR%>>"%~dp0\BuildDepsCache-%TARGET_ARCH%.txt"
 
 set DEPENDENCY_NAME=Open CASCADE Community Edition
 set DEPENDENCY_DIR=%DEPS_DIR%\oce
-set OCE_VERSION=OCE-0.18
 call :GitCloneAndCheckoutRevision https://github.com/tpaviot/oce.git "%DEPENDENCY_DIR%" %OCE_VERSION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 :: Use the oce-win-bundle for OCE's dependencies
@@ -313,8 +321,9 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: NOTE Specify OCE_NO_LIBRARY_VERSION as rc.exe can fail due to long filenames and huge command-line parameter
 :: input (more than 32,000 characters). Could maybe try using subst for the build dir to overcome this.
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" set STATIC_RUNTIME_1=-DOCE_USE_STATIC_MSVC_RUNTIME=1
 call :RunCMake  -DOCE_BUILD_SHARED_LIB=0 -DOCE_INSTALL_PREFIX="%INSTALL_DIR%\oce" -DOCE_TESTING=0 ^
-                -DOCE_NO_LIBRARY_VERSION=1 -DOCE_USE_STATIC_MSVC_RUNTIME=1
+                -DOCE_NO_LIBRARY_VERSION=1 %STATIC_RUNTIME_1%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\OCE.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -324,7 +333,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 :Python
 :: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.4.3
 IF "%IFCOS_USE_PYTHON2%"=="TRUE" set PYTHON_VERSION=2.7.10
 set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
 set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
@@ -362,7 +370,6 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
-set SWIG_VERSION=3.0.12
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
@@ -406,6 +413,7 @@ git reset --hard
 REM There probably need to be quotes here around the filename
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_cxx\"}" | git apply --unidiff-zero
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch"
 cd msvc
 cd vs%VS_VER:~2,2%
 call .\msbuild.bat gc LIB %VS_PLATFORM% Release
@@ -421,16 +429,8 @@ call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpfr.git "%DEP
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 git reset --hard
-for /f "delims=|" %%f in ('dir /s/b build.vc15\*.vcxproj') do (
-    set "full=%%f"
-    set rel=!full:*%DEPENDENCY_DIR%=!
-    set relnix=!rel:\=/!
-    powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"!relnix!\"}" | git apply --unidiff-zero
-    git diff --exit-code -- %%f
-    IF !ERRORLEVEL!==0 (
-        powershell -c "get-content %~dp0patches\mpfr2.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"!relnix!\"}" | git apply --unidiff-zero
-    )
-)
+powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"}" | git apply --unidiff-zero
+if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch"
 call :BuildSolution "%DEPENDENCY_DIR%\build.vc15\lib_mpfr.sln" %DEBUG_OR_RELEASE% lib_mpfr
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
@@ -438,19 +438,20 @@ copy lib\%VS_PLATFORM%\Release\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :cgal
-set DEPENDENCY_NAME=mpfr
+set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
 call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" releases/CGAL-4.13.1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
+git reset --hard
+git apply "%~dp0patches\cgal_no_zlib.patch"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\cgal"    ^
                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%"    ^
                -DGMP_INCLUDE_DIR="%INSTALL_DIR%\mpir"         ^
                -DGMP_LIBRARIES="%INSTALL_DIR%\mpir\mpir.lib"  ^
                -DMPFR_INCLUDE_DIR="%INSTALL_DIR%\mpfr"        ^
                -DMPFR_LIBRARIES="%INSTALL_DIR%\mpfr\mpfr.lib" ^
-               -DCGAL_BUILD_SHARED_LIBS=Off                   ^
-               -DBUILD_SHARED_LIBS=Off                        ^
+               -DBUILD_SHARED_LIBS=On                         ^
                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%

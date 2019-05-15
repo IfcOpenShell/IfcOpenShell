@@ -64,14 +64,18 @@ IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementation
 
 extern void init_KernelImplementation_opencascade_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
 extern void init_KernelImplementation_opencascade_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
+#ifdef IFOPSH_USE_CGAL
 extern void init_KernelImplementation_cgal_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
 extern void init_KernelImplementation_cgal_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
+#endif
 
 IfcGeom::impl::KernelFactoryImplementation::KernelFactoryImplementation() {
 	init_KernelImplementation_opencascade_Ifc2x3(this);
 	init_KernelImplementation_opencascade_Ifc4(this);
+#ifdef IFOPSH_USE_CGAL
 	init_KernelImplementation_cgal_Ifc2x3(this);
 	init_KernelImplementation_cgal_Ifc4(this);
+#endif
 }
 
 void IfcGeom::impl::KernelFactoryImplementation::bind(const std::string& schema_name, const std::string& geometry_library, IfcGeom::impl::kernel_fn fn) {

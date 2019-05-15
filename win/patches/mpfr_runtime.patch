@@ -1,0 +1,8 @@
+--- a/build.vc15/lib_mpfr/lib_mpfr.vcxproj
++++ a/build.vc15/lib_mpfr/lib_mpfr.vcxproj
+@@ -148 +148 @@
+-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+@@ -179 +179 @@
+-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
