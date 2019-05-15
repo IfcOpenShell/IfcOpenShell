@@ -535,15 +535,17 @@ public:
 				bounds[1].get(i) = bbox_xyz[i + 3];
 			}
 			progress_writer silent;
-			auto surface = storage_for(bounds);
-			threaded_processor proc(surface, silent);
+			auto surface = storage_for(bounds, 256U);
+			processor proc(surface, silent);
+			std::vector<std::pair<int, TopoDS_Compound > > geometries = { {1, compound} };
+			proc.process(geometries.begin(), geometries.end(), SURFACE(), output(MERGED()));
 			surface = (regular_voxel_storage*) proc.voxels();
 			double vsize = surface->voxel_size();
-			delete surface;
 			auto surface_count = surface->count();
 			traversal_voxel_filler_inverse filler;
 			auto volume = filler(surface);
 			auto volume_count = volume->count();
+			delete surface;
 			delete volume;
 			double total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
 			put_json(TOTAL_SHAPE_VOLUME, total_volume);
