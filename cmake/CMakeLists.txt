@@ -165,7 +165,7 @@ ELSE()
 ENDIF()
 
 set(BOOST_COMPONENTS system program_options regex thread date_time)
-if(USE_MMAP)
+if(USE_MMAP OR USE_VOXELS)
     if(MSVC)
         # filesystem is necessary for the utf-16 wpath
         set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams filesystem)
@@ -183,6 +183,7 @@ if (USE_VOXELS)
     FIND_LIBRARY(libvoxel NAMES voxel libvoxel PATHS ${VOXEL_LIBRARY_DIR} NO_DEFAULT_PATH)
     FIND_LIBRARY(libvoxec NAMES voxec libvoxec PATHS ${VOXEL_LIBRARY_DIR} NO_DEFAULT_PATH)
     set(VOXEL_LIBRARIES ${libvoxel} ${libvoxec})
+	ADD_DEFINITIONS("-DUSE_VOXELS")
 endif()
 
 FIND_PACKAGE(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})

@@ -59,6 +59,12 @@
 
 #include <memory>
 
+#ifdef USE_VOXELS
+#include <voxel/storage.h>
+#include <voxel/traversal.h>
+#include <voxel/processor.h>
+#endif
+
 template <typename T>
 union data_field {
     char buffer[sizeof(T)];
@@ -470,9 +476,9 @@ public:
 			put_json(TOTAL_SURFACE_AREA, a);
 		}
 
-		if (elem_->geometry().calculate_volume(a)) {
-			put_json(TOTAL_SHAPE_VOLUME, a);
-		}
+		TopoDS_Compound compound = TopoDS::Compound(((IfcGeom::OpenCascadeShape*) elem_->geometry().as_compound(true))->shape());
+		double bbox_xyz[6];
+		bool has_boundingbox = false;
 
 		if (elem_->calculate_projected_surface_area(a, b, c)) {
 			put_json(SURFACE_AREA_ALONG_X, a);
@@ -483,7 +489,6 @@ public:
 		boost::optional<gp_Dir> largest_face_dir;
 
 		{
-			TopoDS_Compound compound = TopoDS::Compound(((IfcGeom::OpenCascadeShape*) elem_->geometry().as_compound(true))->shape());
 			TopExp_Explorer exp(compound, TopAbs_FACE);
 			for (; exp.More(); exp.Next()) {
 				GProp_GProps prop;
@@ -503,18 +508,47 @@ public:
 			}
 
 			Bnd_Box box;
-			double xyz[6];
 
 			BRepBndLib::AddClose(compound, box);
 
 			if (!box.IsVoid()) {
-				box.Get(xyz[0], xyz[1], xyz[2], xyz[3], xyz[4], xyz[5]);
+				has_boundingbox = true;
+				box.Get(bbox_xyz[0], bbox_xyz[1], bbox_xyz[2], bbox_xyz[3], bbox_xyz[4], bbox_xyz[5]);
 				for (int i = 0; i < 3; ++i) {
-					const double bsz = xyz[i + 3] - xyz[i];
+					const double bsz = bbox_xyz[i + 3] - bbox_xyz[i];
 					put_json(BOUNDING_BOX_SIZE_ALONG_ + XYZ[i], bsz);
 				}
 			}
 		}
+
+		if (elem_->geometry().calculate_volume(a)) {
+			put_json(TOTAL_SHAPE_VOLUME, a);
+		}
+#ifdef USE_VOXELS
+		// Sometimes geometries are not a topologically valid manifold,
+		// but still (approximately) enclose a volume. In this case
+		// we can voxlize the geometry and fill the interior solid volume.
+		else if (has_boundingbox) {
+			std::array< vec_n<3, double>, 2 > bounds;
+			for (int i = 0; i < 3; ++i) {
+				bounds[0].get(i) = bbox_xyz[i + 0];
+				bounds[1].get(i) = bbox_xyz[i + 3];
+			}
+			progress_writer silent;
+			auto surface = storage_for(bounds);
+			threaded_processor proc(surface, silent);
+			surface = (regular_voxel_storage*) proc.voxels();
+			double vsize = surface->voxel_size();
+			delete surface;
+			auto surface_count = surface->count();
+			traversal_voxel_filler_inverse filler;
+			auto volume = filler(surface);
+			auto volume_count = volume->count();
+			delete volume;
+			double total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
+			put_json(TOTAL_SHAPE_VOLUME, total_volume);
+		}
+#endif
 
 		if (largest_face_dir) {
 			put_json(LARGEST_FACE_DIRECTION, *largest_face_dir);
