@@ -1,5 +1,7 @@
---- a/build.vc15/lib_mpfr/lib_mpfr.vcxproj
-+++ a/build.vc15/lib_mpfr/lib_mpfr.vcxproj
+diff --git a/msvc/vs17/fn/fn.vcxproj b/msvc/vs17/fn/fn.vcxproj
+index d8d87f8f..e543adc8 100644
+--- a/msvc/vs17/fn/fn.vcxproj
++++ b/msvc/vs17/fn/fn.vcxproj
 @@ -25 +25 @@
 -    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
 +    <WindowsTargetPlatformVersion>sdk</WindowsTargetPlatformVersion>

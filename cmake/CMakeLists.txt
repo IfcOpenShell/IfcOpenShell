@@ -44,10 +44,12 @@ OPTION(BUILD_CONVERT "Build IfcConvert executable." ON)
 OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(USE_VOXELS "Use voxelized geometries as a fallback mechanism to calculate quantities in IfcGeomServer" OFF)
+OPTION(USE_CGAL "Use CGAL as an alternative geometry kernel implementation" OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." ON)
 endif()
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
+OPTION(USE_STATIC_MSVC_RUNTIME "Link to the static runtime on MSVC." ON)
 
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
@@ -147,8 +149,10 @@ ENDMACRO()
 # runtime, when doing running conda-build we pick what conda prepared for us.
 IF(WIN32 AND ("$ENV{CONDA_BUILD}" STREQUAL ""))
 	SET(Boost_USE_STATIC_LIBS ON)
-	SET(Boost_USE_STATIC_RUNTIME ON)
 	SET(Boost_USE_MULTITHREADED ON)
+    if (USE_STATIC_MSVC_RUNTIME)
+        SET(Boost_USE_STATIC_RUNTIME ON)
+    endif()
 ELSE()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
@@ -268,6 +272,11 @@ foreach(lib ${OPENCASCADE_LIBRARY_NAMES})
 	list(APPEND OPENCASCADE_LIBRARIES "${lib_path}")
 endforeach()
 
+list(APPEND GEOMETRY_KERNELS opencascade)
+
+if (USE_CGAL)
+add_definitions(-DIFOPSH_USE_CGAL)
+list(APPEND GEOMETRY_KERNELS cgal)
 SET(CGAL_LIBRARY_NAMES libCGAL_Core libCGAL_ImageIO libCGAL)
 # Find CGAL
 IF("${CGAL_INCLUDE_DIR}" STREQUAL "")
@@ -316,6 +325,7 @@ IF(NOT libMPFR)
 ENDIF()
 list(APPEND CGAL_LIBRARIES "${libMPFR}")
 list(APPEND CGAL_LIBRARIES "${libGMP}")
+endif()
 
 if(MSVC)
     add_definitions(-DHAVE_NO_DLL)
@@ -473,20 +483,22 @@ IF(MSVC)
 		# @todo currently fails
         # add_definitions(-permissive-)
     endif()
-	# Link against the static VC runtime
-    # TODO Make this configurable
-	IF("$ENV{CONDA_BUILD}" STREQUAL "")
-	FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
-			CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-			CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-		IF(${flag} MATCHES "/MD")
-			STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
-		ENDIF()
-		IF(${flag} MATCHES "/MDd")
-			STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
-		ENDIF()
-	ENDFOREACH()
-	ENDIF()
+    
+    if(USE_STATIC_MSVC_RUNTIME)
+        # Link against the static VC runtime
+        IF("$ENV{CONDA_BUILD}" STREQUAL "")
+        FOREACH(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
+                CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+            IF(${flag} MATCHES "/MD")
+                STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
+            ENDIF()
+            IF(${flag} MATCHES "/MDd")
+                STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
+            ENDIF()
+        ENDFOREACH()
+        ENDIF()
+    endif()
 ElSE()
     add_definitions(-Wall -Wextra)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -595,7 +607,7 @@ TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_
 
 if (BUILD_IFCGEOM)
 
-foreach(kernel opencascade cgal)
+foreach(kernel ${GEOMETRY_KERNELS})
 string(TOUPPER ${kernel} KERNEL_UPPER)
 file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.cpp)
@@ -618,7 +630,7 @@ set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_
 target_link_libraries(IfcGeom_ifc${schema} IfcParse)
 list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
 
-foreach(kernel opencascade cgal)
+foreach(kernel ${GEOMETRY_KERNELS})
 file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
