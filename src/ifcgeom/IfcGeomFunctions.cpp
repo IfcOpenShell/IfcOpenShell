@@ -3298,7 +3298,7 @@ bool IfcGeom::Kernel::flatten_wire(TopoDS_Wire& wire) {
 	return true;
 }
 
-bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfShape& faces) {
+bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces) {
 	// This is a bit of a precarious approach, but seems to work for the 
 	// versions of OCCT tested for. OCCT has a Delaunay triangulation function 
 	// BRepMesh_Delaun, but it is notoriously hard to interpret the results 
@@ -3315,52 +3315,70 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	typedef std::pair<double, double> uv_node;
 
 	gp_Pln pln;
-	if (!approximate_plane_through_wire(wire, pln, std::numeric_limits<double>::infinity())) {
+	if (!approximate_plane_through_wire(wires.front(), pln, std::numeric_limits<double>::infinity())) {
 		return false;
 	}
 
 	const gp_XYZ& udir = pln.Position().XDirection().XYZ();
 	const gp_XYZ& vdir = pln.Position().YDirection().XYZ();
 	const gp_XYZ& pnt = pln.Position().Location().XYZ();
-	
-	BRepTools_WireExplorer exp(wire);
-	BRepBuilderAPI_MakePolygon mp;
+
 	std::map<uv_node, TopoDS_Vertex> mapping;
 	std::map<std::pair<uv_node, uv_node>, TopoDS_Edge> existing_edges, new_edges;
 
-	// Add UV coordinates to a newly created polygon
-	for (; exp.More(); exp.Next()) {
-		// Project onto plane
-		const TopoDS_Vertex& V = exp.CurrentVertex();
-		gp_Pnt p = BRep_Tool::Pnt(V);
-		double u = (p.XYZ() - pnt).Dot(udir);
-		double v = (p.XYZ() - pnt).Dot(vdir);
-		mp.Add(gp_Pnt(u, v, 0.));
+	std::unique_ptr<BRepBuilderAPI_MakeFace> mf;
 
-		mapping.insert(std::make_pair(std::make_pair(u, v), V));
+	for (auto it = wires.begin(); it != wires.end(); ++it) {
+		const TopoDS_Wire& wire = *it;
+		BRepTools_WireExplorer exp(wire);
+		BRepBuilderAPI_MakePolygon mp;
 
-		// Store existing edges in a map so that triangles can
-		// actually reference the preexisting edges.
-		const TopoDS_Edge& e = exp.Current();
-		TopoDS_Vertex V0, V1;
-		TopExp::Vertices(e, V0, V1, true);
-		gp_Pnt p0 = BRep_Tool::Pnt(V0);
-		gp_Pnt p1 = BRep_Tool::Pnt(V1);
-		double u0 = (p0.XYZ() - pnt).Dot(udir);
-		double v0 = (p0.XYZ() - pnt).Dot(vdir);
-		double u1 = (p1.XYZ() - pnt).Dot(udir);
-		double v1 = (p1.XYZ() - pnt).Dot(vdir);
-		uv_node uv0 = std::make_pair(u0, v0);
-		uv_node uv1 = std::make_pair(u1, v1);
-		existing_edges.insert(std::make_pair(std::make_pair(uv0, uv1), e));
-		existing_edges.insert(std::make_pair(std::make_pair(uv1, uv0), TopoDS::Edge(e.Reversed())));
+		// Add UV coordinates to a newly created polygon
+		for (; exp.More(); exp.Next()) {
+			// Project onto plane
+			const TopoDS_Vertex& V = exp.CurrentVertex();
+			gp_Pnt p = BRep_Tool::Pnt(V);
+			double u = (p.XYZ() - pnt).Dot(udir);
+			double v = (p.XYZ() - pnt).Dot(vdir);
+			mp.Add(gp_Pnt(u, v, 0.));
+
+			mapping.insert(std::make_pair(std::make_pair(u, v), V));
+
+			// Store existing edges in a map so that triangles can
+			// actually reference the preexisting edges.
+			const TopoDS_Edge& e = exp.Current();
+			TopoDS_Vertex V0, V1;
+			TopExp::Vertices(e, V0, V1, true);
+			gp_Pnt p0 = BRep_Tool::Pnt(V0);
+			gp_Pnt p1 = BRep_Tool::Pnt(V1);
+			double u0 = (p0.XYZ() - pnt).Dot(udir);
+			double v0 = (p0.XYZ() - pnt).Dot(vdir);
+			double u1 = (p1.XYZ() - pnt).Dot(udir);
+			double v1 = (p1.XYZ() - pnt).Dot(vdir);
+			uv_node uv0 = std::make_pair(u0, v0);
+			uv_node uv1 = std::make_pair(u1, v1);
+			existing_edges.insert(std::make_pair(std::make_pair(uv0, uv1), e));
+			existing_edges.insert(std::make_pair(std::make_pair(uv1, uv0), TopoDS::Edge(e.Reversed())));
+		}
+
+		// Not closed by default
+		mp.Close();
+
+		if (mf) {
+			if (it - 1 == wires.begin()) {
+				// @todo is this necessary?
+				TopoDS_Face f = mf->Face();
+				mf->Init(f);
+			} 
+			mf->Add(mp.Wire());
+		} else {
+			mf.reset(new BRepBuilderAPI_MakeFace(mp.Wire()));
+		}
 	}
 
-	// Not closed by default
-	mp.Close();
+	const TopoDS_Face& face = mf->Face();
 
-	// Create a new face from the {u,v,0} wire and mesh the face
-	TopoDS_Face face = BRepBuilderAPI_MakeFace(mp.Wire());
+	// Create a triangular mesh from the face
 	BRepMesh_IncrementalMesh(face, Precision::Confusion());
 
 	int n123[3]; 
@@ -3421,13 +3439,13 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 				}
 			}
 
-			BRepBuilderAPI_MakeFace mf(mp2.Wire());
-			if (mf.IsDone()) {
-				TopoDS_Face triangle_face = mf.Face();
+			BRepBuilderAPI_MakeFace mft(mp2.Wire());
+			if (mft.IsDone()) {
+				TopoDS_Face triangle_face = mft.Face();
 				TopoDS_Iterator jt(triangle_face, false);
 				for (; jt.More(); jt.Next()) {
 					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
-					if (w.Orientation() != wire.Orientation()) {
+					if (w.Orientation() != wires.front().Orientation()) {
 						triangle_face.Reverse();
 					}
 				}
@@ -3440,7 +3458,9 @@ bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfS
 	}
 
 	TopTools_IndexedDataMapOfShapeListOfShape mape, mapn;
-	TopExp::MapShapesAndAncestors(wire, TopAbs_EDGE, TopAbs_WIRE, mape);
+	for (auto& wire : wires) {
+		TopExp::MapShapesAndAncestors(wire, TopAbs_EDGE, TopAbs_WIRE, mape);
+	}
 	TopTools_ListIteratorOfListOfShape it(faces);
 	for (; it.More(); it.Next()) {
 		TopExp::MapShapesAndAncestors(it.Value(), TopAbs_EDGE, TopAbs_WIRE, mapn);
