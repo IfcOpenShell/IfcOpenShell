@@ -324,7 +324,8 @@ public:
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&, double eps=-1.);
 	bool flatten_wire(TopoDS_Wire&);
-	bool triangulate_wire(const TopoDS_Wire&, TopTools_ListOfShape&);
+	/// Triangulate the set of wires. The firstmost wire is assumed to be the outer wire.
+	bool triangulate_wire(const std::vector<TopoDS_Wire>&, TopTools_ListOfShape&);
 	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
 	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 

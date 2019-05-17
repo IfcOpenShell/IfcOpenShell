@@ -108,15 +108,69 @@
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
-	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
+namespace {
+	/* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
+	bool is_polyhedron(const TopoDS_Wire& wire) {
+		double a, b;
+		TopLoc_Location l;
 
-	// Fail on this early as it can cause issues later on
-	if (bounds->size() == 0) {
-		return false;
+		TopoDS_Iterator it(wire, false, false);
+		for (; it.More(); it.Next()) {
+			auto crv = BRep_Tool::Curve(TopoDS::Edge(it.Value()), l, a, b);
+			if (!crv || crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
-	Handle(Geom_Surface) face_surface;
+	/* A temporary structure to store the intermediate data for the face conversion */
+	class face_definition {
+	private:
+		Handle(Geom_Surface) surface_;
+		std::vector<TopoDS_Wire> wires_;
+		bool all_outer_;
+	public:
+		face_definition() : surface_(), all_outer_(false) {}
+
+		typedef std::vector<TopoDS_Wire>::const_iterator wire_it;
+		
+		bool& all_outer() {
+			return all_outer_;
+		}
+
+		bool all_outer() const {
+			return all_outer_;
+		}
+
+		Handle(Geom_Surface)& surface() {
+			return surface_;
+		}
+
+		const Handle(Geom_Surface)& surface() const {
+			return surface_;
+		}
+
+		std::vector<TopoDS_Wire>& wires() {
+			return wires_;
+		}
+
+		const TopoDS_Wire& outer_wire() const {
+			return wires_.front();
+		}
+
+		std::pair<wire_it, wire_it> inner_wires() const {
+			return { wires_.begin() + 1, wires_.end() };
+		}
+	};
+}
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result) {
+	IfcSchema::IfcFaceBound::list::ptr bounds = l->Bounds();
+
+	face_definition fd;
+
 	const bool is_face_surface = l->declaration().is(IfcSchema::IfcFaceSurface::Class());
 
 	if (is_face_surface) {
@@ -131,7 +185,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		if (!exp.More()) return false;
 
 		TopoDS_Face surface = TopoDS::Face(exp.Current());
-		face_surface = BRep_Tool::Surface(surface);
+		fd.surface() = BRep_Tool::Surface(surface);
 	}
 	
 	const int num_bounds = bounds->size();
@@ -151,247 +205,188 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		return false;
 	}
 
-	TopoDS_Compound compound;
-	BRep_Builder builder;
 	if (num_outer_bounds > 1) {
-		builder.MakeCompound(compound);
+		Logger::Message(Logger::LOG_WARNING, "Multiple outer boundaries for:", l);
+		fd.all_outer() = true;
 	}
 
 	TopTools_DataMapOfShapeInteger wire_senses;
 	
-	// The builder is initialized on the heap because of the various different moments
-	// of initialization depending on the configuration of surfaces and boundaries.
-	BRepBuilderAPI_MakeFace* mf = 0;
-	
-	bool success = false;
-	int processed = 0;
-
 	for (int process_interior = 0; process_interior <= 1; ++process_interior) {
 		for (IfcSchema::IfcFaceBound::list::it it = bounds->begin(); it != bounds->end(); ++it) {
 			IfcSchema::IfcFaceBound* bound = *it;
 			IfcSchema::IfcLoop* loop = bound->Bound();
-		
+
 			bool same_sense = bound->Orientation();
-			const bool is_interior = 
+			const bool is_interior =
 				!bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class()) &&
 				(num_bounds > 1) &&
 				(num_outer_bounds < num_bounds);
 
 			// The exterior face boundary is processed first
 			if (is_interior == !process_interior) continue;
-		
+
 			TopoDS_Wire wire;
 			if (faceset_helper_ && loop->as<IfcSchema::IfcPolyLoop>()) {
 				if (!faceset_helper_->wire(loop->as<IfcSchema::IfcPolyLoop>(), wire)) {
 					Logger::Message(Logger::LOG_WARNING, "Face boundary loop not included", loop);
-					delete mf;
-					return false;
+					continue;
 				}
 			} else if (!convert_wire(loop, wire)) {
 				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", loop);
-				delete mf;
 				return false;
 			}
-			
-			// The approach below does not result in a significant speed-up
-			if (loop->as<IfcSchema::IfcPolyLoop>() && processed == 0 && face_surface.IsNull()) {
-				TopExp_Explorer exp(wire, TopAbs_EDGE);
-				int count = 0;
-				TopoDS_Edge edges[2];
-				for (; exp.More(); exp.Next(), count++) {
-					if (count < 2) {
-						edges[count] = TopoDS::Edge(exp.Current());
-					}
-				}
-				
-				if (count == 3) {
-					// Help Open Cascade by finding the plane more efficiently
-					double _, __;
-					Handle(Geom_Line) c1 = Handle(Geom_Line)::DownCast(BRep_Tool::Curve(edges[0], _, __));
-					Handle(Geom_Line) c2 = Handle(Geom_Line)::DownCast(BRep_Tool::Curve(edges[1], _, __));
 
-					const gp_Vec ab = c1->Position().Direction();
-					const gp_Vec ac = c2->Position().Direction();					
-					const gp_Vec cross = ab.Crossed(ac);
-
-					if (cross.SquareMagnitude() > ALMOST_ZERO) {
-						const gp_Dir n = cross;
-						face_surface = new Geom_Plane(c1->Position().Location(), n);
-					}
-				} else {
-					gp_Pln pln;
-					if (approximate_plane_through_wire(wire, pln)) {
-						face_surface = new Geom_Plane(pln);
-					}
-				}
-			}
-		
 			if (!same_sense) {
 				wire.Reverse();
 			}
 
 			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
-			
-			bool flattened_wire = false;
 
-			if (!mf) {
-			process_wire:
+			fd.wires().emplace_back(wire);
+		}
+	}
 
-				if (face_surface.IsNull()) {
-					gp_Pln pln;
-					if (count(wire, TopAbs_EDGE) > 128 && approximate_plane_through_wire(wire, pln)) {
-						// tfk: optimization find the underlying surface ourselves since it's going
-						// to be planar in IFC if no explicit surface is given. Should we always do this?
-						// @todo is this still relevant considering the code above
-						mf = new BRepBuilderAPI_MakeFace(pln, wire, true);
-					} else {
-						BRepLib_FindSurface fs(wire, getValue(GV_PRECISION), true, true);
-						if (fs.Found()) {
-							mf = new BRepBuilderAPI_MakeFace(fs.Surface(), wire);
-							ShapeFix_ShapeTolerance ftol;
-							ftol.SetTolerance(wire, fs.ToleranceReached(), TopAbs_WIRE);
-						}
-					}
-				} else {
-					/// @todo check necessity of false here
-					mf = new BRepBuilderAPI_MakeFace(face_surface, wire, false);
+	if (fd.wires().empty()) {
+		Logger::Warning("Face with no boundaries", l);
+		return false;
+	}
+
+	if (fd.surface().IsNull()) {
+		// Use the first wire to find a plane manually for polygonal wires
+		const TopoDS_Wire& wire = fd.wires().front();
+		if (is_polyhedron(wire)) {
+			TopExp_Explorer exp(wire, TopAbs_EDGE);
+			int count = 0;
+			TopoDS_Edge edges[2];
+			for (; exp.More(); exp.Next(), count++) {
+				if (count < 2) {
+					edges[count] = TopoDS::Edge(exp.Current());
 				}
+			}
 
-				if (mf && mf->IsDone()) {
-					TopoDS_Face outer_face_bound = mf->Face();
+			if (count == 3) {
+				// Help Open Cascade by finding the plane more efficiently
+				double _, __;
+				Handle(Geom_Line) c1 = Handle(Geom_Line)::DownCast(BRep_Tool::Curve(edges[0], _, __));
+				Handle(Geom_Line) c2 = Handle(Geom_Line)::DownCast(BRep_Tool::Curve(edges[1], _, __));
 
-					// In case of (non-planar) face surface, p-curves need to be computed.
-					// For planar faces, Open Cascade generates p-curves on the fly.
-					if (!face_surface.IsNull() && face_surface->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-						TopExp_Explorer exp(outer_face_bound, TopAbs_EDGE);
-						for (; exp.More(); exp.Next()) {
-							const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
-							ShapeFix_Edge fix_edge;
-							fix_edge.FixAddPCurve(edge, outer_face_bound, false, getValue(GV_PRECISION));
-						}
-					}
-					
-					if (BRepCheck_Face(outer_face_bound).OrientationOfWires() == BRepCheck_BadOrientationOfSubshape) {
-						wire.Reverse();
-						same_sense = !same_sense;
-						delete mf;
-						if (face_surface.IsNull()) {
-							mf = new BRepBuilderAPI_MakeFace(wire);
-						} else {
-							mf = new BRepBuilderAPI_MakeFace(face_surface, wire); 
-						}
-						ShapeFix_Face fix(mf->Face());
-						fix.FixOrientation();
-						outer_face_bound = fix.Face();
-					}
+				const gp_Vec ab = c1->Position().Direction();
+				const gp_Vec ac = c2->Position().Direction();
+				const gp_Vec cross = ab.Crossed(ac);
 
-					if (num_outer_bounds > 1) {
-						builder.Add(compound, outer_face_bound);
-						delete mf; mf = 0;
-					} else if (num_bounds > 1) {
-						// Reinitialize the builder to the outer face 
-						// bound in order to add holes more robustly.
-						delete mf;
-						// TODO: What about the face_surface?
-						mf = new BRepBuilderAPI_MakeFace(outer_face_bound);
-					} else {
-						face = outer_face_bound;
-						success = true;
-					}
-				} else {
-					// if mf == nullptr, it means we failed to find a surface earlier using BRepLib_FindSurface
-					const bool non_planar = mf == nullptr || mf->Error() == BRepBuilderAPI_NotPlanar;
-					delete mf;
-
-					if (non_planar && bounds->size() == 1 && face_surface.IsNull()) {
-						Logger::Message(Logger::LOG_WARNING, "Triangulating face boundary", bound);
-
-						// When creating a solid, flatting the boundary only postpones the issue to
-						// creating a topological manifold out of the individual faces.
-						TopTools_ListOfShape face_list;
-						triangulate_wire(wire, face_list);
-
-						TopoDS_Compound triangulation_compound;
-						BRep_Builder triangulation_builder;
-						triangulation_builder.MakeCompound(triangulation_compound);
-
-						TopTools_ListIteratorOfListOfShape face_iterator;
-						for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
-							triangulation_builder.Add(triangulation_compound, face_iterator.Value());
-						}
-
-						face = triangulation_compound;
-
-						return true;
-					}
-
-					if (!non_planar || flattened_wire || !flatten_wire(wire)) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary", bound);
-						return false;
-					} else {
-						Logger::Message(Logger::LOG_ERROR, "Flattening face boundary", bound);
-						flattened_wire = true;
-						goto process_wire;
-					}
+				if (cross.SquareMagnitude() > ALMOST_ZERO) {
+					const gp_Dir n = cross;
+					fd.surface() = new Geom_Plane(c1->Position().Location(), n);
 				}
-
 			} else {
-				mf->Add(wire);
+				gp_Pln pln;
+				if (approximate_plane_through_wire(wire, pln)) {
+					fd.surface() = new Geom_Plane(pln);
+				}
+			}
+		}
+	}	
 
-				// Same as above:
-				// In case of (non-planar) face surface, p-curves need to be computed.
-				if (BRep_Tool::Surface(mf->Face())->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-					TopExp_Explorer exp(wire, TopAbs_EDGE);
-					for (; exp.More(); exp.Next()) {
-						const TopoDS_Edge& edge = TopoDS::Edge(exp.Current());
+	if (fd.surface().IsNull()) {
+		// BRepLib_FindSurface is used in case no surface is found or provided
+		
+		const TopoDS_Wire& wire = fd.wires().front();
+
+		BRepLib_FindSurface fs(wire, getValue(GV_PRECISION), true, true);
+		if (fs.Found()) {
+			fd.surface() = fs.Surface();
+			ShapeFix_ShapeTolerance ftol;
+			ftol.SetTolerance(wire, fs.ToleranceReached(), TopAbs_WIRE);
+		}
+	}
+
+	TopTools_ListOfShape face_list;
+
+	if (fd.surface().IsNull()) {
+		// The set of wires is triangulated in case no surface can be found
+		Logger::Message(Logger::LOG_WARNING, "Triangulating face boundaries for face", l);
+
+		if (fd.all_outer()) {
+			for (const auto& w : fd.wires()) {
+				TopTools_ListOfShape fl;
+				triangulate_wire({ w }, fl);
+				face_list.Append(fl);
+			}
+		} else {
+			triangulate_wire(fd.wires(), face_list);			
+		}
+	} else if (!fd.all_outer()) {
+		BRepBuilderAPI_MakeFace mf(fd.surface(), fd.outer_wire());
+
+		if (mf.IsDone()) {
+			// Is this necessary
+			TopoDS_Face f = mf.Face();
+			mf.Init(f);
+
+			for (auto it = fd.inner_wires().first; it != fd.inner_wires().second; ++it) {
+				mf.Add(*it);
+			}
+
+			face_list.Append(mf.Face());
+		}		
+	} else {
+		for (const auto& w : fd.wires()) {
+			BRepBuilderAPI_MakeFace mf(fd.surface(), w);
+			if (mf.IsDone()) {
+				face_list.Append(mf.Face());
+			}
+		}
+	}
+
+	if (!fd.surface().IsNull()) {
+		// Some fixes for orientation and p-curves. If we have no surface, it
+		// means the face has been triangulated in which case none of these
+		// fixes are necessary.
+		
+		if (fd.surface()->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+			// In case of (non-planar) face surface, p-curves need to be computed.
+			// For planar faces, Open Cascade generates p-curves on the fly.
+
+			for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+				// Small chance there are multiple faces
+				const TopoDS_Face& face = TopoDS::Face(it.Value());
+				for (TopExp_Explorer exp2(face, TopAbs_EDGE); exp2.More(); exp2.Next()) {
+					const TopoDS_Edge& edge = TopoDS::Edge(exp2.Current());
 						ShapeFix_Edge fix_edge;
-						fix_edge.FixAddPCurve(edge, mf->Face(), false, getValue(GV_PRECISION));
+						fix_edge.FixAddPCurve(edge, face, false, getValue(GV_PRECISION));
+				}
+			}
+		}
+
+		for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+			const TopoDS_Face& face = TopoDS::Face(it.Value());
+			
+			ShapeFix_Face sfs(TopoDS::Face(face));
+			TopTools_DataMapOfShapeListOfShape wire_map;
+			sfs.FixOrientation(wire_map);
+
+			TopoDS_Iterator jt(face, false);
+			for (; jt.More(); jt.Next()) {
+				const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
+				// tfk: @todo if wire_map contains w, I would assume wire_senses also contains w,
+				// this is not the case in github issue #405.
+				if (wire_map.IsBound(w) && wire_senses.IsBound(w)) {
+					const TopTools_ListOfShape& shapes = wire_map.Find(w);
+					TopTools_ListIteratorOfListOfShape kt(shapes);
+					for (; kt.More(); kt.Next()) {
+						// Apparently the wire got reversed, so register it with opposite orientation in the map
+						wire_senses.Bind(kt.Value(), wire_senses.Find(w) == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
 					}
 				}
 			}
-			processed ++;
+
+			it.Value() = sfs.Face();
 		}
-	}
 
-	if (!success) {
-		success = processed == num_bounds;
-		if (success) {
-			if (num_outer_bounds > 1) {
-				face = compound;
-			} else {
-				success = success && mf->IsDone();
-				if (success) {
-					face = mf->Face();
-				}
+		for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+			TopoDS_Face& face = TopoDS::Face(it.Value());
 
-				ShapeFix_Face sfs(TopoDS::Face(face));
-				TopTools_DataMapOfShapeListOfShape wire_map;
-				sfs.FixOrientation(wire_map);
-				
-				TopoDS_Iterator jt(face, false);
-				for (; jt.More(); jt.Next()) {
-					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
-					// tfk: @todo if wire_map contains w, I would assume wire_senses also contains w,
-					// this is not the case in github issue #405.
-					if (wire_map.IsBound(w) && wire_senses.IsBound(w)) {
-						const TopTools_ListOfShape& shapes = wire_map.Find(w);
-						TopTools_ListIteratorOfListOfShape it(shapes);
-						for (; it.More(); it.Next()) {
-							// Apparently the wire got reversed, so register it with opposite orientation in the map
-							wire_senses.Bind(it.Value(), wire_senses.Find(w) == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);
-						}
-					}
-				}
-				
-				face = TopoDS::Face(sfs.Face());				
-			}
-		}
-	}
-
-	if (success) {
-		// If the wires are reversed the face needs to be reversed as well in order
-		// to maintain the counter-clock-wise ordering of the bounding wire's vertices.
-		if (num_bounds == 1 || true) {
 			bool all_reversed = true;
 			TopoDS_Iterator jt(face, false);
 			for (; jt.More(); jt.Next()) {
@@ -407,8 +402,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& face) {
 		}
 	}
 
-	delete mf;
-	return success;
+	if (face_list.Extent() > 1) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+		for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+			TopoDS_Face& face = TopoDS::Face(it.Value());
+			builder.Add(compound, face);
+		}
+		result = compound;
+	} else {
+		result = face_list.First();
+	}
+
+	return true;
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, TopoDS_Shape& face) {
