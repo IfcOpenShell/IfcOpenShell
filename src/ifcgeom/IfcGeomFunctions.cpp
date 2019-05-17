@@ -3999,7 +3999,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 		}
 	}
 
-	const double fuzz = (std::min)(min_length_orig / 10., fuzziness);
+	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
@@ -4037,13 +4037,13 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 				// output is not trusted and the operation is attempted with a higher fuzziness.
 				int reason = 0;
 				double v;
-				if ((v = min_edge_length(r)) < fuzziness * 10.) {
+				if ((v = min_edge_length(r)) < fuzziness * 3.) {
 					reason = 0;
 					success = false;
-				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.)) < fuzziness * 10.) {
+				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
 					reason = 1;
 					success = false;
-				} else if ((v = min_face_face_distance(r, fuzziness * 10.)) < fuzziness * 10.) {
+				} else if ((v = min_face_face_distance(r, fuzziness * 3.)) < fuzziness * 3.) {
 					reason = 2;
 					success = false;
 				}
