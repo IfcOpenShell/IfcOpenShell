@@ -597,7 +597,10 @@ int main(int argc, char** argv) {
 
 #ifdef _MSC_VER
 	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
-		// These serializers do not support opening unicode paths on Windows. Therefore
+#else
+	if (output_extension == DAE) {
+#endif
+		// These serializers do not support opening unicode paths. Therefore
 		// a random temp file is generated using only ASCII characters instead.
 		std::random_device rng;
 		std::uniform_int_distribution<int> index_dist(L'A', L'Z');
@@ -607,7 +610,6 @@ int main(int argc, char** argv) {
 		}
 		output_temp_filename += L".tmp";
 	}
-#endif
 
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
