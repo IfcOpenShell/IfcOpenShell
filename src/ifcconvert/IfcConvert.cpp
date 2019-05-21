@@ -61,9 +61,9 @@
 #ifdef _MSC_VER
 #include <io.h>
 #include <fcntl.h>
+#endif
 // C++11 header:
 #include <random>
-#endif
 
 #if defined(_MSC_VER) && defined(_UNICODE)
 typedef std::wstring path_t;
