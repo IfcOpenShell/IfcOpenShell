@@ -31,16 +31,19 @@
 #   if building with -shared                                                  #
 #     * libgl1-mesa-dev libxext-dev libxmu-dev libxmu-headers libxi-dev       #
 #                                                                             #
+#   for python37 to install correctly additionally:                           #
+#     * libffi(-dev[el])                                                      #
+#                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2                 #
-#            libfreetype6-dev mesa-common-dev                                 #
+#            libfreetype6-dev mesa-common-dev libffi-dev                      #
 #                                                                             #
 #     on ubuntu 14.04:                                                        #
 #          $ apt-get install git gcc g++ autoconf bison make                  #
-#            libfreetype6-dev mesa-common-dev                                 #
+#            libfreetype6-dev mesa-common-dev libffi-dev                      #
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
-#          $ brew install git bison autoconf automake freetype                #
+#          $ brew install git bison autoconf automake freetype libffi         #
 #                                                                             #
 ###############################################################################
 
