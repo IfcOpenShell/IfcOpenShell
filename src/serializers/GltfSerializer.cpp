@@ -151,15 +151,19 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 }
 
 void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
+	if (o->geometry().material_ids().empty()) {
+		return;
+	}
+
 	node_array_.push_back(json_["nodes"].size());
 
 	const std::vector<double>& m = o->transformation().matrix().data();
 	// nb: note that this contains the Y-UP transform as well.
 	const std::array<double, 16> matrix_flat = {
-		m[0], m[ 2], m[ 1], 0,
-		m[3], m[ 5], m[ 4], 0,
-		m[6], m[ 8], m[ 7], 0,
-		m[9], m[11], m[10], 1
+		m[0], m[ 2], -m[ 1], 0,
+		m[3], m[ 5], -m[ 4], 0,
+		m[6], m[ 8], -m[ 7], 0,
+		m[9], m[11], -m[10], 1
 	};
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 	
