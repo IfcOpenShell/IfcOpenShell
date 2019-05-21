@@ -188,7 +188,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 dependency_tree = {
     'IfcParse': ('boost',  'libxml2'),
     'IfcGeom': ('IfcParse',  'occ'),
-    'IfcConvert': ('IfcGeom',  'OpenCOLLADA'),
+    'IfcConvert': ('IfcGeom',  'OpenCOLLADA', 'json'),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom',),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
@@ -198,7 +198,8 @@ dependency_tree = {
     'python': (),
     'swig': (),
     'occ': (),
-    'pcre': ()
+    'pcre': (),
+    'json': ()
 }
 
 def v(dep):
@@ -486,6 +487,13 @@ for FL in ["C", "CXX"]:
 #    declare ${FL}FLAGS_MINIMAL="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null` ${!FLM}"
 shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 
+if "json" in targets:
+    json_url = "https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp"
+    json_install_path = "{DEPS_DIR}/install/json/nlohmann/json.hpp".format(**locals())
+    if not os.path.exists(json_install_path):
+        os.makedirs(os.path.dirname(json_install_path))
+        urllib.urlretrieve(json_url, json_install_path)
+
 if "pcre" in targets:
     build_dependency(
         name="pcre-{PCRE_VERSION}".format(**locals()),
@@ -657,6 +665,8 @@ cmake_args=[
     "-DBUILD_CONVERT="                +OFF_ON["IfcConvert" in targets],
     "-DCMAKE_INSTALL_PREFIX="          "{DEPS_DIR}/install/ifcopenshell".format(**locals()),
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
+    "-DGLTF_SUPPORT="                  "ON",
+    "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals())
 ]
 
 if "occ" in targets and USE_OCCT:
