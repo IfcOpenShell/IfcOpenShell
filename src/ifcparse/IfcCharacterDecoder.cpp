@@ -27,6 +27,13 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ < 5
+#include <boost/locale/encoding_utf.hpp>
+using boost::locale::conv::utf_to_utf;
+#define CODECVT_BOOST_FALLBACK
+#else
+#include <codecvt>
+#endif
 
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcException.h"
@@ -334,6 +341,16 @@ std::wstring::value_type IfcUtil::convert_codepage(int codepage, int c) {
 	return r;
 }
 
+#ifdef CODECVT_BOOST_FALLBACK
+std::string IfcUtil::convert_utf8(const std::wstring& s) {
+    return utf_to_utf<char>(s.c_str(), s.c_str() + s.size());
+}
+
+std::wstring IfcUtil::convert_utf8(const std::string& s)
+{
+    return utf_to_utf<wchar_t>(s.c_str(), s.c_str() + s.size());
+}
+#else
 std::string IfcUtil::convert_utf8(const std::wstring& s) {
 	return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().to_bytes(s);
 }
@@ -341,3 +358,4 @@ std::string IfcUtil::convert_utf8(const std::wstring& s) {
 std::wstring IfcUtil::convert_utf8(const std::string& s) {
 	return std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>>().from_bytes(s);
 }
+#endif
