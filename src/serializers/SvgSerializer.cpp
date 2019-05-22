@@ -288,57 +288,25 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 	IfcUtil::IfcBaseEntity* storey = storey_;
 	boost::optional<double> storey_elevation = boost::none;
 
-	/*
-
-	TODO: based on BRepElement::parent()
-	
-	IfcSchema::IfcObjectDefinition* obdef = static_cast<IfcSchema::IfcObjectDefinition*>(file->entityById(o->id()));
-
-#ifndef USE_IFC4
-	typedef IfcSchema::IfcRelDecomposes decomposition_element;
-#else
-	typedef IfcSchema::IfcRelAggregates decomposition_element;
-#endif
-
-	for (; storey == 0;) {
-		// Iterate over the decomposing element to find the parent IfcBuildingStorey
-		decomposition_element::list::ptr decomposes = obdef->Decomposes();
-		if (!decomposes->size()) {
-			if (obdef->declaration().is(IfcSchema::Type::IfcElement)) {
-				IfcSchema::IfcRelContainedInSpatialStructure::list::ptr containment = ((IfcSchema::IfcElement*)obdef)->ContainedInStructure();
-				if (!containment->size()) {
-					break;
-				}
-				for (IfcSchema::IfcRelContainedInSpatialStructure::list::it it = containment->begin(); it != containment->end(); ++it) {
-					IfcSchema::IfcRelContainedInSpatialStructure* container = *it;
-					if (container->RelatingStructure() != obdef) {
-						obdef = container->RelatingStructure();
-					}
-				}
-			} else {
-				break;
-			}
-		} else {
-			for (decomposition_element::list::it it = decomposes->begin(); it != decomposes->end(); ++it) {
-				decomposition_element* decompose = *it;
-				if (decompose->RelatingObject() != obdef) {
-					obdef = decompose->RelatingObject();
-				}
-			}
-		}
-		if (obdef->declaration().is(IfcSchema::Type::IfcBuildingStorey)) {
-			storey = static_cast<IfcSchema::IfcBuildingStorey*>(obdef);
-			if (storey->hasElevation()) {
+	for (const auto& p : o->parents()) {
+		if (p->type() == "IfcBuildingStorey") {
+			try {
 				const IfcGeom::ElementSettings& settings = o->geometry().settings();
-				storey_elevation = storey->Elevation() * settings.unit_magnitude();
+				double e = *p->product()->get("Elevation");
+				storey_elevation = e * settings.unit_magnitude();
+			} catch (...) {
+				continue;
 			}
+			storey = p->product();
 			break;
 		}
 	}
-	*/
 
 	// With a global section height, building storeys are not a requirement.
-	if (!storey && !section_height) return;
+	if (!storey && !section_height) {
+		Logger::Warning("No global section height and unable to determine building storey for:", o->product());
+		return;
+	}
 
 	path_object& p = start_path(storey, nameElement(o));
 
