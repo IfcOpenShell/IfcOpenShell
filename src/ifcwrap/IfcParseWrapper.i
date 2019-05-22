@@ -90,6 +90,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		f << (*$self);
 	}
 
+	std::string to_string() {
+		std::stringstream s;
+		s << (*$self);
+		return s.str();
+	}
+
 	std::vector<unsigned> entity_names() const {
 		std::vector<unsigned> keys;
 		keys.reserve(std::distance($self->begin(), $self->end()));
