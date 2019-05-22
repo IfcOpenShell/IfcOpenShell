@@ -620,7 +620,7 @@ int main(int argc, char** argv) {
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == SVG || output_extension == OBJ);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
 #if OCC_VERSION_HEX < 0x60900
@@ -632,7 +632,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
+	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
@@ -649,10 +649,6 @@ int main(int argc, char** argv) {
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
         const path_t mtl_filename = change_extension(output_filename, MTL);
-		if (!use_world_coords) {
-			Logger::Notice("Using world coords when writing WaveFront OBJ files");
-			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
-		}
 		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == DAE) {
