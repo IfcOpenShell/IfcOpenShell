@@ -134,13 +134,15 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
             for mat in mats:
                 props = {}
                 if mat.has_diffuse:
-                    props['diffuse_color'] = mat.diffuse
-                if mat.has_specular:
-                    props['specular_color'] = mat.specular
-                if mat.has_transparency and mat.transparency > 0:
-                    props['transparency'] = mat.transparency
-                if mat.has_specularity:
-                    props['specular_intensity'] = mat.specularity
+                    alpha = 1.
+                    if mat.has_transparency and mat.transparency > 0:
+                        alpha = 1. - mat.transparency
+                    props['diffuse_color'] = mat.diffuse + (alpha,)
+                # @todo
+                # if mat.has_specular:
+                #     props['specular_color'] = mat.specular
+                # if mat.has_specularity:
+                #     props['specular_intensity'] = mat.specularity
                 add_material(mat.name, props)
 
             faces = me.polygons if hasattr(me, 'polygons') else me.faces
@@ -263,8 +265,10 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                 mod.operation = "DIFFERENCE"
                 mod.object = opening_ob
 
-    txt = bpy.data.texts.new(f"{bpy.path.basename(filename)}.log")
-    txt.from_string(iterator.getLog())
+    if hasattr(iterator, 'getLog'):
+        # @todo
+        txt = bpy.data.texts.new(f"{bpy.path.basename(filename)}.log")
+        txt.from_string(iterator.getLog())
 
     return True
 
