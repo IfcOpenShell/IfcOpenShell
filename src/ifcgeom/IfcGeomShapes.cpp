@@ -1099,20 +1099,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		}
 	}
 
-	const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
+	// This is not used anymore, BRepBuilderAPI_RightCorner is always used now.
+	// const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
-	// NB2: Contrary to IfcSurfaceCurveSweptAreaSolid the transition mode has been
-	// set to create round corners as this has proven to work better with the types
-	// of directrices encountered, which do not necessarily conform to a surface.
 	{ BRepOffsetAPI_MakePipeShell builder(wire);
 	builder.Add(section1);
-	if (!is_continuous) {
-		// Only perform round corners on wires that are not c1 continuous
-		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
-	}
+	builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
 	builder.Build();
 	builder.MakeSolid();
 	shape = builder.Shape(); }
@@ -1120,9 +1115,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	if (hasInnerRadius) {
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section2);
-		if (!is_continuous) {
-			builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
-		}
+		builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
 		builder.Build();
 		builder.MakeSolid();
 		TopoDS_Shape inner = builder.Shape();

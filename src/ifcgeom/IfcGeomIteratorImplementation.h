@@ -452,8 +452,8 @@ namespace IfcGeom {
 					bool representation_processed_as_mapped_item = false;
                     IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
 					if (representation_mapped_to) {
-                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ ||
-                            ok_mapped_representations->contains(representation_mapped_to);
+                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ && (
+                            ok_mapped_representations->contains(representation_mapped_to) || reuse_ok_(kernel.products_represented_by(representation_mapped_to)));
 					}
 
 					if (representation_processed_as_mapped_item) {
