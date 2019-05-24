@@ -374,7 +374,7 @@ namespace {
 
 		IfcGeom::impl::tree<int> tree;
 
-		// Add edges to tree
+		// Add faces to tree
 		for (int i = 1; i <= faces.Extent(); ++i) {
 			if (BRep_Tool::Surface(TopoDS::Face(faces(i)))->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 				tree.add(i, faces(i));
@@ -395,9 +395,9 @@ namespace {
 			BRepBndLib::AddClose(f, b);
 			b.Enlarge(max_search);
 
-			std::vector<int> edge_idxs = tree.select_box(b, false);
-			std::vector<int>::const_iterator it = edge_idxs.begin();
-			for (; it != edge_idxs.end(); ++it) {
+			std::vector<int> face_idxs = tree.select_box(b, false);
+			std::vector<int>::const_iterator it = face_idxs.begin();
+			for (; it != face_idxs.end(); ++it) {
 				if (*it == j) {
 					continue;
 				}
@@ -419,6 +419,8 @@ namespace {
 						double u = d.Dot(p1->Position().XDirection());
 						double v = d.Dot(p1->Position().YDirection());
 
+						// nb: TopAbs_ON is explicitly not considered to prevent matching adjacent faces
+						// with similar orientations.
 						if (cls.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
 							gp_Pnt test2;
 							p1->D0(u, v, test2);
@@ -458,16 +460,14 @@ namespace {
 		}
 	}
 
-#ifdef UNIFY_OPERANDS
-	TopoDS_Shape unify(const TopoDS_Shape& s) {
+	TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance) {
 		ShapeUpgrade_UnifySameDomain usd(s);
-		usd.SetLinearTolerance(Precision::Confusion() * 10.);
-		usd.SetAngularTolerance(Precision::Angular() * 10.);
+		usd.SetSafeInputMode(true);
+		usd.SetLinearTolerance(tolerance);
+		usd.SetAngularTolerance(tolerance * 100.);
 		usd.Build();
 		return usd.Shape();
 	}
-#endif
-
 }
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
@@ -3936,20 +3936,21 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	
-#ifdef UNIFY_OPERANDS
-	TopoDS_Shape a = unify(a_);
+	if (fuzziness < 0.) {
+		fuzziness = getValue(GV_PRECISION);
+	}
+
+	// @todo, it does seem a bit odd, we first triangulate non-planar faces
+	// to later unify them again. Can we make this a bit more intelligent?
+	TopoDS_Shape a = unify(a_, fuzziness);
 	TopTools_ListOfShape b_;
 	{
 		TopTools_ListIteratorOfListOfShape it(b__);
 		for (; it.More(); it.Next()) {
-			b_.Append(unify(it.Value()));
+			b_.Append(unify(it.Value(), fuzziness));
 		}
 	}
-#else
-	const TopoDS_Shape& a = a_;
-	const TopTools_ListOfShape& b_ = b__;
-#endif
-		
+
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
 	TopTools_ListOfShape B, b;
@@ -3971,15 +3972,11 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 		return true;
 	}
 
-	if (fuzziness < 0.) {
-		fuzziness = getValue(GV_PRECISION);
-	}
-
 	// Find a sensible value for the fuzziness, based on precision
 	// and limited by edge lengths and vertex-edge distances.
-	const double len_a = min_edge_length(a);
-	double min_length_orig = (std::min)(len_a, min_vertex_edge_distance(a, getValue(GV_PRECISION), len_a));
-	TopTools_ListIteratorOfListOfShape it(b);
+	const double len_a = min_edge_length(a_);
+	double min_length_orig = (std::min)(len_a, min_vertex_edge_distance(a_, getValue(GV_PRECISION), len_a));
+	TopTools_ListIteratorOfListOfShape it(b__);
 	for (; it.More(); it.Next()) {
 		double d = min_edge_length(it.Value());
 		if (d < min_length_orig) {
