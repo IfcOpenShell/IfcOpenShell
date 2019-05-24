@@ -1265,12 +1265,6 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DEFLECTION_TOLERANCE:
 		deflection_tolerance = value;
 		break;
-	case GV_WIRE_CREATION_TOLERANCE:
-		wire_creation_tolerance = value;
-		break;
-	case GV_POINT_EQUALITY_TOLERANCE:
-		point_equality_tolerance = value;
-		break;
 	case GV_LENGTH_UNIT:
 		ifc_length_unit = value;
 		break;
@@ -1283,8 +1277,11 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DIMENSIONALITY:
 		dimensionality = value;
 		break;
+	case GV_MAX_FACES_TO_ORIENT:
+		max_faces_to_orient = value;
+		break;
 	default:
-		assert(!"never reach here");
+		throw std::runtime_error("Invalid setting");
 	}
 }
 
@@ -1292,29 +1289,24 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		return deflection_tolerance;
-	case GV_WIRE_CREATION_TOLERANCE:
-		return wire_creation_tolerance;
 	case GV_MINIMAL_FACE_AREA:
 		// Considering a right-angled triangle, this about the smallest
 		// area you can obtain without the vertices being confused.
-		return modelling_precision * modelling_precision / 2.;
+		return modelling_precision * modelling_precision / 20.;
 	case GV_POINT_EQUALITY_TOLERANCE:
-		return point_equality_tolerance;
+		return modelling_precision;
 	case GV_LENGTH_UNIT:
 		return ifc_length_unit;
-		break;
 	case GV_PLANEANGLE_UNIT:
 		return ifc_planeangle_unit;
-		break;
 	case GV_PRECISION:
 		return modelling_precision;
-		break;
 	case GV_DIMENSIONALITY:
 		return dimensionality;
-		break;
+	case GV_MAX_FACES_TO_ORIENT:
+		return max_faces_to_orient;
 	}
-	assert(!"never reach here");
-	return 0;
+	throw std::runtime_error("Invalid setting");
 }
 
 namespace {

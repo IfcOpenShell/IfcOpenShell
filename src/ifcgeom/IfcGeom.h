@@ -209,13 +209,11 @@ private:
 	};
 
 	double deflection_tolerance;
-	double wire_creation_tolerance;
-	double point_equality_tolerance;
-	double max_faces_to_sew;
 	double ifc_length_unit;
 	double ifc_planeangle_unit;
 	double modelling_precision;
 	double dimensionality;
+	double max_faces_to_orient;
 
 #ifndef NO_CACHE
 	MAKE_TYPE_NAME(Cache) cache;
@@ -234,9 +232,7 @@ public:
 	MAKE_TYPE_NAME(Kernel)()
 		: IfcGeom::Kernel(0)
 		, deflection_tolerance(0.001)
-		, wire_creation_tolerance(0.0001)
-		, point_equality_tolerance(0.00001)
-		, max_faces_to_sew(-1.0)
+		, max_faces_to_orient(-1.0)
 		, ifc_length_unit(1.0)
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
@@ -251,8 +247,7 @@ public:
 
 	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
-		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
-		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
+		setValue(GV_MAX_FACES_TO_ORIENT,      other.getValue(GV_MAX_FACES_TO_ORIENT));
 		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
 		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
 		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));

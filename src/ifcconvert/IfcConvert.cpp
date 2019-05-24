@@ -242,6 +242,11 @@ int main(int argc, char** argv) {
 			"Specifies whether to convert back geometrical output back to the "
 			"unit of measure in which it is defined in the IFC file. Default is "
 			"to use meters.")
+		("orient-shells",
+			"Specifies whether to orient the faces of IfcConnectedFaceSets. "
+			"This is a potentially time consuming operation, but guarantees a "
+			"consistent orientation of surface normals, even if the faces are not "
+			"properly oriented in the IFC file.")
 #if OCC_VERSION_HEX < 0x60900
 		// In Open CASCADE version prior to 6.9.0 boolean operations with multiple
 		// arguments where not introduced yet and a work-around was implemented to
@@ -386,6 +391,7 @@ int main(int argc, char** argv) {
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
+	const bool orient_shells = vmap.count("orient-shells") != 0;
 #if OCC_VERSION_HEX < 0x60900
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
@@ -622,6 +628,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == SVG || output_extension == OBJ);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
 #if OCC_VERSION_HEX < 0x60900
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
@@ -1188,6 +1195,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	IfcGeom::IteratorSettings settings;
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 
