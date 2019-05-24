@@ -51,7 +51,7 @@
 
 %extend IfcGeom::tree {
 
-	static IfcEntityList::ptr vector_to_list(const std::vector<IfcSchema::IfcProduct*>& ps) const {
+	static IfcEntityList::ptr vector_to_list(const std::vector<IfcSchema::IfcProduct*>& ps) {
 		IfcEntityList::ptr r(new IfcEntityList);
 		for (std::vector<IfcSchema::IfcProduct*>::const_iterator it = ps.begin(); it != ps.end(); ++it) {
 			r->push(*it);
