@@ -2025,6 +2025,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 	}
 
 	if (positive) {
+		std::reverse(styles.begin(), styles.end());
 		std::reverse(surfaces.begin(), surfaces.end());
 	}
 
