@@ -637,6 +637,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
 
+	double min_face_area = faceset_helper_
+		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)
+		: getValue(GV_MINIMAL_FACE_AREA);
+
 	TopTools_ListOfShape face_list;
 	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
 		bool success = false;
@@ -667,18 +671,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 				if (face_it.Value().ShapeType() == TopAbs_FACE) {
 					// This should really be the case. This is not asserted.
 					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
-					if (face_area(triangle) > getValue(GV_MINIMAL_FACE_AREA)) {
+					if (face_area(triangle) > min_face_area) {
 						face_list.Append(triangle);
 					} else {
-						Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it));
+						Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
 					}
 				}
 			}
 		} else {
-			if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+			if (face_area(face) > min_face_area) {
 				face_list.Append(face);
 			} else {
-				Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it));
+				Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
 			}
 		}
 	}
@@ -687,7 +691,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		return false;
 	}
 
-	if (!create_solid_from_faces(face_list, shape)) {
+	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(face_list, shape)) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
