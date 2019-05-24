@@ -349,17 +349,19 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 		builder.Perform();
 		shape = builder.SewedShape();
 
-		{
-			BRepCheck_Analyzer ana(shape);
-			if (!ana.IsValid()) {
-				ShapeFix_Shape sfs(shape);
-				sfs.Perform();
-				shape = sfs.Shape();
-			}
+		BRepCheck_Analyzer ana(shape);
+		valid_shell = ana.IsValid();
+
+		if (!valid_shell) {
+			ShapeFix_Shape sfs(shape);
+			sfs.Perform();
+			shape = sfs.Shape();
+
+			BRepCheck_Analyzer reana(shape);
+			valid_shell = reana.IsValid();
 		}
 
-		BRepCheck_Analyzer ana(shape);
-		valid_shell = ana.IsValid() != 0 && count(shape, TopAbs_SHELL) > 0;
+		valid_shell &= count(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
 			Logger::Error(e.GetMessageString());
