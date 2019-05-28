@@ -119,7 +119,7 @@ template <typename T>
 T change_extension(const T& fn, const T& ext) {
 	typename T::size_type dot = fn.find_last_of('.');
 	if (dot != T::npos) {
-		return fn.substr(0, dot) + ext;
+		return fn.substr(0, dot + 1) + ext;
 	} else {
 		return fn + ext;
 	}
