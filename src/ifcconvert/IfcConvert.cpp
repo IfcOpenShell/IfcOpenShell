@@ -70,7 +70,7 @@ static std::ostream& cout_ = std::cout;
 static std::ostream& cerr_ = std::cerr;
 #endif
 
-const std::string DEFAULT_EXTENSION = "obj";
+const std::string DEFAULT_EXTENSION = ".obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
 namespace po = boost::program_options;
@@ -94,7 +94,7 @@ void print_usage(bool suggest_help = true)
         << "  .xml   XML            Property definitions and decomposition tree\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
         << "\n"
-        << "If no output filename given, <input>." << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
+        << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
         cout_ << "\nRun 'IfcConvert --help' for more information.";
     }
@@ -119,7 +119,7 @@ template <typename T>
 T change_extension(const T& fn, const T& ext) {
 	typename T::size_type dot = fn.find_last_of('.');
 	if (dot != T::npos) {
-		return fn.substr(0, dot + 1) + ext;
+		return fn.substr(0, dot) + ext;
 	} else {
 		return fn + ext;
 	}
