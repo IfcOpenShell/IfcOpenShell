@@ -75,7 +75,7 @@ static std::ostream& cout_ = std::cout;
 static std::ostream& cerr_ = std::cerr;
 #endif
 
-const std::string DEFAULT_EXTENSION = "obj";
+const std::string DEFAULT_EXTENSION = ".obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
 namespace po = boost::program_options;
@@ -103,7 +103,7 @@ void print_usage(bool suggest_help = true)
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
-        << "If no output filename given, <input>." << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
+        << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
         cout_ << "\nRun 'IfcConvert --help' for more information.";
     }
