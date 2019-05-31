@@ -174,13 +174,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 %extend IfcGeom::Representation::Triangulation {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			id = property(id)
-			faces = property(faces)
-			edges = property(edges)
-			material_ids = property(material_ids)
-			materials = property(materials)
+        # Hide the getters with read-only property implementations
+        id = property(id)
+        faces = property(faces)
+        edges = property(edges)
+        material_ids = property(material_ids)
+        materials = property(materials)
 	%}
 };
 
@@ -188,28 +187,25 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // would appear before templated getter functions are defined.
 %extend IfcGeom::Representation::Triangulation<float> {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			verts = property(verts)
-			normals = property(normals)
+        # Hide the getters with read-only property implementations
+        verts = property(verts)
+        normals = property(normals)
 	%}
 };
 %extend IfcGeom::Representation::Triangulation<double> {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			verts = property(verts)
-			normals = property(normals)
+        # Hide the getters with read-only property implementations
+        verts = property(verts)
+        normals = property(normals)
 	%}
 };
 
 %extend IfcGeom::Representation::Serialization {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			id = property(id)
-			brep_data = property(brep_data)
-			surface_styles = property(surface_styles)
+        # Hide the getters with read-only property implementations
+        id = property(id)
+        brep_data = property(brep_data)
+        surface_styles = property(surface_styles)
 	%}
 };
 
@@ -220,66 +216,60 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			id = property(id)
-			parent_id = property(parent_id)
-			name = property(name)
-			type = property(type)
-			guid = property(guid)
-			context = property(context)
-			unique_id = property(unique_id)
-			transformation = property(transformation)
-			product = property(product_)
+        # Hide the getters with read-only property implementations
+        id = property(id)
+        parent_id = property(parent_id)
+        name = property(name)
+        type = property(type)
+        guid = property(guid)
+        context = property(context)
+        unique_id = property(unique_id)
+        transformation = property(transformation)
+        product = property(product_)
 	%}
 
 };
 
 %extend IfcGeom::TriangulationElement {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			geometry = property(geometry)
+        # Hide the getters with read-only property implementations
+        geometry = property(geometry)
 	%}
 };
 
 %extend IfcGeom::SerializedElement {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			geometry = property(geometry)
+        # Hide the getters with read-only property implementations
+        geometry = property(geometry)
 	%}
 };
 
 %extend IfcGeom::Material {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			has_diffuse = property(hasDiffuse)
-			has_specular = property(hasSpecular)
-			has_transparency = property(hasTransparency)
-			has_specularity = property(hasSpecularity)
-			diffuse = property(diffuse)
-			specular = property(specular)
-			transparency = property(transparency)
-			specularity = property(specularity)
-			name = property(name)
+        # Hide the getters with read-only property implementations
+        has_diffuse = property(hasDiffuse)
+        has_specular = property(hasSpecular)
+        has_transparency = property(hasTransparency)
+        has_specularity = property(hasSpecularity)
+        diffuse = property(diffuse)
+        specular = property(specular)
+        transparency = property(transparency)
+        specularity = property(specularity)
+        name = property(name)
 	%}
 };
 
 %extend IfcGeom::Transformation {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			matrix = property(matrix)
+        # Hide the getters with read-only property implementations
+        matrix = property(matrix)
 	%}
 };
 
 %extend IfcGeom::Matrix {
 	%pythoncode %{
-		if _newclass:
-			# Hide the getters with read-only property implementations
-			data = property(data)
+        # Hide the getters with read-only property implementations
+        data = property(data)
 	%}
 };
 
