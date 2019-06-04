@@ -54,6 +54,13 @@ GltfSerializer::GltfSerializer(const std::string& filename, const SerializerSett
 	, tmp_fstream2_(IfcUtil::path::from_utf8(tmp_filename2_).c_str(), std::ios_base::binary)
 	{}
 
+GltfSerializer::~GltfSerializer() {
+	tmp_fstream1_.close();
+	tmp_fstream2_.close();
+	IfcUtil::path::delete_file(tmp_filename1_);
+	IfcUtil::path::delete_file(tmp_filename2_);
+}
+
 bool GltfSerializer::ready() {
 	return fstream_.is_open() && tmp_fstream1_.is_open() && tmp_fstream2_.is_open();
 }
@@ -323,9 +330,6 @@ void GltfSerializer::finalize() {
 		fstream_ << ifs.rdbuf();
 	}
 	write_padding<BIN>(fstream_, binary_length);
-
-	IfcUtil::path::delete_file(tmp_filename1_);
-	IfcUtil::path::delete_file(tmp_filename2_);
 }
 
 #endif
