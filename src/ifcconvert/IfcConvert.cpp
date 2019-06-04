@@ -855,7 +855,7 @@ int main(int argc, char** argv) {
     }
 
 	if (validate && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
-		Logger::Error("Errors encountered during proccessing.");
+		Logger::Error("Errors encountered during processing.");
 		successful = false;
 	}
 
