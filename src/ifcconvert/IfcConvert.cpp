@@ -688,6 +688,7 @@ int main(int argc, char** argv) {
 	
     if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
         write_log(!quiet);
+		serializer.reset();
         IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
         return EXIT_FAILURE;
     }
@@ -697,6 +698,7 @@ int main(int argc, char** argv) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Error("No geometrical entities found");
+		serializer.reset();
 		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
         write_log(!quiet);
         return EXIT_FAILURE;
