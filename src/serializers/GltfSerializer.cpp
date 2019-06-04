@@ -127,7 +127,7 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 
 	std::array<typename It::value_type, N> min, max;
 	min.fill(std::numeric_limits<typename It::value_type>::max());
-	max.fill(std::numeric_limits<typename It::value_type>::min());
+	max.fill(std::numeric_limits<typename It::value_type>::lowest());
 	for (auto it = begin; it != end; it += N) {
 		for (size_t i = 0; i < N; ++i) {
 			const float& v = *(it + i);
