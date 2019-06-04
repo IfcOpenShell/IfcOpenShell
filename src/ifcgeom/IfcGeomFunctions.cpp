@@ -461,10 +461,11 @@ namespace {
 	}
 
 	TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance) {
+		tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
 		ShapeUpgrade_UnifySameDomain usd(s);
 		usd.SetSafeInputMode(true);
 		usd.SetLinearTolerance(tolerance);
-		usd.SetAngularTolerance(tolerance * 100.);
+		usd.SetAngularTolerance(1.e-3);
 		usd.Build();
 		return usd.Shape();
 	}
