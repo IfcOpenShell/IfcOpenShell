@@ -114,6 +114,9 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	if (type > max_severity) {
+		max_severity = type;
+	}
 	if ((log2 || wlog2) && type >= verbosity) {
 		if (format == FMT_PLAIN) {
             if (log2) {
