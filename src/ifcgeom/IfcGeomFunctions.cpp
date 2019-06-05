@@ -3938,7 +3938,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	
 	if (fuzziness < 0.) {
-		fuzziness = getValue(GV_PRECISION);
+		fuzziness = getValue(GV_PRECISION) / 10.;
 	}
 
 	// @todo, it does seem a bit odd, we first triangulate non-planar faces
