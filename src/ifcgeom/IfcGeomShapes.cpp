@@ -609,8 +609,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 #if OCC_VERSION_HEX < 0x60900
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
 #else
-	const double fuzz = has_halfspace_operand ? getValue(GV_PRECISION) * 10. : -1.;
-	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape, fuzz);
+	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
 #endif
 
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
