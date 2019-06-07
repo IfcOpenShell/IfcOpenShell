@@ -179,6 +179,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 		// glTF validator complains about identity matrices
 		node["matrix"] = matrix_flat;
 	}
+	node["name"] = object_id(o);
 	
 	int current_mesh_index;
 
