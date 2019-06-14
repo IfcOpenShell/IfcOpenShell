@@ -4173,18 +4173,35 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		}
 	}
 
+	// @todo, there a tiny possibility that the duplicate faces are triggered
+	// for an internal boundary, that is also present as an external boundary.
+	// This will result in non-manifold configuration then, but this is deemed
+	// such as corner-case that it is not considered.
 	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
 
-	size_t loops_removed = 0, non_manifold = 0;
+	size_t loops_removed = 0, non_manifold = 0, duplicate_faces = 0;
+
+	typedef std::array<int, 2> edge_t;
+	typedef std::set<edge_t> edge_set_t;
+	std::set<edge_set_t> edge_sets;
 
 	for (auto& loop : *loops) {
 		auto ps = loop->Polygon();
 
 		std::vector<std::pair<int, int> > segments;
+		edge_set_t segment_set;
 
-		loop_(ps, [&segments](int C, int D, bool) {
+		loop_(ps, [&segments, &segment_set](int C, int D, bool) {
+			segment_set.insert({ C, D });
 			segments.push_back({ C, D });
 		});
+
+		if (edge_sets.find(segment_set) != edge_sets.end()) {
+			duplicate_faces++;
+			duplicates_.insert(loop);
+			continue;
+		}
+		edge_sets.insert(segment_set);
 
 		if (segments.size() >= 3) {
 			for (auto& p : segments) {
@@ -4206,6 +4223,6 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	}
 
 	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
-		Logger::Warning(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
+		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
 	}
 }

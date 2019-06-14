@@ -119,6 +119,7 @@ private:
 	class faceset_helper {
 	private:
 		MAKE_TYPE_NAME(Kernel)* kernel_;
+		std::set<const IfcSchema::IfcPolyLoop*> duplicates_;
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		double eps_;
@@ -173,6 +174,9 @@ private:
 		}
 
 		bool wire(const IfcSchema::IfcPolyLoop* loop, TopoDS_Wire& wire) {
+			if (duplicates_.find(loop) != duplicates_.end()) {
+				return false;
+			}
 			BRep_Builder builder;
 			builder.MakeWire(wire);
 			int count = 0;
