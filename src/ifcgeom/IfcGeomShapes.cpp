@@ -478,7 +478,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 
 	TopoDS_Shape s1, s2;
-	IfcRepresentationShapeItems items1, items2;
+	IfcRepresentationShapeItems items1;
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
@@ -554,6 +554,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 		{
 			if (shape_type(operand2) == ST_SHAPELIST) {
+				IfcRepresentationShapeItems items2;
 				shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
 			} else if (shape_type(operand2) == ST_SHAPE) {
 				shape2_processed = convert_shape(operand2, s2);
