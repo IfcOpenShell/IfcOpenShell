@@ -1,7 +1,7 @@
 IfcOpenShell 
 ============
 IfcOpenShell is an open source ([LGPL]) software library for working with the Industry Foundation Classes ([IFC]) 
-file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4 Add1].
+file format. Currently supported IFC releases are [IFC2x3 TC1] and [IFC4 Add2 TC1].
 
 For more information, see
 * [http://ifcopenshell.org](http://ifcopenshell.org)  
