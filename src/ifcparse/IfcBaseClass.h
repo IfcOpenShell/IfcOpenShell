@@ -22,7 +22,7 @@
 
 #include "ifc_parse_api.h"
 
-#ifdef USE_IFC4x2
+#ifdef USE_IFC4X2
 #include "../ifcparse/Ifc4x2enum.h"
 #elif USE_IFC4
 #include "../ifcparse/Ifc4enum.h"

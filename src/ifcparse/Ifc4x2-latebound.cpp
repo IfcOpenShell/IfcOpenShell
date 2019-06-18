@@ -1,4 +1,6 @@
 
+#ifdef USE_IFC4X2
+
 #include <set>
 
 #include "../ifcparse/Ifc4x2.h"
@@ -5271,3 +5273,4 @@ void Type::PopulateDerivedFields(IfcEntityInstanceData* e) {
         }
     }
 }
+#endif
