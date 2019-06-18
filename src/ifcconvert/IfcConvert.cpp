@@ -1125,13 +1125,13 @@ namespace latebound_access {
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
-		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type()) {
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, IfcWrite::IfcWriteArgument::EnumerationReference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
+		} else {
+			IfcWrite::IfcWriteArgument* a = new IfcWrite::IfcWriteArgument;
+			a->set(t);
+			inst->data().attributes()[i] = a;
 		}
-
-		IfcWrite::IfcWriteArgument* a = new IfcWrite::IfcWriteArgument;
-		a->set(t);
-		inst->data().attributes()[i] = a;
 	}
 
 	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
