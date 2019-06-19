@@ -47,7 +47,7 @@ regices = list(zip([re.compile(s,re.M) for s in [r'<[\w\n=" \-/\.;_\t:%#,\?\(\)]
 definition_files = ['DocEntity.csv', 'DocEnumeration.csv', 'DocDefined.csv', 'DocSelect.csv']
 definition_files = map(make_absolute, definition_files)
 for fn in definition_files:
-    with open(fn) as f:
+    with open(path, encoding="utf8", errors='ignore') as f:
         for oid, name, desc in csv.reader(f, delimiter=';', quotechar='"'):
             name_to_oid[name] = oid
             oid_to_name[oid] = name
