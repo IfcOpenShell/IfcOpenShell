@@ -477,7 +477,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 
-	TopoDS_Shape s1, s2;
+	TopoDS_Shape s1;
 	IfcRepresentationShapeItems items1;
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
@@ -546,6 +546,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopTools_ListOfShape second_operand_shapes;
 
 	for (auto& operand2 : second_operands) {
+		TopoDS_Shape s2;
+
 		bool shape2_processed = false;
 
 		bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
@@ -602,12 +604,15 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Compound compound;
 	builder.MakeCompound(compound);
 	builder.Add(compound, s1);
-	builder.Add(compound, s2);
+	for (const auto& s2 : second_operand_shapes) {
+		builder.Add(compound, s2);
+	}
 	shape = compound;
 	return true;
 	*/	
 
 #if OCC_VERSION_HEX < 0x60900
+	// @todo: this currently does not compile anymore, do we still need this?
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
 #else
 	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
