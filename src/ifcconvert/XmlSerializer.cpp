@@ -158,6 +158,8 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 			value = format_attribute(argument, argument_type, qualified_name);
 		} catch (const std::exception& e) {
 			Logger::Error(e);
+		} catch (const Standard_ConstructionError& e) {
+			Logger::Error(e.GetMessageString(), instance->entity);
 		}
 
 		if (value) {
