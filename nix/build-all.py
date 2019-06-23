@@ -74,10 +74,18 @@ PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3"]
 # OCCT_HASH="88af392"
 OCCT_VERSION="7.3.0p3"
 BOOST_VERSION="1.59.0"
-PCRE_VERSION="8.39"
-LIBXML_VERSION="2.9.3"
-CMAKE_VERSION="3.4.1"
-SWIG_VERSION="3.0.12"
+#PCRE_VERSION="8.39"
+PCRE_VERSION="8.43"
+#LIBXML2_VERSION="2.9.3"
+LIBXML2_VERSION="2.9.9_2"
+#CMAKE_VERSION="3.4.1"
+CMAKE_VERSION="3.14.5"
+#SWIG_VERSION="3.0.12"
+SWIG_VERSION="4.0.0"
+#OPENCOLLADA_VERSION="v1.6.63"
+OPENCOLLADA_VERSION="v1.6.68"
+
+
 
 # binaries
 cp="cp"
@@ -287,9 +295,6 @@ CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
 BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
-OPENCOLLADA_LOCATION="https://github.com/KhronosGroup/OpenCOLLADA.git"
-#OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
-OPENCOLLADA_COMMIT="v1.6.63"
 
 # Helper functions
 
@@ -308,9 +313,9 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     cmake_path= os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake")
     run([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
 
-def git_clone(clone_url, target_dir, revision=None):
+def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     """Lazily clones the `git` repository denoted by `clone_url` into
-    `target_dir`, i.e. skips cloning if `target_dir` exists (naively assumes
+    the `target_dir` or pulls latest changes if the `target_dir` exists (naively assumes
     that a working clone exists there) and optionally checks out a revision
     `revision` after cloning or in the existing clone if `revision` is not
     `None`."""
@@ -318,7 +323,9 @@ def git_clone(clone_url, target_dir, revision=None):
         logger.info("cloning '%s' into '%s'" % (clone_url, target_dir))
         run([git, "clone", clone_url, target_dir])
     else:
-        logger.info("directory '%s' exists, skipping cloning" % (target_dir,))
+        logger.info("directory '%s' already cloned. Pulling latest changes." % (target_dir,))
+        run([git, "pull", clone_url], cwd=target_dir)       
+        
     if revision != None:
         run([git, "checkout", revision], cwd=target_dir)
 
@@ -335,8 +342,6 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
     
-    logger.info("\rFetching %s...   " % (name,))
-    
     if download_tool == download_tool_curl or download_tool == download_tool_wget:
         if no_append_name:
             url = download_url
@@ -346,17 +351,20 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     if download_tool == download_tool_curl:
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
+            logger.info("\rDownloading %s...   " % (name,))
             run(CURL + ["-o", download_name, url], cwd=build_dir)
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_wget:
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
+            logger.info("\rDownloading %s...   " % (name,))
             run(WGET + ["-O", download_name, url], cwd=build_dir)
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_git:
-        git_clone(download_url, target_dir=os.path.join(build_dir, download_name), revision=revision)
+        logger.info("\rChecking %s...   " % (name,))
+        git_clone_or_pull_repository(download_url, target_dir=os.path.join(build_dir, download_name), revision=revision)
     else:
         raise ValueError("download tool '%s' is not supported" % (download_tool,))
     download_dir = os.path.join(build_dir, download_name)
@@ -550,7 +558,7 @@ elif "occ" in targets:
         
 if "libxml2" in targets:
     build_dependency(
-        "libxml2-{LIBXML_VERSION}".format(**locals()),
+        "libxml2-{LIBXML2_VERSION}".format(**locals()),
         "autoconf",
         build_tool_args=[
             "--without-python",
@@ -561,7 +569,7 @@ if "libxml2" in targets:
             "--without-lzma"
         ],
         download_url="ftp://xmlsoft.org/libxml2/",
-        download_name="libxml2-{LIBXML_VERSION}.tar.gz".format(**locals())
+        download_name="libxml2-{LIBXML2_VERSION}.tar.gz".format(**locals())
     )
     
 if "OpenCOLLADA" in targets:
@@ -569,8 +577,8 @@ if "OpenCOLLADA" in targets:
         "OpenCOLLADA",
         "cmake",
         build_tool_args=[
-            "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
+            "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
             "-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include".format(**locals()),
             "-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}".format(**locals()),
             "-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}".format(**locals()),
@@ -579,7 +587,7 @@ if "OpenCOLLADA" in targets:
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
-        revision=OPENCOLLADA_COMMIT
+        revision=OPENCOLLADA_VERSION
     )
 
 if "python" in targets:
@@ -697,8 +705,8 @@ if "pcre" in targets:
 
 if "libxml2" in targets:
     cmake_args.extend([
-        "-DLIBXML2_INCLUDE_DIR="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-        "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals())
+        "-DLIBXML2_INCLUDE_DIR="       "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+        "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals())
     ])
 
 run_cmake("", cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -742,8 +750,8 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
-                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
+                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
                 "-DCOLLADA_SUPPORT=OFF"
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
         
