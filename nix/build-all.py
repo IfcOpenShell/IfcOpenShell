@@ -57,7 +57,17 @@ import shutil
 import time
 import tarfile
 import multiprocessing
-import urllib
+
+PYTHON_MAJOR = sys.version_info[0]
+
+if PYTHON_MAJOR >= 3:
+    from urllib.request import urlretrieve
+else:
+    # Not Python 3 - today, it is most likely to be Python 2
+    # But note that this might need an update when Python 4
+    # might be around one day
+    from urllib import urlretrieve
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -66,10 +76,11 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
+PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3"]
+JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
 # OCCT_HASH="89aebde"
-PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3"]
 # OCCT_VERSION="7.2.0"
 # OCCT_HASH="88af392"
 OCCT_VERSION="7.3.0p3"
@@ -128,6 +139,15 @@ def get_os():
     ret_value = sp.check_output([uname, "-s"]).strip()
     return ret_value
 
+def to_pystring(x):
+    """ Python 2 & 3 compatibility function for strings handling 
+    (to solve TypeError "Can't mix strings and bytes in path components" for Python 3).
+    Reference https://github.com/hugsy/gef/issues/382 """
+    res = str(x, encoding="utf-8") if PYTHON_MAJOR == 3 else x
+    substs = [("\n","\\n"), ("\r","\\r"), ("\t","\\t"), ("\v","\\v"), ("\b","\\b"), ]
+    for x,y in substs: res = res.replace(x,y)
+    return res
+
 # Set defaults for missing empty environment variables
 
 USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
@@ -152,10 +172,11 @@ CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
 try:
     DEPS_DIR = os.environ["DEPS_DIR"]
 except KeyError:
-    path = ["..", "build", sp.check_output(uname).strip(), TARGET_ARCH]
+    path = [b"..", b"build", sp.check_output(uname).strip(), TARGET_ARCH]
     if TOOLSET:
         path.append(TOOLSET)
-    DEPS_DIR = os.path.realpath(os.path.join(*path))
+        
+    DEPS_DIR = to_pystring(os.path.realpath(os.path.join(*path)))
 
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
@@ -260,7 +281,7 @@ WGET= ["wget", "-q", "--no-check-certificate"]
 log_dir = os.path.join(DEPS_DIR, "logs")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
-LOG_FILE="%s.log" % (os.path.join(log_dir, sp.check_output([date, "+%Y%m%d"]).strip()),)
+LOG_FILE="%s.log" % (os.path.join(log_dir, to_pystring(sp.check_output([date, "+%Y%m%d"]).strip())),)
 if not os.path.exists(LOG_FILE):
     open(LOG_FILE, "w").close()
 logger.info("using command log file '%s'" % (LOG_FILE,))
@@ -274,7 +295,7 @@ def run(cmds, cwd=None):
     """
 
     logger.debug("running command %r in directory %r" % (" ".join(cmds), cwd))
-    log_file_handle = open(LOG_FILE, "a")
+    log_file_handle = open(LOG_FILE, "ab")
     proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE)
     stdout, stderr = proc.communicate()
     log_file_handle.write(stdout)
@@ -391,7 +412,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     
     for path, url in additional_files.items():
         if not os.path.exists(path):
-            urllib.urlretrieve(url, os.path.join(extract_dir, path))
+            urlretrieve(url, os.path.join(extract_dir, path))
             
     if patch is not None:
         patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), patch))
@@ -496,11 +517,11 @@ for FL in ["C", "CXX"]:
 shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 
 if "json" in targets:
-    json_url = "https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp"
+    json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
     json_install_path = "{DEPS_DIR}/install/json/nlohmann/json.hpp".format(**locals())
     if not os.path.exists(json_install_path):
         os.makedirs(os.path.dirname(json_install_path))
-        urllib.urlretrieve(json_url, json_install_path)
+        urlretrieve(json_url, json_install_path)
 
 if "pcre" in targets:
     build_dependency(
