@@ -31,7 +31,11 @@
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcException.h"
 
-#ifdef USE_IFC4
+#ifdef USE_IFC4X2
+#include "../ifcparse/Ifc4x2enum.h"
+#elif USE_IFC4X1
+#include "../ifcparse/Ifc4x1enum.h"
+#elif USE_IFC4
 #include "../ifcparse/Ifc4enum.h"
 #else
 #include "../ifcparse/Ifc2x3enum.h"
