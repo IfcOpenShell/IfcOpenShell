@@ -19,13 +19,13 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4x2.exp (Draft). Do not make modifications  *
+ * This file has been generated from IFC4x1.exp. Do not make modifications  *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFC4X2ENUM_H
-#define IFC4X2ENUM_H
+#ifndef IFC4X1ENUM_H
+#define IFC4X1ENUM_H
 
 #include "../ifcparse/ifc_parse_api.h"
 
