@@ -19,11 +19,10 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4x1.exp. Do not make modifications  *
+ * This file has been generated from IFC4x1.exp. Do not make modifications      *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
-
 
 #ifndef IFC4X1_H
 #define IFC4X1_H
@@ -40,8 +39,6 @@
 #include "../ifcparse/IfcSchema.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Argument.h"
-
-#include "../ifcparse/Ifc4x1enum.h"
 
 struct Ifc4x1 {
 

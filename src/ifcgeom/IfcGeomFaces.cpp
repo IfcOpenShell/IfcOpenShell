@@ -97,14 +97,14 @@
 
 #include <BRepLib_FindSurface.hxx>
 
-#ifdef USE_IFC4
+#include "../ifcgeom/IfcGeom.h"
+
+#ifdef SCHEMA_HAS_IfcBSplineSurfaceWithKnots
 #include <Geom_BSplineSurface.hxx>
 #include <TColgp_Array2OfPnt.hxx>
 #include <TColStd_Array1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #endif
-
-#include "../ifcgeom/IfcGeom.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -472,7 +472,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleProfileDef* l, TopoDS
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -495,7 +495,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRoundedRectangleProfileDef* l,
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -529,7 +529,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangleHollowProfileDef* l, 
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -575,7 +575,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrapeziumProfileDef* l, TopoDS
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -620,7 +620,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIShapeProfileDef* l, TopoDS_Sh
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -659,7 +659,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcZShapeProfileDef* l, TopoDS_Sh
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -692,7 +692,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCShapeProfileDef* l, TopoDS_Sh
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -767,7 +767,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLShapeProfileDef* l, TopoDS_Sh
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -815,7 +815,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcUShapeProfileDef* l, TopoDS_Sh
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -904,7 +904,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTShapeProfileDef* l, TopoDS_Sh
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -926,7 +926,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleProfileDef* l, TopoDS_Sh
 	
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -958,7 +958,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircleHollowProfileDef* l, Top
 	
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -996,7 +996,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipseProfileDef* l, TopoDS_S
 
 	gp_Trsf2d trsf2d;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -1124,7 +1124,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPlane* l, TopoDS_Shape& face) 
 	return true;
 }
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcBSplineSurfaceWithKnots
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineSurfaceWithKnots* l, TopoDS_Shape& face) {
 	boost::shared_ptr< IfcTemplatedEntityListList<IfcSchema::IfcCartesianPoint> > cps = l->ControlPointsList();

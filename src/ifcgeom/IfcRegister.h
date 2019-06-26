@@ -52,12 +52,20 @@ SHAPES(IfcMappedItem);
 SHAPES(IfcManifoldSolidBrep);
 SHAPES(IfcGeometricSet);
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcCylindricalSurface
 SHAPE(IfcCylindricalSurface);
+#endif
+#ifdef SCHEMA_HAS_IfcAdvancedBrep
 SHAPE(IfcAdvancedBrep);
+#endif
 // FIXME: Surfaces should have a shape type of their own
+#ifdef SCHEMA_HAS_IfcBSplineSurfaceWithKnots
 SHAPE(IfcBSplineSurfaceWithKnots);
+#endif
+#ifdef SCHEMA_HAS_IfcTriangulatedFaceSet
 SHAPE(IfcTriangulatedFaceSet);
+#endif
+#ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
 SHAPE(IfcExtrudedAreaSolidTapered);
 #endif
 SHAPE(IfcPlane);
@@ -114,14 +122,14 @@ WIRE(IfcPolyLoop);
 WIRE(IfcCompositeCurve);
 WIRE(IfcTrimmedCurve);
 WIRE(IfcArbitraryOpenProfileDef);
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 WIRE(IfcIndexedPolyCurve)
 #endif
 
 CURVE(IfcCircle);
 CURVE(IfcEllipse);
 CURVE(IfcLine);
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
 // IfcRationalBSplineCurveWithKnots included
 CURVE(IfcBSplineCurveWithKnots);
 #endif

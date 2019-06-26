@@ -6,7 +6,7 @@
 
 #include <libxml/parser.h>
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
@@ -328,9 +328,24 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 				attributes.push_back(std::make_pair(attrname, value));
 
 				if ((tagname == "ifc:ifcXML" || tagname == "ifcXML") && attrname == "xsi:schemaLocation" && boost::starts_with(value, "http://www.buildingsmart-tech.org/ifcXML/IFC4")) {
-					state->file = new IfcParse::IfcFile(IfcParse::schema_by_name("IFC4"));
-					state->file->parsing_complete() = false;
-					state->dialect = ifcxml_dialect_ifc4;
+					// We're expecting a schemaLocation like "http://www.buildingsmart-tech.org/ifcXML/IFC4/Add2 IFC4_ADD2_TC1.xsd"
+					// With token compression this is split into:
+					// [0] http:
+					// [1] www.buildingsmart-tech.org
+					// [2] ifcXML
+					// [3] IFC4
+					// [4] Add2
+					// [5] IFC4_ADD2_TC1.xsd
+					// The hosstname will likely change though.
+                    auto it = boost::algorithm::make_split_iterator(value, boost::algorithm::token_finder(boost::algorithm::is_any_of("/ "), boost::algorithm::token_compress_on));
+					decltype(it) end;
+					for (int tok = 0; it != end && tok < 3; ++it, ++tok) {}
+					if (it != end) {
+						const std::string schema_name(&it->front(), it->size());
+						state->file = new IfcParse::IfcFile(IfcParse::schema_by_name(schema_name));
+						state->file->parsing_complete() = false;
+						state->dialect = ifcxml_dialect_ifc4;
+					}
 					goto end;
 				} else if (tagname == "ex:iso_10303_28" && attrname == "xsi:schemaLocation" && boost::starts_with(value, "http://www.iai-tech.org/ifcXML/IFC2x3")) {
 					state->file = new IfcParse::IfcFile(IfcParse::schema_by_name("IFC2X3"));

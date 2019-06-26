@@ -453,14 +453,18 @@ function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     )
 endfunction()
 
+set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2")
+
 if(COMPILE_SCHEMA)
+	# @todo, this appears to be untested at the moment
+
     find_package(PythonInterp)
     
     IF(NOT PYTHONINTERP_FOUND)
         MESSAGE(FATAL_ERROR "A Python interpreter is necessary when COMPILE_SCHEMA is enabled. Disable COMPILE_SCHEMA or fix Python paths to proceed.")
     ENDIF()
     
-    set(IFC_RELEASE_NOT_USED "2x3" "4")
+    set(IFC_RELEASE_NOT_USED ${SCHEMA_VERSIONS})
     
     # Install pyparsing if necessary
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip freeze OUTPUT_VARIABLE PYTHON_PACKAGE_LIST)
@@ -501,13 +505,11 @@ if(COMPILE_SCHEMA)
         OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
     
     # Prevent the schema that had just been compiled from being excluded
-    if("${COMPILED_SCHEMA_NAME}" STREQUAL "IFC2X3")
-        list(REMOVE_ITEM IFC_RELEASE_NOT_USED "2x3")
-        add_definitions(-DUSE_IFC2x3)
-    elseif("${COMPILED_SCHEMA_NAME}" STREQUAL "IFC4")
-        list(REMOVE_ITEM IFC_RELEASE_NOT_USED "4")
-        add_definitions(-DUSE_IFC4)
-    endif()
+	foreach(s ${SCHEMA_VERSIONS})
+		if("${COMPILED_SCHEMA_NAME}" STREQUAL "${s}")
+			list(REMOVE_ITEM IFC_RELEASE_NOT_USED "${s}")
+		endif()
+	endforeach()
 endif()
 
 # Boost >= 1.58 requires BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE to build on some Linux distros.
@@ -517,10 +519,16 @@ endif()
 
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 if (BUILD_IFCGEOM)
-set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom)
+	foreach(s ${SCHEMA_VERSIONS})
+		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
+	endforeach()
+	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
 if (BUILD_CONVERT)
-set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers_ifc2x3 Serializers_ifc4 Serializers Serializers_ifc2x3 Serializers_ifc4 Serializers)
+	foreach(s ${SCHEMA_VERSIONS})
+		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${s})
+	endforeach()
+	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 endif()
 
 # IfcParse
@@ -540,15 +548,11 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom_ifc2x3 STATIC ${IFCGEOM_FILES})
-add_library(IfcGeom_ifc4 STATIC ${IFCGEOM_FILES})
-
-set_target_properties(IfcGeom_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3")
-# TODO: Detect based on IfcSchema
-set_target_properties(IfcGeom_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4")
-
-TARGET_LINK_LIBRARIES(IfcGeom_ifc2x3 IfcParse ${OPENCASCADE_LIBRARIES})
-TARGET_LINK_LIBRARIES(IfcGeom_ifc4 IfcParse ${OPENCASCADE_LIBRARIES})
+foreach(s ${SCHEMA_VERSIONS})
+	add_library(IfcGeom_ifc${s} STATIC ${IFCGEOM_FILES})
+	set_target_properties(IfcGeom_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s}")
+	TARGET_LINK_LIBRARIES(IfcGeom_ifc${s} IfcParse ${OPENCASCADE_LIBRARIES})
+endforeach()
 
 # IfcGeom (schema agnostic)
 file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom_schema_agnostic/*.h)
@@ -557,7 +561,7 @@ set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
-TARGET_LINK_LIBRARIES(IfcGeom IfcGeom_ifc2x3 IfcGeom_ifc4)
+TARGET_LINK_LIBRARIES(IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 
 endif(BUILD_IFCGEOM)
 
@@ -571,20 +575,16 @@ file(GLOB SERIALIZERS_S_H_FILES ../src/serializers/schema_dependent/*.h)
 file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
 set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
-add_library(Serializers_ifc2x3 STATIC ${SERIALIZERS_S_FILES})
-add_library(Serializers_ifc4 STATIC ${SERIALIZERS_S_FILES})
-
-set_target_properties(Serializers_ifc2x3 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc2x3 ${CONVERT_PRECISION}")
-# TODO: Detect based on IfcSchema
-set_target_properties(Serializers_ifc4 PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc4 -DUSE_IFC4 ${CONVERT_PRECISION}")
-
-TARGET_LINK_LIBRARIES(Serializers_ifc2x3 IfcGeom ${OPENCASCADE_LIBRARIES})
-TARGET_LINK_LIBRARIES(Serializers_ifc4 IfcGeom ${OPENCASCADE_LIBRARIES})
+foreach(s ${SCHEMA_VERSIONS})
+	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
+	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
+	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES})
+endforeach()
 
 add_library(Serializers ${SERIALIZERS_FILES})
 set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(Serializers Serializers_ifc2x3 Serializers_ifc4)
+TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -663,7 +663,7 @@ INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES}
 	DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
 )
 
-INSTALL(TARGETS IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom
+INSTALL(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}
@@ -671,7 +671,7 @@ INSTALL(TARGETS IfcGeom_ifc2x3 IfcGeom_ifc4 IfcGeom
 endif()
 
 if(BUILD_CONVERT)
-INSTALL(TARGETS Serializers Serializers_ifc2x3 Serializers_ifc4
+INSTALL(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}

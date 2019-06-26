@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4x2.exp Draft. Do not make modifications  *
+ * This file has been generated from IFC4x2.exp. Do not make modifications      *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
@@ -13249,64 +13249,9 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcTypeResource_type->set_inverse_attributes(attributes);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcPlanarBox_type);
-        IFC4X2_IfcPlanarExtent_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcArbitraryClosedProfileDef_type);defs.push_back(IFC4X2_IfcArbitraryOpenProfileDef_type);defs.push_back(IFC4X2_IfcCompositeProfileDef_type);defs.push_back(IFC4X2_IfcDerivedProfileDef_type);defs.push_back(IFC4X2_IfcParameterizedProfileDef_type);
-        IFC4X2_IfcProfileDef_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(7);
-        defs.push_back(IFC4X2_IfcAlignmentCurve_type);defs.push_back(IFC4X2_IfcBSplineCurve_type);defs.push_back(IFC4X2_IfcCompositeCurve_type);defs.push_back(IFC4X2_IfcCurveSegment2D_type);defs.push_back(IFC4X2_IfcIndexedPolyCurve_type);defs.push_back(IFC4X2_IfcPolyline_type);defs.push_back(IFC4X2_IfcTrimmedCurve_type);
-        IFC4X2_IfcBoundedCurve_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcClassification_type);defs.push_back(IFC4X2_IfcDocumentInformation_type);defs.push_back(IFC4X2_IfcLibraryInformation_type);
-        IFC4X2_IfcExternalInformation_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcDoorStyle_type);defs.push_back(IFC4X2_IfcElementType_type);defs.push_back(IFC4X2_IfcSpatialElementType_type);defs.push_back(IFC4X2_IfcWindowStyle_type);
-        IFC4X2_IfcTypeProduct_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcCableCarrierFittingType_type);defs.push_back(IFC4X2_IfcCableFittingType_type);defs.push_back(IFC4X2_IfcDuctFittingType_type);defs.push_back(IFC4X2_IfcJunctionBoxType_type);defs.push_back(IFC4X2_IfcPipeFittingType_type);
-        IFC4X2_IfcFlowFittingType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcCompressor_type);defs.push_back(IFC4X2_IfcFan_type);defs.push_back(IFC4X2_IfcPump_type);
-        IFC4X2_IfcFlowMovingDevice_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcConversionBasedUnitWithOffset_type);
-        IFC4X2_IfcConversionBasedUnit_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcBuildingSystem_type);defs.push_back(IFC4X2_IfcDistributionSystem_type);defs.push_back(IFC4X2_IfcStructuralAnalysisModel_type);defs.push_back(IFC4X2_IfcZone_type);
-        IFC4X2_IfcSystem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCaissonFoundationType_type);
-        IFC4X2_IfcDeepFoundationType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcStructuralCurveMember_type);defs.push_back(IFC4X2_IfcStructuralSurfaceMember_type);
-        IFC4X2_IfcStructuralMember_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcClassificationReference_type);defs.push_back(IFC4X2_IfcDocumentReference_type);defs.push_back(IFC4X2_IfcExternallyDefinedHatchStyle_type);defs.push_back(IFC4X2_IfcExternallyDefinedSurfaceStyle_type);defs.push_back(IFC4X2_IfcExternallyDefinedTextFont_type);defs.push_back(IFC4X2_IfcLibraryReference_type);
-        IFC4X2_IfcExternalReference_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC4X2_IfcActionRequest_type);defs.push_back(IFC4X2_IfcCostItem_type);defs.push_back(IFC4X2_IfcCostSchedule_type);defs.push_back(IFC4X2_IfcPerformanceHistory_type);defs.push_back(IFC4X2_IfcPermit_type);defs.push_back(IFC4X2_IfcProjectOrder_type);defs.push_back(IFC4X2_IfcWorkCalendar_type);defs.push_back(IFC4X2_IfcWorkControl_type);
+        IFC4X2_IfcControl_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(6);
@@ -13314,19 +13259,49 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcObject_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcReinforcingBarType_type);defs.push_back(IFC4X2_IfcReinforcingMeshType_type);defs.push_back(IFC4X2_IfcTendonAnchorType_type);defs.push_back(IFC4X2_IfcTendonConduitType_type);defs.push_back(IFC4X2_IfcTendonType_type);
-        IFC4X2_IfcReinforcingElementType_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC4X2_IfcActuator_type);defs.push_back(IFC4X2_IfcAlarm_type);defs.push_back(IFC4X2_IfcController_type);defs.push_back(IFC4X2_IfcFlowInstrument_type);defs.push_back(IFC4X2_IfcProtectiveDeviceTrippingUnit_type);defs.push_back(IFC4X2_IfcSensor_type);defs.push_back(IFC4X2_IfcUnitaryControlElement_type);
+        IFC4X2_IfcDistributionControlElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC4X2_IfcActuatorType_type);defs.push_back(IFC4X2_IfcAlarmType_type);defs.push_back(IFC4X2_IfcControllerType_type);defs.push_back(IFC4X2_IfcFlowInstrumentType_type);defs.push_back(IFC4X2_IfcProtectiveDeviceTrippingUnitType_type);defs.push_back(IFC4X2_IfcSensorType_type);defs.push_back(IFC4X2_IfcUnitaryControlElementType_type);
+        IFC4X2_IfcDistributionControlElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcAdvancedBrep_type);defs.push_back(IFC4X2_IfcFacetedBrep_type);
+        IFC4X2_IfcManifoldSolidBrep_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcMaterialLayerWithOffsets_type);
-        IFC4X2_IfcMaterialLayer_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcAdvancedBrepWithVoids_type);
+        IFC4X2_IfcAdvancedBrep_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcBuildingStorey_type);defs.push_back(IFC4X2_IfcFacility_type);defs.push_back(IFC4X2_IfcFacilityPart_type);defs.push_back(IFC4X2_IfcSite_type);defs.push_back(IFC4X2_IfcSpace_type);
-        IFC4X2_IfcSpatialStructureElement_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcAdvancedFace_type);
+        IFC4X2_IfcFaceSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(13);
+        defs.push_back(IFC4X2_IfcAirTerminal_type);defs.push_back(IFC4X2_IfcAudioVisualAppliance_type);defs.push_back(IFC4X2_IfcCommunicationsAppliance_type);defs.push_back(IFC4X2_IfcElectricAppliance_type);defs.push_back(IFC4X2_IfcFireSuppressionTerminal_type);defs.push_back(IFC4X2_IfcLamp_type);defs.push_back(IFC4X2_IfcLightFixture_type);defs.push_back(IFC4X2_IfcMedicalDevice_type);defs.push_back(IFC4X2_IfcOutlet_type);defs.push_back(IFC4X2_IfcSanitaryTerminal_type);defs.push_back(IFC4X2_IfcSpaceHeater_type);defs.push_back(IFC4X2_IfcStackTerminal_type);defs.push_back(IFC4X2_IfcWasteTerminal_type);
+        IFC4X2_IfcFlowTerminal_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC4X2_IfcAirTerminalBox_type);defs.push_back(IFC4X2_IfcDamper_type);defs.push_back(IFC4X2_IfcElectricDistributionBoard_type);defs.push_back(IFC4X2_IfcElectricTimeControl_type);defs.push_back(IFC4X2_IfcFlowMeter_type);defs.push_back(IFC4X2_IfcProtectiveDevice_type);defs.push_back(IFC4X2_IfcSwitchingDevice_type);defs.push_back(IFC4X2_IfcValve_type);
+        IFC4X2_IfcFlowController_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC4X2_IfcAirTerminalBoxType_type);defs.push_back(IFC4X2_IfcDamperType_type);defs.push_back(IFC4X2_IfcElectricDistributionBoardType_type);defs.push_back(IFC4X2_IfcElectricTimeControlType_type);defs.push_back(IFC4X2_IfcFlowMeterType_type);defs.push_back(IFC4X2_IfcProtectiveDeviceType_type);defs.push_back(IFC4X2_IfcSwitchingDeviceType_type);defs.push_back(IFC4X2_IfcValveType_type);
+        IFC4X2_IfcFlowControllerType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(13);
+        defs.push_back(IFC4X2_IfcAirTerminalType_type);defs.push_back(IFC4X2_IfcAudioVisualApplianceType_type);defs.push_back(IFC4X2_IfcCommunicationsApplianceType_type);defs.push_back(IFC4X2_IfcElectricApplianceType_type);defs.push_back(IFC4X2_IfcFireSuppressionTerminalType_type);defs.push_back(IFC4X2_IfcLampType_type);defs.push_back(IFC4X2_IfcLightFixtureType_type);defs.push_back(IFC4X2_IfcMedicalDeviceType_type);defs.push_back(IFC4X2_IfcOutletType_type);defs.push_back(IFC4X2_IfcSanitaryTerminalType_type);defs.push_back(IFC4X2_IfcSpaceHeaterType_type);defs.push_back(IFC4X2_IfcStackTerminalType_type);defs.push_back(IFC4X2_IfcWasteTerminalType_type);
+        IFC4X2_IfcFlowTerminalType_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(20);
@@ -13339,34 +13314,9 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcEnergyConversionDeviceType_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcDoorLiningProperties_type);defs.push_back(IFC4X2_IfcDoorPanelProperties_type);defs.push_back(IFC4X2_IfcPermeableCoveringProperties_type);defs.push_back(IFC4X2_IfcReinforcementDefinitionProperties_type);defs.push_back(IFC4X2_IfcWindowLiningProperties_type);defs.push_back(IFC4X2_IfcWindowPanelProperties_type);
-        IFC4X2_IfcPreDefinedPropertySet_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcDistributionControlElement_type);defs.push_back(IFC4X2_IfcDistributionFlowElement_type);
-        IFC4X2_IfcDistributionElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcStructuralLoadConfiguration_type);defs.push_back(IFC4X2_IfcStructuralLoadOrResult_type);
-        IFC4X2_IfcStructuralLoad_type->set_subtypes(defs);
-    }
-    {
         std::vector<const entity*> defs; defs.reserve(1);
         defs.push_back(IFC4X2_IfcAlignment_type);
         IFC4X2_IfcLinearPositioningElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcRelConnectsPathElements_type);defs.push_back(IFC4X2_IfcRelConnectsWithRealizingElements_type);
-        IFC4X2_IfcRelConnectsElements_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcProjectedCRS_type);
-        IFC4X2_IfcCoordinateReferenceSystem_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(30);
@@ -13374,194 +13324,24 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcGeometricRepresentationItem_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcRelAssociatesApproval_type);defs.push_back(IFC4X2_IfcRelAssociatesClassification_type);defs.push_back(IFC4X2_IfcRelAssociatesConstraint_type);defs.push_back(IFC4X2_IfcRelAssociatesDocument_type);defs.push_back(IFC4X2_IfcRelAssociatesLibrary_type);defs.push_back(IFC4X2_IfcRelAssociatesMaterial_type);
-        IFC4X2_IfcRelAssociates_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcAlignment2DHorizontalSegment_type);defs.push_back(IFC4X2_IfcAlignment2DVerticalSegment_type);
+        IFC4X2_IfcAlignment2DSegment_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcOffsetCurve2D_type);defs.push_back(IFC4X2_IfcOffsetCurve3D_type);defs.push_back(IFC4X2_IfcOffsetCurveByDistances_type);
-        IFC4X2_IfcOffsetCurve_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcCableCarrierSegment_type);defs.push_back(IFC4X2_IfcCableSegment_type);defs.push_back(IFC4X2_IfcDuctSegment_type);defs.push_back(IFC4X2_IfcPipeSegment_type);
-        IFC4X2_IfcFlowSegment_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcBridge_type);defs.push_back(IFC4X2_IfcBuilding_type);
-        IFC4X2_IfcFacility_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcStructuralCurveConnection_type);defs.push_back(IFC4X2_IfcStructuralPointConnection_type);defs.push_back(IFC4X2_IfcStructuralSurfaceConnection_type);
-        IFC4X2_IfcStructuralConnection_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcExtrudedAreaSolid_type);defs.push_back(IFC4X2_IfcFixedReferenceSweptAreaSolid_type);defs.push_back(IFC4X2_IfcRevolvedAreaSolid_type);defs.push_back(IFC4X2_IfcSurfaceCurveSweptAreaSolid_type);
-        IFC4X2_IfcSweptAreaSolid_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBoundaryCurve_type);
-        IFC4X2_IfcCompositeCurveOnSurface_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStyledRepresentation_type);
-        IFC4X2_IfcStyleModel_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcObjectDefinition_type);defs.push_back(IFC4X2_IfcPropertyDefinition_type);defs.push_back(IFC4X2_IfcRelationship_type);
-        IFC4X2_IfcRoot_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(8);
-        defs.push_back(IFC4X2_IfcAirTerminalBoxType_type);defs.push_back(IFC4X2_IfcDamperType_type);defs.push_back(IFC4X2_IfcElectricDistributionBoardType_type);defs.push_back(IFC4X2_IfcElectricTimeControlType_type);defs.push_back(IFC4X2_IfcFlowMeterType_type);defs.push_back(IFC4X2_IfcProtectiveDeviceType_type);defs.push_back(IFC4X2_IfcSwitchingDeviceType_type);defs.push_back(IFC4X2_IfcValveType_type);
-        IFC4X2_IfcFlowControllerType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(9);
-        defs.push_back(IFC4X2_IfcDistributionChamberElement_type);defs.push_back(IFC4X2_IfcEnergyConversionDevice_type);defs.push_back(IFC4X2_IfcFlowController_type);defs.push_back(IFC4X2_IfcFlowFitting_type);defs.push_back(IFC4X2_IfcFlowMovingDevice_type);defs.push_back(IFC4X2_IfcFlowSegment_type);defs.push_back(IFC4X2_IfcFlowStorageDevice_type);defs.push_back(IFC4X2_IfcFlowTerminal_type);defs.push_back(IFC4X2_IfcFlowTreatmentDevice_type);
-        IFC4X2_IfcDistributionFlowElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcCartesianPointList2D_type);defs.push_back(IFC4X2_IfcCartesianPointList3D_type);
-        IFC4X2_IfcCartesianPointList_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcConnectionPointEccentricity_type);
-        IFC4X2_IfcConnectionPointGeometry_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStructuralSurfaceMemberVarying_type);
-        IFC4X2_IfcStructuralSurfaceMember_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcDistributionControlElementType_type);defs.push_back(IFC4X2_IfcDistributionFlowElementType_type);
-        IFC4X2_IfcDistributionElementType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcQuantityArea_type);defs.push_back(IFC4X2_IfcQuantityCount_type);defs.push_back(IFC4X2_IfcQuantityLength_type);defs.push_back(IFC4X2_IfcQuantityTime_type);defs.push_back(IFC4X2_IfcQuantityVolume_type);defs.push_back(IFC4X2_IfcQuantityWeight_type);
-        IFC4X2_IfcPhysicalSimpleQuantity_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBSplineSurfaceWithKnots_type);
-        IFC4X2_IfcBSplineSurface_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcCompressorType_type);defs.push_back(IFC4X2_IfcFanType_type);defs.push_back(IFC4X2_IfcPumpType_type);
-        IFC4X2_IfcFlowMovingDeviceType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcMaterialProperties_type);defs.push_back(IFC4X2_IfcProfileProperties_type);
-        IFC4X2_IfcExtendedProperties_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcIrregularTimeSeries_type);defs.push_back(IFC4X2_IfcRegularTimeSeries_type);
-        IFC4X2_IfcTimeSeries_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcBoxedHalfSpace_type);defs.push_back(IFC4X2_IfcPolygonalBoundedHalfSpace_type);
-        IFC4X2_IfcHalfSpaceSolid_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcCsgSolid_type);defs.push_back(IFC4X2_IfcManifoldSolidBrep_type);defs.push_back(IFC4X2_IfcSectionedSolid_type);defs.push_back(IFC4X2_IfcSweptAreaSolid_type);defs.push_back(IFC4X2_IfcSweptDiskSolid_type);
-        IFC4X2_IfcSolidModel_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(8);
-        defs.push_back(IFC4X2_IfcActionRequest_type);defs.push_back(IFC4X2_IfcCostItem_type);defs.push_back(IFC4X2_IfcCostSchedule_type);defs.push_back(IFC4X2_IfcPerformanceHistory_type);defs.push_back(IFC4X2_IfcPermit_type);defs.push_back(IFC4X2_IfcProjectOrder_type);defs.push_back(IFC4X2_IfcWorkCalendar_type);defs.push_back(IFC4X2_IfcWorkControl_type);
-        IFC4X2_IfcControl_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCenterLineProfileDef_type);
-        IFC4X2_IfcArbitraryOpenProfileDef_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcBoundaryEdgeCondition_type);defs.push_back(IFC4X2_IfcBoundaryFaceCondition_type);defs.push_back(IFC4X2_IfcBoundaryNodeCondition_type);
-        IFC4X2_IfcBoundaryCondition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcBoundedSurface_type);defs.push_back(IFC4X2_IfcElementarySurface_type);defs.push_back(IFC4X2_IfcSweptSurface_type);
-        IFC4X2_IfcSurface_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(8);
-        defs.push_back(IFC4X2_IfcAirTerminalBox_type);defs.push_back(IFC4X2_IfcDamper_type);defs.push_back(IFC4X2_IfcElectricDistributionBoard_type);defs.push_back(IFC4X2_IfcElectricTimeControl_type);defs.push_back(IFC4X2_IfcFlowMeter_type);defs.push_back(IFC4X2_IfcProtectiveDevice_type);defs.push_back(IFC4X2_IfcSwitchingDevice_type);defs.push_back(IFC4X2_IfcValve_type);
-        IFC4X2_IfcFlowController_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcComplexPropertyTemplate_type);defs.push_back(IFC4X2_IfcSimplePropertyTemplate_type);
-        IFC4X2_IfcPropertyTemplate_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcAlignment2DVerSegCircularArc_type);defs.push_back(IFC4X2_IfcAlignment2DVerSegLine_type);defs.push_back(IFC4X2_IfcAlignment2DVerSegParabolicArc_type);
+        IFC4X2_IfcAlignment2DVerticalSegment_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(7);
-        defs.push_back(IFC4X2_IfcBuildingElementPart_type);defs.push_back(IFC4X2_IfcDiscreteAccessory_type);defs.push_back(IFC4X2_IfcFastener_type);defs.push_back(IFC4X2_IfcMechanicalFastener_type);defs.push_back(IFC4X2_IfcReinforcingElement_type);defs.push_back(IFC4X2_IfcVibrationDamper_type);defs.push_back(IFC4X2_IfcVibrationIsolator_type);
-        IFC4X2_IfcElementComponent_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcAlignmentCurve_type);defs.push_back(IFC4X2_IfcBSplineCurve_type);defs.push_back(IFC4X2_IfcCompositeCurve_type);defs.push_back(IFC4X2_IfcCurveSegment2D_type);defs.push_back(IFC4X2_IfcIndexedPolyCurve_type);defs.push_back(IFC4X2_IfcPolyline_type);defs.push_back(IFC4X2_IfcTrimmedCurve_type);
+        IFC4X2_IfcBoundedCurve_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcOuterBoundaryCurve_type);
-        IFC4X2_IfcBoundaryCurve_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcComplexProperty_type);defs.push_back(IFC4X2_IfcSimpleProperty_type);
-        IFC4X2_IfcProperty_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcAxis1Placement_type);defs.push_back(IFC4X2_IfcAxis2Placement2D_type);defs.push_back(IFC4X2_IfcAxis2Placement3D_type);
-        IFC4X2_IfcPlacement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcShapeModel_type);defs.push_back(IFC4X2_IfcStyleModel_type);
-        IFC4X2_IfcRepresentation_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcRectangleHollowProfileDef_type);defs.push_back(IFC4X2_IfcRoundedRectangleProfileDef_type);
-        IFC4X2_IfcRectangleProfileDef_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcIndexedTriangleTextureMap_type);
-        IFC4X2_IfcIndexedTextureMap_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcDistributionCircuit_type);
-        IFC4X2_IfcDistributionSystem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcWallElementedCase_type);defs.push_back(IFC4X2_IfcWallStandardCase_type);
-        IFC4X2_IfcWall_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(13);
-        defs.push_back(IFC4X2_IfcAirTerminal_type);defs.push_back(IFC4X2_IfcAudioVisualAppliance_type);defs.push_back(IFC4X2_IfcCommunicationsAppliance_type);defs.push_back(IFC4X2_IfcElectricAppliance_type);defs.push_back(IFC4X2_IfcFireSuppressionTerminal_type);defs.push_back(IFC4X2_IfcLamp_type);defs.push_back(IFC4X2_IfcLightFixture_type);defs.push_back(IFC4X2_IfcMedicalDevice_type);defs.push_back(IFC4X2_IfcOutlet_type);defs.push_back(IFC4X2_IfcSanitaryTerminal_type);defs.push_back(IFC4X2_IfcSpaceHeater_type);defs.push_back(IFC4X2_IfcStackTerminal_type);defs.push_back(IFC4X2_IfcWasteTerminal_type);
-        IFC4X2_IfcFlowTerminal_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC4X2_IfcAnnotation_type);defs.push_back(IFC4X2_IfcElement_type);defs.push_back(IFC4X2_IfcPort_type);defs.push_back(IFC4X2_IfcPositioningElement_type);defs.push_back(IFC4X2_IfcProxy_type);defs.push_back(IFC4X2_IfcSpatialElement_type);defs.push_back(IFC4X2_IfcStructuralActivity_type);defs.push_back(IFC4X2_IfcStructuralItem_type);
+        IFC4X2_IfcProduct_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(9);
@@ -13569,29 +13349,89 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcResourceLevelRelationship_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStructuralLoadSingleForceWarping_type);
-        IFC4X2_IfcStructuralLoadSingleForce_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcMaterialDefinitionRepresentation_type);defs.push_back(IFC4X2_IfcProductDefinitionShape_type);
-        IFC4X2_IfcProductRepresentation_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcExternalSpatialStructureElement_type);defs.push_back(IFC4X2_IfcSpatialStructureElement_type);defs.push_back(IFC4X2_IfcSpatialZone_type);
-        IFC4X2_IfcSpatialElement_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcArbitraryClosedProfileDef_type);defs.push_back(IFC4X2_IfcArbitraryOpenProfileDef_type);defs.push_back(IFC4X2_IfcCompositeProfileDef_type);defs.push_back(IFC4X2_IfcDerivedProfileDef_type);defs.push_back(IFC4X2_IfcParameterizedProfileDef_type);
+        IFC4X2_IfcProfileDef_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRelSpaceBoundary2ndLevel_type);
-        IFC4X2_IfcRelSpaceBoundary1stLevel_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcArbitraryProfileDefWithVoids_type);
+        IFC4X2_IfcArbitraryClosedProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcAsset_type);defs.push_back(IFC4X2_IfcInventory_type);defs.push_back(IFC4X2_IfcStructuralLoadGroup_type);defs.push_back(IFC4X2_IfcStructuralResultGroup_type);defs.push_back(IFC4X2_IfcSystem_type);
+        IFC4X2_IfcGroup_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(11);
+        defs.push_back(IFC4X2_IfcAsymmetricIShapeProfileDef_type);defs.push_back(IFC4X2_IfcCShapeProfileDef_type);defs.push_back(IFC4X2_IfcCircleProfileDef_type);defs.push_back(IFC4X2_IfcEllipseProfileDef_type);defs.push_back(IFC4X2_IfcIShapeProfileDef_type);defs.push_back(IFC4X2_IfcLShapeProfileDef_type);defs.push_back(IFC4X2_IfcRectangleProfileDef_type);defs.push_back(IFC4X2_IfcTShapeProfileDef_type);defs.push_back(IFC4X2_IfcTrapeziumProfileDef_type);defs.push_back(IFC4X2_IfcUShapeProfileDef_type);defs.push_back(IFC4X2_IfcZShapeProfileDef_type);
+        IFC4X2_IfcParameterizedProfileDef_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcDuctSilencerType_type);defs.push_back(IFC4X2_IfcFilterType_type);defs.push_back(IFC4X2_IfcInterceptorType_type);
-        IFC4X2_IfcFlowTreatmentDeviceType_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcAxis1Placement_type);defs.push_back(IFC4X2_IfcAxis2Placement2D_type);defs.push_back(IFC4X2_IfcAxis2Placement3D_type);
+        IFC4X2_IfcPlacement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcBSplineCurveWithKnots_type);
+        IFC4X2_IfcBSplineCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcBSplineSurface_type);defs.push_back(IFC4X2_IfcCurveBoundedPlane_type);defs.push_back(IFC4X2_IfcCurveBoundedSurface_type);defs.push_back(IFC4X2_IfcRectangularTrimmedSurface_type);
+        IFC4X2_IfcBoundedSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcBSplineSurfaceWithKnots_type);
+        IFC4X2_IfcBSplineSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(22);
+        defs.push_back(IFC4X2_IfcBeam_type);defs.push_back(IFC4X2_IfcBearing_type);defs.push_back(IFC4X2_IfcBuildingElementProxy_type);defs.push_back(IFC4X2_IfcChimney_type);defs.push_back(IFC4X2_IfcColumn_type);defs.push_back(IFC4X2_IfcCovering_type);defs.push_back(IFC4X2_IfcCurtainWall_type);defs.push_back(IFC4X2_IfcDeepFoundation_type);defs.push_back(IFC4X2_IfcDoor_type);defs.push_back(IFC4X2_IfcFooting_type);defs.push_back(IFC4X2_IfcMember_type);defs.push_back(IFC4X2_IfcPlate_type);defs.push_back(IFC4X2_IfcRailing_type);defs.push_back(IFC4X2_IfcRamp_type);defs.push_back(IFC4X2_IfcRampFlight_type);defs.push_back(IFC4X2_IfcRoof_type);defs.push_back(IFC4X2_IfcShadingDevice_type);defs.push_back(IFC4X2_IfcSlab_type);defs.push_back(IFC4X2_IfcStair_type);defs.push_back(IFC4X2_IfcStairFlight_type);defs.push_back(IFC4X2_IfcWall_type);defs.push_back(IFC4X2_IfcWindow_type);
+        IFC4X2_IfcBuildingElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcBeamStandardCase_type);
+        IFC4X2_IfcBeam_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(23);
+        defs.push_back(IFC4X2_IfcBeamType_type);defs.push_back(IFC4X2_IfcBearingType_type);defs.push_back(IFC4X2_IfcBuildingElementProxyType_type);defs.push_back(IFC4X2_IfcChimneyType_type);defs.push_back(IFC4X2_IfcColumnType_type);defs.push_back(IFC4X2_IfcCoveringType_type);defs.push_back(IFC4X2_IfcCurtainWallType_type);defs.push_back(IFC4X2_IfcDeepFoundationType_type);defs.push_back(IFC4X2_IfcDoorType_type);defs.push_back(IFC4X2_IfcFootingType_type);defs.push_back(IFC4X2_IfcMemberType_type);defs.push_back(IFC4X2_IfcPileType_type);defs.push_back(IFC4X2_IfcPlateType_type);defs.push_back(IFC4X2_IfcRailingType_type);defs.push_back(IFC4X2_IfcRampFlightType_type);defs.push_back(IFC4X2_IfcRampType_type);defs.push_back(IFC4X2_IfcRoofType_type);defs.push_back(IFC4X2_IfcShadingDeviceType_type);defs.push_back(IFC4X2_IfcSlabType_type);defs.push_back(IFC4X2_IfcStairFlightType_type);defs.push_back(IFC4X2_IfcStairType_type);defs.push_back(IFC4X2_IfcWallType_type);defs.push_back(IFC4X2_IfcWindowType_type);
+        IFC4X2_IfcBuildingElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcBlobTexture_type);defs.push_back(IFC4X2_IfcImageTexture_type);defs.push_back(IFC4X2_IfcPixelTexture_type);
+        IFC4X2_IfcSurfaceTexture_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcBlock_type);defs.push_back(IFC4X2_IfcRectangularPyramid_type);defs.push_back(IFC4X2_IfcRightCircularCone_type);defs.push_back(IFC4X2_IfcRightCircularCylinder_type);defs.push_back(IFC4X2_IfcSphere_type);
+        IFC4X2_IfcCsgPrimitive3D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcBooleanClippingResult_type);
+        IFC4X2_IfcBooleanResult_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcBoundaryCurve_type);
+        IFC4X2_IfcCompositeCurveOnSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcBoundaryEdgeCondition_type);defs.push_back(IFC4X2_IfcBoundaryFaceCondition_type);defs.push_back(IFC4X2_IfcBoundaryNodeCondition_type);
+        IFC4X2_IfcBoundaryCondition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcBoundaryNodeConditionWarping_type);
+        IFC4X2_IfcBoundaryNodeCondition_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(6);
@@ -13599,44 +13439,74 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcCurve_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcSpaceType_type);
-        IFC4X2_IfcSpatialStructureElementType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRelAssignsToGroupByFactor_type);
-        IFC4X2_IfcRelAssignsToGroup_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStructuralPlanarAction_type);
-        IFC4X2_IfcStructuralSurfaceAction_type->set_subtypes(defs);
-    }
-    {
         std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcCartesianPoint_type);defs.push_back(IFC4X2_IfcPointOnCurve_type);defs.push_back(IFC4X2_IfcPointOnSurface_type);
-        IFC4X2_IfcPoint_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcFacetedBrepWithVoids_type);
-        IFC4X2_IfcFacetedBrep_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcBoundedSurface_type);defs.push_back(IFC4X2_IfcElementarySurface_type);defs.push_back(IFC4X2_IfcSweptSurface_type);
+        IFC4X2_IfcSurface_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcCircle_type);defs.push_back(IFC4X2_IfcEllipse_type);
-        IFC4X2_IfcConic_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcBoxedHalfSpace_type);defs.push_back(IFC4X2_IfcPolygonalBoundedHalfSpace_type);
+        IFC4X2_IfcHalfSpaceSolid_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcBridge_type);defs.push_back(IFC4X2_IfcBuilding_type);
+        IFC4X2_IfcFacility_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcTriangulatedIrregularNetwork_type);
-        IFC4X2_IfcTriangulatedFaceSet_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcBridgePart_type);
+        IFC4X2_IfcFacilityPart_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStructuralLinearAction_type);
-        IFC4X2_IfcStructuralCurveAction_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(10);
+        defs.push_back(IFC4X2_IfcBuildingElement_type);defs.push_back(IFC4X2_IfcCivilElement_type);defs.push_back(IFC4X2_IfcDistributionElement_type);defs.push_back(IFC4X2_IfcElementAssembly_type);defs.push_back(IFC4X2_IfcElementComponent_type);defs.push_back(IFC4X2_IfcFeatureElement_type);defs.push_back(IFC4X2_IfcFurnishingElement_type);defs.push_back(IFC4X2_IfcGeographicElement_type);defs.push_back(IFC4X2_IfcTransportElement_type);defs.push_back(IFC4X2_IfcVirtualElement_type);
+        IFC4X2_IfcElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC4X2_IfcBuildingElementPart_type);defs.push_back(IFC4X2_IfcDiscreteAccessory_type);defs.push_back(IFC4X2_IfcFastener_type);defs.push_back(IFC4X2_IfcMechanicalFastener_type);defs.push_back(IFC4X2_IfcReinforcingElement_type);defs.push_back(IFC4X2_IfcVibrationDamper_type);defs.push_back(IFC4X2_IfcVibrationIsolator_type);
+        IFC4X2_IfcElementComponent_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC4X2_IfcBuildingElementPartType_type);defs.push_back(IFC4X2_IfcDiscreteAccessoryType_type);defs.push_back(IFC4X2_IfcFastenerType_type);defs.push_back(IFC4X2_IfcMechanicalFastenerType_type);defs.push_back(IFC4X2_IfcReinforcingElementType_type);defs.push_back(IFC4X2_IfcVibrationDamperType_type);defs.push_back(IFC4X2_IfcVibrationIsolatorType_type);
+        IFC4X2_IfcElementComponentType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(8);
+        defs.push_back(IFC4X2_IfcBuildingElementType_type);defs.push_back(IFC4X2_IfcCivilElementType_type);defs.push_back(IFC4X2_IfcDistributionElementType_type);defs.push_back(IFC4X2_IfcElementAssemblyType_type);defs.push_back(IFC4X2_IfcElementComponentType_type);defs.push_back(IFC4X2_IfcFurnishingElementType_type);defs.push_back(IFC4X2_IfcGeographicElementType_type);defs.push_back(IFC4X2_IfcTransportElementType_type);
+        IFC4X2_IfcElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcBuildingStorey_type);defs.push_back(IFC4X2_IfcFacility_type);defs.push_back(IFC4X2_IfcFacilityPart_type);defs.push_back(IFC4X2_IfcSite_type);defs.push_back(IFC4X2_IfcSpace_type);
+        IFC4X2_IfcSpatialStructureElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcBuildingSystem_type);defs.push_back(IFC4X2_IfcDistributionSystem_type);defs.push_back(IFC4X2_IfcStructuralAnalysisModel_type);defs.push_back(IFC4X2_IfcZone_type);
+        IFC4X2_IfcSystem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcCableCarrierFitting_type);defs.push_back(IFC4X2_IfcCableFitting_type);defs.push_back(IFC4X2_IfcDuctFitting_type);defs.push_back(IFC4X2_IfcJunctionBox_type);defs.push_back(IFC4X2_IfcPipeFitting_type);
+        IFC4X2_IfcFlowFitting_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcCableCarrierFittingType_type);defs.push_back(IFC4X2_IfcCableFittingType_type);defs.push_back(IFC4X2_IfcDuctFittingType_type);defs.push_back(IFC4X2_IfcJunctionBoxType_type);defs.push_back(IFC4X2_IfcPipeFittingType_type);
+        IFC4X2_IfcFlowFittingType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcCableCarrierSegment_type);defs.push_back(IFC4X2_IfcCableSegment_type);defs.push_back(IFC4X2_IfcDuctSegment_type);defs.push_back(IFC4X2_IfcPipeSegment_type);
+        IFC4X2_IfcFlowSegment_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcCableCarrierSegmentType_type);defs.push_back(IFC4X2_IfcCableSegmentType_type);defs.push_back(IFC4X2_IfcDuctSegmentType_type);defs.push_back(IFC4X2_IfcPipeSegmentType_type);
+        IFC4X2_IfcFlowSegmentType_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(2);
@@ -13645,33 +13515,148 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcDoorStandardCase_type);
-        IFC4X2_IfcDoor_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcFurnitureType_type);defs.push_back(IFC4X2_IfcSystemFurnitureElementType_type);
-        IFC4X2_IfcFurnishingElementType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcPostalAddress_type);defs.push_back(IFC4X2_IfcTelecomAddress_type);
-        IFC4X2_IfcAddress_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(8);
-        defs.push_back(IFC4X2_IfcBuildingElementType_type);defs.push_back(IFC4X2_IfcCivilElementType_type);defs.push_back(IFC4X2_IfcDistributionElementType_type);defs.push_back(IFC4X2_IfcElementAssemblyType_type);defs.push_back(IFC4X2_IfcElementComponentType_type);defs.push_back(IFC4X2_IfcFurnishingElementType_type);defs.push_back(IFC4X2_IfcGeographicElementType_type);defs.push_back(IFC4X2_IfcTransportElementType_type);
-        IFC4X2_IfcElementType_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcCaissonFoundationType_type);
+        IFC4X2_IfcDeepFoundationType_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcDuctSilencer_type);defs.push_back(IFC4X2_IfcFilter_type);defs.push_back(IFC4X2_IfcInterceptor_type);
-        IFC4X2_IfcFlowTreatmentDevice_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcCartesianPoint_type);defs.push_back(IFC4X2_IfcPointOnCurve_type);defs.push_back(IFC4X2_IfcPointOnSurface_type);
+        IFC4X2_IfcPoint_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcCartesianPointList2D_type);defs.push_back(IFC4X2_IfcCartesianPointList3D_type);
+        IFC4X2_IfcCartesianPointList_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcCartesianTransformationOperator2D_type);defs.push_back(IFC4X2_IfcCartesianTransformationOperator3D_type);
+        IFC4X2_IfcCartesianTransformationOperator_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcCartesianTransformationOperator2DnonUniform_type);
+        IFC4X2_IfcCartesianTransformationOperator2D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcCartesianTransformationOperator3DnonUniform_type);
+        IFC4X2_IfcCartesianTransformationOperator3D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcCenterLineProfileDef_type);
+        IFC4X2_IfcArbitraryOpenProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcCircle_type);defs.push_back(IFC4X2_IfcEllipse_type);
+        IFC4X2_IfcConic_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcCircleHollowProfileDef_type);
+        IFC4X2_IfcCircleProfileDef_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcReinforcementBarProperties_type);defs.push_back(IFC4X2_IfcSectionProperties_type);defs.push_back(IFC4X2_IfcSectionReinforcementProperties_type);
-        IFC4X2_IfcPreDefinedProperties_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcCircularArcSegment2D_type);defs.push_back(IFC4X2_IfcLineSegment2D_type);defs.push_back(IFC4X2_IfcTransitionCurveSegment2D_type);
+        IFC4X2_IfcCurveSegment2D_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcClassification_type);defs.push_back(IFC4X2_IfcDocumentInformation_type);defs.push_back(IFC4X2_IfcLibraryInformation_type);
+        IFC4X2_IfcExternalInformation_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcClassificationReference_type);defs.push_back(IFC4X2_IfcDocumentReference_type);defs.push_back(IFC4X2_IfcExternallyDefinedHatchStyle_type);defs.push_back(IFC4X2_IfcExternallyDefinedSurfaceStyle_type);defs.push_back(IFC4X2_IfcExternallyDefinedTextFont_type);defs.push_back(IFC4X2_IfcLibraryReference_type);
+        IFC4X2_IfcExternalReference_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcClosedShell_type);defs.push_back(IFC4X2_IfcOpenShell_type);
+        IFC4X2_IfcConnectedFaceSet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcColourRgb_type);
+        IFC4X2_IfcColourSpecification_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(17);
+        defs.push_back(IFC4X2_IfcColourRgbList_type);defs.push_back(IFC4X2_IfcColourSpecification_type);defs.push_back(IFC4X2_IfcCurveStyleFont_type);defs.push_back(IFC4X2_IfcCurveStyleFontAndScaling_type);defs.push_back(IFC4X2_IfcCurveStyleFontPattern_type);defs.push_back(IFC4X2_IfcIndexedColourMap_type);defs.push_back(IFC4X2_IfcPreDefinedItem_type);defs.push_back(IFC4X2_IfcSurfaceStyleLighting_type);defs.push_back(IFC4X2_IfcSurfaceStyleRefraction_type);defs.push_back(IFC4X2_IfcSurfaceStyleShading_type);defs.push_back(IFC4X2_IfcSurfaceStyleWithTextures_type);defs.push_back(IFC4X2_IfcSurfaceTexture_type);defs.push_back(IFC4X2_IfcTextStyleForDefinedFont_type);defs.push_back(IFC4X2_IfcTextStyleTextModel_type);defs.push_back(IFC4X2_IfcTextureCoordinate_type);defs.push_back(IFC4X2_IfcTextureVertex_type);defs.push_back(IFC4X2_IfcTextureVertexList_type);
+        IFC4X2_IfcPresentationItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcColumnStandardCase_type);
+        IFC4X2_IfcColumn_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcComplexProperty_type);defs.push_back(IFC4X2_IfcSimpleProperty_type);
+        IFC4X2_IfcProperty_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcComplexPropertyTemplate_type);defs.push_back(IFC4X2_IfcSimplePropertyTemplate_type);
+        IFC4X2_IfcPropertyTemplate_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcCompositeCurveOnSurface_type);
+        IFC4X2_IfcCompositeCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcCompressor_type);defs.push_back(IFC4X2_IfcFan_type);defs.push_back(IFC4X2_IfcPump_type);
+        IFC4X2_IfcFlowMovingDevice_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcCompressorType_type);defs.push_back(IFC4X2_IfcFanType_type);defs.push_back(IFC4X2_IfcPumpType_type);
+        IFC4X2_IfcFlowMovingDeviceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(7);
+        defs.push_back(IFC4X2_IfcConnectedFaceSet_type);defs.push_back(IFC4X2_IfcEdge_type);defs.push_back(IFC4X2_IfcFace_type);defs.push_back(IFC4X2_IfcFaceBound_type);defs.push_back(IFC4X2_IfcLoop_type);defs.push_back(IFC4X2_IfcPath_type);defs.push_back(IFC4X2_IfcVertex_type);
+        IFC4X2_IfcTopologicalRepresentationItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcConnectionCurveGeometry_type);defs.push_back(IFC4X2_IfcConnectionPointGeometry_type);defs.push_back(IFC4X2_IfcConnectionSurfaceGeometry_type);defs.push_back(IFC4X2_IfcConnectionVolumeGeometry_type);
+        IFC4X2_IfcConnectionGeometry_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcConnectionPointEccentricity_type);
+        IFC4X2_IfcConnectionPointGeometry_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcConstructionEquipmentResource_type);defs.push_back(IFC4X2_IfcConstructionMaterialResource_type);defs.push_back(IFC4X2_IfcConstructionProductResource_type);defs.push_back(IFC4X2_IfcCrewResource_type);defs.push_back(IFC4X2_IfcLaborResource_type);defs.push_back(IFC4X2_IfcSubContractResource_type);
+        IFC4X2_IfcConstructionResource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcConstructionEquipmentResourceType_type);defs.push_back(IFC4X2_IfcConstructionMaterialResourceType_type);defs.push_back(IFC4X2_IfcConstructionProductResourceType_type);defs.push_back(IFC4X2_IfcCrewResourceType_type);defs.push_back(IFC4X2_IfcLaborResourceType_type);defs.push_back(IFC4X2_IfcSubContractResourceType_type);
+        IFC4X2_IfcConstructionResourceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcConstructionResource_type);
+        IFC4X2_IfcResource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcConstructionResourceType_type);
+        IFC4X2_IfcTypeResource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcContext_type);defs.push_back(IFC4X2_IfcObject_type);defs.push_back(IFC4X2_IfcTypeObject_type);
+        IFC4X2_IfcObjectDefinition_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(3);
@@ -13680,128 +13665,73 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStructuralLoadCase_type);
-        IFC4X2_IfcStructuralLoadGroup_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcOpeningElement_type);defs.push_back(IFC4X2_IfcVoidingFeature_type);
-        IFC4X2_IfcFeatureElementSubtraction_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcConversionBasedUnitWithOffset_type);
+        IFC4X2_IfcConversionBasedUnit_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcExtrudedAreaSolidTapered_type);
-        IFC4X2_IfcExtrudedAreaSolid_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcCostValue_type);
+        IFC4X2_IfcAppliedValue_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcCircularArcSegment2D_type);defs.push_back(IFC4X2_IfcLineSegment2D_type);defs.push_back(IFC4X2_IfcTransitionCurveSegment2D_type);
-        IFC4X2_IfcCurveSegment2D_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcIntersectionCurve_type);defs.push_back(IFC4X2_IfcSeamCurve_type);
-        IFC4X2_IfcSurfaceCurve_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcEventType_type);defs.push_back(IFC4X2_IfcProcedureType_type);defs.push_back(IFC4X2_IfcTaskType_type);
-        IFC4X2_IfcTypeProcess_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcOpeningStandardCase_type);
-        IFC4X2_IfcOpeningElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcDraughtingPreDefinedCurveFont_type);
-        IFC4X2_IfcPreDefinedCurveFont_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(7);
-        defs.push_back(IFC4X2_IfcBuildingElementPartType_type);defs.push_back(IFC4X2_IfcDiscreteAccessoryType_type);defs.push_back(IFC4X2_IfcFastenerType_type);defs.push_back(IFC4X2_IfcMechanicalFastenerType_type);defs.push_back(IFC4X2_IfcReinforcingElementType_type);defs.push_back(IFC4X2_IfcVibrationDamperType_type);defs.push_back(IFC4X2_IfcVibrationIsolatorType_type);
-        IFC4X2_IfcElementComponentType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBridgePart_type);
-        IFC4X2_IfcFacilityPart_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcProjectionElement_type);
-        IFC4X2_IfcFeatureElementAddition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcIndexedTextureMap_type);defs.push_back(IFC4X2_IfcTextureCoordinateGenerator_type);defs.push_back(IFC4X2_IfcTextureMap_type);
-        IFC4X2_IfcTextureCoordinate_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcStructuralAction_type);defs.push_back(IFC4X2_IfcStructuralReaction_type);
-        IFC4X2_IfcStructuralActivity_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcCsgSolid_type);defs.push_back(IFC4X2_IfcManifoldSolidBrep_type);defs.push_back(IFC4X2_IfcSectionedSolid_type);defs.push_back(IFC4X2_IfcSweptAreaSolid_type);defs.push_back(IFC4X2_IfcSweptDiskSolid_type);
+        IFC4X2_IfcSolidModel_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcLightSourceAmbient_type);defs.push_back(IFC4X2_IfcLightSourceDirectional_type);defs.push_back(IFC4X2_IfcLightSourceGoniometric_type);defs.push_back(IFC4X2_IfcLightSourcePositional_type);
-        IFC4X2_IfcLightSource_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcStructuralCurveMemberVarying_type);
-        IFC4X2_IfcStructuralCurveMember_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcGeometricRepresentationSubContext_type);
-        IFC4X2_IfcGeometricRepresentationContext_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcConstructionResourceType_type);
-        IFC4X2_IfcTypeResource_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcGeometricCurveSet_type);
-        IFC4X2_IfcGeometricSet_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcAdvancedFace_type);
-        IFC4X2_IfcFaceSurface_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(13);
-        defs.push_back(IFC4X2_IfcAirTerminalType_type);defs.push_back(IFC4X2_IfcAudioVisualApplianceType_type);defs.push_back(IFC4X2_IfcCommunicationsApplianceType_type);defs.push_back(IFC4X2_IfcElectricApplianceType_type);defs.push_back(IFC4X2_IfcFireSuppressionTerminalType_type);defs.push_back(IFC4X2_IfcLampType_type);defs.push_back(IFC4X2_IfcLightFixtureType_type);defs.push_back(IFC4X2_IfcMedicalDeviceType_type);defs.push_back(IFC4X2_IfcOutletType_type);defs.push_back(IFC4X2_IfcSanitaryTerminalType_type);defs.push_back(IFC4X2_IfcSpaceHeaterType_type);defs.push_back(IFC4X2_IfcStackTerminalType_type);defs.push_back(IFC4X2_IfcWasteTerminalType_type);
-        IFC4X2_IfcFlowTerminalType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcStructuralLoadStatic_type);defs.push_back(IFC4X2_IfcSurfaceReinforcementArea_type);
-        IFC4X2_IfcStructuralLoadOrResult_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcGridPlacement_type);defs.push_back(IFC4X2_IfcLinearPlacement_type);defs.push_back(IFC4X2_IfcLocalPlacement_type);
-        IFC4X2_IfcObjectPlacement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcSurfaceOfLinearExtrusion_type);defs.push_back(IFC4X2_IfcSurfaceOfRevolution_type);
-        IFC4X2_IfcSweptSurface_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcCurveStyle_type);defs.push_back(IFC4X2_IfcFillAreaStyle_type);defs.push_back(IFC4X2_IfcSurfaceStyle_type);defs.push_back(IFC4X2_IfcTextStyle_type);
+        IFC4X2_IfcPresentationStyle_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcBSplineSurface_type);defs.push_back(IFC4X2_IfcCurveBoundedPlane_type);defs.push_back(IFC4X2_IfcCurveBoundedSurface_type);defs.push_back(IFC4X2_IfcRectangularTrimmedSurface_type);
-        IFC4X2_IfcBoundedSurface_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcCylindricalSurface_type);defs.push_back(IFC4X2_IfcPlane_type);defs.push_back(IFC4X2_IfcSphericalSurface_type);defs.push_back(IFC4X2_IfcToroidalSurface_type);
+        IFC4X2_IfcElementarySurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(9);
+        defs.push_back(IFC4X2_IfcDistributionChamberElement_type);defs.push_back(IFC4X2_IfcEnergyConversionDevice_type);defs.push_back(IFC4X2_IfcFlowController_type);defs.push_back(IFC4X2_IfcFlowFitting_type);defs.push_back(IFC4X2_IfcFlowMovingDevice_type);defs.push_back(IFC4X2_IfcFlowSegment_type);defs.push_back(IFC4X2_IfcFlowStorageDevice_type);defs.push_back(IFC4X2_IfcFlowTerminal_type);defs.push_back(IFC4X2_IfcFlowTreatmentDevice_type);
+        IFC4X2_IfcDistributionFlowElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(9);
+        defs.push_back(IFC4X2_IfcDistributionChamberElementType_type);defs.push_back(IFC4X2_IfcEnergyConversionDeviceType_type);defs.push_back(IFC4X2_IfcFlowControllerType_type);defs.push_back(IFC4X2_IfcFlowFittingType_type);defs.push_back(IFC4X2_IfcFlowMovingDeviceType_type);defs.push_back(IFC4X2_IfcFlowSegmentType_type);defs.push_back(IFC4X2_IfcFlowStorageDeviceType_type);defs.push_back(IFC4X2_IfcFlowTerminalType_type);defs.push_back(IFC4X2_IfcFlowTreatmentDeviceType_type);
+        IFC4X2_IfcDistributionFlowElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcDistributionCircuit_type);
+        IFC4X2_IfcDistributionSystem_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcElectricFlowStorageDevice_type);defs.push_back(IFC4X2_IfcTank_type);
-        IFC4X2_IfcFlowStorageDevice_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcDistributionControlElement_type);defs.push_back(IFC4X2_IfcDistributionFlowElement_type);
+        IFC4X2_IfcDistributionElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcDistributionControlElementType_type);defs.push_back(IFC4X2_IfcDistributionFlowElementType_type);
+        IFC4X2_IfcDistributionElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcDistributionPort_type);
+        IFC4X2_IfcPort_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcDoorLiningProperties_type);defs.push_back(IFC4X2_IfcDoorPanelProperties_type);defs.push_back(IFC4X2_IfcPermeableCoveringProperties_type);defs.push_back(IFC4X2_IfcReinforcementDefinitionProperties_type);defs.push_back(IFC4X2_IfcWindowLiningProperties_type);defs.push_back(IFC4X2_IfcWindowPanelProperties_type);
+        IFC4X2_IfcPreDefinedPropertySet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcDoorStandardCase_type);
+        IFC4X2_IfcDoor_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcDoorStyle_type);defs.push_back(IFC4X2_IfcElementType_type);defs.push_back(IFC4X2_IfcSpatialElementType_type);defs.push_back(IFC4X2_IfcWindowStyle_type);
+        IFC4X2_IfcTypeProduct_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
@@ -13809,74 +13739,59 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcPreDefinedColour_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcStructuralConnection_type);defs.push_back(IFC4X2_IfcStructuralMember_type);
-        IFC4X2_IfcStructuralItem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcConstructionEquipmentResourceType_type);defs.push_back(IFC4X2_IfcConstructionMaterialResourceType_type);defs.push_back(IFC4X2_IfcConstructionProductResourceType_type);defs.push_back(IFC4X2_IfcCrewResourceType_type);defs.push_back(IFC4X2_IfcLaborResourceType_type);defs.push_back(IFC4X2_IfcSubContractResourceType_type);
-        IFC4X2_IfcConstructionResourceType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcCableCarrierFitting_type);defs.push_back(IFC4X2_IfcCableFitting_type);defs.push_back(IFC4X2_IfcDuctFitting_type);defs.push_back(IFC4X2_IfcJunctionBox_type);defs.push_back(IFC4X2_IfcPipeFitting_type);
-        IFC4X2_IfcFlowFitting_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcAlignment2DHorizontalSegment_type);defs.push_back(IFC4X2_IfcAlignment2DVerticalSegment_type);
-        IFC4X2_IfcAlignment2DSegment_type->set_subtypes(defs);
-    }
-    {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcFaceOuterBound_type);
-        IFC4X2_IfcFaceBound_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcSweptDiskSolidPolygonal_type);
-        IFC4X2_IfcSweptDiskSolid_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcPolygonalFaceSet_type);defs.push_back(IFC4X2_IfcTriangulatedFaceSet_type);
-        IFC4X2_IfcTessellatedFaceSet_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcDraughtingPreDefinedCurveFont_type);
+        IFC4X2_IfcPreDefinedCurveFont_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcPreDefinedColour_type);defs.push_back(IFC4X2_IfcPreDefinedCurveFont_type);defs.push_back(IFC4X2_IfcPreDefinedTextFont_type);
-        IFC4X2_IfcPreDefinedItem_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcDuctSilencer_type);defs.push_back(IFC4X2_IfcFilter_type);defs.push_back(IFC4X2_IfcInterceptor_type);
+        IFC4X2_IfcFlowTreatmentDevice_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcDuctSilencerType_type);defs.push_back(IFC4X2_IfcFilterType_type);defs.push_back(IFC4X2_IfcInterceptorType_type);
+        IFC4X2_IfcFlowTreatmentDeviceType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcEdgeCurve_type);defs.push_back(IFC4X2_IfcOrientedEdge_type);defs.push_back(IFC4X2_IfcSubedge_type);
+        IFC4X2_IfcEdge_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcEdgeLoop_type);defs.push_back(IFC4X2_IfcPolyLoop_type);defs.push_back(IFC4X2_IfcVertexLoop_type);
+        IFC4X2_IfcLoop_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcElectricFlowStorageDevice_type);defs.push_back(IFC4X2_IfcTank_type);
+        IFC4X2_IfcFlowStorageDevice_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcElectricFlowStorageDeviceType_type);defs.push_back(IFC4X2_IfcTankType_type);
+        IFC4X2_IfcFlowStorageDeviceType_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRelSpaceBoundary1stLevel_type);
-        IFC4X2_IfcRelSpaceBoundary_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcElementQuantity_type);
+        IFC4X2_IfcQuantitySet_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(7);
-        defs.push_back(IFC4X2_IfcActuator_type);defs.push_back(IFC4X2_IfcAlarm_type);defs.push_back(IFC4X2_IfcController_type);defs.push_back(IFC4X2_IfcFlowInstrument_type);defs.push_back(IFC4X2_IfcProtectiveDeviceTrippingUnit_type);defs.push_back(IFC4X2_IfcSensor_type);defs.push_back(IFC4X2_IfcUnitaryControlElement_type);
-        IFC4X2_IfcDistributionControlElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRelConnectsWithEccentricity_type);
-        IFC4X2_IfcRelConnectsStructuralMember_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcMirroredProfileDef_type);
-        IFC4X2_IfcDerivedProfileDef_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcEvent_type);defs.push_back(IFC4X2_IfcProcedure_type);defs.push_back(IFC4X2_IfcTask_type);
+        IFC4X2_IfcProcess_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcStructuralLoadLinearForce_type);defs.push_back(IFC4X2_IfcStructuralLoadPlanarForce_type);defs.push_back(IFC4X2_IfcStructuralLoadSingleDisplacement_type);defs.push_back(IFC4X2_IfcStructuralLoadSingleForce_type);defs.push_back(IFC4X2_IfcStructuralLoadTemperature_type);
-        IFC4X2_IfcStructuralLoadStatic_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcEventTime_type);defs.push_back(IFC4X2_IfcLagTime_type);defs.push_back(IFC4X2_IfcResourceTime_type);defs.push_back(IFC4X2_IfcTaskTime_type);defs.push_back(IFC4X2_IfcWorkTime_type);
+        IFC4X2_IfcSchedulingTime_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBoundaryNodeConditionWarping_type);
-        IFC4X2_IfcBoundaryNodeCondition_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcEventType_type);defs.push_back(IFC4X2_IfcProcedureType_type);defs.push_back(IFC4X2_IfcTaskType_type);
+        IFC4X2_IfcTypeProcess_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(4);
@@ -13885,18 +13800,128 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcSectionedSolidHorizontal_type);
-        IFC4X2_IfcSectionedSolid_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcExternalSpatialElement_type);
+        IFC4X2_IfcExternalSpatialStructureElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcExternalSpatialStructureElement_type);defs.push_back(IFC4X2_IfcSpatialStructureElement_type);defs.push_back(IFC4X2_IfcSpatialZone_type);
+        IFC4X2_IfcSpatialElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcExtrudedAreaSolid_type);defs.push_back(IFC4X2_IfcFixedReferenceSweptAreaSolid_type);defs.push_back(IFC4X2_IfcRevolvedAreaSolid_type);defs.push_back(IFC4X2_IfcSurfaceCurveSweptAreaSolid_type);
+        IFC4X2_IfcSweptAreaSolid_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCircleHollowProfileDef_type);
-        IFC4X2_IfcCircleProfileDef_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcExtrudedAreaSolidTapered_type);
+        IFC4X2_IfcExtrudedAreaSolid_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(16);
-        defs.push_back(IFC4X2_IfcRelConnectsElements_type);defs.push_back(IFC4X2_IfcRelConnectsPortToElement_type);defs.push_back(IFC4X2_IfcRelConnectsPorts_type);defs.push_back(IFC4X2_IfcRelConnectsStructuralActivity_type);defs.push_back(IFC4X2_IfcRelConnectsStructuralMember_type);defs.push_back(IFC4X2_IfcRelContainedInSpatialStructure_type);defs.push_back(IFC4X2_IfcRelCoversBldgElements_type);defs.push_back(IFC4X2_IfcRelCoversSpaces_type);defs.push_back(IFC4X2_IfcRelFillsElement_type);defs.push_back(IFC4X2_IfcRelFlowControlElements_type);defs.push_back(IFC4X2_IfcRelInterferesElements_type);defs.push_back(IFC4X2_IfcRelPositions_type);defs.push_back(IFC4X2_IfcRelReferencedInSpatialStructure_type);defs.push_back(IFC4X2_IfcRelSequence_type);defs.push_back(IFC4X2_IfcRelServicesBuildings_type);defs.push_back(IFC4X2_IfcRelSpaceBoundary_type);
-        IFC4X2_IfcRelConnects_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcFaceOuterBound_type);
+        IFC4X2_IfcFaceBound_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcFaceSurface_type);
+        IFC4X2_IfcFace_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcFacetedBrepWithVoids_type);
+        IFC4X2_IfcFacetedBrep_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcFailureConnectionCondition_type);defs.push_back(IFC4X2_IfcSlippageConnectionCondition_type);
+        IFC4X2_IfcStructuralConnectionCondition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcFeatureElementAddition_type);defs.push_back(IFC4X2_IfcFeatureElementSubtraction_type);defs.push_back(IFC4X2_IfcSurfaceFeature_type);
+        IFC4X2_IfcFeatureElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcFurniture_type);defs.push_back(IFC4X2_IfcSystemFurnitureElement_type);
+        IFC4X2_IfcFurnishingElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcFurnitureType_type);defs.push_back(IFC4X2_IfcSystemFurnitureElementType_type);
+        IFC4X2_IfcFurnishingElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcGeometricCurveSet_type);
+        IFC4X2_IfcGeometricSet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcGeometricRepresentationContext_type);
+        IFC4X2_IfcRepresentationContext_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcGeometricRepresentationItem_type);defs.push_back(IFC4X2_IfcMappedItem_type);defs.push_back(IFC4X2_IfcStyledItem_type);defs.push_back(IFC4X2_IfcTopologicalRepresentationItem_type);
+        IFC4X2_IfcRepresentationItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcGeometricRepresentationSubContext_type);
+        IFC4X2_IfcGeometricRepresentationContext_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcGrid_type);defs.push_back(IFC4X2_IfcLinearPositioningElement_type);defs.push_back(IFC4X2_IfcReferent_type);
+        IFC4X2_IfcPositioningElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcGridPlacement_type);defs.push_back(IFC4X2_IfcLinearPlacement_type);defs.push_back(IFC4X2_IfcLocalPlacement_type);
+        IFC4X2_IfcObjectPlacement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcIndexedPolygonalFace_type);defs.push_back(IFC4X2_IfcTessellatedFaceSet_type);
+        IFC4X2_IfcTessellatedItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcIndexedPolygonalFaceWithVoids_type);
+        IFC4X2_IfcIndexedPolygonalFace_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcIndexedTextureMap_type);defs.push_back(IFC4X2_IfcTextureCoordinateGenerator_type);defs.push_back(IFC4X2_IfcTextureMap_type);
+        IFC4X2_IfcTextureCoordinate_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcIndexedTriangleTextureMap_type);
+        IFC4X2_IfcIndexedTextureMap_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcIntersectionCurve_type);defs.push_back(IFC4X2_IfcSeamCurve_type);
+        IFC4X2_IfcSurfaceCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcIrregularTimeSeries_type);defs.push_back(IFC4X2_IfcRegularTimeSeries_type);
+        IFC4X2_IfcTimeSeries_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(4);
+        defs.push_back(IFC4X2_IfcLightSourceAmbient_type);defs.push_back(IFC4X2_IfcLightSourceDirectional_type);defs.push_back(IFC4X2_IfcLightSourceGoniometric_type);defs.push_back(IFC4X2_IfcLightSourcePositional_type);
+        IFC4X2_IfcLightSource_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcLightSourceSpot_type);
+        IFC4X2_IfcLightSourcePositional_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
@@ -13910,8 +13935,183 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
     }
     {
         std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcElectricFlowStorageDeviceType_type);defs.push_back(IFC4X2_IfcTankType_type);
-        IFC4X2_IfcFlowStorageDeviceType_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcMaterialDefinitionRepresentation_type);defs.push_back(IFC4X2_IfcProductDefinitionShape_type);
+        IFC4X2_IfcProductRepresentation_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcMaterialLayerSetUsage_type);defs.push_back(IFC4X2_IfcMaterialProfileSetUsage_type);
+        IFC4X2_IfcMaterialUsageDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcMaterialLayerWithOffsets_type);
+        IFC4X2_IfcMaterialLayer_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcMaterialProfileSetUsageTapering_type);
+        IFC4X2_IfcMaterialProfileSetUsage_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcMaterialProfileWithOffsets_type);
+        IFC4X2_IfcMaterialProfile_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcMaterialProperties_type);defs.push_back(IFC4X2_IfcProfileProperties_type);
+        IFC4X2_IfcExtendedProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcMemberStandardCase_type);
+        IFC4X2_IfcMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcMetric_type);defs.push_back(IFC4X2_IfcObjective_type);
+        IFC4X2_IfcConstraint_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcMirroredProfileDef_type);
+        IFC4X2_IfcDerivedProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcObjectDefinition_type);defs.push_back(IFC4X2_IfcPropertyDefinition_type);defs.push_back(IFC4X2_IfcRelationship_type);
+        IFC4X2_IfcRoot_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcOccupant_type);
+        IFC4X2_IfcActor_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcOffsetCurve2D_type);defs.push_back(IFC4X2_IfcOffsetCurve3D_type);defs.push_back(IFC4X2_IfcOffsetCurveByDistances_type);
+        IFC4X2_IfcOffsetCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcOpeningElement_type);defs.push_back(IFC4X2_IfcVoidingFeature_type);
+        IFC4X2_IfcFeatureElementSubtraction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcOpeningStandardCase_type);
+        IFC4X2_IfcOpeningElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcOuterBoundaryCurve_type);
+        IFC4X2_IfcBoundaryCurve_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcPhysicalComplexQuantity_type);defs.push_back(IFC4X2_IfcPhysicalSimpleQuantity_type);
+        IFC4X2_IfcPhysicalQuantity_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcPlanarBox_type);
+        IFC4X2_IfcPlanarExtent_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcPlateStandardCase_type);
+        IFC4X2_IfcPlate_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcPolygonalFaceSet_type);defs.push_back(IFC4X2_IfcTriangulatedFaceSet_type);
+        IFC4X2_IfcTessellatedFaceSet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcPostalAddress_type);defs.push_back(IFC4X2_IfcTelecomAddress_type);
+        IFC4X2_IfcAddress_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcPreDefinedColour_type);defs.push_back(IFC4X2_IfcPreDefinedCurveFont_type);defs.push_back(IFC4X2_IfcPreDefinedTextFont_type);
+        IFC4X2_IfcPreDefinedItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcPreDefinedPropertySet_type);defs.push_back(IFC4X2_IfcPropertySet_type);defs.push_back(IFC4X2_IfcQuantitySet_type);
+        IFC4X2_IfcPropertySetDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcPresentationLayerWithStyle_type);
+        IFC4X2_IfcPresentationLayerAssignment_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcProject_type);defs.push_back(IFC4X2_IfcProjectLibrary_type);
+        IFC4X2_IfcContext_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcProjectedCRS_type);
+        IFC4X2_IfcCoordinateReferenceSystem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcProjectionElement_type);
+        IFC4X2_IfcFeatureElementAddition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcPropertyBoundedValue_type);defs.push_back(IFC4X2_IfcPropertyEnumeratedValue_type);defs.push_back(IFC4X2_IfcPropertyListValue_type);defs.push_back(IFC4X2_IfcPropertyReferenceValue_type);defs.push_back(IFC4X2_IfcPropertySingleValue_type);defs.push_back(IFC4X2_IfcPropertyTableValue_type);
+        IFC4X2_IfcSimpleProperty_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcPropertySetDefinition_type);defs.push_back(IFC4X2_IfcPropertyTemplateDefinition_type);
+        IFC4X2_IfcPropertyDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcPropertySetTemplate_type);defs.push_back(IFC4X2_IfcPropertyTemplate_type);
+        IFC4X2_IfcPropertyTemplateDefinition_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcQuantityArea_type);defs.push_back(IFC4X2_IfcQuantityCount_type);defs.push_back(IFC4X2_IfcQuantityLength_type);defs.push_back(IFC4X2_IfcQuantityTime_type);defs.push_back(IFC4X2_IfcQuantityVolume_type);defs.push_back(IFC4X2_IfcQuantityWeight_type);
+        IFC4X2_IfcPhysicalSimpleQuantity_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcRationalBSplineCurveWithKnots_type);
+        IFC4X2_IfcBSplineCurveWithKnots_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcRationalBSplineSurfaceWithKnots_type);
+        IFC4X2_IfcBSplineSurfaceWithKnots_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcRectangleHollowProfileDef_type);defs.push_back(IFC4X2_IfcRoundedRectangleProfileDef_type);
+        IFC4X2_IfcRectangleProfileDef_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcReinforcementBarProperties_type);defs.push_back(IFC4X2_IfcSectionProperties_type);defs.push_back(IFC4X2_IfcSectionReinforcementProperties_type);
+        IFC4X2_IfcPreDefinedProperties_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcReinforcingBar_type);defs.push_back(IFC4X2_IfcReinforcingMesh_type);defs.push_back(IFC4X2_IfcTendon_type);defs.push_back(IFC4X2_IfcTendonAnchor_type);defs.push_back(IFC4X2_IfcTendonConduit_type);
+        IFC4X2_IfcReinforcingElement_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcReinforcingBarType_type);defs.push_back(IFC4X2_IfcReinforcingMeshType_type);defs.push_back(IFC4X2_IfcTendonAnchorType_type);defs.push_back(IFC4X2_IfcTendonConduitType_type);defs.push_back(IFC4X2_IfcTendonType_type);
+        IFC4X2_IfcReinforcingElementType_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(4);
@@ -13924,19 +14124,34 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcRelationship_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcStructuralCurveAction_type);defs.push_back(IFC4X2_IfcStructuralPointAction_type);defs.push_back(IFC4X2_IfcStructuralSurfaceAction_type);
-        IFC4X2_IfcStructuralAction_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(23);
-        defs.push_back(IFC4X2_IfcBeamType_type);defs.push_back(IFC4X2_IfcBearingType_type);defs.push_back(IFC4X2_IfcBuildingElementProxyType_type);defs.push_back(IFC4X2_IfcChimneyType_type);defs.push_back(IFC4X2_IfcColumnType_type);defs.push_back(IFC4X2_IfcCoveringType_type);defs.push_back(IFC4X2_IfcCurtainWallType_type);defs.push_back(IFC4X2_IfcDeepFoundationType_type);defs.push_back(IFC4X2_IfcDoorType_type);defs.push_back(IFC4X2_IfcFootingType_type);defs.push_back(IFC4X2_IfcMemberType_type);defs.push_back(IFC4X2_IfcPileType_type);defs.push_back(IFC4X2_IfcPlateType_type);defs.push_back(IFC4X2_IfcRailingType_type);defs.push_back(IFC4X2_IfcRampFlightType_type);defs.push_back(IFC4X2_IfcRampType_type);defs.push_back(IFC4X2_IfcRoofType_type);defs.push_back(IFC4X2_IfcShadingDeviceType_type);defs.push_back(IFC4X2_IfcSlabType_type);defs.push_back(IFC4X2_IfcStairFlightType_type);defs.push_back(IFC4X2_IfcStairType_type);defs.push_back(IFC4X2_IfcWallType_type);defs.push_back(IFC4X2_IfcWindowType_type);
-        IFC4X2_IfcBuildingElementType_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcRelAssignsToActor_type);defs.push_back(IFC4X2_IfcRelAssignsToControl_type);defs.push_back(IFC4X2_IfcRelAssignsToGroup_type);defs.push_back(IFC4X2_IfcRelAssignsToProcess_type);defs.push_back(IFC4X2_IfcRelAssignsToProduct_type);defs.push_back(IFC4X2_IfcRelAssignsToResource_type);
+        IFC4X2_IfcRelAssigns_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcElementQuantity_type);
-        IFC4X2_IfcQuantitySet_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcRelAssignsToGroupByFactor_type);
+        IFC4X2_IfcRelAssignsToGroup_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(6);
+        defs.push_back(IFC4X2_IfcRelAssociatesApproval_type);defs.push_back(IFC4X2_IfcRelAssociatesClassification_type);defs.push_back(IFC4X2_IfcRelAssociatesConstraint_type);defs.push_back(IFC4X2_IfcRelAssociatesDocument_type);defs.push_back(IFC4X2_IfcRelAssociatesLibrary_type);defs.push_back(IFC4X2_IfcRelAssociatesMaterial_type);
+        IFC4X2_IfcRelAssociates_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(16);
+        defs.push_back(IFC4X2_IfcRelConnectsElements_type);defs.push_back(IFC4X2_IfcRelConnectsPortToElement_type);defs.push_back(IFC4X2_IfcRelConnectsPorts_type);defs.push_back(IFC4X2_IfcRelConnectsStructuralActivity_type);defs.push_back(IFC4X2_IfcRelConnectsStructuralMember_type);defs.push_back(IFC4X2_IfcRelContainedInSpatialStructure_type);defs.push_back(IFC4X2_IfcRelCoversBldgElements_type);defs.push_back(IFC4X2_IfcRelCoversSpaces_type);defs.push_back(IFC4X2_IfcRelFillsElement_type);defs.push_back(IFC4X2_IfcRelFlowControlElements_type);defs.push_back(IFC4X2_IfcRelInterferesElements_type);defs.push_back(IFC4X2_IfcRelPositions_type);defs.push_back(IFC4X2_IfcRelReferencedInSpatialStructure_type);defs.push_back(IFC4X2_IfcRelSequence_type);defs.push_back(IFC4X2_IfcRelServicesBuildings_type);defs.push_back(IFC4X2_IfcRelSpaceBoundary_type);
+        IFC4X2_IfcRelConnects_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcRelConnectsPathElements_type);defs.push_back(IFC4X2_IfcRelConnectsWithRealizingElements_type);
+        IFC4X2_IfcRelConnectsElements_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcRelConnectsWithEccentricity_type);
+        IFC4X2_IfcRelConnectsStructuralMember_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(4);
@@ -13944,339 +14159,14 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcRelDefines_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcIndexedPolygonalFace_type);defs.push_back(IFC4X2_IfcTessellatedFaceSet_type);
-        IFC4X2_IfcTessellatedItem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcMetric_type);defs.push_back(IFC4X2_IfcObjective_type);
-        IFC4X2_IfcConstraint_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcShapeRepresentation_type);defs.push_back(IFC4X2_IfcTopologyRepresentation_type);
-        IFC4X2_IfcShapeModel_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcRelSpaceBoundary1stLevel_type);
+        IFC4X2_IfcRelSpaceBoundary_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcAdvancedBrepWithVoids_type);
-        IFC4X2_IfcAdvancedBrep_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(7);
-        defs.push_back(IFC4X2_IfcConnectedFaceSet_type);defs.push_back(IFC4X2_IfcEdge_type);defs.push_back(IFC4X2_IfcFace_type);defs.push_back(IFC4X2_IfcFaceBound_type);defs.push_back(IFC4X2_IfcLoop_type);defs.push_back(IFC4X2_IfcPath_type);defs.push_back(IFC4X2_IfcVertex_type);
-        IFC4X2_IfcTopologicalRepresentationItem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcExternalSpatialElement_type);
-        IFC4X2_IfcExternalSpatialStructureElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(17);
-        defs.push_back(IFC4X2_IfcColourRgbList_type);defs.push_back(IFC4X2_IfcColourSpecification_type);defs.push_back(IFC4X2_IfcCurveStyleFont_type);defs.push_back(IFC4X2_IfcCurveStyleFontAndScaling_type);defs.push_back(IFC4X2_IfcCurveStyleFontPattern_type);defs.push_back(IFC4X2_IfcIndexedColourMap_type);defs.push_back(IFC4X2_IfcPreDefinedItem_type);defs.push_back(IFC4X2_IfcSurfaceStyleLighting_type);defs.push_back(IFC4X2_IfcSurfaceStyleRefraction_type);defs.push_back(IFC4X2_IfcSurfaceStyleShading_type);defs.push_back(IFC4X2_IfcSurfaceStyleWithTextures_type);defs.push_back(IFC4X2_IfcSurfaceTexture_type);defs.push_back(IFC4X2_IfcTextStyleForDefinedFont_type);defs.push_back(IFC4X2_IfcTextStyleTextModel_type);defs.push_back(IFC4X2_IfcTextureCoordinate_type);defs.push_back(IFC4X2_IfcTextureVertex_type);defs.push_back(IFC4X2_IfcTextureVertexList_type);
-        IFC4X2_IfcPresentationItem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcTaskTimeRecurring_type);
-        IFC4X2_IfcTaskTime_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcEdgeLoop_type);defs.push_back(IFC4X2_IfcPolyLoop_type);defs.push_back(IFC4X2_IfcVertexLoop_type);
-        IFC4X2_IfcLoop_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcTypeProcess_type);defs.push_back(IFC4X2_IfcTypeProduct_type);defs.push_back(IFC4X2_IfcTypeResource_type);
-        IFC4X2_IfcTypeObject_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcClosedShell_type);defs.push_back(IFC4X2_IfcOpenShell_type);
-        IFC4X2_IfcConnectedFaceSet_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcSurfaceStyleRendering_type);
-        IFC4X2_IfcSurfaceStyleShading_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcMaterialLayerSetUsage_type);defs.push_back(IFC4X2_IfcMaterialProfileSetUsage_type);
-        IFC4X2_IfcMaterialUsageDefinition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcGrid_type);defs.push_back(IFC4X2_IfcLinearPositioningElement_type);defs.push_back(IFC4X2_IfcReferent_type);
-        IFC4X2_IfcPositioningElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(8);
-        defs.push_back(IFC4X2_IfcAnnotation_type);defs.push_back(IFC4X2_IfcElement_type);defs.push_back(IFC4X2_IfcPort_type);defs.push_back(IFC4X2_IfcPositioningElement_type);defs.push_back(IFC4X2_IfcProxy_type);defs.push_back(IFC4X2_IfcSpatialElement_type);defs.push_back(IFC4X2_IfcStructuralActivity_type);defs.push_back(IFC4X2_IfcStructuralItem_type);
-        IFC4X2_IfcProduct_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(10);
-        defs.push_back(IFC4X2_IfcBuildingElement_type);defs.push_back(IFC4X2_IfcCivilElement_type);defs.push_back(IFC4X2_IfcDistributionElement_type);defs.push_back(IFC4X2_IfcElementAssembly_type);defs.push_back(IFC4X2_IfcElementComponent_type);defs.push_back(IFC4X2_IfcFeatureElement_type);defs.push_back(IFC4X2_IfcFurnishingElement_type);defs.push_back(IFC4X2_IfcGeographicElement_type);defs.push_back(IFC4X2_IfcTransportElement_type);defs.push_back(IFC4X2_IfcVirtualElement_type);
-        IFC4X2_IfcElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcGeometricRepresentationContext_type);
-        IFC4X2_IfcRepresentationContext_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcLightSourceSpot_type);
-        IFC4X2_IfcLightSourcePositional_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcColumnStandardCase_type);
-        IFC4X2_IfcColumn_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcContext_type);defs.push_back(IFC4X2_IfcObject_type);defs.push_back(IFC4X2_IfcTypeObject_type);
-        IFC4X2_IfcObjectDefinition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcCartesianTransformationOperator2D_type);defs.push_back(IFC4X2_IfcCartesianTransformationOperator3D_type);
-        IFC4X2_IfcCartesianTransformationOperator_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcCylindricalSurface_type);defs.push_back(IFC4X2_IfcPlane_type);defs.push_back(IFC4X2_IfcSphericalSurface_type);defs.push_back(IFC4X2_IfcToroidalSurface_type);
-        IFC4X2_IfcElementarySurface_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcAsset_type);defs.push_back(IFC4X2_IfcInventory_type);defs.push_back(IFC4X2_IfcStructuralLoadGroup_type);defs.push_back(IFC4X2_IfcStructuralResultGroup_type);defs.push_back(IFC4X2_IfcSystem_type);
-        IFC4X2_IfcGroup_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcSpatialStructureElementType_type);defs.push_back(IFC4X2_IfcSpatialZoneType_type);
-        IFC4X2_IfcSpatialElementType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcEdgeCurve_type);defs.push_back(IFC4X2_IfcOrientedEdge_type);defs.push_back(IFC4X2_IfcSubedge_type);
-        IFC4X2_IfcEdge_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(7);
-        defs.push_back(IFC4X2_IfcActuatorType_type);defs.push_back(IFC4X2_IfcAlarmType_type);defs.push_back(IFC4X2_IfcControllerType_type);defs.push_back(IFC4X2_IfcFlowInstrumentType_type);defs.push_back(IFC4X2_IfcProtectiveDeviceTrippingUnitType_type);defs.push_back(IFC4X2_IfcSensorType_type);defs.push_back(IFC4X2_IfcUnitaryControlElementType_type);
-        IFC4X2_IfcDistributionControlElementType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcCurveStyle_type);defs.push_back(IFC4X2_IfcFillAreaStyle_type);defs.push_back(IFC4X2_IfcSurfaceStyle_type);defs.push_back(IFC4X2_IfcTextStyle_type);
-        IFC4X2_IfcPresentationStyle_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcReinforcingBar_type);defs.push_back(IFC4X2_IfcReinforcingMesh_type);defs.push_back(IFC4X2_IfcTendon_type);defs.push_back(IFC4X2_IfcTendonAnchor_type);defs.push_back(IFC4X2_IfcTendonConduit_type);
-        IFC4X2_IfcReinforcingElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBooleanClippingResult_type);
-        IFC4X2_IfcBooleanResult_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcPropertySetTemplate_type);defs.push_back(IFC4X2_IfcPropertyTemplate_type);
-        IFC4X2_IfcPropertyTemplateDefinition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(9);
-        defs.push_back(IFC4X2_IfcDistributionChamberElementType_type);defs.push_back(IFC4X2_IfcEnergyConversionDeviceType_type);defs.push_back(IFC4X2_IfcFlowControllerType_type);defs.push_back(IFC4X2_IfcFlowFittingType_type);defs.push_back(IFC4X2_IfcFlowMovingDeviceType_type);defs.push_back(IFC4X2_IfcFlowSegmentType_type);defs.push_back(IFC4X2_IfcFlowStorageDeviceType_type);defs.push_back(IFC4X2_IfcFlowTerminalType_type);defs.push_back(IFC4X2_IfcFlowTreatmentDeviceType_type);
-        IFC4X2_IfcDistributionFlowElementType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcConnectionCurveGeometry_type);defs.push_back(IFC4X2_IfcConnectionPointGeometry_type);defs.push_back(IFC4X2_IfcConnectionSurfaceGeometry_type);defs.push_back(IFC4X2_IfcConnectionVolumeGeometry_type);
-        IFC4X2_IfcConnectionGeometry_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcProject_type);defs.push_back(IFC4X2_IfcProjectLibrary_type);
-        IFC4X2_IfcContext_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcMaterialProfileWithOffsets_type);
-        IFC4X2_IfcMaterialProfile_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcConstructionEquipmentResource_type);defs.push_back(IFC4X2_IfcConstructionMaterialResource_type);defs.push_back(IFC4X2_IfcConstructionProductResource_type);defs.push_back(IFC4X2_IfcCrewResource_type);defs.push_back(IFC4X2_IfcLaborResource_type);defs.push_back(IFC4X2_IfcSubContractResource_type);
-        IFC4X2_IfcConstructionResource_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcRelAssignsToActor_type);defs.push_back(IFC4X2_IfcRelAssignsToControl_type);defs.push_back(IFC4X2_IfcRelAssignsToGroup_type);defs.push_back(IFC4X2_IfcRelAssignsToProcess_type);defs.push_back(IFC4X2_IfcRelAssignsToProduct_type);defs.push_back(IFC4X2_IfcRelAssignsToResource_type);
-        IFC4X2_IfcRelAssigns_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcFeatureElementAddition_type);defs.push_back(IFC4X2_IfcFeatureElementSubtraction_type);defs.push_back(IFC4X2_IfcSurfaceFeature_type);
-        IFC4X2_IfcFeatureElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcDistributionPort_type);
-        IFC4X2_IfcPort_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcPreDefinedPropertySet_type);defs.push_back(IFC4X2_IfcPropertySet_type);defs.push_back(IFC4X2_IfcQuantitySet_type);
-        IFC4X2_IfcPropertySetDefinition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcConstructionResource_type);
-        IFC4X2_IfcResource_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCartesianTransformationOperator2DnonUniform_type);
-        IFC4X2_IfcCartesianTransformationOperator2D_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(22);
-        defs.push_back(IFC4X2_IfcBeam_type);defs.push_back(IFC4X2_IfcBearing_type);defs.push_back(IFC4X2_IfcBuildingElementProxy_type);defs.push_back(IFC4X2_IfcChimney_type);defs.push_back(IFC4X2_IfcColumn_type);defs.push_back(IFC4X2_IfcCovering_type);defs.push_back(IFC4X2_IfcCurtainWall_type);defs.push_back(IFC4X2_IfcDeepFoundation_type);defs.push_back(IFC4X2_IfcDoor_type);defs.push_back(IFC4X2_IfcFooting_type);defs.push_back(IFC4X2_IfcMember_type);defs.push_back(IFC4X2_IfcPlate_type);defs.push_back(IFC4X2_IfcRailing_type);defs.push_back(IFC4X2_IfcRamp_type);defs.push_back(IFC4X2_IfcRampFlight_type);defs.push_back(IFC4X2_IfcRoof_type);defs.push_back(IFC4X2_IfcShadingDevice_type);defs.push_back(IFC4X2_IfcSlab_type);defs.push_back(IFC4X2_IfcStair_type);defs.push_back(IFC4X2_IfcStairFlight_type);defs.push_back(IFC4X2_IfcWall_type);defs.push_back(IFC4X2_IfcWindow_type);
-        IFC4X2_IfcBuildingElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcMaterialProfileSetUsageTapering_type);
-        IFC4X2_IfcMaterialProfileSetUsage_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcPhysicalComplexQuantity_type);defs.push_back(IFC4X2_IfcPhysicalSimpleQuantity_type);
-        IFC4X2_IfcPhysicalQuantity_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(11);
-        defs.push_back(IFC4X2_IfcAsymmetricIShapeProfileDef_type);defs.push_back(IFC4X2_IfcCShapeProfileDef_type);defs.push_back(IFC4X2_IfcCircleProfileDef_type);defs.push_back(IFC4X2_IfcEllipseProfileDef_type);defs.push_back(IFC4X2_IfcIShapeProfileDef_type);defs.push_back(IFC4X2_IfcLShapeProfileDef_type);defs.push_back(IFC4X2_IfcRectangleProfileDef_type);defs.push_back(IFC4X2_IfcTShapeProfileDef_type);defs.push_back(IFC4X2_IfcTrapeziumProfileDef_type);defs.push_back(IFC4X2_IfcUShapeProfileDef_type);defs.push_back(IFC4X2_IfcZShapeProfileDef_type);
-        IFC4X2_IfcParameterizedProfileDef_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(6);
-        defs.push_back(IFC4X2_IfcPropertyBoundedValue_type);defs.push_back(IFC4X2_IfcPropertyEnumeratedValue_type);defs.push_back(IFC4X2_IfcPropertyListValue_type);defs.push_back(IFC4X2_IfcPropertyReferenceValue_type);defs.push_back(IFC4X2_IfcPropertySingleValue_type);defs.push_back(IFC4X2_IfcPropertyTableValue_type);
-        IFC4X2_IfcSimpleProperty_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcCableCarrierSegmentType_type);defs.push_back(IFC4X2_IfcCableSegmentType_type);defs.push_back(IFC4X2_IfcDuctSegmentType_type);defs.push_back(IFC4X2_IfcPipeSegmentType_type);
-        IFC4X2_IfcFlowSegmentType_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcEventTime_type);defs.push_back(IFC4X2_IfcLagTime_type);defs.push_back(IFC4X2_IfcResourceTime_type);defs.push_back(IFC4X2_IfcTaskTime_type);defs.push_back(IFC4X2_IfcWorkTime_type);
-        IFC4X2_IfcSchedulingTime_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcBlobTexture_type);defs.push_back(IFC4X2_IfcImageTexture_type);defs.push_back(IFC4X2_IfcPixelTexture_type);
-        IFC4X2_IfcSurfaceTexture_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcStructuralCurveReaction_type);defs.push_back(IFC4X2_IfcStructuralPointReaction_type);defs.push_back(IFC4X2_IfcStructuralSurfaceReaction_type);
-        IFC4X2_IfcStructuralReaction_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcWindowStandardCase_type);
-        IFC4X2_IfcWindow_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(4);
-        defs.push_back(IFC4X2_IfcGeometricRepresentationItem_type);defs.push_back(IFC4X2_IfcMappedItem_type);defs.push_back(IFC4X2_IfcStyledItem_type);defs.push_back(IFC4X2_IfcTopologicalRepresentationItem_type);
-        IFC4X2_IfcRepresentationItem_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcOccupant_type);
-        IFC4X2_IfcActor_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcFailureConnectionCondition_type);defs.push_back(IFC4X2_IfcSlippageConnectionCondition_type);
-        IFC4X2_IfcStructuralConnectionCondition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcVertexPoint_type);
-        IFC4X2_IfcVertex_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcFurniture_type);defs.push_back(IFC4X2_IfcSystemFurnitureElement_type);
-        IFC4X2_IfcFurnishingElement_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcPropertySetDefinition_type);defs.push_back(IFC4X2_IfcPropertyTemplateDefinition_type);
-        IFC4X2_IfcPropertyDefinition_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcMemberStandardCase_type);
-        IFC4X2_IfcMember_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRevolvedAreaSolidTapered_type);
-        IFC4X2_IfcRevolvedAreaSolid_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcPlateStandardCase_type);
-        IFC4X2_IfcPlate_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcIndexedPolygonalFaceWithVoids_type);
-        IFC4X2_IfcIndexedPolygonalFace_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcColourRgb_type);
-        IFC4X2_IfcColourSpecification_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcTextStyleFontModel_type);
-        IFC4X2_IfcPreDefinedTextFont_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBeamStandardCase_type);
-        IFC4X2_IfcBeam_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcArbitraryProfileDefWithVoids_type);
-        IFC4X2_IfcArbitraryClosedProfileDef_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCompositeCurveOnSurface_type);
-        IFC4X2_IfcCompositeCurve_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcTextLiteralWithExtent_type);
-        IFC4X2_IfcTextLiteral_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcRelSpaceBoundary2ndLevel_type);
+        IFC4X2_IfcRelSpaceBoundary1stLevel_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
@@ -14285,43 +14175,23 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCartesianTransformationOperator3DnonUniform_type);
-        IFC4X2_IfcCartesianTransformationOperator3D_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(5);
-        defs.push_back(IFC4X2_IfcBlock_type);defs.push_back(IFC4X2_IfcRectangularPyramid_type);defs.push_back(IFC4X2_IfcRightCircularCone_type);defs.push_back(IFC4X2_IfcRightCircularCylinder_type);defs.push_back(IFC4X2_IfcSphere_type);
-        IFC4X2_IfcCsgPrimitive3D_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcRevolvedAreaSolidTapered_type);
+        IFC4X2_IfcRevolvedAreaSolid_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcBSplineCurveWithKnots_type);
-        IFC4X2_IfcBSplineCurve_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcSectionedSolidHorizontal_type);
+        IFC4X2_IfcSectionedSolid_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcFaceSurface_type);
-        IFC4X2_IfcFace_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcShapeModel_type);defs.push_back(IFC4X2_IfcStyleModel_type);
+        IFC4X2_IfcRepresentation_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcEvent_type);defs.push_back(IFC4X2_IfcProcedure_type);defs.push_back(IFC4X2_IfcTask_type);
-        IFC4X2_IfcProcess_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcPresentationLayerWithStyle_type);
-        IFC4X2_IfcPresentationLayerAssignment_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRationalBSplineSurfaceWithKnots_type);
-        IFC4X2_IfcBSplineSurfaceWithKnots_type->set_subtypes(defs);
-    }
-    {
-        std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcCostValue_type);
-        IFC4X2_IfcAppliedValue_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcShapeRepresentation_type);defs.push_back(IFC4X2_IfcTopologyRepresentation_type);
+        IFC4X2_IfcShapeModel_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(2);
@@ -14329,9 +14199,69 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcSlab_type->set_subtypes(defs);
     }
     {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcSpaceType_type);
+        IFC4X2_IfcSpatialStructureElementType_type->set_subtypes(defs);
+    }
+    {
         std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcAdvancedBrep_type);defs.push_back(IFC4X2_IfcFacetedBrep_type);
-        IFC4X2_IfcManifoldSolidBrep_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcSpatialStructureElementType_type);defs.push_back(IFC4X2_IfcSpatialZoneType_type);
+        IFC4X2_IfcSpatialElementType_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcStructuralAction_type);defs.push_back(IFC4X2_IfcStructuralReaction_type);
+        IFC4X2_IfcStructuralActivity_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcStructuralConnection_type);defs.push_back(IFC4X2_IfcStructuralMember_type);
+        IFC4X2_IfcStructuralItem_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcStructuralCurveAction_type);defs.push_back(IFC4X2_IfcStructuralPointAction_type);defs.push_back(IFC4X2_IfcStructuralSurfaceAction_type);
+        IFC4X2_IfcStructuralAction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcStructuralCurveConnection_type);defs.push_back(IFC4X2_IfcStructuralPointConnection_type);defs.push_back(IFC4X2_IfcStructuralSurfaceConnection_type);
+        IFC4X2_IfcStructuralConnection_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcStructuralCurveMember_type);defs.push_back(IFC4X2_IfcStructuralSurfaceMember_type);
+        IFC4X2_IfcStructuralMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcStructuralCurveMemberVarying_type);
+        IFC4X2_IfcStructuralCurveMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcStructuralCurveReaction_type);defs.push_back(IFC4X2_IfcStructuralPointReaction_type);defs.push_back(IFC4X2_IfcStructuralSurfaceReaction_type);
+        IFC4X2_IfcStructuralReaction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcStructuralLinearAction_type);
+        IFC4X2_IfcStructuralCurveAction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcStructuralLoadCase_type);
+        IFC4X2_IfcStructuralLoadGroup_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcStructuralLoadConfiguration_type);defs.push_back(IFC4X2_IfcStructuralLoadOrResult_type);
+        IFC4X2_IfcStructuralLoad_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(5);
+        defs.push_back(IFC4X2_IfcStructuralLoadLinearForce_type);defs.push_back(IFC4X2_IfcStructuralLoadPlanarForce_type);defs.push_back(IFC4X2_IfcStructuralLoadSingleDisplacement_type);defs.push_back(IFC4X2_IfcStructuralLoadSingleForce_type);defs.push_back(IFC4X2_IfcStructuralLoadTemperature_type);
+        IFC4X2_IfcStructuralLoadStatic_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
@@ -14339,19 +14269,89 @@ IfcParse::schema_definition* IFC4X2_populate_schema() {
         IFC4X2_IfcStructuralLoadSingleDisplacement_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(2);
-        defs.push_back(IFC4X2_IfcWorkPlan_type);defs.push_back(IFC4X2_IfcWorkSchedule_type);
-        IFC4X2_IfcWorkControl_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcStructuralLoadSingleForceWarping_type);
+        IFC4X2_IfcStructuralLoadSingleForce_type->set_subtypes(defs);
     }
     {
-        std::vector<const entity*> defs; defs.reserve(3);
-        defs.push_back(IFC4X2_IfcAlignment2DVerSegCircularArc_type);defs.push_back(IFC4X2_IfcAlignment2DVerSegLine_type);defs.push_back(IFC4X2_IfcAlignment2DVerSegParabolicArc_type);
-        IFC4X2_IfcAlignment2DVerticalSegment_type->set_subtypes(defs);
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcStructuralLoadStatic_type);defs.push_back(IFC4X2_IfcSurfaceReinforcementArea_type);
+        IFC4X2_IfcStructuralLoadOrResult_type->set_subtypes(defs);
     }
     {
         std::vector<const entity*> defs; defs.reserve(1);
-        defs.push_back(IFC4X2_IfcRationalBSplineCurveWithKnots_type);
-        IFC4X2_IfcBSplineCurveWithKnots_type->set_subtypes(defs);
+        defs.push_back(IFC4X2_IfcStructuralPlanarAction_type);
+        IFC4X2_IfcStructuralSurfaceAction_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcStructuralSurfaceMemberVarying_type);
+        IFC4X2_IfcStructuralSurfaceMember_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcStyledRepresentation_type);
+        IFC4X2_IfcStyleModel_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcSurfaceOfLinearExtrusion_type);defs.push_back(IFC4X2_IfcSurfaceOfRevolution_type);
+        IFC4X2_IfcSweptSurface_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcSurfaceStyleRendering_type);
+        IFC4X2_IfcSurfaceStyleShading_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcSweptDiskSolidPolygonal_type);
+        IFC4X2_IfcSweptDiskSolid_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcTaskTimeRecurring_type);
+        IFC4X2_IfcTaskTime_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcTextLiteralWithExtent_type);
+        IFC4X2_IfcTextLiteral_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcTextStyleFontModel_type);
+        IFC4X2_IfcPreDefinedTextFont_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcTriangulatedIrregularNetwork_type);
+        IFC4X2_IfcTriangulatedFaceSet_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(3);
+        defs.push_back(IFC4X2_IfcTypeProcess_type);defs.push_back(IFC4X2_IfcTypeProduct_type);defs.push_back(IFC4X2_IfcTypeResource_type);
+        IFC4X2_IfcTypeObject_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcVertexPoint_type);
+        IFC4X2_IfcVertex_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcWallElementedCase_type);defs.push_back(IFC4X2_IfcWallStandardCase_type);
+        IFC4X2_IfcWall_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(1);
+        defs.push_back(IFC4X2_IfcWindowStandardCase_type);
+        IFC4X2_IfcWindow_type->set_subtypes(defs);
+    }
+    {
+        std::vector<const entity*> defs; defs.reserve(2);
+        defs.push_back(IFC4X2_IfcWorkPlan_type);defs.push_back(IFC4X2_IfcWorkSchedule_type);
+        IFC4X2_IfcWorkControl_type->set_subtypes(defs);
     }
 
     std::vector<const declaration*> declarations; declarations.reserve(1223);
