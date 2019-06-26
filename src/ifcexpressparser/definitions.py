@@ -17,23 +17,46 @@
 #                                                                             #
 ###############################################################################
 
-import templates
+import operator
+
+import nodes
 import codegen
 
-class EnumHeader(codegen.Base):
+from collections import defaultdict
+
+class Definitions(codegen.Base):
     def __init__(self, mapping):
-        enumerable_types = sorted(set([name for name, type in mapping.schema.types.items()] + [name for name, type in mapping.schema.entities.items()]))
         
-        self.str = templates.enum_header % {
-            'schema_name_upper' : mapping.schema.name.upper(),
-            'schema_name'       : mapping.schema.name.capitalize(),
-            'types'             : ', '.join(enumerable_types)
-        }
+        schema_name = mapping.schema.name
+        self.schema_name = schema_name_title = schema_name.capitalize()
+                    
+        statements = ['']
         
-        self.schema_name = mapping.schema.name.capitalize()
+        def write_entity(schema_name, name, type):
+            attribute_names = list(map(lambda t: (t.name, t.optional), type.attributes))
+            for attr, is_optional in attribute_names:
+                statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
+                if is_optional:
+                    statements.append("#define SCHEMA_%(name)s_%(attr)s_IS_OPTIONAL" % locals())
+            
+        def write(name):
+            statements.append("#define SCHEMA_HAS_%(name)s" % locals())
+            fn = None
+            if mapping.schema.is_entity(name):
+                fn = write_entity
+                
+            if fn is not None:
+                decl = mapping.schema[name]
+                if isinstance(decl, nodes.TypeDeclaration):
+                    decl = decl.type.type
+                fn(schema_name, name, decl) is not False
         
-        self.file_name = '%senum.h'%self.schema_name
+        for name in mapping.schema:
+            write(name)
+            
+        self.str = "\n".join(statements) + "\n"
         
-        
+        self.file_name = '%s-definitions.h' % self.schema_name
+
     def __repr__(self):
         return self.str

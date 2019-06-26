@@ -255,7 +255,7 @@ ptree& descend(IfcSchema::IfcObjectDefinition* product, ptree& tree) {
         }
     }
 
-#ifndef USE_IFC4
+#ifdef SCHEMA_IfcRelDecomposes_HAS_RelatedObjects
 	IfcSchema::IfcObjectDefinition::list::ptr structures = get_related
 		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>
 		(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);

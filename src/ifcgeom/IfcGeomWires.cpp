@@ -849,7 +849,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSubedge* l, TopoDS_Wire& resul
 	}
 }
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wire& result) {
 	

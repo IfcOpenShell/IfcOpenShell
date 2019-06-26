@@ -80,6 +80,9 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x.h)
 #include INCLUDE_PARENT_DIR(IfcSchema)
+#undef INCLUDE_PARENT_DIR
+#define INCLUDE_PARENT_DIR(x) STRINGIFY(../ifcparse/x-definitions.h)
+#include INCLUDE_PARENT_DIR(IfcSchema)
 
 namespace IfcGeom {
 	class IFC_GEOM_API geometry_exception : public std::exception {
@@ -357,7 +360,7 @@ public:
 	const SurfaceStyle* get_style(const IfcSchema::IfcMaterial*);
 	
 	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
 		IfcEntityList::ptr style_assignments = si->Styles();
 		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {

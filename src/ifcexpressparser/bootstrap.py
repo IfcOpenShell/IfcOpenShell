@@ -199,14 +199,14 @@ else:
         pickle.dump(mapping, f, protocol=0)    
 
 import header
-import enum_header
 import implementation
 import schema_class
+import definitions
 
 header.Header(mapping).emit()
-enum_header.EnumHeader(mapping).emit()
 implementation.Implementation(mapping).emit()
 schema_class.SchemaClass(mapping).emit()
+definitions.Definitions(mapping).emit()
 
 sys.stdout.write(schema.name)
 """%('\n    '.join(statements)))

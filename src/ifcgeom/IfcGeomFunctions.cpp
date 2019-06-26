@@ -1587,11 +1587,7 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
 	IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
 	for (;;) {
-#ifdef USE_IFC4
-		IfcSchema::IfcRelAggregates::list::ptr decomposes = obdef->Decomposes();
-#else
-		IfcSchema::IfcRelDecomposes::list::ptr decomposes = obdef->Decomposes();
-#endif
+		auto decomposes = obdef->Decomposes();
 		if (decomposes->size() != 1) break;
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
 		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
@@ -2175,7 +2171,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		gp_Trsf extrusion_position;
 
 		bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 		has_position = extrusion->hasPosition();
 #endif
 		if (has_position) {

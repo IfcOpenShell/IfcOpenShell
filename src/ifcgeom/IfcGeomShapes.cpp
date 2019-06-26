@@ -119,7 +119,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -166,7 +166,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	return !shape.IsNull();
 }
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, TopoDS_Shape& shape) {
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	if (height < getValue(GV_PRECISION)) {
@@ -180,7 +180,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -280,7 +280,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -315,7 +315,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -344,7 +344,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -376,7 +376,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 		if (l->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
 			voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
 		}
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcAdvancedBrepWithVoids
 		if (l->declaration().is(IfcSchema::IfcAdvancedBrepWithVoids::Class())) {
 			voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
 		}
@@ -545,27 +545,27 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 	TopTools_ListOfShape second_operand_shapes;
 
-	for (auto& operand2 : second_operands) {
+	for (auto& op2 : second_operands) {
 		TopoDS_Shape s2;
 
 		bool shape2_processed = false;
 
-		bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
-		bool is_unbounded_halfspace = is_halfspace && !operand2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
+		bool is_halfspace = op2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
+		bool is_unbounded_halfspace = is_halfspace && !op2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
 		has_halfspace_operand |= is_halfspace;
 
 		{
-			if (shape_type(operand2) == ST_SHAPELIST) {
+			if (shape_type(op2) == ST_SHAPELIST) {
 				IfcRepresentationShapeItems items2;
-				shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
-			} else if (shape_type(operand2) == ST_SHAPE) {
-				shape2_processed = convert_shape(operand2, s2);
+				shape2_processed = convert_shapes(op2, items2) && flatten_shape_list(items2, s2, true);
+			} else if (shape_type(op2) == ST_SHAPE) {
+				shape2_processed = convert_shape(op2, s2);
 				if (shape2_processed) {
 					TopoDS_Solid temp_solid;
 					s2 = ensure_fit_for_subtraction(s2, temp_solid);
 				}
 			} else {
-				Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2);
+				Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", op2);
 			}
 		}
 
@@ -583,14 +583,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 		}
 
 		if (!shape2_processed) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to convert SecondOperand:", operand2);
+			Logger::Message(Logger::LOG_ERROR, "Failed to convert SecondOperand:", op2);
 			continue;
 		}
 
-		if (operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class())) {
+		if (op2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class())) {
 			const double second_operand_volume = shape_volume(s2);
 			if (second_operand_volume <= ALMOST_ZERO) {
-				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", operand2);
+				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", op2);
 			}
 		}
 
@@ -950,7 +950,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -1152,7 +1152,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	return true;
 }
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcCylindricalSurface
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_Shape& face) {
 	gp_Trsf trsf;
@@ -1167,9 +1167,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	return true;
 }
 
+#endif
+
+#ifdef SCHEMA_HAS_IfcAdvancedBrep
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcAdvancedBrep* l, TopoDS_Shape& shape) {
 	return convert(l->Outer(), shape);
 }
+
+#endif
+
+#ifdef SCHEMA_HAS_IfcTriangulatedFaceSet
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
@@ -1231,18 +1239,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	bool valid_shell = false;
 
 	// @todo Do this more efficiently by creating proper half-edge pairs.
-	BRepOffsetAPI_Sewing builder;
-	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	BRepOffsetAPI_Sewing sewing_builder;
+	sewing_builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	sewing_builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	sewing_builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		
 	for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
-		builder.Add(*it);
+		sewing_builder.Add(*it);
 	}
 
 	try {
-		builder.Perform();
-		shape = builder.SewedShape();
+		sewing_builder.Perform();
+		shape = sewing_builder.SewedShape();
 		valid_shell = BRepCheck_Analyzer(shape).IsValid();
 	} catch(...) {}
 
