@@ -89,8 +89,8 @@ BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.43"
 #LIBXML2_VERSION="2.9.3"
 LIBXML2_VERSION="2.9.9"
-#CMAKE_VERSION="3.4.1"
-CMAKE_VERSION="3.14.5"
+CMAKE_VERSION="3.4.1"
+#CMAKE_VERSION="3.14.5"
 SWIG_VERSION="3.0.12"
 #SWIG_VERSION="4.0.0"
 #OPENCOLLADA_VERSION="v1.6.63"
@@ -519,8 +519,9 @@ shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 if "json" in targets:
     json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
     json_install_path = "{DEPS_DIR}/install/json/nlohmann/json.hpp".format(**locals())
-    if not os.path.exists(json_install_path):
+    if not os.path.exists(os.path.dirname(json_install_path)):
         os.makedirs(os.path.dirname(json_install_path))
+    if not os.path.exists(json_install_path):
         urlretrieve(json_url, json_install_path)
 
 if "pcre" in targets:
