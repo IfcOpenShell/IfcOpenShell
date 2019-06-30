@@ -4190,7 +4190,7 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		edge_set_t segment_set;
 
 		loop_(ps, [&segments, &segment_set](int C, int D, bool) {
-			segment_set.insert({ C, D });
+			segment_set.insert({{ C, D }});
 			segments.push_back({ C, D });
 		});
 
