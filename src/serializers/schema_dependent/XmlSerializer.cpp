@@ -176,7 +176,7 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 		} catch (const std::exception& e) {
 			Logger::Error(e);
 		} catch (const Standard_ConstructionError& e) {
-			Logger::Error(e.GetMessageString(), instance->entity);
+			Logger::Error(e.GetMessageString(), instance);
 		}
 
 		if (value) {
