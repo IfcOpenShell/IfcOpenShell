@@ -262,19 +262,8 @@ for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "p
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
-download_tool_curl="curl"
-download_tool_wget="wget"
+download_tool_default = download_tool_py = "py"
 download_tool_git = "git"
-
-if which(wget) != None:
-    download_tool_default = download_tool_wget
-elif which(curl) != None:
-    download_tool_default = download_tool_curl
-else:
-    raise ValueError("No download application found, tried: curl, wget")
-
-CURL = ["curl", "-sL"]
-WGET= ["wget", "-q", "--no-check-certificate"]
 
 # Create log directory and file
 
@@ -362,25 +351,18 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     build_dir = os.path.join(DEPS_DIR, "build")
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
+        
+    logger.info("\rFetching %s...   " % (name,))
     
-    if download_tool == download_tool_curl or download_tool == download_tool_wget:
+    if download_tool == download_tool_py:
         if no_append_name:
             url = download_url
         else:
             url = os.path.join(download_url, download_name)
-    
-    if download_tool == download_tool_curl:
+            
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            logger.info("\rDownloading %s...   " % (name,))
-            run(CURL + ["-o", download_name, url], cwd=build_dir)
-        else:
-            logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
-    elif download_tool == download_tool_wget:
-        download_path = os.path.join(build_dir, download_name)
-        if not os.path.exists(download_path):
-            logger.info("\rDownloading %s...   " % (name,))
-            run(WGET + ["-O", download_name, url], cwd=build_dir)
+            urlretrieve(url, os.path.join(build_dir, download_path))
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_git:
