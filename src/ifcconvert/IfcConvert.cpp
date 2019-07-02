@@ -54,6 +54,25 @@
 #include <set>
 #include <time.h>
 
+///////////////  Multithreading part   //////////////
+#include <future>
+#include <thread>
+#include <queue>
+#include <chrono>
+#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/Ifc4.h"
+#ifdef USE_IFC4
+#include "../ifcparse/Ifc4.h"
+#define IfcSchema Ifc4
+#else
+#include "../ifcparse/Ifc2x3.h"
+#define IfcSchema Ifc2x3
+#endif
+#include "../ifcgeom/IfcGeom.h"
+#include "../serializers/GeometrySerializer.h"
+#include "../ifcgeom/IfcGeomIteratorImplementation.h"
+#include "ThreadedIteratorImplementation.h"
+
 #if USE_VLD
 #include <vld.h>
 #endif
@@ -79,6 +98,29 @@ const std::string DEFAULT_EXTENSION = ".obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
 namespace po = boost::program_options;
+
+using namespace multithreading;
+
+struct IfcproductRepresentation
+{
+	int index;
+	IfcSchema::IfcRepresentation *representation;
+	IfcSchema::IfcProduct *product;
+	IfcGeom::Element<real_t> *geom_object;
+	IfcGeom::BRepElement<real_t> *brep;
+	IfcGeom::TriangulationElement<real_t> *element;
+};
+
+struct Bounds
+{
+	gp_XYZ min;
+	gp_XYZ max;
+};
+
+bool reuse_ok_(SerializerSettings settings, const IfcSchema::IfcProduct::list::ptr &products, IfcGeom::Kernel kernel);
+void create_element(SerializerSettings &settings, IfcproductRepresentation &rep, IfcGeom::KernelIfc2x3&);
+Bounds compute_bounds(IfcParse::IfcFile *, IfcGeom::Kernel);
+void write_element(boost::shared_ptr<GeometrySerializer>, IfcproductRepresentation *, bool);
 
 void print_version()
 {
@@ -672,7 +714,7 @@ int main(int argc, char** argv) {
 		// According to https://tracker.dev.opencascade.org/view.php?id=25689 something has been fixed in 6.9.0
 		IGESControl_Controller::Init(); // work around Open Cascade bug
 #endif
-		serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
+	serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
@@ -752,7 +794,8 @@ int main(int argc, char** argv) {
 	serializer->writeHeader();
 
 	int old_progress = quiet ? 0 : -1;
-
+    
+    Bounds model_bounds;
     if (is_tesselated && (center_model || model_offset)) {
         double* offset = serializer->settings().offset;
         if (center_model) {
@@ -787,42 +830,185 @@ int main(int argc, char** argv) {
 		Logger::Status("Creating geometry...");
 	}
 
+
+
     /// =============== Sanders approach for multiple threading ============================
-	for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
-	{
-	 	IfcproductRepresentation &r = IfcproductRepresentations[j];
-	 	create_element(settings, r, kernel2x3);
+	// for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
+	// {
+	//  	IfcproductRepresentation &r = IfcproductRepresentations[j];
+	//  	create_element(settings, r, kernel2x3);
 	
-		if (threadpool.size() < concurrency)
+	// 	if (threadpool.size() < concurrency)
+	// 	{
+	//   		std::future<void> fu = std::async(std::launch::async, create_element, std::ref(settings), std::ref(r), std::ref(kernel2x3));
+	//   		threadpool.emplace_back(std::move(fu));
+	//   		j++;
+	// 	}
+	// 	else
+	// 	{
+	//   	bool waiting = true;
+	// 		while (waiting)
+	//   		{
+	//     		for (int i = 0; i < (int)threadpool.size(); i++)
+	//     		{
+	// 				cout << "Thread pool size: " << threadpool.size();
+	//       			std::future<void> &fu = threadpool[i];
+	//       			std::future_status status;
+	//       			status = fu.wait_for(std::chrono::seconds(0));
+	//       			if (status == std::future_status::ready)
+	//       			{
+	//         			fu.get();
+	//         			threadpool.erase(threadpool.begin() + i);
+	//         			waiting = false;
+	//       			} // if
+	//     		}   // for
+	//   		}     // while
+	// 	}	//else 
+	// }
+
+    // // Serializer
+    // for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
+	// {
+	//  	IfcproductRepresentation *rep = &IfcproductRepresentations[j];
+	//  	//write_element(serializer, rep, is_tesselated);
+	//  	cout_ << "writing to file, element #: " << rep->index << "\n";
+	//  	IfcGeom::Element<real_t> *geom_object = rep->element;
+	// 	if (geom_object == nullptr) 
+	// 	{
+	// 		cout_ << "skipped" << std::endl;
+	// 		continue;
+	// 	}
+	//  	if (is_tesselated)
+	//  	{
+	//  		serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t> *>(geom_object));
+	//  	}
+	//  	else
+	// 	{
+	//    	    serializer->write(static_cast<const IfcGeom::BRepElement<real_t> *>(geom_object));
+	//  	}
+
+	// }
+
+    //================= Airsquire approach ===================
+
+    IfcGeom::Kernel kernel;
+	IfcGeom::KernelIfc2x3 kernel2x3;
+	size_t num_created = 0;
+	int currentElementIndex = 0;
+	double unit_magnitude = 1.f;
+
+	IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
+  	IfcSchema::IfcRepresentation::list::ptr representations =
+    IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
+  	IfcSchema::IfcRepresentation::list::it representation_iterator;
+
+	IfcSchema::IfcMaterialLayerSetUsage::Class();
+	vector<future<bool>> threadpool;
+	unsigned int concurrency = std::thread::hardware_concurrency();
+	cout << "Threads available: " << concurrency << endl;
+
+	// From Sander's version/work (v0.5)
+	std::vector<IfcGeom::filter_t> filters_;
+	std::vector<IfcproductRepresentation> IfcproductRepresentations;
+	IfcSchema::IfcProduct::list::ptr ifcproducts;
+	IfcSchema::IfcProduct::list::it ifcproduct_iterator;
+	IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
+	IfcGeom::layer_filter layer_filter;
+	IfcGeom::attribute_filter attribute_filter;
+
+    // Version v0.6
+	filters_.emplace_back(boost::ref(layer_filter));
+	filters_.emplace_back(boost::ref(entity_filter));
+	filters_.emplace_back(boost::ref(attribute_filter));
+	bool geometry_reuse_ok_for_current_representation_;
+
+	// fucntor
+	struct filter_match
+	{
+		filter_match(IfcSchema::IfcProduct *prod) : product(prod) {}
+		bool operator()(const IfcGeom::filter_t &filter) const
 		{
-	  		std::future<void> fu = std::async(std::launch::async, create_element, std::ref(settings), std::ref(r), std::ref(kernel2x3));
-	  		threadpool.emplace_back(std::move(fu));
-	  		j++;
+			return filter(product);
 		}
-		else
+		IfcSchema::IfcProduct *product;
+	};
+ 
+	int index_count = 0;
+	for (representation_iterator = representations->begin(); 
+		 representation_iterator != representations->end(); 
+		 representation_iterator++)
+	{
+		IfcSchema::IfcRepresentation *representation = *representation_iterator;
+		//ifcproducts.reset();
+		ifcproducts.reset(new IfcSchema::IfcProduct::list);
+		ifcproducts = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
+		IfcSchema::IfcProduct::list::ptr unfiltered_products = kernel2x3.products_represented_by(representation);
+
+		geometry_reuse_ok_for_current_representation_ = reuse_ok_(settings, unfiltered_products, kernel2x3);
+		IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+
+		if(!geometry_reuse_ok_for_current_representation_ && maps->size() == 1)
 		{
-	  	bool waiting = true;
-			while (waiting)
-	  		{
-	    		for (int i = 0; i < (int)threadpool.size(); i++)
-	    		{
-					cout << "Thread pool size: " << threadpool.size();
-	      			std::future<void> &fu = threadpool[i];
-	      			std::future_status status;
-	      			status = fu.wait_for(std::chrono::seconds(0));
-	      			if (status == std::future_status::ready)
-	      			{
-	        			fu.get();
-	        			threadpool.erase(threadpool.begin() + i);
-	        			waiting = false;
-	      			} // if
-	    		}   // for
-	  		}     // while
-		}	//else 
+			IfcSchema::IfcRepresentationMap *map = *maps->begin();
+			if(map->MapUsage()->size() > 0)
+		 	{
+		 		continue;
+		 	}
+		}
+
+		bool representation_processed_as_mapped_item = false;
+		IfcSchema::IfcRepresentation *representation_mapped_to = kernel2x3.representation_mapped_to(representation);
+		if (representation_mapped_to)
+		{
+		 	// Check if this representation has (or will be) processed as part its mapped representation
+		  	bool contains = ok_mapped_representations->contains(representation_mapped_to);
+		  	bool reuse = reuse_ok_(settings, kernel2x3.products_represented_by(representation_mapped_to), kernel);
+		  	representation_processed_as_mapped_item = contains || reuse;
+		}
+		if (representation_processed_as_mapped_item)
+		{
+		 	ok_mapped_representations->push(representation_mapped_to);
+		  	// _nextShape();
+		  	continue;
+		}
+
+		// Filter the products based on the set of entities and/or names being included or excluded for processing.
+		for (IfcSchema::IfcProduct::list::it jt = unfiltered_products->begin(); jt != unfiltered_products->end(); ++jt)
+		{
+			IfcSchema::IfcProduct *prod = *jt;
+			if (boost::all(filters_, filter_match(prod)))
+			{
+		 		ifcproducts->push(prod);
+		 	}
+		}
+		for (ifcproduct_iterator = ifcproducts->begin(); ifcproduct_iterator != ifcproducts->end(); ifcproduct_iterator++)
+		{
+			IfcproductRepresentation ir;
+		 	ir.index = index_count;
+		 	ir.product = *ifcproduct_iterator;
+		 	ir.representation = representation;
+			IfcproductRepresentations.push_back(ir);
+
+		 	index_count++;
+		}
 	}
 
-    // Serializer
-    for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
+	vector<future<void>> futureVector;
+	for (int i = 0; i < (int)IfcproductRepresentations.size(); i++)
+	{
+		IfcGeom::KernelIfc2x3 kernel2x3;
+		IfcproductRepresentation &r = IfcproductRepresentations[i];
+		futureVector.emplace_back(
+			    multithreading::ThreadPool::enqueue(
+					&create_element,
+					settings,
+					r,
+					kernel2x3)
+		);
+	}
+
+	
+	for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
 	{
 	 	IfcproductRepresentation *rep = &IfcproductRepresentations[j];
 	 	//write_element(serializer, rep, is_tesselated);
@@ -839,10 +1025,11 @@ int main(int argc, char** argv) {
 	 	}
 	 	else
 		{
-	   	    serializer->write(static_cast<const IfcGeom::BRepElement<real_t> *>(geom_object));
+	   	serializer->write(static_cast<const IfcGeom::BRepElement<real_t> *>(geom_object));
 	 	}
 
 	}
+
 
     serializer->finalize();
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
@@ -1435,4 +1622,60 @@ void create_element(SerializerSettings &settings, IfcproductRepresentation &rep,
   //   }
 
   return;
+}
+
+Bounds compute_bounds(IfcParse::IfcFile *ifc_file, IfcGeom::Kernel kernel)
+{
+	IfcGeom::KernelIfc2x3 kernel2x3;
+	gp_XYZ bounds_min_;
+  	gp_XYZ bounds_max_;
+  	Bounds bounds;
+
+  	for (int i = 1; i < 4; ++i)
+  	{
+    	bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
+    	bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
+  	}
+
+  	IfcSchema::IfcProduct::list::ptr products = ifc_file->instances_by_type<IfcSchema::IfcProduct>();
+  	for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter)
+  	{
+    	IfcSchema::IfcProduct *product = *iter;
+    	if (product->hasObjectPlacement())
+    	{
+      	// Use a fresh trsf every time in order to prevent the
+      	// result to be concatenated
+      	gp_Trsf trsf;
+      	bool success = false;
+
+      	try
+      	{
+        	success = kernel2x3.convert(product->ObjectPlacement(), trsf);
+      	}
+      	catch (const std::exception &e)
+      	{
+        	Logger::Error(e);
+      	}
+      	catch (...)
+      	{
+        	Logger::Error("Failed to construct placement");
+      	}
+
+      	if (!success)
+      	{
+        	continue;
+      	}
+
+      	const gp_XYZ &pos = trsf.TranslationPart();
+      	bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
+      	bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
+      	bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
+      	bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
+      	bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
+      	bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
+    	}
+  	}
+  	bounds.min = bounds_min_;
+  	bounds.max = bounds_max_;
+  	return bounds;
 }
