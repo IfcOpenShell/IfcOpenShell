@@ -787,61 +787,61 @@ int main(int argc, char** argv) {
 		Logger::Status("Creating geometry...");
 	}
 
-	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
-	// wrap an iterator of all geometrical products in the Ifc file. 
-	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
-	// -BRepElement pointer, based on current settings. (see IfcGeomIterator.h 
-	// for definition) IfcGeom::Iterator::next() is used to poll whether more 
-	// geometrical entities are available. None of these functions throw 
-	// exceptions, neither for parsing errors or geometrical errors. Upon 
-	// calling next() the entity to be returned has already been processed, a 
-	// non-null return value guarantees that a successfully processed product is 
-	// available. 
-	size_t num_created = 0;
+    /// =============== Sanders approach for multiple threading ============================
+	for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
+	{
+	 	IfcproductRepresentation &r = IfcproductRepresentations[j];
+	 	create_element(settings, r, kernel2x3);
 	
-	do {
-        IfcGeom::Element<real_t> *geom_object = context_iterator.get();
-
-		if (is_tesselated)
+		if (threadpool.size() < concurrency)
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+	  		std::future<void> fu = std::async(std::launch::async, create_element, std::ref(settings), std::ref(r), std::ref(kernel2x3));
+	  		threadpool.emplace_back(std::move(fu));
+	  		j++;
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::BRepElement<real_t>*>(geom_object));
-		}
+	  	bool waiting = true;
+			while (waiting)
+	  		{
+	    		for (int i = 0; i < (int)threadpool.size(); i++)
+	    		{
+					cout << "Thread pool size: " << threadpool.size();
+	      			std::future<void> &fu = threadpool[i];
+	      			std::future_status status;
+	      			status = fu.wait_for(std::chrono::seconds(0));
+	      			if (status == std::future_status::ready)
+	      			{
+	        			fu.get();
+	        			threadpool.erase(threadpool.begin() + i);
+	        			waiting = false;
+	      			} // if
+	    		}   // for
+	  		}     // while
+		}	//else 
+	}
 
-        if (!no_progress) {
-			if (quiet) {
-				const int progress = context_iterator.progress();
-				for (; old_progress < progress; ++old_progress) {
-					std::cout << ".";
-					if (stderr_progress)
-						std::cerr << ".";
-				}
-				std::cout << std::flush;
-				if (stderr_progress)
-					std::cerr << std::flush;
-			} else {
-				const int progress = context_iterator.progress() / 2;
-				if (old_progress != progress) Logger::ProgressBar(progress);
-				old_progress = progress;
-			}
-        }
-    } while (++num_created, context_iterator.next());
-
-	if (!no_progress && quiet) {
-		for (; old_progress < 100; ++old_progress) {
-			std::cout << ".";
-			if (stderr_progress)
-				std::cerr << ".";
+    // Serializer
+    for (int j = 0; j < (int)IfcproductRepresentations.size(); j++)
+	{
+	 	IfcproductRepresentation *rep = &IfcproductRepresentations[j];
+	 	//write_element(serializer, rep, is_tesselated);
+	 	cout_ << "writing to file, element #: " << rep->index << "\n";
+	 	IfcGeom::Element<real_t> *geom_object = rep->element;
+		if (geom_object == nullptr) 
+		{
+			cout_ << "skipped" << std::endl;
+			continue;
 		}
-		std::cout << std::flush;
-		if (stderr_progress)
-			std::cerr << std::flush;
-	} else {
-		Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
-			" objects)                                ");
+	 	if (is_tesselated)
+	 	{
+	 		serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t> *>(geom_object));
+	 	}
+	 	else
+		{
+	   	    serializer->write(static_cast<const IfcGeom::BRepElement<real_t> *>(geom_object));
+	 	}
+
 	}
 
     serializer->finalize();
@@ -1347,4 +1347,92 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 			" objects                                ");
 	}
 
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////// ***** Added for multithreading ****** /////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool reuse_ok_(SerializerSettings settings, const IfcSchema::IfcProduct::list::ptr &products, IfcGeom::Kernel kernel)
+{
+	IfcGeom::KernelIfc2x3 kernel2x3;
+	
+	if(settings.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS))
+	{
+		return false;
+	}
+	std::set<const IfcSchema::IfcMaterial *> associated_single_materials;
+
+	for(IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it)
+	{
+		IfcSchema::IfcProduct *product = *it;
+
+		if(!settings.get(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) &&
+			kernel2x3.find_openings(product)->size())
+			{
+				return false;
+			}
+		if (settings.get(IfcGeom::IteratorSettings::APPLY_LAYERSETS))
+    	{
+      		IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
+      		for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt)
+      		{
+        		IfcSchema::IfcRelAssociatesMaterial *assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
+        		if (assoc)
+        		{
+          			//if (assoc->RelatingMaterial()->is(IfcSchema::IfcMaterialLayerSetUsage))
+					if (assoc->RelatingMaterial()->declaration().is(IfcSchema::IfcMaterialLayerSetUsage::Class()))
+          			{
+            			return false;
+          			}
+        		}
+      		}
+    	}
+		associated_single_materials.insert(kernel2x3.get_single_material_association(product));
+		if (associated_single_materials.size() > 1)
+		{
+      		return false;
+		}
+	}
+	return associated_single_materials.size() == 1;
+}
+
+void write_element(boost::shared_ptr<GeometrySerializer> serializer, IfcproductRepresentation *rep, bool is_tesselated)
+{
+	IfcGeom::Element<real_t> *geom_object = rep->element;
+	if (is_tesselated)
+	{
+		serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t> *>(geom_object));
+	}
+	else
+	{
+		serializer->write(static_cast<const IfcGeom::BRepElement<real_t> *>(geom_object));
+	}
+}
+
+void create_element(SerializerSettings &settings, IfcproductRepresentation &rep, IfcGeom::KernelIfc2x3& kernel2x3)
+{
+  ////////////////////////////////////////////////////////////
+  //  is kernel thread-safe ?
+  //  @tfk: no, it's not, my advise would be to boot one
+  //        kernel instance per thread.
+  ////////////////////////////////////////////////////////////
+  Logger::Status("processing item #: " + std::to_string(rep.index));
+  IfcSchema::IfcRepresentation *representation = rep.representation;
+  IfcSchema::IfcProduct *product = rep.product;
+  // IfcGeom::BRepElement<real_t> *element; 
+  //rep.element = kernel2x3.create_brep_for_representation_and_product<real_t, real_t>(settings, representation, product);
+  rep.brep = kernel2x3.create_brep_for_representation_and_product<real_t, real_t>(settings, representation, product);
+  rep.element = rep.brep ? new IfcGeom::TriangulationElement<double>(*rep.brep) : nullptr;
+  // if(geometry_reuse_ok_for_current_representation_)
+  //     {
+  //   // element =
+  //   kernel.create_brep_for_processed_representation(settings,
+  //   representation,
+  //   // product,
+  //   // current_shape_model);
+  //   }
+
+  return;
 }
