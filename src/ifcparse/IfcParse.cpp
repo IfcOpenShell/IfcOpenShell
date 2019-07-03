@@ -17,17 +17,6 @@
 *                                                                              *
 ********************************************************************************/
 
-#include <set>
-#include <algorithm>
-#include <string>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctime>
-#include <boost/circular_buffer.hpp>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-
 #include "../ifcparse/IfcCharacterDecoder.h"
 #include "../ifcparse/IfcParse.h"
 #include "../ifcparse/IfcException.h"
@@ -41,6 +30,18 @@
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
 #endif
+
+#include <set>
+#include <ctime>
+#include <mutex>
+#include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <algorithm>
+
+#include <boost/circular_buffer.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #define PERMISSIVE_FLOAT
 
@@ -251,9 +252,11 @@ void IfcSpfStream::Inc() {
 		eof = true;
 		return;
 	}
-	/// @todo: Shouldn't this be a loop of some kind
 	const char current = IfcSpfStream::Peek();
-	if ( current == '\n' || current == '\r' ) IfcSpfStream::Inc();
+	if (current == '\n' || current == '\r') {
+		// NB this is recursive. It might as well be a loop.
+		IfcSpfStream::Inc();
+	}
 }
 
 IfcSpfLexer::IfcSpfLexer(IfcParse::IfcSpfStream *s, IfcParse::IfcFile* f) {
@@ -331,10 +334,26 @@ Token IfcSpfLexer::Next() {
 		len ++;
 
 		// If a string is encountered defer processing to the IfcCharacterDecoder
-		if ( c == '\'' ) decoder->dryRun();
+		if ( c == '\'' ) decoder->skip();
 	}
 	if ( len ) return GeneralTokenPtr(this, pos, stream->Tell());
 	else return NoneTokenPtr();
+}
+
+bool IfcSpfStream::is_eof_at(unsigned int local_ptr) {
+	return local_ptr >= len;
+}
+
+void IfcSpfStream::increment_at(unsigned int& local_ptr) {
+	if (++local_ptr == len) {
+		return;
+	}
+	const char current = IfcSpfStream::peek_at(local_ptr);
+	if (current == '\n' || current == '\r') IfcSpfStream::increment_at(local_ptr);
+}
+
+char IfcSpfStream::peek_at(unsigned int local_ptr) {
+	return buffer[local_ptr];
 }
 
 //
@@ -342,23 +361,19 @@ Token IfcSpfLexer::Next() {
 // Omits whitespace and comments
 //
 void IfcSpfLexer::TokenString(unsigned int offset, std::string &buffer) {
-	const bool was_eof = stream->eof;
-	unsigned int old_offset = stream->Tell();
-	stream->Seek(offset);
 	buffer.clear();
-	while ( ! stream->eof ) {
-		char c = stream->Peek();
+	while (!stream->is_eof_at(offset)) {
+		char c = stream->peek_at(offset);
 		if ( buffer.size() && (c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/') ) break;
-		stream->Inc();
+		stream->increment_at(offset);
 		if ( c == ' ' || c == '\r' || c == '\n' || c == '\t' ) continue;
 		else if ( c == '\'' ) {
-			buffer = *decoder;
+			// todo, make decoder use local offset ptr
+			buffer = decoder->get(offset);
 			break;
 		}
 		else buffer.push_back(c);
 	}
-	if ( was_eof ) stream->eof = true;
-	else stream->Seek(old_offset);
 }
 
 //Note: according to STEP standard, there may be newlines in tokens
@@ -887,14 +902,16 @@ IfcEntityInstanceData* IfcParse::read(unsigned int i, IfcFile* f, boost::optiona
 	return e;
 }
 
-void IfcParse::IfcFile::load(const IfcEntityInstanceData& data) {
+void IfcParse::IfcFile::seek_to(const IfcEntityInstanceData& data) {
 	if (tokens->stream->Tell() != data.offset_in_file()) {
 		tokens->stream->Seek(data.offset_in_file());
 		Token datatype = tokens->Next();
 		if (!TokenFunc::isKeyword(datatype)) throw IfcException("Unexpected token while parsing entity instance");
 	}
 	tokens->Next();
-	load(data.id(), data.attributes(), data.getArgumentCount());
+}
+
+void IfcParse::IfcFile::try_read_semicolon() {
 	unsigned int old_offset = tokens->stream->Tell();
 	Token semilocon = tokens->Next();
 	if (!TokenFunc::isOperator(semilocon, ';')) {
@@ -984,15 +1001,26 @@ unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
 // Returns the entities of Entity type that have this entity in their ArgumentList
 //
 IfcEntityList::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration* type, int attribute_index) const {
+	static std::mutex m;
+	std::lock_guard<std::mutex> lk(m);
+
 	return file->getInverse(id_, type, attribute_index);
 }
 
 void IfcEntityInstanceData::load() const {
+	static std::recursive_mutex m;
+	std::lock_guard<std::recursive_mutex> lk(m);
+
 	// type_ is 0 for header entities which have their size predetermined in code
+	Argument** tmp_data = nullptr;
 	if (type_ != 0) {
-		attributes_ = new Argument*[getArgumentCount()];
+		tmp_data = new Argument*[getArgumentCount()];
 	}
-	file->load(*this);
+	file->seek_to(*this);
+	file->load(id(), tmp_data, getArgumentCount());
+	file->try_read_semicolon();
+	// @todo does this need to be atomic somehow?
+	attributes_ = tmp_data;
 }
 
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& e) {
