@@ -199,8 +199,9 @@ public:
 
 	std::string createTimestamp() const;
 
-	void load(const IfcEntityInstanceData&);
 	size_t load(unsigned entity_instance_name, Argument**& attributes, size_t num_attributes);
+	void seek_to(const IfcEntityInstanceData& data);
+	void try_read_semicolon();
 
 	void register_inverse(unsigned, Token);
 	void register_inverse(unsigned, IfcUtil::IfcBaseClass*);

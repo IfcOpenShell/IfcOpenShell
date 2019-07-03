@@ -72,6 +72,10 @@ namespace IfcParse {
 		void Seek(unsigned int offset);
 		/// Returns the cursor position
 		unsigned int Tell();
+
+		bool is_eof_at(unsigned int);
+		void increment_at(unsigned int&);
+		char peek_at(unsigned int);
 	};
 }
 
