@@ -63,6 +63,7 @@
 #include <vector>
 #include <limits>
 #include <algorithm>
+#include <atomic>
 
 #include <future>
 #include <thread>
@@ -106,6 +107,35 @@ namespace {
 		std::vector<IfcGeom::Element<P, PP>*> elements;
 	};
 
+	template <typename P, typename PP=P>
+	IfcGeom::Element<P, PP>* process_based_on_settings(
+		const IfcGeom::IteratorSettings& settings,
+		IfcGeom::BRepElement<P, PP>* elem, 
+		IfcGeom::TriangulationElement<P, PP>* previous=nullptr)
+	{
+		if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+			try {
+				return new IfcGeom::SerializedElement<P, PP>(*elem);
+			} catch (...) {
+				Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
+				return nullptr;
+			}
+		} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+			try {
+				if (!previous) {
+					return  new IfcGeom::TriangulationElement<P, PP>(*elem);
+				} else {
+					return  new IfcGeom::TriangulationElement<P, PP>(*elem, previous->geometry_pointer());
+				}
+			} catch (...) {
+				Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
+				return nullptr;
+			}
+		} else {
+			return elem;
+		}
+	}
+
 	template <typename P, typename PP = P>
 	void create_element(
 		IfcGeom::MAKE_TYPE_NAME(Kernel)* kernel, 
@@ -114,13 +144,28 @@ namespace {
 	{
 		IfcSchema::IfcRepresentation *representation = rep->representation;
 		IfcSchema::IfcProduct *product = *rep->products->begin();
-		rep->breps = { kernel->create_brep_for_representation_and_product<P, PP>(settings, representation, product) };
-		// @todo based on settings
-		rep->elements = { rep->breps[0] ? new IfcGeom::TriangulationElement<P, PP>(*rep->breps[0]) : nullptr };
+		auto brep = kernel->create_brep_for_representation_and_product<P, PP>(settings, representation, product);
+		if (!brep) {
+			return;
+		}
+
+		auto elem = process_based_on_settings(settings, brep);
+		if (!elem) {
+			return;
+		}
+
+		rep->breps = { brep };
+		rep->elements = { elem };
 
 		for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
-			rep->breps.push_back(kernel->create_brep_for_processed_representation<P, PP>(settings, representation, *it, rep->breps[0]));
-			rep->elements.push_back(rep->breps.back() ? new IfcGeom::TriangulationElement<P, PP>(*rep->breps.back()) : nullptr);
+			auto brep2 = kernel->create_brep_for_processed_representation<P, PP>(settings, representation, *it, brep);
+			if (brep2) {
+				auto elem2 = process_based_on_settings(settings, brep, dynamic_cast<IfcGeom::TriangulationElement<P, PP>*>(elem));
+				if (elem2) {
+					rep->breps.push_back(brep2);
+					rep->elements.push_back(elem2);
+				}
+			}
 		}
 	}
 }
@@ -134,7 +179,9 @@ namespace IfcGeom {
 		size_t num_threads_;
 		std::vector<geometry_conversion_task<P, PP>> tasks_;
 		std::vector<IfcGeom::Element<P, PP>*> all_processed_elements_;
+		std::vector<IfcGeom::BRepElement<P, PP>*> all_processed_native_elements_;
 		typename std::vector<IfcGeom::Element<P, PP>*>::const_iterator task_result_iterator_;
+		typename std::vector<IfcGeom::BRepElement<P, PP>*>::const_iterator native_task_result_iterator_;
 
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
@@ -357,9 +404,9 @@ namespace IfcGeom {
 		}
 
 		void process_concurrently() {
-			unsigned int conc_threads = std::thread::hardware_concurrency();
-			if (conc_threads > (unsigned int)tasks_.size()) {
-				conc_threads = (unsigned int)tasks_.size();
+			size_t conc_threads = num_threads_;
+			if (conc_threads > tasks_.size()) {
+				conc_threads = tasks_.size();
 			}
 			
 			std::vector<MAKE_TYPE_NAME(Kernel)*> kernel_pool;
@@ -399,9 +446,11 @@ namespace IfcGeom {
 
 			for (auto& rep : tasks_) {
 				all_processed_elements_.insert(all_processed_elements_.end(), rep.elements.begin(), rep.elements.end());
+				all_processed_native_elements_.insert(all_processed_native_elements_.end(), rep.breps.begin(), rep.breps.end());
 			}
 
 			task_result_iterator_ = all_processed_elements_.begin();
+			native_task_result_iterator_ = all_processed_native_elements_.begin();
 		}
 
         /// Computes model's bounding box (bounds_min and bounds_max).
@@ -648,9 +697,8 @@ namespace IfcGeom {
         /// Use get() to retrieve the created geometry.
 		IfcUtil::IfcBaseClass* next() {
 			if (num_threads_ != 1) {
-				do {
-					task_result_iterator_++;
-				} while (task_result_iterator_ != all_processed_elements_.end() && *task_result_iterator_ == nullptr);
+				task_result_iterator_++;
+				native_task_result_iterator_++;
 				if (task_result_iterator_ == all_processed_elements_.end()) {
 					return nullptr;
 				} else {
@@ -738,7 +786,11 @@ namespace IfcGeom {
 		BRepElement<P, PP>* get_native()
 		{
 			// TODO: Test settings and throw
-			return current_shape_model;
+			if (num_threads_ != 1) {
+				return *native_task_result_iterator_;
+			} else {
+				return current_shape_model;
+			}
 		}
 
 		const Element<P, PP>* get_object(int id) {
