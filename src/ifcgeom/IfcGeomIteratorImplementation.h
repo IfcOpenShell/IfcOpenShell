@@ -417,8 +417,16 @@ namespace IfcGeom {
 
 			std::vector<std::future<void>> threadpool;
 
+			int old_progress = -1;
+			int processed = 0;
+
+			Logger::ProgressBar(0);
+
 			for (auto& rep : tasks_) {
-				auto K = kernel_pool[threadpool.size()];
+				MAKE_TYPE_NAME(Kernel)* K = nullptr;
+				if (threadpool.size() < kernel_pool.size()) {
+					K = kernel_pool[threadpool.size()];
+				}
 
 				while (threadpool.size() == conc_threads) {
 					for (int i = 0; i < (int)threadpool.size(); i++) {
@@ -427,6 +435,14 @@ namespace IfcGeom {
 						status = fu.wait_for(std::chrono::seconds(0));
 						if (status == std::future_status::ready) {
 							fu.get();
+							
+							processed += 1;
+							const int progress = processed * 50 / tasks_.size();
+							if (progress != old_progress) {
+								Logger::ProgressBar(progress);
+								old_progress = progress;
+							}
+								
 							std::swap(threadpool[i], threadpool.back());
 							threadpool.pop_back();
 							std::swap(kernel_pool[i], kernel_pool.back());
@@ -442,6 +458,13 @@ namespace IfcGeom {
 
 			for (std::future<void> &fu : threadpool) {
 				fu.get();
+
+				processed += 1;
+				const int progress = processed * 50 / tasks_.size();
+				if (progress != old_progress) {
+					Logger::ProgressBar(progress);
+					old_progress = progress;
+				}
 			}
 
 			for (auto& rep : tasks_) {
@@ -451,6 +474,9 @@ namespace IfcGeom {
 
 			task_result_iterator_ = all_processed_elements_.begin();
 			native_task_result_iterator_ = all_processed_native_elements_.begin();
+
+			Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
+				" objects)                                ");
 		}
 
         /// Computes model's bounding box (bounds_min and bounds_max).
