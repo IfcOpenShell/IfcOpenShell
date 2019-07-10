@@ -23,6 +23,7 @@
 #include <string>
 #include <algorithm>
 
+#include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "../ifcgeom/IfcGeomRepresentation.h"
