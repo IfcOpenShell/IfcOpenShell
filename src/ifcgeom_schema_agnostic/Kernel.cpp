@@ -145,6 +145,8 @@ IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBase
 		return get_decomposing_entity_impl(inst->as<Ifc2x3::IfcProduct>(), include_openings);
 	} else if (inst->as<Ifc4::IfcProduct>()) {
 		return get_decomposing_entity_impl(inst->as<Ifc4::IfcProduct>(), include_openings);
+	} else if (inst->declaration().name() == "IfcProject") {
+		return nullptr;
 	} else {
 		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
 	}
