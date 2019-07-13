@@ -181,26 +181,21 @@ namespace latebound_access {
 }
 
 
+
+
+TopoDS_Shape thickened_face(TopoDS_Face face,double offset) {
+
+	BRepOffset_MakeOffset mos = BRepOffset_MakeOffset::BRepOffset_MakeOffset(face, offset, 0, BRepOffset_Skin, Standard_False, Standard_False, GeomAbs_Arc, Standard_True);
+	return mos.Shape(); 
+}
+
+
 int main() {
 
 	std::cout << "HELLO"; 
 
-	//gp_Dir normal = gp_Dir(); 
-
-
-
-	//gp_Pnt point = gp_Pnt(3,4,5); 
-
-	//
-	//const gp_Pln plane = gp_Pln(point, normal);
-	//TopoDS_Face aface = BRepBuilderAPI_MakeFace(plane);
-
-	//BRepTools::Write(aface, "myface2.brep");
-
 
 	TopoDS_Shell sh = BRepPrimAPI_MakeBox(1, 1, 1);
-
-	//BRepTools::Write(sh, "myshell.brep");
 
 	BRep_Builder compound_builder;
 	TopoDS_Compound shape_compound;
@@ -209,24 +204,33 @@ int main() {
 
 
 	TopoDS_Face bf = BRepPrimAPI_MakeBox(1, 1, 1).BackFace(); 
-	TopoDS_Face bf1 = BRepPrimAPI_MakeBox(1, 1, 1).BottomFace();
-	/*BRepTools::Write(bf, "uneface.brep");*/
+
+	Handle(Geom_Surface) surf = BRep_Tool::Surface(bf);
+	Handle(Geom_Plane) pln;
+	pln = Handle(Geom_Plane)::DownCast(surf);
+	gp_Pln plan = Handle(Geom_Plane)::DownCast(surf)->Pln();
+	gp_Dir normal = pln->Pln().Axis().Direction();
+
+	GProp_GProps massProps;
+	BRepGProp::SurfaceProperties(bf, massProps);
+	gp_Pnt point = massProps.CentreOfMass();
+
+	gp_Lin ligne = gp_Lin(point, normal); 
+
+	TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(ligne); 
 
 
-	BRepOffset_MakeOffset mos1 = BRepOffset_MakeOffset::BRepOffset_MakeOffset(bf1, 13, 2, BRepOffset_Skin, Standard_False, Standard_False, GeomAbs_Arc, Standard_True);
-
-	BRepOffset_MakeOffset mos = BRepOffset_MakeOffset::BRepOffset_MakeOffset(bf, 5, 2, BRepOffset_Skin, Standard_False, Standard_False, GeomAbs_Arc, Standard_True);
 
 
-	TopoDS_Shape shape1 = mos1.Shape();
-	TopoDS_Shape shape = mos.Shape(); 
-
-	compound_builder.Add(shape_compound,shape1);
-
-	compound_builder.Add(shape_compound,shape);
 
 
-	BRepTools::Write(shape_compound, "compounds.brep");
+	TopoDS_Shape shape = thickened_face(bf,0.05); 
+
+
+	compound_builder.Add(shape_compound,edge);
+
+	//compound_builder.Add(shape_compound,shape);
+	BRepTools::Write(shape_compound, "withfunc3.brep");
 
 
 
