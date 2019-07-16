@@ -41,11 +41,17 @@ if "bpy" in locals():
     if "ifcopenshell" in locals():
         importlib.reload(ifcopenshell)
 
-import bpy
-import mathutils
-from collections import defaultdict
-from bpy.props import StringProperty, IntProperty, BoolProperty
+from bpy.props import (
+    BoolProperty,
+    IntProperty,
+    StringProperty,
+)
 from bpy_extras.io_utils import ImportHelper
+from collections import defaultdict
+import bpy
+import logging
+import mathutils
+import os
 
 major, minor = bpy.app.version[0:2]
 transpose_matrices = minor >= 62
@@ -63,6 +69,25 @@ bpy.types.Object.ifc_type = StringProperty(
     name="IFC Entity Type",
     description="The STEP Datatype keyword")
 
+def _get_parent(instance):
+    """This is based on ifcopenshell.app.geom"""
+    if instance.is_a("IfcOpeningElement"):
+        # We skip opening elements as they are nameless.
+        # We use this function to get usable collections.
+        return _get_parent(instance.VoidsElements[0].RelatingBuildingElement)
+    if instance.is_a("IfcElement"):
+        fills = instance.FillsVoids
+        if len(fills):
+            return fills[0].RelatingOpeningElement
+        containments = instance.ContainedInStructure
+        if len(containments):
+            return containments[0].RelatingStructure
+    if instance.is_a("IfcObjectDefinition"):
+        decompositions = instance.Decomposes
+        if len(decompositions):
+            return decompositions[0].RelatingObject
+
+
 
 def import_ifc(filename, use_names, process_relations, blender_booleans):
     from . import ifcopenshell
@@ -70,7 +95,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
     print(f"Reading {bpy.path.basename(filename)}...")
     settings = ifcopenshell_geom.settings()
     settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, blender_booleans)
-    ifc_file = ifcopenshell.file(filename)
+    assert os.path.exists(filename), filename
+    ifc_file = ifcopenshell.open(filename)
     iterator = ifcopenshell_geom.iterator(settings, ifc_file)
     valid_file = iterator.initialize()
     if not valid_file:
@@ -82,8 +108,40 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
     openings = []
     old_progress = -1
     print("Creating geometry...")
-    collection = bpy.data.collections.new(f"{bpy.path.basename(filename)}")
-    bpy.context.scene.collection.children.link(collection)
+    root_collection = bpy.data.collections.new(f"{bpy.path.basename(filename)}")
+    bpy.context.scene.collection.children.link(root_collection)
+
+    collections = {
+        0: root_collection
+    }
+    def get_collection(cid):
+        if cid == 0:
+            return root_collection
+
+        collection = collections.get(cid)
+        if collection is None:
+            try:
+                ifc_object = ifc_file.by_id(cid)
+            except Exception as exc:
+                logging.exception(exc)
+                ifc_object = None
+
+            if ifc_object is not None:
+                # FIXME: I am really unsure if that is correct way to get parent object
+                ifc_parent_object = _get_parent(ifc_object)
+                parent_id = ifc_parent_object.id() if ifc_parent_object is not None else 0
+                parent_collection = get_collection(parent_id)
+                name = ifc_object.Name or f'{ifc_object.is_a()}[{cid}]'
+            else:
+                parent_collection = get_collection(0)
+                name = f'unresolved_{cid}'
+
+            collection = bpy.data.collections.new(name)
+            parent_collection.children.link(collection)
+            collections[cid] = collection
+
+
+        return collection
 
     if  process_relations:
         rel_collection = bpy.data.collections.new("Relations")
@@ -166,7 +224,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
             id_to_matrix[ob.id] = mat
         else:
             bob.matrix_world = mat
-        collection.objects.link(bob)
+
+        get_collection(ob.parent_id).objects.link(bob)
 
         bpy.context.view_layer.objects.active = bob
         bpy.ops.object.mode_set(mode='EDIT')
