@@ -43,6 +43,7 @@ if "bpy" in locals():
 
 import bpy
 import mathutils
+from collections import defaultdict
 from bpy.props import StringProperty, IntProperty, BoolProperty
 from bpy_extras.io_utils import ImportHelper
 
@@ -75,7 +76,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
     if not valid_file:
         return False
     print("Done reading file")
-    id_to_object = {}
+    id_to_object = defaultdict(list)
     id_to_parent = {}
     id_to_matrix = {}
     openings = []
@@ -83,6 +84,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
     print("Creating geometry...")
     collection = bpy.data.collections.new(f"{bpy.path.basename(filename)}")
     bpy.context.scene.collection.children.link(collection)
+
     if  process_relations:
         rel_collection = bpy.data.collections.new("Relations")
         collection.children.link(rel_collection)
@@ -179,8 +181,6 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                 bob.hide_viewport = bob.hide_render = True
             bob.display_type = 'WIRE'
 
-        if ob.id not in id_to_object:
-            id_to_object[ob.id] = []
         id_to_object[ob.id].append(bob)
 
         if ob.parent_id > 0:
@@ -202,45 +202,43 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
     if process_relations:
         print("Processing relations...")
+        while len(id_to_parent_temp):
+            id, parent_id = id_to_parent_temp.popitem()
 
-    while len(id_to_parent_temp) and process_relations:
-        id, parent_id = id_to_parent_temp.popitem()
-
-        if parent_id in id_to_object:
-            bob = id_to_object[parent_id][0]
-        else:
-            parent_ob = iterator.getObject(parent_id)
-            if parent_ob.id == -1:
-                bob = None
+            if parent_id in id_to_object:
+                bob = id_to_object[parent_id][0]
             else:
-                m = parent_ob.transformation.matrix.data
-                nm = parent_ob.name if len(parent_ob.name) and use_names \
-                    else parent_ob.guid
-                bob = bpy.data.objects.new(nm, None)
+                parent_ob = iterator.getObject(parent_id)
+                if parent_ob.id == -1:
+                    bob = None
+                else:
+                    m = parent_ob.transformation.matrix.data
+                    nm = parent_ob.name if len(parent_ob.name) and use_names \
+                        else parent_ob.guid
+                    bob = bpy.data.objects.new(nm, None)
 
-                mat = mathutils.Matrix((
-                    [m[0], m[1], m[2], 0],
-                    [m[3], m[4], m[5], 0],
-                    [m[6], m[7], m[8], 0],
-                    [m[9], m[10], m[11], 1]))
-                if transpose_matrices:
-                    mat.transpose()
-                id_to_matrix[parent_ob.id] = mat
+                    mat = mathutils.Matrix((
+                        [m[0], m[1], m[2], 0],
+                        [m[3], m[4], m[5], 0],
+                        [m[6], m[7], m[8], 0],
+                        [m[9], m[10], m[11], 1]))
+                    if transpose_matrices:
+                        mat.transpose()
+                    id_to_matrix[parent_ob.id] = mat
 
-                rel_collection.objects.link(bob)
+                    rel_collection.objects.link(bob)
 
-                bob.ifc_id = parent_ob.id
-                bob.ifc_name, bob.ifc_type, bob.ifc_guid = \
-                    parent_ob.name, parent_ob.type, parent_ob.guid
+                    bob.ifc_id = parent_ob.id
+                    bob.ifc_name, bob.ifc_type, bob.ifc_guid = \
+                        parent_ob.name, parent_ob.type, parent_ob.guid
 
-                if parent_ob.parent_id > 0:
-                    id_to_parent[parent_id] = parent_ob.parent_id
-                    id_to_parent_temp[parent_id] = parent_ob.parent_id
-                if parent_id not in id_to_object: id_to_object[parent_id] = []
-                id_to_object[parent_id].append(bob)
-        if bob:
-            for ob in id_to_object[id]:
-                ob.parent = bob
+                    if parent_ob.parent_id > 0:
+                        id_to_parent[parent_id] = parent_ob.parent_id
+                        id_to_parent_temp[parent_id] = parent_ob.parent_id
+                    id_to_object[parent_id].append(bob)
+            if bob:
+                for ob in id_to_object[id]:
+                    ob.parent = bob
 
     id_to_matrix_temp = dict(id_to_matrix)
 
