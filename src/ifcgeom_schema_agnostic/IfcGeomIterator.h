@@ -83,7 +83,7 @@ namespace IfcGeom {
 		IteratorImplementation<P, PP>* implementation_;
 
 	public:
-		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, size_t num_threads = 1)
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, int num_threads = 1)
 			: file_(file)
 			, settings_(settings)
 		{

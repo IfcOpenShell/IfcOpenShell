@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
 		("calculate-quantities", "Calculate or fix the physical quantity definitions "
 			"based on an interpretation of the geometry when exporting IFC");
 
-	size_t num_threads;
+	int num_threads;
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -735,7 +735,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	if (num_threads == 0) {
+	if (num_threads <= 0) {
 		num_threads = std::thread::hardware_concurrency();
 		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
 	}

@@ -14,7 +14,7 @@ namespace IfcGeom {
 namespace {
 	template <typename P, typename PP>
 	struct MAKE_TYPE_NAME(factory_t) {
-		IfcGeom::IteratorImplementation<P, PP>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, size_t num_threads) const {
+		IfcGeom::IteratorImplementation<P, PP>* operator()(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads) const {
 			return new IfcGeom::MAKE_TYPE_NAME(IteratorImplementation_)<P, PP>(settings, file, filters, num_threads);
 		}
 	};
