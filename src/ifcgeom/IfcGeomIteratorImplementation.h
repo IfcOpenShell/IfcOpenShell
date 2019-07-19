@@ -89,6 +89,8 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
 
+#include <atomic>
+
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
 #undef min
@@ -176,7 +178,8 @@ namespace IfcGeom {
 	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation<P, PP> {
 	private:
 
-		size_t num_threads_;
+		int num_threads_;
+		std::atomic<int> progress_;
 		std::vector<geometry_conversion_task<P, PP>> tasks_;
 		std::vector<IfcGeom::Element<P, PP>*> all_processed_elements_;
 		std::vector<IfcGeom::BRepElement<P, PP>*> all_processed_native_elements_;
@@ -437,10 +440,10 @@ namespace IfcGeom {
 							fu.get();
 							
 							processed += 1;
-							const int progress = processed * 50 / tasks_.size();
-							if (progress != old_progress) {
-								Logger::ProgressBar(progress);
-								old_progress = progress;
+							progress_ = processed * 50 / tasks_.size();
+							if (progress_ != old_progress) {
+								Logger::ProgressBar(progress_);
+								old_progress = progress_;
 							}
 								
 							std::swap(threadpool[i], threadpool.back());
@@ -460,10 +463,10 @@ namespace IfcGeom {
 				fu.get();
 
 				processed += 1;
-				const int progress = processed * 50 / tasks_.size();
-				if (progress != old_progress) {
-					Logger::ProgressBar(progress);
-					old_progress = progress;
+				progress_ = processed * 50 / tasks_.size();
+				if (progress_ != old_progress) {
+					Logger::ProgressBar(progress_);
+					old_progress = progress_;
 				}
 			}
 
@@ -519,7 +522,13 @@ namespace IfcGeom {
             }
         }
 
-		int progress() const { return 100 * done / total; }
+		int progress() const { 
+			if (num_threads_ == 1) {
+				return 100 * done / total;
+			} else {
+				return progress_;
+			}
+		}
 
 		const std::string& getUnitName() const { return unit_name; }
 
@@ -946,7 +955,7 @@ namespace IfcGeom {
 
 		bool owns_ifc_file;
 	public:
-		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, size_t num_threads)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings(settings)
 			, ifc_file(file)
 			, filters_(filters)
