@@ -122,6 +122,7 @@ bool rename_file(const std::string& old_filename, const std::string& new_filenam
 static std::stringstream log_stream;
 void write_log(bool);
 void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
+void fix_IsExternal(IfcParse::IfcFile&);
 std::string format_duration(time_t start, time_t end);
 
 /// @todo make the filters non-global
@@ -187,6 +188,10 @@ int main(int argc, char** argv)
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
 		("calculate-quantities", "Calculate or fix the physical quantity definitions "
+			"based on an interpretation of the geometry when exporting IFC");
+
+	ifc_options.add_options()
+		("external-walls", "Fix the physical quantity definitions "
 			"based on an interpretation of the geometry when exporting IFC");
     
 	po::options_description geom_options("Geometry options");
@@ -501,6 +506,11 @@ int main(int argc, char** argv)
 					if (vmap.count("calculate-quantities")) {
 						fix_quantities(*ifc_file, no_progress, quiet, stderr_progress);
 					}
+					if (vmap.count("external-walls")) {
+						fix_IsExternal(*ifc_file);
+					}
+
+
 					fs << *ifc_file;
 					exit_code = EXIT_SUCCESS;
 				} else {
@@ -1134,6 +1144,8 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	size_t num_created = 0;
 	int old_progress = quiet ? 0 : -1;
 
+
+
 	auto person = latebound_access::create(f, "IfcPerson");
 	latebound_access::set(person, "FamilyName", std::string("IfcOpenShell"));
 	latebound_access::set(person, "GivenName", std::string("IfcOpenShell"));
@@ -1269,6 +1281,120 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	} else {
 		Logger::Status("\rDone writing quantities for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
+	}
+
+}
+
+#include <BRep_Builder.hxx>
+#include <GProp_GProps.hxx>
+#include <BRepGProp.hxx>
+#include <BRepOffset_MakeOffset.hxx>
+#include <TopOpeBRep_ShapeIntersector.hxx>
+#include <ShapeUpgrade_UnifySameDomain.hxx>
+
+struct WallFace {
+	TopoDS_Face aface;
+	Standard_Real area;
+};
+
+bool compareByArea(const WallFace &a, const WallFace &b)
+{
+	return a.area < b.area;
+}
+
+TopoDS_Shape thickened_face(TopoDS_Face face, double offset) {
+	BRepOffset_MakeOffset mos = BRepOffset_MakeOffset::BRepOffset_MakeOffset(face, offset, 0, BRepOffset_Skin, Standard_False, Standard_False, GeomAbs_Arc, Standard_True);
+	return mos.Shape();
+}
+
+bool intersects(TopoDS_Shape shell1, TopoDS_Shape shell2) {
+
+	TopOpeBRep_ShapeIntersector intersector = TopOpeBRep_ShapeIntersector();
+	intersector.InitIntersection(shell1, shell2);
+	Standard_Boolean verif = intersector.MoreIntersection();
+	return verif;
+}
+
+
+void fix_IsExternal(IfcParse::IfcFile& f) {
+
+	const double OFFSET = 2.;
+
+	std::cout << "Hello World !";
+	
+	auto space_instances = f.instances_by_type("IfcSpace");	
+
+	IfcGeom::IteratorSettings settings;
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
+	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	IfcGeom::Kernel temp(&f);
+
+	BRep_Builder shell_compound_builder;
+	TopoDS_Compound ashell_compound;
+	shell_compound_builder.MakeCompound(ashell_compound);
+
+	// Loop to store the vertical faces of the spaces in the compound
+	for (IfcEntityList::it it = space_instances->begin(); it != space_instances->end(); ++it) {
+
+		IfcUtil::IfcBaseEntity * space = (IfcUtil::IfcBaseEntity*)*it;
+		std::string nom = *(space)->get("GlobalId");
+
+		// Get the Brep definition of the IFC entity
+		IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, space);
+
+		TopoDS_Compound compound = elem->geometry().as_compound(true);
+		shell_compound_builder.Add(ashell_compound, compound);
+	}
+
+	// Get the IfcWall entities
+	auto wall_entities = f.instances_by_type("IfcWall");
+
+	for (IfcEntityList::it it = wall_entities->begin(); it != wall_entities->end(); ++it) {
+		IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
+
+		IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, wall_entity);
+
+		TopoDS_Compound compound = elem->geometry().as_compound(true);
+
+		ShapeUpgrade_UnifySameDomain usd(compound);
+		usd.Build();
+
+		TopExp_Explorer wall_exp(usd.Shape(), TopAbs_FACE);
+
+		std::vector<WallFace> face_storing;
+
+		for (TopExp_Explorer exp(compound, TopAbs_FACE); exp.More(); exp.Next()) {
+			TopoDS_Face aface;
+			aface = TopoDS::Face(exp.Current());
+
+			GProp_GProps System;
+			BRepGProp::SurfaceProperties(aface, System);
+			Standard_Real area = System.Mass();
+
+			face_storing.push_back({ aface, area });
+		}
+
+		if (face_storing.size() < 2) {
+			Logger::Error("Not enough faces for wall", wall_entity);
+			continue;
+		}
+
+		std::sort(face_storing.begin(), face_storing.end(), compareByArea);
+
+		std::array <bool, 2> is_intersecting;
+		std::array<TopoDS_Shape, 2> thick_faces = { 
+			thickened_face((*face_storing.rbegin()).aface, OFFSET), 
+			thickened_face((*(face_storing.rbegin() + 1)).aface, OFFSET)
+		};
+
+		for (int i = 0; i < 2; ++i) {
+			is_intersecting[i] = intersects(thick_faces[i], ashell_compound);
+		}
+
+		const bool is_external = is_intersecting[0] == is_intersecting[1];		
+		std::cout << is_external<<std::endl; 
+
 	}
 
 }
