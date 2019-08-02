@@ -63,6 +63,11 @@
 #include <vector>
 #include <limits>
 #include <algorithm>
+#include <atomic>
+
+#include <future>
+#include <thread>
+#include <chrono>
 
 #include <boost/algorithm/string.hpp>
 
@@ -90,6 +95,8 @@
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
 
+#include <atomic>
+
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
 #undef min
@@ -98,11 +105,94 @@
 #undef max
 #endif
 
+namespace {
+	template <typename P, typename PP=P>
+	struct geometry_conversion_task {
+		int index;
+		IfcSchema::IfcRepresentation *representation;
+		IfcSchema::IfcProduct::list::ptr products;
+		std::vector<IfcGeom::NativeElement<P, PP>*> breps;
+		std::vector<IfcGeom::Element<P, PP>*> elements;
+	};
+
+	template <typename P, typename PP=P>
+	IfcGeom::Element<P, PP>* process_based_on_settings(
+		const IfcGeom::IteratorSettings& settings,
+		IfcGeom::NativeElement<P, PP>* elem, 
+		IfcGeom::TriangulationElement<P, PP>* previous=nullptr)
+	{
+		if (settings.get(IfcGeom::IteratorSettings::USE_BREP_DATA)) {
+			try {
+				return new IfcGeom::SerializedElement<P, PP>(*elem);
+			} catch (...) {
+				Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
+				return nullptr;
+			}
+		} else if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+			try {
+				if (!previous) {
+					return  new IfcGeom::TriangulationElement<P, PP>(*elem);
+				} else {
+					return  new IfcGeom::TriangulationElement<P, PP>(*elem, previous->geometry_pointer());
+				}
+			} catch (...) {
+				Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
+				return nullptr;
+			}
+		} else {
+			return elem;
+		}
+	}
+
+	template <typename P, typename PP = P>
+	void create_element(
+		IfcGeom::MAKE_TYPE_NAME(AbstractKernel)* kernel, 
+		const IfcGeom::IteratorSettings& settings,
+		geometry_conversion_task<P, PP>* rep) 
+	{
+		IfcSchema::IfcRepresentation *representation = rep->representation;
+		IfcSchema::IfcProduct *product = *rep->products->begin();
+		auto brep = kernel->create_brep_for_representation_and_product<P, PP>(settings, representation, product);
+		if (!brep) {
+			return;
+		}
+
+		auto elem = process_based_on_settings(settings, brep);
+		if (!elem) {
+			return;
+		}
+
+		rep->breps = { brep };
+		rep->elements = { elem };
+
+		for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
+			auto brep2 = kernel->create_brep_for_processed_representation<P, PP>(settings, representation, *it, brep);
+			if (brep2) {
+				auto elem2 = process_based_on_settings(settings, brep, dynamic_cast<IfcGeom::TriangulationElement<P, PP>*>(elem));
+				if (elem2) {
+					rep->breps.push_back(brep2);
+					rep->elements.push_back(elem2);
+				}
+			}
+		}
+	}
+}
+
 namespace IfcGeom {
 	
 	template <typename P, typename PP>
 	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation<P, PP> {
 	private:
+
+		int num_threads_;
+		std::atomic<int> progress_;
+		std::vector<geometry_conversion_task<P, PP>> tasks_;
+		std::vector<IfcGeom::Element<P, PP>*> all_processed_elements_;
+		std::vector<IfcGeom::NativeElement<P, PP>*> all_processed_native_elements_;
+		typename std::vector<IfcGeom::Element<P, PP>*>::const_iterator task_result_iterator_;
+		typename std::vector<IfcGeom::NativeElement<P, PP>*>::const_iterator native_task_result_iterator_;
+
+		std::string geometry_library_;
 
 		MAKE_TYPE_NAME(IteratorImplementation_)(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
@@ -245,14 +335,116 @@ namespace IfcGeom {
 			representation_iterator = representations->begin();
 			ifcproducts.reset();
 
-			if (!create()) {
-				return false;
-			}
-
 			done = 0;
 			total = representations->size();
 
+			if (num_threads_ != 1) {
+				collect();
+				process_concurrently();
+			} else {
+				if (!create()) {
+					return false;
+				}
+			}
+			
 			return true;
+		}
+
+		void collect() {
+			int i = 0;
+			IfcSchema::IfcProduct::list* previous = nullptr;
+			while (auto rp = get_next_task()) {
+				// Note that get_next_task() mutates the state of the iterator
+				// we use that capture all products that can be processed as
+				// part of this representation and then keep iterating until
+				// the underlying list of products changes.
+				if (ifcproducts.get() != previous) {
+					previous = ifcproducts.get();
+					geometry_conversion_task<P, PP> t;
+					t.index = i++;
+					t.representation = *representation_iterator;
+					t.products = ifcproducts;
+					tasks_.emplace_back(t);
+				}
+
+				_nextShape();
+			}
+		}
+
+		void process_concurrently() {
+			size_t conc_threads = num_threads_;
+			if (conc_threads > tasks_.size()) {
+				conc_threads = tasks_.size();
+			}
+			
+			std::vector<MAKE_TYPE_NAME(AbstractKernel)*> kernel_pool;
+			kernel_pool.reserve(conc_threads);
+			for (unsigned i = 0; i < conc_threads; ++i) {
+				kernel_pool.push_back((MAKE_TYPE_NAME(AbstractKernel)*) impl::kernel_implementations().construct(ifc_file->schema()->name(), geometry_library_, ifc_file));
+			}
+
+			std::vector<std::future<void>> threadpool;
+
+			int old_progress = -1;
+			int processed = 0;
+
+			Logger::ProgressBar(0);
+
+			for (auto& rep : tasks_) {
+				MAKE_TYPE_NAME(AbstractKernel)* K = nullptr;
+				if (threadpool.size() < kernel_pool.size()) {
+					K = kernel_pool[threadpool.size()];
+				}
+
+				while (threadpool.size() == conc_threads) {
+					for (int i = 0; i < (int)threadpool.size(); i++) {
+						std::future<void> &fu = threadpool[i];
+						std::future_status status;
+						status = fu.wait_for(std::chrono::seconds(0));
+						if (status == std::future_status::ready) {
+							fu.get();
+							
+							processed += 1;
+							progress_ = processed * 50 / tasks_.size();
+							if (progress_ != old_progress) {
+								Logger::ProgressBar(progress_);
+								old_progress = progress_;
+							}
+								
+							std::swap(threadpool[i], threadpool.back());
+							threadpool.pop_back();
+							std::swap(kernel_pool[i], kernel_pool.back());
+							K = kernel_pool.back();
+							break;
+						} // if
+					}   // for
+				}     // while
+
+				std::future<void> fu = std::async(std::launch::async, create_element<P, PP>, K, std::ref(settings), &rep);
+				threadpool.emplace_back(std::move(fu));
+			}
+
+			for (std::future<void> &fu : threadpool) {
+				fu.get();
+
+				processed += 1;
+				progress_ = processed * 50 / tasks_.size();
+				if (progress_ != old_progress) {
+					Logger::ProgressBar(progress_);
+					old_progress = progress_;
+				}
+			}
+
+			for (auto& rep : tasks_) {
+				all_processed_elements_.insert(all_processed_elements_.end(), rep.elements.begin(), rep.elements.end());
+				all_processed_native_elements_.insert(all_processed_native_elements_.end(), rep.breps.begin(), rep.breps.end());
+			}
+
+			task_result_iterator_ = all_processed_elements_.begin();
+			native_task_result_iterator_ = all_processed_native_elements_.begin();
+
+			Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
+				" objects)                                ");
 		}
 
         /// Computes model's bounding box (bounds_min and bounds_max).
@@ -296,7 +488,13 @@ namespace IfcGeom {
             }
         }
 
-		int progress() const { return 100 * done / total; }
+		int progress() const { 
+			if (num_threads_ == 1) {
+				return 100 * done / total;
+			} else {
+				return progress_;
+			}
+		}
 
 		const std::string& getUnitName() const { return unit_name; }
 
@@ -360,13 +558,13 @@ namespace IfcGeom {
 			return associated_single_materials.size() == 1;
 		}
 
-		NativeElement<P, PP>* create_shape_model_for_next_entity() {
+		boost::optional<std::pair<IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*>> get_next_task() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
 
-				if ( representation_iterator == representations->end() ) {
+				if (representation_iterator == representations->end()) {
 					representations.reset();
-					return 0; // reached the end of our list of representations
+					return boost::none; // reached the end of our list of representations
 				}
 				representation = *representation_iterator;
 
@@ -382,12 +580,12 @@ namespace IfcGeom {
                         }
                     }
 
-                    if (ifcproducts->size() == 0) {
-                        _nextShape();
-                        continue;
-                    }
+					if (ifcproducts->size() == 0) {
+						_nextShape();
+						continue;
+					}
 
-                    geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
+					geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
 
 					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 
@@ -414,7 +612,7 @@ namespace IfcGeom {
 					}
 
 					if (representation_processed_as_mapped_item) {
-                        ok_mapped_representations->push(representation_mapped_to);
+						ok_mapped_representations->push(representation_mapped_to);
 						_nextShape();
 						continue;
 					}
@@ -423,13 +621,28 @@ namespace IfcGeom {
 				}
 
 				// Have we reached the end of our list of IfcProducts?
-				if ( ifcproduct_iterator == ifcproducts->end() ) {
+				if (ifcproduct_iterator == ifcproducts->end()) {
 					_nextShape();
 					continue;
 				}
 
 				IfcSchema::IfcProduct* product = *ifcproduct_iterator;
-                Logger::SetProduct(product);
+
+
+				return std::make_pair(representation, product);
+			}
+		}
+
+		NativeElement<P, PP>* create_shape_model_for_next_entity() {
+			for (;;) {
+				auto rp = get_next_task();
+				if (!rp) {
+					return nullptr;
+				}
+				auto representation = rp->first;
+				auto product = rp->second;
+
+				Logger::SetProduct(product);
 
 				NativeElement<P, PP>* element;
 				if (ifcproduct_iterator == ifcproducts->begin() || !geometry_reuse_ok_for_current_representation_) {
@@ -477,13 +690,23 @@ namespace IfcGeom {
         /// Moves to the next shape representation, create its geometry, and returns the associated product.
         /// Use get() to retrieve the created geometry.
 		IfcUtil::IfcBaseClass* next() {
-			// Increment the iterator over the list of products using the current
-			// shape representation
-			if (ifcproducts) {
-				++ifcproduct_iterator;
-			}
+			if (num_threads_ != 1) {
+				task_result_iterator_++;
+				native_task_result_iterator_++;
+				if (task_result_iterator_ == all_processed_elements_.end()) {
+					return nullptr;
+				} else {
+					return (*task_result_iterator_)->product();
+				}
+			} else {
+				// Increment the iterator over the list of products using the current
+				// shape representation
+				if (ifcproducts) {
+					++ifcproduct_iterator;
+				}
 
-			return create();
+				return create();
+			}
 		}
 
         /// Gets the representation of the current geometrical entity.
@@ -491,9 +714,18 @@ namespace IfcGeom {
         {
             // TODO: Test settings and throw
             Element<P, PP>* ret = 0;
-            if (current_triangulation) { ret = current_triangulation; }
-            else if (current_serialization) { ret = current_serialization; }
-            else if (current_shape_model) { ret = current_shape_model; }
+
+			if (num_threads_ != 1) {
+				ret = *task_result_iterator_;
+			} else {
+				if (current_triangulation) { 
+					ret = current_triangulation; 
+				} else if (current_serialization) { 
+					ret = current_serialization; 
+				} else if (current_shape_model) { 
+					ret = current_shape_model; 
+				}
+			}
 
 			// If we want to organize the element considering their hierarchy
 			if (settings.get(IteratorSettings::SEARCH_FLOOR))
@@ -548,7 +780,11 @@ namespace IfcGeom {
 		NativeElement<P, PP>* get_native()
 		{
 			// TODO: Test settings and throw
-			return current_shape_model;
+			if (num_threads_ != 1) {
+				return *native_task_result_iterator_;
+			} else {
+				return current_shape_model;
+			}
 		}
 
 		const Element<P, PP>* get_object(int id) {
@@ -678,11 +914,13 @@ namespace IfcGeom {
 
 		bool owns_ifc_file;
 	public:
-		MAKE_TYPE_NAME(IteratorImplementation_)(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
+		MAKE_TYPE_NAME(IteratorImplementation_)(const std::string& geometry_library, const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings(settings)
 			, ifc_file(file)
 			, filters_(filters)
 			, owns_ifc_file(false)
+			, num_threads_(num_threads)
+			, geometry_library_(geometry_library)
 		{
 			kernel = (MAKE_TYPE_NAME(AbstractKernel)*) impl::kernel_implementations().construct(file->schema()->name(), geometry_library, file);
 			// kernel = new Kernel(geometry_library, file);
@@ -692,6 +930,16 @@ namespace IfcGeom {
 		~MAKE_TYPE_NAME(IteratorImplementation_)() {
 			if (owns_ifc_file) {
 				delete ifc_file;
+			}
+
+			if (settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+				for (auto& p : all_processed_native_elements_) {
+					delete p;
+				}
+			}
+
+			for (auto& p : all_processed_elements_) {
+				delete p;
 			}
 
 			free_shapes();

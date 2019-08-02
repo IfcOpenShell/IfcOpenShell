@@ -345,6 +345,10 @@ endif()
 # resolved. Also add thread and rt libraries.
 get_filename_component(libTKernelExt ${libTKernel} EXT)
 if("${libTKernelExt}" STREQUAL ".a")
+    set(OCCT_STATIC ON)
+endif()
+
+if(OCCT_STATIC)
     find_package(Threads)
     # OPENCASCADE_LIBRARIES repeated three times below in order to fix cyclic dependencies - use --start-group ... --end-group instead?
     set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
@@ -668,7 +672,12 @@ set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
-target_link_libraries(IfcGeom ${IfcGeom_libraries})
+
+if (UNIX)
+find_package(Threads)
+endif()
+
+TARGET_LINK_LIBRARIES(IfcGeom ${IfcGeom_libraries} ${CMAKE_THREAD_LIBS_INIT})
 
 endif(BUILD_IFCGEOM)
 

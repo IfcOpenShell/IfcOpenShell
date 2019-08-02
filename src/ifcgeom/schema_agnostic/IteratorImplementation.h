@@ -23,9 +23,9 @@ namespace IfcGeom {
 	class NativeElement;
 }
 
-typedef boost::function4<IfcGeom::IteratorImplementation<float, float>*, const std::string&, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_float_float_fn;
-typedef boost::function4<IfcGeom::IteratorImplementation<float, double>*, const std::string&, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_float_double_fn;
-typedef boost::function4<IfcGeom::IteratorImplementation<double, double>*, const std::string&, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&> iterator_double_double_fn;
+typedef boost::function5<IfcGeom::IteratorImplementation<float, float>*, const std::string&, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_float_float_fn;
+typedef boost::function5<IfcGeom::IteratorImplementation<float, double>*, const std::string&, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_float_double_fn;
+typedef boost::function5<IfcGeom::IteratorImplementation<double, double>*, const std::string&, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int> iterator_double_double_fn;
 
 template <typename P, typename PP>
 struct get_factory_type {};
@@ -50,7 +50,7 @@ class IteratorFactoryImplementation : public std::map<std::string, typename get_
 public:
 	IteratorFactoryImplementation();
 	void bind(const std::string& schema_name, typename get_factory_type<P, PP>::type fn);
-	IfcGeom::IteratorImplementation<P, PP>* construct(const std::string& schema_name, const std::string& geometry_library, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&);
+	IfcGeom::IteratorImplementation<P, PP>* construct(const std::string& schema_name, const std::string& geometry_library, const IfcGeom::IteratorSettings&, IfcParse::IfcFile*, const std::vector<IfcGeom::filter_t>&, int);
 };
 
 template <typename P, typename PP>

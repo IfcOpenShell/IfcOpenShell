@@ -85,112 +85,162 @@ IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* f) {
 IfcCharacterDecoder::~IfcCharacterDecoder() {
 }
 
-IfcCharacterDecoder::operator std::string() {
-	unsigned int parse_state = 0;
-	builder_.clear();
-	builder_.push_back('\'');
-	char current_char;
-	int codepage = 1;
-	unsigned int hex = 0;
-	unsigned int hex_count = 0;
+namespace {
+	static unsigned int reference_helper = 0;
 
-	while ( (current_char = file->Peek()) != 0 ) {
-		if ( EXPECTS_CHARACTER(parse_state) ) {
-			builder_.push_back(IfcUtil::convert_codepage(codepage, current_char + 0x80));
-			parse_state = 0;
-		} else if ( current_char == '\'' && ! parse_state ) {
-			parse_state = APOSTROPHE;
-		} else if ( current_char == '\\' && ! parse_state ) {
-			parse_state = FIRST_SOLIDUS;
-		} else if ( current_char == '\\' && EXPECTS_SOLIDUS(parse_state) ) {
-			if ( parse_state & ALPHABET_DEFINITION || 
-				parse_state & IGNORED_DIRECTIVE || 
-				parse_state & ENDEXTENDED_0 ) parse_state = hex = hex_count = 0;
-			else if ( parse_state & ENCOUNTERED_HEX ) {
-				parse_state += THIRD_SOLIDUS;
-				parse_state -= ENCOUNTERED_HEX;
+	class pure_impure_helper {
+	private:
+		bool pure_;
+		IfcParse::IfcSpfStream* stream_;
+		unsigned int& pointer_;
+		std::wstring builder_;
+
+		char peek() {
+			if (pure_) {
+				return stream_->peek_at(pointer_);
+			} else {
+				return stream_->Peek();
 			}
-			else parse_state += SECOND_SOLIDUS;
-		} else if ( current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state) ) {
-			parse_state += ENDEXTENDED_X;
-		} else if ( current_char == '0' && EXPECTS_ENDEXTENDED_0(parse_state) ) {
-			parse_state += ENDEXTENDED_0;
-		} else if ( current_char == 'X' && EXPECTS_ARBITRARY(parse_state) ) {
-			parse_state += ARBITRARY;
-		} else if ( current_char == '2' && EXPECTS_ARBITRARY2(parse_state) ) {
-			parse_state += EXTENDED2;
-		} else if ( current_char == '4' && EXPECTS_ARBITRARY2(parse_state) ) {
-			parse_state += EXTENDED2 + EXTENDED4;
-		} else if ( current_char == 'P' && EXPECTS_ALPHABET(parse_state) ) {
-			parse_state += ALPHABET;
-		} else if ( (current_char == 'N' || current_char == 'F') && EXPECTS_N_OR_F(parse_state) ) {
-			parse_state += IGNORED_DIRECTIVE;
-		} else if ( IS_VALID_ALPHABET_DEFINITION(current_char) && EXPECTS_ALPHABET_DEFINITION(parse_state) ) {
-			codepage = current_char - 0x40;
-			parse_state += ALPHABET_DEFINITION;
-		} else if ( current_char == 'S' && EXPECTS_PAGE(parse_state) ) {
-			parse_state += PAGE;
-		} else if ( IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state) ) {
-			hex <<= 4;
-			parse_state += HEX((++hex_count));
-			hex += HEX_TO_INT(current_char);
-			if ( (hex_count == 2 && !(parse_state & EXTENDED2)) ||
-				(hex_count == 4 && !(parse_state & EXTENDED4)) ||
-				(hex_count == 8) ) 
-			{
-				builder_.push_back(hex);
-				if ( hex_count == 2 ) parse_state = 0;
-				else {
-					CLEAR_HEX(parse_state);
-					parse_state |= ENCOUNTERED_HEX;
-				}
-				hex = hex_count = 0;
-			}
-		} else if ( parse_state && !(
-			(current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
-			(current_char == '\'' && parse_state == APOSTROPHE)
-			) ) {
-				if ( parse_state == APOSTROPHE && current_char != '\'' ) break;
-				throw IfcInvalidTokenException(file->Tell(), current_char);
-		} else {
-			parse_state = hex = hex_count = 0;
-			builder_.push_back(current_char);
 		}
-		file->Inc();
-	}
-	builder_.push_back('\'');
 
-	if (mode == UTF8) {
-		return IfcUtil::convert_utf8(builder_);
-	} else if (mode == SUBSTITUTE) {
-		std::string r;
-		r.reserve(builder_.size());
-		const char& sub = substitution_character;
-		std::transform(builder_.begin(), builder_.end(), std::back_inserter(r), [&sub](wchar_t c) {
-			if (c >= 0x20 && c <= 0x7e) {
-				return (char)c;
+		unsigned int tell() {
+			if (pure_) {
+				return pointer_;
 			} else {
-				return sub;
+				return stream_->Tell();
 			}
-		});
-		return r;
-	} else if (mode == ESCAPE) {
-		std::stringstream str;
-		str << std::hex << std::setw(4) << std::setfill('0');
-		std::for_each(builder_.begin(), builder_.end(), [&str](wchar_t c) {
-			if (c >= 0x20 && c <= 0x7e) {
-				str.put((char)c);
+		}
+
+		void increment() {
+			if (pure_) {
+				stream_->increment_at(pointer_);
 			} else {
-				str << "\\u" << c;
+				stream_->Inc();
 			}
-		});
-		return str.str();
-	} else {
-		throw IfcParse::IfcException("Invalid conversion mode");
-	}
+		}
+
+	public:
+		pure_impure_helper(IfcParse::IfcSpfStream* stream)
+			: pure_(false), stream_(stream), pointer_(reference_helper)
+		{}
+
+		pure_impure_helper(IfcParse::IfcSpfStream* stream, unsigned int& pointer)
+			: pure_(true), stream_(stream), pointer_(pointer)
+		{}
+
+		std::string get(IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
+			unsigned int parse_state = 0;
+			builder_.clear();
+			builder_.push_back('\'');
+			char current_char;
+			int codepage = 1;
+			unsigned int hex = 0;
+			unsigned int hex_count = 0;
+
+			while ((current_char = peek()) != 0) {
+				if (EXPECTS_CHARACTER(parse_state)) {
+					builder_.push_back(IfcUtil::convert_codepage(codepage, current_char + 0x80));
+					parse_state = 0;
+				} else if (current_char == '\'' && !parse_state) {
+					parse_state = APOSTROPHE;
+				} else if (current_char == '\\' && !parse_state) {
+					parse_state = FIRST_SOLIDUS;
+				} else if (current_char == '\\' && EXPECTS_SOLIDUS(parse_state)) {
+					if (parse_state & ALPHABET_DEFINITION ||
+						parse_state & IGNORED_DIRECTIVE ||
+						parse_state & ENDEXTENDED_0) parse_state = hex = hex_count = 0;
+					else if (parse_state & ENCOUNTERED_HEX) {
+						parse_state += THIRD_SOLIDUS;
+						parse_state -= ENCOUNTERED_HEX;
+					} else parse_state += SECOND_SOLIDUS;
+				} else if (current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state)) {
+					parse_state += ENDEXTENDED_X;
+				} else if (current_char == '0' && EXPECTS_ENDEXTENDED_0(parse_state)) {
+					parse_state += ENDEXTENDED_0;
+				} else if (current_char == 'X' && EXPECTS_ARBITRARY(parse_state)) {
+					parse_state += ARBITRARY;
+				} else if (current_char == '2' && EXPECTS_ARBITRARY2(parse_state)) {
+					parse_state += EXTENDED2;
+				} else if (current_char == '4' && EXPECTS_ARBITRARY2(parse_state)) {
+					parse_state += EXTENDED2 + EXTENDED4;
+				} else if (current_char == 'P' && EXPECTS_ALPHABET(parse_state)) {
+					parse_state += ALPHABET;
+				} else if ((current_char == 'N' || current_char == 'F') && EXPECTS_N_OR_F(parse_state)) {
+					parse_state += IGNORED_DIRECTIVE;
+				} else if (IS_VALID_ALPHABET_DEFINITION(current_char) && EXPECTS_ALPHABET_DEFINITION(parse_state)) {
+					codepage = current_char - 0x40;
+					parse_state += ALPHABET_DEFINITION;
+				} else if (current_char == 'S' && EXPECTS_PAGE(parse_state)) {
+					parse_state += PAGE;
+				} else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
+					hex <<= 4;
+					parse_state += HEX((++hex_count));
+					hex += HEX_TO_INT(current_char);
+					if ((hex_count == 2 && !(parse_state & EXTENDED2)) ||
+						(hex_count == 4 && !(parse_state & EXTENDED4)) ||
+						(hex_count == 8)) {
+						builder_.push_back(hex);
+						if (hex_count == 2) parse_state = 0;
+						else {
+							CLEAR_HEX(parse_state);
+							parse_state |= ENCOUNTERED_HEX;
+						}
+						hex = hex_count = 0;
+					}
+				} else if (parse_state && !(
+					(current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
+					(current_char == '\'' && parse_state == APOSTROPHE)
+					)) {
+					if (parse_state == APOSTROPHE && current_char != '\'') break;
+					throw IfcInvalidTokenException(tell(), current_char);
+				} else {
+					parse_state = hex = hex_count = 0;
+					builder_.push_back(current_char);
+				}
+				increment();
+			}
+			builder_.push_back('\'');
+
+			if (mode == IfcParse::IfcCharacterDecoder::UTF8) {
+				return IfcUtil::convert_utf8(builder_);
+			} else if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
+				std::string r;
+				r.reserve(builder_.size());
+				std::transform(builder_.begin(), builder_.end(), std::back_inserter(r), [&substitution_character](wchar_t c) {
+					if (c >= 0x20 && c <= 0x7e) {
+						return (char)c;
+					} else {
+						return substitution_character;
+					}
+				});
+				return r;
+			} else if (mode == IfcParse::IfcCharacterDecoder::ESCAPE) {
+				std::stringstream str;
+				str << std::hex << std::setw(4) << std::setfill('0');
+				std::for_each(builder_.begin(), builder_.end(), [&str](wchar_t c) {
+					if (c >= 0x20 && c <= 0x7e) {
+						str.put((char)c);
+					} else {
+						str << "\\u" << c;
+					}
+				});
+				return str.str();
+			} else {
+				throw IfcParse::IfcException("Invalid conversion mode");
+			}
+		}
+	};
 }
 
-void IfcCharacterDecoder::dryRun() {
+IfcCharacterDecoder::operator std::string() {
+	return pure_impure_helper(file).get(mode, substitution_character);
+}
+
+std::string IfcCharacterDecoder::get(unsigned int& ptr) {
+	return pure_impure_helper(file, ptr).get(mode, substitution_character);
+}
+
+void IfcCharacterDecoder::skip() {
 	unsigned int parse_state = 0;
 	char current_char;
 	unsigned int hex_count = 0;
