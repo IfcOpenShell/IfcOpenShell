@@ -31,16 +31,19 @@
 #   if building with -shared                                                  #
 #     * libgl1-mesa-dev libxext-dev libxmu-dev libxmu-headers libxi-dev       #
 #                                                                             #
+#   for python37 to install correctly additionally:                           #
+#     * libffi(-dev[el])                                                      #
+#                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2                 #
-#            libfreetype6-dev mesa-common-dev                                 #
+#            libfreetype6-dev mesa-common-dev libffi-dev                      #
 #                                                                             #
 #     on ubuntu 14.04:                                                        #
 #          $ apt-get install git gcc g++ autoconf bison make                  #
-#            libfreetype6-dev mesa-common-dev                                 #
+#            libfreetype6-dev mesa-common-dev libffi-dev                      #
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
-#          $ brew install git bison autoconf automake freetype                #
+#          $ brew install git bison autoconf automake freetype libffi         #
 #                                                                             #
 ###############################################################################
 
@@ -54,7 +57,17 @@ import shutil
 import time
 import tarfile
 import multiprocessing
-import urllib
+
+PYTHON_MAJOR = sys.version_info[0]
+
+if PYTHON_MAJOR >= 3:
+    from urllib.request import urlretrieve
+else:
+    # Not Python 3 - today, it is most likely to be Python 2
+    # But note that this might need an update when Python 4
+    # might be around one day
+    from urllib import urlretrieve
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -63,18 +76,25 @@ ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
 PROJECT_NAME="IfcOpenShell"
+PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2", "3.7.3"]
+JSON_VERSION="v3.6.1"
 OCE_VERSION="0.18"
 # OCCT_VERSION="7.1.0"
 # OCCT_HASH="89aebde"
-PYTHON_VERSIONS=["2.7.16", "3.2.6", "3.3.6", "3.4.6", "3.5.3", "3.6.2"]
 # OCCT_VERSION="7.2.0"
 # OCCT_HASH="88af392"
-OCCT_VERSION="7.3.0"
+OCCT_VERSION="7.3.0p3"
 BOOST_VERSION="1.69.0"
-PCRE_VERSION="8.39"
-LIBXML_VERSION="2.9.3"
+#PCRE_VERSION="8.39"
+PCRE_VERSION="8.41"
+#LIBXML2_VERSION="2.9.3"
+LIBXML2_VERSION="2.9.9"
 CMAKE_VERSION="3.4.1"
+#CMAKE_VERSION="3.14.5"
 SWIG_VERSION="3.0.12"
+#SWIG_VERSION="4.0.0"
+#OPENCOLLADA_VERSION="v1.6.63"
+OPENCOLLADA_VERSION="v1.6.68"
 GMP_VERSION="6.1.2"
 MPFR_VERSION="3.1.5"
 CGAL_VERSION="4.13"
@@ -120,6 +140,15 @@ def get_os():
     ret_value = sp.check_output([uname, "-s"]).strip()
     return ret_value
 
+def to_pystring(x):
+    """ Python 2 & 3 compatibility function for strings handling 
+    (to solve TypeError "Can't mix strings and bytes in path components" for Python 3).
+    Reference https://github.com/hugsy/gef/issues/382 """
+    res = str(x, encoding="utf-8") if PYTHON_MAJOR == 3 else x
+    substs = [("\n","\\n"), ("\r","\\r"), ("\t","\\t"), ("\v","\\v"), ("\b","\\b"), ]
+    for x,y in substs: res = res.replace(x,y)
+    return res
+
 # Set defaults for missing empty environment variables
 
 USE_OCCT = os.environ.get("USE_OCCT", "true").lower() == "true"
@@ -144,10 +173,11 @@ CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
 try:
     DEPS_DIR = os.environ["DEPS_DIR"]
 except KeyError:
-    path = ["..", "build", sp.check_output(uname).strip(), TARGET_ARCH]
+    path = [b"..", b"build", sp.check_output(uname).strip(), TARGET_ARCH]
     if TOOLSET:
         path.append(TOOLSET)
-    DEPS_DIR = os.path.realpath(os.path.join(*path))
+        
+    DEPS_DIR = to_pystring(os.path.realpath(os.path.join(*path)))
 
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
@@ -188,7 +218,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 dependency_tree = {
     'IfcParse': ('boost',  'libxml2'),
     'IfcGeom': ('IfcParse',  'occ',  'cgal', 'voxel'),
-    'IfcConvert': ('IfcGeom',  'OpenCOLLADA'),
+    'IfcConvert': ('IfcGeom',  'OpenCOLLADA', 'json'),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom', ),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
@@ -200,7 +230,8 @@ dependency_tree = {
     'swig': (),
     'occ': (),
     'cgal': (),
-    'pcre': ()
+    'pcre': (),
+    'json': ()
 }
 
 def v(dep):
@@ -234,26 +265,15 @@ for cmd in [git, bunzip2, tar, cc, cplusplus, autoconf, automake, yacc, make, "p
         raise ValueError("Required tool '%s' not installed or not added to PATH" % (cmd,))
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
-download_tool_curl="curl"
-download_tool_wget="wget"
+download_tool_default = download_tool_py = "py"
 download_tool_git = "git"
-
-if which(wget) != None:
-    download_tool_default = download_tool_wget
-elif which(curl) != None:
-    download_tool_default = download_tool_curl
-else:
-    raise ValueError("No download application found, tried: curl, wget")
-
-CURL = ["curl", "-sL"]
-WGET= ["wget", "-q", "--no-check-certificate"]
 
 # Create log directory and file
 
 log_dir = os.path.join(DEPS_DIR, "logs")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
-LOG_FILE="%s.log" % (os.path.join(log_dir, sp.check_output([date, "+%Y%m%d"]).strip()),)
+LOG_FILE="%s.log" % (os.path.join(log_dir, to_pystring(sp.check_output([date, "+%Y%m%d"]).strip())),)
 if not os.path.exists(LOG_FILE):
     open(LOG_FILE, "w").close()
 logger.info("using command log file '%s'" % (LOG_FILE,))
@@ -267,7 +287,7 @@ def run(cmds, cwd=None):
     """
 
     logger.debug("running command %r in directory %r" % (" ".join(cmds), cwd))
-    log_file_handle = open(LOG_FILE, "a")
+    log_file_handle = open(LOG_FILE, "ab")
     proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE)
     stdout, stderr = proc.communicate()
     log_file_handle.write(stdout)
@@ -288,9 +308,6 @@ CMAKE_VERSION_2=CMAKE_VERSION[:CMAKE_VERSION.rindex('.')]
 
 OCE_LOCATION="https://github.com/tpaviot/oce/archive/OCE-%s.tar.gz" % (OCE_VERSION,)
 BOOST_LOCATION="http://downloads.sourceforge.net/project/boost/boost/%s/boost_%s.tar.bz2" % (BOOST_VERSION, BOOST_VERSION_UNDERSCORE)
-OPENCOLLADA_LOCATION="https://github.com/KhronosGroup/OpenCOLLADA.git"
-#OPENCOLLADA_COMMIT="f99d59e73e565a41715eaebc00c7664e1ee5e628"
-OPENCOLLADA_COMMIT="v1.6.63"
 
 # Helper functions
 
@@ -313,9 +330,9 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     cmake_path= os.path.join(DEPS_DIR, "install", "cmake-%s" % (CMAKE_VERSION,), "bin", "cmake")
     run([cmake_path, P]+cmake_args+["-DCMAKE_BUILD_TYPE=%s" % (BUILD_CFG,)], cwd=cwd)
 
-def git_clone(clone_url, target_dir, revision=None):
+def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     """Lazily clones the `git` repository denoted by `clone_url` into
-    `target_dir`, i.e. skips cloning if `target_dir` exists (naively assumes
+    the `target_dir` or pulls latest changes if the `target_dir` exists (naively assumes
     that a working clone exists there) and optionally checks out a revision
     `revision` after cloning or in the existing clone if `revision` is not
     `None`."""
@@ -323,7 +340,9 @@ def git_clone(clone_url, target_dir, revision=None):
         logger.info("cloning '%s' into '%s'" % (clone_url, target_dir))
         run([git, "clone", clone_url, target_dir])
     else:
-        logger.info("directory '%s' exists, skipping cloning" % (target_dir,))
+        logger.info("directory '%s' already cloned. Pulling latest changes." % (target_dir,))
+        run([git, "pull", clone_url], cwd=target_dir)       
+        
     if revision != None:
         run([git, "checkout", revision], cwd=target_dir)
         run([git, "pull"], cwd=target_dir)
@@ -340,29 +359,23 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     build_dir = os.path.join(DEPS_DIR, "build")
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
-    
+        
     logger.info("\rFetching %s...   " % (name,))
     
-    if download_tool == download_tool_curl or download_tool == download_tool_wget:
+    if download_tool == download_tool_py:
         if no_append_name:
             url = download_url
         else:
             url = os.path.join(download_url, download_name)
-    
-    if download_tool == download_tool_curl:
+            
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            run(CURL + ["-o", download_name, url], cwd=build_dir)
-        else:
-            logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
-    elif download_tool == download_tool_wget:
-        download_path = os.path.join(build_dir, download_name)
-        if not os.path.exists(download_path):
-            run(WGET + ["-O", download_name, url], cwd=build_dir)
+            urlretrieve(url, os.path.join(build_dir, download_path))
         else:
             logger.info("Download '%s' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping" % (download_path,))
     elif download_tool == download_tool_git:
-        git_clone(download_url, target_dir=os.path.join(build_dir, download_name), revision=revision)
+        logger.info("\rChecking %s...   " % (name,))
+        git_clone_or_pull_repository(download_url, target_dir=os.path.join(build_dir, download_name), revision=revision)
     else:
         raise ValueError("download tool '%s' is not supported" % (download_tool,))
     download_dir = os.path.join(build_dir, download_name)
@@ -389,7 +402,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
     
     for path, url in additional_files.items():
         if not os.path.exists(path):
-            urllib.urlretrieve(url, os.path.join(extract_dir, path))
+            urlretrieve(url, os.path.join(extract_dir, path))
             
     if patch is not None:
         patch_abs = os.path.abspath(os.path.join(os.path.dirname(__file__), patch))
@@ -493,6 +506,14 @@ for FL in ["C", "CXX"]:
 #    declare ${FL}FLAGS_MINIMAL="`$DEPS_DIR/install/cmake-$CMAKE_VERSION/bin/cmake . 2>&1 >/dev/null` ${!FLM}"
 shutil.rmtree(CMAKE_FLAG_EXTRACT_DIR)
 
+if "json" in targets:
+    json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
+    json_install_path = "{DEPS_DIR}/install/json/nlohmann/json.hpp".format(**locals())
+    if not os.path.exists(os.path.dirname(json_install_path)):
+        os.makedirs(os.path.dirname(json_install_path))
+    if not os.path.exists(json_install_path):
+        urlretrieve(json_url, json_install_path)
+
 if "pcre" in targets:
     build_dependency(
         name="pcre-{PCRE_VERSION}".format(**locals()),
@@ -554,7 +575,7 @@ elif "occ" in targets:
         
 if "libxml2" in targets:
     build_dependency(
-        "libxml2-{LIBXML_VERSION}".format(**locals()),
+        "libxml2-{LIBXML2_VERSION}".format(**locals()),
         "autoconf",
         build_tool_args=[
             "--without-python",
@@ -565,7 +586,7 @@ if "libxml2" in targets:
             "--without-lzma"
         ],
         download_url="ftp://xmlsoft.org/libxml2/",
-        download_name="libxml2-{LIBXML_VERSION}.tar.gz".format(**locals())
+        download_name="libxml2-{LIBXML2_VERSION}.tar.gz".format(**locals())
     )
     
 if "OpenCOLLADA" in targets:
@@ -573,8 +594,8 @@ if "OpenCOLLADA" in targets:
         "OpenCOLLADA",
         "cmake",
         build_tool_args=[
-            "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
+            "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
             "-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include".format(**locals()),
             "-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}".format(**locals()),
             "-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}".format(**locals()),
@@ -583,7 +604,7 @@ if "OpenCOLLADA" in targets:
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
-        revision=OPENCOLLADA_COMMIT
+        revision=OPENCOLLADA_VERSION
     )
 
 if "python" in targets:
@@ -644,19 +665,6 @@ if "boost" in targets:
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())
     )
     
-<<<<<<< HEAD
-if "icu" in targets:
-    build_dependency(
-        name="icu-{ICU_VERSION}".format(**locals()),
-        mode="icu",
-        build_tool_args=[
-            "--enable-static",
-            "--disable-shared"
-        ],
-        download_url="http://download.icu-project.org/files/icu4c/{ICU_VERSION}/".format(**locals()),
-        download_name="icu4c-{ICU_VERSION_UNDERSCORE}-src.tgz".format(**locals())
-    )
-
 if "cgal" in targets:
     build_dependency(name="gmp-%s" % (GMP_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-pic"], download_url="https://ftp.gnu.org/gnu/gmp/", download_name="gmp-%s.tar.bz2" % (GMP_VERSION,))
     build_dependency(name="mpfr-%s" % (MPFR_VERSION,), mode="autoconf", build_tool_args=["--disable-shared", "--with-gmp=%s/install/gmp-%s" % (DEPS_DIR, GMP_VERSION)], download_url="http://www.mpfr.org/mpfr-%s/" % (MPFR_VERSION,), download_name="mpfr-%s.tar.bz2" % (MPFR_VERSION,))
@@ -710,6 +718,8 @@ cmake_args=[
     "-DBUILD_CONVERT="                +OFF_ON["IfcConvert" in targets],
     "-DCMAKE_INSTALL_PREFIX="          "{DEPS_DIR}/install/ifcopenshell".format(**locals()),
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
+    "-DGLTF_SUPPORT="                  "ON",
+    "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals())
 ]
 
 if "occ" in targets:
@@ -746,8 +756,8 @@ if "pcre" in targets:
 
 if "libxml2" in targets:
     cmake_args.extend([
-        "-DLIBXML2_INCLUDE_DIR="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-        "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals())
+        "-DLIBXML2_INCLUDE_DIR="       "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+        "-DLIBXML2_LIBRARIES="         "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals())
     ])
 
 run_cmake("", cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
@@ -791,8 +801,8 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
-                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/include/libxml2".format(**locals()),
-                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
+                "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+                "-DLIBXML2_LIBRARIES="       "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
                 "-DCOLLADA_SUPPORT=OFF"
             ], cmake_dir=CMAKE_DIR, cwd=python_dir)
         

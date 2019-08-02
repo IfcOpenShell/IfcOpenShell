@@ -34,6 +34,9 @@
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/Ifc4.h"
+#include "../ifcparse/Ifc4x1.h"
+#include "../ifcparse/Ifc4x2.h"
+
 
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcWrite.h"
@@ -51,6 +54,14 @@ namespace {
 	}
 
 	Ifc4::IfcObjectDefinition* get_parent_of_relation(Ifc4::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	Ifc4x1::IfcObjectDefinition* get_parent_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
+	Ifc4x2::IfcObjectDefinition* get_parent_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatingStructure();
 	}
 

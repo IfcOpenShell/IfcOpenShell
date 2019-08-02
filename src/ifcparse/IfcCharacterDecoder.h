@@ -29,7 +29,6 @@
 
 #include <string>
 #include <sstream>
-#include <codecvt>
 
 #include "../ifcparse/IfcSpfStream.h"
 

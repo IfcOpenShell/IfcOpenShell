@@ -34,8 +34,6 @@ header = """
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/Argument.h"
 
-#include "../ifcparse/%(schema_name)senum.h"
-
 struct %(schema_name)s {
 
 static const IfcParse::schema_definition& get_schema();

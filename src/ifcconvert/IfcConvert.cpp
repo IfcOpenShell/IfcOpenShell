@@ -61,9 +61,9 @@
 #ifdef _MSC_VER
 #include <io.h>
 #include <fcntl.h>
+#endif
 // C++11 header:
 #include <random>
-#endif
 
 #if defined(_MSC_VER) && defined(_UNICODE)
 typedef std::wstring path_t;
@@ -75,7 +75,7 @@ static std::ostream& cout_ = std::cout;
 static std::ostream& cerr_ = std::cerr;
 #endif
 
-const std::string DEFAULT_EXTENSION = "obj";
+const std::string DEFAULT_EXTENSION = ".obj";
 const std::string TEMP_FILE_EXTENSION = ".tmp";
 
 namespace po = boost::program_options;
@@ -103,7 +103,7 @@ void print_usage(bool suggest_help = true)
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
-        << "If no output filename given, <input>." << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
+        << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
         cout_ << "\nRun 'IfcConvert --help' for more information.";
     }
@@ -245,6 +245,11 @@ int main(int argc, char** argv) {
 			"Specifies whether to convert back geometrical output back to the "
 			"unit of measure in which it is defined in the IFC file. Default is "
 			"to use meters.")
+		("orient-shells",
+			"Specifies whether to orient the faces of IfcConnectedFaceSets. "
+			"This is a potentially time consuming operation, but guarantees a "
+			"consistent orientation of surface normals, even if the faces are not "
+			"properly oriented in the IFC file.")
 #if OCC_VERSION_HEX < 0x60900
 		// In Open CASCADE version prior to 6.9.0 boolean operations with multiple
 		// arguments where not introduced yet and a work-around was implemented to
@@ -389,6 +394,7 @@ int main(int argc, char** argv) {
 	const bool weld_vertices = vmap.count("weld-vertices") != 0;
 	const bool use_world_coords = vmap.count("use-world-coords") != 0;
 	const bool convert_back_units = vmap.count("convert-back-units") != 0;
+	const bool orient_shells = vmap.count("orient-shells") != 0;
 #if OCC_VERSION_HEX < 0x60900
 	const bool merge_boolean_operands = vmap.count("merge-boolean-operands") != 0;
 #endif
@@ -600,23 +606,32 @@ int main(int argc, char** argv) {
 
 #ifdef _MSC_VER
 	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
-		// These serializers do not support opening unicode paths on Windows. Therefore
+#else
+	if (output_extension == DAE) {
+#endif
+		// These serializers do not support opening unicode paths. Therefore
 		// a random temp file is generated using only ASCII characters instead.
 		std::random_device rng;
-		std::uniform_int_distribution<int> index_dist(L'A', L'Z');
-		output_temp_filename = L".ifcopenshell.";
-		for (int i = 0; i < 8; ++i) {
-			output_temp_filename.push_back(static_cast<wchar_t>(index_dist(rng)));
+		std::uniform_int_distribution<int> index_dist('A', 'Z');
+		{
+			std::string v = ".ifcopenshell.";
+			output_temp_filename += path_t(v.begin(), v.end());
 		}
-		output_temp_filename += L".tmp";
+		for (int i = 0; i < 8; ++i) {
+			output_temp_filename.push_back(static_cast<path_t::value_type>(index_dist(rng)));
+		}
+		{
+			std::string v = ".tmp.";
+			output_temp_filename += path_t(v.begin(), v.end());
+		}
 	}
-#endif
 
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
 	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords);
+	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == SVG || output_extension == OBJ);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
 #if OCC_VERSION_HEX < 0x60900
 	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
@@ -627,7 +642,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
+	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
 	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
@@ -644,10 +659,6 @@ int main(int argc, char** argv) {
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
         const path_t mtl_filename = change_extension(output_filename, MTL);
-		if (!use_world_coords) {
-			Logger::Notice("Using world coords when writing WaveFront OBJ files");
-			settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
-		}
 		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == DAE) {
@@ -717,6 +728,7 @@ int main(int argc, char** argv) {
 	
     if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
         write_log(!quiet);
+		serializer.reset();
         IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
         return EXIT_FAILURE;
     }
@@ -726,6 +738,7 @@ int main(int argc, char** argv) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
         Logger::Notice("No geometrical elements found or none succesfully converted");
+		serializer.reset();
 		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
         write_log(!quiet);
         return EXIT_FAILURE;
@@ -847,7 +860,7 @@ int main(int argc, char** argv) {
     }
 
 	if (validate && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
-		Logger::Error("Errors encountered during proccessing.");
+		Logger::Error("Errors encountered during processing.");
 		successful = false;
 	}
 
@@ -1115,13 +1128,13 @@ namespace latebound_access {
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
-		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type()) {
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, IfcWrite::IfcWriteArgument::EnumerationReference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
+		} else {
+			IfcWrite::IfcWriteArgument* a = new IfcWrite::IfcWriteArgument;
+			a->set(t);
+			inst->data().attributes()[i] = a;
 		}
-
-		IfcWrite::IfcWriteArgument* a = new IfcWrite::IfcWriteArgument;
-		a->set(t);
-		inst->data().attributes()[i] = a;
 	}
 
 	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
@@ -1187,6 +1200,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	IfcGeom::IteratorSettings settings;
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
 	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 

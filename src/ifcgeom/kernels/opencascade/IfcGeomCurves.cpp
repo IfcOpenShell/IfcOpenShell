@@ -77,11 +77,11 @@
 
 #include <TopLoc_Location.hxx>
 
-#ifdef USE_IFC4
+#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
+
+#ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
 #include <Geom_BSplineCurve.hxx>
 #endif
-
-#include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
@@ -143,7 +143,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& c
 	return true;
 }
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Handle(Geom_Curve)& curve) {
 
 	const bool is_rational = l->declaration().is(IfcSchema::IfcRationalBSplineCurveWithKnots::Class());

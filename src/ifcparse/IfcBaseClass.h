@@ -22,12 +22,6 @@
 
 #include "ifc_parse_api.h"
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4enum.h"
-#else
-#include "../ifcparse/Ifc2x3enum.h"
-#endif
-
 #include "../ifcparse/IfcEntityInstanceData.h"
 #include "../ifcparse/IfcSchema.h"
 
