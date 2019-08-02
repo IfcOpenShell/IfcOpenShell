@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
-		("threads,j", po::value<size_t>(&num_threads)->default_value(1),
+		("threads,j", po::value<int>(&num_threads)->default_value(1),
 			"Number of parallel processing threads for geometry interpretation.")
 		("plan",
 			"Specifies whether to include curves in the output result. Typically "
