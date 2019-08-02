@@ -39,7 +39,7 @@ private:
 	int writeMaterial(const IfcGeom::Material& style);
 public:
 	GltfSerializer(const std::string& filename, const SerializerSettings& settings);
-	virtual ~GltfSerializer() {}
+	virtual ~GltfSerializer();
 	bool ready();
 	void writeHeader();
 	void write(const IfcGeom::TriangulationElement<real_t>* o);

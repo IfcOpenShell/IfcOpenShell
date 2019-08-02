@@ -175,6 +175,8 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 			value = format_attribute(argument, argument_type, qualified_name);
 		} catch (const std::exception& e) {
 			Logger::Error(e);
+		} catch (const Standard_ConstructionError& e) {
+			Logger::Error(e.GetMessageString(), instance);
 		}
 
 		if (value) {
@@ -255,7 +257,7 @@ ptree& descend(IfcSchema::IfcObjectDefinition* product, ptree& tree) {
         }
     }
 
-#ifndef USE_IFC4
+#ifdef SCHEMA_IfcRelDecomposes_HAS_RelatedObjects
 	IfcSchema::IfcObjectDefinition::list::ptr structures = get_related
 		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>
 		(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);

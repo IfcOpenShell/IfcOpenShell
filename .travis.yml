@@ -36,7 +36,7 @@ script:
     -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 \
     -DPYTHON_EXECUTABLE=/usr/bin/python2.7 \
     -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
-    -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.a;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5" \
+    -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.a;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5;/usr/lib/x86_64-linux-gnu/libicuuc.so.55;/usr/lib/x86_64-linux-gnu/libicudata.so.55" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include/json \
     ..
@@ -50,7 +50,7 @@ script:
   - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
   - gltf_validator acad2010_walls.glb
   
-  - python -c "from __future__ import print_function; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); print(f[1][0])" | grep "'a' 1m³ ≤ 5m³ ≥ 10m³"
+  - python -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); print(f[1][0], file=open('encoding.txt', 'w', encoding='utf-8'))" && grep "'a' 1m³ ≤ 5m³ ≥ 10m³" encoding.txt
   
   - |
     (for i in *.ifc; do \

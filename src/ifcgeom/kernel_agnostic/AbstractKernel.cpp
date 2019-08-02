@@ -13,9 +13,6 @@ void IfcGeom::AbstractKernel::setValue(GeomValue var, double value) {
 	case GV_DEFLECTION_TOLERANCE:
 		deflection_tolerance = value;
 		break;
-	case GV_WIRE_CREATION_TOLERANCE:
-		wire_creation_tolerance = value;
-		break;
 	case GV_POINT_EQUALITY_TOLERANCE:
 		point_equality_tolerance = value;
 		break;
@@ -40,8 +37,6 @@ double IfcGeom::AbstractKernel::getValue(GeomValue var) const {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		return deflection_tolerance;
-	case GV_WIRE_CREATION_TOLERANCE:
-		return wire_creation_tolerance;
 	case GV_MINIMAL_FACE_AREA:
 		// Considering a right-angled triangle, this about the smallest
 		// area you can obtain without the vertices being confused.
@@ -178,7 +173,7 @@ namespace {
 
 	template <typename T>
 	std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
 		IfcEntityList::ptr style_assignments = si->Styles();
 		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
 			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {

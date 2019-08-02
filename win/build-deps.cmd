@@ -152,7 +152,7 @@ cd "%DEPS_DIR%"
 :: Define the version strings at the top in case individual dependencies are skipped
 set BOOST_VERSION=1.67.0
 set BOOST_VER=%BOOST_VERSION:.=_%
-set OCCT_VERSION=7.3.0
+set OCCT_VERSION=7.3.0p3
 set OCE_VERSION=OCE-0.18
 set PYTHON_VERSION=3.4.3
 set SWIG_VERSION=3.0.12

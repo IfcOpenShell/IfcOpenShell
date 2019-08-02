@@ -409,8 +409,8 @@ namespace IfcGeom {
 					bool representation_processed_as_mapped_item = false;
                     IfcSchema::IfcRepresentation* representation_mapped_to = kernel->representation_mapped_to(representation);
 					if (representation_mapped_to) {
-                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ ||
-                            ok_mapped_representations->contains(representation_mapped_to);
+                        representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ && (
+                            ok_mapped_representations->contains(representation_mapped_to) || reuse_ok_(kernel->products_represented_by(representation_mapped_to)));
 					}
 
 					if (representation_processed_as_mapped_item) {
@@ -663,6 +663,7 @@ namespace IfcGeom {
 			unit_name = "METER";
 			unit_magnitude = 1.f;
 
+            kernel->setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_ORIENT, settings.get(IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
             kernel->setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IteratorSettings::INCLUDE_CURVES)
                 ? (settings.get(IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 			if (settings.get(IteratorSettings::BUILDING_LOCAL_PLACEMENT)) {

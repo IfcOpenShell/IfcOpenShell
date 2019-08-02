@@ -9,6 +9,9 @@
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x-definitions.h)
+#include INCLUDE_SCHEMA(IfcSchema)
+#undef INCLUDE_SCHEMA
 
 namespace IfcGeom {
 

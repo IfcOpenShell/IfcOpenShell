@@ -84,6 +84,9 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../../ifcparse/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../../ifcparse/x-definitions.h)
+#include INCLUDE_SCHEMA(IfcSchema)
+#undef INCLUDE_SCHEMA
 
 namespace IfcGeom {
 	class IFC_GEOM_API geometry_exception : public std::exception {
@@ -123,6 +126,7 @@ private:
 	class faceset_helper {
 	private:
 		MAKE_TYPE_NAME(Kernel)* kernel_;
+		std::set<const IfcSchema::IfcPolyLoop*> duplicates_;
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		double eps_;
@@ -177,6 +181,9 @@ private:
 		}
 
 		bool wire(const IfcSchema::IfcPolyLoop* loop, TopoDS_Wire& wire) {
+			if (duplicates_.find(loop) != duplicates_.end()) {
+				return false;
+			}
 			BRep_Builder builder;
 			builder.MakeWire(wire);
 			int count = 0;
@@ -232,8 +239,7 @@ public:
 
 	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
-		setValue(GV_WIRE_CREATION_TOLERANCE,  other.getValue(GV_WIRE_CREATION_TOLERANCE));
-		setValue(GV_POINT_EQUALITY_TOLERANCE, other.getValue(GV_POINT_EQUALITY_TOLERANCE));
+		setValue(GV_MAX_FACES_TO_ORIENT,      other.getValue(GV_MAX_FACES_TO_ORIENT));
 		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
 		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
 		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));
@@ -302,7 +308,8 @@ public:
 	void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 	bool approximate_plane_through_wire(const TopoDS_Wire&, gp_Pln&, double eps=-1.);
 	bool flatten_wire(TopoDS_Wire&);
-	bool triangulate_wire(const TopoDS_Wire&, TopTools_ListOfShape&);
+	/// Triangulate the set of wires. The firstmost wire is assumed to be the outer wire.
+	bool triangulate_wire(const std::vector<TopoDS_Wire>&, TopTools_ListOfShape&);
 	bool wire_intersections(const TopoDS_Wire & wire, TopTools_ListOfShape & wires);
 	void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
 
@@ -320,6 +327,55 @@ public:
 	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
 	
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
+
+	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
+#ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
+		IfcEntityList::ptr style_assignments = si->Styles();
+		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
+				continue;
+			}
+			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
+#else
+		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
+		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
+			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
+#endif
+			IfcEntityList::ptr styles = style_assignment->Styles();
+			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
+				IfcUtil::IfcBaseClass* style = *lt;
+				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
+					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
+					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+						IfcEntityList::ptr styles_elements = surface_style->Styles();
+						for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+							if ((*mt)->declaration().is(T::Class())) {
+								return std::make_pair(surface_style, (T*) *mt);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
+	}
+
+	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
+  		// For certain representation items, most notably boolean operands,
+		// a style definition might reside on one of its operands.
+		representation_item = find_item_carrying_style(representation_item);
+
+		if (representation_item->as<IfcSchema::IfcStyledItem>()) {
+			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
+		}
+		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
+		if (styled_items->size()) {
+			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
+			return _get_surface_style<T>(*styled_items->begin());
+		}
+		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
+	}
 
     void purge_cache() { 
 		// Rather hack-ish, but a stopgap solution to keep memory under control
