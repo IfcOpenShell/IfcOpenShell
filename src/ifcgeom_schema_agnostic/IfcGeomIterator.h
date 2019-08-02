@@ -83,19 +83,19 @@ namespace IfcGeom {
 		IteratorImplementation<P, PP>* implementation_;
 
 	public:
-		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file)
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, int num_threads = 1)
 			: file_(file)
 			, settings_(settings)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_);
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
 		}
 
-		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters)
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, size_t num_threads = 1)
 			: file_(file)
 			, settings_(settings)
 			, filters_(filters)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_);
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
 		}
 
 		bool initialize() {
