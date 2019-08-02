@@ -83,19 +83,19 @@ namespace IfcGeom {
 		IteratorImplementation<P, PP>* implementation_;
 
 	public:
-		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::string& geometry_library="opencascade")
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::string& geometry_library="opencascade", int num_threads = 1)
 			: file_(file)
 			, settings_(settings)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), geometry_library, settings, file, filters_);
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), geometry_library, settings, file, filters_, num_threads);
 		}
 
-		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, const std::string& geometry_library = "opencascade")
+		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, const std::string& geometry_library = "opencascade", int num_threads = 1)
 			: file_(file)
 			, settings_(settings)
 			, filters_(filters)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), geometry_library, settings, file, filters_);
+			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), geometry_library, settings, file, filters_, num_threads);
 		}
 
 		bool initialize() {

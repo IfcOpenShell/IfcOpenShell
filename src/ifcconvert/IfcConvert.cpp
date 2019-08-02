@@ -62,8 +62,9 @@
 #include <io.h>
 #include <fcntl.h>
 #endif
-// C++11 header:
+
 #include <random>
+#include <thread>
 
 #if defined(_MSC_VER) && defined(_UNICODE)
 typedef std::wstring path_t;
@@ -219,11 +220,15 @@ int main(int argc, char** argv) {
 	ifc_options.add_options()
 		("calculate-quantities", "Calculate or fix the physical quantity definitions "
 			"based on an interpretation of the geometry when exporting IFC");
+
+	int num_threads;
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("kernel", po::value<std::string>(&geometry_kernel)->default_value("opencascade"), 
 			"Geometry kernel to use (opencascade or cgal).")
+		("threads,j", po::value<int>(&num_threads)->default_value(1),
+			"Number of parallel processing threads for geometry interpretation.")
 		("plan",
 			"Specifies whether to include curves in the output result. Typically "
 			"these are representations of type Plan or Axis. Excluded by default.")
@@ -519,7 +524,7 @@ int main(int argc, char** argv) {
         }
     }
 
-	Logger::SetOutput(&cout_, &log_stream);
+	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
 	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
@@ -733,7 +738,18 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, geometry_kernel);
+	if (num_threads <= 0) {
+		num_threads = std::thread::hardware_concurrency();
+		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
+	}
+
+	if (!quiet && num_threads > 1) {
+		Logger::Status("Creating geometry...");
+	}
+
+	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
+
+    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, geometry_kernel, num_threads);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -787,7 +803,11 @@ int main(int argc, char** argv) {
     }
 
 	if (!quiet) {
-		Logger::Status("Creating geometry...");
+		if (num_threads == 1) {
+			Logger::Status("Creating geometry...");
+		} else {
+			Logger::Status("Writing geometry...");
+		}
 	}
 
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
@@ -818,13 +838,13 @@ int main(int argc, char** argv) {
 			if (quiet) {
 				const int progress = context_iterator.progress();
 				for (; old_progress < progress; ++old_progress) {
-					std::cout << ".";
+					cout_ << ".";
 					if (stderr_progress)
-						std::cerr << ".";
+						cerr_ << ".";
 				}
-				std::cout << std::flush;
+				cout_ << std::flush;
 				if (stderr_progress)
-					std::cerr << std::flush;
+					cerr_ << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -835,15 +855,17 @@ int main(int argc, char** argv) {
 
 	if (!no_progress && quiet) {
 		for (; old_progress < 100; ++old_progress) {
-			std::cout << ".";
+			cout_ << ".";
 			if (stderr_progress)
-				std::cerr << ".";
+				cerr_ << ".";
 		}
-		std::cout << std::flush;
-		if (stderr_progress)
-			std::cerr << std::flush;
+		cout_ << std::flush;
+		if (stderr_progress) {
+			cerr_ << std::flush;
+		}
 	} else {
-		Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(num_created) +
+		const std::string task = ((num_threads == 1) ? "creating" : "writing");
+		Logger::Status("\rDone " + task + " geometry (" + boost::lexical_cast<std::string>(num_created) +
 			" objects)                                ");
 	}
 
