@@ -43,7 +43,6 @@ namespace IfcParse {
 	class IFC_PARSE_API IfcCharacterDecoder {
 	private:
 		IfcParse::IfcSpfStream* file;
-		std::wstring builder_;
 		int codepage_;
 	public:
 		enum ConversionMode {SUBSTITUTE, UTF8, ESCAPE};
@@ -51,8 +50,15 @@ namespace IfcParse {
 		static char substitution_character;
 		IfcCharacterDecoder(IfcParse::IfcSpfStream* file);
 		~IfcCharacterDecoder();
-		void dryRun();
+		// Only advances the underlying token stream read pointer
+		// to the next token.
+		void skip();
+		// Gets a decoded string representation at the token stream
+		// read pointer and advances the underlying token stream.
 		operator std::string();
+		// Gets a decoded string representation at the offset provided,
+		// does not mutate the underlying token stream read pointer.
+		std::string get(unsigned int&);
 	};
 
 }

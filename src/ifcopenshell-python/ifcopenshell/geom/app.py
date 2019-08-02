@@ -7,6 +7,7 @@ import sys
 import time
 import operator
 import functools
+import multiprocessing
 
 import OCC.AIS
 
@@ -54,6 +55,43 @@ from .. import version as ifcopenshell_version
 if ifcopenshell_version < "0.6":
     # not yet ported
     from .. import get_supertype
+    
+class geometry_creation_signals(QtCore.QObject):
+    completed = QtCore.pyqtSignal('PyQt_PyObject')
+    progress = QtCore.pyqtSignal('PyQt_PyObject')
+    
+class geometry_creation_thread(QtCore.QThread):
+    def __init__(self, signals, settings, f):
+        QtCore.QThread.__init__(self)
+        self.signals = signals
+        self.settings = settings
+        self.f = f
+
+    def run(self):
+        t0 = time.time()
+
+        # detect concurrency from hardware, we need to have
+        # at least two threads because otherwise the interface
+        # is different
+        # is different
+        it = iterator(self.settings, self.f, max(2, multiprocessing.cpu_count()))
+        if not it.initialize():
+            self.signals.completed.emit([])
+            return
+            
+        def _():
+
+            old_progress = -1
+            while True:
+                shape = it.get()
+                
+                if shape:
+                    yield shape
+                
+                if not it.next():
+                    break
+
+        self.signals.completed.emit((it, self.f, list(_())))
 
 class configuration(object):
     def __init__(self):
@@ -393,62 +431,59 @@ class application(QtWidgets.QApplication):
             self.product_to_ais = {}
             self.counter = 0
             self.window = widget
+            self.thread = None
 
         def initialize(self):
             self.InitDriver()
             self._display.Select = self.HandleSelection
 
-        def load_file(self, f, setting=None):
-
-            if setting is None:
-                setting = settings()
-                setting.set(setting.USE_PYTHON_OPENCASCADE, True)
-
+        def finished(self, file_shapes):
+            it, f, shapes = file_shapes
             v = self._display
-
+            
             t = {0: time.time()}
 
             def update(dt=None):
                 t1 = time.time()
-                if t1 - t[0] > (dt or -1):
+                if dt is None or t1 - t[0] > dt:
                     v.FitAll()
                     v.Repaint()
                     t[0] = t1
-
-            terminate = [False]
-            self.window.window_closed.connect(lambda *args: operator.setitem(terminate, 0, True))
-
-            t0 = time.time()
-
-            it = iterator(setting, f)
-            if not it.initialize():
-                return
-
-            old_progress = -1
-            while True:
-                if terminate[0]:
-                    break
-                shape = it.get()
-                product = f[shape.data.id]
+            
+            for shape in shapes:
                 ais = display_shape(shape, viewer_handle=v)
+                product = f[shape.data.id]
+                
                 ais.GetObject().SetSelectionPriority(self.counter)
                 self.ais_to_product[self.counter] = product
                 self.product_to_ais[product] = ais
                 self.counter += 1
+                
                 QtWidgets.QApplication.processEvents()
+                
                 if product.is_a() in {'IfcSpace', 'IfcOpeningElement'}:
                     v.Context.Erase(ais, True)
-                progress = it.progress() // 2
-                if progress > old_progress:
-                    print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
-                    old_progress = progress
-                if not it.next():
-                    break
-                update(0.2)
-
-            print("\rOpened file in %.2f seconds%s" % (time.time() - t0, " " * 25))
-
+                    
+                update(1.)
+                
             update()
+                    
+            self.thread = None
+        
+        def load_file(self, f, setting=None):
+        
+            if self.thread is not None:
+                return
+
+            if setting is None:
+                setting = settings()
+                setting.set(setting.USE_PYTHON_OPENCASCADE, True)
+                                        
+            self.signals = geometry_creation_signals()
+            thread = self.thread = geometry_creation_thread(self.signals, setting, f)
+            self.window.window_closed.connect(lambda *args: thread.terminate())            
+            self.signals.completed.connect(self.finished)
+            self.thread.start()
 
         def select(self, product):
             ais = self.product_to_ais.get(product)

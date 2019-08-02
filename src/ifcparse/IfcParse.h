@@ -49,6 +49,17 @@
 
 #include "../ifcparse/IfcSpfStream.h"
 
+ /* gcc doesn't know _Thread_local from C11 yet */
+#ifdef __GNUC__
+# define my_thread_local __thread
+#elif __STDC_VERSION__ >= 201112L
+# define my_thread_local _Thread_local
+#elif defined(_MSC_VER)
+# define my_thread_local __declspec(thread)
+#else
+# error Cannot define thread_local
+#endif
+
 namespace IfcParse {
 
 	class IfcFile;
@@ -141,12 +152,13 @@ namespace IfcParse {
 	class IFC_PARSE_API IfcSpfLexer {
 	private:
 		IfcCharacterDecoder* decoder;
-		//storage for temporary string without allocation
-		mutable std::string _tempString;
 		unsigned int skipWhitespace();
 		unsigned int skipComment();
 	public:
-		std::string &GetTempString() const { return _tempString; }
+		std::string &GetTempString() const { 
+			static my_thread_local std::string s;
+			return s;
+		}
 		IfcSpfStream* stream;
 		IfcFile* file;
 		IfcSpfLexer(IfcSpfStream* s, IfcFile* f);

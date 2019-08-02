@@ -29,6 +29,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/version.hpp>
 
+#include <mutex>
 #include <iostream>
 #include <algorithm>
 
@@ -114,6 +115,9 @@ void Logger::SetOutput(std::wostream* l1, std::wostream* l2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseClass* instance) {
+	static std::mutex m;
+	std::lock_guard<std::mutex> lk(m);
+
 	if (type > max_severity) {
 		max_severity = type;
 	}
