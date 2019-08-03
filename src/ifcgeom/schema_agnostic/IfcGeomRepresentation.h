@@ -60,11 +60,11 @@ namespace IfcGeom {
 			IfcGeom::ConversionResults::const_iterator end() const { return shapes_.end(); }
 			const IfcGeom::ConversionResults& shapes() const { return shapes_; }
 			const std::string& id() const { return id_; }
-			ConversionResultShape* as_compound(bool force_meters = false) const;
+			IfcGeom::ConversionResultShape* as_compound(bool force_meters = false) const;
 
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;
-			bool calculate_projected_surface_area(const ConversionResultPlacement* ax, double& along_x, double& along_y, double& along_z) const;
+			bool calculate_projected_surface_area(const IfcGeom::ConversionResultPlacement* ax, double& along_x, double& along_y, double& along_z) const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {

@@ -38,16 +38,16 @@
 
 %ignore IfcGeom::impl::tree::selector;
 
-%include "../ifcgeom/ifc_geom_api.h"
-%include "../ifcgeom/IfcGeomIteratorSettings.h"
-%include "../ifcgeom/IfcGeomElement.h"
-%include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-%include "../ifcgeom/IfcGeomRepresentation.h"
-%include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+%include "../ifcgeom/schema_agnostic/ifc_geom_api.h"
+%include "../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+%include "../ifcgeom/schema_agnostic/IfcGeomElement.h"
+%include "../ifcgeom/schema_agnostic/IfcGeomMaterial.h"
+%include "../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
+%include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
 
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
-%include "../ifcgeom/IfcGeomTree.h"
+%include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
 
 %extend IfcGeom::tree {
 
@@ -277,8 +277,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	template <typename Schema>
 	static boost::variant<IfcGeom::Element<double>*, IfcGeom::Representation::Representation*> helper_fn_create_shape(IfcGeom::IteratorSettings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
-			
-		IfcGeom::Kernel kernel(file);
+
+		// @todo Default to opencascade for now.
+		IfcGeom::Kernel kernel("opencascade", file);
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_ORIENT, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 			

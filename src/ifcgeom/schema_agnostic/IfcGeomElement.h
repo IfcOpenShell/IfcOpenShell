@@ -38,7 +38,7 @@ namespace IfcGeom {
 	private:
 		std::vector<P> _data;
 	public:
-		Matrix(const ElementSettings& settings, const ConversionResultPlacement* trsf) {
+		Matrix(const ElementSettings& settings, const IfcGeom::ConversionResultPlacement* trsf) {
 			// Convert the gp_Trsf into a 4x3 Matrix
 			// Note that in case the CONVERT_BACK_UNITS setting is enabled
 			// the translation component of the matrix needs to be divided
@@ -66,12 +66,12 @@ namespace IfcGeom {
 		ConversionResultPlacement* trsf_;
 		Matrix<P> matrix_;
 	public:
-		Transformation(const ElementSettings& settings, const ConversionResultPlacement* trsf)
+		Transformation(const ElementSettings& settings, const IfcGeom::ConversionResultPlacement* trsf)
 			: settings_(settings)
 			, trsf_(trsf ? trsf->clone() : nullptr)
 			, matrix_(settings, trsf) 
 		{}
-		const ConversionResultPlacement* data() const { return trsf_; }
+		const IfcGeom::ConversionResultPlacement* data() const { return trsf_; }
 		const Matrix<P>& matrix() const { return matrix_; }
 
 		Transformation inverted() const {
@@ -133,7 +133,7 @@ namespace IfcGeom {
 		void SetParents(std::vector<const IfcGeom::Element<P, PP>*> newparents) { _parents = newparents; }
 
 		Element(const ElementSettings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const ConversionResultPlacement* trsf, IfcUtil::IfcBaseEntity* product)
+            const std::string& guid, const std::string& context, const IfcGeom::ConversionResultPlacement* trsf, IfcUtil::IfcBaseEntity* product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -170,7 +170,7 @@ namespace IfcGeom {
 		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const Representation::BRep& geometry() const { return *_geometry; }
 		NativeElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const ConversionResultPlacement* trsf, const boost::shared_ptr<Representation::BRep>& geometry,
+            const std::string& context, const IfcGeom::ConversionResultPlacement* trsf, const boost::shared_ptr<Representation::BRep>& geometry,
 			IfcUtil::IfcBaseEntity* product)
 			: Element<P, PP>(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)
