@@ -33,17 +33,14 @@
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4.h"
-#define IfcSchema Ifc4
-#else
-#include "../ifcparse/Ifc2x3.h"
-#define IfcSchema Ifc2x3
-#endif
+#include <Precision.hxx>
 
+#define IfcSchema Ifc2x3
+#include "../ifcparse/macros.h"
+#include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
-#include "../ifcgeom/IfcGeom.h"
+
 #include "../ifcgeom/schema_agnostic/Serialization.h"
 
 #if USE_VLD
