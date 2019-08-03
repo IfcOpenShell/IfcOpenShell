@@ -328,55 +328,6 @@ public:
 	
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> _get_surface_style(const IfcSchema::IfcStyledItem* si) {
-#ifdef SCHEMA_HAS_IfcStyleAssignmentSelect
-		IfcEntityList::ptr style_assignments = si->Styles();
-		for (IfcEntityList::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			if (!(*kt)->declaration().is(IfcSchema::IfcPresentationStyleAssignment::Class())) {
-				continue;
-			}
-			IfcSchema::IfcPresentationStyleAssignment* style_assignment = (IfcSchema::IfcPresentationStyleAssignment*) *kt;
-#else
-		IfcSchema::IfcPresentationStyleAssignment::list::ptr style_assignments = si->Styles();
-		for (IfcSchema::IfcPresentationStyleAssignment::list::it kt = style_assignments->begin(); kt != style_assignments->end(); ++kt) {
-			IfcSchema::IfcPresentationStyleAssignment* style_assignment = *kt;
-#endif
-			IfcEntityList::ptr styles = style_assignment->Styles();
-			for (IfcEntityList::it lt = styles->begin(); lt != styles->end(); ++lt) {
-				IfcUtil::IfcBaseClass* style = *lt;
-				if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-					IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*) style;
-					if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
-						IfcEntityList::ptr styles_elements = surface_style->Styles();
-						for (IfcEntityList::it mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-							if ((*mt)->declaration().is(T::Class())) {
-								return std::make_pair(surface_style, (T*) *mt);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
-	template <typename T> std::pair<IfcSchema::IfcSurfaceStyle*, T*> get_surface_style(const IfcSchema::IfcRepresentationItem* representation_item) {
-  		// For certain representation items, most notably boolean operands,
-		// a style definition might reside on one of its operands.
-		representation_item = find_item_carrying_style(representation_item);
-
-		if (representation_item->as<IfcSchema::IfcStyledItem>()) {
-			return _get_surface_style<T>(representation_item->as<IfcSchema::IfcStyledItem>());
-		}
-		IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-		if (styled_items->size()) {
-			// StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
-			return _get_surface_style<T>(*styled_items->begin());
-		}
-		return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(0,0);
-	}
-
     void purge_cache() { 
 		// Rather hack-ish, but a stopgap solution to keep memory under control
 		// for large files. SurfaceStyles need to be kept at all costs, as they

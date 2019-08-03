@@ -43,7 +43,7 @@ public:
 	bool ready();
 	void writeHeader();
 	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::BRepElement<real_t>* /*o*/) {}
+	void write(const IfcGeom::NativeElement<real_t>* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
