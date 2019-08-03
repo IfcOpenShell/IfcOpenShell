@@ -72,7 +72,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom/schema_agnostic/Serialization.h"
-	#include "../ifcgeom/IfcGeomTree.h"
+	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
 	
 	#include "../ifcparse/Ifc2x3.h"
 	#include "../ifcparse/Ifc4.h"
