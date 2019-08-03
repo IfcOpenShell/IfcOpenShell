@@ -334,10 +334,14 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "clone", clone_url, target_dir])
     else:
         logger.info("directory '%s' already cloned. Pulling latest changes." % (target_dir,))
-        run([git, "pull", clone_url], cwd=target_dir)       
-        
+
+    # detect whether we are on a branch and pull
+    if run([git, "rev-parse", "--abbrev-ref", "HEAD"], cwd=target_dir) != "HEAD":
+        run([git, "pull", clone_url], cwd=target_dir)
+
     if revision != None:
         run([git, "checkout", revision], cwd=target_dir)
+
 
 def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False):
     """Handles building of dependencies with different tools (which are
