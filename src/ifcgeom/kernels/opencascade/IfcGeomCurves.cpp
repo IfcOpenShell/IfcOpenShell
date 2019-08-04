@@ -83,7 +83,7 @@
 #include <Geom_BSplineCurve.hxx>
 #endif
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define Kernel POSTFIX_SCHEMA(Kernel)
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCircle* l, Handle(Geom_Curve)& curve) {
 	const double r = l->Radius() * getValue(GV_LENGTH_UNIT);

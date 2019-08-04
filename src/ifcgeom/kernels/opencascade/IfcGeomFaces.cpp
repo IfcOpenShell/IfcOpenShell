@@ -106,7 +106,7 @@
 #include <TColStd_Array1OfInteger.hxx>
 #endif
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define Kernel POSTFIX_SCHEMA(Kernel)
 
 namespace {
 	/* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/

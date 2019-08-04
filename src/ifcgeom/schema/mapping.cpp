@@ -1,4 +1,4 @@
-/********************************************************************************
+﻿/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -17,18 +17,14 @@
 *                                                                              *
 ********************************************************************************/
 
-#ifndef IFCOPENSHELL_MACROS_H
-#define IFCOPENSHELL_MACROS_H
+#include "mapping.h"
 
-#define POSTFIX_SCHEMA__(a, b) a ## _ ## b
-#define POSTFIX_SCHEMA_(a, b) POSTFIX_SCHEMA__(a, b)
-#define POSTFIX_SCHEMA(t) POSTFIX_SCHEMA_(t, IfcSchema)
+#include "../../ifcparse/IfcLogger.h"
 
-#define STRINGIFY_(x) #x
-#define STRINGIFY(x) STRINGIFY_(x)
+using namespace IfcUtil;
 
-#define MAKE_INIT_FN__(a, b) init_ ## a ## b
-#define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
-#define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)
-
-#endif
+ifcopenshell::geometry::taxonomy::item* ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)::map(const IfcBaseClass* l) {
+#include "bind_convert_impl.i"
+	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", l);
+	return nullptr;
+}

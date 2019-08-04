@@ -167,9 +167,9 @@
 #endif
 
 namespace {
-	struct MAKE_TYPE_NAME(factory_t) {
+	struct POSTFIX_SCHEMA(factory_t) {
 		IfcGeom::Kernel* operator()(IfcParse::IfcFile* file) const {
-			IfcGeom::MAKE_TYPE_NAME(Kernel)* k = new IfcGeom::MAKE_TYPE_NAME(Kernel);
+			IfcGeom::POSTFIX_SCHEMA(Kernel)* k = new IfcGeom::POSTFIX_SCHEMA(Kernel);
 			if (file) {
 				double unit_magnitude = 1.;
 
@@ -222,11 +222,11 @@ namespace {
 
 void MAKE_INIT_FN(KernelImplementation_opencascade_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
-	MAKE_TYPE_NAME(factory_t) factory;
+	POSTFIX_SCHEMA(factory_t) factory;
 	mapping->bind(schema_name, "opencascade", factory);
 }
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define Kernel POSTFIX_SCHEMA(Kernel)
 
 namespace {
 	void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r) {

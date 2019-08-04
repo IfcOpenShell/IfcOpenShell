@@ -35,9 +35,9 @@ using boost::property_tree::ptree;
 #include "XmlSerializer.h"
 
 namespace {
-	struct MAKE_TYPE_NAME(factory_t) {
+	struct POSTFIX_SCHEMA(factory_t) {
 		XmlSerializer* operator()(IfcParse::IfcFile* file, const std::string& xml_filename) const {
-			MAKE_TYPE_NAME(XmlSerializer)* s = new MAKE_TYPE_NAME(XmlSerializer)(file, xml_filename);
+			POSTFIX_SCHEMA(XmlSerializer)* s = new POSTFIX_SCHEMA(XmlSerializer)(file, xml_filename);
 			s->setFile(file);
 			return s;
 		}
@@ -46,14 +46,14 @@ namespace {
 
 void MAKE_INIT_FN(XmlSerializer)(XmlSerializerFactory::Factory* mapping) {
 	static const std::string schema_name = STRINGIFY(IfcSchema);
-	MAKE_TYPE_NAME(factory_t) factory;
+	POSTFIX_SCHEMA(factory_t) factory;
 	mapping->bind(schema_name, factory);
 }
 
 namespace {
 
 // TODO: Make this a member of XmlSerializer?
-std::map<std::string, std::string> MAKE_TYPE_NAME(argument_name_map);
+std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
@@ -127,7 +127,7 @@ boost::optional<std::string> format_attribute(const Argument* argument, IfcUtil:
 			} else if (e->declaration().is(IfcSchema::IfcLocalPlacement::Class())) {
 				IfcSchema::IfcLocalPlacement* placement = e->as<IfcSchema::IfcLocalPlacement>();
 				gp_Trsf trsf;
-				IfcGeom::MAKE_TYPE_NAME(Kernel) kernel;
+				IfcGeom::POSTFIX_SCHEMA(Kernel) kernel;
 				
 				if (kernel.convert(placement, trsf)) {
 					std::stringstream stream;
@@ -163,8 +163,8 @@ ptree& format_entity_instance(IfcUtil::IfcBaseEntity* instance, ptree& child, pt
 
 		std::string argument_name = instance->declaration().attribute_by_index(i)->name();
 		std::map<std::string, std::string>::const_iterator argument_name_it;
-		argument_name_it = MAKE_TYPE_NAME(argument_name_map).find(argument_name);
-		if (argument_name_it != MAKE_TYPE_NAME(argument_name_map).end()) {
+		argument_name_it = POSTFIX_SCHEMA(argument_name_map).find(argument_name);
+		if (argument_name_it != POSTFIX_SCHEMA(argument_name_map).end()) {
 			argument_name = argument_name_it->second;
 		}
 		const IfcUtil::ArgumentType argument_type = instance->data().getArgument(i)->type();
@@ -360,8 +360,8 @@ void format_quantities(IfcSchema::IfcPhysicalQuantity::list::ptr quantities, ptr
 
 } // ~unnamed namespace
 
-void MAKE_TYPE_NAME(XmlSerializer)::finalize() {
-	MAKE_TYPE_NAME(argument_name_map).insert(std::make_pair("GlobalId", "id"));
+void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
+	POSTFIX_SCHEMA(argument_name_map).insert(std::make_pair("GlobalId", "id"));
 
 	IfcSchema::IfcProject::list::ptr projects = file->instances_by_type<IfcSchema::IfcProject>();
 	if (projects->size() != 1) {

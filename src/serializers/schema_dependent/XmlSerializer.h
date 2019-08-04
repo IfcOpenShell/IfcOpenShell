@@ -26,12 +26,12 @@
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
-class MAKE_TYPE_NAME(XmlSerializer) : public XmlSerializer {
+class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
 private:
 	IfcParse::IfcFile* file;
 
 public:
-	MAKE_TYPE_NAME(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
+	POSTFIX_SCHEMA(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
 		: XmlSerializer(0, "")
 	{
 		this->file = file;

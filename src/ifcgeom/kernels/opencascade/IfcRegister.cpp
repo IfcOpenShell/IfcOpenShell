@@ -20,7 +20,7 @@
 #include "IfcGeom.h"
 #include "IfcGeomShapeType.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define Kernel POSTFIX_SCHEMA(Kernel)
 
 using namespace IfcUtil;
 

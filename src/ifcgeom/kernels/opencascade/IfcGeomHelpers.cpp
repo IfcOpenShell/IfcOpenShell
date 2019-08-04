@@ -77,7 +77,7 @@
 
 #include "../../../ifcgeom/kernels/opencascade/IfcGeom.h"
 
-#define Kernel MAKE_TYPE_NAME(Kernel)
+#define Kernel POSTFIX_SCHEMA(Kernel)
 
 namespace {
 
