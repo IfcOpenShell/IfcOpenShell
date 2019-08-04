@@ -20,8 +20,7 @@
 /********************************************************************************
  *                                                                              *
  * This file registers function prototypes for all supported IFC geometrical    *
- * entities. For entities of type CLASS an std::map is also created to cache    *
- * the output of the conversion functions                                       *
+ * entities.																	*
  *                                                                              *
  ********************************************************************************/
 
