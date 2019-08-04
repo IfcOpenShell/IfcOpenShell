@@ -631,9 +631,10 @@ TARGET_LINK_LIBRARIES(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} ${LIBXML2_
 if (BUILD_IFCGEOM)
 
 foreach(kernel ${GEOMETRY_KERNELS})
+
 string(TOUPPER ${kernel} KERNEL_UPPER)
-file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.h)
-file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema_agnostic/${kernel}/*.cpp)
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
 add_library(IfcGeom_${kernel} STATIC ${IFCGEOM_FILES})
@@ -644,30 +645,20 @@ endforeach()
 
 foreach(schema ${SCHEMA_VERSIONS})
 
-file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernel_agnostic/*.h)
-file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernel_agnostic/*.cpp)
-set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
+file(GLOB IFCGEOM_I_FILES ../src/ifcgeom/schema/*.i)
+file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema/*.h)
+file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema/*.cpp)
+set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
 
 add_library(IfcGeom_ifc${schema} STATIC ${IFCGEOM_FILES})
 set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
 target_link_libraries(IfcGeom_ifc${schema} IfcParse)
 list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
 
-foreach(kernel ${GEOMETRY_KERNELS})
-file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
-file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
-set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
-
-add_library(IfcGeom_${kernel}_ifc${schema} STATIC ${IFCGEOM_FILES})
-set_target_properties(IfcGeom_${kernel}_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-target_link_libraries(IfcGeom_${kernel}_ifc${schema} IfcGeom_${kernel} IfcGeom_ifc${schema})
-list(APPEND IfcGeom_libraries IfcGeom_${kernel}_ifc${schema})
 endforeach()
 
-endforeach()
-
-file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/schema_agnostic/*.h)
-file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/schema_agnostic/*.cpp)
+file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/*.h)
+file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/*.cpp)
 set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})

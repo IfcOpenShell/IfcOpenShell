@@ -107,13 +107,13 @@ namespace IfcGeom {
 			: geometry_exception("Too many faces for operation") {}
 	};
 
-class IFC_GEOM_API MAKE_TYPE_NAME(Cache) {
+class IFC_GEOM_API POSTFIX_SCHEMA(Cache) {
 public:
 #include "IfcRegisterCreateCache.h"
 	std::map<int, TopoDS_Shape> Shape;
 };
 
-class IFC_GEOM_API MAKE_TYPE_NAME(Kernel) : public IfcGeom::MAKE_TYPE_NAME(AbstractKernel) {
+class IFC_GEOM_API POSTFIX_SCHEMA(Kernel) : public IfcGeom::POSTFIX_SCHEMA(AbstractKernel) {
 private:
 
 	/*
@@ -125,7 +125,7 @@ private:
 	*/
 	class faceset_helper {
 	private:
-		MAKE_TYPE_NAME(Kernel)* kernel_;
+		POSTFIX_SCHEMA(Kernel)* kernel_;
 		std::set<const IfcSchema::IfcPolyLoop*> duplicates_;
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
@@ -154,7 +154,7 @@ private:
 			}
 		}
 	public:
-		faceset_helper(MAKE_TYPE_NAME(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
+		faceset_helper(POSTFIX_SCHEMA(Kernel)* kernel, const IfcSchema::IfcConnectedFaceSet* l);
 
 		~faceset_helper();
 
@@ -220,24 +220,24 @@ private:
 	};	
 
 #ifndef NO_CACHE
-	MAKE_TYPE_NAME(Cache) cache;
+	POSTFIX_SCHEMA(Cache) cache;
 #endif
 
 	faceset_helper* faceset_helper_;
 
 public:
-	MAKE_TYPE_NAME(Kernel)()
-		: IfcGeom::MAKE_TYPE_NAME(AbstractKernel)("opencascade")
+	POSTFIX_SCHEMA(Kernel)()
+		: IfcGeom::POSTFIX_SCHEMA(AbstractKernel)("opencascade")
 		, faceset_helper_(nullptr)
 	{}
 
-	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) 
-		: IfcGeom::MAKE_TYPE_NAME(AbstractKernel)("opencascade") 
+	POSTFIX_SCHEMA(Kernel)(const POSTFIX_SCHEMA(Kernel)& other) 
+		: IfcGeom::POSTFIX_SCHEMA(AbstractKernel)("opencascade") 
 	{
 		*this = other;
 	}
 
-	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
+	POSTFIX_SCHEMA(Kernel)& operator=(const POSTFIX_SCHEMA(Kernel)& other) {
 		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
 		setValue(GV_MAX_FACES_TO_ORIENT,      other.getValue(GV_MAX_FACES_TO_ORIENT));
 		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
@@ -333,7 +333,7 @@ public:
 		// for large files. SurfaceStyles need to be kept at all costs, as they
 		// are read later on when serializing Collada files.
 #ifndef NO_CACHE
-		cache = MAKE_TYPE_NAME(Cache)();
+		cache = POSTFIX_SCHEMA(Cache)();
 #endif
 	}	
 
@@ -368,8 +368,8 @@ public:
 
 };
 
-IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(tesselate_)(const TopoDS_Shape& shape, double deflection);
-IfcUtil::IfcBaseClass* MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& shape, bool advanced);
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate_)(const TopoDS_Shape& shape, double deflection);
+IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise_)(const TopoDS_Shape& shape, bool advanced);
 
 }
 #endif
