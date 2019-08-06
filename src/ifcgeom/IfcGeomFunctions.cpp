@@ -1501,6 +1501,14 @@ template <typename P, typename PP>
 IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and_product(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 {
+	if(representation == nullptr) {
+		representation = find_representation(product, "Body");
+	}
+
+	if (representation == nullptr) {
+		throw IfcParse::IfcException("No representation");
+	}
+
 	std::stringstream representation_id_builder;
 
 	representation_id_builder << representation->data().id();

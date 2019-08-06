@@ -1269,4 +1269,22 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	return true;
 }
 
+
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* l, TopoDS_Shape& shape) {
+	IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
+	return 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 #endif

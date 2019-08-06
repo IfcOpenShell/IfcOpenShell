@@ -1292,6 +1292,8 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 #include <TopOpeBRep_ShapeIntersector.hxx>
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 
+
+
 struct WallFace {
 	TopoDS_Face aface;
 	Standard_Real area;
@@ -1318,83 +1320,346 @@ bool intersects(TopoDS_Shape shell1, TopoDS_Shape shell2) {
 
 void fix_IsExternal(IfcParse::IfcFile& f) {
 
-	const double OFFSET = 2.;
 
-	std::cout << "Hello World !";
-	
-	auto space_instances = f.instances_by_type("IfcSpace");	
 
+	std::cout << "Hello World!";
+
+
+
+	IfcEntityList::ptr space_instances(new IfcEntityList());
+	space_instances = f.instances_by_type("IfcSpace");
+
+	// Settings to convert IFC definition to Brep
 	IfcGeom::IteratorSettings settings;
 	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
 	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
 	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 	IfcGeom::Kernel temp(&f);
+
 
 	BRep_Builder shell_compound_builder;
 	TopoDS_Compound ashell_compound;
 	shell_compound_builder.MakeCompound(ashell_compound);
 
+
 	// Loop to store the vertical faces of the spaces in the compound
 	for (IfcEntityList::it it = space_instances->begin(); it != space_instances->end(); ++it) {
 
-		IfcUtil::IfcBaseEntity * space = (IfcUtil::IfcBaseEntity*)*it;
-		std::string nom = *(space)->get("GlobalId");
 
-		// Get the Brep definition of the IFC entity
-		IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, space);
-
+		IfcUtil::IfcBaseEntity * space_entity = (IfcUtil::IfcBaseEntity*)*it;
+		std::string name = *(space_entity)->get("GlobalId");
+		IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, space_entity);
 		TopoDS_Compound compound = elem->geometry().as_compound(true);
-		shell_compound_builder.Add(ashell_compound, compound);
+
+
+		TopExp_Explorer shell_explorer(compound, TopAbs_SHELL);
+
+		for (; shell_explorer.More(); shell_explorer.Next()) {
+
+			TopoDS_Shell currshell = TopoDS::Shell(shell_explorer.Current());
+			shell_compound_builder.Add(ashell_compound, currshell);
+
+
+
+		}
 	}
+
+
 
 	// Get the IfcWall entities
-	auto wall_entities = f.instances_by_type("IfcWall");
+	IfcEntityList::ptr wall_entities(new IfcEntityList());
+	wall_entities = f.instances_by_type("IfcWall");
+
+	TopoDS_Compound wall_faces_compound;
+	BRep_Builder wall_compound_builder;
+	wall_compound_builder.MakeCompound(wall_faces_compound);
+
+
+	TopoDS_Compound fortest;
+	BRep_Builder test;
+	test.MakeCompound(fortest);
+
+
+	TopoDS_Compound store_wall_faces;
+	BRep_Builder mybuilder;
+	mybuilder.MakeCompound(store_wall_faces);
+
+
+
+	ofstream myfile;
+	myfile.open("autreexample3.txt");
+
+
+
+
+	TopoDS_Compound external_walls;
+	BRep_Builder mybestbuilder;
+	mybestbuilder.MakeCompound(external_walls);
+
 
 	for (IfcEntityList::it it = wall_entities->begin(); it != wall_entities->end(); ++it) {
+
+
+/*
 		IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
+		std::string nom = *(wall_entity)->get("GlobalId");
+*/
 
+
+
+
+
+		IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
+		std::string nom = *(wall_entity)->get("GlobalId");
+		std::string nam = *(wall_entity)->get("Name");
 		IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, wall_entity);
-
 		TopoDS_Compound compound = elem->geometry().as_compound(true);
 
-		ShapeUpgrade_UnifySameDomain usd(compound);
-		usd.Build();
+		TopExp_Explorer wall_exp(compound, TopAbs_FACE);
 
-		TopExp_Explorer wall_exp(usd.Shape(), TopAbs_FACE);
+		std::vector<WallFace>face_storing;
 
-		std::vector<WallFace> face_storing;
-
+		int compterr = 0;
 		for (TopExp_Explorer exp(compound, TopAbs_FACE); exp.More(); exp.Next()) {
-			TopoDS_Face aface;
-			aface = TopoDS::Face(exp.Current());
 
-			GProp_GProps System;
-			BRepGProp::SurfaceProperties(aface, System);
-			Standard_Real area = System.Mass();
+			
+				WallFace awallface;
+				compterr++;
 
-			face_storing.push_back({ aface, area });
+				TopoDS_Face aface;
+				aface = TopoDS::Face(exp.Current());
+				awallface.aface = aface;
+
+				GProp_GProps System;
+				BRepGProp::SurfaceProperties(aface, System);
+				Standard_Real area = System.Mass();
+				/*	std::cout << "sur : " << sur << " ";*/
+				/*	surfaces.push_back(sur);*/
+				awallface.area = area;
+				std::cout << area << " ";
+				face_storing.push_back(awallface);
+			
+			
+
+
 		}
 
-		if (face_storing.size() < 2) {
-			Logger::Error("Not enough faces for wall", wall_entity);
-			continue;
-		}
 
+		//std::cout << compterr << std::endl; 
 		std::sort(face_storing.begin(), face_storing.end(), compareByArea);
 
-		std::array <bool, 2> is_intersecting;
-		std::array<TopoDS_Shape, 2> thick_faces = { 
-			thickened_face((*face_storing.rbegin()).aface, OFFSET), 
-			thickened_face((*(face_storing.rbegin() + 1)).aface, OFFSET)
-		};
+		std::cout << nom <<" "<<nam<< std::endl;
+			for (auto&& x : face_storing) {
+				std::cout << x.area << '\n';
+			}
 
-		for (int i = 0; i < 2; ++i) {
-			is_intersecting[i] = intersects(thick_faces[i], ashell_compound);
+		int avantdernier = face_storing.size() - 2;
+		int dernier = face_storing.size() - 1;
+
+		Standard_Real AD = face_storing[avantdernier].area;
+		Standard_Real D = face_storing[dernier].area;
+
+	/*	TopoDS_Face face1 = face_storing[avantdernier].aface;
+		TopoDS_Face face2 = face_storing[dernier].aface;*/
+
+		
+
+		TopoDS_Face face1 = (*(face_storing.rbegin())).aface;
+		
+		TopoDS_Face face2 = (*(face_storing.rbegin() + 1)).aface;
+
+
+		TopoDS_Shape shape1 = thickened_face(face1, 2);
+		TopoDS_Shape shape2 = thickened_face(face2, 2);
+
+
+
+
+		bool face1_check = 0;
+		bool face2_check = 0;
+
+
+
+		for (TopExp_Explorer shell_expp(ashell_compound, TopAbs_SHELL); shell_expp.More(); shell_expp.Next()) {
+			TopoDS_Shell aspaceshell = TopoDS::Shell(shell_expp.Current());
+			/*std::cout << intersects(shape1, aspaceface); */
+			if (intersects(shape1, aspaceshell)) {
+				face1_check = 1;
+				break;
+			}
+
 		}
 
-		const bool is_external = is_intersecting[0] == is_intersecting[1];		
-		std::cout << is_external<<std::endl; 
+
+		for (TopExp_Explorer shell_expp(ashell_compound, TopAbs_SHELL); shell_expp.More(); shell_expp.Next()) {
+			TopoDS_Shell aspaceshell = TopoDS::Shell(shell_expp.Current());
+			/*std::cout << intersects(shape1, aspaceface); */
+			if (intersects(shape2, aspaceshell)) {
+				face2_check = 1;
+				break;
+			}
+
+		}
+
+
+		if (face1_check == 1 && face2_check == 1) {
+			std::cout << "The wall " << nom << " is internal" << endl;
+
+		}
+
+		else {
+
+			std::cout << "The wall " << nom << " is external" << endl;
+			mybestbuilder.Add(external_walls, face1);
+			mybestbuilder.Add(external_walls, face2);
+
+		}
+
+
+
+
 
 	}
 
+
+	BRepTools::Write(external_walls, "uno_test.brep");
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//const double OFFSET = 2;
+
+	//std::cout << "Hello World !";
+	//
+	//auto space_instances = f.instances_by_type("IfcSpace");	
+
+	//IfcGeom::IteratorSettings settings;
+	//settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
+	//settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
+	//settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	//IfcGeom::Kernel temp(&f);
+
+	//BRep_Builder shell_compound_builder;
+	//TopoDS_Compound ashell_compound;
+	//shell_compound_builder.MakeCompound(ashell_compound);
+
+	//// Loop to store the vertical faces of the spaces in the compound
+	//for (IfcEntityList::it it = space_instances->begin(); it != space_instances->end(); ++it) {
+
+	//	IfcUtil::IfcBaseEntity * space = (IfcUtil::IfcBaseEntity*)*it;
+	//	std::string nom = *(space)->get("GlobalId");
+
+	//	// Get the Brep definition of the IFC entity
+	//	IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, space);
+
+	//	TopoDS_Compound compound = elem->geometry().as_compound(true);
+	//	shell_compound_builder.Add(ashell_compound, compound);
+	//}
+
+	//// Get the IfcWall entities
+	//auto wall_entities = f.instances_by_type("IfcWall");
+
+	//for (IfcEntityList::it it = wall_entities->begin(); it != wall_entities->end(); ++it) {
+	//	
+	//	IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
+	//	std::string name = *(wall_entity)->get("GlobalId");
+	//	IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, wall_entity);
+
+	//	TopoDS_Compound compound = elem->geometry().as_compound(true);
+
+	//	ShapeUpgrade_UnifySameDomain usd(compound);
+	//	usd.Build();
+
+	//	TopExp_Explorer wall_exp(usd.Shape(), TopAbs_FACE);
+
+	//	std::vector<WallFace> face_storing;
+
+
+	//	//for (TopExp_Explorer exp(compound, TopAbs_FACE); exp.More(); exp.Next()) {
+	//	for (; wall_exp.More(); wall_exp.Next()) {
+	//		TopoDS_Face aface;
+	//		aface = TopoDS::Face(wall_exp.Current());
+
+	//		GProp_GProps System;
+	//		BRepGProp::SurfaceProperties(aface, System);
+	//		Standard_Real area = System.Mass();
+
+	//		face_storing.push_back({ aface, area });
+	//	}
+
+	//	if (face_storing.size() < 2) {
+	//		Logger::Error("Not enough faces for wall", wall_entity);
+	//		continue;
+	//	}
+
+	//	std::sort(face_storing.begin(), face_storing.end(), compareByArea);
+
+	//	std::array <bool, 2> is_intersecting;
+	//	std::array<TopoDS_Shape, 2> thick_faces = { 
+	//		thickened_face((*face_storing.rbegin()).aface, OFFSET), 
+	//		thickened_face((*(face_storing.rbegin() + 1)).aface, OFFSET)
+	//	};
+
+	//	for (int i = 0; i < 2; ++i) {
+	//		is_intersecting[i] = intersects(thick_faces[i], ashell_compound);
+	//	}
+
+	//	const bool is_external = is_intersecting[0] == is_intersecting[1];		
+	//	std::cout <<name<<" "<< is_external<<std::endl; 
+
+
+
+
+
+	//}
+
+

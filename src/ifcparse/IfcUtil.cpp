@@ -167,7 +167,11 @@ void IfcUtil::unescape_xml(std::string &str)
 }
 
 Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
-	return data().getArgument(declaration().attribute_index(name));
+	int i = declaration().attribute_index(name);
+	if (i == -1) {
+		throw IfcParse::IfcException(declaration().name() + " has no attribute " + name);
+	}
+	return data().getArgument(i);
 }
 
 void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
