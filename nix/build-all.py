@@ -172,7 +172,7 @@ except KeyError:
 try:
     TARGET_ARCH = os.environ["TARGET_ARCH"]
 except KeyError:
-    TARGET_ARCH = platform.uname()[4] #to_pystring(sp.check_output([uname, "-m"]).strip())
+    TARGET_ARCH = platform.uname()[4]
 
 CMAKE_DIR=os.path.realpath(os.path.join("..", "cmake"))
 
@@ -194,11 +194,8 @@ except KeyError:
 
 # Print build configuration information
 
-cecho ("""This script fetches and builds %s and its dependencies
-    """ % (PROJECT_NAME,), BLACK_ON_WHITE)
-cecho("""Script configuration:
-    
-    """, GREEN)
+cecho ("""This script fetches and builds %s and its dependencies """ % (PROJECT_NAME,), BLACK_ON_WHITE)
+cecho("""Script configuration:""", GREEN)
 cecho("""* Target Architecture    = %s""" % (TARGET_ARCH,), MAGENTA)
 cecho(" - Whether 32-bit (i686) or 64-bit (x86_64) will be built.")
 cecho("""* USE_OCCT               = %r""" % (USE_OCCT,), MAGENTA)
@@ -216,8 +213,7 @@ if BUILD_CFG == "MinSizeRel":
     cecho("     WARNING: MinSizeRel build can suffer from a significant performance loss.", RED)
 
 cecho("* IFCOS_NUM_BUILD_PROCS  = %s" % (IFCOS_NUM_BUILD_PROCS,), MAGENTA)
-cecho(""" - How many compiler processes may be run in parallel.
-    """)
+cecho(""" - How many compiler processes may be run in parallel.""")
 
 dependency_tree = {
     'IfcParse': ('boost',  'libxml2'),
@@ -242,7 +238,6 @@ def v(dep):
         for x in v(d):
             yield x
 
-       
 tgts = [s for s in sys.argv[1:] if not s.startswith("-")]
 flags = set(s for s in sys.argv[1:] if s.startswith("-"))
 
@@ -331,10 +326,9 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     """Lazily clones the `git` repository denoted by `clone_url` into
-        the `target_dir` or pulls latest changes if the `target_dir` exists (naively assumes
-        that a working clone exists there) and optionally checks out a revision
-        `revision` after cloning or in the existing clone if `revision` is not
-        `None`."""
+       the `target_dir` or pulls latest changes if the `target_dir` exists (naively assumes
+       that a working clone exists there) and optionally checks out a revision
+       `revision` after cloning or in the existing clone if `revision` is not `None`."""
     if not os.path.exists(target_dir):
         logger.info("cloning '%s' into '%s'" % (clone_url, target_dir))
         run([git, "clone", clone_url, target_dir])
@@ -494,9 +488,9 @@ if os.path.exists(CMAKE_FLAG_EXTRACT_DIR):
 os.makedirs(CMAKE_FLAG_EXTRACT_DIR)
 BUILD_CFG_UPPER=BUILD_CFG.upper()
 for FL in ["C", "CXX"]:
-    run([bash, "-c", """echo "
-        message(\"\${CMAKE_%s_FLAGS_%s}\")
-        " > CMakeLists.txt""" % (FL, BUILD_CFG_UPPER)], cwd=CMAKE_FLAG_EXTRACT_DIR)
+    run([bash, "-c", """echo "message(\"\${CMAKE_%s_FLAGS_%s}\")" > CMakeLists.txt""" % (FL, BUILD_CFG_UPPER)], 
+        cwd=CMAKE_FLAG_EXTRACT_DIR
+    )
     FL="%sFLAGS" % (FL,)
     FLM="%sFLAGS_MINIMAL" % (FL,)
 # @TODO: bash code unclear
@@ -541,7 +535,7 @@ if USE_OCCT and "occ" in targets:
              "-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}".format(**locals()),
              "-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}".format(**locals()),
              "-DBUILD_MODULE_Draw=0",
-            ],
+        ],
         download_url = "https://git.dev.opencascade.org/repos/occt.git",
         download_name = "occt",
         download_tool=download_tool_git,
@@ -553,14 +547,14 @@ elif "occ" in targets:
         name="oce-{OCE_VERSION}".format(**locals()),
         mode="cmake",
         build_tool_args=[
-             "-DOCE_DISABLE_TKSERVICE_FONT=ON",
-             "-DOCE_TESTING=OFF",
-             "-DOCE_BUILD_SHARED_LIB=OFF",
-             "-DOCE_DISABLE_X11=ON",
-             "-DOCE_VISUALISATION=OFF",
-             "-DOCE_OCAF=OFF",
-             "-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}".format(**locals())
-            ],
+            "-DOCE_DISABLE_TKSERVICE_FONT=ON",
+            "-DOCE_TESTING=OFF",
+            "-DOCE_BUILD_SHARED_LIB=OFF",
+            "-DOCE_DISABLE_X11=ON",
+            "-DOCE_VISUALISATION=OFF",
+            "-DOCE_OCAF=OFF",
+            "-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}".format(**locals())
+        ],
         download_url="https://github.com/tpaviot/oce/archive/",
         download_name="OCE-{OCE_VERSION}.tar.gz".format(**locals())
     )
@@ -576,7 +570,7 @@ if "libxml2" in targets:
             "--without-zlib",
             "--without-iconv",
             "--without-lzma"
-            ],
+        ],
         download_url="ftp://xmlsoft.org/libxml2/",
         download_name="libxml2-{LIBXML2_VERSION}.tar.gz".format(**locals())
     )
@@ -586,13 +580,13 @@ if "OpenCOLLADA" in targets:
         "OpenCOLLADA",
         "cmake",
         build_tool_args=[
-             "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
-             "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
-             "-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include".format(**locals()),
-             "-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}".format(**locals()),
-             "-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}".format(**locals()),
-             "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/".format(**locals())
-             ],
+            "-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
+            "-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}".format(**locals()),
+            "-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include".format(**locals()),
+            "-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}".format(**locals()),
+            "-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}".format(**locals()),
+            "-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/".format(**locals())
+        ],
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
@@ -640,15 +634,15 @@ if "boost" in targets:
         "boost-{BOOST_VERSION}".format(**locals()),
         mode="bjam",
         build_tool_args=[
-             "--stagedir={DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
-             "--with-system",
-             "--with-program_options",
-             "--with-regex",
-             "--with-thread",
-             "--with-date_time",
-             "--with-iostreams",
-             "link={LINK_TYPE}".format(**locals())
-             ] + \
+            "--stagedir={DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
+            "--with-system",
+            "--with-program_options",
+            "--with-regex",
+            "--with-thread",
+            "--with-date_time",
+            "--with-iostreams",
+            "link={LINK_TYPE}".format(**locals())
+            ] + \
         BOOST_ADDRESS_MODEL                                            + \
         list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + \
         list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + \
@@ -684,7 +678,7 @@ cmake_args=[
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals())
-    ]
+]
 
 if "occ" in targets and USE_OCCT:
     occ_include_dir =                  "{DEPS_DIR}/install/occt-{OCCT_VERSION}/include/opencascade".format(**locals())
