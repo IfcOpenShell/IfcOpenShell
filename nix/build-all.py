@@ -803,4 +803,4 @@ for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
     logger.info("IfcOpenShell package copied to: %s" % (ifcos_archive_dir))
     run([cp, "-R", ifcos_built_dir, ifcos_archive_dir])
 
-    logger.info("\rBuilt IfcOpenShell...\n\n")
+logger.info("\rBuilt IfcOpenShell...\n\n")
