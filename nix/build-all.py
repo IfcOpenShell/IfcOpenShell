@@ -741,16 +741,16 @@ for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
     # find system python site-specific home folder and extract its version from its path
     # tail is home folder of the system python installation denoted by version number (i.e. Mac OS X, 3.7 = major.minor)
     head,tail = os.path.split(sys.exec_prefix)
-        # extract individual version numbers from the python version currently used for the build process
+    # extract individual version numbers from the python version currently used for the build process
     major, minor, revision = PYTHON_VERSION.split('.')
         
-        # determine full path for homedir of the system python
-    build_dependency = "{head}/{major}.{minor}".format(**locals())
+    # determine full path for homedir of the system python
+    system_python_dir = "{head}/{major}.{minor}".format(**locals())
         
-        # determine key python folders to use during the build process
-    PYTHON_EXECUTABLE= "{build_dependency}/bin/python{major}.{minor}".format(**locals())
-    PYTHON_LIBRARY= "{build_dependency}/lib/libpython*.*".format(**locals())
-    PYTHON_INCLUDE= "{build_dependency}/include/python{major}.{minor}m".format(**locals())
+    # determine key python folders to use during the build process
+    PYTHON_EXECUTABLE= "{system_python_dir}/bin/python{major}.{minor}".format(**locals())
+    PYTHON_LIBRARY= "{system_python_dir}/lib/libpython*.*".format(**locals())
+    PYTHON_INCLUDE= "{system_python_dir}/include/python{major}.{minor}m".format(**locals())
     
     cecho("System python version %s used: " % (PYTHON_VERSION,), GREEN)
     logger.info("\rPYTHON_EXECUTABLE = %s""" % (PYTHON_EXECUTABLE,))
@@ -790,8 +790,8 @@ for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
     if get_os() == "Darwin":
         run([strip, "-x", "_ifcopenshell_wrapper.so"], cwd=ifcos_built_dir)
     else:
-      # ToDo: needs to be tested on non Mac OS X platforms!
-      run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=ifcos_built_dir)
+        # ToDo: needs to be tested on non Mac OS X platforms!
+        run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=ifcos_built_dir)
 
     ifcos_archive_dir = os.path.join(DEPS_DIR, "install", "ifcopenshell", "python-%s%s" % (PYTHON_VERSION, TAG))
     logger.info("IfcOpenShell package copied to: %s" % (ifcos_archive_dir))
