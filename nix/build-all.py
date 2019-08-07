@@ -339,6 +339,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
     if revision != None:
         run([git, "checkout", revision], cwd=target_dir)
 
+
 def build_dependency(name, mode, build_tool_args, download_url, download_name, download_tool=download_tool_default, revision=None, patch=None, additional_files={}, no_append_name=False):
     """Handles building of dependencies with different tools (which are
     distinguished with the `mode` argument. `build_tool_args` is expected to be
