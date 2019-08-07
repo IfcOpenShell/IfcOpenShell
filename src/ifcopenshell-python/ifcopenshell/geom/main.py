@@ -47,9 +47,11 @@ def wrap_shape_creation(settings, shape):
 if has_occ:
     from . import occ_utils as utils
 
-    def wrap_shape_creation(settings, shape): return utils.create_shape_from_serialization(shape) if getattr(settings,
-                                                                                                             'use_python_opencascade',
-                                                                                                             False) else shape
+    def wrap_shape_creation(settings, shape):
+        if getattr(settings, 'use_python_opencascade', False):
+            return utils.create_shape_from_serialization(shape)
+        else:
+            return shape
 
 
 # Subclass the settings module to provide an additional
@@ -77,13 +79,13 @@ _iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):
-    def __init__(self, settings, file_or_filename):
+    def __init__(self, settings, file_or_filename, num_threads = 1):
         self.settings = settings
         if isinstance(file_or_filename, file):
             file_or_filename = file_or_filename.wrapped_data
         else:
             file_or_filename = os.path.abspath(file_or_filename)
-        _iterator.__init__(self, settings, file_or_filename)
+        _iterator.__init__(self, settings, file_or_filename, num_threads)
 
     if has_occ:
         def get(self):
