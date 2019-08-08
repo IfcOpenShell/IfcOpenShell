@@ -1,5 +1,7 @@
 language: cpp
-compiler: gcc
+compiler:
+  - gcc
+  - clang
 os: linux
 dist: xenial
 sudo: required
