@@ -38,7 +38,7 @@ script:
     -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 \
     -DPYTHON_EXECUTABLE=/usr/bin/python2.7 \
     -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
-    -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.a;/lib/x86_64-linux-gnu/libz.so;/lib/x86_64-linux-gnu/liblzma.so;/usr/lib/x86_64-linux-gnu/libicuuc.so;/usr/lib/x86_64-linux-gnu/libicudata.so" \
+    -DLIBXML2_LIBRARIES="/usr/lib/x86_64-linux-gnu/libxml2.a;/lib/x86_64-linux-gnu/libz.so.1;/lib/x86_64-linux-gnu/liblzma.so.5;/usr/lib/x86_64-linux-gnu/libicuuc.so;/usr/lib/x86_64-linux-gnu/libicudata.so" \
     -DGLTF_SUPPORT=On \
     -DJSON_INCLUDE_DIR=/usr/include/json \
     ..
