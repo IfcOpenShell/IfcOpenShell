@@ -4137,6 +4137,14 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	// Use the bbox diagonal to influence local epsilon
 	// double bdiff = std::sqrt(box.SquareExtent());
 
+	// @todo the bounding box diagonal is not used (see above)
+	// because we're explicitly interested in the miminal
+	// dimension of the element to limit the tolerance (for sheet-
+	// like elements for example). But the way below is very
+	// dependent on orientation due to the usage of the
+	// axis-aligned bounding box. Use PCA to find three non-aligned
+	// set of dimensions and use the one with the smallest eigenvalue.
+
 	// Find the minimal bounding box edge
 	double bmin[3], bmax[3];
 	box.Get(bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2]);
@@ -4149,27 +4157,6 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	}
 
 	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
-	
-	if (eps_ < Precision::Confusion()) {
-		// occt uses some hard coded precision values, don't go smaller than that.
-		// @todo, can be reset though with BRepLib::Precision(double)
-		eps_ = Precision::Confusion();
-	}
-
-	std::map<std::pair<int, int>, int> edge_use;
-
-	for (int i = 0; i < (int) pnts.size(); ++i) {
-		if (pnts[i]) {
-			std::set<int> vs;
-			find_neighbours(tree, pnts, vs, i, eps_);
-
-			for (int v : vs) {
-				auto pt = *(points->begin() + v);
-				// NB: insert() ignores duplicate keys
-				vertex_mapping_.insert({ pt->data().id() , i });
-			}
-		}
-	}
 
 	// @todo, there a tiny possibility that the duplicate faces are triggered
 	// for an internal boundary, that is also present as an external boundary.
@@ -4177,36 +4164,78 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	// such as corner-case that it is not considered.
 	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
 
-	size_t loops_removed = 0, non_manifold = 0, duplicate_faces = 0;
+	size_t loops_removed, non_manifold, duplicate_faces;
 
-	typedef std::array<int, 2> edge_t;
-	typedef std::set<edge_t> edge_set_t;
-	std::set<edge_set_t> edge_sets;
+	std::map<std::pair<int, int>, int> edge_use;
 
-	for (auto& loop : *loops) {
-		auto ps = loop->Polygon();
+	for (int i = 0; i < 3; ++i) {
+		// Some times files, have large tolerance values specified collapsing too many vertices.
+		// This case we detect below and re-run the loop with smaller epsilon. Normally
+		// the body of this loop would only be executed once.
 
-		std::vector<std::pair<int, int> > segments;
-		edge_set_t segment_set;
+		loops_removed = 0;
+		non_manifold = 0;
+		duplicate_faces = 0;
 
-		loop_(ps, [&segments, &segment_set](int C, int D, bool) {
-			segment_set.insert({{ C, D }});
-			segments.push_back({ C, D });
-		});
+		vertex_mapping_.clear();
+		duplicates_.clear();
 
-		if (edge_sets.find(segment_set) != edge_sets.end()) {
-			duplicate_faces++;
-			duplicates_.insert(loop);
-			continue;
-		}
-		edge_sets.insert(segment_set);
+		edge_use.clear();
 
-		if (segments.size() >= 3) {
-			for (auto& p : segments) {
-				edge_use[p] ++;
+		if (eps_ < Precision::Confusion()) {
+			// occt uses some hard coded precision values, don't go smaller than that.
+			// @todo, can be reset though with BRepLib::Precision(double)
+			eps_ = Precision::Confusion();
+		}		
+
+		for (int i = 0; i < (int)pnts.size(); ++i) {
+			if (pnts[i]) {
+				std::set<int> vs;
+				find_neighbours(tree, pnts, vs, i, eps_);
+
+				for (int v : vs) {
+					auto pt = *(points->begin() + v);
+					// NB: insert() ignores duplicate keys
+					vertex_mapping_.insert({ pt->data().id() , i });
+				}
 			}
+		}		
+
+		typedef std::array<int, 2> edge_t;
+		typedef std::set<edge_t> edge_set_t;
+		std::set<edge_set_t> edge_sets;
+
+		for (auto& loop : *loops) {
+			auto ps = loop->Polygon();
+
+			std::vector<std::pair<int, int> > segments;
+			edge_set_t segment_set;
+
+			loop_(ps, [&segments, &segment_set](int C, int D, bool) {
+				segment_set.insert({ { C, D } });
+				segments.push_back({ C, D });
+			});
+
+			if (edge_sets.find(segment_set) != edge_sets.end()) {
+				duplicate_faces++;
+				duplicates_.insert(loop);
+				continue;
+			}
+			edge_sets.insert(segment_set);
+
+			if (segments.size() >= 3) {
+				for (auto& p : segments) {
+					edge_use[p] ++;
+				}
+			} else {
+				loops_removed += 1;
+			}
+		}
+
+		if (edge_use.size() != 0) {
+			break;
 		} else {
-			loops_removed += 1;
+			eps_ /= 10.;
 		}
 	}
 
