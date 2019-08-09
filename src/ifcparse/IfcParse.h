@@ -49,8 +49,9 @@
 
 #include "../ifcparse/IfcSpfStream.h"
 
- /* gcc doesn't know _Thread_local from C11 yet */
-#ifdef __GNUC__
+#if defined(__clang__)
+# define my_thread_local thread_local
+#elif defined(__GNUC__)
 # define my_thread_local __thread
 #elif __STDC_VERSION__ >= 201112L
 # define my_thread_local _Thread_local
