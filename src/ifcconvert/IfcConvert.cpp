@@ -1309,7 +1309,13 @@ TopoDS_Shape thickened_face(TopoDS_Face face, double offset) {
 	return mos.Shape();
 }
 
+#include <BRepAlgoAPI_Common.hxx>
+
 bool intersects(TopoDS_Shape shell1, TopoDS_Shape shell2) {
+	TopoDS_Shape result = BRepAlgoAPI_Common(shell1, shell2);
+	TopExp_Explorer exp(result, TopAbs_FACE);
+	return exp.More();
+	
 
 	TopOpeBRep_ShapeIntersector intersector = TopOpeBRep_ShapeIntersector();
 	intersector.InitIntersection(shell1, shell2);
@@ -1408,26 +1414,29 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 
 
 
-
-
 		IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
 		std::string nom = *(wall_entity)->get("GlobalId");
-		std::string nam = *(wall_entity)->get("Name");
-		IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, wall_entity);
-		TopoDS_Compound compound = elem->geometry().as_compound(true);
 
-		TopExp_Explorer wall_exp(compound, TopAbs_FACE);
+		//if (nom == "3HYZkVMT9BD8vZbvA2zR1q") {
 
-		std::vector<WallFace>face_storing;
 
-		int compterr = 0;
-		for (TopExp_Explorer exp(compound, TopAbs_FACE); exp.More(); exp.Next()) {
+			std::string nam = *(wall_entity)->get("Name");
+			IfcGeom::BRepElement<double, double>* elem = temp.convert(settings, nullptr, wall_entity);
+			TopoDS_Compound compound = elem->geometry().as_compound(true);
 
-			
+			TopExp_Explorer wall_exp(compound, TopAbs_FACE);
+
+			std::vector<WallFace>face_storing;
+
+			int compterr = 0;
+			for (TopExp_Explorer exp(compound, TopAbs_FACE); exp.More(); exp.Next()) {
+
+
 				WallFace awallface;
 				compterr++;
 
 				TopoDS_Face aface;
+
 				aface = TopoDS::Face(exp.Current());
 				awallface.aface = aface;
 
@@ -1439,91 +1448,105 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 				awallface.area = area;
 				std::cout << area << " ";
 				face_storing.push_back(awallface);
-			
-			
+
+				if (face_storing.size() < 2) {
+					Logger::Error("Not enough faces for wall", wall_entity);
+					continue;
+				}
 
 
-		}
 
 
-		//std::cout << compterr << std::endl; 
-		std::sort(face_storing.begin(), face_storing.end(), compareByArea);
 
-		std::cout << nom <<" "<<nam<< std::endl;
+			}
+
+
+			//std::cout << compterr << std::endl; 
+			std::sort(face_storing.begin(), face_storing.end(), compareByArea);
+
+			std::cout << nom << " " << nam << std::endl;
 			for (auto&& x : face_storing) {
 				std::cout << x.area << '\n';
 			}
 
-		int avantdernier = face_storing.size() - 2;
-		int dernier = face_storing.size() - 1;
+			int avantdernier = face_storing.size() - 2;
+			int dernier = face_storing.size() - 1;
 
-		Standard_Real AD = face_storing[avantdernier].area;
-		Standard_Real D = face_storing[dernier].area;
+			Standard_Real AD = face_storing[avantdernier].area;
+			Standard_Real D = face_storing[dernier].area;
 
-	/*	TopoDS_Face face1 = face_storing[avantdernier].aface;
-		TopoDS_Face face2 = face_storing[dernier].aface;*/
+			/*	TopoDS_Face face1 = face_storing[avantdernier].aface;
+				TopoDS_Face face2 = face_storing[dernier].aface;*/
 
-		
-
-		TopoDS_Face face1 = (*(face_storing.rbegin())).aface;
-		
-		TopoDS_Face face2 = (*(face_storing.rbegin() + 1)).aface;
-
-
-		TopoDS_Shape shape1 = thickened_face(face1, 2);
-		TopoDS_Shape shape2 = thickened_face(face2, 2);
-
-
-
-
-		bool face1_check = 0;
-		bool face2_check = 0;
-
-
-
-		for (TopExp_Explorer shell_expp(ashell_compound, TopAbs_SHELL); shell_expp.More(); shell_expp.Next()) {
-			TopoDS_Shell aspaceshell = TopoDS::Shell(shell_expp.Current());
-			/*std::cout << intersects(shape1, aspaceface); */
-			if (intersects(shape1, aspaceshell)) {
-				face1_check = 1;
-				break;
+			if (face_storing.size() < 2) {
+				Logger::Error("Not enough faces for wall", wall_entity);
+				continue;
 			}
 
-		}
+			TopoDS_Face face1 = (*(face_storing.rbegin())).aface;
+
+			TopoDS_Face face2 = (*(face_storing.rbegin() + 1)).aface;
 
 
-		for (TopExp_Explorer shell_expp(ashell_compound, TopAbs_SHELL); shell_expp.More(); shell_expp.Next()) {
-			TopoDS_Shell aspaceshell = TopoDS::Shell(shell_expp.Current());
-			/*std::cout << intersects(shape1, aspaceface); */
-			if (intersects(shape2, aspaceshell)) {
-				face2_check = 1;
-				break;
+			TopoDS_Shape shape1 = thickened_face(face1, 2);
+			TopoDS_Shape shape2 = thickened_face(face2, 2);
+
+
+
+
+			bool face1_check = 0;
+			bool face2_check = 0;
+
+
+
+			for (TopExp_Explorer shell_expp(ashell_compound, TopAbs_SHELL); shell_expp.More(); shell_expp.Next()) {
+				TopoDS_Shell aspaceshell = TopoDS::Shell(shell_expp.Current());
+				/*std::cout << intersects(shape1, aspaceface); */
+				if (intersects(shape1, aspaceshell)) {
+					face1_check = 1;
+				/*	mybestbuilder.Add(external_walls, aspaceshell);
+					mybestbuilder.Add(external_walls, shape1);*/
+
+					break;
+				}
+
 			}
 
-		}
+
+			for (TopExp_Explorer shell_expp(ashell_compound, TopAbs_SHELL); shell_expp.More(); shell_expp.Next()) {
+				TopoDS_Shell aspaceshell = TopoDS::Shell(shell_expp.Current());
+				/*std::cout << intersects(shape1, aspaceface); */
+				if (intersects(shape2, aspaceshell)) {
+					face2_check = 1;
+					/*mybestbuilder.Add(external_walls, aspaceshell);
+					mybestbuilder.Add(external_walls, shape2);*/
+					break;
+				}
+
+			}
 
 
-		if (face1_check == 1 && face2_check == 1) {
-			std::cout << "The wall " << nom << " is internal" << endl;
+			if (face1_check == 1 && face2_check == 1) {
+				/*std::cout << "The wall " << nom << " is internal" << endl;*/
 
-		}
+			}
 
-		else {
+			else {
 
-			std::cout << "The wall " << nom << " is external" << endl;
-			mybestbuilder.Add(external_walls, face1);
-			mybestbuilder.Add(external_walls, face2);
+				/*std::cout << "The wall " << nom << " is external" << endl;*/
+				mybestbuilder.Add(external_walls, face1);
+				mybestbuilder.Add(external_walls, face2);
 
-		}
+			}
 
 
-
+		/*}*/
 
 
 	}
 
 
-	BRepTools::Write(external_walls, "uno_test.brep");
+	BRepTools::Write(external_walls, "uno_test22.brep");
 
 }
 
