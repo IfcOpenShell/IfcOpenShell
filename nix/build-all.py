@@ -73,6 +73,12 @@ else:
     # might be around one day
     from urllib import urlretrieve
 
+import argparse
+
+# parse command line parameters
+parser = argparse.ArgumentParser()
+parser.add_argument("-usp", "--use_system_python", help="use system instaled Python for bulding", action="store_true")
+args = parser.parse_args()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -195,6 +201,8 @@ except KeyError:
 # Print build configuration information
 
 cecho ("""This script fetches and builds %s and its dependencies """ % (PROJECT_NAME,), BLACK_ON_WHITE)
+if args.use_system_python:
+    cecho("Use of system Python is turned on ", RED)
 cecho("""Script configuration:""", GREEN)
 cecho("""* Target Architecture    = %s""" % (TARGET_ARCH,), MAGENTA)
 cecho(" - Whether 32-bit (i686) or 64-bit (x86_64) will be built.")
@@ -717,7 +725,7 @@ run_cmake("", cmake_args, cmake_dir=CMAKE_DIR, cwd=executables_dir)
 
 logger.info("\rBuilding executables...")
 
-run([make, "-j{IFCOS_NUM_BUILD_PROCS}".format(**locals())], cwd=executables_dir)
+run([make, "-j%s" % (IFCOS_NUM_BUILD_PROCS,)], cwd=executables_dir)
 run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
 
 if "IfcOpenShell-Python" in targets:
@@ -738,21 +746,30 @@ for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
     if not os.path.exists(python_dir):
         os.makedirs(python_dir)
 
-    # idea is to use system installed python located in "which python" or "which python3"
-    # find system python site-specific home folder and extract its version from its path
-    # tail is home folder of the system python installation denoted by version number (i.e. Mac OS X, 3.7 = major.minor)
-    head,tail = os.path.split(sys.exec_prefix)
-    # extract individual version numbers from the python version currently used for the build process
-    major, minor, revision = PYTHON_VERSION.split('.')
+    if args.use_system_python:
+        # idea is to use system installed python located in "which python" or "which python3"
+        # find system python site-specific home folder and extract its version from its path
+        # tail is home folder of the system python installation denoted by version number (i.e. Mac OS X, 3.7 = major.minor)
+        if get_os() == "Darwin":
+            head,tail = os.path.split(sys.exec_prefix)
+            # extract individual version numbers from the python version currently used for the build process
+            major,minor,revision = PYTHON_VERSION.split('.')
         
-    # determine full path for homedir of the system python
-    system_python_dir = "{head}/{major}.{minor}".format(**locals())
+            # determine full path for homedir of the system python
+            system_python_dir = "{head}/{major}.{minor}".format(**locals())
         
-    # determine key python folders to use during the build process
-    PYTHON_EXECUTABLE= "{system_python_dir}/bin/python{major}.{minor}".format(**locals())
-    PYTHON_LIBRARY= "{system_python_dir}/lib/libpython*.*".format(**locals())
-    PYTHON_INCLUDE= "{system_python_dir}/include/python{major}.{minor}m".format(**locals())
-    
+            # determine key python folders to use during the build process
+            PYTHON_EXECUTABLE= "{system_python_dir}/bin/python{major}.{minor}".format(**locals())
+            PYTHON_LIBRARY= "{system_python_dir}/lib/libpython*.*".format(**locals())
+            PYTHON_INCLUDE= "{system_python_dir}/include/python{major}.{minor}m".format(**locals())
+        else: 
+            # ToDo implement also for Linux
+            cecho("Use of system Python on Linux not supported yet", RED)
+    else:
+        PYTHON_LIBRARY=run([bash, "-c", "ls    {DEPS_DIR}/install/python-{PYTHON_VERSION}{TAG}/lib/libpython*.*".format(**locals())])
+        PYTHON_INCLUDE=run([bash, "-c", "ls -d {DEPS_DIR}/install/python-{PYTHON_VERSION}{TAG}/include/python*".format(**locals())])
+        PYTHON_EXECUTABLE=os.path.join(DEPS_DIR, "install", "python-{PYTHON_VERSION}{TAG}".format(**locals()), "bin", "python{PYTHON_VERSION[0]}".format(**locals()))
+        
     cecho("System python version %s used: " % (PYTHON_VERSION,), GREEN)
     logger.info("\rPYTHON_EXECUTABLE = %s""" % (PYTHON_EXECUTABLE,))
     logger.info("\rPYTHON_LIBRARY = %s""" % (PYTHON_LIBRARY,))
