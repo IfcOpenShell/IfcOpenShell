@@ -122,6 +122,7 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(VOXEL_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(VOXEL_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(EIGEN_DIR)
 
 if (GLTF_SUPPORT AND BUILD_CONVERT)
 UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
@@ -527,7 +528,7 @@ endif()
 
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR}
-	${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${VOXEL_INCLUDE_DIR}
+	${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${VOXEL_INCLUDE_DIR} ${EIGEN_DIR}
 )
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
@@ -607,15 +608,15 @@ endif()
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 if (BUILD_IFCGEOM)
 	foreach(s ${SCHEMA_VERSIONS})
-		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom_ifc${s})
+		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${s})
 	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
+	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom geometry_mapping ${IFCGEOM_SCHEMA_LIBRARIES})
 endif()
 if (BUILD_CONVERT)
 	foreach(s ${SCHEMA_VERSIONS})
-		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${s})
+		set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} serializers_ifc${s})
 	endforeach()
-	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
+	set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 endif()
 
 # IfcParse
@@ -637,11 +638,20 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
-add_library(IfcGeom_${kernel} STATIC ${IFCGEOM_FILES})
-set_target_properties(IfcGeom_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
-target_link_libraries(IfcGeom_${kernel} IfcParse ${${KERNEL_UPPER}_LIBRARIES})
-list(APPEND IfcGeom_libraries IfcGeom_${kernel})
+add_library(geometry_kernel_${kernel} STATIC ${IFCGEOM_FILES})
+set_target_properties(geometry_kernel_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
+target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES})
+list(APPEND kernel_libraries geometry_kernel_${kernel})
+
 endforeach()
+
+file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/kernel_agnostic/*.h)
+file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/kernel_agnostic/*.cpp)
+set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
+
+add_library(geometry_kernels ${SCHEMA_AGNOSTIC_FILES})
+set_target_properties(geometry_kernels PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+target_link_libraries(geometry_kernels ${kernel_libraries})
 
 foreach(schema ${SCHEMA_VERSIONS})
 
@@ -650,10 +660,10 @@ file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/schema/*.h)
 file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/schema/*.cpp)
 set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
 
-add_library(IfcGeom_ifc${schema} STATIC ${IFCGEOM_FILES})
-set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-target_link_libraries(IfcGeom_ifc${schema} IfcParse)
-list(APPEND IfcGeom_libraries IfcGeom_ifc${schema})
+add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
+set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
+target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
+list(APPEND mapping_libraries geometry_mapping_ifc${schema})
 
 endforeach()
 
@@ -661,20 +671,27 @@ file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/*.h)
 file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/*.cpp)
 set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
-add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
-set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+add_library(geometry_mappings ${SCHEMA_AGNOSTIC_FILES})
+set_target_properties(geometry_mappings PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+target_link_libraries(geometry_mappings ${mapping_libraries})
 
 if (UNIX)
 find_package(Threads)
 endif()
 
-TARGET_LINK_LIBRARIES(IfcGeom ${IfcGeom_libraries} ${CMAKE_THREAD_LIBS_INIT})
+file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/schema_agnostic/*.h)
+file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/schema_agnostic/*.cpp)
+set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
+
+add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
+set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
+target_link_libraries(IfcGeom geometry_mappings geometry_kernels ${CMAKE_THREAD_LIBS_INIT})
 
 endif(BUILD_IFCGEOM)
 
 if (BUILD_CONVERT)
 
-# Serializers
+# serializers
 file(GLOB SERIALIZERS_H_FILES ../src/serializers/*.h)
 file(GLOB SERIALIZERS_CPP_FILES ../src/serializers/*.cpp)
 set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
@@ -683,15 +700,15 @@ file(GLOB SERIALIZERS_S_CPP_FILES ../src/serializers/schema_dependent/*.cpp)
 set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
 foreach(s ${SCHEMA_VERSIONS})
-	add_library(Serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
-	set_target_properties(Serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
-	TARGET_LINK_LIBRARIES(Serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES})
+	add_library(serializers_ifc${s} STATIC ${SERIALIZERS_S_FILES})
+	set_target_properties(serializers_ifc${s} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${s} ${CONVERT_PRECISION}")
+	TARGET_LINK_LIBRARIES(serializers_ifc${s} IfcGeom ${OPENCASCADE_LIBRARIES})
 endforeach()
 
-add_library(Serializers ${SERIALIZERS_FILES})
-set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}")
+add_library(serializers ${SERIALIZERS_FILES})
+set_target_properties(serializers PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS ${CONVERT_PRECISION}")
 
-TARGET_LINK_LIBRARIES(Serializers ${SERIALIZER_SCHEMA_LIBRARIES})
+TARGET_LINK_LIBRARIES(serializers ${SERIALIZER_SCHEMA_LIBRARIES})
 
 # IfcConvert
 file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
@@ -778,7 +795,7 @@ INSTALL(TARGETS IfcGeom ${IfcGeom_libraries}
 endif()
 
 if(BUILD_CONVERT)
-INSTALL(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
+INSTALL(TARGETS serializers ${SERIALIZER_SCHEMA_LIBRARIES}
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}

@@ -78,6 +78,21 @@ namespace IfcUtil {
 		virtual const IfcParse::entity& declaration() const = 0;
 
 		Argument* get(const std::string& name) const;
+
+		template <typename T>
+		T get_value_or(const std::string& name, const T& if_null) const {
+			auto arg = get(name);
+			if (arg->isNull()) {
+				return if_null;
+			} else {
+				return *arg;
+			}
+		}
+
+		template <typename T>
+		T get_value(const std::string& name) const {
+			return *get(name);
+		}
 	};
 
 	// TODO: Investigate whether these should be template classes instead

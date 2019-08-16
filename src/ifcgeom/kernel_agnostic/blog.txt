@@ -1,0 +1,71 @@
+v0.6.0
+
+People not following the development of IfcOpenShell actively and happily using the master branch of the github repository might be surprised to know there is a lot of activity happening in the v0.6.0 and v0.7.0 branches. This post discusses the changes in the v0.6.0 branch. The following post will elaborate on some of the design decisions we are making in the v0.7.0 branch.
+
+Schemas
+
+The most significant improvement in the v0.6.0 branch is that multiple schemas (IFC2X3, IFC4, IFC4X1 and IFC4X2) are supported from within the same executable, module or plug-in. Previously, selecting the schema had been a compile-time option.
+
+In IfcOpenShell and most other EXPRESS-based toolkits, the IFC schema is compiled into (a) the early-bound definitions: a class hierarchy with member functions and (b) a set of methods to operate on the schema definitions at runtime (late-bound access). C++ only allows very limited introspection (but the development of C++ is very active, see for example P1240 https://github.com/cplusplus/papers/issues/545) so to complement the lack of introspection a set of methods exists to query for example all attribute names or the sub- and supertypes of an entity. In the master branch these methods are static, in the v0.6.0 branch these are the member functions of a schema class, that is a more complete reference mirrorring the EXPRESS schema definition at runtime. See IfcBaseEntity::declararation() or IfcParse::schema::declaration_by_name("IfcWall")->as_entity()->all_attribute_names().
+
+Writing schema agnostic code
+
+The code generated from the four schemas are completely orthogonal class hiercharies. For the C++ compiler there is no relationship between a Ifc2x3::IfcWall and a Ifc4::IfcWall. But IfcOpenShell offers three ways to write code that adapts to the schema of the file known at runtime.
+
+(a) preprocessor
+
+This is the approach taken in the IfcGeom modules in v0.6.0. Essentially the same code base is compiled multiple times where the schema is available as a preprocessor constant. This means you can enable specific code paths with for example #ifdef directives. In this way the added entities in Ifc4 (IfcBSplineSurface, yay!) can be selectively compiled for example. 
+
+https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.6.0/src/ifcgeom/IfcGeomFaces.cpp#L1127
+
+Smaller code blocks can be written as macros as well. 
+
+https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.6.0/src/ifcgeom_schema_agnostic/Kernel.cpp#L74
+
+Benefits: fairly readible code, full autocompletion typically in an IDE when using the static library approach
+Downsides: Some infrastructure required to compile the different libraries and select the correct implementation at runtime
+
+(b) late-bound access
+
+There are two modes of accessing schemas. In the early-bound approach function signatures and return types are known at compilation time. In the late-bound approach attribute names are referenced by strings and types are 
+
+Ifc2x3::IfcWall* wall;
+// Early-bound access;
+std::string global_id = wall->GlobalId();
+// Late-bound access.
+std::string global_id = *wall->get("GlobalId");
+// ERROR: By dereferencing the return type, it is casted into a string, which will cause an exception *at runtime* when the types do not match.
+int global_id = *wall->get("GlobalId");
+
+Benefits:
+fairly readible code
+no complicated setup of different libraries
+Downsides: 
+no code completion
+errors are only spotted at runtime, not compile-time
+late-bound manipulation of inverse attributes is not well supported currently in IfcOpenShell
+less means for the compiler to create highly optimized code
+
+(c) templates
+
+C++ has very extensive support for compile time generic arguments: templates.
+
+template <Schema>
+void print_globalid(Schema::IfcWall* wall) {
+    std::cout << wall->GlobalId();
+}
+
+Benefits:
+no complicated setup of different libraries
+no autocompletion typically, but errors caught at compile-time
+Downsides: 
+fairly unreadible code due to additional template and typename keywords.
+error messages are harder to make sense up (due to two phase lookup rules for example)
+
+All three approaches are used in the IfcOpenShell code-base. 
+
+Other improvements:
+
+Multi-threading in collaboration with TNO, MAUC and Airsquire
+
+Direct binary glTF output (previously supported through Collada and Collada2Gltf) in collaboration with Schuco US.

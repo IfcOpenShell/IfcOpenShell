@@ -20,14 +20,17 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
-#include "ifc_geom_api.h"
-#include "../../ifcparse/IfcException.h"
-#include "../../ifcparse/IfcBaseClass.h"
-#include "../../ifcparse/IfcLogger.h"
+// #include "ifc_geom_api.h"
 
-namespace IfcGeom
-{
-    class IFC_GEOM_API IteratorSettings
+#define IFC_GEOM_API
+
+#include "../ifcparse/IfcException.h"
+#include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/IfcLogger.h"
+
+namespace ifcopenshell { namespace geometry {
+
+    class IFC_GEOM_API settings
     {
     public:
         /// Enumeration of setting identifiers. These settings define the
@@ -93,7 +96,7 @@ namespace IfcGeom
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
 
-        IteratorSettings()
+        settings()
             : settings_(WELD_VERTICES) // OR options that default to true here
             , deflection_tolerance_(1.e-3)
         {
@@ -136,13 +139,13 @@ namespace IfcGeom
         double deflection_tolerance_;
     };
 
-    class IFC_GEOM_API ElementSettings : public IteratorSettings
+    class IFC_GEOM_API element_settings : public settings
     {
     public:
-        ElementSettings(const IteratorSettings& settings,
+		element_settings(const settings& s,
             double unit_magnitude,
             const std::string& element_type)
-            : IteratorSettings(settings)
+            : settings(s)
             , unit_magnitude_(unit_magnitude)
             , element_type_(element_type)
         {
@@ -155,6 +158,7 @@ namespace IfcGeom
         double unit_magnitude_;
         std::string element_type_;
     };
-}
+
+}}
 
 #endif
