@@ -2,19 +2,21 @@
 #define ITERATOR_KERNEL_H
 
 #include "../../ifcparse/IfcFile.h"
-#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/settings.h"
 #include "../../ifcgeom/schema_agnostic/ConversionResult.h"
+#include "../../ifcgeom/abstract_mapping.h"
+#include "../../ifcgeom/kernel_agnostic/AbstractKernel.h"
 
 #include <boost/function.hpp>
 
-namespace IfcGeom {
+namespace ifcopenshell { namespace geometry {
 
-	template <typename P, typename PP>
 	class NativeElement;
 
-	class Kernel {
+	class Converter {
 	private:
-		Kernel* implementation_;
+		abstract_mapping* mapping_;
+		kernels::AbstractKernel* kernel_;
 
 	public:
 		// Tolerances and settings for various geometrical operations:
@@ -47,10 +49,13 @@ namespace IfcGeom {
 			GV_DIMENSIONALITY
 		};
 
-		Kernel(const std::string& geometry_library, IfcParse::IfcFile* file_ = 0);
+		Converter(const std::string& geometry_library, IfcParse::IfcFile* file);
 		
-		virtual ~Kernel() {}
+		~Converter() {}
 
+		abstract_mapping* mapping() const { return mapping_; }
+
+		/*
 		virtual void setValue(GeomValue var, double value) {
 			implementation_->setValue(var, value);
 		}
@@ -58,43 +63,42 @@ namespace IfcGeom {
 		virtual double getValue(GeomValue var) const {
 			return implementation_->getValue(var);
 		}
+		*/
 
+		/*
 		virtual NativeElement<double, double>* convert(
 			const IteratorSettings& settings, IfcUtil::IfcBaseClass* representation,
 			IfcUtil::IfcBaseClass* product)
 		{
 			return implementation_->convert(settings, representation, product);
 		}
+		*/
 
-		virtual ConversionResults convert(IfcUtil::IfcBaseClass* item) {
-			return implementation_->convert(item);
+		ifcopenshell::geometry::ConversionResults convert(IfcUtil::IfcBaseClass* item) {
+			auto geom_item = mapping_->map(item);
+			ifcopenshell::geometry::ConversionResults results;
+			kernel_->convert(geom_item, results);
+			return results;
 		}
 
-		virtual bool convert_placement(IfcUtil::IfcBaseClass* item, ConversionResultPlacement*& trsf) {
-			return implementation_->convert_placement(item, trsf);
+		bool convert_placement(IfcUtil::IfcBaseClass* item, ifcopenshell::geometry::ConversionResultPlacement*& trsf) {
+			throw std::runtime_error("not implemented");
+			// return implementation_->convert_placement(item, trsf);
 		}
 
-		static int count(const ConversionResultShape*, int, bool unique=false);
-		static int surface_genus(const ConversionResultShape*);
+		ifcopenshell::geometry::NativeElement* create_brep_for_representation_and_product(const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product);
+		ifcopenshell::geometry::NativeElement* create_brep_for_processed_representation(const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product, ifcopenshell::geometry::NativeElement* brep);
 
-		static bool is_manifold(const ConversionResultShape*);
+		/*
+		static int count(const ifcopenshell::geometry::ConversionResultShape*, int, bool unique=false);
+		static int surface_genus(const ifcopenshell::geometry::ConversionResultShape*);
+
+		static bool is_manifold(const ifcopenshell::geometry::ConversionResultShape*);
 		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings=true);
 		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		static IfcEntityList::ptr find_openings(IfcUtil::IfcBaseEntity* product);
+		*/
 	};
-
-	namespace impl {
-		typedef boost::function1<Kernel*, IfcParse::IfcFile*> kernel_fn;
-
-		class KernelFactoryImplementation : public std::map<std::pair<std::string, std::string>, kernel_fn> {
-		public:
-			KernelFactoryImplementation();
-			void bind(const std::string& schema_name, const std::string& geometry_library, kernel_fn);
-			Kernel* construct(const std::string& schema_name, const std::string& geometry_library, IfcParse::IfcFile*);
-		};
-
-		KernelFactoryImplementation& kernel_implementations();
-	}
-}
+}}
 
 #endif

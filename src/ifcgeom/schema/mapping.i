@@ -127,3 +127,7 @@ BIND(IfcCartesianTransformationOperator3D);
 BIND(IfcObjectPlacement);
 BIND(IfcVector);
 BIND(IfcPlane);
+
+BIND(IfcColourRgb);
+BIND(IfcMaterial);
+BIND(IfcStyledItem);

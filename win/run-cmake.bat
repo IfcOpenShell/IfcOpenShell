@@ -86,6 +86,7 @@ set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
 set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
 set VOXEL_INCLUDE_DIR=%INSTALL_DIR%\voxel\include
 set VOXEL_LIBRARY_DIR=%INSTALL_DIR%\voxel\lib
+set EIGEN_DIR=%INSTALL_DIR%\Eigen
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -115,6 +116,7 @@ echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
 echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
 echo    VOXEL_INCLUDE_DIR       = %VOXEL_INCLUDE_DIR%
 echo    VOXEL_LIBRARY_DIR       = %VOXEL_LIBRARY_DIR%
+echo    EIGEN_DIR               = %EIGEN_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.

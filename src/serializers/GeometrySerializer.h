@@ -27,29 +27,29 @@ typedef float real_t;
 #endif
 
 #include "../serializers/Serializer.h"
-#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../ifcgeom/settings.h"
 
-class SerializerSettings : public IfcGeom::IteratorSettings
+class SerializerSettings : public ifcopenshell::geometry::settings
 {
 public:
     enum Setting
     {
         /// Use entity names instead of unique IDs for naming elements.
         /// Applicable for OBJ, DAE, and SVG output.
-        USE_ELEMENT_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 1),
+        USE_ELEMENT_NAMES = 1 << (ifcopenshell::geometry::settings::NUM_SETTINGS + 1),
         /// Use entity GUIDs instead of unique IDs for naming elements.
         /// Applicable for OBJ, DAE, and SVG output.
-        USE_ELEMENT_GUIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 2),
+        USE_ELEMENT_GUIDS = 1 << (ifcopenshell::geometry::settings::NUM_SETTINGS + 2),
         /// Use material names instead of unique IDs for naming materials.
         /// Applicable for OBJ and DAE output.
-        USE_MATERIAL_NAMES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 3),
+        USE_MATERIAL_NAMES = 1 << (ifcopenshell::geometry::settings::NUM_SETTINGS + 3),
 		/// Use element types instead of unique IDs for naming elements.
 		/// Applicable for DAE output.
-		USE_ELEMENT_TYPES = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 4),
+		USE_ELEMENT_TYPES = 1 << (ifcopenshell::geometry::settings::NUM_SETTINGS + 4),
 		/// Order the elements using their IfcBuildingStorey parent
 		/// Applicable for DAE output
-		USE_ELEMENT_HIERARCHY = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 5),
+		USE_ELEMENT_HIERARCHY = 1 << (ifcopenshell::geometry::settings::NUM_SETTINGS + 5),
         /// Number of different setting flags.
         NUM_SETTINGS = 5
     };
@@ -76,15 +76,15 @@ public:
 	virtual ~GeometrySerializer() {} 
 
 	virtual bool isTesselated() const = 0;
-	virtual void write(const IfcGeom::TriangulationElement<real_t>* o) = 0;
-	virtual void write(const IfcGeom::NativeElement<real_t>* o) = 0;
+	virtual void write(const ifcopenshell::geometry::TriangulationElement* o) = 0;
+	virtual void write(const ifcopenshell::geometry::NativeElement* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
 
     const SerializerSettings& settings() const { return settings_; }
     SerializerSettings& settings() { return settings_; }
 
     /// Returns ID for the object depending on the used setting.
-    virtual std::string object_id(const IfcGeom::Element<real_t>* o)
+    virtual std::string object_id(const ifcopenshell::geometry::Element* o)
     {
         if (settings_.get(SerializerSettings::USE_ELEMENT_GUIDS)) return o->guid();
         if (settings_.get(SerializerSettings::USE_ELEMENT_NAMES)) return o->name();

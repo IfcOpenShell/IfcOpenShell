@@ -20,6 +20,7 @@
 #ifndef XMLSERIALIZERIMPL_H
 #define XMLSERIALIZERIMPL_H
 
+#include "../../ifcgeom/abstract_mapping.h"
 #include "../../ifcparse/macros.h"
 #include "../../serializers/XmlSerializer.h"
 
@@ -29,10 +30,12 @@
 class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
 private:
 	IfcParse::IfcFile* file;
+	ifcopenshell::geometry::abstract_mapping* mapping_;
 
 public:
 	POSTFIX_SCHEMA(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
 		: XmlSerializer(0, "")
+		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file))
 	{
 		this->file = file;
 		this->xml_filename = xml_filename;

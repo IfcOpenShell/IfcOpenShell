@@ -20,7 +20,6 @@
 #ifndef OPENCASCADEBASEDSERIALIZER_H
 #define OPENCASCADEBASEDSERIALIZER_H
 
-#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
 #include "../serializers/GeometrySerializer.h"
 

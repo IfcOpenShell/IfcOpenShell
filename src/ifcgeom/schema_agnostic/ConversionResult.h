@@ -21,12 +21,12 @@
 #define IFCSHAPELIST_H
 
 #include "../../ifcgeom/schema_agnostic/IfcGeomRenderStyles.h"
-#include "../../ifcgeom/schema_agnostic/IfcGeomIteratorSettings.h"
+#include "../../ifcgeom/settings.h"
+#include "../../ifcgeom/taxonomy.h"
 
-namespace IfcGeom {
+namespace ifcopenshell { namespace geometry {
 
 	namespace Representation {
-		template <typename P>
 		class IFC_GEOM_API Triangulation;
 	}
 
@@ -44,8 +44,8 @@ namespace IfcGeom {
 
 	class IFC_GEOM_API ConversionResultShape {
 	public:
-		virtual void Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement* place, IfcGeom::Representation::Triangulation<float>* t, int surface_style_id) const = 0;
-		virtual void Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement* place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const = 0;
+		virtual void Triangulate(const ifcopenshell::geometry::settings & settings, const ifcopenshell::geometry::ConversionResultPlacement* place, ifcopenshell::geometry::Representation::Triangulation* t, int surface_style_id) const = 0;
+
 		virtual void Serialize(std::string&) const = 0;
 		virtual ConversionResultShape* clone() const = 0;
 		virtual int surface_genus() const = 0;
@@ -57,16 +57,16 @@ namespace IfcGeom {
 		int id;
 		ConversionResultPlacement* placement;
 		ConversionResultShape* shape;
-		const SurfaceStyle* style;
+		ifcopenshell::geometry::taxonomy::style style;
 	public:
-		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape, const SurfaceStyle* style)
+		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
 			: id(id), placement(placement->clone()), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape)
-			: id(id), placement(placement->clone()), shape(shape->clone()), style(0) {}
-		ConversionResult(int id, const ConversionResultShape* shape, const SurfaceStyle* style)
+			: id(id), placement(placement->clone()), shape(shape->clone()) {}
+		ConversionResult(int id, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
 			: id(id), placement(0), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ConversionResultShape* shape)
-			: id(id), placement(0), shape(shape->clone()), style(0) {}
+			: id(id), placement(0), shape(shape->clone()) {}
 		void append(const ConversionResultPlacement* trsf) {
 			if (placement == 0) {
 				placement = trsf->clone();
@@ -83,12 +83,13 @@ namespace IfcGeom {
 		}
 		const ConversionResultShape* Shape() const { return shape; }
 		const ConversionResultPlacement* Placement() const { return placement; }
-		bool hasStyle() const { return style != 0; }
-		const SurfaceStyle& Style() const { return *style; }
-		void setStyle(const SurfaceStyle* newStyle) { style = newStyle; }
+		// @todo
+		bool hasStyle() const { return style.diffuse.is_initialized(); }
+		const ifcopenshell::geometry::taxonomy::style& Style() const { return style; }
+		void setStyle(const ifcopenshell::geometry::taxonomy::style& newStyle) { style = newStyle; }
 		int ItemId() const { return id; }
 	};
     
 	typedef std::vector<ConversionResult> ConversionResults;
-}
+}}
 #endif
