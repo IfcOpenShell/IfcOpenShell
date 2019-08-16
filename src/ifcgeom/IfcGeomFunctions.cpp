@@ -147,6 +147,7 @@
 
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 
+#include <Extrema_ExtCS.hxx>
 #include <Extrema_ExtPC.hxx>
 #include <BRepAdaptor_Curve.hxx>
 
@@ -2336,6 +2337,11 @@ bool IfcGeom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pn
 }
 
 bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
+	/*
+	 * @todo isn't it easier to do this based on the non-folded surfaces of
+	 * the connected walls and fold both pairs of layersets simultaneously?
+	*/
+
 	bool folds_made = false;
 	
 	IfcSchema::IfcRelConnectsPathElements::list::ptr connections(new IfcSchema::IfcRelConnectsPathElements::list);
@@ -2349,6 +2355,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	typedef std::vector< std::vector<Handle_Geom_Surface> > result_t;
 	endpoint_connections_t endpoint_connections;
 
+	// Find the semantic connections ot other wall elements when they are not connected 'AT_PATH' because
+	// in that latter case no folds need to be made.
 	for (IfcSchema::IfcRelConnectsPathElements::list::it it = connections->begin(); it != connections->end(); ++it) {
 		IfcSchema::IfcRelConnectsPathElements* connection = *it;
 		IfcSchema::IfcConnectionTypeEnum::Value own_type = connection->RelatedElement() == wall
@@ -2373,7 +2381,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	if (endpoint_connections.size() == 0) {
 		return false;
 	}
-
+	
+	// Count how many connections are made AT_START and AT_END respectively
 	int connection_type_count[2] = {0,0};
 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 		const int idx = it->first.first == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
@@ -2399,6 +2408,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	gp_Pnt own_axis_start, own_axis_end;
 	find_wall_end_points(wall, own_axis_start, own_axis_end);
 
+	// Sometimes duplicate IfcRelConnectsPathElements exist. These are detected
+	// and the counts of connections are decremented accordingly.
 	for (int idx = 0; idx < 2; ++idx) {
 		if (connection_type_count[idx] <= 1) {
 			continue;
@@ -2466,6 +2477,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		const int idx = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
 		if (connection_type_count[idx] > 1) continue;
 
+		// Pick the corresponding point from the axis
 		const gp_Pnt& own_end_point = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND
 			? own_axis_end
 			: own_axis_start;
@@ -2502,9 +2514,12 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		TopoDS_Shape body_shape;
 		flatten_shape_list(items, body_shape, false);
 
-		Handle_Geom_Curve axis_curve;
+		// Create a single paremetric range over a single curve
+		// that represents the entire 1d domain of the other wall
+		// Sometimes there are multiple edges in the Axis shape
+		// but it is assumed these are colinear.
+		Handle_Geom_Curve other_axis_curve;
 		double axis_u1, axis_u2;
-				
 		{ 
 			TopExp_Explorer exp(axis_shape, TopAbs_EDGE);
 			if (!exp.More()) {
@@ -2512,11 +2527,11 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			}
 
 			TopoDS_Edge axis_edge = TopoDS::Edge(exp.Current());
-			axis_curve = BRep_Tool::Curve(axis_edge, axis_u1, axis_u2);
+			other_axis_curve = BRep_Tool::Curve(axis_edge, axis_u1, axis_u2);
 
 			gp_Pnt other_a_1, other_a_2;
-			axis_curve->D0(axis_u1, other_a_1);
-			axis_curve->D0(axis_u2, other_a_2);
+			other_axis_curve->D0(axis_u1, other_a_1);
+			other_axis_curve->D0(axis_u2, other_a_2);
 
 			if (axis_u2 < axis_u1) {
 				std::swap(axis_u1, axis_u2);
@@ -2530,7 +2545,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 					gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp2.Current()));
 					gp_Pnt pp;
 					double u, d;
-					if (project(axis_curve, p, pp, u, d)) {
+					if (project(other_axis_curve, p, pp, u, d)) {
 						if (u < axis_u1) axis_u1 = u;
 						if (u > axis_u2) axis_u2 = u;
 					}
@@ -2543,23 +2558,27 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
 
+		// nb The first layer is never folded, because it corresponds
+		// to one of the longitudonal faces of the wall. Hence the +1
 		for (surfaces_t::const_iterator jt = surfaces.begin() + 1; jt != surfaces.end() - 1; ++jt, ++result_vector) {
 			layer_offset += *thickness++;
 
 			bool found_intersection = false;
 			boost::optional<gp_Pnt> point_outside_param_range;
-			//double param;
 				
 			const Handle_Geom_Surface& surface = *jt;
 
-			GeomAPI_IntCS intersections(axis_curve, surface);
+			// Find the intersection point between the layerset surface
+			// and the other axis curve. If it's within the parametric
+			// range of the other wall it means the walls are connected
+			// with an angle.
+			GeomAPI_IntCS intersections(other_axis_curve, surface);
 			if (intersections.IsDone() && intersections.NbPoints() == 1) {
 				const gp_Pnt& p = intersections.Point(1);
 				double u, v, w;
 				intersections.Parameters(1, u, v, w);
 				if (w < axis_u1 || w > axis_u2) {
 					point_outside_param_range = p;
-					//param = w;
 				} else {
 					// Found an intersection. Layer end point is covered by connecting wall
 					found_intersection = true;
@@ -2583,6 +2602,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				
 				Handle_Geom_Surface plane = new Geom_Plane(*point_outside_param_range, gp::DZ());
 
+				// vertical edges at wall end point face.
 				curves_on_surfaces_t layer_ends;
 				intersect(surface, body_shape, layer_ends);
 
@@ -2598,18 +2618,33 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 						// Filter horizontal curves
 						continue;
 					}
+					// Find vertical wall end point edge closest to end point associated with semantic connection
 					if (project(kt->second, own_end_point, p, u, d)) {
 						if (d < mind) {
-							body_surface = kt->first;
-							layer_body_intersection = kt->second;
-							mind = d;
+							GeomAdaptor_Curve GAC(other_axis_curve);
+							GeomAdaptor_Surface GAS(kt->first);
+
+							Extrema_ExtCS x(GAC, GAS, getValue(GV_PRECISION), getValue(GV_PRECISION));
+
+							if (x.IsParallel()) {
+								body_surface = kt->first;
+								layer_body_intersection = kt->second;
+								mind = d;
+							}
 						}
 					}
 				}
 
+				if (body_surface.IsNull()) {
+					continue;
+				}
+
+				// Intersect vertical edge with ground plane for point.
 				GeomAPI_IntCS intersection2(layer_body_intersection, plane);
 				if (intersection2.IsDone() && intersection2.NbPoints() == 1) {
 					const gp_Pnt& layer_end_point = intersection2.Point(1);
+
+					// Intersect layerset surface with ground plane
 					GeomAPI_IntSS intersection3(surface, plane, 1.e-7);
 					if (intersection3.IsDone() && intersection3.NbLines() == 1) {
 						Handle_Geom_Curve layer_line = intersection3.Line(1);
@@ -2618,8 +2653,10 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 						gp_Pnt layer_end_point_projected; double layer_end_point_param;
 						sac.Project(layer_line, layer_end_point, 1e-3, layer_end_point_projected, layer_end_point_param, false);
 
+						// Move point inwards by distance from other layerset
 						GCPnts_AbscissaPoint dst(layer_line_adaptor, layer_offset, layer_end_point_param);
 						if (dst.IsDone()) {
+							// Convert parameter to point
 							gp_Pnt layer_fold_point;
 							layer_line->D0(dst.Parameter(), layer_fold_point);
 							
