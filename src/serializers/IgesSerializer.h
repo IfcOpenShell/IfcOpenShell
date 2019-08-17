@@ -42,8 +42,8 @@ public:
         : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}
-	void writeShape(const IfcGeom::ConversionResultShape* shape) {
-		writer.AddShape(*(IfcGeom::OpenCascadeShape*)shape);
+	void writeShape(const ifcopenshell::geometry::ConversionResultShape* shape) {
+		writer.AddShape(*(ifcopenshell::geometry::OpenCascadeShape*)shape);
 	}
 	void finalize() {
 		writer.Write(out_filename.c_str());

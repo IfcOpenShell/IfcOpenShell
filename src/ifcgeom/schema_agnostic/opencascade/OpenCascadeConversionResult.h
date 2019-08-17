@@ -88,9 +88,7 @@ namespace ifcopenshell {
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }
 
-			virtual void Triangulate(const settings & settings, const ConversionResultPlacement * place, Representation::Triangulation<float>* t, int surface_style_id) const;
-
-			virtual void Triangulate(const settings & settings, const ConversionResultPlacement * place, Representation::Triangulation<double>* t, int surface_style_id) const;
+			virtual void Triangulate(const settings & settings, const ConversionResultPlacement * place, Representation::Triangulation* t, int surface_style_id) const;
 
 			virtual void Serialize(std::string&) const {
 				throw std::runtime_error("Not implemented");

@@ -23,8 +23,6 @@
 #include <STEPControl_Writer.hxx>
 #include <Interface_Static.hxx>
 
-#include "../ifcgeom/schema_agnostic/IfcGeomIterator.h"
-
 #include "../serializers/OpenCascadeBasedSerializer.h"
 
 class StepSerializer : public OpenCascadeBasedSerializer
@@ -36,10 +34,10 @@ public:
 		: OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~StepSerializer() {}
-	void writeShape(const IfcGeom::ConversionResultShape* shape) {
+	void writeShape(const ifcopenshell::geometry::ConversionResultShape* shape) {
 		std::stringstream ss;
 		std::streambuf *sb = std::cout.rdbuf(ss.rdbuf());
-		writer.Transfer(((IfcGeom::OpenCascadeShape*)shape)->shape(), STEPControl_AsIs);
+		writer.Transfer(((ifcopenshell::geometry::OpenCascadeShape*)shape)->shape(), STEPControl_AsIs);
 		std::cout.rdbuf(sb);
 	}
 	void finalize() {

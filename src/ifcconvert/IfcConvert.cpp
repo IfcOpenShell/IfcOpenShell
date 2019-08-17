@@ -633,24 +633,24 @@ int main(int argc, char** argv) {
 
 	SerializerSettings settings;
 	/// @todo Make APPLY_DEFAULT_MATERIALS configurable? Quickly tested setting this to false and using obj exporter caused the program to crash and burn.
-	settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS,      true);
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS,             use_world_coords || output_extension == SVG || output_extension == OBJ);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES,                weld_vertices);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS,                   orient_shells);
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS,           convert_back_units);
+	settings.set(ifcopenshell::geometry::settings::APPLY_DEFAULT_MATERIALS,      true);
+	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS,             use_world_coords || output_extension == SVG || output_extension == OBJ);
+	settings.set(ifcopenshell::geometry::settings::WELD_VERTICES,                weld_vertices);
+	settings.set(ifcopenshell::geometry::settings::SEW_SHELLS,                   orient_shells);
+	settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS,           convert_back_units);
 #if OCC_VERSION_HEX < 0x60900
-	settings.set(IfcGeom::IteratorSettings::FASTER_BOOLEANS,              merge_boolean_operands);
+	settings.set(ifcopenshell::geometry::settings::FASTER_BOOLEANS,              merge_boolean_operands);
 #endif
-	settings.set(IfcGeom::IteratorSettings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
-	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
-	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
-	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
-    settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
-    settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
-	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
-	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
-	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
-	settings.set(IfcGeom::IteratorSettings::VALIDATE_QUANTITIES, validate);
+	settings.set(ifcopenshell::geometry::settings::DISABLE_OPENING_SUBTRACTIONS, disable_opening_subtractions);
+	settings.set(ifcopenshell::geometry::settings::INCLUDE_CURVES,               include_plan);
+	settings.set(ifcopenshell::geometry::settings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
+	settings.set(ifcopenshell::geometry::settings::APPLY_LAYERSETS,              enable_layerset_slicing);
+    settings.set(ifcopenshell::geometry::settings::NO_NORMALS, no_normals);
+    settings.set(ifcopenshell::geometry::settings::GENERATE_UVS, generate_uvs);
+	settings.set(ifcopenshell::geometry::settings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
+	settings.set(ifcopenshell::geometry::settings::SITE_LOCAL_PLACEMENT, site_local_placement);
+	settings.set(ifcopenshell::geometry::settings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
+	settings.set(ifcopenshell::geometry::settings::VALIDATE_QUANTITIES, validate);
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
@@ -682,7 +682,7 @@ int main(int argc, char** argv) {
 #endif
 		serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 	} else if (output_extension == SVG) {
-		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+		settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
 		if (vmap.count("section-height") != 0) {
 			Logger::Notice("Overriding section height");
@@ -719,7 +719,7 @@ int main(int argc, char** argv) {
             Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
-        settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+        settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
 	}
 
 	if (!serializer->ready()) {
@@ -749,7 +749,7 @@ int main(int argc, char** argv) {
 
 	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
 
-    IfcGeom::Iterator<real_t> context_iterator(settings, ifc_file, filter_funcs, geometry_kernel, num_threads);
+    ifcopenshell::geometry::Iterator context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
@@ -823,15 +823,15 @@ int main(int argc, char** argv) {
 	size_t num_created = 0;
 	
 	do {
-        IfcGeom::Element<real_t> *geom_object = context_iterator.get();
+        ifcopenshell::geometry::Element* geom_object = context_iterator.get();
 
 		if (is_tesselated)
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const ifcopenshell::geometry::TriangulationElement*>(geom_object));
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::NativeElement<real_t>*>(geom_object));
+			serializer->write(static_cast<const ifcopenshell::geometry::NativeElement*>(geom_object));
 		}
 
         if (!no_progress) {
@@ -1219,14 +1219,14 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		}
 	}
 
-	IfcGeom::IteratorSettings settings;
-	settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-	settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-	settings.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
-	settings.set(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS, true);
-	settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
+	ifcopenshell::geometry::settings settings;
+	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
+	settings.set(ifcopenshell::geometry::settings::WELD_VERTICES, false);
+	settings.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
+	settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS, true);
+	settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
 
-	IfcGeom::Iterator<double> context_iterator(settings, &f);
+	ifcopenshell::geometry::Iterator context_iterator(settings, &f);
 
 	if (!context_iterator.initialize()) {
 		return;
@@ -1260,14 +1260,14 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 
 	IfcUtil::IfcBaseClass* quantity = nullptr;
 	IfcEntityList::ptr objects;
-	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
+	boost::shared_ptr<ifcopenshell::geometry::Representation::BRep> previous_geometry_pointer;
 
 	for (;; ++num_created) {
 		bool has_more = true;
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::NativeElement<double>* geom_object = nullptr;
+		ifcopenshell::geometry::NativeElement* geom_object = nullptr;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}

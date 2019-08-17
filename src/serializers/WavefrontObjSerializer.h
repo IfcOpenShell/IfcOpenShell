@@ -39,9 +39,9 @@ public:
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
-	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::NativeElement<real_t>* /*o*/) {}
+	void writeMaterial(const ifcopenshell::geometry::taxonomy::style& style);
+	void write(const ifcopenshell::geometry::TriangulationElement* o);
+	void write(const ifcopenshell::geometry::NativeElement* /*o*/) {}
 	void finalize() {}
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}

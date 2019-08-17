@@ -129,11 +129,13 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 				auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) placement;				
 
 				std::stringstream stream;
-				for (int i = 0; i < 16; ++i) {
-					const double trsf_value = matrix->components[i];
-					stream << trsf_value;
-					if (i != 15) {
-						stream << " ";
+				for (int i = 0; i < 4; ++i) {
+					for (int j = 0; j < 4; ++j) {
+						const double trsf_value = matrix->components(j, i);
+						stream << trsf_value;
+						if (i < 3 && j < 3) {
+							stream << " ";
+						}
 					}
 				}
 				value = stream.str();
@@ -475,7 +477,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	for (IfcEntityList::it it = unit_assignments->begin(); it != unit_assignments->end(); ++it) {
 		if ((*it)->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
 			IfcSchema::IfcNamedUnit* named_unit = (*it)->as<IfcSchema::IfcNamedUnit>();
-			ptree& node = format_entity_instance(mapping, named_unit, units);
+			ptree& node = format_entity_instance(mapping_, named_unit, units);
 			node.put("<xmlattr>.SI_equivalent", IfcParse::get_SI_equivalent<IfcSchema>(named_unit));
 		} else if ((*it)->declaration().is(IfcSchema::IfcMonetaryUnit::Class())) {
 			format_entity_instance(mapping_, (*it)->as<IfcSchema::IfcMonetaryUnit>(), units);

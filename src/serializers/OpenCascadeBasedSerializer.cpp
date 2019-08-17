@@ -36,19 +36,19 @@ bool OpenCascadeBasedSerializer::ready() {
 	return succeeded;
 }
 
-void OpenCascadeBasedSerializer::write(const IfcGeom::NativeElement<real_t>* o) {
-	IfcGeom::OpenCascadeShape* occt_shape = ((IfcGeom::OpenCascadeShape*) o->geometry().as_compound());
+void OpenCascadeBasedSerializer::write(const ifcopenshell::geometry::NativeElement* o) {
+	ifcopenshell::geometry::OpenCascadeShape* occt_shape = ((ifcopenshell::geometry::OpenCascadeShape*) o->geometry().as_compound());
         TopoDS_Shape compound = occt_shape->shape();
         delete occt_shape;
 
-	if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
+	if (o->geometry().settings().get(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS)) {
 		gp_Trsf scale;
 		scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
 		
 		compound = BRepBuilderAPI_Transform(compound, scale, true).Shape();
 	}
 
-	IfcGeom::OpenCascadeShape s(compound);
+	ifcopenshell::geometry::OpenCascadeShape s(compound);
 	writeShape(&s);
 }
 
