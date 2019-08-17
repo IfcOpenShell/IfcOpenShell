@@ -285,7 +285,7 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* st
 	return p;
 }
 
-void SvgSerializer::write(const IfcGeom::NativeElement<real_t>* o)
+void SvgSerializer::write(const ifcopenshell::geometry::NativeElement* o)
 {
 	IfcUtil::IfcBaseEntity* storey = storey_;
 	boost::optional<double> storey_elevation = boost::none;
@@ -293,7 +293,7 @@ void SvgSerializer::write(const IfcGeom::NativeElement<real_t>* o)
 	for (const auto& p : o->parents()) {
 		if (p->type() == "IfcBuildingStorey") {
 			try {
-				const IfcGeom::ElementSettings& settings = o->geometry().settings();
+				const ifcopenshell::geometry::element_settings& settings = o->geometry().settings();
 				double e = *p->product()->get("Elevation");
 				storey_elevation = e * settings.unit_magnitude();
 			} catch (...) {
@@ -312,7 +312,8 @@ void SvgSerializer::write(const IfcGeom::NativeElement<real_t>* o)
 
 	path_object& p = start_path(storey, nameElement(o));
 
-	IfcGeom::OpenCascadeShape* occt_shape = ((IfcGeom::OpenCascadeShape*) o->geometry().as_compound());
+	// @todo check whether correct kernel is used
+	ifcopenshell::geometry::OpenCascadeShape* occt_shape = ((ifcopenshell::geometry::OpenCascadeShape*) o->geometry().as_compound());
 	TopoDS_Shape compound = occt_shape->shape();
 	delete occt_shape;
 
@@ -443,7 +444,7 @@ void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
 }
 
-std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
+std::string SvgSerializer::nameElement(const ifcopenshell::geometry::Element* elem)
 {
 	std::ostringstream oss;
 	const std::string type = "product";
@@ -471,11 +472,10 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 	file = f;
 
+	mapping_ = ifcopenshell::geometry::impl::mapping_implementations().construct(f);
+
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (!storeys || storeys->size() == 0) {
-		
-		IfcGeom::Kernel kernel("opencascade", f);
-		
 		std::vector<const IfcParse::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
@@ -485,10 +485,10 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
 					if (!product->get("ObjectPlacement")->isNull()) {
-						IfcGeom::ConversionResultPlacement* trsf;
-						if (kernel.convert_placement(*product->get("ObjectPlacement"), trsf)) {
-							double X, Y, Z;
-							trsf->TranslationPart(X, Y, Z);
+						auto item = mapping_->map(*product->get("ObjectPlacement"));
+						if (item) {
+							auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
+							const double& Z = matrix->components(3, 2);
 							setSectionHeight(Z + 1.);
 							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;

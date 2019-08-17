@@ -30,6 +30,9 @@ namespace ifcopenshell { namespace geometry {
 		class IFC_GEOM_API Triangulation;
 	}
 
+	// @todo, this class is no longer necessary, we can directly use
+	// taxonomy::matrix4, which does not need to be implemented specifically
+	// in the respective kernels
 	class IFC_GEOM_API ConversionResultPlacement {
 	public:
 		virtual void Multiply(const ConversionResultPlacement*) = 0;

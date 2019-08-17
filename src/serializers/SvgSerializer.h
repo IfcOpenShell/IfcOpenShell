@@ -26,6 +26,7 @@
 #include "../serializers/util.h"
 
 #include "../ifcparse/utils.h"
+#include "../ifcgeom/abstract_mapping.h"
 
 #include <sstream>
 #include <string>
@@ -45,6 +46,7 @@ protected:
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;
 	IfcParse::IfcFile* file;
 	IfcUtil::IfcBaseEntity* storey_;
+	ifcopenshell::geometry::abstract_mapping* mapping_;
 public:
 	SvgSerializer(const std::string& out_filename, const SerializerSettings& settings)
 		: GeometrySerializer(settings)
@@ -63,8 +65,8 @@ public:
     void growBoundingBox(double x, double y) { if (x < xmin) xmin = x; if (x > xmax) xmax = x; if (y < ymin) ymin = y; if (y > ymax) ymax = y; }
     void writeHeader();
     bool ready();
-    void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
-    void write(const IfcGeom::NativeElement<real_t>* o);
+    void write(const ifcopenshell::geometry::TriangulationElement* /*o*/) {}
+    void write(const ifcopenshell::geometry::NativeElement* o);
     void write(path_object& p, const TopoDS_Wire& wire);
     path_object& start_path(IfcUtil::IfcBaseEntity* storey, const std::string& id);
     bool isTesselated() const { return false; }
@@ -73,7 +75,7 @@ public:
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
 	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0) { section_height = h; storey_ = storey; }
-    std::string nameElement(const IfcGeom::Element<real_t>* elem);
+    std::string nameElement(const ifcopenshell::geometry::Element* elem);
     std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 };
 

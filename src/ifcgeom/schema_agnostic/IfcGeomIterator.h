@@ -194,8 +194,8 @@ namespace ifcopenshell { namespace geometry {
 		int done;
 		int total;
 
-		std::string unit_name;
-		double unit_magnitude;
+		std::string unit_name_;
+		double unit_magnitude_;
 
         gp_XYZ bounds_min_;
         gp_XYZ bounds_max_;
@@ -204,6 +204,9 @@ namespace ifcopenshell { namespace geometry {
 
         /// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
+
+		const std::string& unit_name() const { return unit_name_; }
+		const double unit_magnitude() const { return unit_magnitude_; }
 
 		bool initialize() {
 			converter_->mapping()->get_representations(tasks_, filters_, settings_);
@@ -357,10 +360,10 @@ namespace ifcopenshell { namespace geometry {
 			}
 		}
 
-		const std::string& getUnitName() const { return unit_name; }
+		const std::string& getUnitName() const { return unit_name_; }
 
         /// @note Double always as per IFC specification.
-        double getUnitMagnitude() const { return unit_magnitude; }
+        double getUnitMagnitude() const { return unit_magnitude_; }
 	
 		std::string getLog() const { return Logger::GetLog(); }
 
@@ -418,6 +421,10 @@ namespace ifcopenshell { namespace geometry {
 				if (task_result_index_ == all_processed_elements_.size()) {
 					return create();
 				}
+				if (task_result_index_ == all_processed_elements_.size()) {
+					return nullptr;
+				}
+				return all_processed_elements_[task_result_index_]->product();
 			}
 		}
 
@@ -563,8 +570,8 @@ namespace ifcopenshell { namespace geometry {
 		}
 	private:
 		void _initialize() {
-			unit_name = "METER";
-			unit_magnitude = 1.f;
+			unit_name_ = "METER";
+			unit_magnitude_ = 1.f;
 
 			// @todo
 
@@ -585,13 +592,23 @@ namespace ifcopenshell { namespace geometry {
 
 		bool owns_ifc_file;
 	public:
-		Iterator(const std::string& geometry_library, const settings& settings, IfcParse::IfcFile* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads)
+		Iterator(const std::string& geometry_library, const settings& settings, IfcParse::IfcFile* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads = 1)
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
 			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library)
+		{
+			_initialize();
+		}
+
+		Iterator(const settings& settings, IfcParse::IfcFile* file, int num_threads = 1)
+			: settings_(settings)
+			, ifc_file(file)
+			, owns_ifc_file(false)
+			, num_threads_(num_threads)
+			, geometry_library_("opencascade")
 		{
 			_initialize();
 		}
