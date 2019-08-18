@@ -126,12 +126,28 @@ namespace {
 taxonomy::item* mapping::map(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	// @todo length unit
 	return new taxonomy::extrusion(
-		inst,
 		as<taxonomy::matrix4>(map(inst->Position())),
 		as<taxonomy::face>(map(inst->SweptArea())),
 		as<taxonomy::direction3>(map(inst->ExtrudedDirection())),
 		inst->Depth()
 	);
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcRepresentation* inst) {
+	auto c = new taxonomy::collection();
+	IfcSchema::IfcRepresentationItem::list::ptr items = inst->Items();
+	if (items->size()) {
+		for (IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
+			if (auto r = map(*it)) {
+				c->children.push_back(r);
+			}
+		}
+	}
+	if (c->children.empty()) {
+		delete c;
+		return nullptr;
+	}
+	return c;
 }
 
 taxonomy::item* mapping::map(const IfcSchema::IfcAxis2Placement3D* inst) {

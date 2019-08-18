@@ -209,6 +209,7 @@ namespace ifcopenshell { namespace geometry {
 		const double unit_magnitude() const { return unit_magnitude_; }
 
 		bool initialize() {
+			converter_ = new Converter(geometry_library_, ifc_file);
 			converter_->mapping()->get_representations(tasks_, filters_, settings_);
 
 			if (tasks_.size() == 0) {

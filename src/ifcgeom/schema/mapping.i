@@ -26,7 +26,7 @@
 
 // BIND(IfcShellBasedSurfaceModel);
 // BIND(IfcFaceBasedSurfaceModel);
-// BIND(IfcRepresentation);
+BIND(IfcRepresentation);
 // BIND(IfcMappedItem);
 // IfcFacetedBrep included
 // IfcAdvancedBrep included
