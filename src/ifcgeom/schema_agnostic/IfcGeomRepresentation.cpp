@@ -29,29 +29,28 @@
 
 #include "IfcGeomRepresentation.h"
 #include "../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
-#include "../../ifcgeom/schema_agnostic/Kernel.h"
 
-IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
+ifcopenshell::geometry::Representation::Serialization::Serialization(const BRep& brep)
 	: Representation(brep.settings())
 	, id_(brep.id())
 {
-	IfcGeom::ConversionResultShape* shape = brep.as_compound();
+	ifcopenshell::geometry::ConversionResultShape* shape = brep.as_compound();
 	TopoDS_Compound compound = TopoDS::Compound(((OpenCascadeShape*) shape)->shape());
 	delete shape;
 
-	for (IfcGeom::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
-		if (it->hasStyle() && it->Style().Diffuse()) {
-			const IfcGeom::SurfaceStyle::ColorComponent& clr = *it->Style().Diffuse();
-			surface_styles_.push_back(clr.R());
-			surface_styles_.push_back(clr.G());
-			surface_styles_.push_back(clr.B());
+	for (ifcopenshell::geometry::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
+		if (it->hasStyle() && it->Style().diffuse) {
+			auto clr = it->Style().diffuse.get().components;
+			surface_styles_.push_back(clr[0]);
+			surface_styles_.push_back(clr[1]);
+			surface_styles_.push_back(clr[2]);
 		} else {
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
 		}
-		if (it->hasStyle() && it->Style().Transparency()) {
-			surface_styles_.push_back(1. - *it->Style().Transparency());
+		if (it->hasStyle() && it->Style().transparency) {
+			surface_styles_.push_back(1. - *it->Style().transparency);
 		} else {
 			surface_styles_.push_back(1.);
 		}
@@ -86,19 +85,23 @@ TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
 	}
 }
 
-IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::as_compound(bool force_meters) const {
+ifcopenshell::geometry::ConversionResultShape* ifcopenshell::geometry::Representation::BRep::as_compound(bool force_meters) const {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
 
-	for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+	for (ifcopenshell::geometry::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 		const TopoDS_Shape& s = *(OpenCascadeShape*) it->Shape();
+		
+		// @todo, check
 		gp_GTrsf trsf;
-		if (it->Placement()) {
-			trsf = ((OpenCascadePlacement*)it->Placement())->trsf();
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < j; ++i) {
+				trsf.SetValue(i + 1, j + 1, it->Placement().components(i, j));
+			}
 		}
 
-		if (!force_meters && settings().get(IteratorSettings::CONVERT_BACK_UNITS)) {
+		if (!force_meters && settings().get(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
 			scale.SetScaleFactor(1.0 / settings().unit_magnitude());
 			trsf.PreMultiply(scale);
@@ -195,11 +198,11 @@ namespace {
 	}
 }
 
-bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
+bool ifcopenshell::geometry::Representation::BRep::calculate_surface_area(double& area) const {
 	try {
 		area = 0.;
 
-		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+		for (ifcopenshell::geometry::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			GProp_GProps prop;
 			BRepGProp::SurfaceProperties(*(OpenCascadeShape*)it->Shape(), prop);
 			area += prop.Mass();
@@ -212,12 +215,12 @@ bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
 	}
 }
 
-bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
+bool ifcopenshell::geometry::Representation::BRep::calculate_volume(double& volume) const {
 	try {
 		volume = 0.;
 
-		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
-			if (Kernel::is_manifold(it->Shape())) {
+		for (ifcopenshell::geometry::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+			if (it->Shape()->is_manifold()) {
 				GProp_GProps prop;
 				BRepGProp::VolumeProperties(*(OpenCascadeShape*)it->Shape(), prop);
 				volume += prop.Mass();
@@ -233,19 +236,26 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 	}
 }
 
-bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ConversionResultPlacement* place, double & along_x, double & along_y, double & along_z) const {
+bool ifcopenshell::geometry::Representation::BRep::calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& place, double & along_x, double & along_y, double & along_z) const {
 	try {
-		gp_Trsf trsf = ((OpenCascadePlacement*)place)->trsf().Trsf();
-		gp_Mat mat = trsf.HVectorialPart();
+		// @todo check
+		gp_GTrsf trsf;
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < j; ++i) {
+				trsf.SetValue(i + 1, j + 1, place.components(i, j));
+			}
+		}
+
+		gp_Mat mat = trsf.Trsf().HVectorialPart();
 		gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
 
 		along_x = along_y = along_z = 0.;
 
-		for (IfcGeom::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
+		for (ifcopenshell::geometry::ConversionResults::const_iterator it = begin(); it != end(); ++it) {
 			double x, y, z;
 			surface_area_along_direction(settings().deflection_tolerance(), *(OpenCascadeShape*)it->Shape(), ax, x, y, z);
 
-			if (Kernel::is_manifold(it->Shape())) {
+			if (it->Shape()->is_manifold()) {
 				x /= 2.;
 				y /= 2.;
 				z /= 2.;

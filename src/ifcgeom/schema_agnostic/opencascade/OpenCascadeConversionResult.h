@@ -39,47 +39,6 @@
 namespace ifcopenshell {
 	namespace geometry {
 
-		class OpenCascadePlacement : public ConversionResultPlacement {
-		public:
-			OpenCascadePlacement(const gp_GTrsf& trsf)
-				: trsf_(trsf) {}
-
-			const gp_GTrsf& trsf() const { return trsf_; }
-			operator const gp_GTrsf& () { return trsf_; }
-
-			virtual double Value(int i, int j) const {
-				return trsf_.Value(i, j);
-			}
-
-			virtual void Multiply(const ConversionResultPlacement* other) {
-				trsf_.Multiply(((OpenCascadePlacement*)other)->trsf_);
-			}
-
-			virtual void PreMultiply(const ConversionResultPlacement* other) {
-				trsf_.PreMultiply(((OpenCascadePlacement*)other)->trsf_);
-			}
-
-			virtual ConversionResultPlacement* clone() const {
-				return new OpenCascadePlacement(trsf_);
-			}
-
-			virtual ConversionResultPlacement* inverted() const {
-				return new OpenCascadePlacement(trsf_.Inverted());
-			}
-
-			virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement* other) const {
-				return new OpenCascadePlacement(trsf_.Multiplied(((OpenCascadePlacement*)other)->trsf_));
-			}
-
-			virtual void TranslationPart(double& X, double& Y, double& Z) const {
-				X = trsf_.TranslationPart().X();
-				Y = trsf_.TranslationPart().Y();
-				Z = trsf_.TranslationPart().Z();
-			}
-		private:
-			gp_GTrsf trsf_;
-		};
-
 		class OpenCascadeShape : public ConversionResultShape {
 		public:
 			OpenCascadeShape(const TopoDS_Shape& shape)
@@ -88,7 +47,7 @@ namespace ifcopenshell {
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }
 
-			virtual void Triangulate(const settings & settings, const ConversionResultPlacement * place, Representation::Triangulation* t, int surface_style_id) const;
+			virtual void Triangulate(const settings & settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const;
 
 			virtual void Serialize(std::string&) const {
 				throw std::runtime_error("Not implemented");
@@ -97,6 +56,8 @@ namespace ifcopenshell {
 			virtual ConversionResultShape* clone() const {
 				return new OpenCascadeShape(shape_);
 			}
+
+			virtual bool is_manifold() const;
 
 			virtual int surface_genus() const;
 		private:
