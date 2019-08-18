@@ -3,7 +3,7 @@
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 
 ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file) {
-	kernel_ = kernels::impl::kernel_implementations().construct(geometry_library, file);
+	kernel_ = kernels::construct(geometry_library, file);
 	mapping_ = impl::mapping_implementations().construct(file);
 }
 
@@ -26,15 +26,6 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 		Logger::Error(e);
 	}
 
-	ConversionResultPlacement* trsf = nullptr;
-	try {
-		convert_placement(product, trsf);
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	} catch (...) {
-		Logger::Error("Failed to construct placement");
-	}
-
 	const std::string guid = product->get_value<std::string>("GlobalId");
 	const std::string name = product->get_value_or<std::string>("Name", "");
 	
@@ -44,7 +35,8 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	ifcopenshell::geometry::ConversionResults shapes;
 
 	auto rep_item = mapping_->map(representation);
-	auto placement = mapping_->map(product);
+	// @todo decide how to get placement from product
+	auto placement = (taxonomy::geom_item*) mapping_->map(product);
 	kernel_->convert(rep_item, shapes);
 
 	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
@@ -57,7 +49,7 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 		guid,
 		// @todo
 		"",
-		trsf,
+		placement->matrix,
 		boost::shared_ptr<ifcopenshell::geometry::Representation::BRep>(shape),
 		product
 	);
@@ -202,55 +194,50 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	*/
 }
 
-/*
-template <typename P, typename PP>
-ifcopenshell::geometry::kernels::NativeElement<P, PP>* ifcopenshell::geometry::kernels::AbstractKernel::create_brep_for_processed_representation(
-	const IteratorSettings& //* settings /, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product,
-	ifcopenshell::geometry::kernels::NativeElement<P, PP>* brep) {
+ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(
+	const ifcopenshell::geometry::settings& /* settings */, IfcUtil::IfcBaseEntity* /* representation */, IfcUtil::IfcBaseEntity* product,
+	ifcopenshell::geometry::NativeElement* brep)
+{
 	int parent_id = -1;
 	try {
-		IfcUtil::IfcBaseEntity* parent_object = get_decomposing_entity(product);
-		if (parent_object && parent_object->as<IfcSchema::IfcObjectDefinition>()) {
+		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
+		if (parent_object) {
 			parent_id = parent_object->data().id();
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
 	}
 
-	const std::string name = product->hasName() ? product->Name() : "";
-	const std::string guid = product->GlobalId();
+	const std::string guid = product->get_value<std::string>("GlobalId");
+	const std::string name = product->get_value_or<std::string>("Name", "");
 
-	ConversionResultPlacement* trsf = nullptr;
-	try {
-		convert_placement(product->ObjectPlacement(), trsf);
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-	} catch (...) {
-		Logger::Error("Failed to construct placement");
-	}
+	auto placement = (taxonomy::geom_item*) mapping_->map(product);
 
+	/*
 	std::string context_string = "";
 	if (representation->hasRepresentationIdentifier()) {
 		context_string = representation->RepresentationIdentifier();
 	} else if (representation->ContextOfItems()->hasContextType()) {
 		context_string = representation->ContextOfItems()->ContextType();
 	}
+	*/
 
 	const std::string product_type = product->declaration().name();
 
-	return new NativeElement<P, PP>(
+	return new NativeElement(
 		product->data().id(),
 		parent_id,
 		name,
 		product_type,
 		guid,
-		context_string,
-		trsf,
+		// @todo
+		"",
+		placement->matrix,
 		brep->geometry_pointer(),
 		product
 		);
 }
-*/
+
 //#include "../../ifcparse/Ifc2x3.h"
 //#include "../../ifcparse/Ifc4.h"
 //
@@ -308,42 +295,6 @@ ifcopenshell::geometry::kernels::NativeElement<P, PP>* ifcopenshell::geometry::k
 //	return genus;
 //}
 //
-//IfcGeom::impl::KernelFactoryImplementation& IfcGeom::impl::kernel_implementations() {
-//	static KernelFactoryImplementation impl;
-//	return impl;
-//}
-//
-//extern void init_KernelImplementation_opencascade_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
-//extern void init_KernelImplementation_opencascade_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
-//#ifdef IFOPSH_USE_CGAL
-//extern void init_KernelImplementation_cgal_Ifc2x3(IfcGeom::impl::KernelFactoryImplementation*);
-//extern void init_KernelImplementation_cgal_Ifc4(IfcGeom::impl::KernelFactoryImplementation*);
-//#endif
-//
-//IfcGeom::impl::KernelFactoryImplementation::KernelFactoryImplementation() {
-//	init_KernelImplementation_opencascade_Ifc2x3(this);
-//	init_KernelImplementation_opencascade_Ifc4(this);
-//#ifdef IFOPSH_USE_CGAL
-//	init_KernelImplementation_cgal_Ifc2x3(this);
-//	init_KernelImplementation_cgal_Ifc4(this);
-//#endif
-//}
-//
-//void IfcGeom::impl::KernelFactoryImplementation::bind(const std::string& schema_name, const std::string& geometry_library, IfcGeom::impl::kernel_fn fn) {
-//	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-//	this->insert(std::make_pair(std::make_pair(schema_name_lower, geometry_library), fn));
-//}
-//
-//IfcGeom::Kernel* IfcGeom::impl::KernelFactoryImplementation::construct(const std::string& schema_name, const std::string& geometry_library, IfcParse::IfcFile* file) {
-//	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-//	std::map<std::pair<std::string, std::string>, IfcGeom::impl::kernel_fn>::const_iterator it;
-//	it = this->find(std::make_pair(schema_name_lower, geometry_library));
-//	if (it == end()) {
-//		throw IfcParse::IfcException("No geometry kernel registered for " + schema_name);
-//	}
-//	return it->second(file);
-//}
-//
 //
 //IfcUtil::IfcBaseEntity* IfcGeom::Kernel::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
 //	if (inst->as<Ifc2x3::IfcProduct>()) {
@@ -357,33 +308,6 @@ ifcopenshell::geometry::kernels::NativeElement<P, PP>* ifcopenshell::geometry::k
 //	}
 //}
 //
-//namespace {
-//	template <typename Schema>
-//	static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers_impl(typename Schema::IfcProduct* prod) {
-//		std::map<std::string, IfcUtil::IfcBaseEntity*> layers;
-//		if (prod->hasRepresentation()) {
-//			IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
-//			typename Schema::IfcRepresentation::list::ptr representations = r->template as<typename Schema::IfcRepresentation>();
-//			for (typename Schema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
-//				typename Schema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
-//				for (typename Schema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
-//					layers[(*jt)->Name()] = *jt;
-//				}
-//			}
-//		}
-//		return layers;
-//	}
-//}
-//
-//std::map<std::string, IfcUtil::IfcBaseEntity*> IfcGeom::Kernel::get_layers(IfcUtil::IfcBaseEntity* inst) {
-//	if (inst->as<Ifc2x3::IfcProduct>()) {
-//		return get_layers_impl<Ifc2x3>(inst->as<Ifc2x3::IfcProduct>());
-//	} else if (inst->as<Ifc4::IfcProduct>()) {
-//		return get_layers_impl<Ifc4>(inst->as<Ifc4::IfcProduct>());
-//	} else {
-//		throw IfcParse::IfcException("Unexpected entity " + inst->declaration().name());
-//	}
-//}
 //
 //bool IfcGeom::Kernel::is_manifold(const ConversionResultShape* s_) {
 //        // @todo make kernel agnostic

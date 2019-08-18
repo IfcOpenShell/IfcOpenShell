@@ -81,11 +81,6 @@ namespace ifcopenshell { namespace geometry {
 			return results;
 		}
 
-		bool convert_placement(IfcUtil::IfcBaseClass* item, ifcopenshell::geometry::ConversionResultPlacement*& trsf) {
-			throw std::runtime_error("not implemented");
-			// return implementation_->convert_placement(item, trsf);
-		}
-
 		ifcopenshell::geometry::NativeElement* create_brep_for_representation_and_product(const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product);
 		ifcopenshell::geometry::NativeElement* create_brep_for_processed_representation(const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product, ifcopenshell::geometry::NativeElement* brep);
 
@@ -95,7 +90,6 @@ namespace ifcopenshell { namespace geometry {
 
 		static bool is_manifold(const ifcopenshell::geometry::ConversionResultShape*);
 		static IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity*, bool include_openings=true);
-		static std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		static IfcEntityList::ptr find_openings(IfcUtil::IfcBaseEntity* product);
 		*/
 	};

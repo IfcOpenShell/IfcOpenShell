@@ -33,7 +33,7 @@ namespace geometry {
 		virtual ifcopenshell::geometry::taxonomy::item* map(const IfcUtil::IfcBaseClass*) = 0;
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters, settings& s) = 0;
 		virtual IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity* product, bool include_openings = true) = 0;
-		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
+		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*) = 0;
     };
 
 	namespace impl {

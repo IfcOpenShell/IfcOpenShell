@@ -1,6 +1,7 @@
 #include "AbstractKernel.h"
 
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
+#include "../../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
 
 namespace {
 	/* A compile-time for loop over the taxonomy kinds */
@@ -26,6 +27,15 @@ namespace {
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::item* item, ifcopenshell::geometry::ConversionResults& results) {
 	return dispatch_conversion<0>::dispatch(this, item, results);
+}
+
+ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels::construct(const std::string& geometry_library, IfcParse::IfcFile* file) {
+	const std::string geometry_library_lower = boost::to_lower_copy(geometry_library);
+	if (geometry_library_lower == "opencascade") {
+		return new OpenCascadeKernel;
+	} else {
+		throw IfcParse::IfcException("No geometry kernel registered for " + geometry_library);
+	}
 }
 
 //void ifcopenshell::geometry::kernels::AbstractKernel::set_conversion_placement_rel_to(const IfcParse::declaration* type) {

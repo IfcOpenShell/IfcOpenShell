@@ -54,6 +54,9 @@ namespace ifcopenshell { namespace geometry {
 			}
 		}
 		const ifcopenshell::geometry::taxonomy::matrix4& data() const { return matrix_; }
+		const element_settings& settings() const { return settings_; }
+
+		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	};
 
 	class Element {
@@ -131,7 +134,10 @@ namespace ifcopenshell { namespace geometry {
 
 			_unique_id = oss.str();
 		}
+
 		virtual ~Element() {}
+
+		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	};
 
 	class NativeElement : public Element {

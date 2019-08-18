@@ -20,6 +20,7 @@ namespace geometry {
 		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file) : file_(file) {}
 		virtual ifcopenshell::geometry::taxonomy::item* map(const IfcUtil::IfcBaseClass*);
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters, settings& s);
+		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		
 		const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct* product);
 		IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);

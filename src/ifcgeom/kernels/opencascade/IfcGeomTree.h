@@ -24,7 +24,7 @@
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomIterator.h"
 #include "../../../ifcgeom/schema_agnostic/Kernel.h"
-#include "../../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
+#include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>

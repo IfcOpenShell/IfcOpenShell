@@ -699,3 +699,19 @@ IfcUtil::IfcBaseEntity* mapping::get_decomposing_entity(IfcUtil::IfcBaseEntity* 
 
 	return parent;
 }
+
+std::map<std::string, IfcUtil::IfcBaseEntity*> mapping::get_layers(IfcUtil::IfcBaseEntity* inst) {
+	auto prod = inst->as<IfcSchema::IfcProduct>();
+	std::map<std::string, IfcUtil::IfcBaseEntity*> layers;
+	if (prod->hasRepresentation()) {
+		IfcEntityList::ptr r = IfcParse::traverse(prod->Representation());
+		IfcSchema::IfcRepresentation::list::ptr representations = r->as<IfcSchema::IfcRepresentation>();
+		for (IfcSchema::IfcRepresentation::list::it it = representations->begin(); it != representations->end(); ++it) {
+			IfcSchema::IfcPresentationLayerAssignment::list::ptr a = (*it)->LayerAssignments();
+			for (IfcSchema::IfcPresentationLayerAssignment::list::it jt = a->begin(); jt != a->end(); ++jt) {
+				layers[(*jt)->Name()] = *jt;
+			}
+		}
+	}
+	return layers;
+}
