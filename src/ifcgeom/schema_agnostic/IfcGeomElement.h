@@ -28,57 +28,32 @@
 
 #include "../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
 #include "../../ifcgeom/settings.h"
+#include "../../ifcgeom/taxonomy.h"
 
 #include "ifc_geom_api.h"
 
 namespace ifcopenshell { namespace geometry {
 
-	class Matrix {
+	class Transformation {
 	private:
-		std::vector<double> _data;
+		element_settings settings_;
+		ifcopenshell::geometry::taxonomy::matrix4 matrix_;
 	public:
-		Matrix(const element_settings& settings, const ConversionResultPlacement* trsf) {
-			// Convert the gp_Trsf into a 4x3 Matrix
+		Transformation(const element_settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& trsf)
+			: settings_(settings)
+			, matrix_(trsf)
+		{
 			// Note that in case the CONVERT_BACK_UNITS setting is enabled
 			// the translation component of the matrix needs to be divided
 			// by the magnitude of the IFC model length unit because
 			// internally in IfcOpenShell everything is measured in meters.
-			for(int i = 1; i < 5; ++i) {
-				for (int j = 1; j < 4; ++j) {
-					const double trsf_value = (trsf == nullptr)
-						? (i == j ? 1. : 0.)
-						: trsf->Value(j,i);
-					const double matrix_value = (i == 4 && settings.get(settings::CONVERT_BACK_UNITS))
-						? trsf_value / settings.unit_magnitude()
-						: trsf_value;
-					_data.push_back(static_cast<double>(matrix_value));
+			if (settings.get(settings::CONVERT_BACK_UNITS)) {
+				for (int i = 0; i <= 2; ++i) {
+					matrix_.components(3, i) /= settings.unit_magnitude();
 				}
 			}
 		}
-		const std::vector<double>& data() const { return _data; }
-	};
-
-	class Transformation {
-	private:
-		element_settings settings_;
-		ConversionResultPlacement* trsf_;
-		Matrix matrix_;
-	public:
-		Transformation(const element_settings& settings, const ConversionResultPlacement* trsf)
-			: settings_(settings)
-			, trsf_(trsf ? trsf->clone() : nullptr)
-			, matrix_(settings, trsf) 
-		{}
-		const ConversionResultPlacement* data() const { return trsf_; }
-		const Matrix& matrix() const { return matrix_; }
-
-		Transformation inverted() const {
-			return Transformation(settings_, trsf_->inverted());
-		}
-
-		Transformation multiplied(const Transformation& other) const {
-			return Transformation(settings_, trsf_->multiplied(other.data()));
-		}
+		const ifcopenshell::geometry::taxonomy::matrix4& data() const { return matrix_; }
 	};
 
 	class Element {
@@ -130,7 +105,7 @@ namespace ifcopenshell { namespace geometry {
 		void SetParents(std::vector<const Element*> newparents) { _parents = newparents; }
 
 		Element(const element_settings& settings, int id, int parent_id, const std::string& name, const std::string& type,
-            const std::string& guid, const std::string& context, const ConversionResultPlacement* trsf, IfcUtil::IfcBaseEntity* product)
+            const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4& trsf, IfcUtil::IfcBaseEntity* product)
 			: _id(id), _parent_id(parent_id), _name(name), _type(type), _guid(guid), _context(context), _transformation(settings, trsf)
             , product_(product)
 		{ 
@@ -166,7 +141,7 @@ namespace ifcopenshell { namespace geometry {
 		const boost::shared_ptr<Representation::BRep>& geometry_pointer() const { return _geometry; }
 		const Representation::BRep& geometry() const { return *_geometry; }
 		NativeElement(int id, int parent_id, const std::string& name, const std::string& type, const std::string& guid,
-            const std::string& context, const ConversionResultPlacement* trsf, const boost::shared_ptr<Representation::BRep>& geometry,
+            const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4& trsf, const boost::shared_ptr<Representation::BRep>& geometry,
 			IfcUtil::IfcBaseEntity* product)
 			: Element(geometry->settings() ,id, parent_id, name, type, guid, context, trsf, product)
 			, _geometry(geometry)

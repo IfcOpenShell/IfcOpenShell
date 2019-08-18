@@ -648,8 +648,7 @@ namespace {
 	}
 }
 
-
-IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
+IfcUtil::IfcBaseEntity* mapping::get_decomposing_entity(IfcUtil::IfcBaseEntity* inst, bool include_openings) {
 	IfcSchema::IfcObjectDefinition* parent = 0;
 	auto product = inst->as<IfcSchema::IfcProduct>();
 	if (!product) {

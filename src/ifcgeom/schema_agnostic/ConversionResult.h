@@ -33,59 +33,56 @@ namespace ifcopenshell { namespace geometry {
 	// @todo, this class is no longer necessary, we can directly use
 	// taxonomy::matrix4, which does not need to be implemented specifically
 	// in the respective kernels
+	/*
 	class IFC_GEOM_API ConversionResultPlacement {
 	public:
-		virtual void Multiply(const ConversionResultPlacement*) = 0;
-		virtual void PreMultiply(const ConversionResultPlacement*) = 0;
+		virtual void Multiply(const ifcopenshell::geometry::taxonomy::matrix4&) = 0;
+		virtual void PreMultiply(const ifcopenshell::geometry::taxonomy::matrix4&) = 0;
 		virtual void TranslationPart(double& X, double& Y, double& Z) const = 0;
 		virtual ConversionResultPlacement* inverted() const = 0;
-		virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement*) const = 0;
+		virtual ConversionResultPlacement* multiplied(const ifcopenshell::geometry::taxonomy::matrix4&) const = 0;
 		virtual double Value(int i, int j) const = 0;
 		virtual ConversionResultPlacement* clone() const = 0;
 		virtual ~ConversionResultPlacement() {}
 	};
+	*/
 
 	class IFC_GEOM_API ConversionResultShape {
 	public:
-		virtual void Triangulate(const ifcopenshell::geometry::settings & settings, const ifcopenshell::geometry::ConversionResultPlacement* place, ifcopenshell::geometry::Representation::Triangulation* t, int surface_style_id) const = 0;
+		virtual void Triangulate(const ifcopenshell::geometry::settings & settings, const ifcopenshell::geometry::taxonomy::matrix4& place, ifcopenshell::geometry::Representation::Triangulation* t, int surface_style_id) const = 0;
 
 		virtual void Serialize(std::string&) const = 0;
 		virtual ConversionResultShape* clone() const = 0;
 		virtual int surface_genus() const = 0;
+		virtual bool is_manifold() const = 0;
 		virtual ~ConversionResultShape() {}
 	};
 
 	class IFC_GEOM_API ConversionResult {
 	private:
 		int id;
-		ConversionResultPlacement* placement;
+		ifcopenshell::geometry::taxonomy::matrix4 placement;
 		ConversionResultShape* shape;
 		ifcopenshell::geometry::taxonomy::style style;
 	public:
-		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
-			: id(id), placement(placement->clone()), shape(shape->clone()), style(style) {}
-		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape)
-			: id(id), placement(placement->clone()), shape(shape->clone()) {}
+		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
+			: id(id), placement(placement), shape(shape->clone()), style(style) {}
+		ConversionResult(int id, const ifcopenshell::geometry::taxonomy::matrix4& placement, const ConversionResultShape* shape)
+			: id(id), placement(placement), shape(shape->clone()) {}
 		ConversionResult(int id, const ConversionResultShape* shape, const ifcopenshell::geometry::taxonomy::style& style)
-			: id(id), placement(0), shape(shape->clone()), style(style) {}
+			: id(id), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ConversionResultShape* shape)
-			: id(id), placement(0), shape(shape->clone()) {}
-		void append(const ConversionResultPlacement* trsf) {
-			if (placement == 0) {
-				placement = trsf->clone();
-			} else {
-				placement->Multiply(trsf); 
-			}
+			: id(id), shape(shape->clone()) {}
+		void append(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
+			// @todo verify order
+			placement.components = placement.components * trsf.components;
 		}
-		void prepend(const ConversionResultPlacement* trsf) {
-			if (placement == 0) {
-				placement = trsf->clone();
-			} else {
-				placement->PreMultiply(trsf);
-			}
+		void prepend(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
+			// @todo verify order
+			placement.components = trsf.components * placement.components;
 		}
 		const ConversionResultShape* Shape() const { return shape; }
-		const ConversionResultPlacement* Placement() const { return placement; }
+		const ifcopenshell::geometry::taxonomy::matrix4& Placement() const { return placement; }
 		// @todo
 		bool hasStyle() const { return style.diffuse.is_initialized(); }
 		const ifcopenshell::geometry::taxonomy::style& Style() const { return style; }

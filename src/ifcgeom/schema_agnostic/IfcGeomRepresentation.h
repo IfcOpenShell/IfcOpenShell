@@ -63,7 +63,7 @@ namespace ifcopenshell { namespace geometry {
 
 			bool calculate_volume(double&) const;
 			bool calculate_surface_area(double&) const;
-			bool calculate_projected_surface_area(const ifcopenshell::geometry::ConversionResultPlacement* ax, double& along_x, double& along_y, double& along_z) const;
+			bool calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& ax, double& along_x, double& along_y, double& along_z) const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {
