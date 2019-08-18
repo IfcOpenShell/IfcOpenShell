@@ -53,18 +53,7 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual bool convert_impl(const taxonomy::node*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 	};
 
-	namespace impl {
-		typedef boost::function1 < AbstractKernel*, const std::string&> kernel_fn;
-
-		class KernelFactoryImplementation : public std::map<std::string, kernel_fn> {
-		public:
-			KernelFactoryImplementation();
-			void bind(const std::string& geometry_library, kernel_fn);
-			AbstractKernel* construct(const std::string& geometry_library, IfcParse::IfcFile*);
-		};
-
-		KernelFactoryImplementation& kernel_implementations();
-	}
+	AbstractKernel* construct(const std::string& geometry_library, IfcParse::IfcFile*);
 
 }
 }

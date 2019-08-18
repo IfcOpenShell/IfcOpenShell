@@ -55,7 +55,7 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 #include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
 
-#include "../../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
+#include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include "../../../ifcgeom/schema_agnostic/ifc_geom_api.h"
 

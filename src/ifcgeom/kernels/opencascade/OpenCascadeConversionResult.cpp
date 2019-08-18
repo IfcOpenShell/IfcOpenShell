@@ -7,17 +7,19 @@
 
 #include <map>
 
-template <typename Precision>
-void triangulate_helper(const TopoDS_Shape& s, const IfcGeom::IteratorSettings& settings, const IfcGeom::ConversionResultPlacement* place, IfcGeom::Representation::Triangulation<Precision>* t, int surface_style_id) {
+void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const {
 
+	// @todo check
 	gp_GTrsf trsf;
-	if (place) {
-		trsf = dynamic_cast<const IfcGeom::OpenCascadePlacement*>(place)->trsf();
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < j; ++i) {
+			trsf.SetValue(i + 1, j + 1, place.components(i, j));
+		}
 	}
 
 	// Triangulate the shape
 	try {
-		BRepMesh_IncrementalMesh(s, settings.deflection_tolerance());
+		BRepMesh_IncrementalMesh(shape_, settings.deflection_tolerance());
 	} catch (...) {
 
 		// TODO: Catch outside
@@ -29,7 +31,7 @@ void triangulate_helper(const TopoDS_Shape& s, const IfcGeom::IteratorSettings& 
 	// Iterates over the faces of the shape
 	int num_faces = 0;
 	TopExp_Explorer exp;
-	for (exp.Init(s, TopAbs_FACE); exp.More(); exp.Next(), ++num_faces) {
+	for (exp.Init(shape_, TopAbs_FACE); exp.More(); exp.Next(), ++num_faces) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
 		TopLoc_Location loc;
 		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
@@ -51,8 +53,8 @@ void triangulate_helper(const TopoDS_Shape& s, const IfcGeom::IteratorSettings& 
 			std::map<int, int> dict;
 
 			// Vertex normals are only calculated if vertices are not welded and calculation is not disable explicitly.
-			const bool calculate_normals = !settings.get(IfcGeom::IteratorSettings::WELD_VERTICES) &&
-				!settings.get(IfcGeom::IteratorSettings::NO_NORMALS);
+			const bool calculate_normals = !settings.get(ifcopenshell::geometry::settings::WELD_VERTICES) &&
+				!settings.get(ifcopenshell::geometry::settings::NO_NORMALS);
 
 			for (int i = 1; i <= nodes.Length(); ++i) {
 				coords.push_back(nodes(i).Transformed(loc).XYZ());
@@ -114,7 +116,7 @@ void triangulate_helper(const TopoDS_Shape& s, const IfcGeom::IteratorSettings& 
 	if (!t.normals().empty() && settings().get(IfcGeom::IteratorSettings::GENERATE_UVS)) {
 		t.uvs() = box_project_uvs(t.verts(), t.normals());
 	}
-	
+
 	if (num_faces == 0) {
 		// Edges are only emitted if there are no faces. A mixed representation of faces
 		// and loose edges is discouraged by the standard. An alternative would be to use
@@ -184,18 +186,13 @@ void triangulate_helper(const TopoDS_Shape& s, const IfcGeom::IteratorSettings& 
 
 	*/
 
-	BRepTools::Clean(s);
+	BRepTools::Clean(shape_);
 }
 
-void IfcGeom::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<float>* t, int surface_style_id) const {
-	triangulate_helper(shape_, settings, place, t, surface_style_id);
-}
-
-void IfcGeom::OpenCascadeShape::Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const {
-	triangulate_helper(shape_, settings, place, t, surface_style_id);
-}
-
-int IfcGeom::OpenCascadeShape::surface_genus() const {
+int ifcopenshell::geometry::OpenCascadeShape::surface_genus() const {
 	throw std::runtime_error("Not implemented");
-	// return IfcGeom::Kernel::surface_genus(shape_);
+}
+
+bool ifcopenshell::geometry::OpenCascadeShape::is_manifold() const {
+	throw std::runtime_error("Not implemented");
 }

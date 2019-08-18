@@ -191,20 +191,20 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	node.setNodeName(node_name);
 	node.setType(COLLADASW::Node::NODE);
 
-	// The matrix attribute of an entity is basically a 4x3 representation of its ObjectPlacement.
-	// Note that this placement is absolute, ie it is multiplied with all parent placements.
-
 	ifcopenshell::geometry::Transformation* relative_trsf = 0;
 	const ifcopenshell::geometry::Transformation* transformation_towrite = &transformation;
 	
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		relative_trsf = new ifcopenshell::geometry::Transformation(matrixStack.top().multiplied(transformation));
+		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(matrixStack.top().data().components * transformation.data().components);
+		relative_trsf = new ifcopenshell::geometry::Transformation(transformation.settings(), m4);
 		transformation_towrite = relative_trsf;
 	}
 
-	const std::vector<real_t>& posmatrix = transformation_towrite->matrix().data();
+	// @todo verify
+
+	const double* posmatrix = transformation_towrite->data().components.data();
 
 	double matrix_array[4][4] = {
 		{ (double)posmatrix[0], (double)posmatrix[3], (double)posmatrix[6], (double)posmatrix[9] },
@@ -251,11 +251,14 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const ifcopensh
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		relative_trsf = new ifcopenshell::geometry::Transformation(matrixStack.top().multiplied(parent_trsf));
+		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(matrixStack.top().data().components * parent_trsf.data().components);
+		relative_trsf = new ifcopenshell::geometry::Transformation(parent_trsf.settings(), m4);
 		transformation_towrite = relative_trsf;
 	}
 
-	const std::vector<real_t>& parentMatrix = transformation_towrite->matrix().data();
+	// @todo verify
+
+	const double* parentMatrix = transformation_towrite->data().components.data();
 
 	double matrix_array[4][4] = {
 		{ (double)parentMatrix[0], (double)parentMatrix[3], (double)parentMatrix[6], (double)parentMatrix[9] },
@@ -277,7 +280,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const ifcopensh
 	current_node->addMatrix(matrix_array);
 
 	// Add the node to the parent stack
-	matrixStack.push(parent_trsf.inverted());
+	matrixStack.push(ifcopenshell::geometry::Transformation(parent_trsf.settings(), ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data().components.inverse())));
 	parentNodes.push(current_node);
 	serializer->parentStackId.push(parent.id());
 }

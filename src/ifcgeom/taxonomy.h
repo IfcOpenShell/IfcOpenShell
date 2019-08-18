@@ -39,6 +39,7 @@ struct matrix4 : public item {
 	
 	Eigen::Matrix4d components;
 
+	matrix4(const Eigen::Matrix4d& c) : components(c), tag(OTHER) {}
     matrix4() : components(Eigen::Matrix4d::Identity()), tag(IDENTITY) {}
 
 	virtual item* clone() const { return new matrix4(*this); }
