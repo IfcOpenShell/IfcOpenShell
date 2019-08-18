@@ -35,6 +35,11 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	ifcopenshell::geometry::ConversionResults shapes;
 
 	auto rep_item = mapping_->map(representation);
+	// @todo should map() throw an exception instead?
+	if (rep_item == nullptr) {
+		return nullptr;
+	}
+
 	// @todo decide how to get placement from product
 	auto placement = (taxonomy::geom_item*) mapping_->map(product);
 	kernel_->convert(rep_item, shapes);

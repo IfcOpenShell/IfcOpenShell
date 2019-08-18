@@ -19,7 +19,7 @@ namespace geometry {
 
 namespace taxonomy {
 
-enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, EXTRUSION, NODE, COLOUR, STYLE };
+enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, EXTRUSION, NODE, COLOUR, STYLE, COLLECTION };
 
 struct item {
 	const IfcUtil::IfcBaseClass* instance;
@@ -83,6 +83,7 @@ struct geom_item : public item {
 
 	geom_item(const IfcUtil::IfcBaseClass* instance = nullptr) : item(instance) {}
 	geom_item(const IfcUtil::IfcBaseClass* instance, matrix4 m) : item(instance), matrix(m) {}
+	geom_item(matrix4 m) : matrix(m) {}
 };
 
 template <size_t N>
@@ -160,8 +161,8 @@ struct face : public geom_item {
 struct sweep : public geom_item {
     face basis;
 
-	sweep(const IfcUtil::IfcBaseClass* instance, face b) : geom_item(instance), basis(b) {}
-	sweep(const IfcUtil::IfcBaseClass* instance, matrix4 m, face b) : geom_item(instance, m), basis(b) {}
+	sweep(face b) : basis(b) {}
+	sweep(matrix4 m, face b) : geom_item(m), basis(b) {}
 };
 
 struct extrusion : public sweep {
@@ -171,7 +172,14 @@ struct extrusion : public sweep {
 	virtual item* clone() const { return new extrusion(*this); }
 	virtual kinds kind() const { return EXTRUSION; }
 
-	extrusion(const IfcUtil::IfcBaseClass* instance, matrix4 m, face basis, direction3 dir, double d) : sweep(instance, m, basis), direction(dir), depth(d) {}
+	extrusion(matrix4 m, face basis, direction3 dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
+};
+
+struct collection : public geom_item {
+	std::vector<item*> children;
+
+	virtual item* clone() const { return new collection(*this); }
+	virtual kinds kind() const { return COLLECTION; }
 };
 
 struct node : public geom_item {
@@ -185,8 +193,7 @@ struct node : public geom_item {
 };
 
 namespace impl {
-	// enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, EXTRUSION, NODE };
-	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline, edge, loop, face, extrusion, node> KindsTuple;
+	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline, edge, loop, face, extrusion, node, collection> KindsTuple;
 }
 
 struct type_by_kind {
