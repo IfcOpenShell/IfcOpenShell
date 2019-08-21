@@ -26,6 +26,7 @@
 #include <set>
 #include <cassert>
 #include <algorithm>
+#include <numeric>
 
 #include <Standard_Version.hxx>
 
@@ -2414,7 +2415,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		if (connection_type_count[idx] <= 1) {
 			continue;
 		}
-		
+
 		/*
 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = idx == 1
 			? IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
@@ -2427,48 +2428,44 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			const IfcSchema::IfcProduct* other = it->second;
 			if (others.find(other) != others.end()) {
 				it = endpoint_connections.erase(it);
-				-- connection_type_count[idx];
+				--connection_type_count[idx];
 			} else {
 				others.insert(other);
 				++it;
 			}
 		}
-
-		/*
-		Additionally one could check whether the end points are of the wall are really ~1 LayerThickness away from each other
-		for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
-			IfcSchema::IfcConnectionTypeEnum::Value relating_connection_type = it->first.first;
-			IfcSchema::IfcConnectionTypeEnum::Value related_connection_type = it->first.second;
-
-			if (connection_type != relating_connection_type) {
-				continue;
-			}
-
-			gp_Pnt other_axis_start, other_axis_end;
-			find_wall_end_points(it->second->as<IfcSchema::IfcWall>(), other_axis_start, other_axis_end);
-
-			gp_Trsf other;
-			if (!convert(it->second->ObjectPlacement(), other)) {
-				continue;
-			}
-
-			other.Transforms(other_axis_start.ChangeCoord());
-			local.Transforms(other_axis_start.ChangeCoord());
-			other.Transforms(other_axis_end.ChangeCoord());
-			local.Transforms(other_axis_end.ChangeCoord());
-
-			const gp_Pnt& a = relating_connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
-				? own_axis_start
-				: own_axis_end;
-
-			const gp_Pnt& b = related_connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
-				? other_axis_start
-				: other_axis_end;
-
-			const double d = a.Distance(b);
-		}
-		*/
 	}
+
+	// Check whether the end points are of the wall are really ~1 LayerThickness away from each other
+	/*
+	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
+		IfcSchema::IfcConnectionTypeEnum::Value own_type = it->first.first;
+		IfcSchema::IfcConnectionTypeEnum::Value other_type = it->first.second;
+
+		gp_Pnt other_axis_start, other_axis_end;
+		find_wall_end_points(it->second->as<IfcSchema::IfcWall>(), other_axis_start, other_axis_end);
+
+		gp_Trsf other;
+		if (!convert(it->second->ObjectPlacement(), other)) {
+			continue;
+		}
+
+		other.Transforms(other_axis_start.ChangeCoord());
+		local.Transforms(other_axis_start.ChangeCoord());
+		other.Transforms(other_axis_end.ChangeCoord());
+		local.Transforms(other_axis_end.ChangeCoord());
+
+		const gp_Pnt& a = own_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
+			? own_axis_start
+			: own_axis_end;
+
+		const gp_Pnt& b = other_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
+			? other_axis_start
+			: other_axis_end;
+
+		const double d = a.Distance(b);
+	}
+	*/
 
 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = it->first.first;
@@ -2554,6 +2551,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		}
 		
 		double layer_offset = 0;
+
+		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0);
 		
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
@@ -2620,7 +2619,11 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 					}
 					// Find vertical wall end point edge closest to end point associated with semantic connection
 					if (project(kt->second, own_end_point, p, u, d)) {
-						if (d < mind) {
+						// In addition to closest, there is a length threshold based on thickness.
+						// @todo ideally, first, the point closest to end-point is selected, and
+						// after that the parallel check is performed. But threshold probably
+						// functions good enough.
+						if (d < total_thickness * 3 && d < mind) {
 							GeomAdaptor_Curve GAC(other_axis_curve);
 							GeomAdaptor_Surface GAS(kt->first);
 
