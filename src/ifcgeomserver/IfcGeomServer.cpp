@@ -535,7 +535,7 @@ public:
 				bounds[1].get(i) = bbox_xyz[i + 3];
 			}
 			progress_writer silent;
-			auto surface = storage_for(bounds, 256U);
+			auto surface = storage_for(bounds, 128U, 4U);
 			processor proc(surface, silent);
 			std::vector<std::pair<int, TopoDS_Compound > > geometries = { {1, compound} };
 			proc.process(geometries.begin(), geometries.end(), SURFACE(), output(MERGED()));
