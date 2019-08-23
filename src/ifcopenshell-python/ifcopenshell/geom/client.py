@@ -40,27 +40,89 @@ class message_headers(object):
     DEFLECTION = LOG + 1
     SETTING = DEFLECTION + 1
     
+def cast(data, dtype, n=None):
+    arr = numpy.frombuffer(data, dtype=dtype)
+    if n is None: return arr[0]
+    else: return arr
+
+def read(stream, dtype, n=None):
+    data = stream.read(dtype().nbytes * (n or 1))
+    x = cast(data, dtype, n)
+    # print(x)
+    return x
+    
+def readString(s):
+    l = read(s, numpy.int32)
+    S = s.read(int(l)).decode('ascii')
+    while (l % 4 != 0):
+        s.read(1);
+        l += 1
+    # print(S)
+    return S
+    
+def readDoubleArray(s):
+    l = read(s, numpy.int32) // 8
+    return read(s, numpy.float64, int(l))
+    
+def readByteBuffer(s):
+    l = read(s, numpy.int32)
+    return s.read(int(l))
+    
+class entity_contents(object):
+    def __init__(self, data):
+        import json
+        from io import BytesIO
+        s = BytesIO(data)
+        
+        self.structure = [
+            ("id"              , read(s, numpy.int32)), 
+            ("guid"            , readString(s)), 
+            ("name"            , readString(s)), 
+            ("type"            , readString(s)), 
+            ("parentId"        , read(s, numpy.int32)), 
+            ("matrix"          , readDoubleArray(s)), 
+            ("repId"           , read(s, numpy.int32)), 
+            ("positions"       , readByteBuffer(s)), 
+            ("normals"         , readByteBuffer(s)), 
+            ("indices"         , readByteBuffer(s)), 
+            ("colors"          , readByteBuffer(s)), 
+            ("materialIndices" , readByteBuffer(s)), 
+            ("extendedData"    , json.loads(s.read().strip(b'\x00').decode('ascii').strip(' ')))
+        ]
+        
+    def __repr__(self):
+        def format(x):
+            a, b = x
+            if isinstance(b, bytes):
+                b = "<bytes>"
+            elif isinstance(b, dict):
+                padding = " " * (len(a) + 2)
+                b = ("\n".join("%s%%s: %%s" % padding % format(x) for x in b.items())).strip()
+            return a, b
+        return "ENTITY: \n" + "\n".join("%s: %s" % format(x) for x in self.structure)
+
+content_factory = {
+    message_headers.ENTITY: entity_contents
+}     
+
+identity = lambda x: x
+        
+def parse_contents(header, contents):
+    return (content_factory.get(header, identity))(contents)
+    
 message = namedtuple("message", ("header", "contents"))
     
 def process(geomserver_exe, ifc_filename):
         
     proc = subprocess.Popen([geomserver_exe], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-    
-    def cast(data, dtype, n=None):
-        arr = numpy.frombuffer(data, dtype=dtype)
-        if n is None: return arr[0]
-        else: return arr
-
-    def read(dtype, n=None):
-        data = proc.stdout.read(dtype().nbytes * (n or 1))
-        return cast(data, dtype, n)
-        
+            
     def read_message(header_assertion=None):
-        header, size = read(numpy.int32, 2)
+        header, size = read(proc.stdout, numpy.int32, 2)
         assert header_assertion is None or header_assertion == header
         contents = b""
         if size > 0:
             contents = proc.stdout.read(size)
+            contents = parse_contents(header, contents)
         return message(header, contents)
         
     def write(header, contents=None):
@@ -82,11 +144,11 @@ def process(geomserver_exe, ifc_filename):
     write(message_headers.SETTING, [numpy.int32((1 << 4)), numpy.int32(1)]) 
     write(message_headers.IFC_MODEL, [numpy.int32(len(s)), s, b"\x00" * ((4 - (len(s) % 4)) % 4)])
         
-    while True:    
+    while True:
         has_more = cast(read_message(message_headers.MORE).contents, numpy.int32) == 1        
         if not has_more: break        
         write(message_headers.GET)        
-        print(read_message(message_headers.ENTITY).contents)        
+        print(read_message(message_headers.ENTITY).contents)
         write(message_headers.NEXT)        
             
     write(message_headers.BYE)
