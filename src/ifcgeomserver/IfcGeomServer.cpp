@@ -439,6 +439,7 @@ public:
 
 static const std::string TOTAL_SURFACE_AREA = "TOTAL_SURFACE_AREA";
 static const std::string TOTAL_SHAPE_VOLUME = "TOTAL_SHAPE_VOLUME";
+static const std::string TOTAL_SHAPE_VOLUME_VOXELS = "TOTAL_SHAPE_VOLUME_VOXELS";
 static const std::string SURFACE_AREA_ALONG_X = "SURFACE_AREA_ALONG_X";
 static const std::string SURFACE_AREA_ALONG_Y = "SURFACE_AREA_ALONG_Y";
 static const std::string SURFACE_AREA_ALONG_Z = "SURFACE_AREA_ALONG_Z";
@@ -528,13 +529,16 @@ public:
 		// Sometimes geometries are not a topologically valid manifold,
 		// but still (approximately) enclose a volume. In this case
 		// we can voxlize the geometry and fill the interior solid volume.
-		else if (has_boundingbox) {
+		if (has_boundingbox) {
 			std::array< vec_n<3, double>, 2 > bounds;
 			for (int i = 0; i < 3; ++i) {
 				bounds[0].get(i) = bbox_xyz[i + 0];
 				bounds[1].get(i) = bbox_xyz[i + 3];
 			}
 			progress_writer silent;
+			// At least one padding voxel need to be in place as the traversal happens outside
+			// of the surface voxel bounds and is subsequently inverted to find the interior
+			// voxels.
 			auto surface = storage_for(bounds, 128U, 4U);
 			processor proc(surface, silent);
 			std::vector<std::pair<int, TopoDS_Compound > > geometries = { {1, compound} };
@@ -543,12 +547,15 @@ public:
 			double vsize = surface->voxel_size();
 			auto surface_count = surface->count();
 			traversal_voxel_filler_inverse filler;
-			auto volume = filler(surface);
-			auto volume_count = volume->count();
+			double total_volume = 0.;
+			if (surface->count() != 0) {
+				auto volume = filler(surface);
+				auto volume_count = volume->count();
+				delete volume;
+				total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
+			}
 			delete surface;
-			delete volume;
-			double total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
-			put_json(TOTAL_SHAPE_VOLUME, total_volume);
+			put_json(TOTAL_SHAPE_VOLUME_VOXELS, total_volume);
 		}
 #endif
 
