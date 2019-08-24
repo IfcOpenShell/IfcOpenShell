@@ -19,12 +19,18 @@ namespace geometry {
 
 namespace taxonomy {
 
-enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, EXTRUSION, NODE, COLOUR, STYLE, COLLECTION };
+class topology_error : public std::runtime_error {
+public:
+	topology_error() : std::runtime_error("Generic topology error") {}
+};
+
+enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLOUR, STYLE, COLLECTION };
 
 struct item {
 	const IfcUtil::IfcBaseClass* instance;
     virtual item* clone() const = 0;
 	virtual kinds kind() const = 0;
+	virtual void reverse() { throw taxonomy::topology_error(); }
 
 	item(const IfcUtil::IfcBaseClass* instance = nullptr) : instance(instance) {}
 
@@ -98,14 +104,14 @@ struct point3 : public cartesian_base<3> {
     virtual item* clone() const { return new point3(*this); }
 	virtual kinds kind() const { return POINT3; }
 
-	point3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
+	point3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
 };
 
 struct direction3 : public cartesian_base<3> {
 	virtual item* clone() const { return new direction3(*this); }
 	virtual kinds kind() const { return DIRECTION3; }
 
-	direction3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
+	direction3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
 };
 
 struct line : public geom_item {
@@ -133,46 +139,16 @@ typedef boost::variant<line, circle, ellipse, bspline> curve;
 struct edge : public geom_item {
 	boost::variant<point3, double> start, end;
 	boost::optional<curve> basis;
+	bool orientation;
 
+	edge() : orientation(true) {}
 	virtual item* clone() const { return new edge(*this); }
 	virtual kinds kind() const { return EDGE; }
-};
 
-struct loop : public geom_item {
-	std::vector<edge> edges;
-
-	virtual item* clone() const { return new loop(*this); }
-	virtual kinds kind() const { return LOOP; }
-};
-
-struct face : public geom_item {
-	loop outer;
-	std::vector<loop> inner;
-
-	virtual item* clone() const { return new face(*this); }
-	virtual kinds kind() const { return FACE; }
-
-	face(const IfcUtil::IfcBaseClass* instance, loop o) : geom_item(instance), outer(o) {}
-	face(const IfcUtil::IfcBaseClass* instance, loop o, std::vector<loop> i) : geom_item(instance), outer(o), inner(i) {}
-	face(const IfcUtil::IfcBaseClass* instance, matrix4 m, loop o) : geom_item(instance, m), outer(o) {}
-	face(const IfcUtil::IfcBaseClass* instance, matrix4 m, loop o, std::vector<loop> i) : geom_item(instance, m), outer(o), inner(i) {}
-};
-
-struct sweep : public geom_item {
-    face basis;
-
-	sweep(face b) : basis(b) {}
-	sweep(matrix4 m, face b) : geom_item(m), basis(b) {}
-};
-
-struct extrusion : public sweep {
-    direction3 direction;
-    double depth;
-
-	virtual item* clone() const { return new extrusion(*this); }
-	virtual kinds kind() const { return EXTRUSION; }
-
-	extrusion(matrix4 m, face basis, direction3 dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
+	virtual void reverse() {
+		std::swap(start, end);
+		orientation = !orientation;
+	}
 };
 
 struct collection : public geom_item {
@@ -180,6 +156,44 @@ struct collection : public geom_item {
 
 	virtual item* clone() const { return new collection(*this); }
 	virtual kinds kind() const { return COLLECTION; }
+	virtual void reverse() { 
+		std::reverse(children.begin(), children.end()); 
+		for (auto& child : children) {
+			child->reverse();
+		}
+	}
+};
+
+struct shell : public collection {
+	virtual item* clone() const { return new shell(*this); }
+	virtual kinds kind() const { return SHELL; }
+};
+
+struct face : public collection {
+	virtual item* clone() const { return new face(*this); }
+	virtual kinds kind() const { return FACE; }
+};
+
+struct loop : public collection {
+	virtual item* clone() const { return new loop(*this); }
+	virtual kinds kind() const { return LOOP; }
+};
+
+struct sweep : public geom_item {
+	face basis;
+
+	sweep(face b) : basis(b) {}
+	sweep(matrix4 m, face b) : geom_item(m), basis(b) {}
+};
+
+struct extrusion : public sweep {
+	direction3 direction;
+	double depth;
+
+	virtual item* clone() const { return new extrusion(*this); }
+	virtual kinds kind() const { return EXTRUSION; }
+
+	extrusion(matrix4 m, face basis, direction3 dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
 };
 
 struct node : public geom_item {
@@ -188,12 +202,10 @@ struct node : public geom_item {
 
 	virtual item* clone() const { return new node(*this); }
 	virtual kinds kind() const { return NODE; }
-
-	node(const IfcUtil::IfcBaseClass* instance, matrix4 m, const std::map<std::string, geom_item*>& representations, const std::vector<node*>& children) : geom_item(instance, m), representations(representations), children(children) {}
 };
 
 namespace impl {
-	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline, edge, loop, face, extrusion, node, collection> KindsTuple;
+	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline, edge, loop, face, shell, extrusion, node, collection> KindsTuple;
 }
 
 struct type_by_kind {
@@ -201,11 +213,6 @@ struct type_by_kind {
 	using type = typename std::tuple_element<N, impl::KindsTuple>::type;
 
 	static const size_t max = std::tuple_size< impl::KindsTuple>::value;
-};
-
-class topology_error : public std::runtime_error {
-public:
-	topology_error() : std::runtime_error("Generic topology error") {}
 };
 
 }

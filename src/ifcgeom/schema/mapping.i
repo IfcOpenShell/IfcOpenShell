@@ -24,8 +24,10 @@
  *                                                                              *
  ********************************************************************************/
 
+BIND(IfcProduct);
+
 // BIND(IfcShellBasedSurfaceModel);
-// BIND(IfcFaceBasedSurfaceModel);
+BIND(IfcFaceBasedSurfaceModel);
 BIND(IfcRepresentation);
 // BIND(IfcMappedItem);
 // IfcFacetedBrep included
@@ -53,7 +55,7 @@ BIND(IfcRepresentation);
 #endif
 BIND(IfcExtrudedAreaSolid);
 // BIND(IfcRevolvedAreaSolid);
-// BIND(IfcConnectedFaceSet);
+BIND(IfcConnectedFaceSet);
 // BIND(IfcBooleanResult);
 // BIND(IfcPolygonalBoundedHalfSpace);
 // BIND(IfcHalfSpaceSolid);
@@ -91,7 +93,7 @@ BIND(IfcExtrudedAreaSolid);
 // BIND(IfcDerivedProfileDef);
 // IfcFaceSurface included
 // IfcAdvancedFace included in case of IFC4
-// BIND(IfcFace);
+BIND(IfcFace);
 
 // BIND(IfcEdgeCurve);
 // BIND(IfcSubedge);
@@ -99,7 +101,7 @@ BIND(IfcExtrudedAreaSolid);
 // BIND(IfcEdge);
 // BIND(IfcEdgeLoop);
 // BIND(IfcPolyline);
-// BIND(IfcPolyLoop);
+BIND(IfcPolyLoop);
 // BIND(IfcCompositeCurve);
 // BIND(IfcTrimmedCurve);
 // BIND(IfcArbitraryOpenProfileDef);
@@ -115,7 +117,7 @@ BIND(IfcExtrudedAreaSolid);
 // BIND(IfcBSplineCurveWithKnots);
 #endif
 
-// BIND(IfcCartesianPoint);
+BIND(IfcCartesianPoint);
 // BIND(IfcDirection);
 // BIND(IfcAxis2Placement2D);
 BIND(IfcAxis2Placement3D);
@@ -124,7 +126,7 @@ BIND(IfcCartesianTransformationOperator2DnonUniform);
 BIND(IfcCartesianTransformationOperator3DnonUniform);
 BIND(IfcCartesianTransformationOperator2D);
 BIND(IfcCartesianTransformationOperator3D);
-// BIND(IfcObjectPlacement);
+BIND(IfcLocalPlacement);
 // BIND(IfcVector);
 // BIND(IfcPlane);
 
