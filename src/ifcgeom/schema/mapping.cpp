@@ -155,6 +155,26 @@ taxonomy::item* mapping::map(const IfcSchema::IfcAxis2Placement3D* inst) {
 	return new taxonomy::matrix4();
 }
 
+taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* inst) {
+	// @todo length unit
+	return new taxonomy::matrix4();
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* inst) {
+	// @todo length unit
+	return new taxonomy::matrix4();
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
+	// @todo length unit
+	return new taxonomy::matrix4();
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
+	// @todo length unit
+	return new taxonomy::matrix4();
+}
+
 IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation) {
 	IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
 
@@ -361,7 +381,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
 		representations = file_->instances_by_type<IfcSchema::IfcRepresentation>();
 	}
 
-	IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
+	IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations(new IfcSchema::IfcRepresentation::list);
 
 	int task_index = 0;
 	
