@@ -70,7 +70,11 @@ namespace {
 		loop_to_face_upgrade(taxonomy::item* item) {
 			taxonomy::loop* loop = dynamic_cast<taxonomy::loop*>(item);
 			if (loop) {
-				face_ = taxonomy::face(loop->instance, loop->matrix, *loop);
+				face_ = taxonomy::face();
+				face_->instance = loop->instance;
+				face_->matrix = loop->matrix;
+				// @todo make sure loop is not freed
+				face_->children = { loop };
 			}
 		}
 
@@ -121,6 +125,23 @@ namespace {
 			delete item_;
 		}
 	};
+
+	template <typename U = taxonomy::collection, typename T>
+	U* map_to_collection(mapping* m, const T& ts) {
+		auto c = new U;
+		if (ts->size()) {
+			for (auto it = ts->begin(); it != ts->end(); ++it) {
+				if (auto r = m->map(*it)) {
+					c->children.push_back(r);
+				}
+			}
+		}
+		if (c->children.empty()) {
+			delete c;
+			return nullptr;
+		}
+		return c;
+	}
 };
 
 taxonomy::item* mapping::map(const IfcSchema::IfcExtrudedAreaSolid* inst) {
@@ -134,20 +155,82 @@ taxonomy::item* mapping::map(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 }
 
 taxonomy::item* mapping::map(const IfcSchema::IfcRepresentation* inst) {
-	auto c = new taxonomy::collection();
-	IfcSchema::IfcRepresentationItem::list::ptr items = inst->Items();
-	if (items->size()) {
-		for (IfcSchema::IfcRepresentationItem::list::it it = items->begin(); it != items->end(); ++it) {
-			if (auto r = map(*it)) {
-				c->children.push_back(r);
+	return map_to_collection(this, inst->Items());
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcFaceBasedSurfaceModel* inst) {
+	return map_to_collection(this, inst->FbsmFaces());
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcConnectedFaceSet* inst) {
+	return map_to_collection<taxonomy::shell>(this, inst->CfsFaces());
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcFace* inst) {
+	taxonomy::face* face = new taxonomy::face;
+	auto bounds = inst->Bounds();
+	for (auto& bound : *bounds) {
+		if (auto r = map(bound->Bound())) {
+			if (!bound->Orientation()) {
+				r->reverse();
 			}
-		}
+			face->children.push_back(r);
+		}		
 	}
-	if (c->children.empty()) {
-		delete c;
+	if (face->children.empty()) {
+		delete face;
 		return nullptr;
 	}
-	return c;
+	return face;
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcPolyLoop* inst) {
+	taxonomy::loop* loop = new taxonomy::loop;
+	
+	taxonomy::point3 first, previous;
+	bool is_first = true;
+	
+	auto points = inst->Polygon();
+	for (auto& point : *points) {
+		auto p = as<taxonomy::point3>(map(point));
+		if (is_first) {
+			previous = first = p;
+			is_first = false;
+		} else {
+			auto edge = new taxonomy::edge;
+			edge->start = previous;
+			edge->end = p;
+			loop->children.push_back(edge);
+			previous = p;
+		}
+	}
+	
+	auto edge = new taxonomy::edge;
+	edge->start = previous;
+	edge->end = first;
+	loop->children.push_back(edge);
+	
+	if (loop->children.size() < 3) {
+		Logger::Warning("Not enough edges for", inst);
+		delete loop;
+		return nullptr;
+	}
+	return loop;
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcCartesianPoint* inst) {
+	auto coords = inst->Coordinates();
+	return new taxonomy::point3(
+		coords.size() >= 1 ? coords[0] : 0.,
+		coords.size() >= 2 ? coords[1] : 0.,
+		coords.size() >= 3 ? coords[2] : 0.
+	);
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcProduct* inst) {
+	auto n = new taxonomy::node;
+	n->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
+	return n;
 }
 
 taxonomy::item* mapping::map(const IfcSchema::IfcAxis2Placement3D* inst) {
@@ -171,6 +254,11 @@ taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator
 }
 
 taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
+	// @todo length unit
+	return new taxonomy::matrix4();
+}
+
+taxonomy::item* mapping::map(const IfcSchema::IfcLocalPlacement* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
