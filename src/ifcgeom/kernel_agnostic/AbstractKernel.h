@@ -52,7 +52,7 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::node*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::colour*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::collection*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
+		virtual bool convert_impl(const taxonomy::collection*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 	AbstractKernel* construct(const std::string& geometry_library, IfcParse::IfcFile*);

@@ -39,6 +39,14 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 	}
 }
 
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection* collection, ifcopenshell::geometry::ConversionResults& r) { 
+	auto s = r.size();
+	for (auto& c : collection->children) {
+		convert(c, r);
+	}
+	return r.size() > s;
+}
+
 //void ifcopenshell::geometry::kernels::AbstractKernel::set_conversion_placement_rel_to(const IfcParse::declaration* type) {
 //	placement_rel_to = type;
 //}
