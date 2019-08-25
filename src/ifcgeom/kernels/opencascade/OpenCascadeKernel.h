@@ -111,7 +111,6 @@ namespace kernels {
 	
 	class IFC_GEOM_API OpenCascadeKernel : public AbstractKernel {
 	private:
-		/*
 		// faceset_helper traverses the forward instance references of IfcConnectedFaceSet and then provides a mapping
 		// M of (IfcCartesianPoint, IfcCartesianPoint) -> TopoDS_Edge, where M(a, b) is a partner of M(b, a), ie share
 		// the same underlying edge but with orientation reversed. This then later speeds op the process of creating a
@@ -120,22 +119,22 @@ namespace kernels {
 		class faceset_helper {
 		private:
 			OpenCascadeKernel* kernel_;
-			std::set<const IfcSchema::IfcPolyLoop*> duplicates_;
+			std::set<int> duplicates_;
 			std::map<int, int> vertex_mapping_;
 			std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 			double eps_;
 			bool non_manifold_;
 
 			template <typename Fn>
-			void loop_(IfcSchema::IfcCartesianPoint::list::ptr& ps, const Fn& callback) {
-				if (ps->size() < 3) {
+			void loop_(const taxonomy::loop* ps, const Fn& callback) {
+				if (ps->children.size() < 3) {
 					return;
 				}
 
-				auto a = *(ps->end() - 1);
+				auto a = boost::get<taxonomy::point3>(((taxonomy::edge*) ps->children.back())->start).instance;
 				auto A = a->data().id();
-				for (auto& b : *ps) {
-					auto B = b->data().id();
+				for (auto& b : ps->children) {
+					auto B = boost::get<taxonomy::point3>(((taxonomy::edge*) b)->start).instance->data().id();
 					auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 					bool fwd = C < D;
 					if (!fwd) {
@@ -148,16 +147,16 @@ namespace kernels {
 				}
 			}
 		public:
-			faceset_helper(OpenCascadeKernel* kernel, const IfcSchema::IfcConnectedFaceSet* l);
+			faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* l);
 
 			~faceset_helper();
 
 			bool non_manifold() const { return non_manifold_; }
 			bool& non_manifold() { return non_manifold_; }
 
-			bool edge(const IfcSchema::IfcCartesianPoint* a, const IfcSchema::IfcCartesianPoint* b, TopoDS_Edge& e) {
-				int A = vertex_mapping_[a->data().id()];
-				int B = vertex_mapping_[b->data().id()];
+			bool edge(const taxonomy::point3& a, const taxonomy::point3& b, TopoDS_Edge& e) {
+				int A = vertex_mapping_[a.instance->data().id()];
+				int B = vertex_mapping_[b.instance->data().id()];
 				if (A == B) {
 					return false;
 				}
@@ -174,15 +173,14 @@ namespace kernels {
 				return true;
 			}
 
-			bool wire(const IfcSchema::IfcPolyLoop* loop, TopoDS_Wire& wire) {
-				if (duplicates_.find(loop) != duplicates_.end()) {
+			bool wire(const taxonomy::loop* loop, TopoDS_Wire& wire) {
+				if (duplicates_.find(loop->instance->data().id()) != duplicates_.end()) {
 					return false;
 				}
 				BRep_Builder builder;
 				builder.MakeWire(wire);
 				int count = 0;
-				auto ps = loop->Polygon();
-				loop_(ps, [this, &builder, &wire, &count](int A, int B, bool fwd) {
+				loop_(loop, [this, &builder, &wire, &count](int A, int B, bool fwd) {
 					TopoDS_Edge e;
 					if (edge(A, B, e)) {
 						if (!fwd) {
@@ -195,12 +193,15 @@ namespace kernels {
 				if (count >= 3) {
 					wire.Closed(true);
 
+					/*
+					@todo
 					TopTools_ListOfShape results;
 					if (kernel_->wire_intersections(wire, results)) {
 						Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", loop);
 						kernel_->select_largest(results, wire);
 						non_manifold_ = true;
 					}
+					*/
 
 					return true;
 				} else {
@@ -213,13 +214,12 @@ namespace kernels {
 			}
 		};		
 
+/*
 #ifndef NO_CACHE
 		POSTFIX_SCHEMA(Cache) cache;
 #endif
 */
 
-	class faceset_helper {};
-	
 	faceset_helper* faceset_helper_;
 	double precision_;
 
@@ -233,10 +233,12 @@ namespace kernels {
 			*this = other;
 		}
 
-		bool convert(const geometry::taxonomy::extrusion&, TopoDS_Shape&);
-		bool convert(const geometry::taxonomy::face&, TopoDS_Shape&);
-		bool convert(const geometry::taxonomy::matrix4&, gp_Trsf&);
-		bool convert(const geometry::taxonomy::direction3&, gp_Dir&);
+		bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
+		bool convert(const taxonomy::face*, TopoDS_Shape&);
+		bool convert(const taxonomy::matrix4*, gp_GTrsf&);
+
+		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
+		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 	/*

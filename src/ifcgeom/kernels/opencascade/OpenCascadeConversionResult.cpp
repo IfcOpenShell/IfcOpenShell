@@ -12,7 +12,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 	// @todo check
 	gp_GTrsf trsf;
 	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < j; ++i) {
+		for (int j = 0; j < 4; ++i) {
 			trsf.SetValue(i + 1, j + 1, place.components(i, j));
 		}
 	}
