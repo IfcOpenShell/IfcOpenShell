@@ -19,7 +19,8 @@ namespace {
 
 	template <>
 	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::item*, ifcopenshell::geometry::ConversionResults&) {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::item* item, ifcopenshell::geometry::ConversionResults&) {
+			Logger::Error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};

@@ -24,7 +24,7 @@ public:
 	topology_error() : std::runtime_error("Generic topology error") {}
 };
 
-enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLOUR, STYLE, COLLECTION };
+enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLLECTION, COLOUR, STYLE };
 
 struct item {
 	const IfcUtil::IfcBaseClass* instance;
