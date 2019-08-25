@@ -106,33 +106,33 @@
 #include <memory>
 
 #include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 using namespace ifcopenshell::geometry; 
 using namespace ifcopenshell::geometry::kernels;
 
-bool OpenCascadeKernel::convert(const taxonomy::extrusion& extrusion, TopoDS_Shape& shape) {
-	const double& height = extrusion.depth;
+bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Shape& shape) {
+	const double& height = extrusion->depth;
 
 	if (height < precision_) {
-		Logger::Error("Non-positive extrusion height encountered for:", extrusion.instance);
+		Logger::Error("Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}
 
 	TopoDS_Shape face;
-	if (!convert(extrusion.basis, face)) {
+	if (!convert(&extrusion->basis, face)) {
 		return false;
 	}
 
-	gp_Trsf trsf;
-	if (!convert(extrusion.matrix, trsf)) {
+	gp_GTrsf gtrsf;
+	if (!convert(&extrusion->matrix, gtrsf)) {
 		Logger::Error("Unable to move extrusion");
 	}
+	auto trsf = gtrsf.Trsf();
 	
-	gp_Dir dir;
-	if (!convert(extrusion.direction, dir)) {
-		return false;
-	}
-
+	auto fs = extrusion->direction.components.data();
+	gp_Dir dir(fs[0], fs[1], fs[2]);
+	
 	shape.Nullify();
 
 	if (face.ShapeType() == TopAbs_COMPOUND) {
@@ -168,4 +168,28 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion& extrusion, TopoDS_Sha
 	}
 
 	return !shape.IsNull();
+}
+
+bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcopenshell::geometry::ConversionResults& results) {
+	TopoDS_Shape shape;
+	if (!convert(extrusion, shape)) {
+		return false;
+	}
+	results.emplace_back(ConversionResult(
+		extrusion->instance->data().id(),
+		extrusion->matrix,
+		new OpenCascadeShape(shape),
+		extrusion->surface_style
+	));
+	return true;
+}
+
+bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
+	// @todo check
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 4; ++i) {
+			trsf.SetValue(i + 1, j + 1, matrix->components(i, j));
+		}
+	}
+	return true;
 }
