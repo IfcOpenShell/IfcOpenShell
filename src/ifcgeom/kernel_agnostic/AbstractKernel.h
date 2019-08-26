@@ -45,7 +45,7 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual bool convert_impl(const taxonomy::line*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::circle*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::ellipse*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::bspline*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
+		virtual bool convert_impl(const taxonomy::bspline_curve*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::edge*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::loop*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&) { throw std::runtime_error("Not implemented"); }

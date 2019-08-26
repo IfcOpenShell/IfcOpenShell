@@ -235,7 +235,11 @@ namespace kernels {
 
 		bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
 		bool convert(const taxonomy::face*, TopoDS_Shape&);
+		bool convert(const taxonomy::loop*, TopoDS_Wire&);
 		bool convert(const taxonomy::matrix4*, gp_GTrsf&);
+
+		bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps = -1.);
+		bool triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces);
 
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
