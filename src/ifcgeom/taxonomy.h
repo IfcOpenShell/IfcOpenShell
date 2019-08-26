@@ -24,7 +24,7 @@ public:
 	topology_error() : std::runtime_error("Generic topology error") {}
 };
 
-enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLLECTION, COLOUR, STYLE };
+enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLLECTION, COLOUR, STYLE };
 
 struct item {
 	const IfcUtil::IfcBaseClass* instance;
@@ -114,45 +114,73 @@ struct direction3 : public cartesian_base<3> {
 	direction3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
 };
 
-struct line : public geom_item {
+struct curve : public geom_item {};
+
+struct line : public curve {
+	point3 origin;
+	direction3 direction;
+
 	virtual item* clone() const { return new line(*this); }
 	virtual kinds kind() const { return LINE; }
 };
 
-struct circle : public geom_item {
+struct circle : public curve {
+	point3 origin;
+	direction3 x;
+	direction3 z;
+	double radius;
+
 	virtual item* clone() const { return new circle(*this); }
 	virtual kinds kind() const { return CIRCLE; }
 };
 
-struct ellipse : public geom_item {
+struct ellipse : public circle {
+	double radius2;
+
 	virtual item* clone() const { return new ellipse(*this); }
 	virtual kinds kind() const { return ELLIPSE; }
 };
 
-struct bspline : public geom_item {
-	virtual item* clone() const { return new bspline(*this); }
-	virtual kinds kind() const { return BSPLINE; }
+struct bspline_curve : public curve {
+	virtual item* clone() const { return new bspline_curve(*this); }
+	virtual kinds kind() const { return BSPLINE_CURVE; }
 };
 
-typedef boost::variant<line, circle, ellipse, bspline> curve;
-
-struct edge : public geom_item {
+struct trimmed_curve : public curve {
 	boost::variant<point3, double> start, end;
-	boost::optional<curve> basis;
+	// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
+	curve* basis;
 	bool orientation;
 
-	edge() : orientation(true) {}
-	virtual item* clone() const { return new edge(*this); }
-	virtual kinds kind() const { return EDGE; }
-
+	trimmed_curve() : basis(nullptr), orientation(true) {}
+	
 	virtual void reverse() {
 		std::swap(start, end);
 		orientation = !orientation;
 	}
 };
 
+struct edge : public trimmed_curve {
+	// @todo how to express similarity between trimmed_curve and edge?
+	virtual item* clone() const { return new edge(*this); }
+	virtual kinds kind() const { return EDGE; }
+};
+
 struct collection : public geom_item {
 	std::vector<item*> children;
+
+	template <typename T>
+	std::vector<T*> children_as() const {
+		std::vector<T*> ts;
+		ts.reserve(children.size());
+		std::for_each(children.begin(), children.end(), [&ts](item* i){
+			auto v = dynamic_cast<T*>(i);
+			if (v) {
+				ts.push_back(v);
+			}
+		});
+		return ts;
+	}
 
 	virtual item* clone() const { return new collection(*this); }
 	virtual kinds kind() const { return COLLECTION; }
@@ -175,6 +203,8 @@ struct face : public collection {
 };
 
 struct loop : public collection {
+	boost::optional<bool> external;
+
 	virtual item* clone() const { return new loop(*this); }
 	virtual kinds kind() const { return LOOP; }
 };
@@ -205,7 +235,8 @@ struct node : public geom_item {
 };
 
 namespace impl {
-	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline, edge, loop, face, shell, extrusion, node, collection> KindsTuple;
+	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, edge, loop, face, shell, extrusion, node, collection> KindsTuple;
+	typedef std::tuple<line, circle, ellipse, bspline_curve> CurvesTuple;
 }
 
 struct type_by_kind {
@@ -214,6 +245,14 @@ struct type_by_kind {
 
 	static const size_t max = std::tuple_size< impl::KindsTuple>::value;
 };
+
+struct curves {
+	template <std::size_t N>
+	using type = typename std::tuple_element<N, impl::CurvesTuple>::type;
+
+	static const size_t max = std::tuple_size< impl::CurvesTuple>::value;
+};
+
 
 }
 
