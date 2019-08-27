@@ -824,6 +824,20 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcop
 	return true;
 }
 
+bool OpenCascadeKernel::convert_impl(const taxonomy::shell *extrusion, ifcopenshell::geometry::ConversionResults& results) {
+	TopoDS_Shape shape;
+	if (!convert(extrusion, shape)) {
+		return false;
+	}
+	results.emplace_back(ConversionResult(
+		extrusion->instance->data().id(),
+		extrusion->matrix,
+		new OpenCascadeShape(shape),
+		extrusion->surface_style
+	));
+	return true;
+}
+
 bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
 	// @todo check
 	for (int i = 0; i < 3; ++i) {
@@ -1104,4 +1118,457 @@ bool OpenCascadeKernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, 
 	}
 
 	return true;
+}
+
+bool OpenCascadeKernel::convert(const taxonomy::shell* l, TopoDS_Shape& shape) {
+	std::unique_ptr<faceset_helper> helper_scope;
+	helper_scope.reset(new faceset_helper(this, l));
+
+	auto faces = l->children_as<taxonomy::face>();
+	double minimal_face_area = precision_ * precision_ * 0.5;
+
+	double min_face_area = faceset_helper_
+		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)
+		: minimal_face_area;
+
+	TopTools_ListOfShape face_list;
+	for (auto& face : faces) {
+		bool success = false;
+		TopoDS_Face occ_face;
+
+		try {
+			success = convert(face, occ_face);
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Error(e.GetMessageString());
+			} else {
+				Logger::Error("Unknown error creating face");
+			}
+		} catch (...) {
+			Logger::Error("Unknown error creating face");
+		}
+
+		if (!success) {
+			Logger::Message(Logger::LOG_WARNING, "Failed to convert face:", face->instance);
+			continue;
+		}
+
+		if (occ_face.ShapeType() == TopAbs_COMPOUND) {
+			TopoDS_Iterator face_it(occ_face, false);
+			for (; face_it.More(); face_it.Next()) {
+				if (face_it.Value().ShapeType() == TopAbs_FACE) {
+					// This should really be the case. This is not asserted.
+					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
+					if (face_area(triangle) > min_face_area) {
+						face_list.Append(triangle);
+					} else {
+						Logger::Message(Logger::LOG_WARNING, "Degenerate face:", face->instance);
+					}
+				}
+			}
+		} else {
+			if (face_area(occ_face) > min_face_area) {
+				face_list.Append(occ_face);
+			} else {
+				Logger::Message(Logger::LOG_WARNING, "Degenerate face:", face->instance);
+			}
+		}
 	}
+
+	if (face_list.Extent() == 0) {
+		return false;
+	}
+
+	// @todo
+	/* face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) ||  */
+
+	if (!create_solid_from_faces(face_list, shape)) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+
+		TopTools_ListIteratorOfListOfShape face_iterator;
+		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+			builder.Add(compound, face_iterator.Value());
+		}
+		shape = compound;
+	}
+
+	return true;
+}
+
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+
+double OpenCascadeKernel::shape_volume(const TopoDS_Shape& s) {
+	GProp_GProps prop;
+	BRepGProp::VolumeProperties(s, prop);
+	return prop.Mass();
+}
+
+double OpenCascadeKernel::face_area(const TopoDS_Face& f) {
+	GProp_GProps prop;
+	BRepGProp::SurfaceProperties(f, prop);
+	return prop.Mass();
+}
+
+bool OpenCascadeKernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
+	TopTools_ListOfShape face_list;
+	TopExp_Explorer exp(compound, TopAbs_FACE);
+	for (; exp.More(); exp.Next()) {
+		TopoDS_Face face = TopoDS::Face(exp.Current());
+		face_list.Append(face);
+	}
+
+	if (face_list.Extent() == 0) {
+		return false;
+	}
+
+	return create_solid_from_faces(face_list, shape);
+}
+
+bool OpenCascadeKernel::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape) {
+	bool valid_shell = false;
+
+	if (face_list.Extent() == 1) {
+		shape = face_list.First();
+		// A bit dubious what to return here.
+		return true;
+	} else if (face_list.Extent() == 0) {
+		return false;
+	}
+
+	TopTools_ListIteratorOfListOfShape face_iterator;
+
+	bool has_shared_edges = false;
+	TopTools_MapOfShape edge_set;
+
+	// In case there are wire interesections or failures in non-planar wire triangulations
+	// the idea is to let occt do an exhaustive search of edge partners. But we have not
+	// found a case where this actually improves boolean ops later on.
+	// if (!faceset_helper_ || !faceset_helper_->non_manifold()) {
+
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+		// As soon as is detected one of the edges is shared, the assumption is made no
+		// additional sewing is necessary.
+		if (!has_shared_edges) {
+			TopExp_Explorer exp(face_iterator.Value(), TopAbs_EDGE);
+			for (; exp.More(); exp.Next()) {
+				if (edge_set.Contains(exp.Current())) {
+					has_shared_edges = true;
+					break;
+				}
+				edge_set.Add(exp.Current());
+			}
+		}
+	}
+
+	BRepOffsetAPI_Sewing sewing_builder;
+	sewing_builder.SetTolerance(precision_);
+	sewing_builder.SetMaxTolerance(precision_);
+	sewing_builder.SetMinTolerance(precision_);
+
+	BRep_Builder builder;
+	TopoDS_Shell shell;
+	builder.MakeShell(shell);
+
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+		if (has_shared_edges) {
+			builder.Add(shell, face_iterator.Value());
+		} else {
+			sewing_builder.Add(face_iterator.Value());
+		}
+	}
+
+	try {
+		if (has_shared_edges) {
+			ShapeFix_Shell fix;
+			fix.FixFaceOrientation(shell);
+			shape = fix.Shape();
+		} else {
+			sewing_builder.Perform();
+			shape = sewing_builder.SewedShape();
+		}
+
+		BRepCheck_Analyzer ana(shape);
+		valid_shell = ana.IsValid();
+
+		if (!valid_shell) {
+			ShapeFix_Shape sfs(shape);
+			sfs.Perform();
+			shape = sfs.Shape();
+
+			BRepCheck_Analyzer reana(shape);
+			valid_shell = reana.IsValid();
+		}
+
+		valid_shell &= count(shape, TopAbs_SHELL) > 0;
+	} catch (const Standard_Failure& e) {
+		if (e.GetMessageString() && strlen(e.GetMessageString())) {
+			Logger::Error(e.GetMessageString());
+		} else {
+			Logger::Error("Unknown error sewing shell");
+		}
+	} catch (...) {
+		Logger::Error("Unknown error sewing shell");
+	}
+
+	if (valid_shell) {
+
+		TopoDS_Shape complete_shape;
+		TopExp_Explorer exp(shape, TopAbs_SHELL);
+
+		for (; exp.More(); exp.Next()) {
+			TopoDS_Shape result_shape = exp.Current();
+
+			try {
+				ShapeFix_Solid solid;
+				solid.SetMaxTolerance(precision_);
+				TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(exp.Current()));
+				// @todo: BRepClass3d_SolidClassifier::PerformInfinitePoint() is done by SolidFromShell
+				//        and this is done again, to be able to catch errors during this process.
+				//        This is double work that should be avoided.
+				if (!solid_shape.IsNull()) {
+					try {
+						BRepClass3d_SolidClassifier classifier(solid_shape);
+						result_shape = solid_shape;
+						classifier.PerformInfinitePoint(precision_);
+						if (classifier.State() == TopAbs_IN) {
+							shape.Reverse();
+						}
+					} catch (const Standard_Failure& e) {
+						if (e.GetMessageString() && strlen(e.GetMessageString())) {
+							Logger::Error(e.GetMessageString());
+						} else {
+							Logger::Error("Unknown error classifying solid");
+						}
+					} catch (...) {
+						Logger::Error("Unknown error classifying solid");
+					}
+				}
+			} catch (const Standard_Failure& e) {
+				if (e.GetMessageString() && strlen(e.GetMessageString())) {
+					Logger::Error(e.GetMessageString());
+				} else {
+					Logger::Error("Unknown error creating solid");
+				}
+			} catch (...) {
+				Logger::Error("Unknown error creating solid");
+			}
+
+			if (complete_shape.IsNull()) {
+				complete_shape = result_shape;
+			} else {
+				BRep_Builder B;
+				if (complete_shape.ShapeType() != TopAbs_COMPOUND) {
+					TopoDS_Compound C;
+					B.MakeCompound(C);
+					B.Add(C, complete_shape);
+					complete_shape = C;
+					Logger::Warning("Multiple components in IfcConnectedFaceSet");
+				}
+				B.Add(complete_shape, result_shape);
+			}
+		}
+
+		TopExp_Explorer loose_faces(shape, TopAbs_FACE, TopAbs_SHELL);
+
+		for (; loose_faces.More(); loose_faces.Next()) {
+			BRep_Builder B;
+			if (complete_shape.ShapeType() != TopAbs_COMPOUND) {
+				TopoDS_Compound C;
+				B.MakeCompound(C);
+				B.Add(C, complete_shape);
+				complete_shape = C;
+				Logger::Warning("Loose faces in IfcConnectedFaceSet");
+			}
+			B.Add(complete_shape, loose_faces.Current());
+		}
+
+		shape = complete_shape;
+
+	} else {
+		Logger::Error("Failed to sew faceset");
+	}
+
+	return valid_shell;
+}
+
+int OpenCascadeKernel::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
+	if (unique) {
+		TopTools_IndexedMapOfShape map;
+		TopExp::MapShapes(s, t, map);
+		return map.Extent();
+	} else {
+		int i = 0;
+		TopExp_Explorer exp(s, t);
+		for (; exp.More(); exp.Next()) {
+			++i;
+		}
+		return i;
+	}
+}
+
+OpenCascadeKernel::faceset_helper::~faceset_helper() {
+	kernel_->faceset_helper_ = nullptr;
+}
+
+OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* shell)
+	: kernel_(kernel)
+	, non_manifold_(false) {
+	kernel->faceset_helper_ = this;
+
+	std::vector<taxonomy::point3> points;
+	for (auto& f : shell->children_as<taxonomy::face>()) {
+		for (auto& l : f->children_as<taxonomy::loop>()) {
+			for (auto& e : l->children_as<taxonomy::edge>()) {
+				// @todo make sure only cartesian points are provided here
+				points.push_back(boost::get<taxonomy::point3>(e->start));
+			}
+		}
+	}
+	
+	std::vector<std::unique_ptr<gp_Pnt>> pnts(points.size());
+	std::vector<TopoDS_Vertex> vertices(pnts.size());
+
+	// @todo
+	/*
+	IfcGeom::impl::tree<int> tree;
+
+	BRep_Builder B;
+
+	Bnd_Box box;
+	for (size_t i = 0; i < points->size(); ++i) {
+		gp_Pnt* p = new gp_Pnt();
+		if (kernel->convert(*(points->begin() + i), *p)) {
+			pnts[i].reset(p);
+			B.MakeVertex(vertices[i], *p, Precision::Confusion());
+			tree.add(i, vertices[i]);
+			box.Add(*p);
+		} else {
+			delete p;
+		}
+	}
+
+	// Use the bbox diagonal to influence local epsilon
+	// double bdiff = std::sqrt(box.SquareExtent());
+
+	// @todo the bounding box diagonal is not used (see above)
+	// because we're explicitly interested in the miminal
+	// dimension of the element to limit the tolerance (for sheet-
+	// like elements for example). But the way below is very
+	// dependent on orientation due to the usage of the
+	// axis-aligned bounding box. Use PCA to find three non-aligned
+	// set of dimensions and use the one with the smallest eigenvalue.
+
+	// Find the minimal bounding box edge
+	double bmin[3], bmax[3];
+	box.Get(bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2]);
+	double bdiff = std::numeric_limits<double>::infinity();
+	for (size_t i = 0; i < 3; ++i) {
+		const double d = bmax[i] - bmin[i];
+		if (d > kernel->getValue(GV_PRECISION) * 10. && d < bdiff) {
+			bdiff = d;
+		}
+	}
+
+	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
+
+	// @todo, there a tiny possibility that the duplicate faces are triggered
+	// for an internal boundary, that is also present as an external boundary.
+	// This will result in non-manifold configuration then, but this is deemed
+	// such as corner-case that it is not considered.
+	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
+
+	size_t loops_removed, non_manifold, duplicate_faces;
+
+	std::map<std::pair<int, int>, int> edge_use;
+
+	for (int i = 0; i < 3; ++i) {
+		// Some times files, have large tolerance values specified collapsing too many vertices.
+		// This case we detect below and re-run the loop with smaller epsilon. Normally
+		// the body of this loop would only be executed once.
+
+		loops_removed = 0;
+		non_manifold = 0;
+		duplicate_faces = 0;
+
+		vertex_mapping_.clear();
+		duplicates_.clear();
+
+		edge_use.clear();
+
+		if (eps_ < Precision::Confusion()) {
+			// occt uses some hard coded precision values, don't go smaller than that.
+			// @todo, can be reset though with BRepLib::Precision(double)
+			eps_ = Precision::Confusion();
+		}
+
+		for (int i = 0; i < (int)pnts.size(); ++i) {
+			if (pnts[i]) {
+				std::set<int> vs;
+				find_neighbours(tree, pnts, vs, i, eps_);
+
+				for (int v : vs) {
+					auto pt = *(points->begin() + v);
+					// NB: insert() ignores duplicate keys
+					vertex_mapping_.insert({ pt->data().id() , i });
+				}
+			}
+		}
+
+		typedef std::array<int, 2> edge_t;
+		typedef std::set<edge_t> edge_set_t;
+		std::set<edge_set_t> edge_sets;
+
+		for (auto& loop : *loops) {
+			auto ps = loop->Polygon();
+
+			std::vector<std::pair<int, int> > segments;
+			edge_set_t segment_set;
+
+			loop_(ps, [&segments, &segment_set](int C, int D, bool) {
+				segment_set.insert({ { C, D } });
+				segments.push_back({ C, D });
+			});
+
+			if (edge_sets.find(segment_set) != edge_sets.end()) {
+				duplicate_faces++;
+				duplicates_.insert(loop);
+				continue;
+			}
+			edge_sets.insert(segment_set);
+
+			if (segments.size() >= 3) {
+				for (auto& p : segments) {
+					edge_use[p] ++;
+				}
+			} else {
+				loops_removed += 1;
+			}
+		}
+
+		if (edge_use.size() != 0) {
+			break;
+		} else {
+			eps_ /= 10.;
+		}
+	}
+
+	for (auto& p : edge_use) {
+		int a, b;
+		std::tie(a, b) = p.first;
+		edges_[p.first] = BRepBuilderAPI_MakeEdge(vertices[a], vertices[b]);
+
+		if (p.second != 2) {
+			non_manifold += 1;
+		}
+	}
+
+	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
+		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
+	}
+	*/
+}

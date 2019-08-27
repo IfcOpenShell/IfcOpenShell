@@ -233,10 +233,18 @@ namespace kernels {
 			*this = other;
 		}
 
+		double shape_volume(const TopoDS_Shape&);
+		double face_area(const TopoDS_Face&);
+		int count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique = false);
+
+		bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape);
+		bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape);
+
 		bool convert(const taxonomy::extrusion*, TopoDS_Shape&);
 		bool convert(const taxonomy::face*, TopoDS_Shape&);
 		bool convert(const taxonomy::loop*, TopoDS_Wire&);
 		bool convert(const taxonomy::matrix4*, gp_GTrsf&);
+		bool convert(const taxonomy::shell*, TopoDS_Shape&);
 
 		bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps = -1.);
 		bool triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces);
