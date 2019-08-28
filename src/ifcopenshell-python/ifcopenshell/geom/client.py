@@ -90,6 +90,9 @@ class entity_contents(object):
             ("extendedData"    , json.loads(s.read().strip(b'\x00').decode('ascii').strip(' ')))
         ]
         
+    def __getattr__(self, k):
+        return [kv for kv in self.structure if kv[0] == k][0][1]
+        
     def __repr__(self):
         def format(x):
             a, b = x
@@ -148,7 +151,8 @@ def process(geomserver_exe, ifc_filename):
         has_more = cast(read_message(message_headers.MORE).contents, numpy.int32) == 1        
         if not has_more: break        
         write(message_headers.GET)        
-        print(read_message(message_headers.ENTITY).contents)
+        geom_data = read_message(message_headers.ENTITY).contents
+        yield geom_data
         write(message_headers.NEXT)        
             
     write(message_headers.BYE)
@@ -162,4 +166,5 @@ if __name__ == "__main__":
     exe_extension = ".exe" if platform.system() == 'Windows' else ""
     exe = os.environ.get("IFCGEOMSERVER") or ("IfcGeomServer" + exe_extension)
     for fn in sys.argv[1:]:
-        process(exe, fn)
+        for geom_data in process(exe, fn):
+            print(geom_data)
