@@ -5,7 +5,7 @@
 #define BIND(T) \
 	if (l->declaration().is(IfcSchema::T::Class())) { \
 		try { \
-			taxonomy::item* item = map((IfcSchema::T*)l); \
+			taxonomy::item* item = map_impl((IfcSchema::T*)l); \
 			if (item != nullptr) { \
 				item->instance = l; \
 				try { \

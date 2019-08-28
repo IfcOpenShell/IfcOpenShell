@@ -2,6 +2,6 @@
 #undef BIND
 #endif
 
-#define BIND(T) ifcopenshell::geometry::taxonomy::item* map(const IfcSchema::T*);
+#define BIND(T) ifcopenshell::geometry::taxonomy::item* map_impl(const IfcSchema::T*);
 
 #include "mapping.i"
