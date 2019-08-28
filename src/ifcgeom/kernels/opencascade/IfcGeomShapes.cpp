@@ -824,16 +824,16 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcop
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::shell *extrusion, ifcopenshell::geometry::ConversionResults& results) {
+bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell::geometry::ConversionResults& results) {
 	TopoDS_Shape shape;
-	if (!convert(extrusion, shape)) {
+	if (!convert(shell, shape)) {
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		extrusion->instance->data().id(),
-		extrusion->matrix,
+		shell->instance->data().id(),
+		shell->matrix,
 		new OpenCascadeShape(shape),
-		extrusion->surface_style
+		shell->surface_style
 	));
 	return true;
 }

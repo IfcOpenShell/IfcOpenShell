@@ -144,7 +144,7 @@ namespace {
 	}
 };
 
-taxonomy::item* mapping::map(const IfcSchema::IfcExtrudedAreaSolid* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	// @todo length unit
 	return new taxonomy::extrusion(
 		as<taxonomy::matrix4>(map(inst->Position())),
@@ -154,19 +154,19 @@ taxonomy::item* mapping::map(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	);
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcRepresentation* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	return map_to_collection(this, inst->Items());
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcFaceBasedSurfaceModel* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* inst) {
 	return map_to_collection(this, inst->FbsmFaces());
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcConnectedFaceSet* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcConnectedFaceSet* inst) {
 	return map_to_collection<taxonomy::shell>(this, inst->CfsFaces());
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcFace* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcFace* inst) {
 	taxonomy::face* face = new taxonomy::face;
 	auto bounds = inst->Bounds();
 	for (auto& bound : *bounds) {
@@ -184,7 +184,7 @@ taxonomy::item* mapping::map(const IfcSchema::IfcFace* inst) {
 	return face;
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcPolyLoop* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	taxonomy::loop* loop = new taxonomy::loop;
 	
 	taxonomy::point3 first, previous;
@@ -218,7 +218,7 @@ taxonomy::item* mapping::map(const IfcSchema::IfcPolyLoop* inst) {
 	return loop;
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcCartesianPoint* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianPoint* inst) {
 	auto coords = inst->Coordinates();
 	return new taxonomy::point3(
 		coords.size() >= 1 ? coords[0] : 0.,
@@ -227,38 +227,38 @@ taxonomy::item* mapping::map(const IfcSchema::IfcCartesianPoint* inst) {
 	);
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcProduct* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	auto n = new taxonomy::node;
 	n->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 	return n;
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcAxis2Placement3D* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcLocalPlacement* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
 	// @todo length unit
 	return new taxonomy::matrix4();
 }
@@ -672,7 +672,7 @@ namespace {
 	}
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcMaterial* material) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 	IfcSchema::IfcMaterialDefinitionRepresentation::list::ptr defs = material->HasRepresentation();
 	for (IfcSchema::IfcMaterialDefinitionRepresentation::list::it jt = defs->begin(); jt != defs->end(); ++jt) {
 		IfcSchema::IfcRepresentation::list::ptr reps = (*jt)->Representations();
@@ -693,7 +693,7 @@ taxonomy::item* mapping::map(const IfcSchema::IfcMaterial* material) {
 	// return &(style_cache[material->data().id()] = material_style);
 }
 
-taxonomy::item* mapping::map(const IfcSchema::IfcStyledItem* inst) {
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
 
 	taxonomy::style* surface_style = new taxonomy::style;
