@@ -529,7 +529,7 @@ public:
 		// Sometimes geometries are not a topologically valid manifold,
 		// but still (approximately) enclose a volume. In this case
 		// we can voxlize the geometry and fill the interior solid volume.
-		if (has_boundingbox) {
+		else if (has_boundingbox) {
 			std::array< vec_n<3, double>, 2 > bounds;
 			for (int i = 0; i < 3; ++i) {
 				bounds[0].get(i) = bbox_xyz[i + 0];
@@ -541,6 +541,14 @@ public:
 			// voxels.
 			auto surface = storage_for(bounds, 128U, 4U);
 			processor proc(surface, silent);
+			// @todo is scanline entirely reliable due to rounding from float to int?
+			// This is also observed in voxec dump_surfaces().
+			// proc.use_scanline() = false;
+			// @todo we still cannot correctly identify hollow objects correctly.
+			// is it an idea to use several points we know should be inside the volume?
+			// Or, use a boolean intersection of surface and volume and subtract any subsequent
+			// interior void volumes.
+			BRepMesh_IncrementalMesh(compound, 0.001);
 			std::vector<std::pair<int, TopoDS_Compound > > geometries = { {1, compound} };
 			proc.process(geometries.begin(), geometries.end(), SURFACE(), output(MERGED()));
 			surface = (regular_voxel_storage*) proc.voxels();
