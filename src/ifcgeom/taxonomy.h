@@ -193,6 +193,8 @@ struct collection : public geom_item {
 };
 
 struct shell : public collection {
+	boost::optional<bool> closed;
+
 	virtual item* clone() const { return new shell(*this); }
 	virtual kinds kind() const { return SHELL; }
 };

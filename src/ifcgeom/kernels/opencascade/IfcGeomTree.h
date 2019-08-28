@@ -23,7 +23,7 @@
 #include "../../../ifcparse/IfcFile.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomIterator.h"
-#include "../../../ifcgeom/schema_agnostic/Kernel.h"
+#include "../../../ifcgeom/schema_agnostic/Converter.h"
 #include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include <NCollection_UBTree.hxx>
@@ -33,7 +33,7 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 
-namespace IfcGeom {
+namespace ifcopenshell { namespace geometry {
 
 	namespace impl {
 		template <typename T>
@@ -259,30 +259,30 @@ namespace IfcGeom {
 		tree() {};
 
 		tree(IfcParse::IfcFile& f) {
-			add_file(f, IfcGeom::IteratorSettings());
+			add_file(f, ifcopenshell::geometry::settings());
 		}
 
-		tree(IfcParse::IfcFile& f, const IfcGeom::IteratorSettings& settings) {
+		tree(IfcParse::IfcFile& f, const ifcopenshell::geometry::settings& settings) {
 			add_file(f, settings);
 		}
 
-		void add_file(IfcParse::IfcFile& f, const IfcGeom::IteratorSettings& settings) {
-			IfcGeom::IteratorSettings settings_ = settings;
-			settings_.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
-			settings_.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, true);
-			settings_.set(IfcGeom::IteratorSettings::SEW_SHELLS, true);
+		void add_file(IfcParse::IfcFile& f, const ifcopenshell::geometry::settings& settings) {
+			ifcopenshell::geometry::settings settings_ = settings;
+			settings_.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
+			settings_.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, true);
+			settings_.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
 
-			IfcGeom::Iterator<double> it(settings_, &f);
+			Iterator it(settings_, &f);
 
 			if (it.initialize()) {
 				do {
-					IfcGeom::NativeElement<double>* elem = (IfcGeom::NativeElement<double>*)it.get();
+					NativeElement* elem = (NativeElement*)it.get();
 					add((IfcUtil::IfcBaseEntity*)f.instance_by_id(elem->id()), ((OpenCascadeShape*)elem->geometry().as_compound())->shape());
 				} while (it.next());
 			}
 		}
 	};
 
-}
+}}
 
 #endif
