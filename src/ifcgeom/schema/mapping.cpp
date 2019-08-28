@@ -163,7 +163,9 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* ins
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcConnectedFaceSet* inst) {
-	return map_to_collection<taxonomy::shell>(this, inst->CfsFaces());
+	auto shell = map_to_collection<taxonomy::shell>(this, inst->CfsFaces());
+	shell->closed = inst->declaration().is(IfcSchema::IfcClosedShell::Class());
+	return shell;
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcFace* inst) {

@@ -96,7 +96,7 @@ ifcopenshell::geometry::ConversionResultShape* ifcopenshell::geometry::Represent
 		// @todo, check
 		gp_GTrsf trsf;
 		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
 				trsf.SetValue(i + 1, j + 1, it->Placement().components(i, j));
 			}
 		}
@@ -241,7 +241,7 @@ bool ifcopenshell::geometry::Representation::BRep::calculate_projected_surface_a
 		// @todo check
 		gp_GTrsf trsf;
 		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
 				trsf.SetValue(i + 1, j + 1, place.components(i, j));
 			}
 		}

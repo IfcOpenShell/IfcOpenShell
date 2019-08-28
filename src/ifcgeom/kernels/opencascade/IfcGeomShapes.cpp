@@ -841,7 +841,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell:
 bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
 	// @todo check
 	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
 			trsf.SetValue(i + 1, j + 1, matrix->components(i, j));
 		}
 	}
@@ -1415,14 +1415,42 @@ OpenCascadeKernel::faceset_helper::~faceset_helper() {
 	kernel_->faceset_helper_ = nullptr;
 }
 
+#include "IfcGeomTree.h"
+
+namespace {
+	void find_neighbours(ifcopenshell::geometry::impl::tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
+		visited.insert(p);
+
+		Bnd_Box b;
+		b.Set(*pnts[p].get());
+		b.Enlarge(eps);
+
+		std::vector<int> js = tree.select_box(b, false);
+		for (int j : js) {
+			visited.insert(j);
+#ifdef FACESET_HELPER_RECURSIVE
+			if (visited.find(j) == visited.end()) {
+				// @todo, making this recursive removes the dependence on the initial ordering, but will
+				// likely result in empty results when all vertices are within 1 eps from another point.
+				find_neighbours(tree, pnts, visited, j, eps);
+			}
+#endif
+		}
+	}
+}
+
 OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, const taxonomy::shell* shell)
 	: kernel_(kernel)
 	, non_manifold_(false) {
 	kernel->faceset_helper_ = this;
 
+	// @todo use pointers?
 	std::vector<taxonomy::point3> points;
+	std::vector<taxonomy::loop*> loops;
+
 	for (auto& f : shell->children_as<taxonomy::face>()) {
 		for (auto& l : f->children_as<taxonomy::loop>()) {
+			loops.push_back(l);
 			for (auto& e : l->children_as<taxonomy::edge>()) {
 				// @todo make sure only cartesian points are provided here
 				points.push_back(boost::get<taxonomy::point3>(e->start));
@@ -1434,22 +1462,17 @@ OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, con
 	std::vector<TopoDS_Vertex> vertices(pnts.size());
 
 	// @todo
-	/*
-	IfcGeom::impl::tree<int> tree;
+	impl::tree<int> tree;
 
 	BRep_Builder B;
 
 	Bnd_Box box;
-	for (size_t i = 0; i < points->size(); ++i) {
-		gp_Pnt* p = new gp_Pnt();
-		if (kernel->convert(*(points->begin() + i), *p)) {
-			pnts[i].reset(p);
-			B.MakeVertex(vertices[i], *p, Precision::Confusion());
-			tree.add(i, vertices[i]);
-			box.Add(*p);
-		} else {
-			delete p;
-		}
+	for (size_t i = 0; i < points.size(); ++i) {
+		gp_Pnt* p = new gp_Pnt(convert_xyz<gp_Pnt>(points[i]));
+		pnts[i].reset(p);
+		B.MakeVertex(vertices[i], *p, Precision::Confusion());
+		tree.add(i, vertices[i]);
+		box.Add(*p);
 	}
 
 	// Use the bbox diagonal to influence local epsilon
@@ -1469,19 +1492,18 @@ OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, con
 	double bdiff = std::numeric_limits<double>::infinity();
 	for (size_t i = 0; i < 3; ++i) {
 		const double d = bmax[i] - bmin[i];
-		if (d > kernel->getValue(GV_PRECISION) * 10. && d < bdiff) {
+		if (d > kernel->precision_ * 10. && d < bdiff) {
 			bdiff = d;
 		}
 	}
 
-	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
+	eps_ = kernel->precision_ * 10. * (std::min)(1.0, bdiff);
 
 	// @todo, there a tiny possibility that the duplicate faces are triggered
 	// for an internal boundary, that is also present as an external boundary.
 	// This will result in non-manifold configuration then, but this is deemed
 	// such as corner-case that it is not considered.
-	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
-
+	
 	size_t loops_removed, non_manifold, duplicate_faces;
 
 	std::map<std::pair<int, int>, int> edge_use;
@@ -1512,9 +1534,9 @@ OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, con
 				find_neighbours(tree, pnts, vs, i, eps_);
 
 				for (int v : vs) {
-					auto pt = *(points->begin() + v);
+					auto& pt = points[v];
 					// NB: insert() ignores duplicate keys
-					vertex_mapping_.insert({ pt->data().id() , i });
+					vertex_mapping_.insert({ pt.instance->data().id() , i });
 				}
 			}
 		}
@@ -1523,20 +1545,18 @@ OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, con
 		typedef std::set<edge_t> edge_set_t;
 		std::set<edge_set_t> edge_sets;
 
-		for (auto& loop : *loops) {
-			auto ps = loop->Polygon();
-
+		for (auto& loop : loops) {
 			std::vector<std::pair<int, int> > segments;
 			edge_set_t segment_set;
 
-			loop_(ps, [&segments, &segment_set](int C, int D, bool) {
+			loop_(loop, [&segments, &segment_set](int C, int D, bool) {
 				segment_set.insert({ { C, D } });
 				segments.push_back({ C, D });
 			});
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
-				duplicates_.insert(loop);
+				duplicates_.insert(loop->instance->data().id());
 				continue;
 			}
 			edge_sets.insert(segment_set);
@@ -1567,8 +1587,7 @@ OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, con
 		}
 	}
 
-	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
-		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
+	if (loops_removed || (non_manifold && shell->closed.get_value_or(false))) {
+		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", shell->instance);
 	}
-	*/
 }
