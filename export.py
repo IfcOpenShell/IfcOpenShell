@@ -184,7 +184,7 @@ class IfcExporter():
                 self.file.createIfcFaceOuterBound(
                     self.file.createIfcPolyLoop([ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
-                    
+
         return self.file.createIfcProductDefinitionShape(None, None,
             [self.file.createIfcShapeRepresentation(
                 self.ifc_rep_subcontext, 'Body', 'Brep',
@@ -196,8 +196,6 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [ self.ifc_parser.products[e]['ifc'] for e in related_elements],
                 self.ifc_parser.spatial_structure_elements[relating_structure]['ifc'])
-
-
 
 ifc_parser = IfcParser()
 ifc_schema = IfcSchema()
