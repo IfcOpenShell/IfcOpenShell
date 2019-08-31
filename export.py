@@ -178,7 +178,6 @@ class IfcExporter():
                     self.ifc_rep_subcontext, 'Body', 'Brep',
                     [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))])])
                     
-            # placement = self.file.createIfcLocalPlacement(self.ifc_building_storey_placement,
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
             placement = self.file.createIfcLocalPlacement(placement_rel_to,
                 self.file.createIfcAxis2Placement3D(
