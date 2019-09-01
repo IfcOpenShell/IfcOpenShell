@@ -48,16 +48,11 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMO
 
 #include "../../../ifcgeom/kernel_agnostic/AbstractKernel.h"
 
-#include "../../../ifcgeom/schema_agnostic/Kernel.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
-#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
+#include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
 // @todo create separate shapetype enum?
 #include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
-
-#define INCLUDE_SCHEMA(x) STRINGIFY(../../../ifcparse/x.h)
-#include INCLUDE_SCHEMA(IfcSchema)
-#undef INCLUDE_SCHEMA
 
 struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 private:
@@ -102,66 +97,32 @@ public:
   }
 };
 
-namespace IfcGeom {
+namespace ifcopenshell {
+namespace geometry {
+namespace kernels {
 
-	class IFC_GEOM_API CgalCache {
-	public:
-#include "CgalEntityMappingCreateCache.h"
-		std::map<int, cgal_shape_t> Shape;
-	};
-
-	class IFC_GEOM_API MAKE_TYPE_NAME(CgalKernel) : public MAKE_TYPE_NAME(AbstractKernel) {
+	class IFC_GEOM_API CgalKernel : public AbstractKernel {
 	public:
 
-		MAKE_TYPE_NAME(CgalKernel)()
-			: MAKE_TYPE_NAME(AbstractKernel)("cgal") {}
+		CgalKernel()
+			: AbstractKernel("cgal") {}
 
-#ifndef NO_CACHE
-		CgalCache cache;
-#endif
+		void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
 
-		IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
+		CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list);
+		CGAL::Polyhedron_3<Kernel_> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
+		CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
+		CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
 
-		bool convert_shapes(const IfcUtil::IfcBaseClass* L, ConversionResults& result);
-		bool convert_shape(const IfcUtil::IfcBaseClass* L, cgal_shape_t& result);
-		bool convert_wire(const IfcUtil::IfcBaseClass* L, cgal_wire_t& result);
-		bool convert_curve(const IfcUtil::IfcBaseClass* L, cgal_curve_t& result);
-		bool convert_face(const IfcUtil::IfcBaseClass* L, cgal_face_t& result);
-    
-    bool convert_wire_to_face(const cgal_wire_t& wire, cgal_face_t& face);
-    
-    void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
+		bool convert(const taxonomy::face*, cgal_face_t&);
+		bool convert(const taxonomy::loop*, cgal_wire_t&);
+		bool convert(const taxonomy::shell* l, cgal_shape_t& shape);
 
-    bool convert_openings(const IfcSchema::IfcProduct* entity, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const ConversionResults& entity_shapes, const cgal_placement_t& entity_trsf, ConversionResults& cut_shapes);
-    
-//    CGAL::Polyhedron_3<Kernel_> triangulate_faces(CGAL::Polyhedron_3<Kernel_> &polyhedron);
-    CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list);
-    CGAL::Polyhedron_3<Kernel_> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
-    CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
-    CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
-
-		void purge_cache() {
-			// Rather hack-ish, but a stopgap solution to keep memory under control
-			// for large files. SurfaceStyles need to be kept at all costs, as they
-			// are read later on when serializing Collada files.
-#ifndef NO_CACHE
-			cache = CgalCache();
-#endif
-		}
-
-		virtual bool is_identity_transform(const IfcUtil::IfcBaseClass*);
-		virtual bool apply_layerset(const IfcSchema::IfcProduct* product, IfcGeom::ConversionResults& shapes);
-		virtual bool validate_quantities(const IfcSchema::IfcProduct* product, const IfcGeom::Representation::BRep& brep);
-		virtual bool convert_openings(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRelVoidsElement::list::ptr& openings, const IfcGeom::ConversionResults& shapes, const ConversionResultPlacement* trsf, IfcGeom::ConversionResults& opened_shapes);
-        virtual bool convert_placement(IfcUtil::IfcBaseClass* item, ConversionResultPlacement*& trsf);
-
-#include "CgalEntityMappingDeclaration.h"
-
-	private:
-		double deflection_tolerance;
-		double dimensionality;
+		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
+		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 }
-
+}
+}
 #endif

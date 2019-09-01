@@ -246,11 +246,8 @@ namespace {
 #include <ShapeFix_Edge.hxx>
 
 bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result) {
-	std::vector<taxonomy::loop*> bounds;
-	std::transform(face->children.begin(), face->children.end(), std::back_inserter(bounds), [](auto item){
-		return static_cast<taxonomy::loop*>(item);
-	});
-
+	auto bounds = face->children_as<taxonomy::loop>();
+	
 	face_definition fd;
 
 	const bool is_face_surface = false; /* todo */

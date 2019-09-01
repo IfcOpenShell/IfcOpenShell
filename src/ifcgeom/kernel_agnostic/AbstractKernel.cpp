@@ -2,6 +2,7 @@
 
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+#include "../../ifcgeom/kernels/cgal/CgalKernel.h"
 
 namespace {
 	/* A compile-time for loop over the taxonomy kinds */
@@ -34,6 +35,8 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 	const std::string geometry_library_lower = boost::to_lower_copy(geometry_library);
 	if (geometry_library_lower == "opencascade") {
 		return new OpenCascadeKernel;
+	} else if (geometry_library_lower == "cgal") {
+		return new CgalKernel;
 	} else {
 		throw IfcParse::IfcException("No geometry kernel registered for " + geometry_library);
 	}

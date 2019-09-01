@@ -3,18 +3,23 @@
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
 
-template <typename Precision>
-void triangulate_helper(const cgal_shape_t& shape_const, const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<Precision>* t, int surface_style_id) {
-  // Copy is made because triangulate_faces() does not accept a const argument
-  cgal_shape_t s = shape_const;
+void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const {
+	// Copy is made because triangulate_faces() does not accept a const argument
+  cgal_shape_t s = shape_;
 
-  const cgal_placement_t& trsf = dynamic_cast<const IfcGeom::CgalPlacement*>(place)->trsf();
-//  std::cout << "Model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
-//  std::cout << "Valid: " << s.is_valid() << std::endl;
-  
-  // Apply transformation
-  if (place != NULL) for (auto &vertex: vertices(s)) {
-    vertex->point() = vertex->point().transform(trsf);
+  if (!place.components.isIdentity()) {
+	  const auto& m = place.components;
+
+	  // @todo check
+	  const cgal_placement_t trsf(
+		  m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+		  m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+		  m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+
+	  // Apply transformation
+	  for (auto &vertex : vertices(s)) {
+		  vertex->point() = vertex->point().transform(trsf);
+	  }
   }
   
   if (!s.is_valid()) {
@@ -77,12 +82,4 @@ void triangulate_helper(const cgal_shape_t& shape_const, const IfcGeom::Iterator
     ++num_faces;
   }
 
-}
-
-void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<float>* t, int surface_style_id) const {
-	triangulate_helper(shape_, settings, place, t, surface_style_id);
-}
-
-void IfcGeom::CgalShape::Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const {
-	triangulate_helper(shape_, settings, place, t, surface_style_id);
 }

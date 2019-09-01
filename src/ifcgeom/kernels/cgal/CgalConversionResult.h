@@ -20,12 +20,7 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
-#include "../../../ifcgeom/schema_agnostic/Kernel.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
-#include "../../../ifcgeom/schema_agnostic/cgal/CgalConversionResult.h"
-
-// @todo create separate shapetype enum?
-#include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
 
 #include <boost/property_map/property_map.hpp>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
@@ -59,49 +54,9 @@ typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::face_descriptor cgal_f
 
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
 
-namespace IfcGeom {
+namespace ifcopenshell { namespace geometry {
 
-    class CgalPlacement : public ConversionResultPlacement {
-    public:
-        CgalPlacement(const cgal_placement_t& trsf)
-            : trsf_(trsf)
-        {}
-
-        const cgal_placement_t& trsf() const { return trsf_; }
-		operator const cgal_placement_t& () { return trsf_; }
-		
-		virtual double Value(int i, int j) const {
-			return CGAL::to_double(trsf_.cartesian(i-1, j-1));
-		}
-
-		virtual void Multiply(const ConversionResultPlacement* other) {
-			trsf_ = trsf_ * ((CgalPlacement *)other)->trsf_;
-		}
-
-		virtual void PreMultiply(const ConversionResultPlacement* other) {
-			trsf_ = ((CgalPlacement *)other)->trsf_ * trsf_;
-		}
-
-		virtual ConversionResultPlacement* clone() const {
-			return new CgalPlacement(trsf_);
-		}
-
-		virtual ConversionResultPlacement* inverted() const {
-			throw std::runtime_error("Not implemented");
-		}
-
-		virtual ConversionResultPlacement* multiplied(const ConversionResultPlacement*) const {
-			throw std::runtime_error("Not implemented");
-		}
-
-		virtual void TranslationPart(double& X, double& Y, double& Z) const {
-			throw std::runtime_error("Not implemented");
-		}
-    private:
-        cgal_placement_t trsf_;
-    };
-  
-    class CgalShape : public ConversionResultShape {
+	class CgalShape : public ConversionResultShape {
     public:
         CgalShape(const cgal_shape_t& shape)
             : shape_(shape)
@@ -110,9 +65,7 @@ namespace IfcGeom {
 		const cgal_shape_t& shape() const { return shape_; }
 		operator const cgal_shape_t& () { return shape_; }
 
-		virtual void Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<float> * t, int surface_style_id) const;
-		
-		virtual void Triangulate(const IfcGeom::IteratorSettings & settings, const IfcGeom::ConversionResultPlacement * place, IfcGeom::Representation::Triangulation<double>* t, int surface_style_id) const;
+		virtual void Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const;
 		
 		virtual void Serialize(std::string&) const {
 			throw std::runtime_error("Not implemented");
@@ -122,6 +75,10 @@ namespace IfcGeom {
 			return new CgalShape(shape_);
 		}
 
+		virtual bool is_manifold() const {
+			throw std::runtime_error("Not implemented");
+		}
+
 		virtual int surface_genus() const {
 			throw std::runtime_error("Not implemented");
 		}
@@ -129,6 +86,6 @@ namespace IfcGeom {
         cgal_shape_t shape_;
 	};
     
-}
+}}
 
 #endif
