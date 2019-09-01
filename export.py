@@ -97,7 +97,7 @@ class IfcExporter():
     def export(self):
         self.file = ifcopenshell.open(self.template_file)
         self.set_common_definitions()
-        self.parse_objects_into_ifc_data()
+        self.ifc_parser.parse()
         self.create_rep_context()
         self.create_context()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
@@ -109,9 +109,6 @@ class IfcExporter():
         self.origin = self.file.by_type("IfcAxis2Placement3D")[0]
         # Owner history doesn't actually work like this, but for now, it does :)
         self.owner_history = self.file.by_type("ifcownerhistory")[0]
-
-    def parse_objects_into_ifc_data(self):
-        self.ifc_parser.parse()
 
     def create_rep_context(self):
         self.ifc_rep_context = self.file.createIfcGeometricRepresentationContext(
