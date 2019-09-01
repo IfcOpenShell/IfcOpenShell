@@ -841,3 +841,71 @@ std::map<std::string, IfcUtil::IfcBaseEntity*> mapping::get_layers(IfcUtil::IfcB
 	}
 	return layers;
 }
+
+#include "../../ifcparse/IfcSIPrefix.h"
+
+void mapping::initialize_units_() {
+	// Set default units, set length to meters, angles to undefined
+	length_unit_ = 1.;
+	angle_unit_ = -1.;
+	length_unit_name_ = "METER";
+	
+	auto unit_assignments = file_->instances_by_type<IfcSchema::IfcUnitAssignment>();
+	if (unit_assignments->size() != 1) {
+		Logger::Warning("Not a single unit assignment in file");
+	}
+	auto unit_assignment = *unit_assignments->begin();
+
+	bool length_unit_encountered = false, angle_unit_encountered = false;
+
+	try {
+		IfcEntityList::ptr units = unit_assignment->Units();
+		if (!units || !units->size()) {
+			Logger::Warning("No unit information found");
+		} else {
+			for (IfcEntityList::it it = units->begin(); it != units->end(); ++it) {
+				IfcUtil::IfcBaseClass* base = *it;
+				if (base->declaration().is(IfcSchema::IfcNamedUnit::Class())) {
+					IfcSchema::IfcNamedUnit* named_unit = base->as<IfcSchema::IfcNamedUnit>();
+					if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
+						named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT) {
+						std::string current_unit_name;
+						const double current_unit_magnitude = IfcParse::get_SI_equivalent<IfcSchema>(named_unit);
+						if (current_unit_magnitude != 0.) {
+							if (named_unit->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
+								IfcSchema::IfcConversionBasedUnit* u = (IfcSchema::IfcConversionBasedUnit*)base;
+								current_unit_name = u->Name();
+							} else if (named_unit->declaration().is(IfcSchema::IfcSIUnit::Class())) {
+								IfcSchema::IfcSIUnit* si_unit = named_unit->as<IfcSchema::IfcSIUnit>();
+								if (si_unit->hasPrefix()) {
+									current_unit_name = IfcSchema::IfcSIPrefix::ToString(si_unit->Prefix());
+								}
+								current_unit_name += IfcSchema::IfcSIUnitName::ToString(si_unit->Name());
+							}
+							if (named_unit->UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT) {
+								length_unit_name_ = current_unit_name;
+								length_unit_ = current_unit_magnitude;
+								length_unit_encountered = true;
+							} else {
+								angle_unit_ = current_unit_magnitude;
+								angle_unit_encountered = true;
+							}
+						}
+					}
+				}
+			}
+		}
+	} catch (const IfcParse::IfcException& ex) {
+		std::stringstream ss;
+		ss << "Failed to determine unit information '" << ex.what() << "'";
+		Logger::Message(Logger::LOG_ERROR, ss.str());
+	}
+
+	if (!length_unit_encountered) {
+		Logger::Warning("No length unit encountered");
+	}
+
+	if (!angle_unit_encountered) {
+		Logger::Warning("No plane angle unit encountered");
+	}
+}
