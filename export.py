@@ -101,8 +101,7 @@ class IfcParser():
         return results
 
     def get_type_products(self):
-        types_collection = self.get_types_collection()
-        if not types_collection:
+        if not self.selected_types:
             return []
         return [{
             'ifc': None,
@@ -110,12 +109,7 @@ class IfcParser():
             'class': self.get_ifc_class(object.name),
             'representation': self.get_representation_reference(object.data.name),
             'attributes': self.get_object_attributes(object)
-            } for object in types_collection.objects ]
-
-    def get_types_collection(self):
-        for collection in bpy.data.collections:
-            if self.is_a_types_collection(self.get_ifc_class(collection.name)):
-                return collection
+            } for object in self.selected_types ]
 
     def get_representation_reference(self, name):
         return [ r['attributes']['Name'] for r in self.representations ].index(name)
