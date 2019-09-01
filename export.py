@@ -1,7 +1,6 @@
 import ifcopenshell
 import bpy
 
-
 class IfcParser():
     def __init__(self):
         self.spatial_structure_elements = []
@@ -89,12 +88,11 @@ class IfcParser():
         return class_name in ['IfcProject', 'IfcProjectLibrary'] # TODO: unhardcode
 
 class IfcExporter():
-    def __init__(self, ifc_parser, ifc_schema):
+    def __init__(self, ifc_parser):
         self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
         self.output_file = '/home/dion/Projects/blender-bim-ifc/output.ifc'
         self.data_dir = '/home/dion/Projects/blender-bim-ifc/data/'
         self.ifc_parser = ifc_parser
-        self.ifc_schema = ifc_schema
 
     def export(self):
         self.file = ifcopenshell.open(self.template_file)
@@ -198,6 +196,5 @@ class IfcExporter():
                 self.ifc_parser.spatial_structure_elements[relating_structure]['ifc'])
 
 ifc_parser = IfcParser()
-ifc_schema = IfcSchema()
-ifc_exporter = IfcExporter(ifc_parser, ifc_schema)
+ifc_exporter = IfcExporter(ifc_parser)
 ifc_exporter.export()
