@@ -85,7 +85,10 @@ class IfcParser():
             print('ERROR: Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
 
     def is_a_spatial_structure_element(self, class_name):
-        return class_name in ['IfcBuilding', 'IfcBuildingStorey', 'IfcSite'] # TODO: unhardcode
+        # This should only be called on collection class_names, and since
+        # collections either represent contexts or spatial structure elements,
+        # we use this simplified assumption.
+        return class_name[0:3] == 'Ifc' and not self.is_a_context(class_name)
 
     def is_a_context(self, class_name):
         return class_name in ['IfcProject', 'IfcProjectLibrary']
