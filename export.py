@@ -1,11 +1,21 @@
 import ifcopenshell
 import bpy
+import csv
+import json
+from pathlib import Path
 
 class IfcParser():
     def __init__(self):
+        self.data_dir = '/home/dion/Projects/blender-bim-ifc/data/'
+        self.schema_dir = '/home/dion/Projects/blender-bim-ifc/schema/'
+
+        with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
+            self.type_map = json.load(f)
+
         self.selected_products = []
         self.selected_types = []
 
+        self.psets = []
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
@@ -17,6 +27,7 @@ class IfcParser():
 
     def parse(self):
         self.sort_selected_into_products_and_types()
+        self.psets = self.get_psets()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.representations = self.get_representations()
         self.type_products = self.get_type_products()
@@ -58,6 +69,19 @@ class IfcParser():
                 self.selected_types.append(object)
             else:
                 self.selected_products.append(object)
+
+    def get_psets(self):
+        psets = []
+        for filename in Path(self.data_dir).glob('**/*.csv'):
+            with open(filename, 'r') as f:
+                psets.append({
+                    'ifc': None,
+                    'raw': list(csv.reader(f)),
+                    'attributes': {
+                        'Name': filename.parts[-2],
+                        'Description': filename.stem }
+                    })
+        return psets
 
     def is_object_in_types_collection(self, object):
         for collection in object.users_collection:
@@ -165,13 +189,13 @@ class IfcExporter():
     def __init__(self, ifc_parser):
         self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
         self.output_file = '/home/dion/Projects/blender-bim-ifc/output.ifc'
-        self.data_dir = '/home/dion/Projects/blender-bim-ifc/data/'
         self.ifc_parser = ifc_parser
 
     def export(self):
         self.file = ifcopenshell.open(self.template_file)
         self.set_common_definitions()
         self.ifc_parser.parse()
+        self.create_psets()
         self.create_rep_context()
         self.create_context()
         self.create_representations()
@@ -186,6 +210,39 @@ class IfcExporter():
         self.origin = self.file.by_type("IfcAxis2Placement3D")[0]
         # Owner history doesn't actually work like this, but for now, it does :)
         self.owner_history = self.file.by_type("ifcownerhistory")[0]
+
+    def create_psets(self):
+        for pset in self.ifc_parser.psets:
+            properties = self.create_pset_properties(pset)
+            if not properties:
+                continue
+            pset['attributes'].update({
+                'GlobalId': ifcopenshell.guid.new(),
+                'OwnerHistory': self.owner_history,
+                'HasProperties': properties
+                })
+            pset['ifc'] = self.file.create_entity('IfcPropertySet', **pset['attributes'])
+
+    def create_pset_properties(self, pset):
+        properties = []
+        headers = pset['raw'].pop(0)[2:]
+        for data in pset['raw']:
+            type = data[1]
+            value = self.cast_to_base_type(type, data[4])
+            nominal_value = self.file.create_entity(type, value)
+            attributes = { header: data[i+2] if data[i+2] else None for i, header in enumerate(headers)}
+            attributes['NominalValue'] = nominal_value
+            properties.append(self.file.create_entity(data[0], **attributes))
+        return properties
+
+    def cast_to_base_type(self, type, value):
+        if self.ifc_parser.type_map[type] == 'float':
+            return float(value)
+        elif self.ifc_parser.type_map[type] == 'integer':
+            return int(value)
+        elif self.ifc_parser.type_map[type] == 'bool':
+            return True if value.lower() in ['1', 't', 'true', 'yes', 'y', 'uh-huh'] else False
+        return str(value)
 
     def create_rep_context(self):
         self.ifc_rep_context = self.file.createIfcGeometricRepresentationContext(
