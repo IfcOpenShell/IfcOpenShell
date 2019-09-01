@@ -3,29 +3,33 @@ import bpy
 
 class IfcParser():
     def __init__(self):
+        self.selected_products = []
+        self.selected_types = []
+
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
         self.representations = []
+        self.type_products = []
         self.context = {}
         self.products = []
 
     def parse(self):
+        self.sort_selected_into_products_and_types()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.representations = self.get_representations()
+        self.type_products = self.get_type_products()
 
         collection_name_filter = []
         product_index = 0
-        for object in bpy.context.selected_objects:
-            attributes = { 'Name': self.get_ifc_name(object.name) }
-            attributes.update({key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
+        for object in self.selected_products:
             product_data = {
                 'ifc': None,
-                'class': self.get_ifc_class(object.name),
                 'raw': object,
+                'class': self.get_ifc_class(object.name),
                 'relating_structure': None,
                 'representation': self.get_representation_reference(object.data.name),
-                'attributes': attributes
+                'attributes': self.get_object_attributes(object)
                 }
             for collection in object.users_collection:
                 if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
@@ -40,13 +44,31 @@ class IfcParser():
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
             self.context['raw'].children, collection_name_filter)
 
+    def get_object_attributes(self, object):
+        attributes = { 'Name': self.get_ifc_name(object.name) }
+        attributes.update({ key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
+        return attributes
+
+    def sort_selected_into_products_and_types(self):
+        for object in bpy.context.selected_objects:
+            if self.is_object_in_types_collection(object):
+                self.selected_types.append(object)
+            else:
+                self.selected_products.append(object)
+
+    def is_object_in_types_collection(self, object):
+        for collection in object.users_collection:
+            if self.is_a_types_collection(self.get_ifc_class(collection.name)):
+                return True
+        return False
+
     def get_context(self):
         for collection in bpy.data.collections:
             if self.is_a_context(self.get_ifc_class(collection.name)):
                 return {
                     'ifc': None,
-                    'class': self.get_ifc_class(collection.name),
                     'raw': collection,
+                    'class': self.get_ifc_class(collection.name),
                     'attributes': { 'Name': self.get_ifc_name(collection.name) }
                 }
 
@@ -56,15 +78,15 @@ class IfcParser():
             if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
                 elements.append({
                     'ifc': None,
-                    'class': self.get_ifc_class(collection.name),
                     'raw': collection,
+                    'class': self.get_ifc_class(collection.name),
                     'attributes': { 'Name': self.get_ifc_name(collection.name)}
                     })
         return elements
 
     def get_representations(self):
         representations = {}
-        for object in bpy.context.selected_objects:
+        for object in self.selected_products + self.selected_types:
             representations[object.data.name] = object.data
         results = []
         for name, value in representations.items():
@@ -74,6 +96,23 @@ class IfcParser():
                 'attributes': { 'Name': name }
                 })
         return results
+
+    def get_type_products(self):
+        types_collection = self.get_types_collection()
+        if not types_collection:
+            return []
+        return [{
+            'ifc': None,
+            'raw': object,
+            'class': self.get_ifc_class(object.name),
+            'representation': self.get_representation_reference(object.data.name),
+            'attributes': self.get_object_attributes(object)
+            } for object in types_collection.objects ]
+
+    def get_types_collection(self):
+        for collection in bpy.data.collections:
+            if self.is_a_types_collection(self.get_ifc_class(collection.name)):
+                return collection
 
     def get_representation_reference(self, name):
         return [ r['attributes']['Name'] for r in self.representations ].index(name)
@@ -108,13 +147,16 @@ class IfcParser():
             print('ERROR: Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
 
     def is_a_spatial_structure_element(self, class_name):
-        # This should only be called on collection class_names, and since
-        # collections either represent contexts or spatial structure elements,
-        # we use this simplified assumption.
-        return class_name[0:3] == 'Ifc' and not self.is_a_context(class_name)
+        # We assume that any collection we can't identify is a spatial structure
+        return class_name[0:3] == 'Ifc' \
+            and not self.is_a_context(class_name) \
+            and not self.is_a_types_collection(class_name)
 
     def is_a_context(self, class_name):
         return class_name in ['IfcProject', 'IfcProjectLibrary']
+
+    def is_a_types_collection(self, class_name):
+        return class_name == 'IfcTypeProduct'
 
 class IfcExporter():
     def __init__(self, ifc_parser):
@@ -129,8 +171,9 @@ class IfcExporter():
         self.ifc_parser.parse()
         self.create_rep_context()
         self.create_context()
-        self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_representations()
+        self.create_type_products()
+        self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_products()
         self.relate_elements_to_spatial_structures()
         self.file.write(self.output_file)
@@ -162,6 +205,20 @@ class IfcExporter():
             })
         self.ifc_parser.context['ifc'] = self.file.create_entity(self.ifc_parser.context['class'], **attributes)
 
+    def create_type_products(self):
+        for product in self.ifc_parser.type_products:
+            representation = self.ifc_parser.representations[product['representation']]['ifc']
+            placement = self.create_ifc_axis_2_placement_3d(product['raw'].location)
+            representation_map = self.file.createIfcRepresentationMap(placement, representation)
+            product['attributes'].update({
+                'GlobalId': ifcopenshell.guid.new(),
+                'RepresentationMaps': [representation_map]
+                })
+            try:
+                product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
+            except RuntimeError as e:
+                print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
     def create_spatial_structure_elements(self, element_tree, relating_object=None):
         if relating_object == None:
             relating_object = self.ifc_parser.context['ifc']
@@ -190,22 +247,26 @@ class IfcExporter():
 
     def create_products(self):
         for product in self.ifc_parser.products:
-            object = product['raw']
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
             placement = self.file.createIfcLocalPlacement(placement_rel_to,
-                self.file.createIfcAxis2Placement3D(
-                    self.file.createIfcCartesianPoint(
-                        (object.location.x, object.location.y, object.location.z))))
+                self.create_ifc_axis_2_placement_3d(product['raw'].location))
+            representation = self.file.createIfcProductDefinitionShape(
+                    None, None,
+                    [self.ifc_parser.representations[product['representation']]['ifc']])
             product['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
                 'OwnerHistory': self.owner_history, # TODO: unhardcode
                 'ObjectPlacement': placement,
-                'Representation': self.ifc_parser.representations[product['representation']]['ifc']
+                'Representation': representation
                 })
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def create_ifc_axis_2_placement_3d(self, point):
+        return self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((point.x, point.y, point.z)))
 
     def create_representation(self, mesh):
         ifc_vertices = []
@@ -220,10 +281,9 @@ class IfcExporter():
                     self.file.createIfcPolyLoop([ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
 
-        return self.file.createIfcProductDefinitionShape(None, None,
-            [self.file.createIfcShapeRepresentation(
-                self.ifc_rep_subcontext, 'Body', 'Brep',
-                [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))])])
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_subcontext, 'Body', 'Brep',
+            [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))])
 
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
