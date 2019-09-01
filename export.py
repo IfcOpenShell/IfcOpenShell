@@ -9,6 +9,7 @@ class IfcParser():
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
+        self.rel_defines_by_type = {}
         self.representations = []
         self.type_products = []
         self.context = {}
@@ -21,8 +22,7 @@ class IfcParser():
         self.type_products = self.get_type_products()
 
         collection_name_filter = []
-        product_index = 0
-        for object in self.selected_products:
+        for index, object in enumerate(self.selected_products):
             product_data = {
                 'ifc': None,
                 'raw': object,
@@ -34,11 +34,14 @@ class IfcParser():
             for collection in object.users_collection:
                 if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
                     reference = self.get_spatial_structure_element_reference(collection.name)
-                    self.rel_contained_in_spatial_structure.setdefault(reference, []).append(product_index)
+                    self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
                     product_data['relating_structure'] = reference
                     collection_name_filter.append(collection.name)
+            if object.parent \
+                and self.is_a_type(self.get_ifc_class(object.parent.name)):
+                reference = self.get_type_product_reference(object.parent.name)
+                self.rel_defines_by_type.setdefault(reference, []).append(index)
             self.products.append(product_data)
-            product_index += 1
 
         self.context = self.get_context()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
@@ -137,6 +140,9 @@ class IfcParser():
     def get_spatial_structure_element_reference(self, name):
         return [ e['attributes']['Name'] for e in self.spatial_structure_elements ].index(self.get_ifc_name(name))
 
+    def get_type_product_reference(self, name):
+        return [ p['attributes']['Name'] for p in self.type_products ].index(self.get_ifc_name(name))
+
     def get_ifc_class(self, name):
         return name.split('/')[0]
 
@@ -154,6 +160,9 @@ class IfcParser():
 
     def is_a_context(self, class_name):
         return class_name in ['IfcProject', 'IfcProjectLibrary']
+
+    def is_a_type(self, class_name):
+        return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
 
     def is_a_types_collection(self, class_name):
         return class_name == 'IfcTypeProduct'
@@ -176,6 +185,7 @@ class IfcExporter():
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_products()
         self.relate_elements_to_spatial_structures()
+        self.relate_objects_to_types()
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
@@ -291,6 +301,13 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [ self.ifc_parser.products[e]['ifc'] for e in related_elements],
                 self.ifc_parser.spatial_structure_elements[relating_structure]['ifc'])
+
+    def relate_objects_to_types(self):
+        for relating_type, related_objects in self.ifc_parser.rel_defines_by_type.items():
+            self.file.createIfcRelDefinesByType(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [ self.ifc_parser.products[o]['ifc'] for o in related_objects],
+                self.ifc_parser.type_products[relating_type]['ifc'])
 
 ifc_parser = IfcParser()
 ifc_exporter = IfcExporter(ifc_parser)
