@@ -6,11 +6,13 @@ class IfcParser():
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
+        self.representations = []
         self.context = {}
         self.products = []
 
     def parse(self):
         self.spatial_structure_elements = self.get_spatial_structure_elements()
+        self.representations = self.get_representations()
 
         collection_name_filter = []
         product_index = 0
@@ -20,6 +22,7 @@ class IfcParser():
                 'class': self.get_ifc_class(object.name),
                 'raw': object,
                 'relating_structure': None,
+                'representation': self.get_representation_reference(object.data.name),
                 'attributes': { 'Name': self.get_ifc_name(object.name) }
                 }
             for collection in object.users_collection:
@@ -56,6 +59,22 @@ class IfcParser():
                     'attributes': { 'Name': self.get_ifc_name(collection.name)}
                     })
         return elements
+
+    def get_representations(self):
+        representations = {}
+        for object in bpy.context.selected_objects:
+            representations[object.data.name] = object.data
+        results = []
+        for name, value in representations.items():
+            results.append({
+                'ifc': None,
+                'raw': value,
+                'attributes': { 'Name': name }
+                })
+        return results
+
+    def get_representation_reference(self, name):
+        return [ r['attributes']['Name'] for r in self.representations ].index(name)
 
     def get_spatial_structure_elements_tree(self, collections, name_filter):
         collection_tree = []
@@ -109,6 +128,7 @@ class IfcExporter():
         self.create_rep_context()
         self.create_context()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
+        self.create_representations()
         self.create_products()
         self.relate_elements_to_spatial_structures()
         self.file.write(self.output_file)
@@ -162,6 +182,10 @@ class IfcExporter():
                 ifcopenshell.guid.new(),
                 self.owner_history, None, None, relating_object, related_objects)
 
+    def create_representations(self):
+        for representation in self.ifc_parser.representations:
+            representation['ifc'] = self.create_representation(representation['raw'])
+
     def create_products(self):
         for product in self.ifc_parser.products:
             object = product['raw']
@@ -170,26 +194,25 @@ class IfcExporter():
                 self.file.createIfcAxis2Placement3D(
                     self.file.createIfcCartesianPoint(
                         (object.location.x, object.location.y, object.location.z))))
-            representation = self.create_representation(object)
             product['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
                 'OwnerHistory': self.owner_history, # TODO: unhardcode
                 'ObjectPlacement': placement,
-                'Representation': representation
+                'Representation': self.ifc_parser.representations[product['representation']]['ifc']
                 })
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
-    def create_representation(self, object):
+    def create_representation(self, mesh):
         ifc_vertices = []
         ifc_faces = []
 
-        for vertice in object.data.vertices:
+        for vertice in mesh.vertices:
             ifc_vertices.append(
                 self.file.createIfcCartesianPoint((vertice.co.x, vertice.co.y, vertice.co.z)))
-        for polygon in object.data.polygons:
+        for polygon in mesh.polygons:
             ifc_faces.append(self.file.createIfcFace([
                 self.file.createIfcFaceOuterBound(
                     self.file.createIfcPolyLoop([ifc_vertices[vertice] for vertice in polygon.vertices]),
