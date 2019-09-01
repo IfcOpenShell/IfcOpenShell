@@ -118,7 +118,7 @@ BIND(IfcPolyLoop);
 #endif
 
 BIND(IfcCartesianPoint);
-// BIND(IfcDirection);
+BIND(IfcDirection);
 // BIND(IfcAxis2Placement2D);
 BIND(IfcAxis2Placement3D);
 // BIND(IfcAxis1Placement);

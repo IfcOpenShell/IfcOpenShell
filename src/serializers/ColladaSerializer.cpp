@@ -204,13 +204,13 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 
 	// @todo verify
 
-	const double* posmatrix = transformation_towrite->data().components.data();
+	const double* m = transformation_towrite->data().components.data();
 
 	double matrix_array[4][4] = {
-		{ (double)posmatrix[0], (double)posmatrix[3], (double)posmatrix[6], (double)posmatrix[9] },
-		{ (double)posmatrix[1], (double)posmatrix[4], (double)posmatrix[7], (double)posmatrix[10] },
-		{ (double)posmatrix[2], (double)posmatrix[5], (double)posmatrix[8], (double)posmatrix[11] },
-		{ 0, 0, 0, 1 }
+		{ m[0], m[4], m[8], m[12] },
+		{ m[1], m[5], m[9], m[13] },
+		{ m[2], m[6], m[10], m[14] },
+		{ m[3], m[7], m[11], m[15] }
 	};
 	
 	/// @todo: TFK: Rather than applying this offset to all leafs (which might be undesirable) should this offset be applied to a node higher up in the hierarchy?

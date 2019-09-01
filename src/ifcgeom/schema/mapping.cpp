@@ -223,6 +223,15 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianPoint* inst) {
 	auto coords = inst->Coordinates();
 	return new taxonomy::point3(
+		coords.size() >= 1 ? coords[0] * length_unit_ : 0.,
+		coords.size() >= 2 ? coords[1] * length_unit_ : 0.,
+		coords.size() >= 3 ? coords[2] * length_unit_ : 0.
+	);
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcDirection* inst) {
+	auto coords = inst->DirectionRatios();
+	return new taxonomy::direction3(
 		coords.size() >= 1 ? coords[0] : 0.,
 		coords.size() >= 2 ? coords[1] : 0.,
 		coords.size() >= 3 ? coords[2] : 0.
@@ -320,6 +329,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
 			break;
 		}
 	}
+	return m4;
 }
 
 IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation) {

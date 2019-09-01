@@ -42,6 +42,9 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 
 	// @todo decide how to get placement from product
 	auto placement = (taxonomy::geom_item*) mapping_->map(product);
+	if (placement == nullptr) {
+		return nullptr;
+	}
 	kernel_->convert(rep_item, shapes);
 
 	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
