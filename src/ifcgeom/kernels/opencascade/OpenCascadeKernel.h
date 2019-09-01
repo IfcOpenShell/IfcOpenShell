@@ -22,13 +22,6 @@
 
 #include <cmath>
 
-static const double ALMOST_ZERO = 1.e-9;
-
-template <typename T>
-inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMOST_ZERO) {
-	return fabs(a-b) < tolerance; 
-}
-
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 #include <gp_Mat.hxx>

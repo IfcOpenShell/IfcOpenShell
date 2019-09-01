@@ -37,13 +37,6 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #include <cmath>
 
-#define ALMOST_ZERO 1.e-9
-
-template <typename T>
-inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance=ALMOST_ZERO) {
-        return fabs(a-b) < tolerance;
-}
-
 #include "../../../ifcparse/macros.h"
 
 #include "../../../ifcgeom/kernel_agnostic/AbstractKernel.h"

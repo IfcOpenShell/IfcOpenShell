@@ -6,6 +6,13 @@
 #include "../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h"
 #include "../../ifcgeom/taxonomy.h"
 
+static const double ALMOST_ZERO = 1.e-9;
+
+template <typename T>
+inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance = ALMOST_ZERO) {
+	return fabs(a - b) < tolerance;
+}
+
 namespace ifcopenshell { namespace geometry { namespace kernels {
 
 	class IFC_GEOM_API AbstractKernel {
