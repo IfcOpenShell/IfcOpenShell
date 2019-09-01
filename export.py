@@ -17,8 +17,10 @@ class IfcParser():
         for object in bpy.context.selected_objects:
             product_data = {
                 'ifc': None,
+                'class': self.get_ifc_class(object.name),
                 'raw': object,
-                'relating_structure': None
+                'relating_structure': None,
+                'attributes': { 'Name': self.get_ifc_name(object.name) }
                 }
             for collection in object.users_collection:
                 if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
@@ -169,9 +171,16 @@ class IfcExporter():
                     self.file.createIfcCartesianPoint(
                         (object.location.x, object.location.y, object.location.z))))
             representation = self.create_representation(object)
-            product['ifc'] = self.file.createIfcBuildingElementProxy(
-                ifcopenshell.guid.new(),
-                self.owner_history, object.name, None, None, placement, representation, None, None)
+            product['attributes'].update({
+                'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
+                'OwnerHistory': self.owner_history, # TODO: unhardcode
+                'ObjectPlacement': placement,
+                'Representation': representation
+                })
+            try:
+                product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
+            except RuntimeError as e:
+                print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
     def create_representation(self, object):
         ifc_vertices = []
