@@ -45,8 +45,18 @@ struct matrix4 : public item {
 	
 	Eigen::Matrix4d components;
 
+	matrix4() : components(Eigen::Matrix4d::Identity()), tag(IDENTITY) {}
 	matrix4(const Eigen::Matrix4d& c) : components(c), tag(OTHER) {}
-    matrix4() : components(Eigen::Matrix4d::Identity()), tag(IDENTITY) {}
+	matrix4(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) : tag(AFFINE_WO_SCALE) {
+		auto X = x.normalized();
+		auto Y = z.cross(x).normalized();
+		auto Z = z.normalized();
+		components << 
+			X(0), Y(0), Z(0), o(0),
+			X(1), Y(1), Z(1), o(0),
+			X(2), Y(2), Z(2), o(0),
+			0, 0, 0, 1.;
+	}
 
 	virtual item* clone() const { return new matrix4(*this); }
 	virtual kinds kind() const { return MATRIX4; }

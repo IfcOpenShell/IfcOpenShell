@@ -236,33 +236,90 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
-	// @todo length unit
-	return new taxonomy::matrix4();
+	Eigen::Vector3d o, axis(0, 0, 1), refDirection, X(1, 0, 0);
+	{
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
+		o = v.components;
+	}
+	const bool hasAxis = inst->hasAxis();
+	const bool hasRef = inst->hasRefDirection();
+
+	if (hasAxis != hasRef) {
+		Logger::Warning("Axis and RefDirection should be specified together", inst);
+	}
+
+	if (hasAxis) {
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Axis()));
+		axis = v.components;
+	}
+
+	if (hasRef) {
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->RefDirection()));
+		refDirection = v.components;
+	} else {
+		if (acos(axis.dot(X)) > 1.e-5) {
+			refDirection = { 1., 0., 0. };
+		} else {
+			refDirection = { 0., 0., 1. };
+		}
+		auto Xvec = axis.dot(refDirection) * axis;
+		auto Xaxis = refDirection - Xvec;
+		refDirection = Xaxis;
+	}
+	return new taxonomy::matrix4(o, axis, refDirection);
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* inst) {
-	// @todo length unit
+	// @todo
 	return new taxonomy::matrix4();
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* inst) {
-	// @todo length unit
+	// @todo
 	return new taxonomy::matrix4();
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
-	// @todo length unit
+	// @todo
 	return new taxonomy::matrix4();
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
-	// @todo length unit
+	// @todo
 	return new taxonomy::matrix4();
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
-	// @todo length unit
-	return new taxonomy::matrix4();
+	IfcSchema::IfcLocalPlacement* current = (IfcSchema::IfcLocalPlacement*)inst;
+	auto m4 = new taxonomy::matrix4;
+	for (;;) {
+		IfcSchema::IfcAxis2Placement* relplacement = current->RelativePlacement();
+		if (relplacement->declaration().is(IfcSchema::IfcAxis2Placement3D::Class())) {
+			taxonomy::matrix4 trsf2 = as<taxonomy::matrix4>(map(relplacement));
+			// @todo check
+			m4->components = trsf2.components * m4->components;
+		}
+		if (current->hasPlacementRelTo()) {
+			IfcSchema::IfcObjectPlacement* parent = current->PlacementRelTo();
+			IfcSchema::IfcProduct::list::ptr parentPlaces = parent->PlacesObject();
+			bool parentPlacesType = false;
+			for (IfcSchema::IfcProduct::list::it iter = parentPlaces->begin();
+				iter != parentPlaces->end(); ++iter) {
+				if ((*iter)->declaration().is(*placement_rel_to_)) {
+					parentPlacesType = true;
+				}
+			}
+			if (parentPlacesType) {
+				break;
+			} else if (parent->declaration().is(IfcSchema::IfcLocalPlacement::Class())) {
+				current = (IfcSchema::IfcLocalPlacement*)current->PlacementRelTo();
+			} else {
+				break;
+			}
+		} else {
+			break;
+		}
+	}
 }
 
 IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation) {
