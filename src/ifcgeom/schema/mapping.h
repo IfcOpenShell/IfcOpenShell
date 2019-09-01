@@ -16,8 +16,14 @@ namespace geometry {
     class POSTFIX_SCHEMA(mapping) : public abstract_mapping {
 	private:
 		IfcParse::IfcFile* file_;
+		double length_unit_, angle_unit_;
+		std::string length_unit_name_;
+
+		void initialize_units_();
 	public:
-		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file) : file_(file) {}
+		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file) : file_(file) {
+			initialize_units_();
+		}
 		virtual ifcopenshell::geometry::taxonomy::item* map(const IfcUtil::IfcBaseClass*);
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters, settings& s);
 		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
