@@ -17,13 +17,15 @@ class IfcParser():
         collection_name_filter = []
         product_index = 0
         for object in bpy.context.selected_objects:
+            attributes = { 'Name': self.get_ifc_name(object.name) }
+            attributes.update({key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
             product_data = {
                 'ifc': None,
                 'class': self.get_ifc_class(object.name),
                 'raw': object,
                 'relating_structure': None,
                 'representation': self.get_representation_reference(object.data.name),
-                'attributes': { 'Name': self.get_ifc_name(object.name) }
+                'attributes': attributes
                 }
             for collection in object.users_collection:
                 if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
