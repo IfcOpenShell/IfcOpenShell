@@ -2,6 +2,9 @@
 
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+
+#undef Handle
+
 #include "../../ifcgeom/kernels/cgal/CgalKernel.h"
 
 namespace {
