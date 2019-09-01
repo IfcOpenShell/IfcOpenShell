@@ -464,6 +464,16 @@ public:
 	}
 };
 
+#ifdef USE_VOXELS
+namespace {
+	void write_voxels(const std::string& fn, abstract_voxel_storage* voxels) {
+		voxel_writer w;
+		w.SetVoxels(voxels);
+		w.Write(fn);
+	}
+}
+#endif
+
 class QuantityWriter_v1 : public EntityExtension {
 private:
 	const IfcGeom::NativeElement<double, double>* elem_;
@@ -539,15 +549,11 @@ public:
 			// At least one padding voxel need to be in place as the traversal happens outside
 			// of the surface voxel bounds and is subsequently inverted to find the interior
 			// voxels.
-			auto surface = storage_for(bounds, 128U, 4U);
+			auto surface = storage_for(bounds, 256U, 4U, 16U);
 			processor proc(surface, silent);
 			// @todo is scanline entirely reliable due to rounding from float to int?
 			// This is also observed in voxec dump_surfaces().
 			// proc.use_scanline() = false;
-			// @todo we still cannot correctly identify hollow objects correctly.
-			// is it an idea to use several points we know should be inside the volume?
-			// Or, use a boolean intersection of surface and volume and subtract any subsequent
-			// interior void volumes.
 			BRepMesh_IncrementalMesh(compound, 0.001);
 			std::vector<std::pair<int, TopoDS_Compound > > geometries = { {1, compound} };
 			proc.process(geometries.begin(), geometries.end(), SURFACE(), output(MERGED()));
@@ -559,6 +565,15 @@ public:
 			if (surface->count() != 0) {
 				auto volume = filler(surface);
 				auto volume_count = volume->count();
+				auto inner_surface = (regular_voxel_storage*) volume->boolean_intersection(surface);
+				if (inner_surface->count() != 0) {
+					// Or, use a boolean intersection of surface and volume and subtract any subsequent
+					// interior void volumes.
+					auto inner_volume = filler(inner_surface);
+					volume_count -= inner_volume->count();
+					delete inner_volume;
+				}
+				delete inner_surface;
 				delete volume;
 				total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
 			}
