@@ -79,7 +79,10 @@ class IfcParser():
         return name.split('/')[0]
 
     def get_ifc_name(self, name):
-        return name.split('/')[1]
+        try:
+            return name.split('/')[1]
+        except IndexError:
+            print('ERROR: Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
 
     def is_a_spatial_structure_element(self, class_name):
         return class_name in ['IfcBuilding', 'IfcBuildingStorey', 'IfcSite'] # TODO: unhardcode
