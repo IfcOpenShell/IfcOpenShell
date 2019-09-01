@@ -85,7 +85,7 @@ class IfcParser():
         return class_name in ['IfcBuilding', 'IfcBuildingStorey', 'IfcSite'] # TODO: unhardcode
 
     def is_a_context(self, class_name):
-        return class_name in ['IfcProject', 'IfcProjectLibrary'] # TODO: unhardcode
+        return class_name in ['IfcProject', 'IfcProjectLibrary']
 
 class IfcExporter():
     def __init__(self, ifc_parser):
