@@ -219,6 +219,7 @@ namespace ifcopenshell { namespace geometry {
 
 			task_iterator_ = tasks_.begin();
 
+			task_result_index_ = 0;
 			done = 0;
 			total = tasks_.size();
 

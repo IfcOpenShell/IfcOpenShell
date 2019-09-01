@@ -112,7 +112,7 @@ namespace kernels {
 		bool convert(const taxonomy::shell* l, cgal_shape_t& shape);
 
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
-		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
+		// virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 }
