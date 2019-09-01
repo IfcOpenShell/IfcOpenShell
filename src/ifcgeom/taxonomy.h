@@ -53,8 +53,8 @@ struct matrix4 : public item {
 		auto Z = z.normalized();
 		components << 
 			X(0), Y(0), Z(0), o(0),
-			X(1), Y(1), Z(1), o(0),
-			X(2), Y(2), Z(2), o(0),
+			X(1), Y(1), Z(1), o(1),
+			X(2), Y(2), Z(2), o(2),
 			0, 0, 0, 1.;
 	}
 
