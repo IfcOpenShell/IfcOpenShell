@@ -54,3 +54,9 @@ A naming convention of `IfcClass/IfcName` is enforced. If you name your object
 Your objects must live in a top level `Collection` defined as a context class,
 usually something like `IfcProject/Foo`. You can then nest spatial structures
 underneath to create a hierarchy.
+
+![Blender screenshot](blender-screenshot.png)
+
+... this Blender files creates this IFC file ...
+
+![IfcOpenShell screenshot](ifcopenshell-screenshot.png)
