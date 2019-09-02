@@ -41,7 +41,11 @@ check it out:
     script already loaded. Change the hardcoded paths from
     `/home/dion/Projects/blender-bim-ifc/` to wherever you've cloned this
     repository.
- 4. Select all objects that you want to export. Press `Run Script`, and you will
+ 4. Ensure `ifcopenshell` is in your Blender Python's path, so that it can
+    `import ifcopenshell`. You can run
+    `sys.path.append('/path/to/your/ifcopenshell/module')` in the Blender Python
+    console to do this.
+ 5. Select all objects that you want to export. Press `Run Script`, and you will
     get the results in `output.ifc`.
 
 A naming convention of `IfcClass/IfcName` is enforced. If you name your object
