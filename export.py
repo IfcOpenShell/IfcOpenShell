@@ -171,6 +171,9 @@ class IfcParser():
         return [{
             'ifc': None,
             'raw': object,
+            'location': object.location,
+            'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
+            'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'class': self.get_ifc_class(object.name),
             'representation': self.get_representation_reference(object.data.name),
             'attributes': self.get_object_attributes(object)
