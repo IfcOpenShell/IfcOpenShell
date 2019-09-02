@@ -308,7 +308,11 @@ class IfcExporter():
 
     def create_products(self):
         for product in self.ifc_parser.products:
-            placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
+            try:
+                placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
+            except Exception as e:
+                print('The product "{}/{}" could not be placed on a spatial structure {}'.format(product['class'], product['attributes']['Name'], e.args))
+                continue
             placement = self.file.createIfcLocalPlacement(placement_rel_to,
                 self.create_ifc_axis_2_placement_3d(product['raw'].location))
             representation = self.file.createIfcProductDefinitionShape(
