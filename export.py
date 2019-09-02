@@ -3,6 +3,11 @@ import bpy
 import csv
 import json
 from pathlib import Path
+from mathutils import Vector
+
+class ArrayModifier:
+    count: int
+    offset: Vector
 
 class IfcParser():
     def __init__(self):
@@ -32,36 +37,72 @@ class IfcParser():
         self.representations = self.get_representations()
         self.type_products = self.get_type_products()
 
-        collection_name_filter = []
-        for index, object in enumerate(self.selected_products):
-            product_data = {
-                'ifc': None,
-                'raw': object,
-                'class': self.get_ifc_class(object.name),
-                'relating_structure': None,
-                'representation': self.get_representation_reference(object.data.name),
-                'attributes': self.get_object_attributes(object)
-                }
-            for collection in object.users_collection:
-                if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
-                    reference = self.get_spatial_structure_element_reference(collection.name)
-                    self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
-                    product_data['relating_structure'] = reference
-                    collection_name_filter.append(collection.name)
-            if object.parent \
-                and self.is_a_type(self.get_ifc_class(object.parent.name)):
-                reference = self.get_type_product_reference(object.parent.name)
-                self.rel_defines_by_type.setdefault(reference, []).append(index)
-            self.products.append(product_data)
+        self.collection_name_filter = []
+        index = 0
+        for object in self.selected_products:
+            self.products.append(self.get_product(object, index))
+            index += 1
+
+            instance_objects = [(object, object.location)]
+            for instance in self.get_instances(object):
+                created_instances = []
+                for n in range(instance.count-1):
+                    for o in instance_objects:
+                        location = o[1] + ((n+1) * instance.offset)
+                        self.products.append(self.get_product(o[0], index,
+                            {'location': location}))
+                        index += 1
+                        created_instances.append((o[0], location))
+                instance_objects.extend(created_instances)
 
         self.context = self.get_context()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
-            self.context['raw'].children, collection_name_filter)
+            self.context['raw'].children, self.collection_name_filter)
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
         attributes.update({ key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
         return attributes
+
+    def get_product(self, object, index, attribute_override={}):
+        product = {
+            'ifc': None,
+            'raw': object,
+            'location': object.location,
+            'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
+            'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
+            'class': self.get_ifc_class(object.name),
+            'relating_structure': None,
+            'representation': self.get_representation_reference(object.data.name),
+            'attributes': self.get_object_attributes(object)
+            }
+        product.update(attribute_override)
+        for collection in object.users_collection:
+            if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
+                reference = self.get_spatial_structure_element_reference(collection.name)
+                self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
+                product['relating_structure'] = reference
+                self.collection_name_filter.append(collection.name)
+        if object.parent \
+            and self.is_a_type(self.get_ifc_class(object.parent.name)):
+            reference = self.get_type_product_reference(object.parent.name)
+            self.rel_defines_by_type.setdefault(reference, []).append(index)
+        return product
+
+    def get_instances(self, object):
+        instances = []
+        for m in object.modifiers:
+            if m.type == 'ARRAY':
+                array = ArrayModifier()
+                world_rotation = object.matrix_world.decompose()[1]
+                array.offset = world_rotation @ Vector(
+                    (m.constant_offset_displace[0], m.constant_offset_displace[1], m.constant_offset_displace[2]))
+                if m.fit_type == 'FIXED_COUNT':
+                    array.count = m.count
+                elif m.fit_type == 'FIT_LENGTH':
+                    array.count = int(m.fit_length / array.offset.length)
+                instances.append(array)
+        return instances
 
     def sort_selected_into_products_and_types(self):
         for object in bpy.context.selected_objects:
@@ -269,7 +310,7 @@ class IfcExporter():
     def create_type_products(self):
         for product in self.ifc_parser.type_products:
             representation = self.ifc_parser.representations[product['representation']]['ifc']
-            placement = self.create_ifc_axis_2_placement_3d(product['raw'].location)
+            placement = self.create_ifc_axis_2_placement_3d(product['location'], product['up_axis'], product['forward_axis'])
             representation_map = self.file.createIfcRepresentationMap(placement, representation)
             product['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(),
@@ -314,24 +355,31 @@ class IfcExporter():
                 print('The product "{}/{}" could not be placed on a spatial structure {}'.format(product['class'], product['attributes']['Name'], e.args))
                 continue
             placement = self.file.createIfcLocalPlacement(placement_rel_to,
-                self.create_ifc_axis_2_placement_3d(product['raw'].location))
-            representation = self.file.createIfcProductDefinitionShape(
-                    None, None,
-                    [self.ifc_parser.representations[product['representation']]['ifc']])
+                self.create_ifc_axis_2_placement_3d(product['location'],
+                    product['up_axis'],
+                    product['forward_axis']))
+            shape = self.file.createIfcProductDefinitionShape(
+                None, None,
+                [self.ifc_parser.representations[product['representation']]['ifc']])
             product['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
                 'OwnerHistory': self.owner_history, # TODO: unhardcode
                 'ObjectPlacement': placement,
-                'Representation': representation
+                'Representation': shape
                 })
-            try:
-                product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
-            except RuntimeError as e:
-                print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+            self.create_product(product)
 
-    def create_ifc_axis_2_placement_3d(self, point):
+    def create_product(self, product):
+        try:
+            product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
+        except RuntimeError as e:
+            print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def create_ifc_axis_2_placement_3d(self, point, up, forward):
         return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint((point.x, point.y, point.z)))
+            self.file.createIfcCartesianPoint((point.x, point.y, point.z)),
+            self.file.createIfcDirection((up.x, up.y, up.z)),
+            self.file.createIfcDirection((forward.x, forward.y, forward.z)))
 
     def create_representation(self, mesh):
         ifc_vertices = []
