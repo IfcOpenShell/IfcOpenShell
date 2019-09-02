@@ -26,3 +26,27 @@ Let's use Blender to create BIM models, because why not?
  - Create product types that regular IFC products can inherit attributes from.
  - Define your own property sets with control over exactly how the data in the
    property sets are stored.
+ - Applies array modifiers to create instances.
+
+## Demo
+
+It's only just started, so everything can and will change. But if you want to
+check it out:
+
+ 1. Install [Blender](https://www.blender.org/).
+ 2. Install [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell),
+    ensuring that is is compiled to the same Python version and architecture of
+    your Blender installation.
+ 3. Launch Blender. Open `untitled.blend`. You should see the `export.py`
+    script already loaded. Change the hardcoded paths from
+    `/home/dion/Projects/blender-bim-ifc/` to wherever you've cloned this
+    repository.
+ 4. Select all objects that you want to export. Press `Run Script`, and you will
+    get the results in `output.ifc`.
+
+A naming convention of `IfcClass/IfcName` is enforced. If you name your object
+`IfcWall/Foo`, it will turn into an `IfcWall` with the name attribute set to
+`Foo`. You can override object attributes using Blender's `Custom Properties`.
+Your objects must live in a top level `Collection` defined as a context class,
+usually something like `IfcProject/Foo`. You can then nest spatial structures
+underneath to create a hierarchy.
