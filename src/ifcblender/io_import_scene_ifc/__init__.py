@@ -146,6 +146,9 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
     if  process_relations:
         rel_collection = bpy.data.collections.new("Relations")
         collection.children.link(rel_collection)
+
+    project_meshes = dict()
+
     while True:
         ob = iterator.get()
 
@@ -159,9 +162,9 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
         # MESH CREATION
         # Depending on version, geometry.id will be either int or str
         mesh_name = 'mesh-%r' % ob.geometry.id
-        if mesh_name in bpy.data.meshes:
-            me = bpy.data.meshes[mesh_name]
-        else:
+
+        me = project_meshes.get(mesh_name)
+        if me is None:
             verts = [[v[i], v[i + 1], v[i + 2]]
                      for i in range(0, len(v), 3)]
             faces = [[f[i], f[i + 1], f[i + 2]]
