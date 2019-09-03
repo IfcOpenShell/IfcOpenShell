@@ -2,6 +2,7 @@ import ifcopenshell
 import bpy
 import csv
 import json
+import time
 from pathlib import Path
 from mathutils import Vector
 
@@ -427,6 +428,9 @@ class IfcExporter():
                 [ self.ifc_parser.products[o]['ifc'] for o in related_objects],
                 self.ifc_parser.type_products[relating_type]['ifc'])
 
+print('# Starting export')
+start = time.time()
 ifc_parser = IfcParser()
 ifc_exporter = IfcExporter(ifc_parser)
 ifc_exporter.export()
+print('# Export finished in {:.2f} seconds'.format(time.time() - start))
