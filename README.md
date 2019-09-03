@@ -19,6 +19,9 @@ Let's use Blender to create BIM models, because why not?
  - Classify any geometry as any IFC type. Just because it is a wall doesn't
    mean you should be limited to modeling it in a certain way. Easily change
    from one type to another without damaging your geometry.
+ - Support element compositions and decompositions with full control over the
+   classifications of their parts. Most BIM programs don't give this
+   flexibility.
  - Allow BIM objects to instance a shared geometric representations. This allows
    you to place the same shape in multiple objects without drastically
    increasing your filesize.
