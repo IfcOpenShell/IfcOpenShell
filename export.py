@@ -77,17 +77,29 @@ class IfcParser():
             'attributes': self.get_object_attributes(object)
             }
         product.update(attribute_override)
-        for collection in object.users_collection:
-            if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
-                reference = self.get_spatial_structure_element_reference(collection.name)
-                self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
-                product['relating_structure'] = reference
-                self.collection_name_filter.append(collection.name)
+        for collection in product['raw'].users_collection:
+            self.parse_product_spatial_structure(product, index, collection)
+
         if object.parent \
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
             reference = self.get_type_product_reference(object.parent.name)
             self.rel_defines_by_type.setdefault(reference, []).append(index)
         return product
+
+    def parse_product_spatial_structure(self, product, index, collection):
+            if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
+                reference = self.get_spatial_structure_element_reference(collection.name)
+                self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
+                product['relating_structure'] = reference
+                self.collection_name_filter.append(collection.name)
+            else:
+                self.parse_product_spatial_structure(product, index, self.get_parent_collection(collection))
+
+    def get_parent_collection(self, child_collection):
+        for parent_collection in bpy.data.collections:
+            for child in parent_collection.children:
+                if child.name == child_collection.name:
+                    return parent_collection
 
     def get_instances(self, object):
         instances = []
