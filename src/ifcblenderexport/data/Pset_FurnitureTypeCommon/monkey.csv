@@ -1,0 +1,9 @@
+PropertyType,ValueType,Name,Description,NominalValue,Unit
+IfcPropertySingleValue,IfcIdentifier,Reference,,Some reference,
+IfcPropertySingleValue,IfcLabel,Status,,EXISTING,
+IfcPropertySingleValue,IfcLabel,Style,,Some style,
+IfcPropertySingleValue,IfcPositiveLengthMeasure,NominalHeight,,1.2,
+IfcPropertySingleValue,IfcPositiveLengthMeasure,NominalLength,,1.3,
+IfcPropertySingleValue,IfcPositiveLengthMeasure,NominalDepth,,1.5,
+IfcPropertySingleValue,IfcLabel,MainColor,,Blue,
+IfcPropertySingleValue,IfcBoolean,IsBuiltIn,,Uh-huh,
