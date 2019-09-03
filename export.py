@@ -18,27 +18,43 @@ class IfcParser():
         with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
             self.type_map = json.load(f)
 
+        self.already_parsed_collections = []
+
         self.selected_products = []
         self.selected_types = []
 
         self.psets = []
+        self.aggregates = {}
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
         self.rel_defines_by_type = {}
+        self.rel_aggregates = {}
         self.representations = []
         self.type_products = []
         self.context = {}
         self.products = []
 
     def parse(self):
-        self.sort_selected_into_products_and_types()
+        self.sort_into_products_and_types(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.representations = self.get_representations()
         self.type_products = self.get_type_products()
 
         self.collection_name_filter = []
+        self.get_products()
+
+        self.context = self.get_context()
+        self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
+            self.context['raw'].children, self.collection_name_filter)
+
+    def get_object_attributes(self, object):
+        attributes = { 'Name': self.get_ifc_name(object.name) }
+        attributes.update({ key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
+        return attributes
+
+    def get_products(self):
         index = 0
         for object in self.selected_products:
             self.products.append(self.get_product(object, index))
@@ -56,15 +72,6 @@ class IfcParser():
                         created_instances.append((o[0], location))
                 instance_objects.extend(created_instances)
 
-        self.context = self.get_context()
-        self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
-            self.context['raw'].children, self.collection_name_filter)
-
-    def get_object_attributes(self, object):
-        attributes = { 'Name': self.get_ifc_name(object.name) }
-        attributes.update({ key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
-        return attributes
-
     def get_product(self, object, index, attribute_override={}):
         product = {
             'ifc': None,
@@ -74,12 +81,17 @@ class IfcParser():
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
-            'representation': self.get_representation_reference(object.data.name),
+            'representation': self.get_representation_reference_from_object(object),
             'attributes': self.get_object_attributes(object)
             }
         product.update(attribute_override)
+
         for collection in product['raw'].users_collection:
-            self.parse_product_spatial_structure(product, index, collection)
+            self.parse_product_collection(product, index, collection)
+
+        if object.instance_type == 'COLLECTION' \
+            and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
+            self.rel_aggregates[index] = object.instance_collection.name
 
         if object.parent \
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
@@ -87,14 +99,17 @@ class IfcParser():
             self.rel_defines_by_type.setdefault(reference, []).append(index)
         return product
 
-    def parse_product_spatial_structure(self, product, index, collection):
-            if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
-                reference = self.get_spatial_structure_element_reference(collection.name)
-                self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
-                product['relating_structure'] = reference
-                self.collection_name_filter.append(collection.name)
-            else:
-                self.parse_product_spatial_structure(product, index, self.get_parent_collection(collection))
+    def parse_product_collection(self, product, index, collection):
+        class_name = self.get_ifc_class(collection.name)
+        if self.is_a_spatial_structure_element(class_name):
+            reference = self.get_spatial_structure_element_reference(collection.name)
+            self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
+            product['relating_structure'] = reference
+            self.collection_name_filter.append(collection.name)
+        elif self.is_a_rel_aggregates(class_name):
+            self.aggregates.setdefault(collection.name, []).append(index)
+        else:
+            self.parse_product_collection(product, index, self.get_parent_collection(collection))
 
     def get_parent_collection(self, child_collection):
         for parent_collection in bpy.data.collections:
@@ -117,12 +132,16 @@ class IfcParser():
                 instances.append(array)
         return instances
 
-    def sort_selected_into_products_and_types(self):
-        for object in bpy.context.selected_objects:
+    def sort_into_products_and_types(self, objects_to_sort):
+        for object in objects_to_sort:
             if self.is_object_in_types_collection(object):
                 self.selected_types.append(object)
             else:
                 self.selected_products.append(object)
+            if object.instance_type == 'COLLECTION' \
+                and object.instance_collection.name not in self.already_parsed_collections:
+                self.already_parsed_collections.append(object.instance_collection.name)
+                self.sort_into_products_and_types(object.instance_collection.objects)
 
     def get_psets(self):
         psets = []
@@ -168,6 +187,8 @@ class IfcParser():
     def get_representations(self):
         representations = {}
         for object in self.selected_products + self.selected_types:
+            if not object.data:
+                continue
             representations[object.data.name] = object.data
         results = []
         for name, value in representations.items():
@@ -188,9 +209,14 @@ class IfcParser():
             'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'class': self.get_ifc_class(object.name),
-            'representation': self.get_representation_reference(object.data.name),
+            'representation': self.get_representation_reference_from_object(object),
             'attributes': self.get_object_attributes(object)
             } for object in self.selected_types ]
+
+    def get_representation_reference_from_object(self, object):
+        if not object.data:
+            return None
+        return self.get_representation_reference(object.data.name)
 
     def get_representation_reference(self, name):
         return [ r['attributes']['Name'] for r in self.representations ].index(name)
@@ -231,7 +257,11 @@ class IfcParser():
         # We assume that any collection we can't identify is a spatial structure
         return class_name[0:3] == 'Ifc' \
             and not self.is_a_context(class_name) \
-            and not self.is_a_types_collection(class_name)
+            and not self.is_a_types_collection(class_name) \
+            and not self.is_a_rel_aggregates(class_name)
+
+    def is_a_rel_aggregates(self, class_name):
+        return class_name == 'IfcRelAggregates'
 
     def is_a_context(self, class_name):
         return class_name in ['IfcProject', 'IfcProjectLibrary']
@@ -259,6 +289,7 @@ class IfcExporter():
         self.create_type_products()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_products()
+        self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
         self.relate_objects_to_types()
         self.file.write(self.output_file)
@@ -337,6 +368,14 @@ class IfcExporter():
             except RuntimeError as e:
                 print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
+    def relate_objects_to_objects(self):
+        for relating_object, related_objects in self.ifc_parser.rel_aggregates.items():
+            relating_object = self.ifc_parser.products[relating_object]
+            related_objects = [ self.ifc_parser.products[o]['ifc'] for o in self.ifc_parser.aggregates[related_objects] ]
+            self.file.createIfcRelAggregates(
+                ifcopenshell.guid.new(), self.owner_history, relating_object['attributes']['Name'], None,
+                relating_object['ifc'], related_objects)
+
     def create_spatial_structure_elements(self, element_tree, relating_object=None):
         if relating_object == None:
             relating_object = self.ifc_parser.context['ifc']
@@ -365,27 +404,32 @@ class IfcExporter():
 
     def create_products(self):
         for product in self.ifc_parser.products:
-            try:
-                placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
-            except Exception as e:
-                print('The product "{}/{}" could not be placed on a spatial structure {}'.format(product['class'], product['attributes']['Name'], e.args))
-                continue
-            placement = self.file.createIfcLocalPlacement(placement_rel_to,
-                self.create_ifc_axis_2_placement_3d(product['location'],
-                    product['up_axis'],
-                    product['forward_axis']))
-            shape = self.file.createIfcProductDefinitionShape(
-                None, None,
-                [self.ifc_parser.representations[product['representation']]['ifc']])
-            product['attributes'].update({
-                'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
-                'OwnerHistory': self.owner_history, # TODO: unhardcode
-                'ObjectPlacement': placement,
-                'Representation': shape
-                })
             self.create_product(product)
 
     def create_product(self, product):
+        if product['relating_structure']:
+            placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
+        else:
+            placement_rel_to = None
+
+        placement = self.file.createIfcLocalPlacement(placement_rel_to,
+            self.create_ifc_axis_2_placement_3d(product['location'],
+                product['up_axis'],
+                product['forward_axis']))
+
+        try:
+            shape = self.file.createIfcProductDefinitionShape(None, None,
+                [self.ifc_parser.representations[product['representation']]['ifc']])
+        except:
+            shape = None
+
+        product['attributes'].update({
+            'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
+            'OwnerHistory': self.owner_history, # TODO: unhardcode
+            'ObjectPlacement': placement,
+            'Representation': shape
+            })
+
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
         except RuntimeError as e:
