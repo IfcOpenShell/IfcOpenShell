@@ -46,7 +46,6 @@
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h" 
 #include "../../../ifcgeom/schema_agnostic/IfcGeomRepresentation.h" 
 #include "../../../ifcgeom/schema_agnostic/ConversionResult.h"
-#include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
 
 #include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
