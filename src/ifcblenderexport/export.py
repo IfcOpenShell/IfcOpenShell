@@ -185,17 +185,14 @@ class IfcParser():
         return elements
 
     def get_representations(self):
-        representations = {}
+        results = []
         for object in self.selected_products + self.selected_types:
             if not object.data:
                 continue
-            representations[object.data.name] = object.data
-        results = []
-        for name, value in representations.items():
             results.append({
                 'ifc': None,
-                'raw': value,
-                'attributes': { 'Name': name }
+                'raw': object.data,
+                'attributes': { 'Name': object.data.name }
                 })
         return results
 
