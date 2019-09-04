@@ -44,9 +44,6 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
-// @todo create separate shapetype enum?
-#include "../../../ifcgeom/kernels/opencascade/IfcGeomShapeType.h"
-
 struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 private:
   std::list<cgal_face_t> *face_list;
