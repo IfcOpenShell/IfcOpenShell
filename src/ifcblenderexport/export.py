@@ -10,6 +10,58 @@ class ArrayModifier:
     count: int
     offset: Vector
 
+class QtoCalculator():
+    def get_units(self, o, vg_index):
+        return len([ v for v in o.data.vertices if vg_index in [ g.group for g in v.groups ] ])
+        
+    def get_length(self, o, vg_index):
+        length = 0
+        edges = [ e for e in o.data.edges if (
+            vg_index in [ g.group for g in o.data.vertices[e.vertices[0]].groups ] and
+            vg_index in [ g.group for g in o.data.vertices[e.vertices[1]].groups ]
+            ) ]
+        for e in edges:
+            length += self.get_edge_distance(o, e)
+        return length
+    
+    def get_edge_distance(self, object, edge):
+        return (object.data.vertices[edge.vertices[1]].co - object.data.vertices[edge.vertices[0]].co).length
+    
+    def get_area(self, o, vg_index):
+        area = 0
+        vertices_in_vg = [ v.index for v in o.data.vertices if vg_index in [ g.group for g in v.groups ] ]
+        for polygon in o.data.polygons:
+            if self.is_polygon_in_vg(polygon, vertices_in_vg):
+                area += polygon.area
+        return area
+                
+    def is_polygon_in_vg(self, polygon, vertices_in_vg):
+        for v in polygon.vertices:
+            if v not in vertices_in_vg:
+                return False
+        return True
+    
+    def get_volume(self, o, vg_index):
+        volume = 0
+        ob_mat = o.matrix_world
+        me = o.data
+        me.calc_loop_triangles()
+        for tf in me.loop_triangles:
+            tfv = tf.vertices
+            if len(tf.vertices) == 3:
+                tf_tris = (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
+            else:
+                tf_tris = (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),\
+                          (me.vertices[tfv[2]], me.vertices[tfv[3]], me.vertices[tfv[0]])
+                          
+            for tf_iter in tf_tris:
+                v1 = ob_mat @ tf_iter[0].co
+                v2 = ob_mat @ tf_iter[1].co
+                v3 = ob_mat @ tf_iter[2].co
+                
+                volume += v1.dot(v2.cross(v3)) / 6.0
+        return volume
+
 class IfcParser():
     def __init__(self):
         self.data_dir = '/home/dion/Projects/blender-bim-ifc/data/'
@@ -24,11 +76,13 @@ class IfcParser():
         self.selected_types = []
 
         self.psets = []
+        self.qtos = {}
         self.aggregates = {}
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
         self.rel_defines_by_type = {}
+        self.rel_defines_by_qto = {}
         self.rel_aggregates = {}
         self.representations = []
         self.type_products = []
@@ -40,6 +94,7 @@ class IfcParser():
         self.psets = self.get_psets()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.representations = self.get_representations()
+        self.qtos = self.get_qtos()
         self.type_products = self.get_type_products()
 
         self.collection_name_filter = []
@@ -81,6 +136,7 @@ class IfcParser():
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
+            'relating_qtos_key': None,
             'representation': self.get_representation_reference_from_object(object),
             'attributes': self.get_object_attributes(object)
             }
@@ -92,6 +148,9 @@ class IfcParser():
         if object.instance_type == 'COLLECTION' \
             and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
             self.rel_aggregates[index] = object.instance_collection.name
+
+        if object.name in self.qtos:
+            self.rel_defines_by_qto.setdefault(object.name, []).append(product)
 
         if object.parent \
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
@@ -196,6 +255,25 @@ class IfcParser():
                 })
         return results
 
+    def get_qtos(self):
+        results = {}
+        for object in self.selected_products + self.selected_types:
+            if not object.data:
+                continue
+            for property in object.keys():
+                if property[0:4] != 'Qto_':
+                    continue
+                results[object.name] = {
+                    'ifc': None,
+                    'raw': object,
+                    'class': property,
+                    'attributes': {
+                        'Name': property,
+                        'MethodOfMeasurement': object[property]
+                        }
+                    }
+        return results
+
     def get_type_products(self):
         if not self.selected_types:
             return []
@@ -274,6 +352,7 @@ class IfcExporter():
         self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
         self.output_file = '/home/dion/Projects/blender-bim-ifc/output.ifc'
         self.ifc_parser = ifc_parser
+        self.qto_calculator = qto_calculator
 
     def export(self):
         self.file = ifcopenshell.open(self.template_file)
@@ -285,16 +364,23 @@ class IfcExporter():
         self.create_representations()
         self.create_type_products()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
+        self.create_qtos()
         self.create_products()
         self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
         self.relate_objects_to_types()
+        self.relate_objects_to_qtos()
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
-        self.origin = self.file.by_type("IfcAxis2Placement3D")[0]
+        self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
         # Owner history doesn't actually work like this, but for now, it does :)
-        self.owner_history = self.file.by_type("ifcownerhistory")[0]
+        self.owner_history = self.file.by_type('IfcOwnerHistory')[0]
+        # TODO: unhardcode units
+        units = self.file.by_type('IfcSIUnit')
+        self.length_unit = units[0]
+        self.area_unit = units[1]
+        self.volume_unit = units[2]
 
     def create_psets(self):
         for pset in self.ifc_parser.psets:
@@ -403,6 +489,16 @@ class IfcExporter():
         for product in self.ifc_parser.products:
             self.create_product(product)
 
+    def create_qtos(self):
+        for object_name, qto in self.ifc_parser.qtos.items():
+            quantities = self.calculate_quantities(qto['class'], qto['raw'])
+            qto['attributes'].update({
+                'GlobalId': ifcopenshell.guid.new(),
+                'OwnerHistory': self.owner_history,
+                'Quantities': quantities
+                })
+            qto['ifc'] = self.file.create_entity('IfcElementQuantity', **qto['attributes'])
+
     def create_product(self, product):
         if product['relating_structure']:
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
@@ -431,6 +527,31 @@ class IfcExporter():
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
         except RuntimeError as e:
             print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def calculate_quantities(self, qto_name, object):
+        quantities = []
+        for index, vg in enumerate(object.vertex_groups):
+            if qto_name not in vg.name:
+                continue
+            if 'length' in vg.name.lower():
+                quantity = float(self.qto_calculator.get_length(object, index))
+                quantities.append(self.file.createIfcQuantityLength(
+                    vg.name.split('/')[1], None,
+                    self.length_unit, quantity))
+            elif 'area' in vg.name.lower():
+                quantity = float(self.qto_calculator.get_area(object, index))
+                quantities.append(self.file.createIfcQuantityArea(
+                    vg.name.split('/')[1], None,
+                    self.area_unit, quantity))
+            elif 'volume' in vg.name.lower():
+                quantity = float(self.qto_calculator.get_volume(object, index))
+                quantities.append(self.file.createIfcQuantityVolume(
+                    vg.name.split('/')[1], None,
+                    self.volume_unit, quantity))
+            if not quantity:
+                print('Warning: the calculated quantity {} for {} is zero.'.format(
+                    vg.name, object.name))
+        return quantities
 
     def create_ifc_axis_2_placement_3d(self, point, up, forward):
         return self.file.createIfcAxis2Placement3D(
@@ -469,9 +590,19 @@ class IfcExporter():
                 [ self.ifc_parser.products[o]['ifc'] for o in related_objects],
                 self.ifc_parser.type_products[relating_type]['ifc'])
 
+    def relate_objects_to_qtos(self):
+        for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_qto.items():
+            relating_property = self.ifc_parser.qtos[relating_property_key]['ifc']
+            self.file.createIfcRelDefinesByProperties(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [o['ifc'] for o in related_objects],
+                relating_property)
+
+
 print('# Starting export')
 start = time.time()
 ifc_parser = IfcParser()
-ifc_exporter = IfcExporter(ifc_parser)
+qto_calculator = QtoCalculator()
+ifc_exporter = IfcExporter(ifc_parser, qto_calculator)
 ifc_exporter.export()
 print('# Export finished in {:.2f} seconds'.format(time.time() - start))
