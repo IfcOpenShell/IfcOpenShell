@@ -140,7 +140,6 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
             parent_collection.children.link(collection)
             collections[cid] = collection
 
-
         return collection
 
     if  process_relations:
@@ -161,7 +160,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
         nm = ob.name if len(ob.name) and use_names else ob.guid
         # MESH CREATION
         # Depending on version, geometry.id will be either int or str
-        mesh_name = 'mesh-%r' % ob.geometry.id
+        mesh_name = f'mesh-{ob.geometry.id}'
 
         me = project_meshes.get(mesh_name)
         if me is None:
@@ -171,6 +170,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                      for i in range(0, len(f), 3)]
 
             me = bpy.data.meshes.new(mesh_name)
+            project_meshes[mesh_name] = me
+
             me.from_pydata(verts, [], faces)
             me.validate()
             # MATERIAL CREATION
