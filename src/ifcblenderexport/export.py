@@ -106,6 +106,8 @@ class IfcParser():
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
+        if 'IfcGlobalId' not in object:
+            object['IfcGlobalId'] = ifcopenshell.guid.new()
         attributes.update({ key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
         return attributes
 
@@ -122,12 +124,12 @@ class IfcParser():
                     for o in instance_objects:
                         location = o[1] + ((n+1) * instance.offset)
                         self.products.append(self.get_product(o[0], index,
-                            {'location': location}))
+                            {'location': location}, {'GlobalId': ifcopenshell.guid.new()}))
                         index += 1
                         created_instances.append((o[0], location))
                 instance_objects.extend(created_instances)
 
-    def get_product(self, object, index, attribute_override={}):
+    def get_product(self, object, index, metadata_override={}, attribute_override={}):
         product = {
             'ifc': None,
             'raw': object,
@@ -140,7 +142,8 @@ class IfcParser():
             'representation': self.get_representation_reference_from_object(object),
             'attributes': self.get_object_attributes(object)
             }
-        product.update(attribute_override)
+        product['attributes'].update(attribute_override)
+        product.update(metadata_override)
 
         for collection in product['raw'].users_collection:
             self.parse_product_collection(product, index, collection)
@@ -517,7 +520,6 @@ class IfcExporter():
             shape = None
 
         product['attributes'].update({
-            'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
             'OwnerHistory': self.owner_history, # TODO: unhardcode
             'ObjectPlacement': placement,
             'Representation': shape
