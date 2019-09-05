@@ -9,7 +9,7 @@ Let's use Blender to create BIM models, because why not?
  - IFC4 is a first-class citizen. IFC4 has been an ISO standard since 2013, with
    the latest published in 2018. In contrast, other programs are dragging their
    feet with IFC2X3, published back in 2005.
- - Use Blender to do digital modeling! Blender is an amazing open-source
+ - Use Blender 2.8 to do digital modeling! Blender is an amazing open-source
    software that supports the full 3D content creation pipeline that the CG
    industry uses. Don't let your designs fall short just because your modeling
    tool isn't good enough!
@@ -19,9 +19,9 @@ Let's use Blender to create BIM models, because why not?
  - Classify any geometry as any IFC type. Just because it is a wall doesn't
    mean you should be limited to modeling it in a certain way. Easily change
    from one type to another without damaging your geometry.
- - Support element compositions and decompositions with full control over the
-   classifications of their parts. Most BIM programs don't give this
-   flexibility.
+ - Use collections to create element compositions and decompositions with full
+   control over the classifications of their parts. Most BIM programs don't give
+   this flexibility. Create collection instances to duplicate composite objects.
  - Allow BIM objects to instance a shared geometric representations. This allows
    you to place the same shape in multiple objects without drastically
    increasing your filesize.
@@ -30,6 +30,12 @@ Let's use Blender to create BIM models, because why not?
  - Define your own property sets with control over exactly how the data in the
    property sets are stored.
  - Applies array modifiers to create instances.
+ - Basic quantity take-off support for costing.
+ - Settings to toggle export of quantities or geometric representations.
+   Exporting IFC data without geometric representations is much faster and a
+   fraction of the filesize.
+ - Maintain `GlobalId` between exports, so that you can manipulate the IFC
+   reliably in other software while making changes.
 
 ## Demo
 
