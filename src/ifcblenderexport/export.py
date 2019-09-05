@@ -70,10 +70,10 @@ class IfcParser():
         with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
             self.type_map = json.load(f)
 
-        self.already_parsed_collections = []
-
         self.selected_products = []
         self.selected_types = []
+
+        self.product_index = 0
 
         self.psets = []
         self.qtos = {}
@@ -112,24 +112,30 @@ class IfcParser():
         return attributes
 
     def get_products(self):
-        index = 0
-        for object in self.selected_products:
-            self.products.append(self.get_product(object, index))
-            index += 1
+        for selected in self.selected_products:
+            object = selected['object']
+            self.add_product(self.get_product(selected))
+            self.resolve_array_modifier(selected)
 
-            instance_objects = [(object, object.location)]
-            for instance in self.get_instances(object):
-                created_instances = []
-                for n in range(instance.count-1):
-                    for o in instance_objects:
-                        location = o[1] + ((n+1) * instance.offset)
-                        self.products.append(self.get_product(o[0], index,
-                            {'location': location}, {'GlobalId': ifcopenshell.guid.new()}))
-                        index += 1
-                        created_instances.append((o[0], location))
-                instance_objects.extend(created_instances)
+    def resolve_array_modifier(self, selected):
+        object = selected['object']
+        instance_objects = [(object, object.location)]
+        for instance in self.get_instances(object):
+            created_instances = []
+            for n in range(instance.count-1):
+                for o in instance_objects:
+                    location = o[1] + ((n+1) * instance.offset)
+                    self.add_product(self.get_product({ 'object': o[0], 'metadata': selected['metadata'] },
+                        {'location': location}, {'GlobalId': ifcopenshell.guid.new()}))
+                    created_instances.append((o[0], location))
+            instance_objects.extend(created_instances)
 
-    def get_product(self, object, index, metadata_override={}, attribute_override={}):
+    def add_product(self, product):
+        self.products.append(product)
+        self.product_index += 1
+
+    def get_product(self, selected, metadata_override={}, attribute_override={}):
+        object = selected['object']
         product = {
             'ifc': None,
             'raw': object,
@@ -146,11 +152,18 @@ class IfcParser():
         product.update(metadata_override)
 
         for collection in product['raw'].users_collection:
-            self.parse_product_collection(product, index, collection)
+            self.parse_product_collection(product, collection)
 
         if object.instance_type == 'COLLECTION' \
             and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
-            self.rel_aggregates[index] = object.instance_collection.name
+            self.rel_aggregates[self.product_index] = object.name
+
+        if 'rel_aggregates_relating_object' in selected['metadata']:
+            relating_object = selected['metadata']['rel_aggregates_relating_object']
+            product['location'] = relating_object.matrix_world @ product['location']
+            product['up_axis'] = (relating_object.matrix_world.to_quaternion() @ object.matrix_world.to_quaternion()) @ Vector((0, 0, 1))
+            product['forward_axis'] = (relating_object.matrix_world.to_quaternion() @ object.matrix_world.to_quaternion()) @ Vector((1, 0, 0))
+            self.aggregates.setdefault(relating_object.name, []).append(self.product_index)
 
         if object.name in self.qtos:
             self.rel_defines_by_qto.setdefault(object.name, []).append(product)
@@ -158,20 +171,20 @@ class IfcParser():
         if object.parent \
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
             reference = self.get_type_product_reference(object.parent.name)
-            self.rel_defines_by_type.setdefault(reference, []).append(index)
+            self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
         return product
 
-    def parse_product_collection(self, product, index, collection):
+    def parse_product_collection(self, product, collection):
         class_name = self.get_ifc_class(collection.name)
         if self.is_a_spatial_structure_element(class_name):
             reference = self.get_spatial_structure_element_reference(collection.name)
-            self.rel_contained_in_spatial_structure.setdefault(reference, []).append(index)
+            self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
             product['relating_structure'] = reference
             self.collection_name_filter.append(collection.name)
         elif self.is_a_rel_aggregates(class_name):
-            self.aggregates.setdefault(collection.name, []).append(index)
+            pass
         else:
-            self.parse_product_collection(product, index, self.get_parent_collection(collection))
+            self.parse_product_collection(product, self.product_index, self.get_parent_collection(collection))
 
     def get_parent_collection(self, child_collection):
         for parent_collection in bpy.data.collections:
@@ -194,16 +207,17 @@ class IfcParser():
                 instances.append(array)
         return instances
 
-    def sort_into_products_and_types(self, objects_to_sort):
+    def sort_into_products_and_types(self, objects_to_sort, metadata = None):
+        if not metadata:
+            metadata = {}
         for object in objects_to_sort:
             if self.is_object_in_types_collection(object):
-                self.selected_types.append(object)
+                self.selected_types.append({ 'object': object, 'metadata': metadata })
             else:
-                self.selected_products.append(object)
-            if object.instance_type == 'COLLECTION' \
-                and object.instance_collection.name not in self.already_parsed_collections:
-                self.already_parsed_collections.append(object.instance_collection.name)
-                self.sort_into_products_and_types(object.instance_collection.objects)
+                self.selected_products.append({ 'object': object, 'metadata': metadata })
+            if object.instance_type == 'COLLECTION':
+                self.sort_into_products_and_types(object.instance_collection.objects,
+                    {'rel_aggregates_relating_object': object})
 
     def get_psets(self):
         psets = []
@@ -248,7 +262,8 @@ class IfcParser():
 
     def get_representations(self):
         results = []
-        for object in self.selected_products + self.selected_types:
+        for selected in self.selected_products + self.selected_types:
+            object = selected['object']
             if not object.data:
                 continue
             results.append({
@@ -260,7 +275,8 @@ class IfcParser():
 
     def get_qtos(self):
         results = {}
-        for object in self.selected_products + self.selected_types:
+        for selected in self.selected_products + self.selected_types:
+            object = selected['object']
             if not object.data:
                 continue
             for property in object.keys():
@@ -455,9 +471,9 @@ class IfcExporter():
                 print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
     def relate_objects_to_objects(self):
-        for relating_object, related_objects in self.ifc_parser.rel_aggregates.items():
+        for relating_object, related_objects_reference in self.ifc_parser.rel_aggregates.items():
             relating_object = self.ifc_parser.products[relating_object]
-            related_objects = [ self.ifc_parser.products[o]['ifc'] for o in self.ifc_parser.aggregates[related_objects] ]
+            related_objects = [ self.ifc_parser.products[o]['ifc'] for o in self.ifc_parser.aggregates[related_objects_reference] ]
             self.file.createIfcRelAggregates(
                 ifcopenshell.guid.new(), self.owner_history, relating_object['attributes']['Name'], None,
                 relating_object['ifc'], related_objects)
