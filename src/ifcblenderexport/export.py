@@ -351,7 +351,7 @@ class IfcParser():
         return class_name == 'IfcTypeProduct'
 
 class IfcExporter():
-    def __init__(self, ifc_parser):
+    def __init__(self, ifc_parser, qto_calculator):
         self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
         self.output_file = '/home/dion/Projects/blender-bim-ifc/output.ifc'
         self.ifc_parser = ifc_parser
