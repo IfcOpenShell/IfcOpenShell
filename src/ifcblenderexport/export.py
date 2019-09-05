@@ -63,9 +63,11 @@ class QtoCalculator():
         return volume
 
 class IfcParser():
-    def __init__(self):
+    def __init__(self, ifc_export_settings):
         self.data_dir = '/home/dion/Projects/blender-bim-ifc/data/'
         self.schema_dir = '/home/dion/Projects/blender-bim-ifc/schema/'
+
+        self.ifc_export_settings = ifc_export_settings
 
         with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
             self.type_map = json.load(f)
@@ -262,6 +264,8 @@ class IfcParser():
 
     def get_representations(self):
         results = []
+        if not self.ifc_export_settings.has_representations:
+            return results
         for selected in self.selected_products + self.selected_types:
             object = selected['object']
             if not object.data:
@@ -274,6 +278,8 @@ class IfcParser():
         return results
 
     def get_qtos(self):
+        if not self.ifc_export_settings.has_quantities:
+            return {}
         results = {}
         for selected in self.selected_products + self.selected_types:
             object = selected['object']
@@ -308,7 +314,8 @@ class IfcParser():
             } for object in self.selected_types ]
 
     def get_representation_reference_from_object(self, object):
-        if not object.data:
+        if not self.ifc_export_settings.has_representations \
+            or not object.data:
             return None
         return self.get_representation_reference(object.data.name)
 
@@ -367,9 +374,10 @@ class IfcParser():
         return class_name == 'IfcTypeProduct'
 
 class IfcExporter():
-    def __init__(self, ifc_parser, qto_calculator):
+    def __init__(self, ifc_export_settings, ifc_parser, qto_calculator):
         self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
         self.output_file = '/home/dion/Projects/blender-bim-ifc/output.ifc'
+        self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
         self.qto_calculator = qto_calculator
 
@@ -616,11 +624,16 @@ class IfcExporter():
                 [o['ifc'] for o in related_objects],
                 relating_property)
 
+class IfcExportSettings:
+    def __init__(self):
+        self.has_representations = True
+        self.has_quantities = True
 
 print('# Starting export')
 start = time.time()
-ifc_parser = IfcParser()
+ifc_export_settings = IfcExportSettings()
+ifc_parser = IfcParser(ifc_export_settings)
 qto_calculator = QtoCalculator()
-ifc_exporter = IfcExporter(ifc_parser, qto_calculator)
+ifc_exporter = IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
 ifc_exporter.export()
 print('# Export finished in {:.2f} seconds'.format(time.time() - start))
