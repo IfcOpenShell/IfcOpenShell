@@ -304,14 +304,14 @@ class IfcParser():
             return []
         return [{
             'ifc': None,
-            'raw': object,
-            'location': object.location,
-            'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
-            'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
-            'class': self.get_ifc_class(object.name),
-            'representation': self.get_representation_reference_from_object(object),
-            'attributes': self.get_object_attributes(object)
-            } for object in self.selected_types ]
+            'raw': selected['object'],
+            'location': selected['object'].location,
+            'up_axis': selected['object'].matrix_world.to_quaternion() @ Vector((0, 0, 1)),
+            'forward_axis': selected['object'].matrix_world.to_quaternion() @ Vector((1, 0, 0)),
+            'class': self.get_ifc_class(selected['object'].name),
+            'representation': self.get_representation_reference_from_object(selected['object']),
+            'attributes': self.get_object_attributes(selected['object'])
+            } for selected in self.selected_types ]
 
     def get_representation_reference_from_object(self, object):
         if not self.ifc_export_settings.has_representations \
@@ -466,13 +466,14 @@ class IfcExporter():
 
     def create_type_products(self):
         for product in self.ifc_parser.type_products:
-            representation = self.ifc_parser.representations[product['representation']]['ifc']
             placement = self.create_ifc_axis_2_placement_3d(product['location'], product['up_axis'], product['forward_axis'])
-            representation_map = self.file.createIfcRepresentationMap(placement, representation)
-            product['attributes'].update({
-                'GlobalId': ifcopenshell.guid.new(),
-                'RepresentationMaps': [representation_map]
-                })
+            product['attributes'].update({ 'GlobalId': ifcopenshell.guid.new() })
+
+            if product['representation']:
+                representation = self.ifc_parser.representations[product['representation']]['ifc']
+                representation_map = self.file.createIfcRepresentationMap(placement, representation)
+                product['attributes']['RepresentationMaps'] = [representation_map]
+
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
