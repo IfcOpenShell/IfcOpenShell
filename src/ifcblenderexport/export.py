@@ -273,6 +273,7 @@ class IfcParser():
             results.append({
                 'ifc': None,
                 'raw': object.data,
+                'is_wireframe': True if 'IsWireframe' in object.data else False,
                 'attributes': { 'Name': object.data.name }
                 })
         return results
@@ -511,7 +512,7 @@ class IfcExporter():
 
     def create_representations(self):
         for representation in self.ifc_parser.representations:
-            representation['ifc'] = self.create_representation(representation['raw'])
+            representation['ifc'] = self.create_representation(representation)
 
     def create_products(self):
         for product in self.ifc_parser.products:
@@ -586,22 +587,38 @@ class IfcExporter():
             self.file.createIfcDirection((up.x, up.y, up.z)),
             self.file.createIfcDirection((forward.x, forward.y, forward.z)))
 
-    def create_representation(self, mesh):
-        ifc_vertices = []
-        ifc_faces = []
+    def create_representation(self, representation):
+        self.ifc_vertices = []
+        self.ifc_edges = []
+        self.ifc_faces = []
+        if representation['is_wireframe']:
+            return self.create_wireframe_representation(representation['raw'])
+        return self.create_solid_representation(representation['raw'])
 
-        for vertice in mesh.vertices:
-            ifc_vertices.append(
-                self.file.createIfcCartesianPoint((vertice.co.x, vertice.co.y, vertice.co.z)))
+    def create_wireframe_representation(self, mesh):
+        self.create_vertices(mesh.vertices)
+        for edge in mesh.edges:
+            self.ifc_edges.append(self.file.createIfcPolyline([
+                self.ifc_vertices[v] for v in edge.vertices]))
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_subcontext, 'Body', 'Curve',
+            self.ifc_edges)
+
+    def create_solid_representation(self, mesh):
+        self.create_vertices(mesh.vertices)
         for polygon in mesh.polygons:
-            ifc_faces.append(self.file.createIfcFace([
+            self.ifc_faces.append(self.file.createIfcFace([
                 self.file.createIfcFaceOuterBound(
-                    self.file.createIfcPolyLoop([ifc_vertices[vertice] for vertice in polygon.vertices]),
+                    self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
-
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_subcontext, 'Body', 'Brep',
-            [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(ifc_faces))])
+            [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(self.ifc_faces))])
+
+    def create_vertices(self, vertices):
+        for vertice in vertices:
+            self.ifc_vertices.append(
+                self.file.createIfcCartesianPoint((vertice.co.x, vertice.co.y, vertice.co.z)))
 
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
