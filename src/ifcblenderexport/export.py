@@ -13,7 +13,7 @@ class ArrayModifier:
 class QtoCalculator():
     def get_units(self, o, vg_index):
         return len([ v for v in o.data.vertices if vg_index in [ g.group for g in v.groups ] ])
-        
+
     def get_length(self, o, vg_index):
         length = 0
         edges = [ e for e in o.data.edges if (
@@ -23,10 +23,10 @@ class QtoCalculator():
         for e in edges:
             length += self.get_edge_distance(o, e)
         return length
-    
+
     def get_edge_distance(self, object, edge):
         return (object.data.vertices[edge.vertices[1]].co - object.data.vertices[edge.vertices[0]].co).length
-    
+
     def get_area(self, o, vg_index):
         area = 0
         vertices_in_vg = [ v.index for v in o.data.vertices if vg_index in [ g.group for g in v.groups ] ]
@@ -34,13 +34,13 @@ class QtoCalculator():
             if self.is_polygon_in_vg(polygon, vertices_in_vg):
                 area += polygon.area
         return area
-                
+
     def is_polygon_in_vg(self, polygon, vertices_in_vg):
         for v in polygon.vertices:
             if v not in vertices_in_vg:
                 return False
         return True
-    
+
     def get_volume(self, o, vg_index):
         volume = 0
         ob_mat = o.matrix_world
@@ -53,12 +53,12 @@ class QtoCalculator():
             else:
                 tf_tris = (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),\
                           (me.vertices[tfv[2]], me.vertices[tfv[3]], me.vertices[tfv[0]])
-                          
+
             for tf_iter in tf_tris:
                 v1 = ob_mat @ tf_iter[0].co
                 v2 = ob_mat @ tf_iter[1].co
                 v3 = ob_mat @ tf_iter[2].co
-                
+
                 volume += v1.dot(v2.cross(v3)) / 6.0
         return volume
 
