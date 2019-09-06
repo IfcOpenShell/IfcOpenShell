@@ -477,6 +477,7 @@ class application(QtWidgets.QApplication):
 
             if setting is None:
                 setting = settings()
+                setting.set(setting.INCLUDE_CURVES, True)
                 setting.set(setting.USE_PYTHON_OPENCASCADE, True)
                                         
             self.signals = geometry_creation_signals()
