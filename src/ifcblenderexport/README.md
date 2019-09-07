@@ -36,6 +36,10 @@ Let's use Blender to create BIM models, because why not?
    fraction of the filesize.
  - Maintain `GlobalId` between exports, so that you can manipulate the IFC
    reliably in other software while making changes.
+ - Not all objects need full solid geometry. Create representations as 2D or 3D
+   curves / wireframes for rapid and lightweight BIM development.
+ - Create map conversions and coordinate reference system definitions to link
+   BIM to GIS.
 
 ## Demo
 
