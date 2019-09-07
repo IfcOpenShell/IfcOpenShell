@@ -103,6 +103,8 @@ class IfcParser():
         self.get_products()
 
         self.context = self.get_context()
+        self.map_conversion = self.get_map_conversion()
+        self.target_crs = self.get_target_crs()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
             self.context['raw'].children, self.collection_name_filter)
 
@@ -250,6 +252,39 @@ class IfcParser():
                     'attributes': { 'Name': self.get_ifc_name(collection.name) }
                 }
 
+    def get_map_conversion(self):
+        scene = bpy.context.scene
+        if 'HasMapConversion' not in scene:
+            return {}
+        return {
+            'ifc': None,
+            'attributes': {
+                'Eastings': float(scene['Eastings']),
+                'Northings': float(scene['Northings']),
+                'OrthogonalHeight': float(scene['OrthogonalHeight']),
+                'XAxisAbscissa': float(scene['XAxisAbscissa']),
+                'XAxisOrdinate': float(scene['XAxisOrdinate']),
+                'Scale': float(scene['Scale'])
+                }
+            }
+
+    def get_target_crs(self):
+        scene = bpy.context.scene
+        if 'HasMapConversion' not in scene:
+            return {}
+        return {
+            'ifc': None,
+            'attributes': {
+                'Name': scene['Name'],
+                'Description': scene['Description'],
+                'GeodeticDatum': scene['GeodeticDatum'],
+                'VerticalDatum': scene['VerticalDatum'],
+                'MapProjection': scene['MapProjection'],
+                'MapZone': str(scene['MapZone']),
+                'MapUnit': scene['MapUnit']
+                }
+            }
+
     def get_spatial_structure_elements(self):
         elements = []
         for collection in bpy.data.collections:
@@ -374,6 +409,28 @@ class IfcParser():
     def is_a_types_collection(self, class_name):
         return class_name == 'IfcTypeProduct'
 
+class SIUnitHelper:
+    prefixes = ["EXA", "PETA", "TERA", "GIGA", "MEGA", "KILO", "HECTO",
+        "DECA", "DECI", "CENTI", "MILLI", "MICRO", "NANO", "PICO", "FEMTO",
+        "ATTO"]
+    unit_names = ["AMPERE", "BECQUEREL", "CANDELA", "COULOMB",
+        "CUBIC_METRE", "DEGREE CELSIUS", "FARAD", "GRAM", "GRAY", "HENRY",
+        "HERTZ", "JOULE", "KELVIN", "LUMEN", "LUX", "MOLE", "NEWTON", "OHM",
+        "PASCAL", "RADIAN", "SECOND", "SIEMENS", "SIEVERT", "SQUARE METRE",
+        "METRE", "STERADIAN", "TESLA", "VOLT", "WATT", "WEBER"]
+
+    @staticmethod
+    def get_prefix(text):
+        for prefix in SIUnitHelper.prefixes:
+            if prefix in text.upper():
+                return prefix
+
+    @staticmethod
+    def get_unit_name(text):
+        for name in SIUnitHelper.unit_names:
+            if name in text.upper():
+                return name
+
 class IfcExporter():
     def __init__(self, ifc_export_settings, ifc_parser, qto_calculator):
         self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
@@ -389,6 +446,7 @@ class IfcExporter():
         self.create_psets()
         self.create_rep_context()
         self.create_context()
+        self.create_map_conversion()
         self.create_representations()
         self.create_type_products()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
@@ -445,10 +503,7 @@ class IfcExporter():
 
     def create_rep_context(self):
         self.ifc_rep_context = self.file.createIfcGeometricRepresentationContext(
-            None, "Model",
-            3, 1.0E-05,
-            self.origin,
-            self.file.createIfcDirection((0., 1., 0.)))
+            None, "Model", 3, 1.0E-05, self.origin)
 
         self.ifc_rep_subcontext = self.file.createIfcGeometricRepresentationSubContext(
             "Body", "Model",
@@ -464,6 +519,23 @@ class IfcExporter():
             'UnitsInContext': self.file.by_type("IfcUnitAssignment")[0]
             })
         self.ifc_parser.context['ifc'] = self.file.create_entity(self.ifc_parser.context['class'], **attributes)
+
+    def create_map_conversion(self):
+        if not self.ifc_parser.map_conversion:
+            return
+        self.create_target_crs()
+        self.ifc_parser.map_conversion['attributes']['SourceCRS'] = self.ifc_rep_context
+        self.ifc_parser.map_conversion['attributes']['TargetCRS'] = self.ifc_parser.target_crs['ifc']
+        self.ifc_parser.map_conversion['ifc'] = self.file.create_entity('IfcMapConversion',
+            **self.ifc_parser.map_conversion['attributes'])
+
+    def create_target_crs(self):
+        self.ifc_parser.target_crs['attributes']['MapUnit'] = self.file.createIfcSIUnit(
+            None, 'LENGTHUNIT',
+            SIUnitHelper.get_prefix(self.ifc_parser.target_crs['attributes']['MapUnit']),
+            SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit']))
+        self.ifc_parser.target_crs['ifc'] = self.file.create_entity(
+            'IfcProjectedCRS', **self.ifc_parser.target_crs['attributes'])
 
     def create_type_products(self):
         for product in self.ifc_parser.type_products:
