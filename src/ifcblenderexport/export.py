@@ -73,7 +73,6 @@ class IfcParser():
             self.type_map = json.load(f)
 
         self.selected_products = []
-        self.selected_types = []
 
         self.product_index = 0
 
@@ -88,25 +87,27 @@ class IfcParser():
         self.rel_aggregates = {}
         self.representations = []
         self.type_products = []
-        self.context = {}
+        self.project = {}
+        self.libraries = []
         self.products = []
 
     def parse(self):
-        self.sort_into_products_and_types(bpy.context.selected_objects)
+        self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
-        self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.representations = self.get_representations()
         self.qtos = self.get_qtos()
-        self.type_products = self.get_type_products()
+        self.spatial_structure_elements = self.get_spatial_structure_elements()
 
         self.collection_name_filter = []
         self.get_products()
 
-        self.context = self.get_context()
+        self.project = self.get_project()
+        self.libraries = self.get_libraries()
+        self.type_products = self.get_type_products()
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
-            self.context['raw'].children, self.collection_name_filter)
+            self.project['raw'].children, self.collection_name_filter)
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
@@ -116,20 +117,20 @@ class IfcParser():
         return attributes
 
     def get_products(self):
-        for selected in self.selected_products:
-            object = selected['object']
-            self.add_product(self.get_product(selected))
-            self.resolve_array_modifier(selected)
+        for product in self.selected_products:
+            object = product['raw']
+            self.add_product(self.get_product(product))
+            self.resolve_array_modifier(product)
 
-    def resolve_array_modifier(self, selected):
-        object = selected['object']
+    def resolve_array_modifier(self, product):
+        object = product['raw']
         instance_objects = [(object, object.location)]
         for instance in self.get_instances(object):
             created_instances = []
             for n in range(instance.count-1):
                 for o in instance_objects:
                     location = o[1] + ((n+1) * instance.offset)
-                    self.add_product(self.get_product({ 'object': o[0], 'metadata': selected['metadata'] },
+                    self.add_product(self.get_product({ 'raw': o[0], 'metadata': product['metadata'] },
                         {'location': location}, {'GlobalId': ifcopenshell.guid.new()}))
                     created_instances.append((o[0], location))
             instance_objects.extend(created_instances)
@@ -138,8 +139,8 @@ class IfcParser():
         self.products.append(product)
         self.product_index += 1
 
-    def get_product(self, selected, metadata_override={}, attribute_override={}):
-        object = selected['object']
+    def get_product(self, selected_product, metadata_override={}, attribute_override={}):
+        object = selected_product['raw']
         product = {
             'ifc': None,
             'raw': object,
@@ -162,8 +163,8 @@ class IfcParser():
             and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
             self.rel_aggregates[self.product_index] = object.name
 
-        if 'rel_aggregates_relating_object' in selected['metadata']:
-            relating_object = selected['metadata']['rel_aggregates_relating_object']
+        if 'rel_aggregates_relating_object' in selected_product['metadata']:
+            relating_object = selected_product['metadata']['rel_aggregates_relating_object']
             product['location'] = relating_object.matrix_world @ product['location']
             product['up_axis'] = (relating_object.matrix_world.to_quaternion() @ object.matrix_world.to_quaternion()) @ Vector((0, 0, 1))
             product['forward_axis'] = (relating_object.matrix_world.to_quaternion() @ object.matrix_world.to_quaternion()) @ Vector((1, 0, 0))
@@ -211,16 +212,14 @@ class IfcParser():
                 instances.append(array)
         return instances
 
-    def sort_into_products_and_types(self, objects_to_sort, metadata = None):
+    def convert_selected_objects_into_products(self, objects_to_sort, metadata = None):
         if not metadata:
             metadata = {}
         for object in objects_to_sort:
-            if self.is_object_in_types_collection(object):
-                self.selected_types.append({ 'object': object, 'metadata': metadata })
-            else:
-                self.selected_products.append({ 'object': object, 'metadata': metadata })
+            if not self.is_a_library(self.get_ifc_class(object.users_collection[0].name)):
+                self.selected_products.append({ 'raw': object, 'metadata': metadata })
             if object.instance_type == 'COLLECTION':
-                self.sort_into_products_and_types(object.instance_collection.objects,
+                self.convert_selected_objects_into_products(object.instance_collection.objects,
                     {'rel_aggregates_relating_object': object})
 
     def get_psets(self):
@@ -236,21 +235,28 @@ class IfcParser():
                     })
         return psets
 
-    def is_object_in_types_collection(self, object):
-        for collection in object.users_collection:
-            if self.is_a_types_collection(self.get_ifc_class(collection.name)):
-                return True
-        return False
-
-    def get_context(self):
+    def get_project(self):
         for collection in bpy.data.collections:
-            if self.is_a_context(self.get_ifc_class(collection.name)):
+            if self.is_a_project(self.get_ifc_class(collection.name)):
                 return {
                     'ifc': None,
                     'raw': collection,
                     'class': self.get_ifc_class(collection.name),
                     'attributes': { 'Name': self.get_ifc_name(collection.name) }
                 }
+
+    def get_libraries(self):
+        results = []
+        for collection in self.project['raw'].children:
+            if not self.is_a_library(self.get_ifc_class(collection.name)):
+                continue
+            results.append({
+                'ifc': None,
+                'raw': collection,
+                'class': self.get_ifc_class(collection.name),
+                'attributes': { 'Name': self.get_ifc_name(collection.name) }
+            })
+        return results
 
     def get_map_conversion(self):
         scene = bpy.context.scene
@@ -301,8 +307,8 @@ class IfcParser():
         results = []
         if not self.ifc_export_settings.has_representations:
             return results
-        for selected in self.selected_products + self.selected_types:
-            object = selected['object']
+        for product in self.selected_products + self.type_products:
+            object = product['raw']
             if not object.data:
                 continue
             results.append({
@@ -317,8 +323,8 @@ class IfcParser():
         if not self.ifc_export_settings.has_quantities:
             return {}
         results = {}
-        for selected in self.selected_products + self.selected_types:
-            object = selected['object']
+        for product in self.selected_products + self.type_products:
+            object = product['raw']
             if not object.data:
                 continue
             for property in object.keys():
@@ -336,18 +342,25 @@ class IfcParser():
         return results
 
     def get_type_products(self):
-        if not self.selected_types:
-            return []
-        return [{
-            'ifc': None,
-            'raw': selected['object'],
-            'location': selected['object'].location,
-            'up_axis': selected['object'].matrix_world.to_quaternion() @ Vector((0, 0, 1)),
-            'forward_axis': selected['object'].matrix_world.to_quaternion() @ Vector((1, 0, 0)),
-            'class': self.get_ifc_class(selected['object'].name),
-            'representation': self.get_representation_reference_from_object(selected['object']),
-            'attributes': self.get_object_attributes(selected['object'])
-            } for selected in self.selected_types ]
+        results = []
+        for library in self.libraries:
+            for object in library['raw'].objects:
+                if not self.is_a_type(self.get_ifc_class(object.name)):
+                    continue
+                try:
+                    results.append({
+                        'ifc': None,
+                        'raw': object,
+                        'location': object.location,
+                        'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
+                        'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
+                        'class': self.get_ifc_class(object.name),
+                        'representation': self.get_representation_reference_from_object(object),
+                        'attributes': self.get_object_attributes(object)
+                    })
+                except Exception as e:
+                    print('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
+        return results
 
     def get_representation_reference_from_object(self, object):
         if not self.ifc_export_settings.has_representations \
@@ -393,21 +406,21 @@ class IfcParser():
     def is_a_spatial_structure_element(self, class_name):
         # We assume that any collection we can't identify is a spatial structure
         return class_name[0:3] == 'Ifc' \
-            and not self.is_a_context(class_name) \
-            and not self.is_a_types_collection(class_name) \
+            and not self.is_a_project(class_name) \
+            and not self.is_a_library(class_name) \
             and not self.is_a_rel_aggregates(class_name)
 
     def is_a_rel_aggregates(self, class_name):
         return class_name == 'IfcRelAggregates'
 
-    def is_a_context(self, class_name):
-        return class_name in ['IfcProject', 'IfcProjectLibrary']
+    def is_a_project(self, class_name):
+        return class_name == 'IfcProject'
+
+    def is_a_library(self, class_name):
+        return class_name == 'IfcProjectLibrary'
 
     def is_a_type(self, class_name):
         return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
-
-    def is_a_types_collection(self, class_name):
-        return class_name == 'IfcTypeProduct'
 
 class SIUnitHelper:
     prefixes = ["EXA", "PETA", "TERA", "GIGA", "MEGA", "KILO", "HECTO",
@@ -445,7 +458,8 @@ class IfcExporter():
         self.ifc_parser.parse()
         self.create_psets()
         self.create_rep_context()
-        self.create_context()
+        self.create_project()
+        self.create_libraries()
         self.create_map_conversion()
         self.create_representations()
         self.create_type_products()
@@ -510,15 +524,22 @@ class IfcExporter():
             None, None, None, None,
             self.ifc_rep_context, None, "MODEL_VIEW", None)
 
-    def create_context(self):
-        context = self.ifc_parser.context
-        attributes = context['attributes']
-        attributes.update({
+    def create_project(self):
+        self.ifc_parser.project['attributes'].update({
             'GlobalId': ifcopenshell.guid.new(),
             'RepresentationContexts': [self.ifc_rep_context],
             'UnitsInContext': self.file.by_type("IfcUnitAssignment")[0]
             })
-        self.ifc_parser.context['ifc'] = self.file.create_entity(self.ifc_parser.context['class'], **attributes)
+        self.ifc_parser.project['ifc'] = self.file.create_entity(
+            self.ifc_parser.project['class'], **self.ifc_parser.project['attributes'])
+
+    def create_libraries(self):
+        for library in self.ifc_parser.libraries:
+            library['ifc'] = self.file.create_entity(library['class'], **library['attributes'])
+        self.file.createIfcRelDeclares(
+            ifcopenshell.guid.new(), self.owner_history,
+            library['attributes']['Name'], None,
+            self.ifc_parser.project['ifc'], [l['ifc'] for l in self.ifc_parser.libraries])
 
     def create_map_conversion(self):
         if not self.ifc_parser.map_conversion:
@@ -562,7 +583,7 @@ class IfcExporter():
 
     def create_spatial_structure_elements(self, element_tree, relating_object=None):
         if relating_object == None:
-            relating_object = self.ifc_parser.context['ifc']
+            relating_object = self.ifc_parser.project['ifc']
             placement_rel_to = None
         else:
             placement_rel_to = relating_object.ObjectPlacement
