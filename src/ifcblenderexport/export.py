@@ -266,7 +266,7 @@ class IfcParser():
                     'ifc': None,
                     'raw': collection,
                     'class': self.get_ifc_class(collection.name),
-                    'attributes': { 'Name': self.get_ifc_name(collection.name) }
+                    'attributes': self.get_object_attributes(collection)
                 }
 
     def get_libraries(self):
@@ -279,7 +279,7 @@ class IfcParser():
                 'raw': collection,
                 'class': self.get_ifc_class(collection.name),
                 'rel_declares_type_products': [],
-                'attributes': { 'Name': self.get_ifc_name(collection.name) }
+                'attributes': self.get_object_attributes(collection)
             })
         return results
 
@@ -324,7 +324,7 @@ class IfcParser():
                     'ifc': None,
                     'raw': collection,
                     'class': self.get_ifc_class(collection.name),
-                    'attributes': { 'Name': self.get_ifc_name(collection.name)}
+                    'attributes': self.get_object_attributes(collection)
                     })
         return elements
 
@@ -564,7 +564,6 @@ class IfcExporter():
 
     def create_project(self):
         self.ifc_parser.project['attributes'].update({
-            'GlobalId': ifcopenshell.guid.new(),
             'RepresentationContexts': [self.ifc_rep_context],
             'UnitsInContext': self.file.by_type("IfcUnitAssignment")[0]
             })
@@ -636,7 +635,6 @@ class IfcExporter():
         for node in element_tree:
             element = self.ifc_parser.spatial_structure_elements[node['reference']]
             element['attributes'].update({
-                'GlobalId': ifcopenshell.guid.new(), # TODO: unhardcode
                 'OwnerHistory': self.owner_history, # TODO: unhardcode
                 'ObjectPlacement': self.file.createIfcLocalPlacement(placement_rel_to, self.origin)
             })
