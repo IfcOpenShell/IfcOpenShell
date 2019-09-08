@@ -85,7 +85,7 @@ class IfcParser():
         self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
         self.rel_aggregates = {}
-        self.representations = []
+        self.representations = {}
         self.type_products = []
         self.project = {}
         self.libraries = []
@@ -99,11 +99,11 @@ class IfcParser():
         self.spatial_structure_elements = self.get_spatial_structure_elements()
 
         self.collection_name_filter = []
-        self.get_products()
 
         self.project = self.get_project()
         self.libraries = self.get_libraries()
         self.type_products = self.get_type_products()
+        self.get_products()
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
@@ -150,7 +150,7 @@ class IfcParser():
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
             'relating_qtos_key': None,
-            'representation': self.get_representation_reference_from_object(object),
+            'representation': self.get_object_representation_name(object),
             'attributes': self.get_object_attributes(object)
             }
         product['attributes'].update(attribute_override)
@@ -304,19 +304,20 @@ class IfcParser():
         return elements
 
     def get_representations(self):
-        results = []
+        results = {}
         if not self.ifc_export_settings.has_representations:
             return results
         for product in self.selected_products + self.type_products:
             object = product['raw']
-            if not object.data:
+            if not object.data \
+                or object.data.name in results:
                 continue
-            results.append({
+            results[object.data.name] = {
                 'ifc': None,
                 'raw': object.data,
                 'is_wireframe': True if 'IsWireframe' in object.data else False,
                 'attributes': { 'Name': object.data.name }
-                })
+                }
         return results
 
     def get_qtos(self):
@@ -355,21 +356,17 @@ class IfcParser():
                         'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
                         'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
                         'class': self.get_ifc_class(object.name),
-                        'representation': self.get_representation_reference_from_object(object),
+                        'representation': self.get_object_representation_name(object),
                         'attributes': self.get_object_attributes(object)
                     })
                 except Exception as e:
                     print('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
         return results
 
-    def get_representation_reference_from_object(self, object):
-        if not self.ifc_export_settings.has_representations \
-            or not object.data:
-            return None
-        return self.get_representation_reference(object.data.name)
-
-    def get_representation_reference(self, name):
-        return [ r['attributes']['Name'] for r in self.representations ].index(name)
+    def get_object_representation_name(self, object):
+        if object.data:
+            return object.data.name
+        return None
 
     def get_spatial_structure_elements_tree(self, collections, name_filter):
         collection_tree = []
@@ -604,7 +601,7 @@ class IfcExporter():
                 self.owner_history, None, None, relating_object, related_objects)
 
     def create_representations(self):
-        for representation in self.ifc_parser.representations:
+        for representation in self.ifc_parser.representations.values():
             representation['ifc'] = self.create_representation(representation)
 
     def create_products(self):
