@@ -92,7 +92,7 @@ class IfcParser():
 
         self.product_index = 0
 
-        self.psets = []
+        self.psets = {}
         self.qtos = {}
         self.aggregates = {}
         self.spatial_structure_elements = []
@@ -100,6 +100,7 @@ class IfcParser():
         self.rel_contained_in_spatial_structure = {}
         self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
+        self.rel_defines_by_pset = {}
         self.rel_aggregates = {}
         self.representations = {}
         self.type_products = []
@@ -189,6 +190,11 @@ class IfcParser():
         if object.name in self.qtos:
             self.rel_defines_by_qto.setdefault(object.name, []).append(product)
 
+        for key in object.keys():
+            if key[0:5] == 'Pset_':
+                self.rel_defines_by_pset.setdefault(
+                    '{}/{}'.format(key, object[key]), []).append(product)
+
         if object.parent \
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
             reference = self.get_type_product_reference(object.parent.name)
@@ -239,16 +245,18 @@ class IfcParser():
                     {'rel_aggregates_relating_object': object})
 
     def get_psets(self):
-        psets = []
+        psets = {}
         for filename in Path(self.data_dir).glob('**/*.csv'):
             with open(filename, 'r') as f:
-                psets.append({
+                name = filename.parts[-2]
+                description = filename.stem
+                psets['{}/{}'.format(name, description)] = {
                     'ifc': None,
                     'raw': { x[0]: x[1] for x in list(csv.reader(f)) },
                     'attributes': {
-                        'Name': filename.parts[-2],
-                        'Description': filename.stem }
-                    })
+                        'Name': name,
+                        'Description': description }
+                    }
         return psets
 
     def get_project(self):
@@ -489,6 +497,7 @@ class IfcExporter():
         self.relate_elements_to_spatial_structures()
         self.relate_objects_to_types()
         self.relate_objects_to_qtos()
+        self.relate_objects_to_psets()
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
@@ -502,7 +511,7 @@ class IfcExporter():
         self.volume_unit = units[2]
 
     def create_psets(self):
-        for pset in self.ifc_parser.psets:
+        for pset in self.ifc_parser.psets.values():
             properties = self.create_pset_properties(pset)
             if not properties:
                 continue
@@ -766,6 +775,14 @@ class IfcExporter():
     def relate_objects_to_qtos(self):
         for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_qto.items():
             relating_property = self.ifc_parser.qtos[relating_property_key]['ifc']
+            self.file.createIfcRelDefinesByProperties(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [o['ifc'] for o in related_objects],
+                relating_property)
+
+    def relate_objects_to_psets(self):
+        for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_pset.items():
+            relating_property = self.ifc_parser.psets[relating_property_key]['ifc']
             self.file.createIfcRelDefinesByProperties(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
