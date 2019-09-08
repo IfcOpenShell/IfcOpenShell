@@ -254,6 +254,7 @@ class IfcParser():
                 'ifc': None,
                 'raw': collection,
                 'class': self.get_ifc_class(collection.name),
+                'rel_declares_type_products': [],
                 'attributes': { 'Name': self.get_ifc_name(collection.name) }
             })
         return results
@@ -344,6 +345,7 @@ class IfcParser():
 
     def get_type_products(self):
         results = []
+        index = 0
         for library in self.libraries:
             for object in library['raw'].objects:
                 if not self.is_a_type(self.get_ifc_class(object.name)):
@@ -359,6 +361,8 @@ class IfcParser():
                         'representation': self.get_object_representation_name(object),
                         'attributes': self.get_object_attributes(object)
                     })
+                    library['rel_declares_type_products'].append(index)
+                    index += 1
                 except Exception as e:
                     print('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
         return results
@@ -463,6 +467,7 @@ class IfcExporter():
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_qtos()
         self.create_products()
+        self.relate_definitions_to_contexts()
         self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
         self.relate_objects_to_types()
@@ -569,6 +574,13 @@ class IfcExporter():
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def relate_definitions_to_contexts(self):
+        for library in self.ifc_parser.libraries:
+            self.file.createIfcRelDeclares(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                library['ifc'],
+                [self.ifc_parser.type_products[t]['ifc'] for t in library['rel_declares_type_products']])
 
     def relate_objects_to_objects(self):
         for relating_object, related_objects_reference in self.ifc_parser.rel_aggregates.items():
