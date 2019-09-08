@@ -62,15 +62,31 @@ class QtoCalculator():
                 volume += v1.dot(v2.cross(v3)) / 6.0
         return volume
 
-class IfcParser():
-    def __init__(self, ifc_export_settings):
-        self.data_dir = '/home/dion/Projects/blender-bim-ifc/data/'
-        self.schema_dir = '/home/dion/Projects/blender-bim-ifc/schema/'
-
-        self.ifc_export_settings = ifc_export_settings
+class IfcSchema():
+    def __init__(self):
+        self.schema_dir = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/schema/'
+        self.property_file = ifcopenshell.open(self.schema_dir + 'IFC4_ADD2.ifc')
+        self.psets = {}
+        self.qtos = {}
+        self.load()
 
         with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
             self.type_map = json.load(f)
+
+    def load(self):
+        for property in self.property_file.by_type('IfcPropertySetTemplate'):
+            if property.Name[0:4] == 'Qto_':
+                # self.qtos.append({ })
+                pass
+            else:
+                self.psets[property.Name] = {
+                    'HasPropertyTemplates': { p.Name: p for p in property.HasPropertyTemplates}}
+
+class IfcParser():
+    def __init__(self, ifc_export_settings):
+        self.data_dir = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/data/'
+
+        self.ifc_export_settings = ifc_export_settings
 
         self.selected_products = []
 
@@ -228,7 +244,7 @@ class IfcParser():
             with open(filename, 'r') as f:
                 psets.append({
                     'ifc': None,
-                    'raw': list(csv.reader(f)),
+                    'raw': { x[0]: x[1] for x in list(csv.reader(f)) },
                     'attributes': {
                         'Name': filename.parts[-2],
                         'Description': filename.stem }
@@ -446,10 +462,11 @@ class SIUnitHelper:
                 return name
 
 class IfcExporter():
-    def __init__(self, ifc_export_settings, ifc_parser, qto_calculator):
-        self.template_file = '/home/dion/Projects/blender-bim-ifc/template.ifc'
-        self.output_file = '/home/dion/Projects/blender-bim-ifc/output.ifc'
+    def __init__(self, ifc_export_settings, ifc_schema, ifc_parser, qto_calculator):
+        self.template_file = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/template.ifc'
+        self.output_file = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/output.ifc'
         self.ifc_export_settings = ifc_export_settings
+        self.ifc_schema = ifc_schema
         self.ifc_parser = ifc_parser
         self.qto_calculator = qto_calculator
 
@@ -498,22 +515,32 @@ class IfcExporter():
 
     def create_pset_properties(self, pset):
         properties = []
-        headers = pset['raw'].pop(0)[2:]
-        for data in pset['raw']:
-            type = data[1]
-            value = self.cast_to_base_type(type, data[4])
-            nominal_value = self.file.create_entity(type, value)
-            attributes = { header: data[i+2] if data[i+2] else None for i, header in enumerate(headers)}
-            attributes['NominalValue'] = nominal_value
-            properties.append(self.file.create_entity(data[0], **attributes))
+        templates = self.ifc_schema.psets[pset['attributes']['Name']]['HasPropertyTemplates']
+        for name, data in templates.items():
+            if name not in pset['raw']:
+                continue
+            if data.TemplateType == 'P_SINGLEVALUE':
+                if data.PrimaryMeasureType:
+                    value_type = data.PrimaryMeasureType
+                else:
+                    # The IFC spec is missing some, so we provide a fallback
+                    value_type = 'IfcLabel'
+                nominal_value = self.file.create_entity(
+                    value_type,
+                    self.cast_to_base_type(value_type, pset['raw'][name]))
+                properties.append(
+                    self.file.create_entity('IfcPropertySingleValue', **{
+                        'Name': name,
+                        'NominalValue': nominal_value
+                        }))
         return properties
 
     def cast_to_base_type(self, type, value):
-        if self.ifc_parser.type_map[type] == 'float':
+        if self.ifc_schema.type_map[type] == 'float':
             return float(value)
-        elif self.ifc_parser.type_map[type] == 'integer':
+        elif self.ifc_schema.type_map[type] == 'integer':
             return int(value)
-        elif self.ifc_parser.type_map[type] == 'bool':
+        elif self.ifc_schema.type_map[type] == 'bool':
             return True if value.lower() in ['1', 't', 'true', 'yes', 'y', 'uh-huh'] else False
         return str(value)
 
@@ -753,7 +780,8 @@ print('# Starting export')
 start = time.time()
 ifc_export_settings = IfcExportSettings()
 ifc_parser = IfcParser(ifc_export_settings)
+ifc_schema = IfcSchema()
 qto_calculator = QtoCalculator()
-ifc_exporter = IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
+ifc_exporter = IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
 ifc_exporter.export()
 print('# Export finished in {:.2f} seconds'.format(time.time() - start))
