@@ -40,6 +40,7 @@ Let's use Blender to create BIM models, because why not?
    curves / wireframes for rapid and lightweight BIM development.
  - Create map conversions and coordinate reference system definitions to link
    BIM to GIS.
+ - Export basic materials with colours.
 
 ## Demo
 
