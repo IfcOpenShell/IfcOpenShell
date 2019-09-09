@@ -101,6 +101,7 @@ class IfcParser():
         self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
         self.rel_defines_by_pset = {}
+        self.rel_associates_material = {}
         self.rel_aggregates = {}
         self.representations = {}
         self.type_products = []
@@ -112,6 +113,7 @@ class IfcParser():
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.representations = self.get_representations()
+        self.materials = self.get_materials()
         self.qtos = self.get_qtos()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
 
@@ -194,6 +196,9 @@ class IfcParser():
             if key[0:5] == 'Pset_':
                 self.rel_defines_by_pset.setdefault(
                     '{}/{}'.format(key, object[key]), []).append(product)
+
+        for slot in object.material_slots:
+            self.rel_associates_material.setdefault( slot.material.name, []).append(product)
 
         if object.parent \
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
@@ -345,6 +350,24 @@ class IfcParser():
                 }
         return results
 
+    def get_materials(self):
+        results = {}
+        if not self.ifc_export_settings.has_representations:
+            return results
+        for product in self.selected_products + self.type_products:
+            object = product['raw']
+            if not object.data:
+                continue
+            for slot in object.material_slots:
+                if slot.material.name in results:
+                    continue
+                results[slot.material.name] = {
+                    'ifc': None,
+                    'raw': slot.material,
+                    'attributes': { 'Name': slot.material.name }
+                    }
+        return results
+
     def get_qtos(self):
         if not self.ifc_export_settings.has_quantities:
             return {}
@@ -488,6 +511,7 @@ class IfcExporter():
         self.create_libraries()
         self.create_map_conversion()
         self.create_representations()
+        self.create_materials()
         self.create_type_products()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_qtos()
@@ -498,6 +522,7 @@ class IfcExporter():
         self.relate_objects_to_types()
         self.relate_objects_to_qtos()
         self.relate_objects_to_psets()
+        self.relate_objects_to_materials()
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
@@ -646,6 +671,23 @@ class IfcExporter():
                 ifcopenshell.guid.new(),
                 self.owner_history, None, None, relating_object, related_objects)
 
+    def create_materials(self):
+        for material in self.ifc_parser.materials.values():
+            surface_colour = self.file.createIfcColourRgb(None,
+                material['raw'].diffuse_color[0],
+                material['raw'].diffuse_color[1],
+                material['raw'].diffuse_color[2])
+            surface_style_rendering = self.file.create_entity('IfcSurfaceStyleRendering', **{
+                'SurfaceColour': surface_colour
+                })
+            surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', [surface_style_rendering])
+            styled_item = self.file.createIfcStyledItem(None, [surface_style], None)
+            styled_representation = self.file.createIfcStyledRepresentation(
+                self.ifc_rep_subcontext, None, None, [styled_item])
+            material['ifc'] = self.file.createIfcMaterial(material['raw'].name, None, None)
+            self.file.createIfcMaterialDefinitionRepresentation(
+                material['raw'].name, None, [styled_representation], material['ifc'])
+
     def create_representations(self):
         for representation in self.ifc_parser.representations.values():
             representation['ifc'] = self.create_representation(representation)
@@ -785,6 +827,13 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
                 relating_property)
+
+    def relate_objects_to_materials(self):
+        for relating_material_key, related_objects in self.ifc_parser.rel_associates_material.items():
+            self.file.createIfcRelAssociatesmaterial(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [o['ifc'] for o in related_objects],
+                self.ifc_parser.materials[relating_material_key]['ifc'])
 
 class IfcExportSettings:
     def __init__(self):
