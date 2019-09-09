@@ -575,7 +575,7 @@ class IfcExporter():
             library['ifc'] = self.file.create_entity(library['class'], **library['attributes'])
         self.file.createIfcRelDeclares(
             ifcopenshell.guid.new(), self.owner_history,
-            library['attributes']['Name'], None,
+            None, None,
             self.ifc_parser.project['ifc'], [l['ifc'] for l in self.ifc_parser.libraries])
 
     def create_map_conversion(self):
