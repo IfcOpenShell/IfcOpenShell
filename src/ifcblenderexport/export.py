@@ -814,19 +814,17 @@ class IfcExporter():
 
     def relate_objects_to_qtos(self):
         for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_qto.items():
-            relating_property = self.ifc_parser.qtos[relating_property_key]['ifc']
             self.file.createIfcRelDefinesByProperties(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
-                relating_property)
+                self.ifc_parser.qtos[relating_property_key]['ifc'])
 
     def relate_objects_to_psets(self):
         for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_pset.items():
-            relating_property = self.ifc_parser.psets[relating_property_key]['ifc']
             self.file.createIfcRelDefinesByProperties(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
-                relating_property)
+                self.ifc_parser.psets[relating_property_key]['ifc'])
 
     def relate_objects_to_materials(self):
         for relating_material_key, related_objects in self.ifc_parser.rel_associates_material.items():
