@@ -92,6 +92,7 @@ class IfcParser():
 
         self.product_index = 0
 
+        self.units = {}
         self.psets = {}
         self.qtos = {}
         self.aggregates = {}
@@ -110,6 +111,7 @@ class IfcParser():
         self.products = []
 
     def parse(self):
+        self.units = self.get_units()
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.representations = self.get_representations()
@@ -127,6 +129,24 @@ class IfcParser():
         self.target_crs = self.get_target_crs()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
             self.project['raw'].children, self.collection_name_filter)
+
+    def get_units(self):
+        return {
+            'length': {
+                'ifc': None,
+                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'raw': bpy.context.scene.unit_settings.length_unit
+                },
+            'area': {
+                'ifc': None,
+                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'raw': bpy.context.scene.unit_settings.length_unit
+                },
+            'volume': {
+                'ifc': None,
+                'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
+                'raw': bpy.context.scene.unit_settings.length_unit
+            }}
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
@@ -489,7 +509,7 @@ class SIUnitHelper:
     @staticmethod
     def get_unit_name(text):
         for name in SIUnitHelper.unit_names:
-            if name in text.upper():
+            if name in text.upper().replace('METER', 'METRE'):
                 return name
 
 class IfcExporter():
@@ -505,6 +525,7 @@ class IfcExporter():
         self.file = ifcopenshell.open(self.template_file)
         self.set_common_definitions()
         self.ifc_parser.parse()
+        self.create_units()
         self.create_psets()
         self.create_rep_context()
         self.create_project()
@@ -526,14 +547,28 @@ class IfcExporter():
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
-        self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
         # Owner history doesn't actually work like this, but for now, it does :)
+        self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
+
+    def create_units(self):
         self.owner_history = self.file.by_type('IfcOwnerHistory')[0]
-        # TODO: unhardcode units
-        units = self.file.by_type('IfcSIUnit')
-        self.length_unit = units[0]
-        self.area_unit = units[1]
-        self.volume_unit = units[2]
+        for type, data in self.ifc_parser.units.items():
+            if data['is_metric']:
+                type_prefix = ''
+                if type == 'area':
+                    type_prefix = 'SQUARE_'
+                elif type == 'volume':
+                    type_prefix = 'CUBIC_'
+                data['ifc'] = self.file.createIfcSIUnit(None,
+                    '{}UNIT'.format(type.upper()),
+                    SIUnitHelper.get_prefix(data['raw']),
+                    type_prefix + SIUnitHelper.get_unit_name(data['raw']))
+            else:
+                self.create_imperial_unit(type, data)
+        self.file.createIfcUnitAssignment([u['ifc'] for u in self.ifc_parser.units.values()])
+
+    def create_imperial_unit(self, type, data):
+        pass # TODO
 
     def create_psets(self):
         for pset in self.ifc_parser.psets.values():
@@ -767,17 +802,17 @@ class IfcExporter():
                 quantity = float(self.qto_calculator.get_length(object, index))
                 quantities.append(self.file.createIfcQuantityLength(
                     vg.name.split('/')[1], None,
-                    self.length_unit, quantity))
+                    self.ifc_parser.units['length']['ifc'], quantity))
             elif 'area' in vg.name.lower():
                 quantity = float(self.qto_calculator.get_area(object, index))
                 quantities.append(self.file.createIfcQuantityArea(
                     vg.name.split('/')[1], None,
-                    self.area_unit, quantity))
+                    self.ifc_parser.units['area']['ifc'], quantity))
             elif 'volume' in vg.name.lower():
                 quantity = float(self.qto_calculator.get_volume(object, index))
                 quantities.append(self.file.createIfcQuantityVolume(
                     vg.name.split('/')[1], None,
-                    self.volume_unit, quantity))
+                    self.ifc_parser.units['volume']['ifc'], quantity))
             if not quantity:
                 print('Warning: the calculated quantity {} for {} is zero.'.format(
                     vg.name, object.name))
