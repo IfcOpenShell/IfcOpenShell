@@ -424,6 +424,8 @@ class IfcParser():
                         'location': object.location,
                         'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
                         'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
+                        'psets': ['{}/{}'.format(key, object[key]) for key in
+                            object.keys() if key[0:5] == 'Pset_'],
                         'class': self.get_ifc_class(object.name),
                         'representation': self.get_object_representation_name(object),
                         'attributes': self.get_object_attributes(object)
@@ -664,6 +666,11 @@ class IfcExporter():
                 representation = self.ifc_parser.representations[product['representation']]['ifc']
                 representation_map = self.file.createIfcRepresentationMap(placement, representation)
                 product['attributes']['RepresentationMaps'] = [representation_map]
+
+            if product['psets']:
+                product['attributes'].update({ 'HasPropertySets':
+                    [self.ifc_parser.psets[pset]['ifc'] for pset in
+                    product['psets']] })
 
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
