@@ -551,9 +551,9 @@ class IfcExporter():
     def set_common_definitions(self):
         # Owner history doesn't actually work like this, but for now, it does :)
         self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
+        self.owner_history = self.file.by_type('IfcOwnerHistory')[0]
 
     def create_units(self):
-        self.owner_history = self.file.by_type('IfcOwnerHistory')[0]
         for type, data in self.ifc_parser.units.items():
             if data['is_metric']:
                 type_prefix = ''
@@ -660,7 +660,6 @@ class IfcExporter():
     def create_type_products(self):
         for product in self.ifc_parser.type_products:
             placement = self.create_ifc_axis_2_placement_3d(product['location'], product['up_axis'], product['forward_axis'])
-            product['attributes'].update({ 'GlobalId': ifcopenshell.guid.new() })
 
             if product['representation']:
                 representation = self.ifc_parser.representations[product['representation']]['ifc']
