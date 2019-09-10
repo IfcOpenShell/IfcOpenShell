@@ -7,28 +7,37 @@ Let's use Blender to create BIM models, because why not?
 ## Features
 
  - IFC4 is a first-class citizen. IFC4 has been an ISO standard since 2013, with
-   the latest published in 2018. In contrast, other programs are dragging their
-   feet with IFC2X3, published back in 2005.
- - Use Blender 2.8 to do digital modeling! Blender is an amazing open-source
-   software that supports the full 3D content creation pipeline that the CG
-   industry uses. Don't let your designs fall short just because your modeling
-   tool isn't good enough!
+   the latest published in 2018. It contains many more features than IFC2X3,
+   published back in 2005.
+ - Use open-source Blender 2.8 to do digital modeling! Used by NASA, Hollywood,
+   and Ubisoft, Blender allows real-time modeling in rendered view, animations,
+   file linking, proxy objects, Blender Cloud collaboration, lighting analysis,
+   CFD, energy modeling, and a huge ecosystem of add-ons with a thriving
+   community. No licensing, and with a strong Python API to integrate into your
+   custom workflow.
  - Create complex spatial structures with multiple sites, buildings, facilities,
-   bridges, and building parts. In contrast, some BIM tools (uh, Revit?) don't
-   even allow you to specify buildings.
+   bridges, and building parts. Sites can be broken down into sub-sites and
+   multiple buildings per site. You can categorise different floors to different
+   buildings.
  - Classify any geometry as any IFC type. Just because it is a wall doesn't
    mean you should be limited to modeling it in a certain way. Easily change
-   from one type to another without damaging your geometry.
+   from one type to another, switch relationships and aggregations, reuse or
+   even remove geometry altogether, without damaging your geometry or breaking
+   your BIM model.
  - Use collections to create element compositions and decompositions with full
    control over the classifications of their parts. Most BIM programs don't give
-   this flexibility. Create collection instances to duplicate composite objects.
+   this flexibility. Create collection instances to efficiently duplicate
+   composite objects.
  - Allow BIM objects to instance a shared geometric representations. This allows
    you to place the same shape in multiple objects without drastically
    increasing your filesize.
  - Provide a custom value to any simple IFC attribute of an IFC product.
  - Create product types that regular IFC products can inherit attributes from.
  - Define your own property sets with control over exactly how the data in the
-   property sets are stored.
+   property sets are stored using property set template definitions which you
+   can download or create yourself. Property sets can apply to both types and
+   objects, and object property sets can selectively override type property
+   sets.
  - Applies array modifiers to create instances.
  - Basic quantity take-off support for costing.
  - Settings to toggle export of quantities or geometric representations.
@@ -40,7 +49,11 @@ Let's use Blender to create BIM models, because why not?
    curves / wireframes for rapid and lightweight BIM development.
  - Create map conversions and coordinate reference system definitions to link
    BIM to GIS.
- - Export basic materials with colours.
+ - Export basic materials with surface and diffuse colours for representation.
+   You can also link materials to an externally defined file, such as a `.blend`
+   Cycles material, V-Ray material, or even Radiance material for lighting
+   simulation.
+ - Switch between different types of metric units when modeling.
 
 ## Demo
 
