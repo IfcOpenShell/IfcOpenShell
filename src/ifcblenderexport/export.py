@@ -673,20 +673,44 @@ class IfcExporter():
 
     def create_materials(self):
         for material in self.ifc_parser.materials.values():
-            surface_colour = self.file.createIfcColourRgb(None,
-                material['raw'].diffuse_color[0],
-                material['raw'].diffuse_color[1],
-                material['raw'].diffuse_color[2])
-            surface_style_rendering = self.file.create_entity('IfcSurfaceStyleRendering', **{
-                'SurfaceColour': surface_colour
-                })
-            surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', [surface_style_rendering])
+            styles = []
+            styles.append(self.create_surface_style_rendering(material))
+            if 'IsExternal' in material['raw'].keys():
+                styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
+                    **self.get_material_external_definition(material['raw'])))
+
+            surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
             styled_item = self.file.createIfcStyledItem(None, [surface_style], None)
             styled_representation = self.file.createIfcStyledRepresentation(
                 self.ifc_rep_subcontext, None, None, [styled_item])
             material['ifc'] = self.file.createIfcMaterial(material['raw'].name, None, None)
             self.file.createIfcMaterialDefinitionRepresentation(
                 material['raw'].name, None, [styled_representation], material['ifc'])
+
+    def create_surface_style_rendering(self, material):
+        surface_colour = self.create_colour_rgb(material['raw'].diffuse_color)
+        rendering_attributes = { 'SurfaceColour': surface_colour }
+        rendering_attributes.update(self.get_rendering_attributes(material['raw']))
+        return self.file.create_entity('IfcSurfaceStyleRendering', **rendering_attributes)
+
+    def get_rendering_attributes(self, material):
+        if 'Principled BSDF' not in material.node_tree.nodes:
+            return {}
+        bsdf = material.node_tree.nodes['Principled BSDF']
+        return {
+            'Transparency': (bsdf.inputs['Alpha'].default_value - 1) * -1,
+            'DiffuseColour': self.create_colour_rgb(bsdf.inputs['Base Color'].default_value)
+            }
+
+    def get_material_external_definition(self, material):
+        return {
+            'Location': material['Location'],
+            'Identification': material['Identification'] if 'Identification' in material else material.name,
+            'Name': material['Name'] if 'Name' in material else material.name
+        }
+
+    def create_colour_rgb(self, colour):
+        return self.file.createIfcColourRgb(None, colour[0], colour[1], colour[2])
 
     def create_representations(self):
         for representation in self.ifc_parser.representations.values():
