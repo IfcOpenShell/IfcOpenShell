@@ -102,6 +102,8 @@ class IfcParser():
         self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
         self.rel_defines_by_pset = {}
+        self.rel_associates_document_object = {}
+        self.rel_associates_document_type = {}
         self.rel_associates_material = {}
         self.rel_aggregates = {}
         self.representations = {}
@@ -114,6 +116,7 @@ class IfcParser():
         self.units = self.get_units()
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
+        self.documents = self.get_documents()
         self.representations = self.get_representations()
         self.materials = self.get_materials()
         self.qtos = self.get_qtos()
@@ -216,6 +219,9 @@ class IfcParser():
             if key[0:5] == 'Pset_':
                 self.rel_defines_by_pset.setdefault(
                     '{}/{}'.format(key, object[key]), []).append(product)
+            elif key[0:3] == 'Doc':
+                self.rel_associates_document_object.setdefault(
+                    object[key], []).append(product)
 
         for slot in object.material_slots:
             self.rel_associates_material.setdefault( slot.material.name, []).append(product)
@@ -271,7 +277,7 @@ class IfcParser():
 
     def get_psets(self):
         psets = {}
-        for filename in Path(self.data_dir).glob('**/*.csv'):
+        for filename in Path(self.data_dir + 'pset/').glob('**/*.csv'):
             with open(filename, 'r') as f:
                 name = filename.parts[-2]
                 description = filename.stem
@@ -283,6 +289,20 @@ class IfcParser():
                         'Description': description }
                     }
         return psets
+
+    def get_documents(self):
+        documents = {}
+        doc_path = self.data_dir + 'doc/'
+        for filename in Path(doc_path).glob('**/*'):
+            uri = str(filename.relative_to(doc_path).as_posix())
+            documents[uri] = {
+                'ifc': None,
+                'raw': filename,
+                'attributes': {
+                    'Location': uri,
+                    'Name': filename.stem
+                }}
+        return documents
 
     def get_project(self):
         for collection in bpy.data.collections:
@@ -418,7 +438,7 @@ class IfcParser():
                 if not self.is_a_type(self.get_ifc_class(object.name)):
                     continue
                 try:
-                    results.append({
+                    type = {
                         'ifc': None,
                         'raw': object,
                         'location': object.location,
@@ -429,8 +449,15 @@ class IfcParser():
                         'class': self.get_ifc_class(object.name),
                         'representation': self.get_object_representation_name(object),
                         'attributes': self.get_object_attributes(object)
-                    })
+                    }
+                    results.append(type)
                     library['rel_declares_type_products'].append(index)
+
+                    for key in object.keys():
+                        if key[0:3] == 'Doc':
+                            self.rel_associates_document_type.setdefault(
+                                object[key], []).append(type)
+
                     index += 1
                 except Exception as e:
                     print('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
@@ -528,6 +555,7 @@ class IfcExporter():
         self.set_common_definitions()
         self.ifc_parser.parse()
         self.create_units()
+        self.create_documents()
         self.create_psets()
         self.create_rep_context()
         self.create_project()
@@ -546,6 +574,8 @@ class IfcExporter():
         self.relate_objects_to_qtos()
         self.relate_objects_to_psets()
         self.relate_objects_to_materials()
+        self.relate_to_documents(self.ifc_parser.rel_associates_document_object)
+        self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
@@ -571,6 +601,11 @@ class IfcExporter():
 
     def create_imperial_unit(self, type, data):
         pass # TODO
+
+    def create_documents(self):
+        for document in self.ifc_parser.documents.values():
+            document['ifc'] = self.file.create_entity(
+                'IfcDocumentReference', **document['attributes'])
 
     def create_psets(self):
         for pset in self.ifc_parser.psets.values():
@@ -893,10 +928,17 @@ class IfcExporter():
 
     def relate_objects_to_materials(self):
         for relating_material_key, related_objects in self.ifc_parser.rel_associates_material.items():
-            self.file.createIfcRelAssociatesmaterial(
+            self.file.createIfcRelAssociatesMaterial(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
                 self.ifc_parser.materials[relating_material_key]['ifc'])
+
+    def relate_to_documents(self, relationships):
+        for relating_document_key, related_objects in relationships.items():
+            self.file.createIfcRelAssociatesDocument(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [o['ifc'] for o in related_objects],
+                self.ifc_parser.documents[relating_document_key]['ifc'])
 
 class IfcExportSettings:
     def __init__(self):
