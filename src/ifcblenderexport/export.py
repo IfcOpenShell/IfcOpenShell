@@ -97,6 +97,7 @@ class IfcParser():
         self.documents = {}
         self.classifications = []
         self.classification_references = {}
+        self.objectives = {}
         self.qtos = {}
         self.aggregates = {}
         self.spatial_structure_elements = []
@@ -110,6 +111,8 @@ class IfcParser():
         self.rel_associates_classification_object = {}
         self.rel_associates_classification_type = {}
         self.rel_associates_material = {}
+        self.rel_associates_constraint_objective_object = {}
+        self.rel_associates_constraint_objective_type = {}
         self.rel_aggregates = {}
         self.representations = {}
         self.type_products = []
@@ -124,6 +127,7 @@ class IfcParser():
         self.documents = self.get_documents()
         self.classifications = self.get_classifications()
         self.classification_references = self.get_classification_references()
+        self.objectives = self.get_objectives()
         self.representations = self.get_representations()
         self.materials = self.get_materials()
         self.qtos = self.get_qtos()
@@ -232,6 +236,9 @@ class IfcParser():
             elif key[0:5] == 'Class':
                 self.rel_associates_classification_object.setdefault(
                     object[key], []).append(product)
+            elif key[0:9] == 'Objective':
+                self.rel_associates_constraint_objective_object.setdefault(
+                    object[key], []).append(product)
 
         for slot in object.material_slots:
             self.rel_associates_material.setdefault( slot.material.name, []).append(product)
@@ -326,6 +333,20 @@ class IfcParser():
                     'ifc': None,
                     'raw': row,
                     'referenced_source': int(row.pop()),
+                    'attributes': dict(zip(keys, row))
+                    }
+        return results
+
+    def get_objectives(self):
+        results = {}
+        class_path = self.data_dir + 'constraint/'
+        with open(class_path + 'objectives.csv', 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            for row in data:
+                results[row[0]] = {
+                    'ifc': None,
+                    'raw': row,
                     'attributes': dict(zip(keys, row))
                     }
         return results
@@ -500,6 +521,9 @@ class IfcParser():
                         elif key[0:5] == 'Class':
                             self.rel_associates_classification_type.setdefault(
                                 object[key], []).append(type)
+                        elif key[0:9] == 'Objective':
+                            self.rel_associates_constraint_objective_type.setdefault(
+                                object[key], []).append(type)
 
                     index += 1
                 except Exception as e:
@@ -601,6 +625,7 @@ class IfcExporter():
         self.create_documents()
         self.create_classifications()
         self.create_classification_references()
+        self.create_objectives()
         self.create_psets()
         self.create_rep_context()
         self.create_project()
@@ -623,6 +648,8 @@ class IfcExporter():
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_object)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
+        self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_object)
+        self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
@@ -664,6 +691,11 @@ class IfcExporter():
             reference['attributes']['ReferencedSource'] = self.ifc_parser.classifications[reference['referenced_source']]['ifc']
             reference['ifc'] = self.file.create_entity(
                 'IfcClassificationReference', **reference['attributes'])
+
+    def create_objectives(self):
+        for objective in self.ifc_parser.objectives.values():
+            objective['ifc'] = self.file.create_entity(
+                'IfcObjective', **objective['attributes'])
 
     def create_psets(self):
         for pset in self.ifc_parser.psets.values():
@@ -1004,6 +1036,13 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
                 self.ifc_parser.classification_references[relating_key]['ifc'])
+
+    def relate_to_objectives(self, relationships):
+        for relating_key, related_objects in relationships.items():
+            self.file.createIfcRelAssociatesConstraint(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [o['ifc'] for o in related_objects], None,
+                self.ifc_parser.objectives[relating_key]['ifc'])
 
 class IfcExportSettings:
     def __init__(self):
