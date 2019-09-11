@@ -94,6 +94,9 @@ class IfcParser():
 
         self.units = {}
         self.psets = {}
+        self.documents = {}
+        self.classifications = []
+        self.classification_references = {}
         self.qtos = {}
         self.aggregates = {}
         self.spatial_structure_elements = []
@@ -104,6 +107,8 @@ class IfcParser():
         self.rel_defines_by_pset = {}
         self.rel_associates_document_object = {}
         self.rel_associates_document_type = {}
+        self.rel_associates_classification_object = {}
+        self.rel_associates_classification_type = {}
         self.rel_associates_material = {}
         self.rel_aggregates = {}
         self.representations = {}
@@ -117,6 +122,8 @@ class IfcParser():
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.documents = self.get_documents()
+        self.classifications = self.get_classifications()
+        self.classification_references = self.get_classification_references()
         self.representations = self.get_representations()
         self.materials = self.get_materials()
         self.qtos = self.get_qtos()
@@ -222,6 +229,9 @@ class IfcParser():
             elif key[0:3] == 'Doc':
                 self.rel_associates_document_object.setdefault(
                     object[key], []).append(product)
+            elif key[0:5] == 'Class':
+                self.rel_associates_classification_object.setdefault(
+                    object[key], []).append(product)
 
         for slot in object.material_slots:
             self.rel_associates_material.setdefault( slot.material.name, []).append(product)
@@ -289,6 +299,36 @@ class IfcParser():
                         'Description': description }
                     }
         return psets
+
+    def get_classifications(self):
+        results = []
+        class_path = self.data_dir + 'class/'
+        with open(class_path + 'classifications.csv', 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            for row in data:
+                row[-1] = json.loads(row[-1])
+                results.append({
+                    'ifc': None,
+                    'raw': row,
+                    'attributes': dict(zip(keys, row))
+                    })
+        return results
+
+    def get_classification_references(self):
+        results = {}
+        class_path = self.data_dir + 'class/'
+        with open(class_path + 'references.csv', 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            for row in data:
+                results[row[0]] = {
+                    'ifc': None,
+                    'raw': row,
+                    'referenced_source': int(row.pop()),
+                    'attributes': dict(zip(keys, row))
+                    }
+        return results
 
     def get_documents(self):
         documents = {}
@@ -457,6 +497,9 @@ class IfcParser():
                         if key[0:3] == 'Doc':
                             self.rel_associates_document_type.setdefault(
                                 object[key], []).append(type)
+                        elif key[0:5] == 'Class':
+                            self.rel_associates_classification_type.setdefault(
+                                object[key], []).append(type)
 
                     index += 1
                 except Exception as e:
@@ -556,6 +599,8 @@ class IfcExporter():
         self.ifc_parser.parse()
         self.create_units()
         self.create_documents()
+        self.create_classifications()
+        self.create_classification_references()
         self.create_psets()
         self.create_rep_context()
         self.create_project()
@@ -576,6 +621,8 @@ class IfcExporter():
         self.relate_objects_to_materials()
         self.relate_to_documents(self.ifc_parser.rel_associates_document_object)
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
+        self.relate_to_classifications(self.ifc_parser.rel_associates_classification_object)
+        self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
         self.file.write(self.output_file)
 
     def set_common_definitions(self):
@@ -606,6 +653,17 @@ class IfcExporter():
         for document in self.ifc_parser.documents.values():
             document['ifc'] = self.file.create_entity(
                 'IfcDocumentReference', **document['attributes'])
+
+    def create_classifications(self):
+        for classification in self.ifc_parser.classifications:
+            classification['ifc'] = self.file.create_entity(
+                'IfcClassification', **classification['attributes'])
+
+    def create_classification_references(self):
+        for reference in self.ifc_parser.classification_references.values():
+            reference['attributes']['ReferencedSource'] = self.ifc_parser.classifications[reference['referenced_source']]['ifc']
+            reference['ifc'] = self.file.create_entity(
+                'IfcClassificationReference', **reference['attributes'])
 
     def create_psets(self):
         for pset in self.ifc_parser.psets.values():
@@ -939,6 +997,13 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
                 self.ifc_parser.documents[relating_document_key]['ifc'])
+
+    def relate_to_classifications(self, relationships):
+        for relating_key, related_objects in relationships.items():
+            self.file.createIfcRelAssociatesClassification(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [o['ifc'] for o in related_objects],
+                self.ifc_parser.classification_references[relating_key]['ifc'])
 
 class IfcExportSettings:
     def __init__(self):
