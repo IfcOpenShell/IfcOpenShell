@@ -413,6 +413,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcObjectPlacement* l, gp_Trsf& t
 			else break;
 		} else break;
 	}
+
+	trsf.PreMultiply(offset_and_rotation);
+
 	CACHE(IfcObjectPlacement,l,trsf)
 	return true;
 }

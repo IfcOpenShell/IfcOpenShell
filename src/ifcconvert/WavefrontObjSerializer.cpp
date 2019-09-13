@@ -93,9 +93,9 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement<real_t>* 
 
 	const int vcount = (int)mesh.verts().size() / 3;
     for ( std::vector<real_t>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end(); ) {
-        const real_t x = *(it++) + (real_t)settings().offset[0];
-        const real_t y = *(it++) + (real_t)settings().offset[1];
-        const real_t z = *(it++) + (real_t)settings().offset[2];
+        const real_t x = *(it++) + (real_t)settings().serializer_offset[0];
+        const real_t y = *(it++) + (real_t)settings().serializer_offset[1];
+        const real_t z = *(it++) + (real_t)settings().serializer_offset[2];
 		obj_stream << "v " << x << " " << y << " " << z << "\n";
 	}
 
