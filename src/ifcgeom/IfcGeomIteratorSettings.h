@@ -20,6 +20,8 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
+#include <array>
+
 #include "ifc_geom_api.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcBaseClass.h"
@@ -127,6 +129,11 @@ namespace IfcGeom
                 settings_ &= ~setting;
             }
         }
+
+        /// Optional offset x,y,z that is applied to all elements, (0,0,0) by default.
+        std::array<double,3> offset = {0.0, 0.0, 0.0};
+        /// Optional rotation x,y,z,w that is applied to all elements, (0,0,0,1) by default.
+        std::array<double,4> rotation = {0.0, 0.0, 0.0, 1.0};
 
     protected:
         SettingField settings_;

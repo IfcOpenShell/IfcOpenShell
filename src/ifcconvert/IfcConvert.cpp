@@ -295,7 +295,7 @@ int main(int argc, char** argv) {
             "if an object does not have any specified material in the IFC file.");
 
 
-    std::string bounds, offset_str;
+    std::string bounds, offset_str, rotation_str;
 #ifdef HAVE_ICU
     std::string unicode_mode;
 #endif
@@ -332,7 +332,9 @@ int main(int argc, char** argv) {
             "Centers the elements upon serialization by applying the center point of "
             "all placements as an offset. Applicable for OBJ and DAE output. Can take several minutes on large models.")
         ("model-offset", po::value<std::string>(&offset_str),
-            "Applies an arbitrary offset of form 'x;y;z' to all placements. Applicable for OBJ and DAE output.")
+            "Applies an arbitrary offset of form 'x;y;z' to all placements.")
+        ("model-rotation", po::value<std::string>(&rotation_str),
+             "Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
@@ -398,6 +400,7 @@ int main(int argc, char** argv) {
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool model_offset = vmap.count("model-offset") != 0;
+	const bool model_rotation = vmap.count("model-rotation") != 0;
 	const bool site_local_placement = vmap.count("site-local-placement") != 0;
 	const bool building_local_placement = vmap.count("building-local-placement") != 0;
 	const bool generate_uvs = vmap.count("generate-uvs") != 0;
@@ -618,6 +621,39 @@ int main(int argc, char** argv) {
     settings.set_deflection_tolerance(deflection_tolerance);
     settings.precision = precision;
 
+    if (model_offset && center_model) {
+        Logger::Error("Cannot use --center-model together with --model-offset");
+        return EXIT_FAILURE;
+    }
+
+    if (model_offset) {
+        std::array<double,3> &offset = settings.offset;
+        if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
+            cerr_ << "[Error] Invalid use of --model-offset\n" << offset_str;
+            IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+            print_options(serializer_options);
+            return EXIT_FAILURE;
+        }
+
+        std::stringstream msg;
+        msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+        Logger::Notice(msg.str());
+    }
+
+    if (model_rotation) {
+        std::array<double,4> &rotation = settings.rotation;
+        if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf", &rotation[0], &rotation[1], &rotation[2], &rotation[3]) != 4) {
+            cerr_ << "[Error] Invalid use of --model-rotation\n" << rotation_str;
+            IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+            print_options(serializer_options);
+            return EXIT_FAILURE;
+        }
+
+        std::stringstream msg;
+        msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
+        Logger::Notice(msg.str());
+    }
+
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
@@ -716,30 +752,22 @@ int main(int argc, char** argv) {
 
 	int old_progress = quiet ? 0 : -1;
 
-    if (is_tesselated && (center_model || model_offset)) {
-        double* offset = serializer->settings().offset;
-        if (center_model) {
-			if (site_local_placement || building_local_placement) {
-				Logger::Error("Cannot use --center-model together with --{site,building}-local-placement");
-				return EXIT_FAILURE;
-			}
+    if (is_tesselated && center_model) {
+        double* offset = serializer->settings().serializer_offset;
 
-            if (!quiet) Logger::Status("Computing bounds...");
-            context_iterator.compute_bounds();
-            if (!quiet) Logger::Status("Done!");
-
-            gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
-            offset[0] = -center.X();
-            offset[1] = -center.Y();
-            offset[2] = -center.Z();
-        } else {
-            if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
-                cerr_ << "[Error] Invalid use of --model-offset\n";
-				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-                print_options(serializer_options);
-                return EXIT_FAILURE;
-            }
+        if (site_local_placement || building_local_placement) {
+            Logger::Error("Cannot use --center-model together with --{site,building}-local-placement");
+            return EXIT_FAILURE;
         }
+
+        if (!quiet) Logger::Status("Computing bounds...");
+        context_iterator.compute_bounds();
+        if (!quiet) Logger::Status("Done!");
+
+        gp_XYZ center = (context_iterator.bounds_min() + context_iterator.bounds_max()) * 0.5;
+        offset[0] = -center.X();
+        offset[1] = -center.Y();
+        offset[2] = -center.Z();
 
         std::stringstream msg;
         msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
