@@ -73,10 +73,10 @@ BIND(IfcConnectedFaceSet);
 // BIND(IfcSweptDiskSolid);
 
 // BIND(IfcArbitraryProfileDefWithVoids);
-// BIND(IfcArbitraryClosedProfileDef);
+BIND(IfcArbitraryClosedProfileDef);
 // BIND(IfcRoundedRectangleProfileDef);
 // BIND(IfcRectangleHollowProfileDef);
-// BIND(IfcRectangleProfileDef);
+BIND(IfcRectangleProfileDef);
 // BIND(IfcTrapeziumProfileDef)
 // BIND(IfcCShapeProfileDef);
 // IfcAsymmetricIShapeProfileDef included
@@ -119,7 +119,7 @@ BIND(IfcPolyLoop);
 
 BIND(IfcCartesianPoint);
 BIND(IfcDirection);
-// BIND(IfcAxis2Placement2D);
+BIND(IfcAxis2Placement2D);
 BIND(IfcAxis2Placement3D);
 // BIND(IfcAxis1Placement);
 BIND(IfcCartesianTransformationOperator2DnonUniform);

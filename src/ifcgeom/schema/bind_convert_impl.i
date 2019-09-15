@@ -9,7 +9,7 @@
 			if (item != nullptr) { \
 				item->instance = l; \
 				try { \
-					if (l->as<IfcSchema::IfcRepresentationItem>()) { \
+					if (l->as<IfcSchema::IfcRepresentationItem>() && !l->as<IfcSchema::IfcStyledItem>()) { \
 						auto style = find_style(l->as<IfcSchema::IfcRepresentationItem>()); \
 						if (style) { \
 							((taxonomy::geom_item*)item)->surface_style = as<taxonomy::style>(map(style)); \

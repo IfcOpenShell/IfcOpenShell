@@ -505,7 +505,7 @@ namespace {
 	/* A compile-time for loop over the curve kinds */
 	template <typename T, size_t N=0>
 	struct dispatch_curve_creation {
-		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T visitor) {
+		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T& visitor) {
 			// @todo it should be possible to eliminate this dynamic_cast when there is a static equivalent to kind()
 			const ifcopenshell::geometry::taxonomy::curves::type<N>* v = dynamic_cast<const ifcopenshell::geometry::taxonomy::curves::type<N>*>(item);
 			if (v) {
@@ -519,7 +519,7 @@ namespace {
 
 	template <typename T>
 	struct dispatch_curve_creation<T, ifcopenshell::geometry::taxonomy::curves::max> {
-		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T visitor) {
+		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T& visitor) {
 			Logger::Error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
@@ -532,6 +532,7 @@ namespace {
 	}
 
 	struct curve_creation_visitor {
+		OpenCascadeKernel* kernel;
 		typedef boost::variant<Handle(Geom_Curve), TopoDS_Wire> result_type;
 		result_type result;
 
@@ -550,10 +551,32 @@ namespace {
 		result_type operator()(const taxonomy::ellipse& e) {
 			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz<gp_Pnt>(e.origin), convert_xyz<gp_Dir>(e.z), convert_xyz<gp_Dir>(e.x)), e.radius, e.radius2));
 		}
+
+		result_type operator()(const taxonomy::loop& l) {
+			TopoDS_Wire wire;
+			kernel->convert(&l, wire);
+			return result = wire;
+		}
+
+		result_type operator()(const taxonomy::edge& e) {
+			if (e.basis == nullptr) {
+				// @todo we should probably construct edges based on correct oriented TopoDS_Vertex instead.
+				auto p1 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.start));
+				auto p2 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.end));
+				TopoDS_Edge e = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
+				BRep_Builder B;
+				TopoDS_Wire W;
+				B.MakeWire(W);
+				B.Add(W, e);
+				return result = W;
+			} else {
+				throw std::runtime_error("not implemented");
+			}
+		}
 	};
 
-	curve_creation_visitor::result_type convert_curve(const taxonomy::item* curve) {
-		curve_creation_visitor v;
+	curve_creation_visitor::result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::item* curve) {
+		curve_creation_visitor v{ kernel };
 		if (dispatch_curve_creation<curve_creation_visitor, 0>::dispatch(curve, v)) {
 			return v.result;
 		} else {
@@ -771,7 +794,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
 	TopTools_ListOfShape converted_segments;
 
 	for (auto& segment : segments) {
-		TopoDS_Wire segment_wire = boost::get<TopoDS_Wire>(convert_curve(segment));
+		auto segment_wire = boost::get<TopoDS_Wire>(convert_curve(this, segment));
 
 		if (!segment->orientation) {
 			segment_wire.Reverse();
@@ -837,11 +860,13 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell:
 
 bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
 	// @todo check
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			trsf.SetValue(i + 1, j + 1, matrix->components(i, j));
-		}
-	}
+	gp_Trsf t;
+	t.SetValues(
+		matrix->components(0, 0), matrix->components(1, 0), matrix->components(2, 0), matrix->components(3, 0),
+		matrix->components(0, 1), matrix->components(1, 1), matrix->components(2, 1), matrix->components(3, 1),
+		matrix->components(0, 2), matrix->components(1, 2), matrix->components(2, 2), matrix->components(3, 2)
+	);
+	trsf = t;
 	return true;
 }
 

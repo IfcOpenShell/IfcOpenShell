@@ -22,6 +22,7 @@ namespace taxonomy {
 class topology_error : public std::runtime_error {
 public:
 	topology_error() : std::runtime_error("Generic topology error") {}
+	topology_error(const char* const s) : std::runtime_error(s) {}
 };
 
 enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLLECTION, COLOUR, STYLE };
@@ -248,7 +249,7 @@ struct node : public geom_item {
 
 namespace impl {
 	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, edge, loop, face, shell, extrusion, node, collection> KindsTuple;
-	typedef std::tuple<line, circle, ellipse, bspline_curve> CurvesTuple;
+	typedef std::tuple<line, circle, ellipse, bspline_curve, loop, edge> CurvesTuple;
 }
 
 struct type_by_kind {

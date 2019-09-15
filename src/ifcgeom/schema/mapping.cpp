@@ -106,7 +106,7 @@ namespace {
 		as(taxonomy::item* item) : item_(item) {}
 		operator T() const {
 			if (!item_) {
-				throw taxonomy::topology_error();
+				throw taxonomy::topology_error("item was nullptr");
 			}
 			T* t = dynamic_cast<T*>(item_);
 			if (t) {
@@ -118,7 +118,7 @@ namespace {
 						return upgrade;
 					}
 				}
-				throw taxonomy::topology_error();
+				throw taxonomy::topology_error("item does not match type");
 			}
 		}
 		~as() {
@@ -145,12 +145,11 @@ namespace {
 };
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
-	// @todo length unit
 	return new taxonomy::extrusion(
 		as<taxonomy::matrix4>(map(inst->Position())),
 		as<taxonomy::face>(map(inst->SweptArea())),
 		as<taxonomy::direction3>(map(inst->ExtrudedDirection())),
-		inst->Depth()
+		inst->Depth() * length_unit_
 	);
 }
 
@@ -265,12 +264,12 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
 	}
 
 	if (hasAxis) {
-		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Axis()));
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->Axis()));
 		axis = v.components;
 	}
 
 	if (hasRef) {
-		taxonomy::point3 v = as<taxonomy::point3>(map(inst->RefDirection()));
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->RefDirection()));
 		refDirection = v.components;
 	} else {
 		if (acos(axis.dot(X)) > 1.e-5) {
@@ -283,6 +282,20 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
 		refDirection = Xaxis;
 	}
 	return new taxonomy::matrix4(o, axis, refDirection);
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement2D* inst) {
+	Eigen::Vector3d P, axis(0, 0, 1), V(1, 0, 0);
+	{
+		taxonomy::point3 v = as<taxonomy::point3>(map(inst->Location()));
+		P = v.components;
+	}
+	const bool hasRef = inst->hasRefDirection();
+	if (hasRef) {
+		taxonomy::direction3 v = as<taxonomy::direction3>(map(inst->RefDirection()));
+		V = v.components;
+	}
+	return new taxonomy::matrix4(P, axis, V);
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* inst) {
@@ -756,8 +769,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 		for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 			styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
 		}
-		for (IfcSchema::IfcStyledItem::list::it it = styles->begin(); it != styles->end(); ++it) {
-			return map(*it);
+		if (styles->size() == 1) {
+			return map(*styles->begin());
 		}
 	}
 
@@ -829,6 +842,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 
 
 taxonomy::item* mapping::map(const IfcBaseClass* l) {
+	// std::wcout << l->data().toString().c_str() << std::endl;
 #include "bind_convert_impl.i"
 	Logger::Message(Logger::LOG_ERROR, "No operation defined for:", l);
 	return nullptr;
@@ -981,5 +995,122 @@ void mapping::initialize_units_() {
 
 	if (!angle_unit_encountered) {
 		Logger::Warning("No plane angle unit encountered");
+	}
+}
+
+namespace {
+	struct profile_point {
+		std::array<double, 2> xy;
+		boost::optional<double> radius;
+	};
+
+	struct profile_point_with_neighbours {
+		std::array<double, 2> xy;
+		boost::optional<double> radius;
+		profile_point* previous, *next;
+	};
+	taxonomy::loop* profile_helper(mapping* self, const IfcSchema::IfcParameterizedProfileDef* inst, const std::vector<profile_point>& points) {
+		
+		/* TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
+
+		for (int i = 0; i < numVerts; i++) {
+			gp_XY xy(verts[2 * i], verts[2 * i + 1]);
+			trsf.Transforms(xy);
+			vertices[i] = BRepBuilderAPI_MakeVertex(gp_Pnt(xy.X(), xy.Y(), 0.0f));
+		}
+
+		BRepBuilderAPI_MakeWire w;
+		for (int i = 0; i < numVerts; i++)
+			w.Add(BRepBuilderAPI_MakeEdge(vertices[i], vertices[(i + 1) % numVerts]));
+
+		TopoDS_Face face;
+		convert_wire_to_face(w.Wire(), face);
+
+		if (numFillets && *std::max_element(filletRadii, filletRadii + numFillets) > ALMOST_ZERO) {
+			BRepFilletAPI_MakeFillet2d fillet(face);
+			for (int i = 0; i < numFillets; i++) {
+				const double radius = filletRadii[i];
+				if (radius <= ALMOST_ZERO) continue;
+				fillet.AddFillet(vertices[filletIndices[i]], radius);
+			}
+			fillet.Build();
+			if (fillet.IsDone()) {
+				face = TopoDS::Face(fillet.Shape());
+			} else {
+				Logger::Error("Failed to process profile fillets");
+			}
+		}
+		*/
+
+		Eigen::Matrix4d m4;
+
+		bool has_position = true;
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
+		has_position = inst->hasPosition();
+#endif
+		if (has_position) {
+			taxonomy::matrix4 m = as<taxonomy::matrix4>(self->map(inst->Position()));
+			m4 = m.components;
+		}
+
+		// @todo precision
+		if (m4.isIdentity()) {
+			has_position = false;
+		}
+
+		std::vector<taxonomy::point3> ps;
+		ps.reserve(points.size());
+		std::transform(points.begin(), points.end(), std::back_inserter(ps), [&has_position, &m4](const profile_point& p) {
+			if (has_position) {
+				Eigen::Vector4d v(p.xy[0], p.xy[1], 0., 1.);
+				v = m4 * v;
+				return taxonomy::point3(v(0), v(1), 0.);
+			} else {
+				return taxonomy::point3(p.xy[0], p.xy[1], 0.);
+			}			
+		});
+
+		auto loop = new taxonomy::loop();
+		auto previous = ps.back();
+		for (auto& p : ps) {
+			auto e = new taxonomy::edge;
+			e->start = previous;
+			e->end = p;
+			previous = p;
+			loop->children.push_back(e);
+		}
+
+		return loop;
+	}
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangleProfileDef* inst) {
+	const double x = inst->XDim() / 2.0f * length_unit_;
+	const double y = inst->YDim() / 2.0f * length_unit_;
+	
+	// @todo
+	const double precision_ = 1.e-5;
+
+	if (x < precision_ || y < precision_) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
+	}
+
+	return profile_helper(this, inst, {
+		{{-x, -y}},
+		{{+x, -y}},
+		{{+x, +y}},
+		{{-x, +y}},
+	});
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcArbitraryClosedProfileDef* l) {
+	auto loop = map(l->OuterCurve());
+	if (loop) {
+		auto face = new taxonomy::face;
+		face->children = { loop };
+		return face;
+	} else {
+		return nullptr;
 	}
 }
