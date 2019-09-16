@@ -1115,7 +1115,7 @@ class IfcExportSettings:
     def __init__(self):
         self.has_representations = True
         self.has_quantities = True
-        self.subcontexts = ['Body', 'Axis', 'Clearance']
+        self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance']
 
 print('# Starting export')
 start = time.time()
