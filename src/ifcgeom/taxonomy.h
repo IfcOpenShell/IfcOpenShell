@@ -97,6 +97,7 @@ struct style : public item {
 struct geom_item : public item {
     style surface_style;
     matrix4 matrix;
+	boost::optional<bool> orientation;
 
 	geom_item(const IfcUtil::IfcBaseClass* instance = nullptr) : item(instance) {}
 	geom_item(const IfcUtil::IfcBaseClass* instance, matrix4 m) : item(instance), matrix(m) {}
@@ -128,17 +129,11 @@ struct direction3 : public cartesian_base<3> {
 struct curve : public geom_item {};
 
 struct line : public curve {
-	point3 origin;
-	direction3 direction;
-
 	virtual item* clone() const { return new line(*this); }
 	virtual kinds kind() const { return LINE; }
 };
 
 struct circle : public curve {
-	point3 origin;
-	direction3 x;
-	direction3 z;
 	double radius;
 
 	virtual item* clone() const { return new circle(*this); }
@@ -160,7 +155,7 @@ struct bspline_curve : public curve {
 struct trimmed_curve : public curve {
 	boost::variant<point3, double> start, end;
 	// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
-	curve* basis;
+	item* basis;
 	bool orientation;
 
 	trimmed_curve() : basis(nullptr), orientation(true) {}
@@ -216,7 +211,7 @@ struct face : public collection {
 };
 
 struct loop : public collection {
-	boost::optional<bool> external;
+	boost::optional<bool> external, closed;
 
 	virtual item* clone() const { return new loop(*this); }
 	virtual kinds kind() const { return LOOP; }

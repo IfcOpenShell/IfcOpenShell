@@ -533,8 +533,14 @@ namespace {
 
 	template <typename T, typename U>
 	T convert_xyz(const U& u) {
-		const double* vs = u.components.data();
-		return T(vs[0], vs[1], vs[2]);
+		const auto& vs = u.components;
+		return T(vs(0), vs(1), vs(2));
+	}
+
+	// @todo eliminate
+	template <typename T, typename U>
+	T convert_xyz2(const U& vs) {
+		return T(vs(0), vs(1), vs(2));
 	}
 
 	struct curve_creation_visitor {
@@ -547,15 +553,18 @@ namespace {
 		}
 
 		result_type operator()(const taxonomy::line& l) {
-			return result = Handle(Geom_Curve)(new Geom_Line(convert_xyz<gp_Pnt>(l.origin), convert_xyz<gp_Dir>(l.direction)));
+			const auto& m = l.matrix.components;
+			return result = Handle(Geom_Curve)(new Geom_Line(convert_xyz2<gp_Pnt>(m.row(3)), convert_xyz2<gp_Dir>(m.row(0))));
 		}
 
 		result_type operator()(const taxonomy::circle& c) {
-			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz<gp_Pnt>(c.origin), convert_xyz<gp_Dir>(c.z), convert_xyz<gp_Dir>(c.x)), c.radius));
+			const auto& m = c.matrix.components;
+			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz2<gp_Pnt>(m.row(3)), convert_xyz2<gp_Dir>(m.row(2)), convert_xyz2<gp_Dir>(m.row(0))), c.radius));
 		}
 
 		result_type operator()(const taxonomy::ellipse& e) {
-			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz<gp_Pnt>(e.origin), convert_xyz<gp_Dir>(e.z), convert_xyz<gp_Dir>(e.x)), e.radius, e.radius2));
+			const auto& m = e.matrix.components;
+			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz2<gp_Pnt>(m.row(3)), convert_xyz2<gp_Dir>(m.row(2)), convert_xyz2<gp_Dir>(m.row(0))), e.radius, e.radius2));
 		}
 
 		result_type operator()(const taxonomy::loop& l) {
