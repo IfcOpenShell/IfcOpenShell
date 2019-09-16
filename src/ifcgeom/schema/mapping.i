@@ -100,7 +100,7 @@ BIND(IfcFace);
 // BIND(IfcOrientedEdge);
 // BIND(IfcEdge);
 // BIND(IfcEdgeLoop);
-// BIND(IfcPolyline);
+BIND(IfcPolyline);
 BIND(IfcPolyLoop);
 // BIND(IfcCompositeCurve);
 // BIND(IfcTrimmedCurve);

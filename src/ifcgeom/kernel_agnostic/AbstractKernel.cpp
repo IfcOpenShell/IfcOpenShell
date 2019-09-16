@@ -31,7 +31,12 @@ namespace {
 }
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::item* item, ifcopenshell::geometry::ConversionResults& results) {
-	return dispatch_conversion<0>::dispatch(this, item, results);
+	try {
+		return dispatch_conversion<0>::dispatch(this, item, results);
+	} catch (std::exception& e) {
+		Logger::Error(e, item->instance);
+		return false;
+	}
 }
 
 ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels::construct(const std::string& geometry_library, IfcParse::IfcFile* file) {
