@@ -448,16 +448,15 @@ class IfcParser():
                 context = self.get_ifc_context(object.data.name)
                 name = self.get_ifc_representation_name(object.data.name)
                 for subcontext in self.ifc_export_settings.subcontexts:
-                    mesh = bpy.data.meshes['/'.join([context, subcontext, name])]
-                    if not mesh:
+                    try:
+                        mesh = bpy.data.meshes['/'.join([context, subcontext, name])]
+                    except:
                         continue
                     results[mesh.name] = self.get_representation(
                         mesh, context, subcontext)
             else:
-                context = 'Model'
-                subcontext = 'Body'
-                results[object.data.name] = self.get_representation(
-                    object.data, context, subcontext)
+                results['Model/Body/{}'.format(object.data.name)] = self.get_representation(
+                    object.data, 'Model', 'Body')
         return results
 
     def get_representation(self, mesh, context, subcontext):
@@ -567,13 +566,14 @@ class IfcParser():
         if not object.data:
             return names
         if not self.is_mesh_context_sensitive(object.data.name):
-            return [object.data.name]
+            return ['Model/Body/{}'.format(object.data.name)]
         for subcontext in self.ifc_export_settings.subcontexts:
-            mesh = bpy.data.meshes['/'.join([
-                self.get_ifc_context(object.data.name),
-                subcontext,
-                self.get_ifc_representation_name(object.data.name)])]
-            if not mesh:
+            try:
+                mesh = bpy.data.meshes['/'.join([
+                    self.get_ifc_context(object.data.name),
+                    subcontext,
+                    self.get_ifc_representation_name(object.data.name)])]
+            except:
                 continue
             names.append(mesh.name)
         return names
