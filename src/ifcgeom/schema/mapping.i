@@ -102,14 +102,14 @@ BIND(IfcFace);
 // BIND(IfcEdgeLoop);
 BIND(IfcPolyline);
 BIND(IfcPolyLoop);
-// BIND(IfcCompositeCurve);
-// BIND(IfcTrimmedCurve);
+BIND(IfcCompositeCurve);
+BIND(IfcTrimmedCurve);
 // BIND(IfcArbitraryOpenProfileDef);
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 // BIND(IfcIndexedPolyCurve)
 #endif
 
-// BIND(IfcCircle);
+BIND(IfcCircle);
 // BIND(IfcEllipse);
 // BIND(IfcLine);
 #ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
