@@ -11,11 +11,14 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 
 	// @todo check
 	gp_GTrsf trsf;
-	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			trsf.SetValue(i + 1, j + 1, place.components(i, j));
-		}
-	}
+	gp_Trsf tr;
+	const auto& m = place.components;
+	tr.SetValues(
+		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+	);
+	trsf = tr;
 
 	// Triangulate the shape
 	try {

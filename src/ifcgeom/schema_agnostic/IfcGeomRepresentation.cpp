@@ -95,11 +95,14 @@ ifcopenshell::geometry::ConversionResultShape* ifcopenshell::geometry::Represent
 		
 		// @todo, check
 		gp_GTrsf trsf;
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				trsf.SetValue(i + 1, j + 1, it->Placement().components(i, j));
-			}
-		}
+		gp_Trsf tr;
+		const auto& m = it->Placement().components;
+		tr.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+		trsf = tr;
 
 		if (!force_meters && settings().get(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS)) {
 			gp_Trsf scale;
@@ -240,11 +243,14 @@ bool ifcopenshell::geometry::Representation::BRep::calculate_projected_surface_a
 	try {
 		// @todo check
 		gp_GTrsf trsf;
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				trsf.SetValue(i + 1, j + 1, place.components(i, j));
-			}
-		}
+		gp_Trsf tr;
+		const auto& m = place.components;
+		tr.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+		trsf = tr;
 
 		gp_Mat mat = trsf.Trsf().HVectorialPart();
 		gp_Ax3 ax(trsf.TranslationPart(), mat.Column(3), mat.Column(1));
