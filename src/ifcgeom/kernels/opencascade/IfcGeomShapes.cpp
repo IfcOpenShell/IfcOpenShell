@@ -124,12 +124,16 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 		return false;
 	}
 
+	/*
+	// @todo we need to decide whether the matrix is kept on the taxonomy node or
+	// move the TopoDS_Shape, but obviously not both.
 	gp_GTrsf gtrsf;
 	if (!convert(&extrusion->matrix, gtrsf)) {
 		Logger::Error("Unable to move extrusion");
 	}
 	auto trsf = gtrsf.Trsf();
-	
+	*/
+
 	auto fs = extrusion->direction.components.data();
 	gp_Dir dir(fs[0], fs[1], fs[2]);
 	
@@ -161,11 +165,13 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 		shape = BRepPrimAPI_MakePrism(face, height*dir);
 	}
 
+	/*
 	if (!shape.IsNull()) {
 		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
 		// and therefore has a unit scale factor
 		shape.Move(trsf);
 	}
+	*/
 
 	return !shape.IsNull();
 }
@@ -831,6 +837,9 @@ bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcopenshell::geometry::ConversionResults& results) {
+	if (((IfcUtil::IfcBaseEntity*)extrusion->instance)->data().id() == 5722) {
+		std::wcerr << 1;
+	}
 	TopoDS_Shape shape;
 	if (!convert(extrusion, shape)) {
 		return false;
@@ -860,13 +869,14 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell:
 
 bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
 	// @todo check
-	gp_Trsf t;
-	t.SetValues(
-		matrix->components(0, 0), matrix->components(1, 0), matrix->components(2, 0), matrix->components(3, 0),
-		matrix->components(0, 1), matrix->components(1, 1), matrix->components(2, 1), matrix->components(3, 1),
-		matrix->components(0, 2), matrix->components(1, 2), matrix->components(2, 2), matrix->components(3, 2)
+	gp_Trsf tr;
+	const auto& m = matrix->components;
+	tr.SetValues(
+		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
 	);
-	trsf = t;
+	trsf = tr;
 	return true;
 }
 
