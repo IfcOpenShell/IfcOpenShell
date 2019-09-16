@@ -1170,3 +1170,23 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 
 	return polygon_from_points(polygon);
 }
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
+	IfcSchema::IfcCartesianTransformationOperator* transform = inst->MappingTarget();
+	taxonomy::matrix4 gtrsf = as<taxonomy::matrix4>(map(transform));
+	IfcSchema::IfcRepresentationMap* rmap = inst->MappingSource();
+	IfcSchema::IfcAxis2Placement* placement = rmap->MappingOrigin();
+	taxonomy::matrix4 trsf2 = as<taxonomy::matrix4>(map(placement));
+	gtrsf.components = gtrsf.components * trsf2.components;
+	
+	// @todo immutable for caching?
+	// @todo allow for multiple levels of matrix?
+	auto shapes = map(rmap->MappedRepresentation());
+	for (auto& c : ((taxonomy::collection*)shapes)->children) {
+		auto item = ((taxonomy::geom_item*)c);
+		item->matrix.components = gtrsf.components * item->matrix.components;
+		// @todo previously style was also copied.
+	}
+
+	return shapes;
+}
