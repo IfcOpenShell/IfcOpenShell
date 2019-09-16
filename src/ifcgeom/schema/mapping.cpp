@@ -1009,6 +1009,20 @@ namespace {
 		boost::optional<double> radius;
 		profile_point* previous, *next;
 	};
+
+	taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps) {
+		auto loop = new taxonomy::loop();
+		auto previous = ps.back();
+		for (auto& p : ps) {
+			auto e = new taxonomy::edge;
+			e->start = previous;
+			e->end = p;
+			previous = p;
+			loop->children.push_back(e);
+		}
+		return loop;
+	}
+
 	taxonomy::loop* profile_helper(mapping* self, const IfcSchema::IfcParameterizedProfileDef* inst, const std::vector<profile_point>& points) {
 		
 		/* TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
@@ -1070,17 +1084,7 @@ namespace {
 			}			
 		});
 
-		auto loop = new taxonomy::loop();
-		auto previous = ps.back();
-		for (auto& p : ps) {
-			auto e = new taxonomy::edge;
-			e->start = previous;
-			e->end = p;
-			previous = p;
-			loop->children.push_back(e);
-		}
-
-		return loop;
+		return polygon_from_points(ps);
 	}
 }
 
@@ -1113,4 +1117,56 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcArbitraryClosedProfileDef*
 	} else {
 		return nullptr;
 	}
+}
+
+namespace {
+	void remove_duplicate_points_from_loop(std::vector<taxonomy::point3>& polygon, bool closed, double tol) {
+		for (;;) {
+			bool removed = false;
+			int n = polygon.size() - (closed ? 0 : 1);
+			for (int i = 1; i <= n; ++i) {
+				// wrap around to the first point in case of a closed loop
+				int j = (i % polygon.size()) + 1;
+				double dist = (polygon.at(i - 1).components - polygon.at(j - 1).components).squaredNorm();
+				if (dist < tol) {
+					// do not remove the first or last point to
+					// maintain connectivity with other wires
+					if ((closed && j == 1) || (!closed && j == n)) polygon.erase(polygon.begin() + i - 1);
+					else polygon.erase(polygon.begin() + j - 1);
+					removed = true;
+					break;
+				}
+			}
+			if (!removed) break;
+		}
+	}
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
+	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Points();
+
+	// @todo
+	const double precision_ = 1.e-5;
+
+	// Parse and store the points in a sequence
+	std::vector<taxonomy::point3> polygon;
+	polygon.reserve(points->size());
+	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
+		return as<taxonomy::point3>(map(p));
+	});
+
+	const double eps = precision_ * 10;
+	const bool closed_by_proximity = polygon.size() >= 3 && (polygon.front().components - polygon.back().components).norm() < eps;
+	if (closed_by_proximity) {
+		polygon.resize(polygon.size() - 1);
+	}
+
+	// Remove points that are too close to one another
+	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+
+	if (polygon.size() < 2) {
+		return false;
+	}
+
+	return polygon_from_points(polygon);
 }
