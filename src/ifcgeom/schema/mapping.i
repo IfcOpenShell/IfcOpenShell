@@ -29,7 +29,7 @@ BIND(IfcProduct);
 // BIND(IfcShellBasedSurfaceModel);
 BIND(IfcFaceBasedSurfaceModel);
 BIND(IfcRepresentation);
-// BIND(IfcMappedItem);
+BIND(IfcMappedItem);
 // IfcFacetedBrep included
 // IfcAdvancedBrep included
 // IfcFacetedBrepWithVoids included
