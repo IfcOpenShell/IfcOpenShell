@@ -203,7 +203,7 @@ class IfcParser():
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
             'relating_qtos_key': None,
-            'representation': self.get_object_representation_name(object),
+            'representations': self.get_object_representation_names(object),
             'attributes': self.get_object_attributes(object)
             }
         product['attributes'].update(attribute_override)
@@ -443,13 +443,45 @@ class IfcParser():
             if not object.data \
                 or object.data.name in results:
                 continue
-            results[object.data.name] = {
-                'ifc': None,
-                'raw': object.data,
-                'is_wireframe': True if 'IsWireframe' in object.data else False,
-                'attributes': { 'Name': object.data.name }
-                }
+
+            if self.is_mesh_context_sensitive(object.data.name):
+                context = self.get_ifc_context(object.data.name)
+                name = self.get_ifc_representation_name(object.data.name)
+                for subcontext in self.ifc_export_settings.subcontexts:
+                    mesh = bpy.data.meshes['/'.join([context, subcontext, name])]
+                    if not mesh:
+                        continue
+                    results[mesh.name] = self.get_representation(
+                        mesh, context, subcontext)
+            else:
+                context = 'Model'
+                subcontext = 'Body'
+                results[object.data.name] = self.get_representation(
+                    object.data, context, subcontext)
         return results
+
+    def get_representation(self, mesh, context, subcontext):
+        return {
+            'ifc': None,
+            'raw': mesh,
+            'context': context,
+            'subcontext': subcontext,
+            'is_wireframe': True if 'IsWireframe' in mesh else False,
+            'attributes': { 'Name': mesh.name }
+            }
+
+    def is_mesh_context_sensitive(self, name):
+        return '/' in name
+
+    def get_ifc_context(self, name):
+        if self.is_mesh_context_sensitive(name):
+            return name.split('/')[0]
+        return 'Model'
+
+    def get_ifc_representation_name(self, name):
+        if self.is_mesh_context_sensitive(name):
+            return name.split('/')[2]
+        return name
 
     def get_materials(self):
         results = {}
@@ -508,7 +540,7 @@ class IfcParser():
                         'psets': ['{}/{}'.format(key, object[key]) for key in
                             object.keys() if key[0:5] == 'Pset_'],
                         'class': self.get_ifc_class(object.name),
-                        'representation': self.get_object_representation_name(object),
+                        'representations': self.get_object_representation_names(object),
                         'attributes': self.get_object_attributes(object)
                     }
                     results.append(type)
@@ -530,10 +562,21 @@ class IfcParser():
                     print('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
         return results
 
-    def get_object_representation_name(self, object):
-        if object.data:
-            return object.data.name
-        return None
+    def get_object_representation_names(self, object):
+        names = []
+        if not object.data:
+            return names
+        if not self.is_mesh_context_sensitive(object.data.name):
+            return [object.data.name]
+        for subcontext in self.ifc_export_settings.subcontexts:
+            mesh = bpy.data.meshes['/'.join([
+                self.get_ifc_context(object.data.name),
+                subcontext,
+                self.get_ifc_representation_name(object.data.name)])]
+            if not mesh:
+                continue
+            names.append(mesh.name)
+        return names
 
     def get_spatial_structure_elements_tree(self, collections, name_filter):
         collection_tree = []
@@ -747,17 +790,24 @@ class IfcExporter():
         return str(value)
 
     def create_rep_context(self):
-        self.ifc_rep_context = self.file.createIfcGeometricRepresentationContext(
-            None, "Model", 3, 1.0E-05, self.origin)
-
-        self.ifc_rep_subcontext = self.file.createIfcGeometricRepresentationSubContext(
-            "Body", "Model",
-            None, None, None, None,
-            self.ifc_rep_context, None, "MODEL_VIEW", None)
+        self.ifc_rep_context = {}
+        self.ifc_rep_context['Model'] = {
+            'ifc': self.file.createIfcGeometricRepresentationContext(
+                None, 'Model', 3, 1.0E-05, self.origin)}
+        # TODO Make optional
+        self.ifc_rep_context['Plan'] = {
+            'ifc': self.file.createIfcGeometricRepresentationContext(
+                None, 'Plan', 2, 1.0E-05, self.origin)}
+        for subcontext in self.ifc_export_settings.subcontexts:
+            self.ifc_rep_context['Model'][subcontext] = {
+                'ifc': self.file.createIfcGeometricRepresentationSubContext(
+                    subcontext, 'Model',
+                    None, None, None, None,
+                    self.ifc_rep_context['Model']['ifc'], None, 'MODEL_VIEW', None)}
 
     def create_project(self):
         self.ifc_parser.project['attributes'].update({
-            'RepresentationContexts': [self.ifc_rep_context],
+            'RepresentationContexts': [c['ifc'] for c in self.ifc_rep_context.values()],
             'UnitsInContext': self.file.by_type("IfcUnitAssignment")[0]
             })
         self.ifc_parser.project['ifc'] = self.file.create_entity(
@@ -775,7 +825,8 @@ class IfcExporter():
         if not self.ifc_parser.map_conversion:
             return
         self.create_target_crs()
-        self.ifc_parser.map_conversion['attributes']['SourceCRS'] = self.ifc_rep_context
+        # TODO should this be hardcoded?
+        self.ifc_parser.map_conversion['attributes']['SourceCRS'] = self.ifc_rep_context['Model']['ifc']
         self.ifc_parser.map_conversion['attributes']['TargetCRS'] = self.ifc_parser.target_crs['ifc']
         self.ifc_parser.map_conversion['ifc'] = self.file.create_entity('IfcMapConversion',
             **self.ifc_parser.map_conversion['attributes'])
@@ -792,10 +843,12 @@ class IfcExporter():
         for product in self.ifc_parser.type_products:
             placement = self.create_ifc_axis_2_placement_3d(product['location'], product['up_axis'], product['forward_axis'])
 
-            if product['representation']:
-                representation = self.ifc_parser.representations[product['representation']]['ifc']
-                representation_map = self.file.createIfcRepresentationMap(placement, representation)
-                product['attributes']['RepresentationMaps'] = [representation_map]
+            if product['representations']:
+                maps = []
+                for representation in product['representations']:
+                    maps.append(self.file.createIfcRepresentationMap(
+                        placement, self.ifc_parser.representations[representation]['ifc']))
+                product['attributes']['RepresentationMaps'] = maps
 
             if product['psets']:
                 product['attributes'].update({ 'HasPropertySets':
@@ -854,7 +907,7 @@ class IfcExporter():
             surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
             styled_item = self.file.createIfcStyledItem(None, [surface_style], None)
             styled_representation = self.file.createIfcStyledRepresentation(
-                self.ifc_rep_subcontext, None, None, [styled_item])
+                self.ifc_rep_context['Model']['Body']['ifc'], None, None, [styled_item])
             material['ifc'] = self.file.createIfcMaterial(material['raw'].name, None, None)
             self.file.createIfcMaterialDefinitionRepresentation(
                 material['raw'].name, None, [styled_representation], material['ifc'])
@@ -913,22 +966,24 @@ class IfcExporter():
                 product['up_axis'],
                 product['forward_axis']))
 
-        try:
-            shape = self.file.createIfcProductDefinitionShape(None, None,
-                [self.ifc_parser.representations[product['representation']]['ifc']])
-        except:
-            shape = None
-
         product['attributes'].update({
             'OwnerHistory': self.owner_history, # TODO: unhardcode
             'ObjectPlacement': placement,
-            'Representation': shape
+            'Representation': self.get_product_shape(product)
             })
 
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
         except RuntimeError as e:
             print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def get_product_shape(self, product):
+        try:
+            shape = self.file.createIfcProductDefinitionShape(None, None,
+                [self.ifc_parser.representations[p]['ifc'] for p in product['representations']])
+        except:
+            shape = None
+        return shape
 
     def calculate_quantities(self, qto_name, object):
         quantities = []
@@ -965,20 +1020,25 @@ class IfcExporter():
         self.ifc_vertices = []
         self.ifc_edges = []
         self.ifc_faces = []
-        if representation['is_wireframe']:
-            return self.create_wireframe_representation(representation['raw'])
-        return self.create_solid_representation(representation['raw'])
+        if representation['context'] == 'Plan' \
+            or representation['subcontext'] == 'Axis' \
+            or representation['is_wireframe']:
+            return self.create_wireframe_representation(representation)
+        return self.create_solid_representation(representation)
 
-    def create_wireframe_representation(self, mesh):
+    def create_wireframe_representation(self, representation):
+        mesh = representation['raw']
         self.create_vertices(mesh.vertices)
         for edge in mesh.edges:
             self.ifc_edges.append(self.file.createIfcPolyline([
                 self.ifc_vertices[v] for v in edge.vertices]))
         return self.file.createIfcShapeRepresentation(
-            self.ifc_rep_subcontext, 'Body', 'Curve',
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'Curve',
             self.ifc_edges)
 
-    def create_solid_representation(self, mesh):
+    def create_solid_representation(self, representation):
+        mesh = representation['raw']
         self.create_vertices(mesh.vertices)
         for polygon in mesh.polygons:
             self.ifc_faces.append(self.file.createIfcFace([
@@ -986,7 +1046,8 @@ class IfcExporter():
                     self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
         return self.file.createIfcShapeRepresentation(
-            self.ifc_rep_subcontext, 'Body', 'Brep',
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'Brep',
             [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(self.ifc_faces))])
 
     def create_vertices(self, vertices):
@@ -1054,6 +1115,7 @@ class IfcExportSettings:
     def __init__(self):
         self.has_representations = True
         self.has_quantities = True
+        self.subcontexts = ['Body', 'Axis']
 
 print('# Starting export')
 start = time.time()
