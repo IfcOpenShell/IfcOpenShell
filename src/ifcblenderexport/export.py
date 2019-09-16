@@ -622,13 +622,13 @@ class IfcExporter():
         self.set_common_definitions()
         self.ifc_parser.parse()
         self.create_units()
+        self.create_rep_context()
+        self.create_project()
         self.create_documents()
         self.create_classifications()
         self.create_classification_references()
         self.create_objectives()
         self.create_psets()
-        self.create_rep_context()
-        self.create_project()
         self.create_libraries()
         self.create_map_conversion()
         self.create_representations()
@@ -680,11 +680,17 @@ class IfcExporter():
         for document in self.ifc_parser.documents.values():
             document['ifc'] = self.file.create_entity(
                 'IfcDocumentReference', **document['attributes'])
+            self.file.createIfcRelAssociatesDocument(
+                ifcopenshell.guid.new(), None, None, None,
+                [self.ifc_parser.project['ifc']], document['ifc'])
 
     def create_classifications(self):
         for classification in self.ifc_parser.classifications:
             classification['ifc'] = self.file.create_entity(
                 'IfcClassification', **classification['attributes'])
+            self.file.createIfcRelAssociatesClassification(
+                ifcopenshell.guid.new(), None, None, None,
+                [self.ifc_parser.project['ifc']], classification['ifc'])
 
     def create_classification_references(self):
         for reference in self.ifc_parser.classification_references.values():
