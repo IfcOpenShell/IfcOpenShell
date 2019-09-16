@@ -131,9 +131,9 @@ namespace IfcGeom
         }
 
         /// Optional offset x,y,z that is applied to all elements, (0,0,0) by default.
-        std::array<double,3> offset = {0.0, 0.0, 0.0};
+        std::array<double,3> offset = std::array<double,3>{0.0, 0.0, 0.0};
         /// Optional rotation x,y,z,w that is applied to all elements, (0,0,0,1) by default.
-        std::array<double,4> rotation = {0.0, 0.0, 0.0, 1.0};
+        std::array<double,4> rotation = std::array<double,4>{0.0, 0.0, 0.0, 1.0};
 
     protected:
         SettingField settings_;
