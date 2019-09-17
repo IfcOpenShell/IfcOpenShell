@@ -919,7 +919,8 @@ class IfcExporter():
         return self.file.create_entity('IfcSurfaceStyleRendering', **rendering_attributes)
 
     def get_rendering_attributes(self, material):
-        if 'Principled BSDF' not in material.node_tree.nodes:
+        if not hasattr(material.node_tree, 'nodes') \
+            or 'Principled BSDF' not in material.node_tree.nodes:
             return {}
         bsdf = material.node_tree.nodes['Principled BSDF']
         return {
