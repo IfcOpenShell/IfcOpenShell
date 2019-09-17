@@ -54,6 +54,17 @@ Let's use Blender to create BIM models, because why not?
    Cycles material, V-Ray material, or even Radiance material for lighting
    simulation.
  - Switch between different types of metric units when modeling.
+ - Model multiple representations for different purposes for a single BIM
+   object or type, such as footprints, axis, reference, or clearance geometry.
+   You can export just the type of representation required for your usecase, or
+   export multiple for the user to choose from.
+ - Record qualitative objectives such as design intentions, health and safety
+   strategies, or code compliance, performance solutions, and more, in the BIM
+   model and directly associate them to objects or types.
+ - Classify objects and types to different classification systems such as
+   Uniclass, Omniclass, or your custom system.
+ - Associate external document files such as plans, brochures, specifications,
+   warranties, or anything to objects and types.
 
 ## Demo
 
