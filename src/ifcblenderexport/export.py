@@ -444,28 +444,44 @@ class IfcParser():
                 or object.data.name in results:
                 continue
 
-            if self.is_mesh_context_sensitive(object.data.name):
-                context = self.get_ifc_context(object.data.name)
-                name = self.get_ifc_representation_name(object.data.name)
-                for subcontext in self.ifc_export_settings.subcontexts:
-                    try:
-                        mesh = bpy.data.meshes['/'.join([context, subcontext, name])]
-                    except:
-                        continue
-                    results[mesh.name] = self.get_representation(
-                        mesh, context, subcontext)
-            else:
-                results['Model/Body/{}'.format(object.data.name)] = self.get_representation(
-                    object.data, 'Model', 'Body')
+            self.append_default_representation(object, results)
+            self.append_representation_per_context(object, results)
+            self.append_generated_representation_per_context(object, results)
         return results
 
-    def get_representation(self, mesh, context, subcontext):
+    def append_default_representation(self, object, results):
+        if not self.is_mesh_context_sensitive(object.data.name):
+            results['Model/Body/{}'.format(object.data.name)] = self.get_representation(
+                object.data, 'Model', 'Body')
+
+    def append_representation_per_context(self, object, results):
+        context = self.get_ifc_context(object.data.name)
+        name = self.get_ifc_representation_name(object.data.name)
+        for subcontext in self.ifc_export_settings.subcontexts:
+            try:
+                mesh = bpy.data.meshes['/'.join([context, subcontext, name])]
+            except:
+                continue
+            results[mesh.name] = self.get_representation(
+                mesh, context, subcontext)
+
+    def append_generated_representation_per_context(self, object, results):
+        context = self.get_ifc_context(object.data.name)
+        name = self.get_ifc_representation_name(object.data.name)
+        for subcontext in self.ifc_export_settings.generated_subcontexts:
+            representation = self.get_representation(
+                object, context, subcontext, is_generated=True)
+            representation['raw_object'] = object
+            results['/'.join([context, subcontext, name])] = representation
+
+    def get_representation(self, mesh, context, subcontext, is_generated=False):
         return {
             'ifc': None,
             'raw': mesh,
             'context': context,
             'subcontext': subcontext,
             'is_wireframe': True if 'IsWireframe' in mesh else False,
+            'is_generated': is_generated,
             'attributes': { 'Name': mesh.name }
             }
 
@@ -566,7 +582,7 @@ class IfcParser():
         if not object.data:
             return names
         if not self.is_mesh_context_sensitive(object.data.name):
-            return ['Model/Body/{}'.format(object.data.name)]
+            names.append('Model/Body/{}'.format(object.data.name))
         for subcontext in self.ifc_export_settings.subcontexts:
             try:
                 mesh = bpy.data.meshes['/'.join([
@@ -576,6 +592,8 @@ class IfcParser():
             except:
                 continue
             names.append(mesh.name)
+        for subcontext in self.ifc_export_settings.generated_subcontexts:
+            names.append('Model/{}/{}'.format(subcontext, self.get_ifc_representation_name(object.data.name)))
         return names
 
     def get_spatial_structure_elements_tree(self, collections, name_filter):
@@ -798,7 +816,8 @@ class IfcExporter():
         self.ifc_rep_context['Plan'] = {
             'ifc': self.file.createIfcGeometricRepresentationContext(
                 None, 'Plan', 2, 1.0E-05, self.origin)}
-        for subcontext in self.ifc_export_settings.subcontexts:
+        for subcontext in (self.ifc_export_settings.subcontexts +
+            self.ifc_export_settings.generated_subcontexts):
             self.ifc_rep_context['Model'][subcontext] = {
                 'ifc': self.file.createIfcGeometricRepresentationSubContext(
                     subcontext, 'Model',
@@ -1021,11 +1040,25 @@ class IfcExporter():
         self.ifc_vertices = []
         self.ifc_edges = []
         self.ifc_faces = []
-        if representation['context'] == 'Plan' \
+        if representation['is_generated']:
+            if representation['subcontext'] == 'Box':
+                return self.create_box_representation(representation)
+        elif representation['context'] == 'Plan' \
             or representation['subcontext'] == 'Axis' \
             or representation['is_wireframe']:
             return self.create_wireframe_representation(representation)
-        return self.create_solid_representation(representation)
+        else:
+            return self.create_solid_representation(representation)
+
+    def create_box_representation(self, representation):
+        object = representation['raw_object']
+        bounding_box = self.file.createIfcBoundingBox(
+            self.create_cartesian_point(
+                object.bound_box[0][0], object.bound_box[0][1], object.bound_box[0][2]),
+            object.dimensions[0], object.dimensions[1], object.dimensions[2])
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'BoundingBox', [bounding_box])
 
     def create_wireframe_representation(self, representation):
         mesh = representation['raw']
@@ -1053,8 +1086,11 @@ class IfcExporter():
 
     def create_vertices(self, vertices):
         for vertice in vertices:
-            self.ifc_vertices.append(
-                self.file.createIfcCartesianPoint((vertice.co.x, vertice.co.y, vertice.co.z)))
+            self.ifc_vertices.append(self.create_cartesian_point(
+                vertice.co.x, vertice.co.y, vertice.co.z))
+
+    def create_cartesian_point(self, x, y, z):
+        return self.file.createIfcCartesianPoint((x, y, z))
 
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
@@ -1117,6 +1153,7 @@ class IfcExportSettings:
         self.has_representations = True
         self.has_quantities = True
         self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance']
+        self.generated_subcontexts = ['Box']
 
 print('# Starting export')
 start = time.time()
