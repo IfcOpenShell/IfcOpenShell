@@ -1040,9 +1040,11 @@ class IfcExporter():
         self.ifc_vertices = []
         self.ifc_edges = []
         self.ifc_faces = []
-        if representation['is_generated']:
-            if representation['subcontext'] == 'Box':
-                return self.create_box_representation(representation)
+        if representation['is_generated'] \
+            and representation['subcontext'] == 'Box':
+            return self.create_box_representation(representation)
+        elif representation['subcontext'] == 'CoG':
+            return self.create_cog_representation(representation)
         elif representation['context'] == 'Plan' \
             or representation['subcontext'] == 'Axis' \
             or representation['is_wireframe']:
@@ -1059,6 +1061,14 @@ class IfcExporter():
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
             representation['subcontext'], 'BoundingBox', [bounding_box])
+
+    def create_cog_representation(self, representation):
+        mesh = representation['raw']
+        cog = self.create_cartesian_point(
+            mesh.vertices[0].co.x, mesh.vertices[0].co.y, mesh.vertices[0].co.z)
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'BoundingBox', [cog])
 
     def create_wireframe_representation(self, representation):
         mesh = representation['raw']
@@ -1152,7 +1162,7 @@ class IfcExportSettings:
     def __init__(self):
         self.has_representations = True
         self.has_quantities = True
-        self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance']
+        self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG']
         self.generated_subcontexts = ['Box']
 
 print('# Starting export')
