@@ -33,7 +33,7 @@ namespace geometry {
 		IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
 		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation);
 		bool reuse_ok_(settings& s, const IfcSchema::IfcProduct::list::ptr& products);
-		IfcEntityList::ptr find_openings(IfcSchema::IfcProduct* product);
+		IfcEntityList::ptr find_openings(const IfcSchema::IfcProduct* product);
 		IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity* product, bool include_openings);
 
 #include "bind_convert_decl.i"

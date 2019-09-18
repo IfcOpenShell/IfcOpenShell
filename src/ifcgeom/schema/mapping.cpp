@@ -74,6 +74,7 @@ namespace {
 				face_->instance = loop->instance;
 				face_->matrix = loop->matrix;
 				// @todo make sure loop is not freed
+				// this is accounted for below with as::upgraded_
 				face_->children = { loop };
 			}
 		}
@@ -101,9 +102,10 @@ namespace {
 	class as {
 	private:
 		taxonomy::item* item_;
+		mutable bool upgraded_;
 
 	public:
-		as(taxonomy::item* item) : item_(item) {}
+		as(taxonomy::item* item) : item_(item), upgraded_(false) {}
 		operator T() const {
 			if (!item_) {
 				throw taxonomy::topology_error("item was nullptr");
@@ -115,6 +117,7 @@ namespace {
 				{
 					loop_to_face_upgrade<T> upgrade(item_);
 					if (upgrade) {
+						upgraded_ = true;
 						return upgrade;
 					}
 				}
@@ -122,7 +125,10 @@ namespace {
 			}
 		}
 		~as() {
-			delete item_;
+			if (!upgraded_) {
+				// @todo revisit this
+				delete item_;
+			}
 		}
 	};
 
@@ -153,12 +159,66 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	);
 }
 
+namespace {
+	template <typename Fn>
+	void visit(taxonomy::collection* deep, Fn fn) {
+		for (auto& c : deep->children) {
+			if (c->kind() == taxonomy::COLLECTION) {
+				visit((taxonomy::collection*)c, fn);
+			} else {
+				fn(c);
+			}
+		}
+	}
+
+	taxonomy::collection* flatten(taxonomy::collection* deep) {
+		auto flat = new taxonomy::collection;
+		visit(deep, [&flat](taxonomy::item* i) {
+			flat->children.push_back(i);
+		});
+		return flat;
+	}
+
+	template <typename Fn>
+	taxonomy::collection* filter(taxonomy::collection* collection, Fn fn) {
+		auto filtered = new taxonomy::collection;
+		for (auto& child : collection->children) {
+			if (fn(child)) {
+				filtered->children.push_back(child);
+			}
+		}
+		if (filtered->children.empty()) {
+			delete filtered;
+			return nullptr;
+		}
+		return filtered;
+	}
+}
+
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
-	return map_to_collection(this, inst->Items());
+	auto items = map_to_collection(this, inst->Items());
+	if (items == nullptr) {
+		return nullptr;
+	}
+	auto flat = flatten(items);
+	if (flat == nullptr) {
+		return nullptr;
+	}
+	auto filtered = filter(flat, [](taxonomy::item* i) {
+		// @todo just filter loops for now.
+		return i->kind() != taxonomy::LOOP;
+	});
+	delete items;
+	delete flat;
+	return filtered;
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* inst) {
 	return map_to_collection(this, inst->FbsmFaces());
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcGeometricSet* inst) {
+	return map_to_collection(this, inst->Elements());
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcConnectedFaceSet* inst) {
@@ -245,7 +305,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcDirection* inst) {
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
-	auto n = new taxonomy::node;
+	auto openings = find_openings(inst);
+	auto n = map_to_collection<taxonomy::node>(this, openings);
 	n->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 	return n;
 }
@@ -449,7 +510,7 @@ bool mapping::reuse_ok_(settings& s, const IfcSchema::IfcProduct::list::ptr& pro
 	return associated_single_materials.size() == 1;
 }
 
-IfcEntityList::ptr mapping::find_openings(IfcSchema::IfcProduct* product) {
+IfcEntityList::ptr mapping::find_openings(const IfcSchema::IfcProduct* product) {
 
 	IfcEntityList::ptr openings(new IfcEntityList);
 	if (product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
@@ -458,7 +519,7 @@ IfcEntityList::ptr mapping::find_openings(IfcSchema::IfcProduct* product) {
 	}
 
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-	IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
+	const IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
 	for (;;) {
 		auto decomposes = obdef->Decomposes()->generalize();
 		if (decomposes->size() != 1) break;
@@ -1261,6 +1322,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 			Logger::Message(Logger::LOG_WARNING, "Skipping segment with length below tolerance level:", inst);
 			return false;
 		}
+		tc->start = pnts[0];
+		tc->end = pnts[1];
 	} else if (has_flts[0] && has_flts[1]) {
 		// The Geom_Line is constructed from a gp_Pnt and gp_Dir, whereas the IfcLine
 		// is defined by an IfcCartesianPoint and an IfcVector with Magnitude. Because
@@ -1275,12 +1338,15 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 			IfcSchema::IfcEllipse* ellipse = static_cast<IfcSchema::IfcEllipse*>(basis_curve);
 			double x = ellipse->SemiAxis1() * length_unit_;
 			double y = ellipse->SemiAxis2() * length_unit_;
+			// @todo the need for this rotation is OCCT-specific
 			const bool rotated = y > x;
 			if (rotated) {
 				flts[0] -= M_PI / 2.;
 				flts[1] -= M_PI / 2.;
 			}
 		}
+		tc->start = flts[0];
+		tc->end = flts[1];
 	}
 
 	/*
@@ -1314,4 +1380,80 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircle* inst) {
 	c->matrix = as<taxonomy::matrix4>(map(inst->Position()));
 	c->radius = inst->Radius();
 	return c;
+}
+
+namespace {
+	taxonomy::boolean_result::operation_t boolean_op_type(IfcSchema::IfcBooleanOperator::Value op) {
+		if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
+			return taxonomy::boolean_result::SUBTRACTION;
+		} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
+			return taxonomy::boolean_result::INTERSECTION;
+		} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION) {
+			return taxonomy::boolean_result::UNION;
+		} else {
+			throw taxonomy::topology_error("Unknown boolean operation");
+		}
+	}
+
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcBooleanResult* inst) {
+	IfcSchema::IfcBooleanOperand* operand1 = inst->FirstOperand();
+	IfcSchema::IfcBooleanOperand* operand2 = inst->SecondOperand();
+
+	IfcEntityList::ptr operands(new IfcEntityList);
+	operands->push(operand1);
+	operands->push(operand2);
+
+	auto op = boolean_op_type(inst->Operator());
+
+	bool process_as_list = true;
+	while (true) {
+		auto res1 = operand1->as<IfcSchema::IfcBooleanResult>();
+		if (res1) {
+			if (boolean_op_type(res1->Operator()) == op) {
+				operand1 = res1->FirstOperand();
+				operands->push(res1->SecondOperand());
+			} else {
+				process_as_list = false;
+				break;
+			}
+		} else {
+			break;
+		}
+	}
+
+	if (!process_as_list) {
+		operand1 = inst->FirstOperand();
+		operands.reset(new IfcEntityList);
+		operands->push(operand1);
+		operands->push(operand2);
+	}
+
+	auto br = map_to_collection<taxonomy::boolean_result>(this, operands);
+	if (br) {
+		br->operation = op;
+	}
+	return br;
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolygonalBoundedHalfSpace* inst) {
+	auto f = map_impl((IfcSchema::IfcHalfSpaceSolid*) inst);
+	((taxonomy::face*)f)->children = ((taxonomy::loop)as<taxonomy::loop>(map(inst->PolygonalBoundary()))).children;
+	return f;
+}
+
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid* inst) {
+	IfcSchema::IfcSurface* surface = inst->BaseSurface();
+	if (!surface->declaration().is(IfcSchema::IfcPlane::Class())) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
+		return nullptr;
+	}
+	auto p = new taxonomy::plane;
+	p->matrix = as<taxonomy::matrix4>(map(((IfcSchema::IfcPlane*)surface)->Position()));
+	p->orientation = !inst->AgreementFlag();
+	auto f = new taxonomy::face;
+	f->basis = p;
+	return f;
 }
