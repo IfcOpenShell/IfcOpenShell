@@ -506,6 +506,10 @@ bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result
 
 #include <Geom_Curve.hxx>
 #include <Geom_Line.hxx>
+#include <Approx_Curve3d.hxx>
+#include <BRepAdaptor_CompCurve.hxx>
+#include <BRepAdaptor_HCompCurve.hxx>
+#include <Approx_Curve3d.hxx>
 
 namespace {
 	/* A compile-time for loop over the curve kinds */
@@ -543,54 +547,98 @@ namespace {
 		return T(vs(0), vs(1), vs(2));
 	}
 
+	typedef boost::variant<Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
+	curve_creation_visitor_result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::item* curve);
+
 	struct curve_creation_visitor {
 		OpenCascadeKernel* kernel;
-		typedef boost::variant<Handle(Geom_Curve), TopoDS_Wire> result_type;
-		result_type result;
+		curve_creation_visitor_result_type result;
 
-		result_type operator()(const taxonomy::bspline_curve&) {
+		curve_creation_visitor_result_type operator()(const taxonomy::bspline_curve&) {
 			throw std::runtime_error("Not implemented");
 		}
 
-		result_type operator()(const taxonomy::line& l) {
+		curve_creation_visitor_result_type operator()(const taxonomy::line& l) {
 			const auto& m = l.matrix.components;
-			return result = Handle(Geom_Curve)(new Geom_Line(convert_xyz2<gp_Pnt>(m.row(3)), convert_xyz2<gp_Dir>(m.row(0))));
+			return result = Handle(Geom_Curve)(new Geom_Line(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(0))));
 		}
 
-		result_type operator()(const taxonomy::circle& c) {
+		curve_creation_visitor_result_type operator()(const taxonomy::circle& c) {
 			const auto& m = c.matrix.components;
-			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz2<gp_Pnt>(m.row(3)), convert_xyz2<gp_Dir>(m.row(2)), convert_xyz2<gp_Dir>(m.row(0))), c.radius));
+			/*Eigen::IOFormat fmt;
+			std::stringstream ss;
+			ss << m.format(fmt) << std::endl;
+			ss << m.col(3).format(fmt);
+			auto s = ss.str();
+			std::wcout << s.c_str() << std::endl;*/
+			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), c.radius));
 		}
 
-		result_type operator()(const taxonomy::ellipse& e) {
+		curve_creation_visitor_result_type operator()(const taxonomy::ellipse& e) {
 			const auto& m = e.matrix.components;
-			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz2<gp_Pnt>(m.row(3)), convert_xyz2<gp_Dir>(m.row(2)), convert_xyz2<gp_Dir>(m.row(0))), e.radius, e.radius2));
+			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), e.radius, e.radius2));
 		}
 
-		result_type operator()(const taxonomy::loop& l) {
+		curve_creation_visitor_result_type operator()(const taxonomy::loop& l) {
 			TopoDS_Wire wire;
 			kernel->convert(&l, wire);
 			return result = wire;
 		}
 
-		result_type operator()(const taxonomy::edge& e) {
-			if (e.basis == nullptr) {
-				// @todo we should probably construct edges based on correct oriented TopoDS_Vertex instead.
+		curve_creation_visitor_result_type operator()(const taxonomy::edge& e) {
+			// @todo for polyloops/-lines we should probably construct edges based on correct oriented TopoDS_Vertex instead.
+
+			if (e.start.which() != e.end.which()) {
+				throw std::runtime_error("Different trim types not supported");
+			}
+
+			TopoDS_Edge E;
+			if (e.basis) {
+				auto crv_or_wire = convert_curve(kernel, e.basis);
+				Handle(Geom_Curve) curve;
+				if (crv_or_wire.which() == 0) {
+					curve = boost::get<Handle(Geom_Curve)>(crv_or_wire);
+				} else {
+					// @todo
+					const double precision_ = 1.e-5;						
+					Logger::Warning("Approximating BasisCurve due to possible discontinuities", e.instance);
+					BRepAdaptor_CompCurve cc(boost::get<TopoDS_Wire>(crv_or_wire), true);
+					Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
+					// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
+					Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
+					curve = approx.Curve();
+				}
+
+				// @todo, copy over logic from previous IfcTrimmedCurve handling
+				if (e.start.which() == 0) {
+					auto p1 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.start));
+					auto p2 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.end));
+
+					E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
+				} else {
+					auto v1 = boost::get<double>(e.start);
+					auto v2 = boost::get<double>(e.end);
+
+					E = BRepBuilderAPI_MakeEdge(curve, v1, v2).Edge();
+				}
+			} else {
+				if (e.start.which() != 0) {
+					throw std::runtime_error("Non-cartesian trim on edge without curve");
+				}
 				auto p1 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.start));
 				auto p2 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.end));
-				TopoDS_Edge e = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
-				BRep_Builder B;
-				TopoDS_Wire W;
-				B.MakeWire(W);
-				B.Add(W, e);
-				return result = W;
-			} else {
-				throw std::runtime_error("not implemented");
+
+				E = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
 			}
+			BRep_Builder B;
+			TopoDS_Wire W;
+			B.MakeWire(W);
+			B.Add(W, E);
+			return result = W;
 		}
 	};
 
-	curve_creation_visitor::result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::item* curve) {
+	curve_creation_visitor_result_type convert_curve(OpenCascadeKernel* kernel, const taxonomy::item* curve) {
 		curve_creation_visitor v{ kernel };
 		if (dispatch_curve_creation<curve_creation_visitor, 0>::dispatch(curve, v)) {
 			return v.result;
@@ -846,9 +894,6 @@ bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcopenshell::geometry::ConversionResults& results) {
-	if (((IfcUtil::IfcBaseEntity*)extrusion->instance)->data().id() == 5722) {
-		std::wcerr << 1;
-	}
 	TopoDS_Shape shape;
 	if (!convert(extrusion, shape)) {
 		return false;
@@ -1631,4 +1676,589 @@ OpenCascadeKernel::faceset_helper::faceset_helper(OpenCascadeKernel* kernel, con
 	if (loops_removed || (non_manifold && shell->closed.get_value_or(false))) {
 		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", shell->instance);
 	}
+}
+
+#include <ShapeUpgrade_UnifySameDomain.hxx>
+#include <Extrema_ExtPC.hxx>
+#include <BRepTopAdaptor_FClass2d.hxx>
+
+namespace {
+	void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r) {
+#if OCC_VERSION_HEX < 0x70000
+		TopTools_ListIteratorOfListOfShape it(l);
+		for (; it.More(); it.Next()) {
+			r.Append(BRepBuilderAPI_Copy(it.Value()));
+		}
+#else
+		// On OCCT 7.0 and higher BRepAlgoAPI_BuilderAlgo::SetNonDestructive(true) is
+		// called. Not entirely sure on the behaviour before 7.0, so overcautiously
+		// create copies.
+		r.Assign(l);
+#endif
+	}
+
+	TopoDS_Shape copy_operand(const TopoDS_Shape& s) {
+#if OCC_VERSION_HEX < 0x70000
+		return BRepBuilderAPI_Copy(s);
+#else
+		return s;
+#endif
+	}
+
+	double min_edge_length(const TopoDS_Shape& a) {
+		double min_edge_len = std::numeric_limits<double>::infinity();
+		TopExp_Explorer exp(a, TopAbs_EDGE);
+		for (; exp.More(); exp.Next()) {
+			GProp_GProps prop;
+			BRepGProp::LinearProperties(exp.Current(), prop);
+			double l = prop.Mass();
+			if (l < min_edge_len) {
+				min_edge_len = l;
+			}
+		}
+		return min_edge_len;
+	}
+
+	double min_vertex_edge_distance(const TopoDS_Shape& a, double min_search, double max_search) {
+		double M = std::numeric_limits<double>::infinity();
+
+		TopTools_IndexedMapOfShape vertices, edges;
+
+		TopExp::MapShapes(a, TopAbs_VERTEX, vertices);
+		TopExp::MapShapes(a, TopAbs_EDGE, edges);
+
+		impl::tree<int> tree;
+
+		// Add edges to tree
+		for (int i = 1; i <= edges.Extent(); ++i) {
+			tree.add(i, edges(i));
+		}
+
+		for (int j = 1; j <= vertices.Extent(); ++j) {
+			const TopoDS_Vertex& v = TopoDS::Vertex(vertices(j));
+			gp_Pnt p = BRep_Tool::Pnt(v);
+
+			Bnd_Box b;
+			b.Add(p);
+			b.Enlarge(max_search);
+
+			std::vector<int> edge_idxs = tree.select_box(b, false);
+			std::vector<int>::const_iterator it = edge_idxs.begin();
+			for (; it != edge_idxs.end(); ++it) {
+				const TopoDS_Edge& e = TopoDS::Edge(edges(*it));
+				TopoDS_Vertex v1, v2;
+				TopExp::Vertices(e, v1, v2);
+
+				if (v.IsSame(v1) || v.IsSame(v2)) {
+					continue;
+				}
+
+				BRepAdaptor_Curve crv(e);
+				Extrema_ExtPC ext(p, crv);
+				if (!ext.IsDone()) {
+					continue;
+				}
+
+				for (int i = 1; i <= ext.NbExt(); ++i) {
+					const double m = sqrt(ext.SquareDistance(i));
+					if (m < M && m > min_search) {
+						M = m;
+					}
+				}
+			}
+		}
+
+		return M;
+	}
+
+	class points_on_planar_face_generator {
+	private:
+		const TopoDS_Face& f_;
+		Handle(Geom_Surface) plane_;
+		BRepTopAdaptor_FClass2d cls_;
+		double u0, u1, v0, v1;
+		int i, j;
+		static const int N = 10;
+
+	public:
+		points_on_planar_face_generator(const TopoDS_Face& f)
+			: f_(f)
+			, plane_(BRep_Tool::Surface(f_))
+			, cls_(f_, BRep_Tool::Tolerance(f_))
+			, i(0), j(0) {
+			BRepTools::UVBounds(f_, u0, u1, v0, v1);
+		}
+
+		void reset() {
+			i = j = 0;
+		}
+
+		bool operator()(gp_Pnt& p) {
+			while (j < N) {
+				double u = u0 + (u1 - u0) * i / N;
+				double v = v0 + (v1 - v0) * j / N;
+
+				i++;
+				if (i == N) {
+					i = 0;
+					j++;
+				}
+
+				// Specifically does not consider ON
+				if (cls_.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
+					plane_->D0(u, v, p);
+					return true;
+				}
+			}
+
+			return false;
+		}
+	};
+
+	double min_face_face_distance(const TopoDS_Shape& a, double max_search) {
+		/*
+		NB: This is currently only implemented for planar surfaces.
+		*/
+		double M = std::numeric_limits<double>::infinity();
+
+		TopTools_IndexedMapOfShape faces;
+
+		TopExp::MapShapes(a, TopAbs_FACE, faces);
+
+		ifcopenshell::geometry::impl::tree<int> tree;
+
+		// Add faces to tree
+		for (int i = 1; i <= faces.Extent(); ++i) {
+			if (BRep_Tool::Surface(TopoDS::Face(faces(i)))->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+				tree.add(i, faces(i));
+			}
+		}
+
+		for (int j = 1; j <= faces.Extent(); ++j) {
+			const TopoDS_Face& f = TopoDS::Face(faces(j));
+			const Handle(Geom_Surface)& fs = BRep_Tool::Surface(f);
+
+			if (fs->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
+				continue;
+			}
+
+			points_on_planar_face_generator pgen(f);
+
+			Bnd_Box b;
+			BRepBndLib::AddClose(f, b);
+			b.Enlarge(max_search);
+
+			std::vector<int> face_idxs = tree.select_box(b, false);
+			std::vector<int>::const_iterator it = face_idxs.begin();
+			for (; it != face_idxs.end(); ++it) {
+				if (*it == j) {
+					continue;
+				}
+
+				const TopoDS_Face& g = TopoDS::Face(faces(*it));
+				const Handle(Geom_Surface)& gs = BRep_Tool::Surface(g);
+
+				auto p0 = Handle(Geom_Plane)::DownCast(fs);
+				auto p1 = Handle(Geom_Plane)::DownCast(gs);
+
+				if (p0->Position().IsCoplanar(p1->Position(), max_search, asin(max_search))) {
+					pgen.reset();
+
+					BRepTopAdaptor_FClass2d cls(g, BRep_Tool::Tolerance(g));
+
+					gp_Pnt test;
+					while (pgen(test)) {
+						gp_Vec d = test.XYZ() - p1->Position().Location().XYZ();
+						double u = d.Dot(p1->Position().XDirection());
+						double v = d.Dot(p1->Position().YDirection());
+
+						// nb: TopAbs_ON is explicitly not considered to prevent matching adjacent faces
+						// with similar orientations.
+						if (cls.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
+							gp_Pnt test2;
+							p1->D0(u, v, test2);
+							double w = gp_Vec(p1->Position().Direction().XYZ()).Dot(test2.XYZ() - test.XYZ());
+							if (w < M) {
+								M = w;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return M;
+	}
+
+	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
+		Bnd_Box A;
+		BRepBndLib::Add(a, A);
+
+		if (A.IsVoid()) {
+			return;
+		}
+
+		TopTools_ListIteratorOfListOfShape it(b);
+		for (; it.More(); it.Next()) {
+			Bnd_Box B;
+			BRepBndLib::Add(it.Value(), B);
+
+			if (B.IsVoid()) {
+				continue;
+			}
+
+			if (A.Distance(B) < p) {
+				c.Append(it.Value());
+			}
+		}
+	}
+
+	TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance) {
+		tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
+		ShapeUpgrade_UnifySameDomain usd(s);
+		usd.SetSafeInputMode(true);
+		usd.SetLinearTolerance(tolerance);
+		usd.SetAngularTolerance(1.e-3);
+		usd.Build();
+		return usd.Shape();
+	}
+
+	bool is_manifold_occt(const TopoDS_Shape& a) {
+		if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
+			TopoDS_Iterator it(a);
+			for (; it.More(); it.Next()) {
+				if (!is_manifold_occt(it.Value())) {
+					return false;
+				}
+			}
+			return true;
+		} else {
+			TopTools_IndexedDataMapOfShapeListOfShape map;
+			TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
+
+			for (int i = 1; i <= map.Extent(); ++i) {
+				if (map.FindFromIndex(i).Extent() != 2) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}	
+}
+
+bool OpenCascadeKernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+
+	if (fuzziness < 0.) {
+		fuzziness = precision_;
+	}
+
+	// @todo, it does seem a bit odd, we first triangulate non-planar faces
+	// to later unify them again. Can we make this a bit more intelligent?
+	TopoDS_Shape a = unify(a_, fuzziness);
+	TopTools_ListOfShape b_;
+	{
+		TopTools_ListIteratorOfListOfShape it(b__);
+		for (; it.More(); it.Next()) {
+			b_.Append(unify(it.Value(), fuzziness));
+		}
+	}
+
+	bool success = false;
+	BRepAlgoAPI_BooleanOperation* builder;
+	TopTools_ListOfShape B, b;
+	if (op == BOPAlgo_CUT) {
+		builder = new BRepAlgoAPI_Cut();
+		bounding_box_overlap(precision_, a, b_, b);
+	} else if (op == BOPAlgo_COMMON) {
+		builder = new BRepAlgoAPI_Common();
+		b = b_;
+	} else if (op == BOPAlgo_FUSE) {
+		builder = new BRepAlgoAPI_Fuse();
+		b = b_;
+	} else {
+		return false;
+	}
+
+	if (b.Extent() == 0) {
+		result = a;
+		return true;
+	}
+
+	// Find a sensible value for the fuzziness, based on precision
+	// and limited by edge lengths and vertex-edge distances.
+	const double len_a = min_edge_length(a_);
+	double min_length_orig = (std::min)(len_a, min_vertex_edge_distance(a_, precision_, len_a));
+	TopTools_ListIteratorOfListOfShape it(b__);
+	for (; it.More(); it.Next()) {
+		double d = min_edge_length(it.Value());
+		if (d < min_length_orig) {
+			min_length_orig = d;
+		}
+		d = min_vertex_edge_distance(it.Value(), precision_, d);
+		if (d < min_length_orig) {
+			min_length_orig = d;
+		}
+	}
+
+	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
+
+	TopTools_ListOfShape s1s;
+	s1s.Append(copy_operand(a));
+#if OCC_VERSION_HEX >= 0x70000
+	builder->SetNonDestructive(true);
+#endif
+	builder->SetFuzzyValue(fuzz);
+	builder->SetArguments(s1s);
+	copy_operand(b, B);
+	builder->SetTools(B);
+	builder->Build();
+	if (builder->IsDone()) {
+		TopoDS_Shape r = *builder;
+
+		ShapeFix_Shape fix(r);
+		try {
+			fix.SetMinTolerance(fuzz);
+			fix.SetMaxTolerance(fuzz);
+			fix.SetPrecision(fuzz);
+			fix.Perform();
+			r = fix.Shape();
+		} catch (...) {
+			Logger::Error("Shape healing failed on boolean result");
+		}
+
+		success = BRepCheck_Analyzer(r).IsValid() != 0;
+
+		if (success) {
+
+			success = !is_manifold_occt(a) || is_manifold_occt(r);
+
+			if (success) {
+
+				// when there are edges or vertex-edge distances close to the used fuzziness, the  
+				// output is not trusted and the operation is attempted with a higher fuzziness.
+				int reason = 0;
+				double v;
+				if ((v = min_edge_length(r)) < fuzziness * 3.) {
+					reason = 0;
+					success = false;
+				} else if ((v = min_vertex_edge_distance(r, precision_, fuzziness * 3.)) < fuzziness * 3.) {
+					reason = 1;
+					success = false;
+				} else if ((v = min_face_face_distance(r, fuzziness * 3.)) < fuzziness * 3.) {
+					reason = 2;
+					success = false;
+				}
+
+				if (success) {
+					result = r;
+				} else {
+					static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
+					std::stringstream str;
+					str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
+					Logger::Notice(str.str());
+				}
+			} else {
+				Logger::Notice("Boolean operation yields non-manifold result");
+			}
+		} else {
+			Logger::Notice("Boolean operation yields invalid result");
+		}
+	} else {
+		std::stringstream str;
+#if OCC_VERSION_HEX >= 0x70000
+		builder->DumpErrors(str);
+#else
+		str << "Error code: " << builder->ErrorStatus();
+#endif
+		std::string str_str = str.str();
+		if (str_str.size()) {
+			Logger::Notice(str_str);
+		}
+	}
+	delete builder;
+	if (!success) {
+		const double new_fuzziness = fuzziness * 10.;
+		if (new_fuzziness - 1e-15 <= precision_ * 10000. && new_fuzziness < min_length_orig) {
+			return boolean_operation(a, b, op, result, new_fuzziness);
+		} else {
+			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
+		}
+	}
+	return success;
+}
+
+namespace {
+	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_t t) {
+		switch (t) {
+		case taxonomy::boolean_result::UNION: return BOPAlgo_FUSE;
+		case taxonomy::boolean_result::INTERSECTION: return BOPAlgo_COMMON;
+		case taxonomy::boolean_result::SUBTRACTION: return BOPAlgo_CUT;
+		}
+	}
+}
+
+bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::geometry::ConversionResults& results) {
+	bool first = true;
+
+	TopoDS_Shape a;
+	TopTools_ListOfShape b;
+
+	for (auto& c : br->children) {
+		ifcopenshell::geometry::ConversionResults cr;
+		// @todo half-space detection
+		AbstractKernel::convert(c, cr);
+		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
+			// @todo A will be null on union/intersection, intended?
+			flatten_shape_list(cr, a, false);
+		} else {
+			for (auto& r : cr) {
+				auto oshp = (OpenCascadeShape*)r.Shape();
+				b.Append(oshp->shape());
+			}
+		}
+		first = false;
+	}
+
+	TopoDS_Shape r;
+	if (!boolean_operation(a, b, op_to_occt(br->operation), r)) {
+		return false;
+	}
+
+	results.emplace_back(ConversionResult(
+		br->instance->data().id(),
+		br->matrix,
+		new OpenCascadeShape(r),
+		br->surface_style
+	));
+	return true;
+}
+
+bool OpenCascadeKernel::is_compound(const TopoDS_Shape& shape) {
+	bool has_solids = TopExp_Explorer(shape, TopAbs_SOLID).More() != 0;
+	bool has_shells = TopExp_Explorer(shape, TopAbs_SHELL).More() != 0;
+	bool has_compounds = TopExp_Explorer(shape, TopAbs_COMPOUND).More() != 0;
+	bool has_faces = TopExp_Explorer(shape, TopAbs_FACE).More() != 0;
+	return has_compounds && has_faces && !has_solids && !has_shells;
+}
+
+const TopoDS_Shape& OpenCascadeKernel::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid) {
+	const bool is_comp = is_compound(shape);
+	if (!is_comp) {
+		return solid = shape;
+	}
+
+	if (!create_solid_from_compound(shape, solid)) {
+		return solid = shape;
+	}
+
+	return solid;
+}
+
+bool OpenCascadeKernel::flatten_shape_list(const ifcopenshell::geometry::ConversionResults& shapes, TopoDS_Shape& result, bool fuse) {
+	TopoDS_Compound compound;
+	BRep_Builder builder;
+	builder.MakeCompound(compound);
+
+	result = TopoDS_Shape();
+
+	for (ifcopenshell::geometry::ConversionResults::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
+		TopoDS_Shape merged;
+		const TopoDS_Shape& s = *(OpenCascadeShape*)it->Shape();
+		if (fuse) {
+			ensure_fit_for_subtraction(s, merged);
+		} else {
+			merged = s;
+		}
+		const TopoDS_Shape moved_shape = apply_transformation(merged, it->Placement());
+
+		if (shapes.size() == 1) {
+			result = moved_shape;
+			return true;
+		}
+
+		if (fuse) {
+			if (result.IsNull()) {
+				result = moved_shape;
+			} else {
+				BRepAlgoAPI_Fuse brep_fuse(result, moved_shape);
+				if (brep_fuse.IsDone()) {
+					TopoDS_Shape fused = brep_fuse;
+
+					ShapeFix_Shape fix(result);
+					fix.Perform();
+					result = fix.Shape();
+
+					bool is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+					if (is_valid) {
+						result = fused;
+					}
+				}
+			}
+		} else {
+			builder.Add(compound, moved_shape);
+		}
+	}
+
+	if (!fuse) {
+		result = compound;
+	}
+
+	const bool success = !result.IsNull();
+	return success;
+}
+
+TopoDS_Shape OpenCascadeKernel::apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t) {
+	if (t.components.isIdentity()) {
+		return s;
+	} else {
+		gp_GTrsf trsf;
+		convert(&t, trsf);
+		return apply_transformation(s, trsf);
+	}
+}
+
+#include <BRepBuilderAPI_GTransform.hxx>
+
+TopoDS_Shape OpenCascadeKernel::apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t) {
+	if (t.Form() == gp_Other) {
+		Logger::Message(Logger::LOG_WARNING, "Applying non uniform transformation");
+		return BRepBuilderAPI_GTransform(s, t, true);
+	} else {
+		return apply_transformation(s, t.Trsf());
+	}
+}
+
+TopoDS_Shape OpenCascadeKernel::apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t) {
+	/// @todo set to 1. and exactly 1. or use epsilon?
+	if (t.ScaleFactor() != 1.) {
+		return BRepBuilderAPI_Transform(s, t, true);
+	} else {
+		return s.Moved(t);
+	}
+}
+
+bool OpenCascadeKernel::convert_impl(const taxonomy::face* face, ifcopenshell::geometry::ConversionResults& results) {
+	// Root level faces are only encountered in case of half spaces
+
+	if (face->basis == nullptr) {
+		Logger::Error("Half space without underlying surface:", face->instance);
+		return false;
+	}
+
+	if (face->basis->kind() != taxonomy::PLANE) {
+		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", face->basis->instance);
+		return false;
+	}
+
+	// @todo boundary
+	const auto& m = ((taxonomy::geom_item*)face->basis)->matrix.components;
+	gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
+	const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? -pln.Axis().Direction() : pln.Axis().Direction());
+	TopoDS_Shape shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
+	results.emplace_back(ConversionResult(
+		face->instance->data().id(),
+		new OpenCascadeShape(shape),
+		face->surface_style
+	));
 }

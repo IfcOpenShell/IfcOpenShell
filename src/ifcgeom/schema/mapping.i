@@ -35,7 +35,7 @@ BIND(IfcMappedItem);
 // IfcFacetedBrepWithVoids included
 // IfcAdvancedBrepWithVoids included
 // BIND(IfcManifoldSolidBrep);
-// BIND(IfcGeometricSet);
+BIND(IfcGeometricSet);
 
 #ifdef SCHEMA_HAS_IfcCylindricalSurface
 // BIND(IfcCylindricalSurface);
@@ -56,9 +56,9 @@ BIND(IfcMappedItem);
 BIND(IfcExtrudedAreaSolid);
 // BIND(IfcRevolvedAreaSolid);
 BIND(IfcConnectedFaceSet);
-// BIND(IfcBooleanResult);
-// BIND(IfcPolygonalBoundedHalfSpace);
-// BIND(IfcHalfSpaceSolid);
+BIND(IfcBooleanResult);
+BIND(IfcPolygonalBoundedHalfSpace);
+BIND(IfcHalfSpaceSolid);
 // BIND(IfcSurfaceOfLinearExtrusion);
 // BIND(IfcSurfaceOfRevolution);
 // BIND(IfcBlock);

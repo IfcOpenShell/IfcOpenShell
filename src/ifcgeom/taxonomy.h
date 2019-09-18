@@ -25,7 +25,7 @@ public:
 	topology_error(const char* const s) : std::runtime_error(s) {}
 };
 
-enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLLECTION, COLOUR, STYLE };
+enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, PLANE, EDGE, LOOP, FACE, SHELL, EXTRUSION, NODE, COLLECTION, BOOLEAN_RESULT, COLOUR, STYLE };
 
 struct item {
 	const IfcUtil::IfcBaseClass* instance;
@@ -205,7 +205,16 @@ struct shell : public collection {
 	virtual kinds kind() const { return SHELL; }
 };
 
+struct surface : public geom_item {};
+
+struct plane : public surface {
+	virtual item* clone() const { return new plane(*this); }
+	virtual kinds kind() const { return PLANE; }
+};
+
 struct face : public collection {
+	item* basis;
+
 	virtual item* clone() const { return new face(*this); }
 	virtual kinds kind() const { return FACE; }
 };
@@ -234,16 +243,25 @@ struct extrusion : public sweep {
 	extrusion(matrix4 m, face basis, direction3 dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
 };
 
-struct node : public geom_item {
+struct node : public collection {
 	std::map<std::string, geom_item*> representations;
-	std::vector<node*> children;
 
 	virtual item* clone() const { return new node(*this); }
 	virtual kinds kind() const { return NODE; }
 };
 
+struct boolean_result : public collection {
+	enum operation_t {
+		UNION, SUBTRACTION, INTERSECTION
+	};
+
+	virtual item* clone() const { return new boolean_result(*this); }
+	virtual kinds kind() const { return BOOLEAN_RESULT; }
+	operation_t operation;
+};
+
 namespace impl {
-	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, edge, loop, face, shell, extrusion, node, collection> KindsTuple;
+	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, edge, plane, loop, face, shell, extrusion, node, collection, boolean_result> KindsTuple;
 	typedef std::tuple<line, circle, ellipse, bspline_curve, loop, edge> CurvesTuple;
 }
 

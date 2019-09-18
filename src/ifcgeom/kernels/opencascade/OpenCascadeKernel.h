@@ -240,9 +240,19 @@ namespace kernels {
 
 		bool approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps = -1.);
 		bool triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces);
+		bool boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness = -1.);
+		const TopoDS_Shape& ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid);
+		bool flatten_shape_list(const ifcopenshell::geometry::ConversionResults& shapes, TopoDS_Shape& result, bool fuse);
+		bool is_compound(const TopoDS_Shape& shape);
 
+		TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t);
+		TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_GTrsf& t);
+		TopoDS_Shape apply_transformation(const TopoDS_Shape& s, const gp_Trsf& t);
+
+		virtual bool convert_impl(const taxonomy::face*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
+		virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 	/*
