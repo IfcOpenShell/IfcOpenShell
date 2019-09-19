@@ -218,7 +218,9 @@ namespace kernels {
 	public:
 		OpenCascadeKernel()
 			: AbstractKernel("opencascade")
-			, faceset_helper_(nullptr) {}
+			, faceset_helper_(nullptr)
+			// @todo
+			, precision_(1.e-5) {}
 
 		OpenCascadeKernel(const OpenCascadeKernel& other)
 			: AbstractKernel("opencascade") {

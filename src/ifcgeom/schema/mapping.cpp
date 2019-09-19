@@ -306,9 +306,39 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcDirection* inst) {
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	auto openings = find_openings(inst);
-	auto n = map_to_collection<taxonomy::node>(this, openings);
-	n->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
-	return n;
+	// @todo const cast
+	auto reps = inst->data().file->traverse((IfcSchema::IfcProduct*) inst, 2)->as<IfcSchema::IfcRepresentation>();
+	IfcSchema::IfcRepresentation* body = nullptr;
+	for (auto& rep : *reps) {
+		if (rep->RepresentationIdentifier() == "Body") {
+			body = rep;
+		}
+	}
+	if (!body) {
+		return nullptr;
+	}
+
+	auto c = new taxonomy::collection;
+	c->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
+
+	if (openings->size()) {
+		auto ci = c->matrix.components.inverse();
+
+		IfcEntityList::ptr operands(new IfcEntityList);
+		operands->push(body);
+		operands->push(openings);
+		auto n = map_to_collection<taxonomy::boolean_result>(this, operands);
+		std::for_each(n->children.begin() + 1, n->children.end(), [&ci](taxonomy::item* i) {
+			((taxonomy::geom_item*)i)->matrix.components = ci * ((taxonomy::geom_item*)i)->matrix.components;
+		});
+		n->operation = taxonomy::boolean_result::SUBTRACTION;
+		// @todo one indirection too many
+		n->instance = inst;
+		c->children = { n };
+	} else {
+		c->children = { map(body) };
+	}
+	return c;
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
@@ -515,7 +545,10 @@ IfcEntityList::ptr mapping::find_openings(const IfcSchema::IfcProduct* product) 
 	IfcEntityList::ptr openings(new IfcEntityList);
 	if (product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
-		openings = element->HasOpenings()->generalize();
+		auto rels = element->HasOpenings();
+		for (auto& rel : *rels) {
+			openings->push(rel->RelatedOpeningElement());
+		}
 	}
 
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
@@ -526,7 +559,10 @@ IfcEntityList::ptr mapping::find_openings(const IfcSchema::IfcProduct* product) 
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
 		if (rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
 			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
-			openings->push(element->HasOpenings()->generalize());
+			auto rels = element->HasOpenings();
+			for (auto& rel : *rels) {
+				openings->push(rel->RelatedOpeningElement());
+			}
 		}
 
 		obdef = rel_obdef;
