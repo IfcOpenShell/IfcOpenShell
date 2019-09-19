@@ -55,6 +55,9 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	for (auto& c : collection->children) {
 		convert(c, r);
 	}
+	for (auto i = s; i < r.size(); ++i) {
+		r[i].prepend(collection->matrix);
+	}
 	return r.size() > s;
 }
 

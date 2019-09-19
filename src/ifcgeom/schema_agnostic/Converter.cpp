@@ -34,18 +34,24 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	ifcopenshell::geometry::Representation::BRep* shape;
 	ifcopenshell::geometry::ConversionResults shapes;
 
+	/*
 	auto rep_item = mapping_->map(representation);
 	// @todo should map() throw an exception instead?
 	if (rep_item == nullptr) {
 		return nullptr;
 	}
+	*/
 
-	// @todo decide how to get placement from product
-	auto placement = (taxonomy::geom_item*) mapping_->map(product);
-	if (placement == nullptr) {
+	// @todo how to combine product_node and rep_item?
+	auto product_node = (taxonomy::geom_item*) mapping_->map(product);
+	if (product_node == nullptr) {
 		return nullptr;
 	}
-	kernel_->convert(rep_item, shapes);
+	
+	auto place = taxonomy::matrix4();
+	std::swap(place, product_node->matrix);
+
+	kernel_->convert(product_node, shapes);
 
 	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
 
@@ -57,7 +63,8 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 		guid,
 		// @todo
 		"",
-		placement->matrix,
+		place,
+		// product_node->matrix,
 		boost::shared_ptr<ifcopenshell::geometry::Representation::BRep>(shape),
 		product
 	);

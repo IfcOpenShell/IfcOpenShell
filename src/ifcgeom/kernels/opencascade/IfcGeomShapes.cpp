@@ -2104,18 +2104,37 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ifcopen
 	TopoDS_Shape a;
 	TopTools_ListOfShape b;
 
+	taxonomy::style first_item_style;
+
 	for (auto& c : br->children) {
+		// AbstractKernel::convert(c, results);
+		// continue;
+
 		ifcopenshell::geometry::ConversionResults cr;
 		// @todo half-space detection
 		AbstractKernel::convert(c, cr);
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
 			flatten_shape_list(cr, a, false);
+			first_item_style = ((taxonomy::geom_item*)c)->surface_style;
+			if (!first_item_style.diffuse && c->kind() == taxonomy::COLLECTION) {
+				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
+			}
 		} else {
 			for (auto& r : cr) {
-				auto oshp = (OpenCascadeShape*)r.Shape();
-				b.Append(oshp->shape());
-			}
+				auto S = ((OpenCascadeShape*)r.Shape())->shape();
+				gp_GTrsf trsf;
+				convert(&r.Placement(), trsf);
+				// @todo it really confuses me why I cannot use Moved() here instead
+				S.Location(S.Location() * trsf.Trsf());
+				b.Append(S);
+				/*results.emplace_back(ConversionResult(
+					r.ItemId(),
+					ifcopenshell::geometry::taxonomy::matrix4(),
+					new OpenCascadeShape(S),
+					r.Style()
+				));*/
+			}			
 		}
 		first = false;
 	}
@@ -2125,11 +2144,21 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result* br, ifcopen
 		return false;
 	}
 
+	/*
+	TopoDS_Compound r;
+	BRep_Builder B;
+	B.MakeCompound(r);
+	B.Add(r, a);
+	for (auto& bb : b) {
+		B.Add(r, bb);
+	}
+	*/
+
 	results.emplace_back(ConversionResult(
 		br->instance->data().id(),
 		br->matrix,
 		new OpenCascadeShape(r),
-		br->surface_style
+		br->surface_style.diffuse ? br->surface_style : first_item_style
 	));
 	return true;
 }
@@ -2261,4 +2290,6 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face* face, ifcopenshell::g
 		new OpenCascadeShape(shape),
 		face->surface_style
 	));
+
+	return true;
 }
