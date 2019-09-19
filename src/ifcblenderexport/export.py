@@ -452,7 +452,7 @@ class IfcParser():
     def append_default_representation(self, object, results):
         if not self.is_mesh_context_sensitive(object.data.name):
             results['Model/Body/{}'.format(object.data.name)] = self.get_representation(
-                object.data, 'Model', 'Body')
+                object.data, object, 'Model', 'Body')
 
     def append_representation_per_context(self, object, results):
         context = self.get_ifc_context(object.data.name)
@@ -463,24 +463,25 @@ class IfcParser():
             except:
                 continue
             results[mesh.name] = self.get_representation(
-                mesh, context, subcontext)
+                mesh, object, context, subcontext)
 
     def append_generated_representation_per_context(self, object, results):
         context = self.get_ifc_context(object.data.name)
         name = self.get_ifc_representation_name(object.data.name)
         for subcontext in self.ifc_export_settings.generated_subcontexts:
             representation = self.get_representation(
-                object, context, subcontext, is_generated=True)
-            representation['raw_object'] = object
+                object.data, object, context, subcontext, is_generated=True)
             results['/'.join([context, subcontext, name])] = representation
 
-    def get_representation(self, mesh, context, subcontext, is_generated=False):
+    def get_representation(self, mesh, object, context, subcontext, is_generated=False):
         return {
             'ifc': None,
             'raw': mesh,
+            'raw_object': object,
             'context': context,
             'subcontext': subcontext,
             'is_wireframe': True if 'IsWireframe' in mesh else False,
+            'is_swept_solid': True if 'IsSweptSolid' in mesh else False,
             'is_generated': is_generated,
             'attributes': { 'Name': mesh.name }
             }
@@ -1049,6 +1050,8 @@ class IfcExporter():
             or representation['subcontext'] == 'Axis' \
             or representation['is_wireframe']:
             return self.create_wireframe_representation(representation)
+        elif representation['is_swept_solid']:
+            return self.create_swept_solid_representation(representation)
         else:
             return self.create_solid_representation(representation)
 
@@ -1081,6 +1084,86 @@ class IfcExporter():
             representation['subcontext'], 'Curve',
             self.ifc_edges)
 
+    def create_swept_solid_representation(self, representation):
+        object = representation['raw_object']
+        mesh = representation['raw']
+        profile_index = None
+        extrusion_index = None
+        for index, vg in enumerate(object.vertex_groups):
+            if vg.name == 'profile':
+                profile_index = index
+            elif vg.name == 'extrusion':
+                extrusion_index = index
+        profile_edges = self.get_edges_in_vg_index(object, profile_index)
+        extrusion_edge = self.get_edges_in_vg_index(object, extrusion_index)[0]
+        loop = self.get_loop_from_edges(profile_edges)
+        points = []
+        for point in loop:
+            points.append(self.create_cartesian_point(
+                mesh.vertices[point].co.x,
+                mesh.vertices[point].co.y,
+                mesh.vertices[point].co.z))
+        points.append(points[0])
+        curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
+            self.file.createIfcPolyline(points))
+        start, end = self.get_start_and_end_of_extrusion(points, extrusion_edge)
+        direction = self.get_extrusion_direction(mesh, start, end)
+        extruded_area_solid = self.file.createIfcExtrudedAreaSolid(curve, self.origin,
+            self.file.createIfcDirection((direction.x, direction.y, direction.z)), direction.length)
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'SweptSolid',
+            [extruded_area_solid])
+
+    def get_start_and_end_of_extrusion(self, profile_points, extrusion_edge):
+        if extrusion_edge.vertices[0] in profile_points:
+            return (extrusion_edge.vertices[0], extrusion_edge.vertices[1])
+        return (extrusion_edge.vertices[1], extrusion_edge.vertices[0])
+
+    def get_extrusion_direction(self, mesh, start, end):
+        return mesh.vertices[end].co - mesh.vertices[start].co
+
+    def get_edges_in_vg_index(self, object, index):
+        return [ e for e in object.data.edges if (
+            index in [ g.group for g in object.data.vertices[e.vertices[0]].groups ] and
+            index in [ g.group for g in object.data.vertices[e.vertices[1]].groups ]
+            ) ]
+
+    def get_loop_from_edges(self, edges):
+        while edges:
+            currentEdge= edges.pop()
+            startVert= currentEdge.vertices[0]
+            endVert= currentEdge.vertices[1]
+            polyLine= [startVert, endVert]
+            ok= 1
+            while ok:
+                ok= 0
+                i=len(edges)
+                while i:
+                    i-=1
+                    ed= edges[i]
+                    if ed.vertices[0] == endVert:
+                        polyLine.append(ed.vertices[1])
+                        endVert= polyLine[-1]
+                        ok=1
+                        del edges[i]
+                    elif ed.vertices[1] == endVert:
+                        polyLine.append(ed.vertices[0])
+                        endVert= polyLine[-1]
+                        ok=1
+                        del edges[i]
+                    elif ed.vertices[0] == startVert:
+                        polyLine.insert(0, ed.vertices[1])
+                        startVert= polyLine[0]
+                        ok=1
+                        del edges[i]
+                    elif ed.vertices[1] == startVert:
+                        polyLine.insert(0, ed.vertices[0])
+                        startVert= polyLine[0]
+                        ok=1
+                        del edges[i]
+            return polyLine
+
     def create_solid_representation(self, representation):
         mesh = representation['raw']
         self.create_vertices(mesh.vertices)
@@ -1099,7 +1182,9 @@ class IfcExporter():
             self.ifc_vertices.append(self.create_cartesian_point(
                 vertice.co.x, vertice.co.y, vertice.co.z))
 
-    def create_cartesian_point(self, x, y, z):
+    def create_cartesian_point(self, x, y, z=None):
+        if z is None:
+            return self.file.createIfcCartesianPoint((x, y))
         return self.file.createIfcCartesianPoint((x, y, z))
 
     def relate_elements_to_spatial_structures(self):
