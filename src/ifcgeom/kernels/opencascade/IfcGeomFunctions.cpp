@@ -2115,8 +2115,8 @@ bool IfcGeom::Kernel::apply_folded_layerset(const ConversionResults& items, cons
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
 			if (split_solid_by_shell(*(OpenCascadeShape*)it->Shape(), shells.First(), a, b)) {
-				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(b), styles[0] ? styles[0] : &it->Style()));
-				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(a), styles[1] ? styles[1] : &it->Style()));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement() ? it->Placement()->clone() : nullptr, new OpenCascadeShape(b), styles[0] ? styles[0] : &it->Style()));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement() ? it->Placement()->clone() : nullptr, new OpenCascadeShape(a), styles[1] ? styles[1] : &it->Style()));
 			} else {
 				continue;
 			}
@@ -2135,7 +2135,7 @@ bool IfcGeom::Kernel::apply_folded_layerset(const ConversionResults& items, cons
 			std::vector<TopoDS_Shape> slices;
 			if (split(*this, *(OpenCascadeShape*)it->Shape(), shells, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(slices[i]), styles[i] ? styles[i] : &it->Style()));
+					result.push_back(ConversionResult(it->ItemId(), it->Placement() ? it->Placement()->clone() : nullptr, new OpenCascadeShape(slices[i]), styles[i] ? styles[i] : &it->Style()));
 				}
 			} else {
 				return false;
@@ -2158,8 +2158,8 @@ bool IfcGeom::Kernel::apply_layerset(const ConversionResults& items, const std::
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 			TopoDS_Shape a,b;
 			if (split_solid_by_surface(*(OpenCascadeShape*)it->Shape(), surfaces[1], a, b)) {
-				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(b), styles[0] ? styles[0] : &it->Style()));
-				result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(a), styles[1] ? styles[1] : &it->Style()));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement() ? it->Placement()->clone() : nullptr, new OpenCascadeShape(b), styles[0] ? styles[0] : &it->Style()));
+				result.push_back(ConversionResult(it->ItemId(), it->Placement() ? it->Placement()->clone() : nullptr, new OpenCascadeShape(a), styles[1] ? styles[1] : &it->Style()));
 			} else {
 				continue;
 			}
@@ -2219,7 +2219,7 @@ bool IfcGeom::Kernel::apply_layerset(const ConversionResults& items, const std::
 			std::vector<TopoDS_Shape> slices;
 			if (split(*this, *(OpenCascadeShape*)it->Shape(), operands, getValue(GV_PRECISION), slices) && slices.size() == styles.size()) {
 				for (size_t i = 0; i < slices.size(); ++i) {
-					result.push_back(ConversionResult(it->ItemId(), it->Placement()->clone(), new OpenCascadeShape(slices[i]), styles[i] ? styles[i] : &it->Style()));
+					result.push_back(ConversionResult(it->ItemId(), it->Placement() ? it->Placement()->clone() : nullptr, new OpenCascadeShape(slices[i]), styles[i] ? styles[i] : &it->Style()));
 				}
 			} else {
 				return false;

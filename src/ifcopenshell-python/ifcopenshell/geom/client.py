@@ -40,6 +40,9 @@ class message_headers(object):
     DEFLECTION = LOG + 1
     SETTING = DEFLECTION + 1
     
+CALCULATE_QUANTITIES = numpy.int32((1 << 4))
+APPLY_LAYERSETS = numpy.int32((1 << 13))
+    
 def cast(data, dtype, n=None):
     arr = numpy.frombuffer(data, dtype=dtype)
     if n is None: return arr[0]
@@ -144,7 +147,8 @@ def process(geomserver_exe, ifc_filename):
     # @todo: no need to read the entire file in memory
     s = open(ifc_filename, "rb").read()
     
-    write(message_headers.SETTING, [numpy.int32((1 << 4)), numpy.int32(1)]) 
+    write(message_headers.SETTING, [CALCULATE_QUANTITIES, numpy.int32(1)]) 
+    write(message_headers.SETTING, [APPLY_LAYERSETS, numpy.int32(1)]) 
     write(message_headers.IFC_MODEL, [numpy.int32(len(s)), s, b"\x00" * ((4 - (len(s) % 4)) % 4)])
         
     while True:

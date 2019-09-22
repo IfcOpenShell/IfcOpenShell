@@ -578,6 +578,7 @@ public:
 				total_volume = (volume_count + surface_count / 2) * (vsize * vsize * vsize);
 			}
 			delete surface;
+			put_json(TOTAL_SHAPE_VOLUME, total_volume);
 			put_json(TOTAL_SHAPE_VOLUME_VOXELS, total_volume);
 		}
 #endif

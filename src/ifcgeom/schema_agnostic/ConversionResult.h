@@ -60,9 +60,9 @@ namespace IfcGeom {
 		const SurfaceStyle* style;
 	public:
 		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape, const SurfaceStyle* style)
-			: id(id), placement(placement->clone()), shape(shape->clone()), style(style) {}
+			: id(id), placement(placement ? placement->clone() : nullptr), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ConversionResultPlacement* placement, const ConversionResultShape* shape)
-			: id(id), placement(placement->clone()), shape(shape->clone()), style(0) {}
+			: id(id), placement(placement ? placement->clone() : nullptr), shape(shape->clone()), style(0) {}
 		ConversionResult(int id, const ConversionResultShape* shape, const SurfaceStyle* style)
 			: id(id), placement(0), shape(shape->clone()), style(style) {}
 		ConversionResult(int id, const ConversionResultShape* shape)
