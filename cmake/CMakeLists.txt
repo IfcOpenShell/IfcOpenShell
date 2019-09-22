@@ -44,7 +44,7 @@ OPTION(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only."
 OPTION(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 OPTION(USE_VOXELS "Use voxelized geometries as a fallback mechanism to calculate quantities in IfcGeomServer" OFF)
 OPTION(USE_CGAL "Use CGAL as an alternative geometry kernel implementation" OFF)
-OPTION(USE_STATIC_MSVC_RUNTIME "Link to the static runtime on MSVC." ON)
+OPTION(USE_STATIC_MSVC_RUNTIME "Link to the static runtime on MSVC." OFF)
 OPTION(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 if (${HAS_MAX})
 OPTION(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." ON)

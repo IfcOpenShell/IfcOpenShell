@@ -157,8 +157,6 @@ set OCE_VERSION=OCE-0.18
 set PYTHON_VERSION=3.4.3
 set SWIG_VERSION=3.0.12
 
-goto :Eigen
-
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted
 :: by modifying this file and using goto.
 :Boost
