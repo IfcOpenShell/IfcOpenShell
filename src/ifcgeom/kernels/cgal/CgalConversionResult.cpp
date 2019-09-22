@@ -53,7 +53,12 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, co
   }
   
 //  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
-  CGAL::Polygon_mesh_processing::compute_face_normals(s, face_normals_map);
+  try {
+	  CGAL::Polygon_mesh_processing::compute_face_normals(s, face_normals_map);
+  } catch (...) {
+	  Logger::Message(Logger::LOG_ERROR, "Face normal calculation failed");
+	  return;
+  }
   
   int num_faces = 0, num_vertices = 0;
   for (auto &face: faces(s)) {
