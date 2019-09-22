@@ -67,8 +67,10 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, co
       continue;
     }
     CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
+	int vertexidx[3];
+	int i = 0;
     do {
-      t->addVertex(surface_style_id,
+		vertexidx[i++] = t->addVertex(surface_style_id,
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(0)),
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(1)),
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(2)));
@@ -82,7 +84,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, co
       ++current_halfedge;
     } while (current_halfedge != face->facet_begin());
 
-    t->addFace(surface_style_id, num_vertices-3, num_vertices-2, num_vertices-1);
+    t->addFace(surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
 
     ++num_faces;
   }
