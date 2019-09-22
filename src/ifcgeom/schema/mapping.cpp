@@ -1107,8 +1107,9 @@ namespace {
 		profile_point* previous, *next;
 	};
 
-	taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps) {
+	taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps, bool external = true) {
 		auto loop = new taxonomy::loop();
+		loop->external = external;
 		auto previous = ps.back();
 		for (auto& p : ps) {
 			auto e = new taxonomy::edge;
