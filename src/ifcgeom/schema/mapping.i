@@ -72,7 +72,7 @@ BIND(IfcHalfSpaceSolid);
 // BIND(IfcSurfaceCurveSweptAreaSolid);
 // BIND(IfcSweptDiskSolid);
 
-// BIND(IfcArbitraryProfileDefWithVoids);
+// IfcArbitraryProfileDefWithVoids included
 BIND(IfcArbitraryClosedProfileDef);
 // BIND(IfcRoundedRectangleProfileDef);
 // BIND(IfcRectangleHollowProfileDef);
