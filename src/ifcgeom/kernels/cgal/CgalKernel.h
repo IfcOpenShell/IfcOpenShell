@@ -92,10 +92,14 @@ namespace geometry {
 namespace kernels {
 
 	class IFC_GEOM_API CgalKernel : public AbstractKernel {
+	private:
+		double precision_;
 	public:
 
 		CgalKernel()
-			: AbstractKernel("cgal") {}
+			: AbstractKernel("cgal")
+			// @todo
+			, precision_(1.e-5) {}
 
 		void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
 
@@ -104,12 +108,16 @@ namespace kernels {
 		CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
 		CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
 
+		bool convert(const taxonomy::extrusion*, cgal_shape_t&);
 		bool convert(const taxonomy::face*, cgal_face_t&);
 		bool convert(const taxonomy::loop*, cgal_wire_t&);
-		bool convert(const taxonomy::shell* l, cgal_shape_t& shape);
-
+		// bool convert(const taxonomy::matrix4*, cgal_placement_t&);
+		bool convert(const taxonomy::shell*, cgal_shape_t&);
+		
+		// virtual bool convert_impl(const taxonomy::face*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
-		// virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
+		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
+		// virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 }
