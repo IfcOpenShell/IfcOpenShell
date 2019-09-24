@@ -179,6 +179,37 @@ bool CgalKernel::convert(const taxonomy::face* face, cgal_face_t& result) {
 	return true;
 }
 
+namespace {
+	bool convert_curve(CgalKernel* kernel, const taxonomy::item* curve, cgal_wire_t& builder) {
+		if (curve->kind() == taxonomy::EDGE) {
+			auto e = (taxonomy::edge*) curve;
+			if (true || e->basis == nullptr) {
+				if (builder.empty()) {
+					const auto& p = boost::get<taxonomy::point3>(e->start);
+					cgal_point_t pnt(p.components(0), p.components(1), p.components(2));
+					builder.push_back(pnt);
+				}
+				const auto& p = boost::get<taxonomy::point3>(e->end);
+				cgal_point_t pnt(p.components(0), p.components(1), p.components(2));
+				builder.push_back(pnt);
+			} else if (e->basis->kind() == taxonomy::CIRCLE) {
+				// @todo
+			} else if (e->basis->kind() == taxonomy::ELLIPSE) {
+
+			} else {
+				throw std::runtime_error("Not implemented basis kind");
+			}
+		} else if (curve->kind() == taxonomy::LOOP) {
+			const auto& edges = ((taxonomy::loop*) curve)->children;
+			for (auto& c : edges) {
+				convert_curve(kernel, c, builder);
+			}
+		} else {
+			throw std::runtime_error("Not implemented curve");
+		}
+	}
+}
+
 bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	// @todo only implement polygonal loops
 
@@ -187,6 +218,7 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 
 	for (auto& e : edges) {
 		if (e->basis) {
+			Logger::Error("Only polyhedra supported :(");
 			return false;
 		}
 		points.push_back(boost::get<taxonomy::point3>(e->start));
@@ -243,4 +275,126 @@ bool CgalKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell::geomet
 		shell->surface_style
 	));
 	return true;
+}
+
+bool CgalKernel::convert_impl(const taxonomy::extrusion* extrusion, ifcopenshell::geometry::ConversionResults& results) {
+	cgal_shape_t shape;
+	if (!convert(extrusion, shape)) {
+		return false;
+	}
+	results.emplace_back(ConversionResult(
+		extrusion->instance->data().id(),
+		extrusion->matrix,
+		new CgalShape(shape),
+		extrusion->surface_style
+	));
+	return true;
+}
+
+bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &shape) {
+	const double& height = extrusion->depth;
+	if (height < precision_) {
+		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", extrusion->instance);
+		return false;
+	}
+
+	// Outer
+	cgal_face_t bottom_face;
+	if (!convert(&extrusion->basis, bottom_face)) {
+		return false;
+	}
+	//  std::cout << "Face vertices: " << face.outer.size() << std::endl;
+
+	auto fs = extrusion->direction.components;
+	cgal_direction_t dir(fs(0), fs(1), fs(2));
+	//  std::cout << "Direction: " << dir << std::endl;
+
+	std::list<cgal_face_t> face_list;
+	face_list.push_back(bottom_face);
+
+	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
+		current_vertex != bottom_face.outer.end();
+		++current_vertex) {
+		std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+		++next_vertex;
+		if (next_vertex == bottom_face.outer.end()) {
+			next_vertex = bottom_face.outer.begin();
+		} cgal_face_t side_face;
+		side_face.outer.push_back(*next_vertex);
+		side_face.outer.push_back(*current_vertex);
+		side_face.outer.push_back(*current_vertex + height * dir);
+		side_face.outer.push_back(*next_vertex + height * dir);
+		face_list.push_back(side_face);
+	}
+
+	cgal_face_t top_face;
+	for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
+		vertex != bottom_face.outer.rend();
+		++vertex) {
+		top_face.outer.push_back(*vertex + height * dir);
+	} face_list.push_back(top_face);
+
+	if (bottom_face.inner.empty()) {
+		shape = create_polyhedron(face_list);
+		// if (has_position) for (auto &vertex : vertices(shape)) vertex->point() = vertex->point().transform(trsf);
+		return true;
+	}
+
+	CGAL::Nef_polyhedron_3<Kernel_> nef_shape = create_nef_polyhedron(face_list);
+
+	// Inner
+	// TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
+	for (auto &inner : bottom_face.inner) {
+		//    std::cout << "Inner wire" << std::endl;
+		face_list.clear();
+
+		cgal_face_t hole_bottom_face;
+		hole_bottom_face.outer = inner;
+		remove_duplicate_points_from_loop(hole_bottom_face.outer);
+		face_list.push_back(hole_bottom_face);
+
+		for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = inner.begin();
+			current_vertex != inner.end();
+			++current_vertex) {
+			std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+			++next_vertex;
+			if (next_vertex == inner.end()) {
+				next_vertex = inner.begin();
+			} cgal_face_t hole_side_face;
+			hole_side_face.outer.push_back(*next_vertex);
+			hole_side_face.outer.push_back(*current_vertex);
+			hole_side_face.outer.push_back(*current_vertex + height * dir);
+			hole_side_face.outer.push_back(*next_vertex + height * dir);
+			face_list.push_back(hole_side_face);
+		}
+
+		cgal_face_t hole_top_face;
+		for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = inner.rbegin();
+			vertex != inner.rend();
+			++vertex) {
+			hole_top_face.outer.push_back(*vertex + height * dir);
+		} face_list.push_back(hole_top_face);
+
+		try {
+			nef_shape -= create_nef_polyhedron(face_list);
+		} catch (...) {
+			Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:", extrusion->instance);
+			return false;
+		}
+	}
+
+	/*if (has_position) {
+		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
+		// and therefore has a unit scale factor
+		nef_shape.transform(trsf);
+	}*/
+
+	try {
+		nef_shape.convert_to_polyhedron(shape);
+		return true;
+	} catch (...) {
+		Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot convert Nef to polyhedron for:", extrusion->instance);
+		return false;
+	}
+
 }
