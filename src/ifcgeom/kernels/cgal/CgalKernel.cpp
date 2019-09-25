@@ -22,6 +22,8 @@
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
+#include <CGAL/minkowski_sum_3.h>
+
 using namespace ifcopenshell::geometry; 
 using namespace ifcopenshell::geometry::kernels;
 
@@ -397,4 +399,210 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 		return false;
 	}
 
+}
+
+CGAL::Polyhedron_3<Kernel_> CgalKernel::create_cube(double d) {
+	cgal_face_t bottom_face;
+	bottom_face.outer.push_back(Kernel_::Point_3(-d, -d, -d));
+	bottom_face.outer.push_back(Kernel_::Point_3(+d, -d, -d));
+	bottom_face.outer.push_back(Kernel_::Point_3(+d, +d, -d));
+	bottom_face.outer.push_back(Kernel_::Point_3(-d, +d, -d));
+
+	cgal_direction_t dir(0, 0, 2 * d);
+
+	std::list<cgal_face_t> face_list = { bottom_face };
+		
+	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
+		current_vertex != bottom_face.outer.end();
+		++current_vertex)
+	{
+		std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+		++next_vertex;
+
+		if (next_vertex == bottom_face.outer.end()) {
+			next_vertex = bottom_face.outer.begin();
+		}
+			
+		cgal_face_t side_face;
+			
+		side_face.outer.push_back(*next_vertex);
+		side_face.outer.push_back(*current_vertex);
+		side_face.outer.push_back(*current_vertex + dir);
+		side_face.outer.push_back(*next_vertex + dir);
+
+		face_list.push_back(side_face);
+	}
+
+	cgal_face_t top_face;
+
+	for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
+		vertex != bottom_face.outer.rend();
+		++vertex)
+	{
+		top_face.outer.push_back(*vertex + dir);
+	}
+		
+	face_list.push_back(top_face);
+
+	return create_polyhedron(face_list);
+}
+
+bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate) {
+	cgal_shape_t shape = shape_const;
+
+	if (!shape.is_valid()) {
+		Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Invalid geometry:", log_reference);
+		return false;
+	}
+
+	if (!shape.is_closed()) {
+		// TODO: There can be substractions to remove parts of non-volumetric objects. Maybe iterate over all faces of an entity and put them in a Nef_polyhedron_3 through Boolean union? Highly inefficient but maybe desirable...
+		Logger::Message(Logger::LOG_ERROR, "Subtraction of openings not supported for non-closed geometry:", log_reference);
+		return false;
+	}
+
+	bool success = false;
+
+	try {
+		success = CGAL::Polygon_mesh_processing::triangulate_faces(shape);
+	} catch (...) {
+		Logger::Message(Logger::LOG_ERROR, "Triangulation of geometry crashed:", log_reference);
+		return false;
+	}
+
+	if (!success) {
+		Logger::Message(Logger::LOG_ERROR, "Triangulation of geometry failed:", log_reference);
+		return false;
+	}
+
+	if (CGAL::Polygon_mesh_processing::does_self_intersect(shape)) {
+		Logger::Message(Logger::LOG_ERROR, "Conversion to Nef will fail. Self-intersecting geometry:", log_reference);
+		return false;
+	}
+
+	try {
+		result = CGAL::Nef_polyhedron_3<Kernel_>(shape);
+	} catch (...) {
+		Logger::Message(Logger::LOG_ERROR, "Could not convert geometry to Nef:", log_reference);
+		return false;
+	}
+
+	if (false && dilate) {
+		try {
+			// @todo don't dilate in 3 dimensions but only in the XY plane, orthogonal to wall axis.
+			result = CGAL::minkowski_sum_3(result, precision_cube_);
+		} catch (...) {
+			Logger::Message(Logger::LOG_ERROR, "Could not dilate boolean operand", log_reference);
+			return false;
+		}
+	}		
+
+	try {
+		cgal_shape_t convert_back;
+		result.convert_to_polyhedron(convert_back);
+	} catch (...) {
+		Logger::Message(Logger::LOG_WARNING, "Final conversion will likely fail. Could not convert geometry from Nef:", log_reference);
+	}
+
+	return true;
+}
+
+namespace {
+	bool convert_placement(const ifcopenshell::geometry::taxonomy::matrix4& place, cgal_placement_t& trsf) {
+		const auto& m = place.components;
+
+		// @todo check
+		trsf = cgal_placement_t(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+
+		return true;
+	}
+}
+
+
+
+bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::geometry::ConversionResults& results) {
+	bool first = true;
+
+	CGAL::Nef_polyhedron_3<Kernel_> a;
+
+	taxonomy::style first_item_style;
+
+	for (auto& c : br->children) {
+		// AbstractKernel::convert(c, results);
+		// continue;
+
+		ifcopenshell::geometry::ConversionResults cr;
+		// @todo half-space detection
+		AbstractKernel::convert(c, cr);
+
+		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
+			first_item_style = ((taxonomy::geom_item*)c)->surface_style;
+			if (!first_item_style.diffuse && c->kind() == taxonomy::COLLECTION) {
+				first_item_style = ((taxonomy::geom_item*) ((taxonomy::collection*)c)->children[0])->surface_style;
+			}
+		}
+
+		for (auto it = cr.begin(); it != cr.end(); ++it) {
+			const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it->Shape())->shape());
+			cgal_shape_t entity_shape(entity_shape_unlocated);
+			if (!it->Placement().components.isIdentity()) {
+				cgal_placement_t trsf;
+				convert_placement(it->Placement(), trsf);
+				for (auto &vertex : vertices(entity_shape)) {
+					if (false) {
+						auto x = CGAL::to_double(vertex->point().x());
+						auto y = CGAL::to_double(vertex->point().y());
+						auto z = CGAL::to_double(vertex->point().z());
+						std::wcout << x << " " << y << " " << z << std::endl;
+					}
+					vertex->point() = vertex->point().transform(trsf);
+					if (false) {
+						auto x = CGAL::to_double(vertex->point().x());
+						auto y = CGAL::to_double(vertex->point().y());
+						auto z = CGAL::to_double(vertex->point().z());
+						std::wcout << x << " " << y << " " << z << std::endl;
+					}
+				}
+			}
+
+			CGAL::Nef_polyhedron_3<Kernel_> nef;
+			preprocess_boolean_operand(c->instance, entity_shape, nef,
+				// Dilate boolean subtraction operands
+				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION) ? precision_ : 0.);
+
+			if (first) {
+				a = nef;
+			} else {
+				if (br->operation == taxonomy::boolean_result::SUBTRACTION) {
+					a -= nef;
+				} else if (br->operation == taxonomy::boolean_result::INTERSECTION) {
+					a *= nef;
+				} else if (br->operation == taxonomy::boolean_result::UNION) {
+					a += nef;
+				}
+			}
+		}
+
+		first = false;
+	}
+
+	cgal_shape_t a_poly;
+
+	try {
+		a.convert_to_polyhedron(a_poly);
+	} catch (...) {
+		Logger::Message(Logger::LOG_ERROR, "Could not convert geometry with openings from Nef:", br->instance);
+		return false;
+	}
+
+	results.emplace_back(ConversionResult(
+		br->instance->data().id(),
+		br->matrix,
+		new CgalShape(a_poly),
+		br->surface_style.diffuse ? br->surface_style : first_item_style
+	));
+	return true;
 }

@@ -94,12 +94,22 @@ namespace kernels {
 	class IFC_GEOM_API CgalKernel : public AbstractKernel {
 	private:
 		double precision_;
+		size_t circle_segments_;
+		CGAL::Nef_polyhedron_3<Kernel_> precision_cube_;
+
+		CGAL::Polyhedron_3<Kernel_> create_cube(double d);
+		bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate);
 	public:
 
 		CgalKernel()
 			: AbstractKernel("cgal")
 			// @todo
-			, precision_(1.e-5) {}
+			, precision_(1.e-5)
+			, circle_segments_(16)
+		{
+			auto cc = create_cube(precision_);
+			precision_cube_ = CGAL::Nef_polyhedron_3<Kernel_>(cc);
+		}
 
 		void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
 
@@ -117,7 +127,7 @@ namespace kernels {
 		// virtual bool convert_impl(const taxonomy::face*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
-		// virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
+		virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
 	};
 
 }
