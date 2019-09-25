@@ -75,9 +75,19 @@ void ifcopenshell::geometry::CgalShape::Triangulate(const settings& settings, co
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(1)),
                    CGAL::to_double(current_halfedge->vertex()->point().cartesian(2)));
 
-      const double nx = CGAL::to_double(face_normals_map[face].cartesian(0));
-      const double ny = CGAL::to_double(face_normals_map[face].cartesian(1));
-      const double nz = CGAL::to_double(face_normals_map[face].cartesian(2));
+		double nx = 0.;
+		double ny = 0.;
+		double nz = 1.;
+		// @todo normal calculation throws divide by zero?
+		// try {
+		if (false) {
+			nx = CGAL::to_double(face_normals_map[face].cartesian(0));
+			ny = CGAL::to_double(face_normals_map[face].cartesian(1));
+			nz = CGAL::to_double(face_normals_map[face].cartesian(2));
+		}
+		// catch (...) {
+		// 	Logger::Error("Error during normal calculation");
+		// }
       t->addNormal(nx, ny, nz);
 
       ++num_vertices;
