@@ -152,6 +152,9 @@
 #include <Extrema_ExtPC.hxx>
 #include <BRepAdaptor_Curve.hxx>
 
+#include <ShapeAnalysis_Edge.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+
 #include "../ifcparse/macros.h"
 #include "../ifcparse/IfcSIPrefix.h"
 #include "../ifcparse/IfcFile.h"
@@ -326,20 +329,22 @@ namespace {
 		BRepTopAdaptor_FClass2d cls_;
 		double u0, u1, v0, v1;
 		int i, j;
+		bool inset_;
 		static const int N = 10;
 
 	public:
-		points_on_planar_face_generator(const TopoDS_Face& f)
+		points_on_planar_face_generator(const TopoDS_Face& f, bool inset=false)
 			: f_(f)
 			, plane_(BRep_Tool::Surface(f_))
 			, cls_(f_, BRep_Tool::Tolerance(f_))
-			, i(0), j(0)
+			, i((int)inset), j((int)inset)
+			, inset_(inset)
 		{
 			BRepTools::UVBounds(f_, u0, u1, v0, v1);
 		}
 
 		void reset() {
-			i = j = 0;
+			i = j = (int)inset_;
 		}
 
 		bool operator()(gp_Pnt& p) {
@@ -363,6 +368,31 @@ namespace {
 			return false;
 		}
 	};
+
+	bool faces_overlap(const TopoDS_Face& f, const TopoDS_Face& g) {
+		points_on_planar_face_generator pgen(f);
+
+		BRep_Builder B;
+		gp_Pnt test;
+		double eps = BRep_Tool::Tolerance(f) + BRep_Tool::Tolerance(g);
+
+		BRepExtrema_DistShapeShape x;
+		x.LoadS1(g);
+
+		while (pgen(test)) {
+			TopoDS_Vertex V;
+			B.MakeVertex(V, test, Precision::Confusion());
+			x.LoadS2(V);
+			x.Perform();
+			if (x.IsDone() && x.NbSolution() == 1) {
+				if (x.Value() > eps) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
 
 	double min_face_face_distance(const TopoDS_Shape& a, double max_search) {
 		/*
@@ -4058,6 +4088,61 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 		if (success) {
 
 			success = !is_manifold(a) || is_manifold(r);
+
+			if (!success) {
+				// An excemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
+				bool operands_nonmanifold = false;
+				if (op == BOPAlgo_CUT) {
+					TopTools_IndexedMapOfShape edges;
+					TopTools_IndexedDataMapOfShapeListOfShape map;
+					for (auto& bb : B) {
+						TopExp::MapShapes(bb, TopAbs_EDGE, edges);
+						TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
+					}
+					IfcGeom::impl::tree<int> tree;
+					for (int i = 1; i <= edges.Extent(); ++i) {
+						tree.add(i, edges.FindKey(i));
+					}
+					for (int i = 1; i <= edges.Extent(); ++i) {
+						const TopoDS_Edge& ei = TopoDS::Edge(edges.FindKey(i));
+						Bnd_Box b;
+						BRepBndLib::Add(ei, b);
+						b.Enlarge(fuzziness);
+						auto ii = tree.select_box(b, false);
+						for (int j : ii) {
+							if (j != i) {
+								const TopoDS_Edge& ej = TopoDS::Edge(edges.FindKey(j));
+								ShapeAnalysis_Edge sae;
+								double f = fuzziness;
+								bool edges_overlapping = sae.CheckOverlapping(ei, ej, f, 0.) ||
+									sae.CheckOverlapping(ej, ei, f, 0.);
+
+								if (edges_overlapping) {
+									auto faces_i = map.FindFromKey(edges.FindKey(i));
+									auto faces_j = map.FindFromKey(edges.FindKey(j));
+									bool overlap = false;
+									for (auto& fi : faces_i) {
+										for (auto& fj : faces_j) {
+											if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
+												overlap = true;
+											}
+										}
+										if (overlap) {
+											break;
+										}
+									}
+									operands_nonmanifold = !overlap;
+									break;
+								}
+							}
+						}
+						if (operands_nonmanifold) {
+							break;
+						}
+					}
+				}
+				success = operands_nonmanifold;
+			}
 
 			if (success) {
 				
