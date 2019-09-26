@@ -26,7 +26,6 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
     bl_label = "Export .ifc file"
     filename_ext = ".ifc"
-    #filter_glob: StringProperty(default="*.ifc", options={'HIDDEN'})
     filepath: StringProperty(subtype='FILE_PATH')
 
     def invoke(self, context, event):
@@ -49,7 +48,6 @@ class ExportIFC(bpy.types.Operator):
         ifc_exporter.export()
         print('# Export finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
-
 
 def menu_func(self, context):
     self.layout.operator(ExportIFC.bl_idname,
