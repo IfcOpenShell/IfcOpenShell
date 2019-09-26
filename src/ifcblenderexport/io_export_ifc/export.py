@@ -63,8 +63,8 @@ class QtoCalculator():
         return volume
 
 class IfcSchema():
-    def __init__(self):
-        self.schema_dir = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/schema/'
+    def __init__(self, ifc_export_settings):
+        self.schema_dir = '{}schema/'.format(ifc_export_settings.bim_path)
         self.property_file = ifcopenshell.open(self.schema_dir + 'IFC4_ADD2.ifc')
         self.psets = {}
         self.qtos = {}
@@ -84,7 +84,7 @@ class IfcSchema():
 
 class IfcParser():
     def __init__(self, ifc_export_settings):
-        self.data_dir = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/data/'
+        self.data_dir = '{}data/'.format(ifc_export_settings.bim_path)
 
         self.ifc_export_settings = ifc_export_settings
 
@@ -672,8 +672,8 @@ class SIUnitHelper:
 
 class IfcExporter():
     def __init__(self, ifc_export_settings, ifc_schema, ifc_parser, qto_calculator):
-        self.template_file = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/template.ifc'
-        self.output_file = '/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/output.ifc'
+        self.template_file = '{}template.ifc'.format(ifc_export_settings.bim_path)
+        self.output_file = ifc_export_settings.output_file
         self.ifc_export_settings = ifc_export_settings
         self.ifc_schema = ifc_schema
         self.ifc_parser = ifc_parser
@@ -1245,17 +1245,9 @@ class IfcExporter():
 
 class IfcExportSettings:
     def __init__(self):
+        self.bim_path = None
+        self.output_file = None
         self.has_representations = True
         self.has_quantities = True
         self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG']
         self.generated_subcontexts = ['Box']
-
-print('# Starting export')
-start = time.time()
-ifc_export_settings = IfcExportSettings()
-ifc_parser = IfcParser(ifc_export_settings)
-ifc_schema = IfcSchema()
-qto_calculator = QtoCalculator()
-ifc_exporter = IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
-ifc_exporter.export()
-print('# Export finished in {:.2f} seconds'.format(time.time() - start))
