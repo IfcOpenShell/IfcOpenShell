@@ -1,10 +1,10 @@
-import ifcopenshell
 import bpy
 import csv
 import json
 import time
 from pathlib import Path
 from mathutils import Vector
+from . import ifcopenshell
 
 class ArrayModifier:
     count: int
