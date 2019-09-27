@@ -559,6 +559,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 		e = BRepBuilderAPI_MakeEdge(pnts[0], pnts[1]).Edge();
 	}
 
+	if (e.IsNull()) {
+		return false;
+	}
+
 	if (isConic) {
 		// Tiny circle segnments can cause issues later on, for example
 		// when the comp curve is used as the sweeping directrix.
