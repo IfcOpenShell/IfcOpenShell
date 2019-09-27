@@ -225,7 +225,6 @@ dependency_tree = {
     'boost': (),
     'libxml2': (),
     'python': (),
-    'swig': (),
     'occ': (),
     'pcre': (),
     'json': ()
