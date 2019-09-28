@@ -104,6 +104,7 @@ class IfcParser():
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
+        self.rel_nests = {}
         self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
         self.rel_defines_by_pset = {}
@@ -195,6 +196,11 @@ class IfcParser():
         self.products.append(product)
         self.product_index += 1
 
+    def get_product_index_from_raw_name(self, name):
+        for index, product in enumerate(self.products):
+            if product['raw'].name == name:
+                return index
+
     def get_product(self, selected_product, metadata_override={}, attribute_override={}):
         object = selected_product['raw']
         product = {
@@ -212,8 +218,12 @@ class IfcParser():
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
 
-        for collection in product['raw'].users_collection:
-            self.parse_product_collection(product, collection)
+        if product['raw'].parent:
+            self.rel_nests.setdefault(
+                self.get_product_index_from_raw_name(product['raw'].parent.name), []).append(product)
+        else:
+            for collection in product['raw'].users_collection:
+                self.parse_product_collection(product, collection)
 
         if object.instance_type == 'COLLECTION' \
             and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
@@ -720,6 +730,7 @@ class IfcExporter():
         self.relate_definitions_to_contexts()
         self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
+        self.relate_nested_elements_to_hosted_elements()
         self.relate_objects_to_types()
         self.relate_objects_to_qtos()
         self.relate_objects_to_psets()
@@ -1221,6 +1232,13 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [ self.ifc_parser.products[e]['ifc'] for e in related_elements],
                 self.ifc_parser.spatial_structure_elements[relating_structure]['ifc'])
+
+    def relate_nested_elements_to_hosted_elements(self):
+        for relating_object, related_objects in self.ifc_parser.rel_nests.items():
+            self.file.createIfcRelNests(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                self.ifc_parser.products[relating_object]['ifc'],
+                [ o['ifc'] for o in related_objects ])
 
     def relate_objects_to_types(self):
         for relating_type, related_objects in self.ifc_parser.rel_defines_by_type.items():
