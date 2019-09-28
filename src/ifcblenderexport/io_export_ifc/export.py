@@ -113,6 +113,7 @@ class IfcParser():
         self.rel_associates_classification_type = {}
         self.rel_associates_material = {}
         self.rel_associates_material_layer_set = {}
+        self.rel_associates_material_constituent_set = {}
         self.rel_associates_constraint_objective_object = {}
         self.rel_associates_constraint_objective_type = {}
         self.rel_aggregates = {}
@@ -245,6 +246,9 @@ class IfcParser():
         if 'IsMaterialLayerSet' in object:
             for slot in object.material_slots:
                 self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(slot.material.name)
+        elif 'IsMaterialConstituentSet' in object:
+            for slot in object.material_slots:
+                self.rel_associates_material_constituent_set.setdefault(self.product_index, []).append(slot.material.name)
         else:
             for slot in object.material_slots:
                 self.rel_associates_material.setdefault( slot.material.name, []).append(product)
@@ -519,10 +523,14 @@ class IfcParser():
                 results[slot.material.name] = {
                     'ifc': None,
                     'layer_ifc': None,
+                    'constituent_ifc': None,
                     'raw': slot.material,
                     'is_material_layer_set': True if 'IsMaterialLayerSet' in object.keys() else False,
+                    'is_material_constituent_set': True if 'IsMaterialConstituentSet' in object.keys() else False,
                     'attributes': { 'Name': slot.material.name },
                     'layer_attributes': { key[3:]: slot.material[key] for key in
+                        slot.material.keys() if key[0:3] == 'Ifc'},
+                    'constituent_attributes': { key[3:]: slot.material[key] for key in
                         slot.material.keys() if key[0:3] == 'Ifc'}
                     }
         return results
@@ -717,6 +725,7 @@ class IfcExporter():
         self.relate_objects_to_psets()
         self.relate_objects_to_materials()
         self.relate_objects_to_material_layer_sets()
+        self.relate_objects_to_material_constituent_sets()
         self.relate_to_documents(self.ifc_parser.rel_associates_document_object)
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_object)
@@ -944,7 +953,12 @@ class IfcExporter():
                 material['raw'].name, None, [styled_representation], material['ifc'])
             if material['is_material_layer_set']:
                 material['layer_attributes']['Material'] = material['ifc']
-                material['layer_ifc'] = self.file.create_entity('IfcMaterialLayer', **material['layer_attributes'])
+                material['layer_ifc'] = self.file.create_entity('IfcMaterialLayer',
+                    **material['layer_attributes'])
+            elif material['is_material_constituent_set']:
+                material['constituent_attributes']['Material'] = material['ifc']
+                material['constituent_ifc'] = self.file.create_entity('IfcMaterialConstituent',
+                    **material['constituent_attributes'])
 
     def create_surface_style_rendering(self, material):
         surface_colour = self.create_colour_rgb(material['raw'].diffuse_color)
@@ -1245,6 +1259,16 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [self.ifc_parser.products[product_index]['ifc']],
                 material_layer_set)
+
+    def relate_objects_to_material_constituent_sets(self):
+        for product_index, related_materials in self.ifc_parser.rel_associates_material_constituent_set.items():
+            material_constituent_set = self.file.create_entity('IfcMaterialConstituentSet', **{
+                'MaterialConstituents': [self.ifc_parser.materials[m]['constituent_ifc'] for m in related_materials]
+                })
+            self.file.createIfcRelAssociatesMaterial(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [self.ifc_parser.products[product_index]['ifc']],
+                material_constituent_set)
 
     def relate_to_documents(self, relationships):
         for relating_document_key, related_objects in relationships.items():
