@@ -211,6 +211,7 @@ class IfcParser():
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
+            'relating_host': None,
             'relating_qtos_key': None,
             'representations': self.get_object_representation_names(object),
             'attributes': self.get_object_attributes(object)
@@ -219,8 +220,9 @@ class IfcParser():
         product.update(metadata_override)
 
         if product['raw'].parent:
-            self.rel_nests.setdefault(
-                self.get_product_index_from_raw_name(product['raw'].parent.name), []).append(product)
+            parent_product_index = self.get_product_index_from_raw_name(product['raw'].parent.name)
+            self.rel_nests.setdefault(parent_product_index, []).append(product)
+            product['relating_host'] = parent_product_index
         else:
             for collection in product['raw'].users_collection:
                 self.parse_product_collection(product, collection)
@@ -1018,6 +1020,8 @@ class IfcExporter():
     def create_product(self, product):
         if product['relating_structure']:
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']]['ifc'].ObjectPlacement
+        elif product['relating_host'] is not None:
+            placement_rel_to = self.ifc_parser.products[product['relating_host']]['ifc'].ObjectPlacement
         else:
             placement_rel_to = None
 
