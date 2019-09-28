@@ -495,9 +495,13 @@ namespace {
 	TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance) {
 		tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
 		ShapeUpgrade_UnifySameDomain usd(s);
+#if OCC_VERSION_HEX >= 0x70200
 		usd.SetSafeInputMode(true);
+#endif
+#if OCC_VERSION_HEX >= 0x70100
 		usd.SetLinearTolerance(tolerance);
 		usd.SetAngularTolerance(1.e-3);
+#endif
 		usd.Build();
 		return usd.Shape();
 	}
@@ -4095,7 +4099,8 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 				if (op == BOPAlgo_CUT) {
 					TopTools_IndexedMapOfShape edges;
 					TopTools_IndexedDataMapOfShapeListOfShape map;
-					for (auto& bb : B) {
+					for (TopTools_ListIteratorOfListOfShape it(B); it.More(); it.Next()) {
+						auto& bb = it.Value();
 						TopExp::MapShapes(bb, TopAbs_EDGE, edges);
 						TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
 					}
@@ -4121,8 +4126,10 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 									auto faces_i = map.FindFromKey(edges.FindKey(i));
 									auto faces_j = map.FindFromKey(edges.FindKey(j));
 									bool overlap = false;
-									for (auto& fi : faces_i) {
-										for (auto& fj : faces_j) {
+									for (TopTools_ListIteratorOfListOfShape it(faces_i); it.More(); it.Next()) {
+										auto& fi = it.Value();
+										for (TopTools_ListIteratorOfListOfShape it2(faces_j); it2.More(); it2.Next()) {
+											auto& fj = it2.Value();
 											if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
 												overlap = true;
 											}
