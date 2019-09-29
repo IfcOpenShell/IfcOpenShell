@@ -227,13 +227,15 @@ class IfcParser():
             and self.is_a_type(self.get_ifc_class(object.parent.name)):
             reference = self.get_type_product_reference(object.parent.name)
             self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
-        elif product['raw'].parent:
-            parent_product_index = self.get_product_index_from_raw_name(product['raw'].parent.name)
+
+        for collection in product['raw'].users_collection:
+            self.parse_product_collection(product, collection)
+
+        if 'IfcRelNests' in object.constraints:
+            parent_product_index = self.get_product_index_from_raw_name(
+                object.constraints['IfcRelNests'].target.name)
             self.rel_nests.setdefault(parent_product_index, []).append(product)
             product['relating_host'] = parent_product_index
-        else:
-            for collection in product['raw'].users_collection:
-                self.parse_product_collection(product, collection)
 
         if object.instance_type == 'COLLECTION' \
             and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
@@ -276,6 +278,8 @@ class IfcParser():
         return product
 
     def parse_product_collection(self, product, collection):
+        if collection is None:
+            return
         class_name = self.get_ifc_class(collection.name)
         if self.is_a_spatial_structure_element(class_name):
             reference = self.get_spatial_structure_element_reference(collection.name)
@@ -285,7 +289,7 @@ class IfcParser():
         elif self.is_a_rel_aggregates(class_name):
             pass
         else:
-            self.parse_product_collection(product, self.product_index, self.get_parent_collection(collection))
+            self.parse_product_collection(product, self.get_parent_collection(collection))
 
     def get_parent_collection(self, child_collection):
         for parent_collection in bpy.data.collections:
