@@ -120,6 +120,7 @@ class IfcParser():
         self.rel_aggregates = {}
         self.representations = {}
         self.type_products = []
+        self.door_attributes = {}
         self.project = {}
         self.libraries = []
         self.products = []
@@ -141,6 +142,7 @@ class IfcParser():
 
         self.project = self.get_project()
         self.libraries = self.get_libraries()
+        self.door_attributes = self.get_door_attributes()
         self.type_products = self.get_type_products()
         self.get_products()
         self.map_conversion = self.get_map_conversion()
@@ -219,7 +221,11 @@ class IfcParser():
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
 
-        if product['raw'].parent:
+        if object.parent \
+            and self.is_a_type(self.get_ifc_class(object.parent.name)):
+            reference = self.get_type_product_reference(object.parent.name)
+            self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
+        elif product['raw'].parent:
             parent_product_index = self.get_product_index_from_raw_name(product['raw'].parent.name)
             self.rel_nests.setdefault(parent_product_index, []).append(product)
             product['relating_host'] = parent_product_index
@@ -265,10 +271,6 @@ class IfcParser():
             for slot in object.material_slots:
                 self.rel_associates_material.setdefault( slot.material.name, []).append(product)
 
-        if object.parent \
-            and self.is_a_type(self.get_ifc_class(object.parent.name)):
-            reference = self.get_type_product_reference(object.parent.name)
-            self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
         return product
 
     def parse_product_collection(self, product, collection):
@@ -328,6 +330,19 @@ class IfcParser():
                         'Description': description }
                     }
         return psets
+
+    def get_door_attributes(self):
+        results = {}
+        for filename in Path(self.data_dir + 'door/').glob('**/*.csv'):
+            with open(filename, 'r') as f:
+                type_name = filename.parts[-2]
+                pset_name = filename.stem
+                results.setdefault(type_name, []).append({
+                    'ifc': None,
+                    'raw': { x[0]: x[1] for x in list(csv.reader(f)) },
+                    'pset_name': pset_name.split('.')[0]
+                    })
+        return results
 
     def get_classifications(self):
         results = []
@@ -908,10 +923,23 @@ class IfcExporter():
                     [self.ifc_parser.psets[pset]['ifc'] for pset in
                     product['psets']] })
 
+            if product['class'] == 'IfcDoorType' \
+                and product['attributes']['Name'] in self.ifc_parser.door_attributes:
+                attributes = self.ifc_parser.door_attributes[product['attributes']['Name']]
+                self.create_door_attributes(attributes)
+                product['attributes'].setdefault('HasPropertySets', [])
+                for attribute in attributes:
+                    product['attributes']['HasPropertySets'].append(attribute['ifc'])
+
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def create_door_attributes(self, attributes):
+        for attribute in attributes:
+            attribute['ifc'] = self.file.create_entity(attribute['pset_name'],
+                **{k: float(v) if v.replace('.', '', 1).isdigit() else v for k, v in attribute['raw'].items()})
 
     def relate_definitions_to_contexts(self):
         for library in self.ifc_parser.libraries:
