@@ -65,6 +65,16 @@ Let's use Blender to create BIM models, because why not?
    Uniclass, Omniclass, or your custom system.
  - Associate external document files such as plans, brochures, specifications,
    warranties, or anything to objects and types.
+ - Specify swept solid geometries, allowing you to round-trip geometry
+   manipulation with other BIM software which have more limited geometric tools,
+   like Revit.
+ - Create material layer sets, for objects which have materials in predefined
+   layers with thicknesses.
+ - Create material constituent sets, for objects which are made up of
+   arbitrarily mixed ingredients.
+ - Specify nested and hosted element relationships.
+ - Specify predefined door attributes as defined in the IFC4 specification.
+ - Specify predefined window attributes as defined in the IFC4 specification.
 
 ## Demo
 
