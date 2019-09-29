@@ -121,6 +121,7 @@ class IfcParser():
         self.representations = {}
         self.type_products = []
         self.door_attributes = {}
+        self.window_attributes = {}
         self.project = {}
         self.libraries = []
         self.products = []
@@ -143,6 +144,7 @@ class IfcParser():
         self.project = self.get_project()
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
+        self.window_attributes = self.get_window_attributes()
         self.type_products = self.get_type_products()
         self.get_products()
         self.map_conversion = self.get_map_conversion()
@@ -332,8 +334,14 @@ class IfcParser():
         return psets
 
     def get_door_attributes(self):
+        return self.get_predefined_attributes('door')
+
+    def get_window_attributes(self):
+        return self.get_predefined_attributes('window')
+
+    def get_predefined_attributes(self, type):
         results = {}
-        for filename in Path(self.data_dir + 'door/').glob('**/*.csv'):
+        for filename in Path(self.data_dir + type + '/').glob('**/*.csv'):
             with open(filename, 'r') as f:
                 type_name = filename.parts[-2]
                 pset_name = filename.stem
@@ -925,18 +933,25 @@ class IfcExporter():
 
             if product['class'] == 'IfcDoorType' \
                 and product['attributes']['Name'] in self.ifc_parser.door_attributes:
-                attributes = self.ifc_parser.door_attributes[product['attributes']['Name']]
-                self.create_door_attributes(attributes)
-                product['attributes'].setdefault('HasPropertySets', [])
-                for attribute in attributes:
-                    product['attributes']['HasPropertySets'].append(attribute['ifc'])
+                self.add_predefined_attributes_to_type_product(product,
+                    self.ifc_parser.door_attributes[product['attributes']['Name']])
+            elif product['class'] == 'IfcWindowType' \
+                and product['attributes']['Name'] in self.ifc_parser.window_attributes:
+                self.add_predefined_attributes_to_type_product(product,
+                    self.ifc_parser.window_attributes[product['attributes']['Name']])
 
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
-    def create_door_attributes(self, attributes):
+    def add_predefined_attributes_to_type_product(self, product, attributes):
+        self.create_predefined_attributes(attributes)
+        product['attributes'].setdefault('HasPropertySets', [])
+        for attribute in attributes:
+            product['attributes']['HasPropertySets'].append(attribute['ifc'])
+
+    def create_predefined_attributes(self, attributes):
         for attribute in attributes:
             attribute['ifc'] = self.file.create_entity(attribute['pset_name'],
                 **{k: float(v) if v.replace('.', '', 1).isdigit() else v for k, v in attribute['raw'].items()})
