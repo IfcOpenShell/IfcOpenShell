@@ -9,6 +9,7 @@ Let's use Blender to create BIM models, because why not?
  - IFC4 is a first-class citizen. IFC4 has been an ISO standard since 2013, with
    the latest published in 2018. It contains many more features than IFC2X3,
    published back in 2005.
+ - Available for Windows, Mac, and Linux!
  - Use open-source Blender 2.8 to do digital modeling! Used by NASA, Hollywood,
    and Ubisoft, Blender allows real-time modeling in rendered view, animations,
    file linking, proxy objects, Blender Cloud collaboration, lighting analysis,
@@ -81,20 +82,19 @@ Let's use Blender to create BIM models, because why not?
 It's only just started, so everything can and will change. But if you want to
 check it out:
 
- 1. Install [Blender](https://www.blender.org/).
- 2. Install [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell),
-    ensuring that is is compiled to the same Python version and architecture of
-    your Blender installation.
- 3. Launch Blender. Open `untitled.blend`. You should see the `export.py`
-    script already loaded. Change the hardcoded paths from
-    `/home/dion/Projects/blender-bim-ifc/` to wherever you've cloned this
-    repository.
- 4. Ensure `ifcopenshell` is in your Blender Python's path, so that it can
-    `import ifcopenshell`. You can run
-    `sys.path.append('/path/to/your/ifcopenshell/module')` in the Blender Python
-    console to do this.
- 5. Select all objects that you want to export. Press `Run Script`, and you will
-    get the results in `output.ifc`.
+ 1. Install [Blender](https://www.blender.org/) 64-bit version.
+ 2. Download the latest packaged version of Blender BIM from
+    [here](https://thinkmoult.com/blenderbim/).
+ 3. Launch Blender. Go to `Edit->Preferences->Add-ons->Install...`. Browse to
+    the downloaded `.zip` file from step 2.
+ 4. Enable the checkboxes next to the two Import-Export IFC Blender plugins
+    which show up.
+ 5. All done! You will find an import and export IFC option in the `File` menu.
+
+By default, Blender BIM will export whatever you have selected. The objects you
+have selected _must_ belong in an `IfcProject` and spatially contained, such as
+witihn an `IfcBuilding`. It must also follow the naming convention. Please see
+the screenshot below for an example scene.
 
 A naming convention of `IfcClass/IfcName` is enforced. If you name your object
 `IfcWall/Foo`, it will turn into an `IfcWall` with the name attribute set to
