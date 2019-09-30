@@ -66,7 +66,7 @@ DEFAULTS = {
     "application_version": lambda d: main.version,
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: main.schema_identifier,
-    "timestamp": lambda d: time.time(),
+    "timestamp": lambda d: int(time.time()),
     "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get('timestamp') or time.time()))
 }
 
