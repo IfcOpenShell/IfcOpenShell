@@ -140,10 +140,62 @@ int main() {
 	//std::vector<std::vector<int>> points; 
 	int compt = 0;
 
+	IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->begin();
+	
 
-	for (IfcSchema::IfcIndexedPolygonalFace* it = (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->begin(); it != (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->end(); ++it) {
-		compt++;
+	std::vector<int> test = la->CoordIndex();
+
+
+	const gp_Pnt& a = points[test[0] - 1]; 
+	const gp_Pnt& b = points[test[1] - 1];
+	const gp_Pnt& c = points[test[2] - 1];
+	const gp_Pnt& d = points[test[3] - 1];
+	
+	TopoDS_Wire wire = BRepBuilderAPI_MakePolygon(a, b, c, d, true).Wire();
+	
+	TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
+
+	TopoDS_Iterator face_it(face, false);
+	const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
+	const bool reversed = w.Orientation() == TopAbs_REVERSED;
+	if (reversed) {
+		face.Reverse();
 	}
+
+
+	TopoDS_Compound faces_compound;
+	BRep_Builder compound_builder;
+	compound_builder.MakeCompound(faces_compound);
+	compound_builder.Add(faces_compound, face);
+
+	BRepTools::Write(faces_compound, "pfs.brep");
+
+
+	//for (auto& point : test) {
+	//	// Print Index of the point 
+	//	std::cout << "POINT" << std::endl; 
+	//	std::cout << point << std::endl; 
+
+	//	// Find the Gp point in the list
+	//	gp_Pnt pt = points[point-1];
+
+	//	std::cout << "X: " << pt.X() << " Y: " <<pt.Y()<< "Z: "<<pt.Z()<<std::endl;
+	//	
+
+
+	//
+	//}
+	
+
+
+	//for (IfcSchema::IfcIndexedPolygonalFace* it = (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->begin(); it != (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->end(); ++it) {
+	//	compt++;
+	//}
+
+	/*for (IfcEntityList::it it = polygonal_faces->begin(); it != polygonal_faces->end(); ++it) {
+		compt++;
+	}*/
+
 	std::cout << "compt"<<" "<<compt;
 
 	
