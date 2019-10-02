@@ -1372,52 +1372,62 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 	}
 
 
-
-	// Get the IfcWall entities
-	IfcEntityList::ptr wall_entities(new IfcEntityList());
-	wall_entities = f.instances_by_type("IfcWall");
-
-	TopoDS_Compound wall_faces_compound;
-	BRep_Builder wall_compound_builder;
-	wall_compound_builder.MakeCompound(wall_faces_compound);
-
-
-	TopoDS_Compound fortest;
-	BRep_Builder test;
-	test.MakeCompound(fortest);
-
-
-	TopoDS_Compound store_wall_faces;
-	BRep_Builder mybuilder;
-	mybuilder.MakeCompound(store_wall_faces);
-
-
-
-	ofstream myfile;
-	myfile.open("autreexample3.txt");
-
-
-
-
 	TopoDS_Compound external_walls;
 	BRep_Builder mybestbuilder;
 	mybestbuilder.MakeCompound(external_walls);
 
 
-	for (IfcEntityList::it it = wall_entities->begin(); it != wall_entities->end(); ++it) {
+	std::array<std::string, 2> entities = { "IfcWall","IfcSlab" };
+
+	for (auto e : entities) {
+		// Get the IfcWall entities
+		IfcEntityList::ptr wall_entities(new IfcEntityList());
+		wall_entities = f.instances_by_type(e);
+
+		TopoDS_Compound wall_faces_compound;
+		BRep_Builder wall_compound_builder;
+		wall_compound_builder.MakeCompound(wall_faces_compound);
 
 
-/*
-		IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
-		std::string nom = *(wall_entity)->get("GlobalId");
-*/
+		TopoDS_Compound fortest;
+		BRep_Builder test;
+		test.MakeCompound(fortest);
+
+
+		TopoDS_Compound store_wall_faces;
+		BRep_Builder mybuilder;
+		mybuilder.MakeCompound(store_wall_faces);
 
 
 
-		IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
-		std::string nom = *(wall_entity)->get("GlobalId");
+		ofstream myfile;
+		myfile.open("autreexample3.txt");
 
-		//if (nom == "3HYZkVMT9BD8vZbvA2zR1q") {
+
+
+
+		//TopoDS_Compound external_walls;
+		//BRep_Builder mybestbuilder;
+		//mybestbuilder.MakeCompound(external_walls);
+
+
+
+
+
+		for (IfcEntityList::it it = wall_entities->begin(); it != wall_entities->end(); ++it) {
+
+
+			/*
+					IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
+					std::string nom = *(wall_entity)->get("GlobalId");
+			*/
+
+
+
+			IfcUtil::IfcBaseEntity * wall_entity = (IfcUtil::IfcBaseEntity*)*it;
+			std::string nom = *(wall_entity)->get("GlobalId");
+
+			//if (nom == "3HYZkVMT9BD8vZbvA2zR1q") {
 
 
 			std::string nam = *(wall_entity)->get("Name");
@@ -1446,7 +1456,7 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 				/*	std::cout << "sur : " << sur << " ";*/
 				/*	surfaces.push_back(sur);*/
 				awallface.area = area;
-				std::cout << area << " ";
+				/*std::cout << area << " ";*/
 				face_storing.push_back(awallface);
 
 				if (face_storing.size() < 2) {
@@ -1465,9 +1475,9 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 			std::sort(face_storing.begin(), face_storing.end(), compareByArea);
 
 			std::cout << nom << " " << nam << std::endl;
-			for (auto&& x : face_storing) {
+			/*for (auto&& x : face_storing) {
 				std::cout << x.area << '\n';
-			}
+			}*/
 
 			int avantdernier = face_storing.size() - 2;
 			int dernier = face_storing.size() - 1;
@@ -1504,8 +1514,8 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 				/*std::cout << intersects(shape1, aspaceface); */
 				if (intersects(shape1, aspaceshell)) {
 					face1_check = 1;
-				/*	mybestbuilder.Add(external_walls, aspaceshell);
-					mybestbuilder.Add(external_walls, shape1);*/
+					/*	mybestbuilder.Add(external_walls, aspaceshell);
+						mybestbuilder.Add(external_walls, shape1);*/
 
 					break;
 				}
@@ -1540,13 +1550,18 @@ void fix_IsExternal(IfcParse::IfcFile& f) {
 			}
 
 
-		/*}*/
+			/*}*/
 
+
+		}
+
+
+
+
+		
 
 	}
-
-
-	BRepTools::Write(external_walls, "uno_test22.brep");
+	BRepTools::Write(external_walls, "newtest4.brep");
 
 }
 
