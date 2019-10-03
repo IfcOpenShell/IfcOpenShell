@@ -91,6 +91,7 @@ class IfcParser():
         self.selected_products = []
 
         self.product_index = 0
+        self.product_name_index_map = {}
 
         self.units = {}
         self.psets = {}
@@ -105,6 +106,7 @@ class IfcParser():
         self.spatial_structure_elements_tree = []
         self.rel_contained_in_spatial_structure = {}
         self.rel_nests = {}
+        self.rel_space_boundaries = {}
         self.rel_defines_by_type = {}
         self.rel_defines_by_qto = {}
         self.rel_defines_by_pset = {}
@@ -198,6 +200,7 @@ class IfcParser():
 
     def add_product(self, product):
         self.products.append(product)
+        self.product_name_index_map[product['raw'].name] = self.product_index
         self.product_index += 1
 
     def get_product_index_from_raw_name(self, name):
@@ -236,6 +239,20 @@ class IfcParser():
                 object.constraints['IfcRelNests'].target.name)
             self.rel_nests.setdefault(parent_product_index, []).append(product)
             product['relating_host'] = parent_product_index
+
+        for name, constraint in object.constraints.items():
+            if 'IfcRelSpaceBoundary' not in name:
+                continue
+            self.rel_space_boundaries.setdefault(self.product_index, []).append({
+                'ifc': None,
+                'class': self.get_ifc_class(name),
+                'related_building_element_raw_name': constraint.target.name,
+                'connection_geometry_face_index': name.split('/')[1],
+                'attributes': {
+                    'PhysicalOrVirtualBoundary': name.split('/')[2],
+                    'InternalOrExternalBoundary': name.split('/')[3]
+                    }
+                })
 
         if object.instance_type == 'COLLECTION' \
             and self.is_a_rel_aggregates(self.get_ifc_class(object.instance_collection.name)):
@@ -766,6 +783,7 @@ class IfcExporter():
         self.relate_objects_to_materials()
         self.relate_objects_to_material_layer_sets()
         self.relate_objects_to_material_constituent_sets()
+        self.relate_spaces_to_boundary_elements()
         self.relate_to_documents(self.ifc_parser.rel_associates_document_object)
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_object)
@@ -1338,6 +1356,40 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [self.ifc_parser.products[product_index]['ifc']],
                 material_constituent_set)
+
+    def relate_spaces_to_boundary_elements(self):
+        for relating_space_index, relationships, in self.ifc_parser.rel_space_boundaries.items():
+            for relationship in relationships:
+                relationship['attributes']['GlobalId'] = ifcopenshell.guid.new()
+                relationship['attributes']['RelatedBuildingElement'] = self.ifc_parser.products[
+                    self.ifc_parser.get_product_index_from_raw_name(
+                        relationship['related_building_element_raw_name'])]['ifc']
+                relationship['attributes']['RelatingSpace'] = self.ifc_parser.products[relating_space_index]['ifc']
+                relationship['attributes']['ConnectionGeometry'] = self.create_connection_geometry(
+                    self.ifc_parser.products[relating_space_index],
+                    relationship['connection_geometry_face_index'])
+                self.file.create_entity(relationship['class'], **relationship['attributes'])
+
+    def create_connection_geometry(self, product, face_index):
+        mesh = product['raw'].data
+        polygon = mesh.polygons[int(face_index)]
+        vertex_on_polygon = mesh.vertices[polygon.vertices[0]].co
+        center = polygon.center
+        normal = polygon.normal
+        forward = center - vertex_on_polygon
+        return self.file.createIfcFaceSurface([self.file.createIfcFaceOuterBound(
+            self.file.createIfcPolyLoop([
+                self.create_cartesian_point(
+                    mesh.vertices[vertice].co.x,
+                    mesh.vertices[vertice].co.y,
+                    mesh.vertices[vertice].co.z)
+                for vertice in polygon.vertices]),
+            True)],
+            self.file.createIfcPlane(self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint((center.x, center.y, center.z)),
+                self.file.createIfcDirection((normal.x, normal.y, normal.z)),
+                self.file.createIfcDirection((forward.x, forward.y, forward.z)))),
+            True)
 
     def relate_to_documents(self, relationships):
         for relating_document_key, related_objects in relationships.items():
