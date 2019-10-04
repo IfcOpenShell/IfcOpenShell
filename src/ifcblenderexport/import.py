@@ -15,7 +15,7 @@ class ImportIFC():
     def execute(self):
         self.load_file()
         n = 0
-        elements = self.file.by_type('IfcElement')
+        elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
         for element in elements:
             self.create_object(element)
             n += 1
