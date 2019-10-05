@@ -17,8 +17,8 @@ if "bpy" in locals():
 import bpy
 import time
 from . import export
+from . import ui
 import os
-from bpy.props import (StringProperty,)
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 
@@ -26,7 +26,7 @@ class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
     bl_label = "Export .ifc file"
     filename_ext = ".ifc"
-    filepath: StringProperty(subtype='FILE_PATH')
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
 
     def invoke(self, context, event):
         if not self.filepath:
@@ -39,7 +39,8 @@ class ExportIFC(bpy.types.Operator):
         print('# Starting export')
         start = time.time()
         ifc_export_settings = export.IfcExportSettings()
-        ifc_export_settings.bim_path = cwd
+        ifc_export_settings.data_dir = bpy.context.scene.BIMProperties.data_dir
+        ifc_export_settings.schema_dir = bpy.context.scene.BIMProperties.schema_dir
         ifc_export_settings.output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_parser = export.IfcParser(ifc_export_settings)
         ifc_schema = export.IfcSchema(ifc_export_settings)
@@ -53,17 +54,26 @@ def menu_func(self, context):
     self.layout.operator(ExportIFC.bl_idname,
          text="Industry Foundation Classes (.ifc)")
 
-classes = (ExportIFC,)
+classes = (
+    ui.BIMOpAssignClass,
+    ui.BIMOpSelectDataDir,
+    ui.BIMOpSelectSchemaDir,
+    ui.BIMProperties,
+    ui.BIMPanel,
+    ExportIFC,
+    )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_export.append(menu_func)
+    bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func)
+    del(bpy.types.Scene.BIMProperties)
 
 if __name__ == "__main__":
     register()

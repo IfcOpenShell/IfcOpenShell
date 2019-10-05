@@ -64,7 +64,7 @@ class QtoCalculator():
 
 class IfcSchema():
     def __init__(self, ifc_export_settings):
-        self.schema_dir = '{}schema/'.format(ifc_export_settings.bim_path)
+        self.schema_dir = ifc_export_settings.schema_dir
         self.property_file = ifcopenshell.open(self.schema_dir + 'IFC4_ADD2.ifc')
         self.psets = {}
         self.qtos = {}
@@ -84,7 +84,7 @@ class IfcSchema():
 
 class IfcParser():
     def __init__(self, ifc_export_settings):
-        self.data_dir = '{}data/'.format(ifc_export_settings.bim_path)
+        self.data_dir = ifc_export_settings.data_dir
 
         self.ifc_export_settings = ifc_export_settings
 
@@ -746,7 +746,7 @@ class SIUnitHelper:
 
 class IfcExporter():
     def __init__(self, ifc_export_settings, ifc_schema, ifc_parser, qto_calculator):
-        self.template_file = '{}template.ifc'.format(ifc_export_settings.bim_path)
+        self.template_file = '{}template.ifc'.format(ifc_export_settings.schema_dir)
         self.output_file = ifc_export_settings.output_file
         self.ifc_export_settings = ifc_export_settings
         self.ifc_schema = ifc_schema
@@ -1414,7 +1414,8 @@ class IfcExporter():
 
 class IfcExportSettings:
     def __init__(self):
-        self.bim_path = None
+        self.schema_dir = None
+        self.data_dir = None
         self.output_file = None
         self.has_representations = True
         self.has_quantities = True
