@@ -99,6 +99,7 @@ namespace kernels {
 
 		CGAL::Polyhedron_3<Kernel_> create_cube(double d);
 		bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate);
+		bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
 	public:
 
 		CgalKernel()
@@ -128,6 +129,8 @@ namespace kernels {
 		virtual bool convert_impl(const taxonomy::shell*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::extrusion*, ifcopenshell::geometry::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::boolean_result*, ifcopenshell::geometry::ConversionResults&);
+
+		const CGAL::Nef_polyhedron_3<Kernel_>& precision_cube() const { return precision_cube_; }
 	};
 
 }

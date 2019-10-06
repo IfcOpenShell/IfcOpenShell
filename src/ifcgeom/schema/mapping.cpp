@@ -27,8 +27,8 @@ using namespace ifcopenshell::geometry;
 
 namespace {
 	struct POSTFIX_SCHEMA(factory_t) {
-		abstract_mapping* operator()(IfcParse::IfcFile* file) const {
-			ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file);
+		abstract_mapping* operator()(IfcParse::IfcFile* file, settings& settings) const {
+			ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file, settings);
 			return m;
 		}
 	};
@@ -321,7 +321,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	auto c = new taxonomy::collection;
 	c->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 
-	if (openings->size()) {
+	if (openings->size() && !settings_.get(settings::DISABLE_OPENING_SUBTRACTIONS)) {
 		auto ci = c->matrix.components.inverse();
 
 		IfcEntityList::ptr operands(new IfcEntityList);

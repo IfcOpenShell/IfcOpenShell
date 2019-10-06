@@ -30,12 +30,14 @@
 class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
 private:
 	IfcParse::IfcFile* file;
+	// @todo
+	ifcopenshell::geometry::settings settings_;
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 
 public:
 	POSTFIX_SCHEMA(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
 		: XmlSerializer(0, "")
-		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file))
+		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_))
 	{
 		this->file = file;
 		this->xml_filename = xml_filename;

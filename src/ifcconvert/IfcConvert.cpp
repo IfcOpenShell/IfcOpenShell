@@ -143,6 +143,7 @@ bool file_exists(const std::string& filename) {
 static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log(bool);
 void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
+void fix_spaceboundaries(IfcParse::IfcFile&, bool, bool, bool);
 std::string format_duration(time_t start, time_t end);
 
 /// @todo make the filters non-global
@@ -219,7 +220,9 @@ int main(int argc, char** argv) {
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
 		("calculate-quantities", "Calculate or fix the physical quantity definitions "
-			"based on an interpretation of the geometry when exporting IFC");
+			"based on an interpretation of the geometry when exporting IFC")
+		("fix-space-boundaries", "Calculate or fix space boundary geometries "
+			"when exporting IFC");
 
 	int num_threads;
     
@@ -576,6 +579,9 @@ int main(int argc, char** argv) {
 				if (fs.is_open()) {
 					if (vmap.count("calculate-quantities")) {
 						fix_quantities(*ifc_file, no_progress, quiet, stderr_progress);
+					}
+					if (vmap.count("fix-space-boundaries")) {
+						fix_spaceboundaries(*ifc_file, no_progress, quiet, stderr_progress);
 					}
 					fs << *ifc_file;
 					exit_code = EXIT_SUCCESS;
@@ -1168,6 +1174,222 @@ namespace latebound_access {
 			latebound_access::set(inst, "GlobalId", (std::string) guid);
 		}
 		return f.addEntity(inst);
+	}
+}
+
+#undef Handle
+#include "../ifcgeom/kernels/cgal/CgalKernel.h"
+#include <CGAL/box_intersection_d.h>
+#include <CGAL/minkowski_sum_3.h>
+
+template <typename T>
+T enlarge(const T& t, double d = 1.e-5) {
+	T::NT min[3];
+	T::NT max[3];
+	for (int i = 0; i < t.dimension(); ++i) {
+		min[i] = t.min_coord(i) - d;
+		max[i] = t.max_coord(i) + d;
+	}
+	return T(min, max, t.handle());
+}
+
+int convert_to_nef(cgal_shape_t& shape, CGAL::Nef_polyhedron_3<Kernel_>& result) {
+	if (!shape.is_valid()) {
+		return 1;
+	}
+
+	if (!shape.is_closed()) {
+		return 2;
+	}
+
+	bool success = false;
+
+	try {
+		success = CGAL::Polygon_mesh_processing::triangulate_faces(shape);
+	} catch (...) {
+		return 3;
+	}
+
+	if (!success) {
+		return 4;
+	}
+
+	if (CGAL::Polygon_mesh_processing::does_self_intersect(shape)) {
+		return 5;
+	}
+
+	try {
+		result = CGAL::Nef_polyhedron_3<Kernel_>(shape);
+	} catch (...) {
+		return 6;
+	}
+
+	return 0;
+}
+
+void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+	typedef std::vector<std::pair<IfcUtil::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nefs_t;
+	typedef CGAL::Box_intersection_d::Box_with_handle_d<Kernel_::FT, 3, nefs_t::const_iterator> Box;
+
+	ifcopenshell::geometry::settings settings;
+	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
+	settings.set(ifcopenshell::geometry::settings::WELD_VERTICES, false);
+	settings.set(ifcopenshell::geometry::settings::SEW_SHELLS, true);
+	settings.set(ifcopenshell::geometry::settings::CONVERT_BACK_UNITS, true);
+	settings.set(ifcopenshell::geometry::settings::DISABLE_TRIANGULATION, true);
+	settings.set(ifcopenshell::geometry::settings::DISABLE_OPENING_SUBTRACTIONS, true);
+
+	std::vector<ifcopenshell::geometry::filter_t> spaces_and_walls = {
+		IfcGeom::entity_filter(true, false, {"IfcWall", "IfcSpace"})
+	};
+
+	ifcopenshell::geometry::Iterator context_iterator("cgal", settings, &f, spaces_and_walls);
+
+	if (!context_iterator.initialize()) {
+		return;
+	}
+
+	auto kernel = (ifcopenshell::geometry::kernels::CgalKernel*) context_iterator.converter().kernel();
+	auto cube = kernel->precision_cube();
+
+	size_t num_created = 0;
+	int old_progress = quiet ? 0 : -1;
+
+	std::vector<Box> boxes;
+	nefs_t nefs;
+
+	for (;; ++num_created) {
+		bool has_more = true;
+		if (num_created) {
+			has_more = context_iterator.next();
+		}
+		ifcopenshell::geometry::NativeElement* geom_object = nullptr;
+		if (has_more) {
+			geom_object = context_iterator.get_native();
+		}
+		if (!geom_object) {
+			break;
+		}
+
+		std::stringstream ss;
+		ss << geom_object->product()->data().toString();
+		auto sss = ss.str();
+		std::wcout << sss.c_str() << std::endl;
+		
+		for (auto& g : geom_object->geometry()) {
+			auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
+			const auto& m = g.Placement().components;
+			const auto& n = geom_object->transformation().data().components;
+
+			if (true || !m.isIdentity()) {
+				const cgal_placement_t trsf(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+
+				const cgal_placement_t trsf2(
+					n(0, 0), n(0, 1), n(0, 2), n(0, 3),
+					n(1, 0), n(1, 1), n(1, 2), n(1, 3),
+					n(2, 0), n(2, 1), n(2, 2), n(2, 3));
+
+				// Apply transformation
+				for (auto &vertex : vertices(s)) {
+					vertex->point() = vertex->point().transform(trsf).transform(trsf2);
+					/*
+					std::ostringstream ss;
+					ss << vertex->point().cartesian(0);
+					auto sss = ss.str();
+					std::wcout << sss.c_str() << std::endl;
+					*/
+				}
+			}
+
+			std::wcout << 1 << std::endl;
+			CGAL::Nef_polyhedron_3<Kernel_> nef;
+			auto c = convert_to_nef(s, nef);
+			if (c != 0) {
+				std::wcout << "Error " << c << std::endl;
+				continue;
+			}
+			std::wcout << 2 << std::endl;
+			nef = CGAL::minkowski_sum_3(nef, cube);
+			std::wcout << 3 << std::endl;
+			nefs.push_back({ geom_object->product(), nef });
+			std::wcout << 4 << std::endl;
+
+			Kernel_::RT inf(std::numeric_limits<double>::infinity());
+			Kernel_::RT min[3] = { +inf, +inf, +inf };
+			Kernel_::RT max[3] = { -inf, -inf, -inf };
+			Box b(min, max, nefs.end() - 1);
+
+			for (auto &vertex : vertices(s)) {
+				Kernel_::RT p[3] = {
+					vertex->point().cartesian(0),
+					vertex->point().cartesian(1),
+					vertex->point().cartesian(2)
+				};
+				b.extend(p);
+			}
+			
+			boxes.push_back(enlarge(b));
+
+			/*
+			std::ostringstream ss;
+			ss << geom_object->product()->data().toString() << std::endl << b.min_coord(0) << " - " << b.max_coord(0) << std::endl;
+			auto sss = ss.str();
+			std::wcout << sss.c_str();
+			*/
+		}
+		
+		if (!no_progress) {
+			if (quiet) {
+				const int progress = context_iterator.progress();
+				for (; old_progress < progress; ++old_progress) {
+					std::cout << ".";
+					if (stderr_progress)
+						std::cerr << ".";
+				}
+				std::cout << std::flush;
+				if (stderr_progress)
+					std::cerr << std::flush;
+			} else {
+				const int progress = context_iterator.progress() / 2;
+				if (old_progress != progress) Logger::ProgressBar(progress);
+				old_progress = progress;
+			}
+		}
+	}
+
+	CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), [](const Box& a, const Box& b) {
+		std::ostringstream ss;
+		ss << a.handle()->first->data().toString() << "x" << b.handle()->first->data().toString() << std::endl;
+		auto x = a.handle()->second * b.handle()->second;
+		cgal_shape_t x_poly;
+		x.convert_to_polyhedron(x_poly);
+		for (auto& v : vertices(x_poly)) {
+			auto p = v->point();
+			for (int i = 0; i < 3; ++i) {
+				ss << p.cartesian(i) << " ";
+			}
+			ss << std::endl;
+		}
+		ss << "---" << std::endl;
+		auto sss = ss.str();
+		std::wcout << sss.c_str();
+	});
+
+	if (!no_progress && quiet) {
+		for (; old_progress < 100; ++old_progress) {
+			std::cout << ".";
+			if (stderr_progress)
+				std::cerr << ".";
+		}
+		std::cout << std::flush;
+		if (stderr_progress)
+			std::cerr << std::flush;
+	} else {
+		Logger::Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+			" objects                                ");
 	}
 }
 

@@ -447,6 +447,24 @@ CGAL::Polyhedron_3<Kernel_> CgalKernel::create_cube(double d) {
 	return create_polyhedron(face_list);
 }
 
+bool CgalKernel::thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result) {
+	// @todo this should be possible as a minkowski sum of facet & cube. rather than a set of boolean ops.
+
+	auto a_nonconst = a;
+	auto ax = CGAL::minkowski_sum_3(a_nonconst, precision_cube_);
+	auto x = ax - a;
+
+	result = x;
+	return true;
+
+	auto yxy = CGAL::minkowski_sum_3(x, precision_cube_);
+	auto y = yxy * a;
+	auto zyz = CGAL::minkowski_sum_3(y, precision_cube_);
+	result = yxy * zyz;
+
+	return true;
+}
+
 bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate) {
 	cgal_shape_t shape = shape_const;
 
@@ -589,7 +607,10 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		first = false;
 	}
 
-	cgal_shape_t a_poly;
+	cgal_shape_t a_poly, b_poly;
+
+	// CGAL::Nef_polyhedron_3<Kernel_> b;
+	// thin_solid(a, b);
 
 	try {
 		a.convert_to_polyhedron(a_poly);
