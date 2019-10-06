@@ -487,7 +487,7 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 		return false;
 	}
 
-	if (false && dilate) {
+	if (dilate) {
 		try {
 			// @todo don't dilate in 3 dimensions but only in the XY plane, orthogonal to wall axis.
 			result = CGAL::minkowski_sum_3(result, precision_cube_);
@@ -571,7 +571,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
 			preprocess_boolean_operand(c->instance, entity_shape, nef,
 				// Dilate boolean subtraction operands
-				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION) ? precision_ : 0.);
+				(!first && br->operation == taxonomy::boolean_result::SUBTRACTION));
 
 			if (first) {
 				a = nef;
