@@ -19,10 +19,10 @@ namespace geometry {
 		double length_unit_, angle_unit_;
 		std::string length_unit_name_;
 		const IfcParse::declaration* placement_rel_to_;
-
+		
 		void initialize_units_();
 	public:
-		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file) : file_(file), placement_rel_to_(0) {
+		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, settings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_(0) {
 			initialize_units_();
 		}
 		virtual ifcopenshell::geometry::taxonomy::item* map(const IfcUtil::IfcBaseClass*);

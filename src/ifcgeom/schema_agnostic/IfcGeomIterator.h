@@ -141,7 +141,7 @@ namespace {
 	{
 		IfcUtil::IfcBaseEntity* representation = rep->representation;
 		IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *rep->products->begin();
-		auto brep = converter->create_brep_for_representation_and_product(settings, representation, product);
+		auto brep = converter->create_brep_for_representation_and_product(representation, product);
 		if (!brep) {
 			return;
 		}
@@ -155,7 +155,7 @@ namespace {
 		rep->elements = { elem };
 
 		for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
-			auto brep2 = converter->create_brep_for_processed_representation(settings, representation, (IfcUtil::IfcBaseEntity*) *it, brep);
+			auto brep2 = converter->create_brep_for_processed_representation(representation, (IfcUtil::IfcBaseEntity*) *it, brep);
 			if (brep2) {
 				auto elem2 = process_based_on_settings(settings, brep, dynamic_cast<ifcopenshell::geometry::TriangulationElement*>(elem));
 				if (elem2) {
@@ -209,7 +209,7 @@ namespace ifcopenshell { namespace geometry {
 		const double unit_magnitude() const { return unit_magnitude_; }
 
 		bool initialize() {
-			converter_ = new Converter(geometry_library_, ifc_file);
+			converter_ = new Converter(geometry_library_, ifc_file, settings_);
 			converter_->mapping()->get_representations(tasks_, filters_, settings_);
 
 			if (tasks_.size() == 0) {
@@ -243,7 +243,7 @@ namespace ifcopenshell { namespace geometry {
 			std::vector<Converter*> kernel_pool;
 			kernel_pool.reserve(conc_threads);
 			for (unsigned i = 0; i < conc_threads; ++i) {
-				kernel_pool.push_back(new Converter(geometry_library_, ifc_file));
+				kernel_pool.push_back(new Converter(geometry_library_, ifc_file, settings_));
 			}
 
 			std::vector<std::future<void>> threadpool;
@@ -376,6 +376,8 @@ namespace ifcopenshell { namespace geometry {
 
         const gp_XYZ& bounds_min() const { return bounds_min_; }
         const gp_XYZ& bounds_max() const { return bounds_max_; }
+
+		Converter& converter() { return *converter_; }
 
 	private:
 		// Move to the next IfcRepresentation

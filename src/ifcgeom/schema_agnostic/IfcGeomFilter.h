@@ -69,7 +69,9 @@ namespace IfcGeom {
 			// @todo examine if this can indeed be static. For now usage is only
 			// in IfcConvert so invocation is bound to a single file with a single
 			// schema.
-			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file);
+			// @todo pass settings
+			ifcopenshell::geometry::settings s;
+			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
             while ((parent = mapping->get_decomposing_entity(current, traverse_openings)) != nullptr) {
                 if (pred(parent)) {
                     return true;
@@ -175,7 +177,9 @@ namespace IfcGeom {
 			: wildcard_filter(include, traverse, patterns) {}
 
 		bool match(IfcUtil::IfcBaseEntity* prod) const {
-			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file);
+			// @todo
+			ifcopenshell::geometry::settings s;
+			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
             layer_map_t layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
         }

@@ -2,19 +2,21 @@
 
 #include "../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 
-ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file) {
+ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, settings& s)
+	: settings_(s)
+{
 	kernel_ = kernels::construct(geometry_library, file);
-	mapping_ = impl::mapping_implementations().construct(file);
+	mapping_ = impl::mapping_implementations().construct(file, settings_);
 }
 
 ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(
-	const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product) {
+	IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product) {
 
 	std::stringstream representation_id_builder;
 
 	const std::string product_type = product->declaration().name();
 	// @todo
-	element_settings s(settings, 1.0 /*getValue(GV_LENGTH_UNIT) */, product_type);
+	element_settings s(settings_, 1.0 /*getValue(GV_LENGTH_UNIT) */, product_type);
 
 	int parent_id = -1;
 	try {
@@ -210,7 +212,7 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 }
 
 ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(
-	const ifcopenshell::geometry::settings& /* settings */, IfcUtil::IfcBaseEntity* /* representation */, IfcUtil::IfcBaseEntity* product,
+	IfcUtil::IfcBaseEntity* /* representation */, IfcUtil::IfcBaseEntity* product,
 	ifcopenshell::geometry::NativeElement* brep)
 {
 	int parent_id = -1;

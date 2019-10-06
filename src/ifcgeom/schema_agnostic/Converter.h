@@ -17,8 +17,10 @@ namespace ifcopenshell { namespace geometry {
 	private:
 		abstract_mapping* mapping_;
 		kernels::AbstractKernel* kernel_;
-
+		ifcopenshell::geometry::settings settings_;
 	public:
+		kernels::AbstractKernel* kernel() { return kernel_; }
+
 		// Tolerances and settings for various geometrical operations:
 		enum GeomValue {
 			// Specifies the deflection of the mesher
@@ -49,7 +51,7 @@ namespace ifcopenshell { namespace geometry {
 			GV_DIMENSIONALITY
 		};
 
-		Converter(const std::string& geometry_library, IfcParse::IfcFile* file);
+		Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::settings& settings);
 		
 		~Converter() {}
 
@@ -81,8 +83,8 @@ namespace ifcopenshell { namespace geometry {
 			return results;
 		}
 
-		ifcopenshell::geometry::NativeElement* create_brep_for_representation_and_product(const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product);
-		ifcopenshell::geometry::NativeElement* create_brep_for_processed_representation(const ifcopenshell::geometry::settings& settings, IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product, ifcopenshell::geometry::NativeElement* brep);
+		ifcopenshell::geometry::NativeElement* create_brep_for_representation_and_product(IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product);
+		ifcopenshell::geometry::NativeElement* create_brep_for_processed_representation(IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product, ifcopenshell::geometry::NativeElement* brep);
 
 		/*
 		static int count(const ifcopenshell::geometry::ConversionResultShape*, int, bool unique=false);

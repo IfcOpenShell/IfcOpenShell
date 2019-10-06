@@ -29,7 +29,11 @@ namespace geometry {
 	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;
     
     class abstract_mapping {
+	protected:
+		settings settings_;
 	public:
+		abstract_mapping(settings& s) : settings_(s) {}
+
 		virtual ifcopenshell::geometry::taxonomy::item* map(const IfcUtil::IfcBaseClass*) = 0;
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters, settings& s) = 0;
 		virtual IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity* product, bool include_openings = true) = 0;
@@ -37,13 +41,13 @@ namespace geometry {
     };
 
 	namespace impl {
-		typedef boost::function1<abstract_mapping*, IfcParse::IfcFile*> mapping_fn;
+		typedef boost::function2<abstract_mapping*, IfcParse::IfcFile*, settings&> mapping_fn;
 
 		class MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(IfcParse::IfcFile*);
+			abstract_mapping* construct(IfcParse::IfcFile*, settings&);
 		};
 
 		MappingFactoryImplementation& mapping_implementations();

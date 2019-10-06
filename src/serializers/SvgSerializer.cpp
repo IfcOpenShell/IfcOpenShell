@@ -472,7 +472,9 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 	file = f;
 
-	mapping_ = ifcopenshell::geometry::impl::mapping_implementations().construct(f);
+	// @todo
+	ifcopenshell::geometry::settings s;
+	mapping_ = ifcopenshell::geometry::impl::mapping_implementations().construct(f, s);
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (!storeys || storeys->size() == 0) {
