@@ -847,6 +847,10 @@ class IfcExporter():
         for pset in self.ifc_parser.psets.values():
             properties = self.create_pset_properties(pset)
             if not properties:
+                self.ifc_export_settings.logger.error(
+                    'No properties could be detected for the pset {}/{}'.format(
+                        pset['attributes']['Name'],
+                        pset['attributes']['Description']))
                 continue
             pset['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(),
@@ -875,6 +879,13 @@ class IfcExporter():
                         'Name': name,
                         'NominalValue': nominal_value
                         }))
+        invalid_pset_keys = [k for k in pset['raw'].keys() if k not in templates.keys()]
+        if invalid_pset_keys:
+            self.ifc_export_settings.logger.error(
+                'One or more properties were invalid in the pset {}/{}: {}'.format(
+                    pset['attributes']['Name'],
+                    pset['attributes']['Description'],
+                    invalid_pset_keys))
         return properties
 
     def cast_to_base_type(self, type, value):
