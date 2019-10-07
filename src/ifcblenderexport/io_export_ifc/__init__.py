@@ -21,6 +21,7 @@ classes = (
     operator.ExportIFC,
     ui.BIMProperties,
     ui.BIMPanel,
+    ui.MVDPanel,
     )
 
 def menu_func(self, context):

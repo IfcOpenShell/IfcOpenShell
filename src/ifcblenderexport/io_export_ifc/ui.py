@@ -32,10 +32,11 @@ class BIMProperties(bpy.types.PropertyGroup):
         items = getIfcPredefinedTypes,
         name="Predefined Type", default=None)
     ifc_userdefined_type: bpy.props.StringProperty(name="Userdefined Type")
+    export_has_representations: bpy.props.BoolProperty(name="Export Representations", default=True)
 
 class BIMPanel(bpy.types.Panel):
     bl_label = "Building Information Modeling"
-    bl_idname = "SCENE_PT_layout"
+    bl_idname = "bim.panel"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -68,3 +69,21 @@ class BIMPanel(bpy.types.Panel):
         row.prop(bim_properties, "ifc_userdefined_type")
         row = layout.row()
         row.operator("bim.assign_class")
+
+class MVDPanel(bpy.types.Panel):
+    bl_label = "Model View Definitions"
+    bl_idname = "mvd.panel"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        bim_properties = bpy.context.scene.BIMProperties
+
+        layout.label(text="Custom MVD:")
+
+        row = layout.row()
+        row.prop(bim_properties, "export_has_representations")
