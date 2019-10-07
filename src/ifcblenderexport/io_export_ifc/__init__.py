@@ -7,61 +7,25 @@ bl_info = {
     "location": "File > Export",
     "tracker_url": "https://sourceforge.net/p/ifcopenshell/"
         "_list/tickets?source=navbar",
-    "category": "Import-Export"}
-
-if "bpy" in locals():
-    from importlib import reload
-    reload(export)
-    del reload
+    "category": "Import-Export"
+    }
 
 import bpy
-import time
-from . import export
 from . import ui
-import os
-
-cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
-
-class ExportIFC(bpy.types.Operator):
-    bl_idname = "export.ifc"
-    bl_label = "Export .ifc file"
-    filename_ext = ".ifc"
-    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
-
-    def invoke(self, context, event):
-        if not self.filepath:
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".ifc")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-    def execute(self, context):
-        print('# Starting export')
-        start = time.time()
-        ifc_export_settings = export.IfcExportSettings()
-        ifc_export_settings.data_dir = bpy.context.scene.BIMProperties.data_dir
-        ifc_export_settings.schema_dir = bpy.context.scene.BIMProperties.schema_dir
-        ifc_export_settings.output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
-        ifc_parser = export.IfcParser(ifc_export_settings)
-        ifc_schema = export.IfcSchema(ifc_export_settings)
-        qto_calculator = export.QtoCalculator()
-        ifc_exporter = export.IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
-        ifc_exporter.export()
-        print('# Export finished in {:.2f} seconds'.format(time.time() - start))
-        return {'FINISHED'}
-
-def menu_func(self, context):
-    self.layout.operator(ExportIFC.bl_idname,
-         text="Industry Foundation Classes (.ifc)")
+from . import operator
 
 classes = (
-    ui.BIMOpAssignClass,
-    ui.BIMOpSelectDataDir,
-    ui.BIMOpSelectSchemaDir,
+    operator.AssignClass,
+    operator.SelectDataDir,
+    operator.SelectSchemaDir,
+    operator.ExportIFC,
     ui.BIMProperties,
     ui.BIMPanel,
-    ExportIFC,
     )
+
+def menu_func(self, context):
+    self.layout.operator(operator.ExportIFC.bl_idname,
+         text="Industry Foundation Classes (.ifc)")
 
 def register():
     for cls in classes:

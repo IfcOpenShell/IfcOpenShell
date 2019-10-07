@@ -649,7 +649,7 @@ class IfcParser():
 
                     index += 1
                 except Exception as e:
-                    print('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
+                    self.ifc_export_settings.logger.error('The type product "{}" could not be parsed: {}'.format(object.name, e.args))
         return results
 
     def get_object_representation_names(self, object):
@@ -701,7 +701,7 @@ class IfcParser():
         try:
             return name.split('/')[1]
         except IndexError:
-            print('ERROR: Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
+            self.ifc_export_settings.logger.error('Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
 
     def is_a_spatial_structure_element(self, class_name):
         # We assume that any collection we can't identify is a spatial structure
@@ -965,7 +965,7 @@ class IfcExporter():
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
-                print('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+                self.ifc_export_settings.logger.error('The type product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
     def add_predefined_attributes_to_type_product(self, product, attributes):
         self.create_predefined_attributes(attributes)
@@ -1104,7 +1104,7 @@ class IfcExporter():
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
         except RuntimeError as e:
-            print('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+            self.ifc_export_settings.logger.error('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
 
     def get_product_shape(self, product):
         try:
@@ -1135,7 +1135,7 @@ class IfcExporter():
                     vg.name.split('/')[1], None,
                     self.ifc_parser.units['volume']['ifc'], quantity))
             if not quantity:
-                print('Warning: the calculated quantity {} for {} is zero.'.format(
+                self.ifc_export_settings.logger.warning('The calculated quantity {} for {} is zero.'.format(
                     vg.name, object.name))
         return quantities
 
@@ -1414,6 +1414,7 @@ class IfcExporter():
 
 class IfcExportSettings:
     def __init__(self):
+        self.logger = None
         self.schema_dir = None
         self.data_dir = None
         self.output_file = None
