@@ -1342,6 +1342,8 @@ class IfcExporter():
                 self.ifc_parser.psets[relating_property_key]['ifc'])
 
     def relate_objects_to_materials(self):
+        if not self.ifc_export_settings.has_representations:
+            return
         for relating_material_key, related_objects in self.ifc_parser.rel_associates_material.items():
             self.file.createIfcRelAssociatesMaterial(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
@@ -1349,6 +1351,8 @@ class IfcExporter():
                 self.ifc_parser.materials[relating_material_key]['ifc'])
 
     def relate_objects_to_material_layer_sets(self):
+        if not self.ifc_export_settings.has_representations:
+            return
         for product_index, related_materials in self.ifc_parser.rel_associates_material_layer_set.items():
             material_layer_set = self.file.create_entity('IfcMaterialLayerSet', **{
                 'MaterialLayers': [self.ifc_parser.materials[m]['layer_ifc'] for m in related_materials]
@@ -1359,6 +1363,8 @@ class IfcExporter():
                 material_layer_set)
 
     def relate_objects_to_material_constituent_sets(self):
+        if not self.ifc_export_settings.has_representations:
+            return
         for product_index, related_materials in self.ifc_parser.rel_associates_material_constituent_set.items():
             material_constituent_set = self.file.create_entity('IfcMaterialConstituentSet', **{
                 'MaterialConstituents': [self.ifc_parser.materials[m]['constituent_ifc'] for m in related_materials]
