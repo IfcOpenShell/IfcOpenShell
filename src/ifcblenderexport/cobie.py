@@ -9,9 +9,11 @@ class IfcCobieCsv():
         self.file = None
         self.contacts = {}
         self.facilities = {}
+        self.floors = {}
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
+            'FloorType': [],
             'objType': []
             }
 
@@ -19,6 +21,7 @@ class IfcCobieCsv():
         self.file = ifcopenshell.open('C:/cygwin64/home/moud308/Projects/ifc2cobie/input.ifc')
         self.get_contacts()
         self.get_facilities()
+        self.get_floors()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -51,12 +54,12 @@ class IfcCobieCsv():
     def get_facilities(self):
         buildings = self.file.by_type('IfcBuilding')
         for building in buildings:
-            building_name = self.get_building_name(building)
+            building_name = self.get_object_name(building)
             units = self.get_units_from_building(building)
             self.facilities[building_name] = {
                 'CreatedBy': self.get_email_from_history(building.OwnerHistory),
-                'CreatedOn': datetime.datetime.fromtimestamp(building.OwnerHistory.CreationDate).isoformat() if building.OwnerHistory.CreationDate else date.datetime.fromtimestamp(-2177452801).isoformat(),
-                'Category': self.get_category_from_building(building),
+                'CreatedOn': self.get_created_on_from_history(building.OwnerHistory),
+                'Category': self.get_category_from_object(building, 'Category-Facility'),
                 'ProjectName': self.get_project_name_from_building(building),
                 'SiteName': self.get_site_name_from_building(building),
                 'LinearUnits': self.get_unit_type_from_units(units, 'LENGTHUNIT'),
@@ -71,13 +74,46 @@ class IfcCobieCsv():
                 'ExternalSiteIdentifier': self.get_site_globalid_from_building(building),
                 'ExternalFacilityObject': self.get_ext_object(building),
                 'ExternalFacilityIdentifier': building.GlobalId,
-                'Description': self.get_object_attribte(building, 'Description'),
-                'ProjectDescription': self.get_object_attribte(self.get_parent_spatial_element(building, 'IfcProject'), 'Description'),
-                'SiteDescription': self.get_object_attribte(self.get_parent_spatial_element(building, 'IfcSite'), 'Description'),
-                'Phase': self.get_object_attribte(self.get_parent_spatial_element(building, 'IfcProject'), 'Phase')
+                'Description': self.get_object_attribute(building, 'Description'),
+                'ProjectDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Description'),
+                'SiteDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcSite'), 'Description'),
+                'Phase': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Phase')
                 }
 
-    def get_object_attribte(self, object, attribute):
+    def get_floors(self):
+        storeys = self.file.by_type('IfcBuildingStorey')
+        for storey in storeys:
+            storey_name = self.get_object_name(storey)
+            self.floors[storey_name] = {
+                'CreatedBy': self.get_email_from_history(storey.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(storey.OwnerHistory),
+                'Category': self.get_category_from_object(storey, 'FloorType'),
+                'ExtSystem': self.get_ext_system_from_history(storey.OwnerHistory),
+                'ExtObject': self.get_ext_object(storey),
+                'ExtIdentifier': storey.GlobalId,
+                'Description': self.get_object_attribute(storey, 'Description'),
+                'Elevation': self.get_object_attribute(storey, 'Elevation'),
+                'Height': self.get_height_from_storey(storey)
+                }
+
+    def get_height_from_storey(self, storey):
+        for relationship in storey.IsDefinedBy:
+            if not relationship.RelatingPropertyDefinition.is_a('IfcElementQuantity'):
+                continue
+            for quantity in relationship.RelatingPropertyDefinition.Quantities:
+                if quantity.is_a('IfcQuantityLength') \
+                    and quantity.LengthValue:
+                    return quantity.LengthValue
+        logging.warning('A height length value was not found for {}'.format(storey))
+        return 'n/a'
+
+    def get_created_on_from_history(self, history):
+        if history.CreationDate:
+            return datetime.datetime.fromtimestamp(history.CreationDate).isoformat()
+        logging.warning('A created on date was not found for {}'.format(history))
+        return date.datetime.fromtimestamp(-2177452801).isoformat()
+
+    def get_object_attribute(self, object, attribute):
         result = getattr(object, attribute)
         if result:
             return result
@@ -99,11 +135,11 @@ class IfcCobieCsv():
     def get_ext_system_from_history(self, history):
         return history.OwningApplication.ApplicationFullName
 
-    def get_building_name(self, building):
-        if not building.Name:
-            logging.error('A building name was not found for {}'.format(building))
-            return 'Building{}'.format(building.id())
-        return building.Name
+    def get_object_name(self, object):
+        if not object.Name:
+            logging.error('A primary key name was not found for {}'.format(object))
+            return 'Object{}'.format(object.id())
+        return object.Name
 
     def get_area_measurement_from_building(self, building):
         for relationship in building.IsDefinedBy:
@@ -156,10 +192,10 @@ class IfcCobieCsv():
             return self.get_parent_spatial_element(relationship.RelatingObject, name)
         return None
 
-    def get_category_from_building(self, building):
+    def get_category_from_object(self, object, picklist):
         class_identification = None
         class_name = None
-        for association in building.HasAssociations:
+        for association in object.HasAssociations:
             if not association.is_a('IfcRelAssociatesClassification'):
                 continue
             if not association.RelatingClassification.is_a('IfcClassificationReference'):
@@ -171,9 +207,9 @@ class IfcCobieCsv():
             class_name = association.RelatingClassification.Name
             break
         if not class_identification or class_name:
-            logging.error('The classification has invalid identification and name for {}'.format(building))
+            logging.error('The classification has invalid identification and name for {}'.format(object))
         result = '{}:{}'.format(class_identification, class_name)
-        self.picklists['Category-Facility'].append(result)
+        self.picklists[picklist].append(result)
         return result
         # The responsibility matrix lists a fallback, but it is a very
         # cumbersome check, and so it is not implemented here.
@@ -296,4 +332,5 @@ ifc_cobie_csv = IfcCobieCsv()
 ifc_cobie_csv.convert()
 pprint.pprint(ifc_cobie_csv.contacts)
 pprint.pprint(ifc_cobie_csv.facilities)
+pprint.pprint(ifc_cobie_csv.floors)
 print('# Finished conversion in {}s'.format(time.time() - start))
