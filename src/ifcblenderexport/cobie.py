@@ -23,6 +23,7 @@ class IfcCobieCsv():
         self.impacts = {}
         self.documents = {}
         self.attributes = {}
+        self.coordinates = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -112,6 +113,7 @@ class IfcCobieCsv():
         self.get_impacts()
         self.get_documents()
         self.get_attributes()
+        self.get_coordinates()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -493,6 +495,31 @@ class IfcCobieCsv():
                     # more about attributes
                     'AllowedValues': 'n/a',
                     }
+
+    def get_coordinates(self):
+        coordinates = self.file.by_type('IfcBuildingStorey') \
+            + self.file.by_type('IfcSpace') \
+            + self.file.by_type('IfcProduct')
+        for coordinate in coordinates:
+            coordinate_name = '{}/{}'.format(coordinate.is_a(), self.get_object_name(coordinate))
+            self.coordinates[coordinate_name] = {
+                'CreatedBy': self.get_email_from_history(coordinate.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(coordinate.OwnerHistory),
+                'Category': 'Location', # I am not sure what this mapping is meant to be
+                'SheetName': 'Coordinates',
+                'RowName': 'n/a',
+                'CoordinateXAxis': coordinate.ObjectPlacement.RelativePlacement.Location.Coordinates[0],
+                'CoordinateYAxis': coordinate.ObjectPlacement.RelativePlacement.Location.Coordinates[1],
+                'CoordinateZAxis': coordinate.ObjectPlacement.RelativePlacement.Location.Coordinates[2],
+                'ExtSystem': self.get_ext_system_from_history(coordinate.OwnerHistory),
+                'ExtObject': self.get_ext_object(coordinate),
+                'ExtIdentifier': coordinate.GlobalId,
+                # Holding off implementing this, see Bug #688:
+                # https://github.com/IfcOpenShell/IfcOpenShell/issues/688
+                'ClockwiseRotation': 'n/a', # X axis
+                'ElevationalRotation': 'n/a', # Y axis
+                'YawRotation': 'n/a', # Z axis
+                }
 
     def get_directory_from_document(self, document):
         if self.file.schema == 'IFC2X3':
@@ -911,4 +938,5 @@ pprint.pprint(ifc_cobie_csv.jobs)
 pprint.pprint(ifc_cobie_csv.impacts)
 pprint.pprint(ifc_cobie_csv.documents)
 pprint.pprint(ifc_cobie_csv.attributes)
+pprint.pprint(ifc_cobie_csv.coordinates)
 print('# Finished conversion in {}s'.format(time.time() - start))
