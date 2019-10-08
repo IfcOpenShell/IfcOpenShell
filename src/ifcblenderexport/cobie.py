@@ -22,6 +22,7 @@ class IfcCobieCsv():
         self.jobs = {}
         self.impacts = {}
         self.documents = {}
+        self.attributes = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -110,6 +111,7 @@ class IfcCobieCsv():
         self.get_jobs()
         self.get_impacts()
         self.get_documents()
+        self.get_attributes()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -434,7 +436,7 @@ class IfcCobieCsv():
                     'SheetName': 'Impacts',
                     'RowName': 'n/a',
                     'Value': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') else 'n/a',
-                    'Unit': '{}{}'.format(property.Unit.Prefix, property.Unit.Name) if hasattr(property, 'Unit') else 'n/a',
+                    'Unit': '{}{}'.format(property.Unit.Prefix, property.Unit.Name) if hasattr(property, 'Unit') and property.Unit else 'n/a',
                     'LeadInTime': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'LeadInTime' else 'n/a',
                     'Duration': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'Duration' else 'n/a',
                     'LeadOutTime': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'LeadOutTime' else 'n/a',
@@ -464,6 +466,33 @@ class IfcCobieCsv():
                 'Description': self.get_object_attribute(document, 'Description', default=document_name),
                 'Reference': document_name,
                 }
+
+    # Attributes is not explicitly defined as a mapping in the responsibliity
+    # matrix. This is my best guess. This data should not be relied upon until
+    # this is clarified.
+    def get_attributes(self):
+        attributes = self.file.by_type('IfcPropertySet')
+        for attribute in attributes:
+            if not attribute.HasProperties:
+                continue
+            for property in attribute.HasProperties:
+                property_name = '{}-{}'.format(property.id(), self.get_object_name(property))
+                self.attributes[property_name] = {
+                    'CreatedBy': self.get_email_from_history(attribute.OwnerHistory),
+                    'CreatedOn': self.get_created_on_from_history(attribute.OwnerHistory),
+                    'Category': 'n/a', # I am not sure what this mapping is meant to be
+                    'SheetName': 'Attributes',
+                    'RowName': 'n/a', # I am not sure what this mapping is meant to be
+                    'Value': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') else 'n/a',
+                    'Unit': '{}{}'.format(property.Unit.Prefix, property.Unit.Name) if hasattr(property, 'Unit') and property.Unit else 'n/a',
+                    'ExtSystem': self.get_ext_system_from_history(attribute.OwnerHistory),
+                    'ExtObject': self.get_ext_object(attribute),
+                    'ExtIdentifier': attribute.GlobalId,
+                    'Description': self.get_object_attribute(attribute, 'Description', default='n/a'),
+                    # I'm holding off implementing this until I understand a bit
+                    # more about attributes
+                    'AllowedValues': 'n/a',
+                    }
 
     def get_directory_from_document(self, document):
         if self.file.schema == 'IFC2X3':
@@ -881,4 +910,5 @@ pprint.pprint(ifc_cobie_csv.resources)
 pprint.pprint(ifc_cobie_csv.jobs)
 pprint.pprint(ifc_cobie_csv.impacts)
 pprint.pprint(ifc_cobie_csv.documents)
+pprint.pprint(ifc_cobie_csv.attributes)
 print('# Finished conversion in {}s'.format(time.time() - start))
