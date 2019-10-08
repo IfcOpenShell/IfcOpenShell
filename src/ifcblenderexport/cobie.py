@@ -11,11 +11,13 @@ class IfcCobieCsv():
         self.facilities = {}
         self.floors = {}
         self.spaces = {}
+        self.zones = {}
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
             'FloorType': [],
             'Category-Space': [],
+            'ZoneType': [],
             'objType': []
             }
 
@@ -25,6 +27,7 @@ class IfcCobieCsv():
         self.get_facilities()
         self.get_floors()
         self.get_spaces()
+        self.get_zones()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -117,6 +120,30 @@ class IfcCobieCsv():
                 'GrossArea': self.get_gross_area_from_space(space),
                 'NetArea': self.get_net_area_from_space(space),
                 }
+
+    def get_zones(self):
+        zones = self.file.by_type('IfcZone')
+        for zone in zones:
+            zone_name = self.get_object_name(zone)
+            self.zones[zone_name] = {
+                'CreatedBy': self.get_email_from_history(zone.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(zone.OwnerHistory),
+                'Category': self.get_category_from_object(zone, 'ZoneType'),
+                'SpaceNames': self.get_space_names_from_zone(zone),
+                'ExtSystem': self.get_ext_system_from_history(zone.OwnerHistory),
+                'ExtObject': self.get_ext_object(zone),
+                'ExtIdentifier': zone.GlobalId,
+                'Description': self.get_object_attribute(zone, 'Description'),
+                }
+
+    def get_space_names_from_zone(self, zone):
+        spaces = []
+        for relationship in zone.IsGroupedBy:
+            for space in relationship.RelatedObjects:
+                spaces.append(space.Name)
+        if spaces:
+            return ','.join(spaces)
+        logging.error('No spaces were found for {}'.format(zone))
 
     def get_net_area_from_space(self, space):
         qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
@@ -411,4 +438,5 @@ pprint.pprint(ifc_cobie_csv.contacts)
 pprint.pprint(ifc_cobie_csv.facilities)
 pprint.pprint(ifc_cobie_csv.floors)
 pprint.pprint(ifc_cobie_csv.spaces)
+pprint.pprint(ifc_cobie_csv.zones)
 print('# Finished conversion in {}s'.format(time.time() - start))
