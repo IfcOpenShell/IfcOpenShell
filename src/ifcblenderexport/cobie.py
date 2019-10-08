@@ -15,6 +15,7 @@ class IfcCobieCsv():
         self.types = {}
         self.components = {}
         self.systems = {}
+        self.assemblies = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -93,6 +94,7 @@ class IfcCobieCsv():
         self.get_types()
         self.get_components()
         self.get_systems()
+        self.get_assemblies()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -304,6 +306,25 @@ class IfcCobieCsv():
                 'Description': self.get_object_attribute(system, 'Description'),
                 }
 
+    def get_assemblies(self):
+        assemblies = self.file.by_type('IfcRelAggregates')
+        for assembly in assemblies:
+            assembly_name = self.get_object_name(assembly)
+            if not assembly.RelatingObject.is_a('IfcElement'):
+                continue
+            self.assemblies[assembly_name] = {
+                'CreatedBy': self.get_email_from_history(assembly.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(assembly.OwnerHistory),
+                'SheetName': 'Assembly',
+                'ParentName': self.get_object_name(assembly.RelatingObject),
+                'ChildNames': ','.join([o.Name for o in assembly.RelatedObjects]),
+                'AssemblyType': 'n/a', # I don't understand this field
+                'ExtSystem': self.get_ext_system_from_history(assembly.OwnerHistory),
+                'ExtObject': self.get_ext_object(assembly),
+                'ExtIdentifier': assembly.GlobalId,
+                'Description': self.get_object_attribute(assembly, 'Description'),
+                }
+
     def get_space_name_from_component(self, component):
         for relationship in component.ContainedInStructure:
             if relationship.RelatingStructure.is_a('IfcSpace') \
@@ -398,10 +419,11 @@ class IfcCobieCsv():
 
     def get_pset_from_object(self, object, name):
         if object.is_a('IfcTypeObject'):
-            for pset in object.HasPropertySets:
-                if pset.is_a('IfcPropertySet') \
-                    and pset.Name == name:
-                    return pset
+            if object.HasPropertySets:
+                for pset in object.HasPropertySets:
+                    if pset.is_a('IfcPropertySet') \
+                        and pset.Name == name:
+                        return pset
         else:
             for relationship in object.IsDefinedBy:
                 if relationship.is_a('IfcRelDefinesByProperties') \
@@ -555,8 +577,8 @@ class IfcCobieCsv():
         if email:
             return email
 
-        given_name = person.GivenName if person.GivenName else "uknnown"
-        family_name = person.FamilyName if person.FamilyName else "uknnown"
+        given_name = person.GivenName if person.GivenName else "unknown"
+        family_name = person.FamilyName if person.FamilyName else "unknown"
         organisation_name = organisation.Name if organisation.Name else "unknown"
 
         if given_name == 'unknown' \
@@ -655,4 +677,5 @@ pprint.pprint(ifc_cobie_csv.zones)
 pprint.pprint(ifc_cobie_csv.types)
 pprint.pprint(ifc_cobie_csv.components)
 pprint.pprint(ifc_cobie_csv.systems)
+pprint.pprint(ifc_cobie_csv.assemblies)
 print('# Finished conversion in {}s'.format(time.time() - start))
