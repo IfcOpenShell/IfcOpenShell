@@ -20,6 +20,7 @@ class IfcCobieCsv():
         self.spares = {}
         self.resources = {}
         self.jobs = {}
+        self.impacts = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -404,6 +405,35 @@ class IfcCobieCsv():
                 'TaskNumber': self.get_object_attribute(job, 'Identification'),
                 'Priors': self.get_priors_from_job(job),
                 'ResourceNames': self.get_resource_names_from_job(job),
+                }
+
+    # Impacts is not explicitly defined as a mapping in the responsibliity
+    # matrix. This is my best guess. This data should not be relied upon until
+    # this is clarified.
+    def get_impacts(self):
+        impacts = self.file.by_type('IfcPropertySet')
+        for impact in impacts:
+            if impact.Name != 'Pset_EnvironmentalImpactValues' \
+                or not impact.HasProperties:
+                continue
+            for property in impact.HasProperties:
+                property_name = '{}-{}'.format(property.id(), self.get_object_name(property))
+                self.impacts[property_name] = {
+                    'CreatedBy': self.get_email_from_history(impact.OwnerHistory),
+                    'CreatedOn': self.get_created_on_from_history(impact.OwnerHistory),
+                    'ImpactType': None,
+                    'ImpactStage': None,
+                    'SheetName': 'Impacts',
+                    'RowName': 'n/a',
+                    'Value': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') else 'n/a',
+                    'Unit': '{}{}'.format(property.Unit.Prefix, property.Unit.Name) if hasattr(property, 'Unit') else 'n/a',
+                    'LeadInTime': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'LeadInTime' else 'n/a',
+                    'Duration': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'Duration' else 'n/a',
+                    'LeadOutTime': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'LeadOutTime' else 'n/a',
+                    'ExtSystem': self.get_ext_system_from_history(impact.OwnerHistory),
+                    'ExtObject': self.get_ext_object(impact),
+                    'ExtIdentifier': impact.GlobalId,
+                    'Description': self.get_object_attribute(impact, 'Description', default='n/a'),
                 }
 
     def get_resource_names_from_job(self, job):
@@ -804,4 +834,5 @@ pprint.pprint(ifc_cobie_csv.connections)
 pprint.pprint(ifc_cobie_csv.spares)
 pprint.pprint(ifc_cobie_csv.resources)
 pprint.pprint(ifc_cobie_csv.jobs)
+pprint.pprint(ifc_cobie_csv.impacts)
 print('# Finished conversion in {}s'.format(time.time() - start))
