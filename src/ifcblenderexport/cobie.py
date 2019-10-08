@@ -13,6 +13,7 @@ class IfcCobieCsv():
         self.spaces = {}
         self.zones = {}
         self.types = {}
+        self.components = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -44,6 +45,29 @@ class IfcCobieCsv():
             'IfcSpatialZoneType',
             'IfcWindowStyle',
             ]
+        self.component_assets = [
+            'IfcBuildingElementProxy',
+            'IfcChimney',
+            'IfcCovering',
+            'IfcDoor',
+            'IfcShadingDevice',
+            'IfcWindow',
+            'IfcDistributionControlElement',
+            'IfcDistributionChamberElement',
+            'IfcEnergyConversionDevice',
+            'IfcFlowController',
+            'IfcFlowMovingDevice',
+            'IfcFlowStorageDevice',
+            'IfcFlowTerminal',
+            'IfcFlowTreatmentDevice',
+            'IfcDiscreteAccessory',
+            'IfcTendon',
+            'IfcTendonAnchor',
+            'IfcVibrationIsolator',
+            'IfcFurnishingElement',
+            'IfcGeographicElement',
+            'IfcTransportElement',
+            ]
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
@@ -55,6 +79,7 @@ class IfcCobieCsv():
             'DurationUnit': ['day'], # See note about hardcoded day below
             'objType': []
             }
+        self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
     def convert(self):
         self.file = ifcopenshell.open('C:/cygwin64/home/moud308/Projects/ifc2cobie/input.ifc')
@@ -64,6 +89,7 @@ class IfcCobieCsv():
         self.get_spaces()
         self.get_zones()
         self.get_types()
+        self.get_components()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -232,6 +258,53 @@ class IfcCobieCsv():
                 'SustainabilityPerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'SustainabilityPerformance', 'n/a'),
                 }
 
+    def get_components(self):
+        components = self.file.by_type('IfcElement')
+        for component in components:
+            is_a_component_asset = False
+            for asset in self.component_assets:
+                if component.is_a(asset):
+                    is_a_component_asset = True
+            if not is_a_component_asset:
+                logging.warning('A component which is not an asset was found for {}'.format(component))
+                continue
+            component_name = self.get_object_name(component)
+            self.components[component_name] = {
+                'CreatedBy': self.get_email_from_history(component.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(component.OwnerHistory),
+                'TypeName': self.get_type_name_from_component(component),
+                'Space': self.get_space_name_from_component(component),
+                'Description': self.get_object_attribute(component, 'Description'),
+                'ExtSystem': self.get_ext_system_from_history(component.OwnerHistory),
+                'ExtObject': self.get_ext_object(component),
+                'ExtIdentifier': component.GlobalId,
+                'SerialNumber': self.get_pset_value_from_object(component, 'Pset_ManufacturerOccurence', 'SerialNumber', 'n/a'),
+                'InstallationDate': self.get_pset_value_from_object(component, 'COBie_Component', 'InstallationDate', self.default_date),
+                'WarrantyStartDate': self.get_pset_value_from_object(component, 'COBie_Component', 'WarrantyStartDate', self.default_date),
+                'TagNumber': self.get_pset_value_from_object(component, 'COBie_Component', 'TagNumber', 'n/a'),
+                'BarCode': self.get_pset_value_from_object(component, 'Pset_ManufacturerOccurence', 'BarCode', 'n/a'),
+                'AssetIdentifier': self.get_pset_value_from_object(component, 'COBie_Component', 'AssetIdentifier', 'n/a'),
+                }
+
+    def get_space_name_from_component(self, component):
+        for relationship in component.ContainedInStructure:
+            if relationship.RelatingStructure.is_a('IfcSpace') \
+                and relationship.RelatingStructure.Name:
+                return relationship.RelatingStructure.Name
+        logging.error('A related space name could not be determined for {}'.format(component))
+
+    def get_type_name_from_component(self, component):
+        if self.file.schema == 'IFC2X3':
+            for relationship in component.IsDefinedBy:
+                if relationship.is_a('IfcRelDefinesByType') \
+                    and relationship.RelatingType.Name:
+                    return relationship.RelatingType.Name
+        else:
+            for relationship in component.IsTypedBy:
+                if relationship.RelatingType.Name:
+                    return relationship.RelatingType.Name
+        logging.error('A related type name could not be determined for {}'.format(component))
+
     def get_expected_life_from_type(self, type):
         if self.file.schema == 'IFC2X3':
             return self.get_pset_value_from_object(type, 'COBie_ServiceLife', 'ServiceLifeDuration', 'n/a')
@@ -246,8 +319,6 @@ class IfcCobieCsv():
         return result
 
     def get_pset_value_from_object(self, object, pset_name, property_name, default=None, picklist=None):
-        print(object)
-        print(pset_name)
         pset = self.get_pset_from_object(object, pset_name)
         if not pset:
             if picklist:
@@ -314,7 +385,8 @@ class IfcCobieCsv():
                     return pset
         else:
             for relationship in object.IsDefinedBy:
-                if relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
+                if relationship.is_a('IfcRelDefinesByProperties') \
+                    and relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
                     and relationship.RelatingPropertyDefinition.Name == name:
                     return relationship.RelatingPropertyDefinition
         logging.warning('The pset {} was not found for {}'.format(name, object))
@@ -334,7 +406,7 @@ class IfcCobieCsv():
         if history.CreationDate:
             return datetime.datetime.fromtimestamp(history.CreationDate).isoformat()
         logging.warning('A created on date was not found for {}'.format(history))
-        return date.datetime.fromtimestamp(-2177452801).isoformat()
+        return self.default_date
 
     def get_object_attribute(self, object, attribute, is_primary_key = False):
         result = getattr(object, attribute)
@@ -562,4 +634,5 @@ pprint.pprint(ifc_cobie_csv.floors)
 pprint.pprint(ifc_cobie_csv.spaces)
 pprint.pprint(ifc_cobie_csv.zones)
 pprint.pprint(ifc_cobie_csv.types)
+pprint.pprint(ifc_cobie_csv.components)
 print('# Finished conversion in {}s'.format(time.time() - start))
