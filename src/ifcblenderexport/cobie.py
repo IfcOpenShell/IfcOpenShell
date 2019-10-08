@@ -12,12 +12,47 @@ class IfcCobieCsv():
         self.floors = {}
         self.spaces = {}
         self.zones = {}
+        self.types = {}
+        self.type_assets = [
+            'IfcDoorStyle',
+            'IfcBuildingElementProxyType',
+            'IfcChimneyType',
+            'IfcCoveringType',
+            'IfcDoorType',
+            'IfcFootingType',
+            'IfcPileType',
+            'IfcRoofType',
+            'IfcShadingDeviceType',
+            'IfcWindowType',
+            'IfcDistributionControlElementType',
+            'IfcDistributionChamberElementType',
+            'IfcEnergyConversionDeviceType',
+            'IfcFlowControllerType',
+            'IfcFlowMovingDeviceType',
+            'IfcFlowStorageDeviceType',
+            'IfcFlowTerminalType',
+            'IfcFlowTreatmentDeviceType',
+            'IfcElementAssemblyType',
+            'IfcBuildingElementPartType',
+            'IfcDiscreteAccessoryType',
+            'IfcMechanicalFastenerType',
+            'IfcReinforcingElementType',
+            'IfcVibrationIsolatorType',
+            'IfcFurnishingElementType',
+            'IfcGeographicElementType',
+            'IfcTransportElementType',
+            'IfcSpatialZoneType',
+            'IfcWindowStyle',
+            ]
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
             'FloorType': [],
             'Category-Space': [],
             'ZoneType': [],
+            'Category-Product': [],
+            'AssetType': [],
+            'DurationUnit': ['day'], # See note about hardcoded day below
             'objType': []
             }
 
@@ -28,6 +63,7 @@ class IfcCobieCsv():
         self.get_floors()
         self.get_spaces()
         self.get_zones()
+        self.get_types()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -115,7 +151,7 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(space.OwnerHistory),
                 'ExtObject': self.get_ext_object(space),
                 'ExtIdentifier': space.GlobalId,
-                'RoomTag': self.get_room_tag_from_space(space),
+                'RoomTag': self.get_pset_value_from_object(space, 'COBie_Space', 'RoomTag', 'n/a'),
                 'UsableHeight': self.get_usable_height_from_space(space),
                 'GrossArea': self.get_gross_area_from_space(space),
                 'NetArea': self.get_net_area_from_space(space),
@@ -135,6 +171,92 @@ class IfcCobieCsv():
                 'ExtIdentifier': zone.GlobalId,
                 'Description': self.get_object_attribute(zone, 'Description'),
                 }
+
+    def get_types(self):
+        types = self.file.by_type('IfcTypeObject')
+        for type in types:
+            is_a_type_asset = False
+            for type_asset in self.type_assets:
+                if type.is_a(type_asset):
+                    is_a_type_asset = True
+            if not is_a_type_asset:
+                logging.warning('A type which is not an asset was found for {}'.format(type))
+                continue
+            # The responsibility matrix states to parse IfcMaterial and
+            # IfcMaterialLayerSet too, but it doesn't make much sense, so I
+            # don't parse it.
+            type_name = self.get_object_name(type)
+            self.types[type_name] = {
+                'CreatedBy': self.get_email_from_history(type.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(type.OwnerHistory),
+                'Category': self.get_category_from_object(type, 'Category-Product'),
+                # The responsibility matrix states two possible fallbacks. I
+                # choose the 'n/a' option as opposed to repeating the name.
+                'Description': self.get_object_attribute(type, 'Description'),
+                'AssetType': self.get_pset_value_from_object(type, 'COBie_Asset', 'AssetType', 'n/a', 'AssetType'),
+                'Manufacturer': self.get_contact_pset_value_from_object(type, 'Pset_ManufacturerTypeInformation', 'Manufacturer'),
+                'ModelNumber': self.get_pset_value_from_object(type, 'Pset_ManufacturerTypeInformation', 'ModelLabel', 'n/a'),
+                # The responsibility matrix talks about using the Pset_Warranty
+                # values, but Pset_Warranty only applies to objects, not types,
+                # and so they are ignored.
+                'WarrantyGuarantorParts': self.get_contact_pset_value_from_object(type, 'COBie_Warranty', 'WarrantyGuarantorParts'),
+                'WarrantyDurationParts': self.get_pset_value_from_object(type, 'COBie_Warranty', 'WarrantyDurationParts', 0),
+                'WarrantyGuarantorLabor': self.get_contact_pset_value_from_object(type, 'COBie_Warranty', 'WarrantyGuarantorLabor'),
+                'WarrantyDurationLabor': self.get_pset_value_from_object(type, 'COBie_Warranty', 'WarrantyDurationLabor', 0),
+                # TODO: this may be derived from the duration values above, but
+                # until it is clarified, it will be hardcoded as 'day'
+                'WarrantyDurationUnit': 'day',
+                'ExtSystem': self.get_ext_system_from_history(type.OwnerHistory),
+                'ExtObject': self.get_ext_object(type),
+                'ExtIdentifier': type.GlobalId,
+                'ReplacementCost': self.get_pset_value_from_object(type, 'COBie_EconomicImpactValues', 'ReplacementCost', 'n/a'),
+                'ExpectedLife': self.get_expected_life_from_type(type),
+                # See note about WarrantyDurationUnit above
+                'DurationUnit': 'day',
+                'NominalLength': self.get_pset_value_from_object(type, 'COBie_Specification', 'NominalLength', 0),
+                'NominalWidth': self.get_pset_value_from_object(type, 'COBie_Specification', 'NominalWidth', 0),
+                'NominalHeight': self.get_pset_value_from_object(type, 'COBie_Specification', 'NominalHeight', 0),
+                'ModelReference': self.get_pset_value_from_object(type, 'Pset_ManufacturerTypeInformation', 'ModelReference', 'n/a'),
+                'Shape': self.get_pset_value_from_object(type, 'COBie_Specification', 'Shape', 'n/a'),
+                'Size': self.get_pset_value_from_object(type, 'COBie_Specification', 'Size', 'n/a'),
+                # The responsbility matrix allows the British spelling of
+                # "colour". I, however, do not.
+                'Color': self.get_pset_value_from_object(type, 'COBie_Specification', 'Color', 'n/a'),
+                'Finish': self.get_pset_value_from_object(type, 'COBie_Specification', 'Finish', 'n/a'),
+                'Grade': self.get_pset_value_from_object(type, 'COBie_Specification', 'Grade', 'n/a'),
+                'Material': self.get_pset_value_from_object(type, 'COBie_Specification', 'Material', 'n/a'),
+                'Constituents': self.get_pset_value_from_object(type, 'COBie_Specification', 'Constituents', 'n/a'),
+                'Features': self.get_pset_value_from_object(type, 'COBie_Specification', 'Features', 'n/a'),
+                'AccessibilityPerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'AccessibilityPerformance', 'n/a'),
+                'CodePerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'CodePerformance', 'n/a'),
+                'SustainabilityPerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'SustainabilityPerformance', 'n/a'),
+                }
+
+    def get_expected_life_from_type(self, type):
+        if self.file.schema == 'IFC2X3':
+            return self.get_pset_value_from_object(type, 'COBie_ServiceLife', 'ServiceLifeDuration', 'n/a')
+        return self.get_pset_value_from_object(type, 'Pset_ServiceLife', 'ServiceLifeDuration', 'n/a')
+
+    def get_contact_pset_value_from_object(self, object, pset_name, property_name):
+        result = self.get_pset_value_from_object(object, pset_name, property_name)
+        if not result:
+            logging.error('No property {} in {} was found for {}'.format(property_name, pset_name, object))
+        if result not in self.contacts:
+            logging.error('A coresponding {} contact in {} was not found for {}'.format(property_name, pset_name, object))
+        return result
+
+    def get_pset_value_from_object(self, object, pset_name, property_name, default=None, picklist=None):
+        print(object)
+        print(pset_name)
+        pset = self.get_pset_from_object(object, pset_name)
+        if not pset:
+            if picklist:
+                self.picklists[picklist].append(default)
+            return default
+        property = self.get_property_from_pset(pset, property_name, default)
+        if picklist:
+            self.picklists[picklist].append(property)
+        return property
 
     def get_space_names_from_zone(self, zone):
         spaces = []
@@ -177,24 +299,24 @@ class IfcCobieCsv():
         logging.warning('The quantity value {} was not found for {}'.format(name, qto))
         return 'n/a'
 
-    def get_room_tag_from_space(self, space):
-        pset = self.get_pset_from_object(space, 'COBie_Space')
-        if not pset:
-            return 'n/a'
-        return self.get_property_from_pset(pset, 'RoomTag')
-
-    def get_property_from_pset(self, pset, name):
+    def get_property_from_pset(self, pset, name, default=None):
         for property in pset.HasProperties:
             if property.Name == name:
                 return property.NominalValue
         logging.warning('The property {} was not found for {}'.format(name, pset))
-        return 'n/a'
+        return default
 
     def get_pset_from_object(self, object, name):
-        for relationship in object.IsDefinedBy:
-            if relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
-                and relationship.RelatingPropertyDefinition.Name == name:
-                return relationship.RelatingPropertyDefinition
+        if object.is_a('IfcTypeObject'):
+            for pset in object.HasPropertySets:
+                if pset.is_a('IfcPropertySet') \
+                    and pset.Name == name:
+                    return pset
+        else:
+            for relationship in object.IsDefinedBy:
+                if relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
+                    and relationship.RelatingPropertyDefinition.Name == name:
+                    return relationship.RelatingPropertyDefinition
         logging.warning('The pset {} was not found for {}'.format(name, object))
 
     def get_height_from_storey(self, storey):
@@ -439,4 +561,5 @@ pprint.pprint(ifc_cobie_csv.facilities)
 pprint.pprint(ifc_cobie_csv.floors)
 pprint.pprint(ifc_cobie_csv.spaces)
 pprint.pprint(ifc_cobie_csv.zones)
+pprint.pprint(ifc_cobie_csv.types)
 print('# Finished conversion in {}s'.format(time.time() - start))
