@@ -64,6 +64,35 @@ class AssignClass(bpy.types.Operator):
                 del(object['IfcObjectType'])
         return {'FINISHED'}
 
+class SelectClass(bpy.types.Operator):
+    bl_idname = 'bim.select_class'
+    bl_label = 'Select IFC Class'
+
+    def execute(self, context):
+        for object in bpy.context.visible_objects:
+            if '/' in object.name \
+                and object.name[0:3] == 'Ifc' \
+                and object.name.split('/')[0] == bpy.context.scene.BIMProperties.ifc_class:
+                object.select_set(True)
+        return {'FINISHED'}
+
+class SelectType(bpy.types.Operator):
+    bl_idname = 'bim.select_type'
+    bl_label = 'Select IFC Type'
+
+    def execute(self, context):
+        for object in bpy.context.visible_objects:
+            if '/' in object.name \
+                and object.name[0:3] == 'Ifc' \
+                and object.name.split('/')[0] == bpy.context.scene.BIMProperties.ifc_class \
+                and 'IfcPredefinedType' in object.keys() \
+                and object['IfcPredefinedType'] == bpy.context.scene.BIMProperties.ifc_predefined_type:
+                if bpy.context.scene.BIMProperties.ifc_predefined_type != 'USERDEFINED':
+                    object.select_set(True)
+                elif object['IfcObjectType'] == bpy.context.scene.BIMProperties.ifc_userdefined_type:
+                    object.select_set(True)
+        return {'FINISHED'}
+
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"

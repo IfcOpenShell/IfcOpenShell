@@ -16,6 +16,8 @@ from . import operator
 
 classes = (
     operator.AssignClass,
+    operator.SelectClass,
+    operator.SelectType,
     operator.SelectDataDir,
     operator.SelectSchemaDir,
     operator.ExportIFC,
