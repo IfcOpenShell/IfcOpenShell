@@ -747,7 +747,6 @@ class SIUnitHelper:
 class IfcExporter():
     def __init__(self, ifc_export_settings, ifc_schema, ifc_parser, qto_calculator):
         self.template_file = '{}template.ifc'.format(ifc_export_settings.schema_dir)
-        self.output_file = ifc_export_settings.output_file
         self.ifc_export_settings = ifc_export_settings
         self.ifc_schema = ifc_schema
         self.ifc_parser = ifc_parser
@@ -790,7 +789,7 @@ class IfcExporter():
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_object)
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
-        self.file.write(self.output_file)
+        self.file.write(self.ifc_export_settings.output_file)
 
     def set_common_definitions(self):
         # Owner history doesn't actually work like this, but for now, it does :)

@@ -1,7 +1,9 @@
 import bpy
 import time
 import logging
-from . import export
+from . import export_ifc
+from . import import_ifc
+from bpy_extras.io_utils import ImportHelper
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -18,9 +20,9 @@ class ExportIFC(bpy.types.Operator):
 
     def execute(self, context):
         start = time.time()
-        ifc_export_settings = export.IfcExportSettings()
+        ifc_export_settings = export_ifc.IfcExportSettings()
         logging.basicConfig(
-            filename=bpy.context.scene.BIMProperties.data_dir + 'export.log',
+            filename=bpy.context.scene.BIMProperties.data_dir + 'process.log',
             filemode='a', level=logging.DEBUG)
         ifc_export_settings.logger = logging.getLogger('ExportIFC')
         ifc_export_settings.logger.info('Starting export')
@@ -28,12 +30,33 @@ class ExportIFC(bpy.types.Operator):
         ifc_export_settings.schema_dir = bpy.context.scene.BIMProperties.schema_dir
         ifc_export_settings.output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_export_settings.has_representations = bpy.context.scene.BIMProperties.export_has_representations
-        ifc_parser = export.IfcParser(ifc_export_settings)
-        ifc_schema = export.IfcSchema(ifc_export_settings)
-        qto_calculator = export.QtoCalculator()
-        ifc_exporter = export.IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
+        ifc_parser = export_ifc.IfcParser(ifc_export_settings)
+        ifc_schema = export_ifc.IfcSchema(ifc_export_settings)
+        qto_calculator = export_ifc.QtoCalculator()
+        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
         ifc_exporter.export()
         ifc_export_settings.logger.info('Export finished in {:.2f} seconds'.format(time.time() - start))
+        return {'FINISHED'}
+
+class ImportIFC(bpy.types.Operator, ImportHelper):
+    bl_idname = "import.ifc"
+    bl_label = "Import .ifc file"
+
+    filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={'HIDDEN'})
+
+    def execute(self, context):
+        start = time.time()
+        ifc_import_settings = import_ifc.IfcImportSettings()
+        logging.basicConfig(
+            filename=bpy.context.scene.BIMProperties.data_dir + 'process.log',
+            filemode='a', level=logging.DEBUG)
+        ifc_import_settings.logger = logging.getLogger('ImportIFC')
+        ifc_import_settings.logger.info('Starting import')
+        ifc_import_settings.input_file = self.filepath
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.execute()
+        ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
 
 class AssignClass(bpy.types.Operator):
