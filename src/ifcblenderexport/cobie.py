@@ -14,6 +14,7 @@ class IfcCobieCsv():
         self.zones = {}
         self.types = {}
         self.components = {}
+        self.systems = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -77,6 +78,7 @@ class IfcCobieCsv():
             'Category-Product': [],
             'AssetType': [],
             'DurationUnit': ['day'], # See note about hardcoded day below
+            'Category-Element': [],
             'objType': []
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
@@ -90,6 +92,7 @@ class IfcCobieCsv():
         self.get_zones()
         self.get_types()
         self.get_components()
+        self.get_systems()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -191,7 +194,7 @@ class IfcCobieCsv():
                 'CreatedBy': self.get_email_from_history(zone.OwnerHistory),
                 'CreatedOn': self.get_created_on_from_history(zone.OwnerHistory),
                 'Category': self.get_category_from_object(zone, 'ZoneType'),
-                'SpaceNames': self.get_space_names_from_zone(zone),
+                'SpaceNames': self.get_grouped_product_names_from_object(zone, 'IfcSpace'),
                 'ExtSystem': self.get_ext_system_from_history(zone.OwnerHistory),
                 'ExtObject': self.get_ext_object(zone),
                 'ExtIdentifier': zone.GlobalId,
@@ -286,6 +289,21 @@ class IfcCobieCsv():
                 'AssetIdentifier': self.get_pset_value_from_object(component, 'COBie_Component', 'AssetIdentifier', 'n/a'),
                 }
 
+    def get_systems(self):
+        systems = self.file.by_type('IfcSystem')
+        for system in systems:
+            system_name = self.get_object_name(system)
+            self.systems[system_name] = {
+                'CreatedBy': self.get_email_from_history(system.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(system.OwnerHistory),
+                'Category': self.get_category_from_object(system, 'Category-Element'),
+                'ComponentNames': self.get_grouped_product_names_from_object(system, 'IfcProduct'),
+                'ExtSystem': self.get_ext_system_from_history(system.OwnerHistory),
+                'ExtObject': self.get_ext_object(system),
+                'ExtIdentifier': system.GlobalId,
+                'Description': self.get_object_attribute(system, 'Description'),
+                }
+
     def get_space_name_from_component(self, component):
         for relationship in component.ContainedInStructure:
             if relationship.RelatingStructure.is_a('IfcSpace') \
@@ -329,14 +347,15 @@ class IfcCobieCsv():
             self.picklists[picklist].append(property)
         return property
 
-    def get_space_names_from_zone(self, zone):
-        spaces = []
-        for relationship in zone.IsGroupedBy:
-            for space in relationship.RelatedObjects:
-                spaces.append(space.Name)
-        if spaces:
-            return ','.join(spaces)
-        logging.error('No spaces were found for {}'.format(zone))
+    def get_grouped_product_names_from_object(self, object, type):
+        names = []
+        for relationship in object.IsGroupedBy:
+            for related_object in relationship.RelatedObjects:
+                if related_object.is_a(type):
+                    names.append(related_object.Name)
+        if names:
+            return ','.join(names)
+        logging.error('No related {} were found for {}'.format(type, object))
 
     def get_net_area_from_space(self, space):
         qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
@@ -635,4 +654,5 @@ pprint.pprint(ifc_cobie_csv.spaces)
 pprint.pprint(ifc_cobie_csv.zones)
 pprint.pprint(ifc_cobie_csv.types)
 pprint.pprint(ifc_cobie_csv.components)
+pprint.pprint(ifc_cobie_csv.systems)
 print('# Finished conversion in {}s'.format(time.time() - start))
