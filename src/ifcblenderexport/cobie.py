@@ -21,6 +21,7 @@ class IfcCobieCsv():
         self.resources = {}
         self.jobs = {}
         self.impacts = {}
+        self.documents = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -86,6 +87,8 @@ class IfcCobieCsv():
             'DurationUnit': ['day'], # See note about hardcoded day below
             'Category-Element': [],
             'SpareType': [],
+            'ApprovalBy': [],
+            'StageType': [],
             'objType': []
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
@@ -102,6 +105,11 @@ class IfcCobieCsv():
         self.get_systems()
         self.get_assemblies()
         self.get_connections()
+        self.get_spares()
+        self.get_resources()
+        self.get_jobs()
+        self.get_impacts()
+        self.get_documents()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -435,6 +443,43 @@ class IfcCobieCsv():
                     'ExtIdentifier': impact.GlobalId,
                     'Description': self.get_object_attribute(impact, 'Description', default='n/a'),
                 }
+
+    def get_documents(self):
+        documents = self.file.by_type('IfcDocumentInformation')
+        for document in documents:
+            document_name = self.get_object_name(document)
+            self.documents[document_name] = {
+                'CreatedBy': self.get_email_from_history(document.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(document.OwnerHistory),
+                'Category': 'n/a', # I am not sure what this mapping is meant to be
+                'ApprovalBy': self.get_object_attribute(document, 'IntendedUse', picklist='ApprovalBy', default='Information Only'),
+                'Stage': self.get_object_attribute(document, 'Scope', picklist='StageType', default='Required'),
+                'SheetName': 'Documents',
+                'RowName': 'n/a',
+                'Directory': self.get_directory_from_document(document),
+                'File': self.get_file_from_document(document),
+                'ExtSystem': self.get_ext_system_from_history(document.OwnerHistory),
+                'ExtObject': self.get_ext_object(document),
+                'ExtIdentifier': document.GlobalId,
+                'Description': self.get_object_attribute(document, 'Description', default=document_name),
+                'Reference': document_name,
+                }
+
+    def get_directory_from_document(self, document):
+        if self.file.schema == 'IFC2X3':
+            if document.HasDocumentReferences:
+                for reference in document.HasDocumentReferences:
+                    return self.get_object_attribute(reference, 'Location', default='n/a')
+        else:
+            return self.get_object_attribute(document, 'Location', default='n/a')
+
+    def get_file_from_document(self, document):
+        if self.file.schema == 'IFC2X3':
+            if document.HasDocumentReferences:
+                for reference in document.HasDocumentReferences:
+                    return self.get_object_attribute(reference, 'Name', default='n/a')
+        else:
+            self.get_object_attribute(document, 'Identification', default='n/a')
 
     def get_resource_names_from_job(self, job):
         names = []
@@ -835,4 +880,5 @@ pprint.pprint(ifc_cobie_csv.spares)
 pprint.pprint(ifc_cobie_csv.resources)
 pprint.pprint(ifc_cobie_csv.jobs)
 pprint.pprint(ifc_cobie_csv.impacts)
+pprint.pprint(ifc_cobie_csv.documents)
 print('# Finished conversion in {}s'.format(time.time() - start))
