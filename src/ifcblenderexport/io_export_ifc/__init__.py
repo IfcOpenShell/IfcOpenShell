@@ -21,25 +21,32 @@ classes = (
     operator.SelectDataDir,
     operator.SelectSchemaDir,
     operator.ExportIFC,
+    operator.ImportIFC,
     ui.BIMProperties,
     ui.BIMPanel,
     ui.MVDPanel,
     )
 
-def menu_func(self, context):
+def menu_func_export(self, context):
     self.layout.operator(operator.ExportIFC.bl_idname,
+         text="Industry Foundation Classes (.ifc)")
+
+def menu_func_import(self, context):
+    self.layout.operator(operator.ImportIFC.bl_idname,
          text="Industry Foundation Classes (.ifc)")
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del(bpy.types.Scene.BIMProperties)
 
 if __name__ == "__main__":
