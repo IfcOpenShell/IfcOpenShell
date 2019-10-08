@@ -16,6 +16,7 @@ class IfcCobieCsv():
         self.components = {}
         self.systems = {}
         self.assemblies = {}
+        self.connections = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -95,6 +96,7 @@ class IfcCobieCsv():
         self.get_components()
         self.get_systems()
         self.get_assemblies()
+        self.get_connections()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -266,11 +268,7 @@ class IfcCobieCsv():
     def get_components(self):
         components = self.file.by_type('IfcElement')
         for component in components:
-            is_a_component_asset = False
-            for asset in self.component_assets:
-                if component.is_a(asset):
-                    is_a_component_asset = True
-            if not is_a_component_asset:
+            if not self.is_object_a_component_asset(component):
                 logging.warning('A component which is not an asset was found for {}'.format(component))
                 continue
             component_name = self.get_object_name(component)
@@ -310,7 +308,7 @@ class IfcCobieCsv():
         assemblies = self.file.by_type('IfcRelAggregates')
         for assembly in assemblies:
             assembly_name = self.get_object_name(assembly)
-            if not assembly.RelatingObject.is_a('IfcElement'):
+            if not self.is_object_a_component_asset(assembly.RelatingObject):
                 continue
             self.assemblies[assembly_name] = {
                 'CreatedBy': self.get_email_from_history(assembly.OwnerHistory),
@@ -324,6 +322,50 @@ class IfcCobieCsv():
                 'ExtIdentifier': assembly.GlobalId,
                 'Description': self.get_object_attribute(assembly, 'Description'),
                 }
+
+    def get_connections(self):
+        connections = self.file.by_type('IfcRelConnects')
+        for connection in connections:
+            connection_name = self.get_object_name(connection)
+            self.connections[connection_name] = {
+                'CreatedBy': self.get_email_from_history(connection.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(connection.OwnerHistory),
+                # There is ambiguity for what the ConnectionType mapping should be
+                'ConnectionType': self.get_object_attribute(connection, 'Description'),
+                'SheetName': 'Connections',
+                'RowName1': self.get_row_name_from_connection(connection, 'RelatingElement'),
+                'RowName2': self.get_row_name_from_connection(connection, 'RelatedElement'),
+                'RealizingElement': self.get_port_name_from_connection(connection, 'RealizingElement'),
+                'PortName1': self.get_port_name_from_connection(connection, 'RelatingPort'),
+                'PortName2': self.get_port_name_from_connection(connection, 'RelatedPort'),
+                'ExtSystem': self.get_ext_system_from_history(connection.OwnerHistory),
+                'ExtObject': self.get_ext_object(connection),
+                'ExtIdentifier': connection.GlobalId,
+                'Description': self.get_object_attribute(connection, 'Description'),
+                }
+
+    def get_row_name_from_connection(self, connection, key):
+        if not connection.is_a('IfcRelConnectsElements'):
+            return None
+        object = getattr(connection, key)
+        if self.is_object_a_component_asset(object):
+            return object.Name
+        logging.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
+
+    def get_port_name_from_connection(self, connection, key):
+        if not connection.is_a('IfcRelConnectsPorts'):
+            return None
+        object = getattr(connection, key)
+        if self.is_object_a_component_asset(object):
+            return object.Name
+        logging.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
+
+    def is_object_a_component_asset(self, object):
+        is_an_asset = False
+        for asset in self.component_assets:
+            if object.is_a(asset):
+                is_an_asset = True
+        return is_an_asset
 
     def get_space_name_from_component(self, component):
         for relationship in component.ContainedInStructure:
@@ -678,4 +720,5 @@ pprint.pprint(ifc_cobie_csv.types)
 pprint.pprint(ifc_cobie_csv.components)
 pprint.pprint(ifc_cobie_csv.systems)
 pprint.pprint(ifc_cobie_csv.assemblies)
+pprint.pprint(ifc_cobie_csv.connections)
 print('# Finished conversion in {}s'.format(time.time() - start))
