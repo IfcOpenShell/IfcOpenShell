@@ -10,10 +10,12 @@ class IfcCobieCsv():
         self.contacts = {}
         self.facilities = {}
         self.floors = {}
+        self.spaces = {}
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
             'FloorType': [],
+            'Category-Space': [],
             'objType': []
             }
 
@@ -22,6 +24,7 @@ class IfcCobieCsv():
         self.get_contacts()
         self.get_facilities()
         self.get_floors()
+        self.get_spaces()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -96,6 +99,77 @@ class IfcCobieCsv():
                 'Height': self.get_height_from_storey(storey)
                 }
 
+    def get_spaces(self):
+        spaces = self.file.by_type('IfcSpace')
+        for space in spaces:
+            space_name = self.get_object_name(space)
+            self.spaces[space_name] = {
+                'CreatedBy': self.get_email_from_history(space.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(space.OwnerHistory),
+                'Category': self.get_category_from_object(space, 'Category-Space'),
+                'FloorName': self.get_object_attribute(self.get_parent_spatial_element(space, 'IfcBuildingStorey'), 'Name', True),
+                'Description': self.get_object_attribute(space, 'Description'),
+                'ExtSystem': self.get_ext_system_from_history(space.OwnerHistory),
+                'ExtObject': self.get_ext_object(space),
+                'ExtIdentifier': space.GlobalId,
+                'RoomTag': self.get_room_tag_from_space(space),
+                'UsableHeight': self.get_usable_height_from_space(space),
+                'GrossArea': self.get_gross_area_from_space(space),
+                'NetArea': self.get_net_area_from_space(space),
+                }
+
+    def get_net_area_from_space(self, space):
+        qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
+        if not qto:
+            return 'n/a'
+        return self.get_property_from_qto(qto, 'NetFloorArea', 'AreaValue')
+
+    def get_gross_area_from_space(self, space):
+        qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
+        if not qto:
+            return 'n/a'
+        return self.get_property_from_qto(qto, 'GrossFloorArea', 'AreaValue')
+
+    def get_usable_height_from_space(self, space):
+        qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
+        if not qto:
+            return 'n/a'
+        return self.get_property_from_qto(qto, 'FinishCeilingHeight', 'LengthValue')
+
+    def get_qto_from_object(self, object, name):
+        for relationship in object.IsDefinedBy:
+            if relationship.RelatingPropertyDefinition.is_a('IfcQuantitySet') \
+                and relationship.RelatingPropertyDefinition.Name == name:
+                return relationship.RelatingPropertyDefinition
+        logging.warning('The qto {} was not found for {}'.format(name, object))
+
+    def get_property_from_qto(self, qto, name, attribute):
+        for property in qto.Quantities:
+            if property.Name == name:
+                return getattr(property, attribute)
+        logging.warning('The quantity value {} was not found for {}'.format(name, qto))
+        return 'n/a'
+
+    def get_room_tag_from_space(self, space):
+        pset = self.get_pset_from_object(space, 'COBie_Space')
+        if not pset:
+            return 'n/a'
+        return self.get_property_from_pset(pset, 'RoomTag')
+
+    def get_property_from_pset(self, pset, name):
+        for property in pset.HasProperties:
+            if property.Name == name:
+                return property.NominalValue
+        logging.warning('The property {} was not found for {}'.format(name, pset))
+        return 'n/a'
+
+    def get_pset_from_object(self, object, name):
+        for relationship in object.IsDefinedBy:
+            if relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
+                and relationship.RelatingPropertyDefinition.Name == name:
+                return relationship.RelatingPropertyDefinition
+        logging.warning('The pset {} was not found for {}'.format(name, object))
+
     def get_height_from_storey(self, storey):
         for relationship in storey.IsDefinedBy:
             if not relationship.RelatingPropertyDefinition.is_a('IfcElementQuantity'):
@@ -113,11 +187,14 @@ class IfcCobieCsv():
         logging.warning('A created on date was not found for {}'.format(history))
         return date.datetime.fromtimestamp(-2177452801).isoformat()
 
-    def get_object_attribute(self, object, attribute):
+    def get_object_attribute(self, object, attribute, is_primary_key = False):
         result = getattr(object, attribute)
         if result:
             return result
-        logging.warning('The attribute {} was not found for {}'.format(attribute, object))
+        if is_primary_key:
+            logging.error('The primary key attribute {} was not found for {}'.format(attribute, object))
+        else:
+            logging.warning('The attribute {} was not found for {}'.format(attribute, object))
         return 'n/a'
 
     def get_ext_project_object(self):
@@ -333,4 +410,5 @@ ifc_cobie_csv.convert()
 pprint.pprint(ifc_cobie_csv.contacts)
 pprint.pprint(ifc_cobie_csv.facilities)
 pprint.pprint(ifc_cobie_csv.floors)
+pprint.pprint(ifc_cobie_csv.spaces)
 print('# Finished conversion in {}s'.format(time.time() - start))
