@@ -70,6 +70,10 @@ class BIMPanel(bpy.types.Panel):
         row = layout.row()
         row.operator("bim.assign_class")
 
+        row = layout.row(align=True)
+        row.operator("bim.select_class")
+        row.operator("bim.select_type")
+
 class MVDPanel(bpy.types.Panel):
     bl_label = "Model View Definitions"
     bl_idname = "mvd.panel"
