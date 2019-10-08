@@ -19,6 +19,7 @@ class IfcCobieCsv():
         self.connections = {}
         self.spares = {}
         self.resources = {}
+        self.jobs = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -152,10 +153,10 @@ class IfcCobieCsv():
                 'ExternalSiteIdentifier': self.get_site_globalid_from_building(building),
                 'ExternalFacilityObject': self.get_ext_object(building),
                 'ExternalFacilityIdentifier': building.GlobalId,
-                'Description': self.get_object_attribute(building, 'Description'),
-                'ProjectDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Description'),
-                'SiteDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcSite'), 'Description'),
-                'Phase': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Phase')
+                'Description': self.get_object_attribute(building, 'Description', default='n/a'),
+                'ProjectDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Description', default='n/a'),
+                'SiteDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcSite'), 'Description', default='n/a'),
+                'Phase': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Phase', default='n/a')
                 }
 
     def get_floors(self):
@@ -169,8 +170,8 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(storey.OwnerHistory),
                 'ExtObject': self.get_ext_object(storey),
                 'ExtIdentifier': storey.GlobalId,
-                'Description': self.get_object_attribute(storey, 'Description'),
-                'Elevation': self.get_object_attribute(storey, 'Elevation'),
+                'Description': self.get_object_attribute(storey, 'Description', default='n/a'),
+                'Elevation': self.get_object_attribute(storey, 'Elevation', default='n/a'),
                 'Height': self.get_height_from_storey(storey)
                 }
 
@@ -182,8 +183,8 @@ class IfcCobieCsv():
                 'CreatedBy': self.get_email_from_history(space.OwnerHistory),
                 'CreatedOn': self.get_created_on_from_history(space.OwnerHistory),
                 'Category': self.get_category_from_object(space, 'Category-Space'),
-                'FloorName': self.get_object_attribute(self.get_parent_spatial_element(space, 'IfcBuildingStorey'), 'Name', True),
-                'Description': self.get_object_attribute(space, 'Description'),
+                'FloorName': self.get_object_attribute(self.get_parent_spatial_element(space, 'IfcBuildingStorey'), 'Name', is_primary_key=True, default='n/a'),
+                'Description': self.get_object_attribute(space, 'Description', default='n/a'),
                 'ExtSystem': self.get_ext_system_from_history(space.OwnerHistory),
                 'ExtObject': self.get_ext_object(space),
                 'ExtIdentifier': space.GlobalId,
@@ -205,7 +206,7 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(zone.OwnerHistory),
                 'ExtObject': self.get_ext_object(zone),
                 'ExtIdentifier': zone.GlobalId,
-                'Description': self.get_object_attribute(zone, 'Description'),
+                'Description': self.get_object_attribute(zone, 'Description', default='n/a'),
                 }
 
     def get_types(self):
@@ -228,7 +229,7 @@ class IfcCobieCsv():
                 'Category': self.get_category_from_object(type, 'Category-Product'),
                 # The responsibility matrix states two possible fallbacks. I
                 # choose the 'n/a' option as opposed to repeating the name.
-                'Description': self.get_object_attribute(type, 'Description'),
+                'Description': self.get_object_attribute(type, 'Description', default='n/a'),
                 'AssetType': self.get_pset_value_from_object(type, 'COBie_Asset', 'AssetType', 'n/a', 'AssetType'),
                 'Manufacturer': self.get_contact_pset_value_from_object(type, 'Pset_ManufacturerTypeInformation', 'Manufacturer'),
                 'ModelNumber': self.get_pset_value_from_object(type, 'Pset_ManufacturerTypeInformation', 'ModelLabel', 'n/a'),
@@ -280,7 +281,7 @@ class IfcCobieCsv():
                 'CreatedOn': self.get_created_on_from_history(component.OwnerHistory),
                 'TypeName': self.get_type_name_from_object(component),
                 'Space': self.get_space_name_from_component(component),
-                'Description': self.get_object_attribute(component, 'Description'),
+                'Description': self.get_object_attribute(component, 'Description', default='n/a'),
                 'ExtSystem': self.get_ext_system_from_history(component.OwnerHistory),
                 'ExtObject': self.get_ext_object(component),
                 'ExtIdentifier': component.GlobalId,
@@ -304,7 +305,7 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(system.OwnerHistory),
                 'ExtObject': self.get_ext_object(system),
                 'ExtIdentifier': system.GlobalId,
-                'Description': self.get_object_attribute(system, 'Description'),
+                'Description': self.get_object_attribute(system, 'Description', default='n/a'),
                 }
 
     def get_assemblies(self):
@@ -323,7 +324,7 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(assembly.OwnerHistory),
                 'ExtObject': self.get_ext_object(assembly),
                 'ExtIdentifier': assembly.GlobalId,
-                'Description': self.get_object_attribute(assembly, 'Description'),
+                'Description': self.get_object_attribute(assembly, 'Description', default='n/a'),
                 }
 
     def get_connections(self):
@@ -334,7 +335,7 @@ class IfcCobieCsv():
                 'CreatedBy': self.get_email_from_history(connection.OwnerHistory),
                 'CreatedOn': self.get_created_on_from_history(connection.OwnerHistory),
                 # There is ambiguity for what the ConnectionType mapping should be
-                'ConnectionType': self.get_object_attribute(connection, 'Description'),
+                'ConnectionType': self.get_object_attribute(connection, 'Description', default='n/a'),
                 'SheetName': 'Connections',
                 'RowName1': self.get_row_name_from_connection(connection, 'RelatingElement'),
                 'RowName2': self.get_row_name_from_connection(connection, 'RelatedElement'),
@@ -344,7 +345,7 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(connection.OwnerHistory),
                 'ExtObject': self.get_ext_object(connection),
                 'ExtIdentifier': connection.GlobalId,
-                'Description': self.get_object_attribute(connection, 'Description'),
+                'Description': self.get_object_attribute(connection, 'Description', default='n/a'),
                 }
 
     def get_spares(self):
@@ -360,7 +361,7 @@ class IfcCobieCsv():
                 'ExtSystem': self.get_ext_system_from_history(spare.OwnerHistory),
                 'ExtObject': self.get_ext_object(spare),
                 'ExtIdentifier': spare.GlobalId,
-                'Description': self.get_object_attribute(spare, 'Description'),
+                'Description': self.get_object_attribute(spare, 'Description', default='n/a'),
                 'SetNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'SetNumber'),
                 'PartNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'PartNumber'),
                 }
@@ -372,12 +373,54 @@ class IfcCobieCsv():
             self.resources[resource_name] = {
                 'CreatedBy': self.get_email_from_history(resource.OwnerHistory),
                 'CreatedOn': self.get_created_on_from_history(resource.OwnerHistory),
-                'Category': self.get_category_from_object(resource, 'ResourceType'),
+                'Category': self.get_object_attribute(resource, 'ObjectType', picklist='ResourceType', default='n/a'),
                 'ExtSystem': self.get_ext_system_from_history(resource.OwnerHistory),
                 'ExtObject': self.get_ext_object(resource),
                 'ExtIdentifier': resource.GlobalId,
-                'Description': self.get_object_attribute(resource, 'Description'),
+                'Description': self.get_object_attribute(resource, 'Description', default='n/a'),
                 }
+
+    def get_jobs(self):
+        jobs = self.file.by_type('IfcTask')
+        for job in jobs:
+            job_name = self.get_object_name(job)
+            task_time = job.TaskTime
+            self.jobs[job_name] = {
+                'CreatedBy': self.get_email_from_history(job.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(job.OwnerHistory),
+                'Category': self.get_object_attribute(job, 'ObjectType', picklist='JobType', default='n/a'),
+                'Status': self.get_object_attribute(job, 'Status', picklist='JobStatusType', default='n/a'),
+                'TypeName': self.get_type_name_from_object(job),
+                'Description': self.get_object_attribute(job, 'Description', default='n/a'),
+                'Duration': self.get_object_attribute(task_time, 'ScheduleDuration', default=0),
+                'DurationUnit': 'day',
+                'Start': self.get_object_attribute(task_time, 'ScheduleStart', default=0),
+                'TaskStartUnit': 'day',
+                'Frequency': self.get_object_attribute(task_time.Recurrence, 'Occurrences', default=0) if hasattr(task_time, 'Recurrence') else 0,
+                'FrequencyUnit': 'day',
+                'ExtSystem': self.get_ext_system_from_history(job.OwnerHistory),
+                'ExtObject': self.get_ext_object(job),
+                'ExtIdentifier': job.GlobalId,
+                'TaskNumber': self.get_object_attribute(job, 'Identification'),
+                'Priors': self.get_priors_from_job(job),
+                'ResourceNames': self.get_resource_names_from_job(job),
+                }
+
+    def get_resource_names_from_job(self, job):
+        names = []
+        if job.OperatesOn \
+            and job.OperatesOn.RelatedObjects:
+            for object in job.OperatesOn.RelatedObjects:
+                names.append(object.Name)
+        return ','.join(names)
+
+    def get_priors_from_job(self, job):
+        # The responsibility matrix is vague as to whether it expects a task
+        # name or a task identification. I chose task name.
+        if job.IsSuccessorFrom \
+            and job.IsSuccessorFrom.RelatingProcess \
+            and job.IsSuccessorFrom.RelatingProcess.is_a('IfcTask'):
+                return self.get_object_name(job.IsSuccessorFrom.RelatingProcess)
 
     def get_row_name_from_connection(self, connection, key):
         if not connection.is_a('IfcRelConnectsElements'):
@@ -526,15 +569,17 @@ class IfcCobieCsv():
         logging.warning('A created on date was not found for {}'.format(history))
         return self.default_date
 
-    def get_object_attribute(self, object, attribute, is_primary_key = False):
+    def get_object_attribute(self, object, attribute, is_primary_key = False, picklist = None, default=None):
         result = getattr(object, attribute)
         if result:
+            if picklist:
+                self.picklists[picklist].append(result)
             return result
         if is_primary_key:
             logging.error('The primary key attribute {} was not found for {}'.format(attribute, object))
         else:
             logging.warning('The attribute {} was not found for {}'.format(attribute, object))
-        return 'n/a'
+        return default
 
     def get_ext_project_object(self):
         self.picklists['objType'].append('IfcProject')
@@ -758,4 +803,5 @@ pprint.pprint(ifc_cobie_csv.assemblies)
 pprint.pprint(ifc_cobie_csv.connections)
 pprint.pprint(ifc_cobie_csv.spares)
 pprint.pprint(ifc_cobie_csv.resources)
+pprint.pprint(ifc_cobie_csv.jobs)
 print('# Finished conversion in {}s'.format(time.time() - start))
