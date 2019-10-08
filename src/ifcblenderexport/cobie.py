@@ -24,6 +24,7 @@ class IfcCobieCsv():
         self.documents = {}
         self.attributes = {}
         self.coordinates = {}
+        self.issues = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -114,6 +115,7 @@ class IfcCobieCsv():
         self.get_documents()
         self.get_attributes()
         self.get_coordinates()
+        self.get_issues()
 
     def get_contacts(self):
         histories = self.file.by_type('IfcOwnerHistory')
@@ -519,6 +521,30 @@ class IfcCobieCsv():
                 'ClockwiseRotation': 'n/a', # X axis
                 'ElevationalRotation': 'n/a', # Y axis
                 'YawRotation': 'n/a', # Z axis
+                }
+
+    # I don't fully understand this worksheet. Don't trust this data.
+    def get_issues(self):
+        issues = self.file.by_type('IfcApproval')
+        for issue in issues:
+            issue_name = self.get_object_name(issue)
+            self.issues[issue_name] = {
+                'CreatedBy': self.get_email_from_history(issue.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(issue.OwnerHistory),
+                'Type': 'n/a', # How do we get to the Pset_Risk from the IfcApproval?
+                'Risk': 'n/a', # How do we get to the Pset_Risk from the IfcApproval?
+                'Chance': 'n/a', # How do we get to the Pset_Risk from the IfcApproval?
+                'Impact': 'n/a', # How do we get to the Pset_Risk from the IfcApproval?
+                'SheetName1': 'n/a',
+                'RowName1': 'n/a',
+                'SheetName2': 'n/a',
+                'RowName2': 'n/a',
+                'Description': self.get_object_attribute(issue, 'Description', default='n/a'),
+                'Owner': self.get_email_from_history(issue.RequestingApproval), # Is this correct?
+                'Mitigation': 'n/a',
+                'ExtSystem': self.get_ext_system_from_history(issue.OwnerHistory),
+                'ExtObject': self.get_ext_object(issue),
+                'ExtIdentifier': issue.GlobalId,
                 }
 
     def get_directory_from_document(self, document):
@@ -939,4 +965,5 @@ pprint.pprint(ifc_cobie_csv.impacts)
 pprint.pprint(ifc_cobie_csv.documents)
 pprint.pprint(ifc_cobie_csv.attributes)
 pprint.pprint(ifc_cobie_csv.coordinates)
+pprint.pprint(ifc_cobie_csv.issues)
 print('# Finished conversion in {}s'.format(time.time() - start))
