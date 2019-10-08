@@ -18,6 +18,7 @@ class IfcCobieCsv():
         self.assemblies = {}
         self.connections = {}
         self.spares = {}
+        self.resources = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -362,6 +363,20 @@ class IfcCobieCsv():
                 'Description': self.get_object_attribute(spare, 'Description'),
                 'SetNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'SetNumber'),
                 'PartNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'PartNumber'),
+                }
+
+    def get_resources(self):
+        resources = self.file.by_type('IfcConstructionProductResource')
+        for resource in resources:
+            resource_name = self.get_object_name(resource)
+            self.resources[resource_name] = {
+                'CreatedBy': self.get_email_from_history(resource.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(resource.OwnerHistory),
+                'Category': self.get_category_from_object(resource, 'ResourceType'),
+                'ExtSystem': self.get_ext_system_from_history(resource.OwnerHistory),
+                'ExtObject': self.get_ext_object(resource),
+                'ExtIdentifier': resource.GlobalId,
+                'Description': self.get_object_attribute(resource, 'Description'),
                 }
 
     def get_row_name_from_connection(self, connection, key):
@@ -742,4 +757,5 @@ pprint.pprint(ifc_cobie_csv.systems)
 pprint.pprint(ifc_cobie_csv.assemblies)
 pprint.pprint(ifc_cobie_csv.connections)
 pprint.pprint(ifc_cobie_csv.spares)
+pprint.pprint(ifc_cobie_csv.resources)
 print('# Finished conversion in {}s'.format(time.time() - start))
