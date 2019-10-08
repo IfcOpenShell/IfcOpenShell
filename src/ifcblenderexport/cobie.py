@@ -17,6 +17,7 @@ class IfcCobieCsv():
         self.systems = {}
         self.assemblies = {}
         self.connections = {}
+        self.spares = {}
         self.type_assets = [
             'IfcDoorStyle',
             'IfcBuildingElementProxyType',
@@ -81,6 +82,7 @@ class IfcCobieCsv():
             'AssetType': [],
             'DurationUnit': ['day'], # See note about hardcoded day below
             'Category-Element': [],
+            'SpareType': [],
             'objType': []
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
@@ -275,7 +277,7 @@ class IfcCobieCsv():
             self.components[component_name] = {
                 'CreatedBy': self.get_email_from_history(component.OwnerHistory),
                 'CreatedOn': self.get_created_on_from_history(component.OwnerHistory),
-                'TypeName': self.get_type_name_from_component(component),
+                'TypeName': self.get_type_name_from_object(component),
                 'Space': self.get_space_name_from_component(component),
                 'Description': self.get_object_attribute(component, 'Description'),
                 'ExtSystem': self.get_ext_system_from_history(component.OwnerHistory),
@@ -344,6 +346,24 @@ class IfcCobieCsv():
                 'Description': self.get_object_attribute(connection, 'Description'),
                 }
 
+    def get_spares(self):
+        spares = self.file.by_type('IfcConstructionProductResource')
+        for spare in spares:
+            spare_name = self.get_object_name(spare)
+            self.spares[spare_name] = {
+                'CreatedBy': self.get_email_from_history(spare.OwnerHistory),
+                'CreatedOn': self.get_created_on_from_history(spare.OwnerHistory),
+                'Category': self.get_category_from_object(spare, 'SpareType'),
+                'TypeName': self.get_type_name_from_object(spare),
+                'Suppliers': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'Suppliers'),
+                'ExtSystem': self.get_ext_system_from_history(spare.OwnerHistory),
+                'ExtObject': self.get_ext_object(spare),
+                'ExtIdentifier': spare.GlobalId,
+                'Description': self.get_object_attribute(spare, 'Description'),
+                'SetNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'SetNumber'),
+                'PartNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'PartNumber'),
+                }
+
     def get_row_name_from_connection(self, connection, key):
         if not connection.is_a('IfcRelConnectsElements'):
             return None
@@ -374,17 +394,17 @@ class IfcCobieCsv():
                 return relationship.RelatingStructure.Name
         logging.error('A related space name could not be determined for {}'.format(component))
 
-    def get_type_name_from_component(self, component):
+    def get_type_name_from_object(self, object):
         if self.file.schema == 'IFC2X3':
-            for relationship in component.IsDefinedBy:
+            for relationship in object.IsDefinedBy:
                 if relationship.is_a('IfcRelDefinesByType') \
                     and relationship.RelatingType.Name:
                     return relationship.RelatingType.Name
         else:
-            for relationship in component.IsTypedBy:
+            for relationship in object.IsTypedBy:
                 if relationship.RelatingType.Name:
                     return relationship.RelatingType.Name
-        logging.error('A related type name could not be determined for {}'.format(component))
+        logging.error('A related type name could not be determined for {}'.format(object))
 
     def get_expected_life_from_type(self, type):
         if self.file.schema == 'IFC2X3':
@@ -721,4 +741,5 @@ pprint.pprint(ifc_cobie_csv.components)
 pprint.pprint(ifc_cobie_csv.systems)
 pprint.pprint(ifc_cobie_csv.assemblies)
 pprint.pprint(ifc_cobie_csv.connections)
+pprint.pprint(ifc_cobie_csv.spares)
 print('# Finished conversion in {}s'.format(time.time() - start))
