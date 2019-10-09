@@ -3,9 +3,13 @@ import datetime
 import ifcopenshell
 import logging
 import pprint
+import csv
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill
 
-class IfcCobieCsv():
-    def __init__(self):
+class IfcCobieParser():
+    def __init__(self, logger):
+        self.logger = logger
         self.file = None
         self.contacts = {}
         self.facilities = {}
@@ -96,8 +100,8 @@ class IfcCobieCsv():
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
-    def convert(self):
-        self.file = ifcopenshell.open('C:/cygwin64/home/moud308/Projects/ifc2cobie/input.ifc')
+    def parse(self):
+        self.file = ifcopenshell.open('C:/cygwin64/home/moud308/Projects/ifc2cobie/arch.ifc')
         self.get_contacts()
         self.get_facilities()
         self.get_floors()
@@ -232,7 +236,7 @@ class IfcCobieCsv():
                 if type.is_a(type_asset):
                     is_a_type_asset = True
             if not is_a_type_asset:
-                logging.warning('A type which is not an asset was found for {}'.format(type))
+                self.logger.warning('A type which is not an asset was found for {}'.format(type))
                 continue
             # The responsibility matrix states to parse IfcMaterial and
             # IfcMaterialLayerSet too, but it doesn't make much sense, so I
@@ -288,7 +292,7 @@ class IfcCobieCsv():
         components = self.file.by_type('IfcElement')
         for component in components:
             if not self.is_object_a_component_asset(component):
-                logging.warning('A component which is not an asset was found for {}'.format(component))
+                self.logger.warning('A component which is not an asset was found for {}'.format(component))
                 continue
             component_name = self.get_object_name(component)
             self.components[component_name] = {
@@ -585,7 +589,7 @@ class IfcCobieCsv():
         object = getattr(connection, key)
         if self.is_object_a_component_asset(object):
             return object.Name
-        logging.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
+        self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
 
     def get_port_name_from_connection(self, connection, key):
         if not connection.is_a('IfcRelConnectsPorts'):
@@ -593,7 +597,7 @@ class IfcCobieCsv():
         object = getattr(connection, key)
         if self.is_object_a_component_asset(object):
             return object.Name
-        logging.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
+        self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
 
     def is_object_a_component_asset(self, object):
         is_an_asset = False
@@ -607,7 +611,7 @@ class IfcCobieCsv():
             if relationship.RelatingStructure.is_a('IfcSpace') \
                 and relationship.RelatingStructure.Name:
                 return relationship.RelatingStructure.Name
-        logging.error('A related space name could not be determined for {}'.format(component))
+        self.logger.error('A related space name could not be determined for {}'.format(component))
 
     def get_type_name_from_object(self, object):
         if self.file.schema == 'IFC2X3':
@@ -619,7 +623,7 @@ class IfcCobieCsv():
             for relationship in object.IsTypedBy:
                 if relationship.RelatingType.Name:
                     return relationship.RelatingType.Name
-        logging.error('A related type name could not be determined for {}'.format(object))
+        self.logger.error('A related type name could not be determined for {}'.format(object))
 
     def get_expected_life_from_type(self, type):
         if self.file.schema == 'IFC2X3':
@@ -629,9 +633,9 @@ class IfcCobieCsv():
     def get_contact_pset_value_from_object(self, object, pset_name, property_name):
         result = self.get_pset_value_from_object(object, pset_name, property_name)
         if not result:
-            logging.error('No property {} in {} was found for {}'.format(property_name, pset_name, object))
+            self.logger.error('No property {} in {} was found for {}'.format(property_name, pset_name, object))
         if result not in self.contacts:
-            logging.error('A coresponding {} contact in {} was not found for {}'.format(property_name, pset_name, object))
+            self.logger.error('A coresponding {} contact in {} was not found for {}'.format(property_name, pset_name, object))
         return result
 
     def get_pset_value_from_object(self, object, pset_name, property_name, default=None, picklist=None):
@@ -653,7 +657,7 @@ class IfcCobieCsv():
                     names.append(related_object.Name)
         if names:
             return ','.join(names)
-        logging.error('No related {} were found for {}'.format(type, object))
+        self.logger.error('No related {} were found for {}'.format(type, object))
 
     def get_net_area_from_space(self, space):
         qto = self.get_qto_from_object(space, 'Qto_SpaceBaseQuantities')
@@ -678,20 +682,20 @@ class IfcCobieCsv():
             if relationship.RelatingPropertyDefinition.is_a('IfcQuantitySet') \
                 and relationship.RelatingPropertyDefinition.Name == name:
                 return relationship.RelatingPropertyDefinition
-        logging.warning('The qto {} was not found for {}'.format(name, object))
+        self.logger.warning('The qto {} was not found for {}'.format(name, object))
 
     def get_property_from_qto(self, qto, name, attribute):
         for property in qto.Quantities:
             if property.Name == name:
                 return getattr(property, attribute)
-        logging.warning('The quantity value {} was not found for {}'.format(name, qto))
+        self.logger.warning('The quantity value {} was not found for {}'.format(name, qto))
         return 'n/a'
 
     def get_property_from_pset(self, pset, name, default=None):
         for property in pset.HasProperties:
             if property.Name == name:
                 return property.NominalValue
-        logging.warning('The property {} was not found for {}'.format(name, pset))
+        self.logger.warning('The property {} was not found for {}'.format(name, pset))
         return default
 
     def get_pset_from_object(self, object, name):
@@ -707,7 +711,7 @@ class IfcCobieCsv():
                     and relationship.RelatingPropertyDefinition.is_a('IfcPropertySet') \
                     and relationship.RelatingPropertyDefinition.Name == name:
                     return relationship.RelatingPropertyDefinition
-        logging.warning('The pset {} was not found for {}'.format(name, object))
+        self.logger.warning('The pset {} was not found for {}'.format(name, object))
 
     def get_height_from_storey(self, storey):
         for relationship in storey.IsDefinedBy:
@@ -717,13 +721,13 @@ class IfcCobieCsv():
                 if quantity.is_a('IfcQuantityLength') \
                     and quantity.LengthValue:
                     return quantity.LengthValue
-        logging.warning('A height length value was not found for {}'.format(storey))
+        self.logger.warning('A height length value was not found for {}'.format(storey))
         return 'n/a'
 
     def get_created_on_from_history(self, history):
         if history.CreationDate:
             return datetime.datetime.fromtimestamp(history.CreationDate).isoformat()
-        logging.warning('A created on date was not found for {}'.format(history))
+        self.logger.warning('A created on date was not found for {}'.format(history))
         return self.default_date
 
     def get_object_attribute(self, object, attribute, is_primary_key = False, picklist = None, default=None):
@@ -733,9 +737,9 @@ class IfcCobieCsv():
                 self.picklists[picklist].append(result)
             return result
         if is_primary_key:
-            logging.error('The primary key attribute {} was not found for {}'.format(attribute, object))
+            self.logger.error('The primary key attribute {} was not found for {}'.format(attribute, object))
         else:
-            logging.warning('The attribute {} was not found for {}'.format(attribute, object))
+            self.logger.warning('The attribute {} was not found for {}'.format(attribute, object))
         return default
 
     def get_ext_project_object(self):
@@ -755,7 +759,7 @@ class IfcCobieCsv():
 
     def get_object_name(self, object):
         if not object.Name:
-            logging.error('A primary key name was not found for {}'.format(object))
+            self.logger.error('A primary key name was not found for {}'.format(object))
             return 'Object{}'.format(object.id())
         return object.Name
 
@@ -764,7 +768,7 @@ class IfcCobieCsv():
             if relationship.RelatingPropertyDefinition.is_a('IfcElementQuantity') \
                 and relationship.RelatingPropertyDefinition.MethodOfMeasurement:
                 return relationship.RelatingPropertyDefinition.MethodOfMeasurement
-        logging.warning('A method of measurement was not defined for {}'.format(building))
+        self.logger.warning('A method of measurement was not defined for {}'.format(building))
 
     def get_unit_type_from_units(self, units, type):
         for unit in units:
@@ -772,13 +776,13 @@ class IfcCobieCsv():
                 if unit.is_a('IfcSIUnit') and unit.Prefix:
                     return '{}{}'.format(unit.Prefix, unit.Name)
                 return unit.Name
-        logging.error('A unit {} was not defined in this project for {}'.format(type, units))
+        self.logger.error('A unit {} was not defined in this project for {}'.format(type, units))
 
     def get_monetary_unit_from_units(self, units):
         for unit in units:
             if unit.is_a('IfcMonetaryUnit'):
                 return unit.Currency
-        logging.error('A monetary unit could not be found for {}'.format(units))
+        self.logger.error('A monetary unit could not be found for {}'.format(units))
 
     def get_project_globalid_from_building(self, building):
         return self.get_parent_spatial_element(building, 'IfcProject').GlobalId
@@ -790,14 +794,14 @@ class IfcCobieCsv():
         project = self.get_parent_spatial_element(building, 'IfcProject')
         if project.Name:
             return project.Name
-        logging.error('The project name is empty for {}'.format(project))
+        self.logger.error('The project name is empty for {}'.format(project))
         return 'n/a'
 
     def get_site_name_from_building(self, building):
         site = self.get_parent_spatial_element(building, 'IfcSite')
         if site.Name:
             return site.Name
-        logging.error('The site name is empty for {}'.format(site))
+        self.logger.error('The site name is empty for {}'.format(site))
         return 'n/a'
 
     def get_units_from_building(self, building):
@@ -825,7 +829,7 @@ class IfcCobieCsv():
             class_name = association.RelatingClassification.Name
             break
         if not class_identification or class_name:
-            logging.error('The classification has invalid identification and name for {}'.format(object))
+            self.logger.error('The classification has invalid identification and name for {}'.format(object))
         result = '{}:{}'.format(class_identification, class_name)
         self.picklists[picklist].append(result)
         return result
@@ -835,13 +839,13 @@ class IfcCobieCsv():
     def get_name_from_person(self, person, attribute):
         name = getattr(person, attribute)
         if not name.isalpha():
-            logging.warning('The person\'s {} seems to be badly formatted ("{}") for {}'.format(attribute, name, person))
+            self.logger.warning('The person\'s {} seems to be badly formatted ("{}") for {}'.format(attribute, name, person))
         return name if name else 'n/a'
 
     def get_attribute_from_address(self, address, attribute):
         result = getattr(address, attribute)
         if not result:
-            logging.warning('The address {} seems to not exist for {}'.format(attribute, address))
+            self.logger.warning('The address {} seems to not exist for {}'.format(attribute, address))
             return 'n/a'
         return result
 
@@ -863,7 +867,7 @@ class IfcCobieCsv():
         if given_name == 'unknown' \
             and family_name == 'unknown' \
             and organisation_name == 'unknown':
-            logging.error('No primary key could be determined from {}'.format(history))
+            self.logger.error('No primary key could be determined from {}'.format(history))
 
         return '{}{}@{}'.format(given_name, family_name, organisation_name)
 
@@ -885,7 +889,7 @@ class IfcCobieCsv():
             roles.append(self.get_role(role))
         result = ','.join(set(roles))
         if not result:
-            logging.error('No roles could be found for {}'.format(history))
+            self.logger.error('No roles could be found for {}'.format(history))
             return
         self.picklists['Category-Role'].append(result)
         return result
@@ -925,7 +929,7 @@ class IfcCobieCsv():
         for address in (organisation.Addresses or []):
             if address.is_a('IfcPostalAddress'):
                 return address.InternalLocation
-        logging.warning('An internal location was not found for {}'.format(organisation))
+        self.logger.warning('An internal location was not found for {}'.format(organisation))
 
     def get_role(self, role):
         if role.Role == 'USERDEFINED':
@@ -936,34 +940,175 @@ class IfcCobieCsv():
         for address in (person_or_org.Addresses or []):
             if address.is_a('IfcTelecomAddress'):
                 return address.TelephoneNumbers[0]
-        logging.warning('A phone was not found for {}'.format(person_or_org))
+        self.logger.warning('A phone was not found for {}'.format(person_or_org))
 
     def get_email_from_person_or_organisation(self, person_or_org):
         for address in (person_or_org.Addresses or []):
             if address.is_a('IfcTelecomAddress'):
                 return address.ElectronicMailAddresses[0]
-        logging.warning('An email address was not found for {}'.format(person_or_org))
+        self.logger.warning('An email address was not found for {}'.format(person_or_org))
+
+class CobieCsvWriter():
+    def __init__(self, parser):
+        self.parser = parser
+
+    def write(self):
+        self.write_file('Contact', self.parser.contacts, 'Email',
+            ['Email', 'CreatedBy', 'CreatedOn', 'Category', 'Company',
+            'Phone', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Department', 'OrganizationCode', 'GivenName', 'FamilyName',
+            'Street', 'PostalBox', 'Town', 'StateRegion', 'PostalCode',
+            'Country'])
+        self.write_file('Facility', self.parser.facilities, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ProjectName',
+            'SiteName', 'LinearUnits', 'AreaUnits', 'VolumeUnits', 'CostUnit',
+            'AreaMeasurement', 'ExternalSystem', 'ExternalProjectObject',
+            'ExternalProjectIdentifier', 'ExternalSiteObject',
+            'ExternalSiteIdentifier', 'ExternalFacilityObject',
+            'ExternalFacilityIdentifier', 'Description', 'ProjectDescription',
+            'SiteDescription', 'Phase'])
+        self.write_file('Floor', self.parser.floors, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
+            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'])
+        self.write_file('Space', self.parser.spaces, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'FloorName',
+            'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier', 'RoomTag',
+            'UsableHeight', 'GrossArea', 'NetArea'])
+        self.write_file('Zone', self.parser.zones, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SpaceNames',
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
+        self.write_file('Type', self.parser.types, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Description',
+            'AssetType', 'Manufacturer', 'ModelNumber',
+            'WarrantyGuarantorParts', 'WarrantyDurationParts',
+            'WarrantyGuarantorLabor', 'WarrantyDurationLabor',
+            'WarrantyDurationUnit', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'ReplacementCost', 'ExpectedLife', 'DurationUnit', 'NominalLength',
+            'NominalWidth', 'NominalHeight', 'ModelReference', 'Shape', 'Size',
+            'Color', 'Finish', 'Grade', 'Material', 'Constituents', 'Features',
+            'AccessibilityPerformance', 'CodePerformance',
+            'SustainabilityPerformance',])
+        self.write_file('Component', self.parser.components, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'TypeName', 'Space',
+            'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
+            'TagNumber', 'BarCode', 'AssetIdentifier',])
+        self.write_file('System', self.parser.systems, 'Name', 
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
+        self.write_file('Assembly', self.parser.assemblies, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'SheetName', 'ParentName',
+            'ChildNames', 'AssemblyType', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier', 'Description',])
+        self.write_file('Connection', self.parser.connections, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'ConnectionType', 'SheetName',
+            'RowName1', 'RowName2', 'RealizingElement', 'PortName1',
+            'PortName2', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Description',])
+        self.write_file('Spare', self.parser.spares, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'TypeName',
+            'Suppliers', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Description', 'SetNumber', 'PartNumber',])
+        self.write_file('Resource', self.parser.resources, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
+            'ExtObject', 'ExtIdentifier', 'Description',])
+        self.write_file('Job', self.parser.jobs, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Status', 'TypeName',
+            'Description', 'Duration', 'DurationUnit', 'Start', 'TaskStartUnit',
+            'Frequency', 'FrequencyUnit', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',])
+        self.write_file('Impact', self.parser.impacts, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'ImpactType', 'ImpactStage',
+            'SheetName', 'RowName', 'Value', 'Unit', 'LeadInTime', 'Duration',
+            'LeadOutTime', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
+            'Description',])
+        self.write_file('Document', self.parser.documents, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ApprovalBy',
+            'Stage', 'SheetName', 'RowName', 'Directory', 'File', 'ExtSystem',
+            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',])
+        self.write_file('Attribute', self.parser.attributes, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
+            'RowName', 'Value', 'Unit', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier', 'Description', 'AllowedValues',])
+        self.write_file('Coordinate', self.parser.coordinates, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
+            'RowName', 'CoordinateXAxis', 'CoordinateYAxis', 'CoordinateZAxis',
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'ClockwiseRotation',
+            'ElevationalRotation', 'YawRotation',])
+        self.write_file('Issue', self.parser.issues, 'Name',
+            ['Name', 'CreatedBy', 'CreatedOn', 'Type', 'Risk', 'Chance',
+            'Impact', 'SheetName1', 'RowName1', 'SheetName2', 'RowName2',
+            'Description', 'Owner', 'Mitigation', 'ExtSystem', 'ExtObject',
+            'ExtIdentifier',])
+
+    def write_file(self, csv_name, data, primary_key, fieldnames):
+        with open('C:/cygwin64/home/moud308/Projects/ifc2cobie/{}.csv'.format(csv_name), 'w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            for name, row in data.items():
+                row[primary_key] = name
+                writer.writerow(row)
+
+class CobieXlsWriter(CobieCsvWriter):
+    def write(self):
+        self.colours = {
+            'r': 'fdff8e', # Required
+            'i': 'fdcd94', # Internal reference
+            'e': 'cd95ff', # External reference
+            'o': 'cdffc8', # Optional
+            's': 'c0c0c0', # Secondary information
+            'p': '9ccaff', # Project specific
+            'n': '000000' # Not used
+            }
+        super().write()
+        self.workbook = Workbook()
+        self.workbook.remove(self.workbook.active)
+        self.write_worksheet('Contact', self.colours['r'], 'ririrreeeoooooooooo')
+        self.write_worksheet('Facility', self.colours['r'], 'ririrriiiireeeeeeeoooo')
+        self.write_worksheet('Floor', self.colours['r'], 'ririeeeooo')
+        self.write_worksheet('Space', self.colours['r'], 'ririireeeoooo')
+        self.write_worksheet('Zone', self.colours['r'], 'ririieeeo')
+        self.write_worksheet('Type', self.colours['r'], 'riririoooooooeeeooooooooooooooooooo')
+        self.write_worksheet('Component', self.colours['r'], 'ririireeeoooooo')
+        self.write_worksheet('System', self.colours['r'], 'ririieeeo')
+        self.write_worksheet('Assembly', self.colours['r'], 'rirrrrreeeo')
+        self.write_worksheet('Connection', self.colours['r'], 'ririiiiiiieeeo')
+        self.write_worksheet('Spare', self.colours['r'], 'ririiieeeooo')
+        self.write_worksheet('Resource', self.colours['r'], 'ririeeeo')
+        self.write_worksheet('Job', self.colours['r'], 'ririiirriririeeeoii')
+        self.write_worksheet('Impact', self.colours['r'], 'ririiiirioooeeeo')
+        self.write_worksheet('Document', self.colours['r'], 'ririiiiirreeeoo')
+        self.write_worksheet('Attribute', self.colours['r'], 'ririiirreeeoo')
+        self.write_worksheet('Coordinate', self.colours['r'], 'ririiooooeeeooo')
+        self.write_worksheet('Issue', self.colours['r'], 'ririooooooooooeee')
+        self.workbook.save(filename='C:/cygwin64/home/moud308/Projects/ifc2cobie/out.xlsx')
+        self.workbook.close()
+
+    def write_worksheet(self, name, tab_colour, fill_map):
+        worksheet = self.workbook.create_sheet(name)
+        worksheet.sheet_properties.tabColor = tab_colour
+
+        with open('C:/cygwin64/home/moud308/Projects/ifc2cobie/{}.csv'.format(name),
+            'r') as f:
+            reader = csv.reader(f)
+            for r, row in enumerate(reader):
+                for c, col in enumerate(row):
+                    cell = worksheet.cell(column=c+1, row=r+1, value=col)
+                    if r == 0:
+                        cell.fill = PatternFill(fill_type='solid', fgColor=self.colours['s'])
+                    else:
+                        cell.fill = PatternFill(fill_type='solid', fgColor=self.colours[fill_map[c]])
 
 start = time.time()
-print('# Starting conversion')
-ifc_cobie_csv = IfcCobieCsv()
-ifc_cobie_csv.convert()
-pprint.pprint(ifc_cobie_csv.contacts)
-pprint.pprint(ifc_cobie_csv.facilities)
-pprint.pprint(ifc_cobie_csv.floors)
-pprint.pprint(ifc_cobie_csv.spaces)
-pprint.pprint(ifc_cobie_csv.zones)
-pprint.pprint(ifc_cobie_csv.types)
-pprint.pprint(ifc_cobie_csv.components)
-pprint.pprint(ifc_cobie_csv.systems)
-pprint.pprint(ifc_cobie_csv.assemblies)
-pprint.pprint(ifc_cobie_csv.connections)
-pprint.pprint(ifc_cobie_csv.spares)
-pprint.pprint(ifc_cobie_csv.resources)
-pprint.pprint(ifc_cobie_csv.jobs)
-pprint.pprint(ifc_cobie_csv.impacts)
-pprint.pprint(ifc_cobie_csv.documents)
-pprint.pprint(ifc_cobie_csv.attributes)
-pprint.pprint(ifc_cobie_csv.coordinates)
-pprint.pprint(ifc_cobie_csv.issues)
-print('# Finished conversion in {}s'.format(time.time() - start))
+logging.basicConfig(
+    filename='C:/cygwin64/home/moud308/Projects/ifc2cobie/process.log',
+    filemode='a', level=logging.DEBUG)
+logger = logging.getLogger('IFCtoCOBie')
+logger.info('Starting conversion')
+parser = IfcCobieParser(logger)
+parser.parse()
+#writer = CobieCsvWriter(parser)
+#writer.write()
+writer = CobieXlsWriter(parser)
+writer.write()
+logger.info('Finished conversion in {}s'.format(time.time() - start))
