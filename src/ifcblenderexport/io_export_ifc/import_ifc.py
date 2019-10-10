@@ -31,7 +31,7 @@ class IfcImporter():
         bpy.context.scene.collection.children.link(self.project['blender'])
 
     def create_spatial_hierarchy(self):
-        elements = self.file.by_type('IfcSpatialStructureElement')
+        elements = self.file.by_type('IfcSite') + self.file.by_type('IfcBuilding') + self.file.by_type('IfcBuildingStorey')
         while len(self.spatial_structure_elements) < len(elements):
             for element in elements:
                 parent = element.Decomposes[0].RelatingObject
