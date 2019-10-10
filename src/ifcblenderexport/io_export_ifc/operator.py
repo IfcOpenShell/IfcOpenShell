@@ -4,6 +4,7 @@ import logging
 from . import export_ifc
 from . import import_ifc
 from bpy_extras.io_utils import ImportHelper
+from itertools import cycle
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -114,6 +115,90 @@ class SelectType(bpy.types.Operator):
                     object.select_set(True)
                 elif object['IfcObjectType'] == bpy.context.scene.BIMProperties.ifc_userdefined_type:
                     object.select_set(True)
+        return {'FINISHED'}
+
+class ColourByClass(bpy.types.Operator):
+    bl_idname = 'bim.colour_by_class'
+    bl_label = 'Colour by Class'
+
+    def execute(self, context):
+        colour_list = [
+            (.651, .81, .892, 1),
+            (.121, .471, .706, 1),
+            (.699, .876, .54, 1),
+            (.199, .629, .174, 1),
+            (.983, .605, .602, 1),
+            (.89, .101, .112, 1),
+            (.989, .751, .427, 1),
+            (.986, .497, .1, 1),
+            (.792, .699, .839, 1),
+            (.414, .239, .603, 1),
+            (.993, .999, .6, 1),
+            (.693, .349, .157, 1)]
+        colours = cycle(colour_list)
+        ifc_classes = {}
+        for object in bpy.context.selected_objects:
+            if '/' not in object.name:
+                continue
+            ifc_class = object.name.split('/')[0]
+            if ifc_class not in ifc_classes:
+                ifc_classes[ifc_class] = next(colours)
+            object.color = ifc_classes[ifc_class]
+        return {'FINISHED'}
+
+class ResetObjectColours(bpy.types.Operator):
+    bl_idname = 'bim.reset_object_colours'
+    bl_label = 'Reset Colours'
+
+    def execute(self, context):
+        for object in bpy.context.selected_objects:
+            object.color = (1, 1, 1, 1)
+        return {'FINISHED'}
+
+class ApproveClass(bpy.types.Operator):
+    bl_idname = 'bim.approve_class'
+    bl_label = 'Approve Class'
+
+    def execute(self, context):
+        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
+            for object in bpy.context.selected_objects:
+                file.write('Then the element {} is an {}\n'.format(
+                    object['IfcGlobalId'], object.name.split('/')[0]))
+        return {'FINISHED'}
+
+class RejectClass(bpy.types.Operator):
+    bl_idname = 'bim.reject_class'
+    bl_label = 'Reject Class'
+
+    def execute(self, context):
+        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
+            for object in bpy.context.selected_objects:
+                file.write('Then the element {} is an {}\n'.format(
+                    object['IfcGlobalId'], bpy.context.scene.BIMProperties.ifc_class))
+        return {'FINISHED'}
+
+class RejectElement(bpy.types.Operator):
+    bl_idname = 'bim.reject_element'
+    bl_label = 'Reject Element'
+
+    def execute(self, context):
+        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
+            for object in bpy.context.selected_objects:
+                file.write('Then the element {} should not exist because {}\n'.format(
+                    object['IfcGlobalId'], bpy.context.scene.BIMProperties.qa_reject_element_reason))
+        return {'FINISHED'}
+
+class SelectAudited(bpy.types.Operator):
+    bl_idname = 'bim.select_audited'
+    bl_label = 'Select Audited'
+
+    def execute(self, context):
+        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt') as file:
+            for line in file:
+                for object in bpy.context.visible_objects:
+                    if 'IfcGlobalId' in object.keys() \
+                        and object['IfcGlobalId'] == line.split(' ')[3]:
+                        object.select_set(True)
         return {'FINISHED'}
 
 class SelectDataDir(bpy.types.Operator):
