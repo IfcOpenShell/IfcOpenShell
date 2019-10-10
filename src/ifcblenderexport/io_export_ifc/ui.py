@@ -33,6 +33,7 @@ class BIMProperties(bpy.types.PropertyGroup):
         name="Predefined Type", default=None)
     ifc_userdefined_type: bpy.props.StringProperty(name="Userdefined Type")
     export_has_representations: bpy.props.BoolProperty(name="Export Representations", default=True)
+    qa_reject_element_reason: bpy.props.StringProperty(name="Element rejection reason")
 
 class BIMPanel(bpy.types.Panel):
     bl_label = "Building Information Modeling"
@@ -73,6 +74,24 @@ class BIMPanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("bim.select_class")
         row.operator("bim.select_type")
+
+        layout.label(text="Quality Auditing:")
+
+        row = layout.row()
+        row.prop(bim_properties, "qa_reject_element_reason")
+        row = layout.row()
+        row.operator("bim.reject_element")
+
+        row = layout.row(align=True)
+        row.operator("bim.colour_by_class")
+        row.operator("bim.reset_object_colours")
+
+        row = layout.row(align=True)
+        row.operator("bim.approve_class")
+        row.operator("bim.reject_class")
+
+        row = layout.row()
+        row.operator("bim.select_audited")
 
 class MVDPanel(bpy.types.Panel):
     bl_label = "Model View Definitions"
