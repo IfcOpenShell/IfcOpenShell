@@ -32,13 +32,15 @@ class IfcImporter():
 
     def create_spatial_hierarchy(self):
         elements = self.file.by_type('IfcSite') + self.file.by_type('IfcBuilding') + self.file.by_type('IfcBuildingStorey')
-        while len(self.spatial_structure_elements) < len(elements):
+        attempts = 0
+        while len(self.spatial_structure_elements) < len(elements) \
+            and attempts <= len(elements):
             for element in elements:
-                parent = element.Decomposes[0].RelatingObject
-                parent_name = self.get_name(parent)
                 name = self.get_name(element)
                 if name in self.spatial_structure_elements:
                     continue
+                parent = element.Decomposes[0].RelatingObject
+                parent_name = self.get_name(parent)
                 if parent.is_a('IfcProject'):
                     self.spatial_structure_elements[name] = {
                         'blender': bpy.data.collections.new(name)}
@@ -48,6 +50,7 @@ class IfcImporter():
                         'blender': bpy.data.collections.new(name)}
                     self.spatial_structure_elements[parent_name]['blender'].children.link(
                         self.spatial_structure_elements[name]['blender'])
+            attempts += 1
 
     def get_name(self, element):
         return '{}/{}'.format(element.is_a(), element.Name)
