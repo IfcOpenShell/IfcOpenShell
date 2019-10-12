@@ -3,6 +3,55 @@ from .ifcopenshell import geom
 import bpy
 import mathutils
 
+class MaterialCreator():
+    def __init__(self):
+        self.mesh = None
+        self.materials = {}
+
+    def set_mesh(self, mesh):
+        self.mesh = mesh
+
+    def create(self, material_select):
+        if material_select.is_a('IfcMaterialDefinition'):
+            return self.create_definition(material_select)
+
+    def create_definition(self, material):
+        if material.is_a('IfcMaterial'):
+            self.create_single(material)
+
+    def create_single(self, material):
+        if material.Name not in self.materials:
+            self.create_new_single(material)
+        return self.assign_material_to_mesh(self.materials[material.Name])
+
+    def create_new_single(self, material):
+        self.materials[material.Name] = bpy.data.materials.new(material.Name)
+        if not material.HasRepresentation \
+            or not material.HasRepresentation[0].Representations:
+            return
+        for representation in material.HasRepresentation[0].Representations:
+            if not representation.Items:
+                continue
+            for item in representation.Items:
+                if not item.is_a('IfcStyledItem'):
+                    continue
+                for style in item.Styles:
+                    if not style.is_a('IfcSurfaceStyle'):
+                        continue
+                    for surface_style in style.Styles:
+                        if surface_style.is_a('IfcSurfaceStyleShading'):
+                            alpha = 1.
+                            if surface_style.Transparency:
+                                alpha = 1 - surface_style.Transparency
+                            self.materials[material.Name].diffuse_color = (
+                                surface_style.SurfaceColour.Red,
+                                surface_style.SurfaceColour.Green,
+                                surface_style.SurfaceColour.Blue,
+                                alpha)
+
+    def assign_material_to_mesh(self, material):
+        self.mesh.materials.append(material)
+
 class IfcImporter():
     def __init__(self, ifc_import_settings):
         self.ifc_import_settings = ifc_import_settings
@@ -12,6 +61,8 @@ class IfcImporter():
         self.spatial_structure_elements = {}
         self.elements = {}
         self.meshes = {}
+
+        self.material_creator = MaterialCreator()
 
     def execute(self):
         self.load_file()
@@ -69,13 +120,10 @@ class IfcImporter():
         else:
             print('we reused a mesh!')
 
-        materials = shape.geometry.materials
-        for material in materials:
-            if material.has_diffuse:
-                alpha = 1.
-                blender_material = bpy.data.materials.new('mymaterial')
-                blender_material.diffuse_color = material.diffuse + (alpha,)
-                mesh.materials.append(blender_material)
+        for association in element.HasAssociations:
+            if association.is_a('IfcRelAssociatesMaterial'):
+                self.material_creator.set_mesh(mesh)
+                self.material_creator.create(association.RelatingMaterial)
 
         object = bpy.data.objects.new(self.get_name(element), mesh)
         m = shape.transformation.matrix.data
