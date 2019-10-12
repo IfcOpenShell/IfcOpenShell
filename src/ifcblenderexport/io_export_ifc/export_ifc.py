@@ -689,7 +689,8 @@ class IfcParser():
         return collection_tree
 
     def get_spatial_structure_element_reference(self, name):
-        return [ e['attributes']['Name'] for e in self.spatial_structure_elements ].index(self.get_ifc_name(name))
+        return [ '{}/{}'.format(e['class'], e['attributes']['Name']) for e in
+            self.spatial_structure_elements ].index(name)
 
     def get_type_product_reference(self, name):
         return [ p['attributes']['Name'] for p in self.type_products ].index(self.get_ifc_name(name))
