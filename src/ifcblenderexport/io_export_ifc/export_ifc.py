@@ -138,6 +138,7 @@ class IfcParser():
         self.objectives = self.get_objectives()
         self.representations = self.get_representations()
         self.materials = self.get_materials()
+        self.styled_items = self.get_styled_items()
         self.qtos = self.get_qtos()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
 
@@ -282,14 +283,14 @@ class IfcParser():
                 self.rel_associates_constraint_objective_object.setdefault(
                     object[key], []).append(product)
 
-        if 'IsMaterialLayerSet' in object:
-            for slot in object.material_slots:
+        for slot in object.material_slots:
+            if slot.link == 'OBJECT':
+                continue
+            if 'IsMaterialLayerSet' in object:
                 self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(slot.material.name)
-        elif 'IsMaterialConstituentSet' in object:
-            for slot in object.material_slots:
+            elif 'IsMaterialConstituentSet' in object:
                 self.rel_associates_material_constituent_set.setdefault(self.product_index, []).append(slot.material.name)
-        else:
-            for slot in object.material_slots:
+            else:
                 self.rel_associates_material.setdefault( slot.material.name, []).append(product)
 
         return product
@@ -574,7 +575,8 @@ class IfcParser():
             if not object.data:
                 continue
             for slot in object.material_slots:
-                if slot.material.name in results:
+                if slot.material.name in results \
+                    or slot.link == 'OBJECT':
                     continue
                 results[slot.material.name] = {
                     'ifc': None,
@@ -588,6 +590,26 @@ class IfcParser():
                         slot.material.keys() if key[0:3] == 'Ifc'},
                     'constituent_attributes': { key[3:]: slot.material[key] for key in
                         slot.material.keys() if key[0:3] == 'Ifc'}
+                    }
+        return results
+
+    def get_styled_items(self):
+        results = {}
+        if not self.ifc_export_settings.has_representations:
+            return results
+        for product in self.selected_products + self.type_products:
+            object = product['raw']
+            if not object.data:
+                continue
+            for slot in object.material_slots:
+                if slot.material.name in results \
+                    or slot.link == 'DATA':
+                    continue
+                results[slot.material.name] = {
+                    'ifc': None,
+                    'raw': slot.material,
+                    'related_product_name': product['raw'].name,
+                    'attributes': { 'Name': slot.material.name },
                     }
         return results
 
@@ -773,6 +795,7 @@ class IfcExporter():
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_qtos()
         self.create_products()
+        self.create_styled_items()
         self.relate_definitions_to_contexts()
         self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
@@ -1025,16 +1048,31 @@ class IfcExporter():
                 ifcopenshell.guid.new(),
                 self.owner_history, None, None, relating_object, related_objects)
 
+    def create_styled_items(self):
+        for styled_item in self.ifc_parser.styled_items.values():
+            product = self.ifc_parser.products[
+                self.ifc_parser.get_product_index_from_raw_name(
+                    styled_item['related_product_name'])]['ifc']
+            representation_items = []
+            if product.Representation:
+                for representation in product.Representation.Representations:
+                    for item in representation.Items:
+                        representation_items.append(item)
+            for representation_item in representation_items:
+                styled_item['ifc'] = self.create_styled_item(styled_item, representation_item)
+
+    def create_styled_item(self, item, representation_item=None):
+        styles = []
+        styles.append(self.create_surface_style_rendering(item))
+        if 'IsExternal' in item['raw'].keys():
+            styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
+                **self.get_material_external_definition(item['raw'])))
+        surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
+        return self.file.createIfcStyledItem(representation_item, [surface_style], item['attributes']['Name'])
+
     def create_materials(self):
         for material in self.ifc_parser.materials.values():
-            styles = []
-            styles.append(self.create_surface_style_rendering(material))
-            if 'IsExternal' in material['raw'].keys():
-                styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
-                    **self.get_material_external_definition(material['raw'])))
-
-            surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
-            styled_item = self.file.createIfcStyledItem(None, [surface_style], None)
+            styled_item = self.create_styled_item(material)
             styled_representation = self.file.createIfcStyledRepresentation(
                 self.ifc_rep_context['Model']['Body']['ifc'], None, None, [styled_item])
             material['ifc'] = self.file.createIfcMaterial(material['raw'].name, None, None)
@@ -1049,10 +1087,10 @@ class IfcExporter():
                 material['constituent_ifc'] = self.file.create_entity('IfcMaterialConstituent',
                     **material['constituent_attributes'])
 
-    def create_surface_style_rendering(self, material):
-        surface_colour = self.create_colour_rgb(material['raw'].diffuse_color)
+    def create_surface_style_rendering(self, styled_item):
+        surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
         rendering_attributes = { 'SurfaceColour': surface_colour }
-        rendering_attributes.update(self.get_rendering_attributes(material['raw']))
+        rendering_attributes.update(self.get_rendering_attributes(styled_item['raw']))
         return self.file.create_entity('IfcSurfaceStyleRendering', **rendering_attributes)
 
     def get_rendering_attributes(self, material):
