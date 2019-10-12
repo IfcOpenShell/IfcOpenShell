@@ -76,8 +76,21 @@ Let's use Blender to create BIM models, because why not?
  - Specify nested and hosted element relationships.
  - Specify predefined door attributes as defined in the IFC4 specification.
  - Specify predefined window attributes as defined in the IFC4 specification.
+ - Specify surface styles either defined as part of a material or assigned
+   directly to an object's representation.
+ - Colour coding by IFC class to visually spot mistakes
+
+Some more experimental features:
+
+ - Cut sections for documentation with OpenCascade
+ - Export gbXML files that are linked to your IFC file to do energy analysis
+ - QA module to generate Gherkin unit tests to validate your BIM models
+ - HTML formatter to generate reports from QA results
+ - COBie spreadsheet extraction to import into CAFM systems
 
 ## Demo
+
+[See demo video](https://www.youtube.com/watch?v=iD3v3eu2AjY)
 
 It's only just started, so everything can and will change. But if you want to
 check it out:
@@ -87,8 +100,8 @@ check it out:
     [here](https://thinkmoult.com/blenderbim/).
  3. Launch Blender. Go to `Edit->Preferences->Add-ons->Install...`. Browse to
     the downloaded `.zip` file from step 2.
- 4. Enable the checkboxes next to the two Import-Export IFC Blender plugins
-    which show up.
+ 4. Enable the checkbox next to the Import-Export IFC Blender plugin which will
+    show up.
  5. All done! You will find an import and export IFC option in the `File` menu.
 
 By default, Blender BIM will export whatever you have selected. The objects you
@@ -102,6 +115,10 @@ A naming convention of `IfcClass/IfcName` is enforced. If you name your object
 Your objects must live in a top level `Collection` defined as a context class,
 usually something like `IfcProject/Foo`. You can then nest spatial structures
 underneath to create a hierarchy.
+
+## Pictures
+
+![UI](https://aws1.discourse-cdn.com/business6/uploads/buildingsmart1/original/1X/ce820c3ee22adcffae59b40f98ff23379f7e3547.png)
 
 ![Blender screenshot](blender-screenshot.png)
 
