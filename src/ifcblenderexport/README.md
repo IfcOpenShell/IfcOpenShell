@@ -97,7 +97,7 @@ check it out:
 
  1. Install [Blender](https://www.blender.org/) 64-bit version.
  2. Download the latest packaged version of Blender BIM from
-    [here](https://thinkmoult.com/blenderbim/).
+    [here](https://blenderbim.org/builds/).
  3. Launch Blender. Go to `Edit->Preferences->Add-ons->Install...`. Browse to
     the downloaded `.zip` file from step 2.
  4. Enable the checkbox next to the Import-Export IFC Blender plugin which will
