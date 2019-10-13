@@ -1039,7 +1039,7 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
         filter.type = geom_filter::ENTITY_TYPE;
     } else if (type == "layers") {
         filter.type = geom_filter::LAYER_NAME;
-    } else if (type == "arg") {
+    } else if (type == "attribute" || type == "arg") {
         filter.type = geom_filter::ENTITY_ARG;
         filter.arg = *(values.begin() + 1);
     } else {
