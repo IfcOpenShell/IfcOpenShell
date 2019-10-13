@@ -29,8 +29,10 @@ classes = (
     operator.SelectAudited,
     operator.RejectElement,
     ui.BIMProperties,
+    ui.MaterialProperties,
     ui.BIMPanel,
     ui.MVDPanel,
+    ui.MaterialPanel,
     )
 
 def menu_func_export(self, context):
@@ -47,6 +49,7 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
+    bpy.types.Material.MaterialProperties = bpy.props.PointerProperty(type=ui.MaterialProperties)
 
 def unregister():
     for cls in reversed(classes):
@@ -54,6 +57,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del(bpy.types.Scene.BIMProperties)
+    del(bpy.types.Scene.MaterialProperties)
 
 if __name__ == "__main__":
     register()

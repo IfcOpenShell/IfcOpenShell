@@ -35,9 +35,35 @@ class BIMProperties(bpy.types.PropertyGroup):
     export_has_representations: bpy.props.BoolProperty(name="Export Representations", default=True)
     qa_reject_element_reason: bpy.props.StringProperty(name="Element rejection reason")
 
+class MaterialProperties(bpy.types.PropertyGroup):
+    is_external: bpy.props.BoolProperty(name="Has External Definition")
+    location: bpy.props.StringProperty(name="Location")
+    identification: bpy.props.StringProperty(name="Identification")
+    name: bpy.props.StringProperty(name="Name")
+
+class MaterialPanel(bpy.types.Panel):
+    bl_label = 'IFC Materials'
+    bl_idname = 'BIM_PT_material'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'material'
+
+    def draw(self, context):
+        if not bpy.context.active_object.active_material:
+            return
+        layout = self.layout
+        row = layout.row()
+        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'is_external')
+        row = layout.row()
+        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'location')
+        row = layout.row()
+        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'identification')
+        row = layout.row()
+        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'name')
+
 class BIMPanel(bpy.types.Panel):
     bl_label = "Building Information Modeling"
-    bl_idname = "bim.panel"
+    bl_idname = "BIM_PT_bim"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -95,7 +121,7 @@ class BIMPanel(bpy.types.Panel):
 
 class MVDPanel(bpy.types.Panel):
     bl_label = "Model View Definitions"
-    bl_idname = "mvd.panel"
+    bl_idname = "BIM_PT_mvd"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"

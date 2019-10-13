@@ -1064,7 +1064,7 @@ class IfcExporter():
     def create_styled_item(self, item, representation_item=None):
         styles = []
         styles.append(self.create_surface_style_rendering(item))
-        if 'IsExternal' in item['raw'].keys():
+        if item['raw'].MaterialProperties.is_external:
             styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
                 **self.get_material_external_definition(item['raw'])))
         surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
@@ -1105,9 +1105,9 @@ class IfcExporter():
 
     def get_material_external_definition(self, material):
         return {
-            'Location': material['Location'],
-            'Identification': material['Identification'] if 'Identification' in material else material.name,
-            'Name': material['Name'] if 'Name' in material else material.name
+            'Location': material.MaterialProperties.location,
+            'Identification': material.MaterialProperties.identification if material.MaterialProperties.identification else material.name,
+            'Name': material.MaterialProperties.name if material.MaterialProperties.name else material.name
         }
 
     def create_colour_rgb(self, colour):
