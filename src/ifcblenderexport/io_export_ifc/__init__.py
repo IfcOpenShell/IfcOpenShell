@@ -28,11 +28,16 @@ classes = (
     operator.RejectClass,
     operator.SelectAudited,
     operator.RejectElement,
+    operator.SelectExternalMaterialDir,
+    operator.AssignSweptSolidProfile,
+    operator.AssignSweptSolidExtrusion,
     ui.BIMProperties,
     ui.MaterialProperties,
+    ui.MeshProperties,
     ui.BIMPanel,
     ui.MVDPanel,
     ui.MaterialPanel,
+    ui.MeshPanel,
     )
 
 def menu_func_export(self, context):
@@ -50,6 +55,7 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
     bpy.types.Material.MaterialProperties = bpy.props.PointerProperty(type=ui.MaterialProperties)
+    bpy.types.Mesh.MeshProperties = bpy.props.PointerProperty(type=ui.MeshProperties)
 
 def unregister():
     for cls in reversed(classes):
@@ -57,7 +63,8 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del(bpy.types.Scene.BIMProperties)
-    del(bpy.types.Scene.MaterialProperties)
+    del(bpy.types.Material.MaterialProperties)
+    del(bpy.types.Mesh.MeshProperties)
 
 if __name__ == "__main__":
     register()
