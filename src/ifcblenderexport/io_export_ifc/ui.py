@@ -41,6 +41,29 @@ class MaterialProperties(bpy.types.PropertyGroup):
     identification: bpy.props.StringProperty(name="Identification")
     name: bpy.props.StringProperty(name="Name")
 
+class MeshProperties(bpy.types.PropertyGroup):
+    is_wireframe: bpy.props.BoolProperty(name="Is Wireframe")
+    is_swept_solid: bpy.props.BoolProperty(name="Is Swept Solid")
+
+class MeshPanel(bpy.types.Panel):
+    bl_label = 'IFC Representations'
+    bl_idname = 'BIM_PT_mesh'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'data'
+
+    def draw(self, context):
+        if not bpy.context.active_object.data:
+            return
+        layout = self.layout
+        row = layout.row()
+        row.prop(bpy.context.active_object.data.MeshProperties, 'is_wireframe')
+        row = layout.row()
+        row.prop(bpy.context.active_object.data.MeshProperties, 'is_swept_solid')
+        row = layout.row(align=True)
+        row.operator('bim.assign_swept_solid_profile')
+        row.operator('bim.assign_swept_solid_extrusion')
+
 class MaterialPanel(bpy.types.Panel):
     bl_label = 'IFC Materials'
     bl_idname = 'BIM_PT_material'
@@ -54,8 +77,9 @@ class MaterialPanel(bpy.types.Panel):
         layout = self.layout
         row = layout.row()
         row.prop(bpy.context.active_object.active_material.MaterialProperties, 'is_external')
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(bpy.context.active_object.active_material.MaterialProperties, 'location')
+        row.operator('bim.select_external_material_dir', icon="FILE_FOLDER", text="")
         row = layout.row()
         row.prop(bpy.context.active_object.active_material.MaterialProperties, 'identification')
         row = layout.row()

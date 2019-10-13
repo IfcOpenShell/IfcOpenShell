@@ -547,8 +547,8 @@ class IfcParser():
             'raw_object': object,
             'context': context,
             'subcontext': subcontext,
-            'is_wireframe': True if 'IsWireframe' in mesh else False,
-            'is_swept_solid': True if 'IsSweptSolid' in mesh else False,
+            'is_wireframe': mesh.MeshProperties.is_wireframe,
+            'is_swept_solid': mesh.MeshProperties.is_swept_solid,
             'is_generated': is_generated,
             'attributes': { 'Name': mesh.name }
             }

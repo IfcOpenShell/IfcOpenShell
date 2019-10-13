@@ -201,6 +201,51 @@ class SelectAudited(bpy.types.Operator):
                         object.select_set(True)
         return {'FINISHED'}
 
+class AssignSweptSolidProfile(bpy.types.Operator):
+    bl_idname = 'bim.assign_swept_solid_profile'
+    bl_label = 'Assign Profile'
+
+    def execute(self, context):
+        if bpy.context.mode != 'EDIT_MESH':
+            return {'FINISHED'}
+        for vg in bpy.context.active_object.vertex_groups:
+            if vg.name == 'profile':
+                bpy.ops.object.vertex_group_set_active(group=vg.name)
+                bpy.ops.object.vertex_group_remove()
+                break
+        bpy.ops.object.vertex_group_assign_new()
+        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'profile'
+        return {'FINISHED'}
+
+class AssignSweptSolidExtrusion(bpy.types.Operator):
+    bl_idname = 'bim.assign_swept_solid_extrusion'
+    bl_label = 'Assign Extrusion'
+
+    def execute(self, context):
+        if bpy.context.mode != 'EDIT_MESH':
+            return {'FINISHED'}
+        for vg in bpy.context.active_object.vertex_groups:
+            if vg.name == 'extrusion':
+                bpy.ops.object.vertex_group_set_active(group=vg.name)
+                bpy.ops.object.vertex_group_remove()
+                break
+        bpy.ops.object.vertex_group_assign_new()
+        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'extrusion'
+        return {'FINISHED'}
+
+class SelectExternalMaterialDir(bpy.types.Operator):
+    bl_idname = "bim.select_external_material_dir"
+    bl_label = "Select Material File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.active_object.active_material.MaterialProperties.location = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
