@@ -1,5 +1,8 @@
+from behave.__main__ import main as behave_main
 import xml.etree.ElementTree as ET
 import pystache
+
+behave_main(['features', '--junit', '--junit-directory', 'junit/'])
 
 with open('junit/template.html') as template:
     root = ET.parse('junit/TESTS-example.xml').getroot()
