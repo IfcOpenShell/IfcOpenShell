@@ -456,7 +456,7 @@ namespace {
 						if (cls.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
 							gp_Pnt test2;
 							p1->D0(u, v, test2);
-							double w = gp_Vec(p1->Position().Direction().XYZ()).Dot(test2.XYZ() - test.XYZ());
+							double w = std::abs(gp_Vec(p1->Position().Direction().XYZ()).Dot(test2.XYZ() - test.XYZ()));
 							if (w < M) {
 								M = w;
 							}
@@ -4165,7 +4165,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
 					reason = 1;
 					success = false;
-				} else if ((v = min_face_face_distance(r, fuzziness * 3.)) < fuzziness * 3.) {
+				} else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
 					reason = 2;
 					success = false;
 				}
