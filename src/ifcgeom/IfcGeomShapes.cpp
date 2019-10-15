@@ -501,9 +501,17 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	second_operands.push_back(operand2);
 
 	if (occ_op == BOPAlgo_CUT) {
-		bool process_as_list = true;
+		int n_half_space_operands = 0;
+		bool process_as_list = false;
 		while (true) {
 			auto res1 = operand1->as<IfcSchema::IfcBooleanResult>();
+			if (res1 && res1->SecondOperand()->as<IfcSchema::IfcHalfSpaceSolid>() && ++n_half_space_operands > 8) {
+				// There is something peculiar about many half space subtraction operands that OCCT does not like.
+				// Often these are used to create a semi-curved arch, as is the case in 693. Supplying all these
+				// operands at once apparently leads to too many edge-edge interference checks.
+				process_as_list = false;
+				break;
+			}
 			if (res1) {
 				if (res1->Operator() == op) {
 					operand1 = res1->FirstOperand();
