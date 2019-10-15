@@ -371,8 +371,8 @@ protected:
 				if (m) {
 					for (int i = 0; i < 4; ++i) {
 						diffuse_color_array_condensed.push_back((*m)[i]);
-						orig_to_condensed_index_map[orig] = new_index++;
 					}
+					orig_to_condensed_index_map[orig] = new_index++;
 				}
 			}
 
