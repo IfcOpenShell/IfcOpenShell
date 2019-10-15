@@ -344,31 +344,53 @@ protected:
 				swrite_array<int32_t>(s, lines);
 			}
 		}
-		{ std::vector<float> diffuse_color_array;
-		for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
-			const IfcGeom::Material& mat = *it;
-			if (mat.hasDiffuse()) {
-				const double* color = mat.diffuse();
-				diffuse_color_array.push_back(static_cast<float>(color[0]));
-				diffuse_color_array.push_back(static_cast<float>(color[1]));
-				diffuse_color_array.push_back(static_cast<float>(color[2]));
-			} else {
-				diffuse_color_array.push_back(0.f);
-				diffuse_color_array.push_back(0.f);
-				diffuse_color_array.push_back(0.f);
+		{ 
+			// We remove the blanks here from the material array. I.e. materials without a diffuse color
+			std::vector<boost::optional<std::array<float, 4> > > diffuse_color_array;
+			for (std::vector<IfcGeom::Material>::const_iterator it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
+				const IfcGeom::Material& mat = *it;
+				if (mat.hasDiffuse()) {
+					const double* color = mat.diffuse();
+					diffuse_color_array.push_back(std::array<float, 4>{
+						static_cast<float>(color[0]),
+						static_cast<float>(color[1]),
+						static_cast<float>(color[2]),
+						mat.hasTransparency() ? static_cast<float>(1. - mat.transparency()) : 1.f
+					});
+				} else {
+					diffuse_color_array.emplace_back();
+				}
 			}
-			if (mat.hasTransparency()) {
-				diffuse_color_array.push_back(static_cast<float>(1. - mat.transparency()));
-			} else {
-				diffuse_color_array.push_back(1.f);
+
+			std::map<int, int> orig_to_condensed_index_map;
+			std::vector<float> diffuse_color_array_condensed;
+			
+			int new_index = 0;
+			for (int orig = 0; orig < diffuse_color_array.size(); ++orig) {
+				auto& m = diffuse_color_array[orig];
+				if (m) {
+					for (int i = 0; i < 4; ++i) {
+						diffuse_color_array_condensed.push_back((*m)[i]);
+						orig_to_condensed_index_map[orig] = new_index++;
+					}
+				}
 			}
+
+			swrite(s, std::string((char*) diffuse_color_array_condensed.data(), diffuse_color_array_condensed.size() * sizeof(float)));
+
+			std::vector<int32_t> material_indices;
+			for (std::vector<int>::const_iterator it = geom->geometry().material_ids().begin(); it != geom->geometry().material_ids().end(); ++it) {
+				// @todo use something like std::equal_range() ?
+				auto jt = orig_to_condensed_index_map.find(*it);
+				if (jt == orig_to_condensed_index_map.end()) {
+					material_indices.push_back(-1);
+				} else {
+					material_indices.push_back(jt->second);
+				}
+			}
+
+			swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t)));
 		}
-		swrite(s, std::string((char*) diffuse_color_array.data(), diffuse_color_array.size() * sizeof(float))); }
-		{ std::vector<int32_t> material_indices;
-		for (std::vector<int>::const_iterator it = geom->geometry().material_ids().begin(); it != geom->geometry().material_ids().end(); ++it) {
-			material_indices.push_back(*it);
-		} 
-		swrite(s, std::string((char*) material_indices.data(), material_indices.size() * sizeof(int32_t))); }
 		if (eext_) {
 			eext_->write_contents(s);
 		}
