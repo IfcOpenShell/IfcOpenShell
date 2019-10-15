@@ -1265,8 +1265,9 @@ class IfcExporter():
             self.file.createIfcPolyline(points))
         start, end = self.get_start_and_end_of_extrusion(points, extrusion_edge)
         direction = self.get_extrusion_direction(mesh, start, end)
+        unit_direction = direction.normalized()
         extruded_area_solid = self.file.createIfcExtrudedAreaSolid(curve, self.origin,
-            self.file.createIfcDirection((direction.x, direction.y, direction.z)), direction.length)
+            self.file.createIfcDirection((unit_direction.x, unit_direction.y, unit_direction.z)), direction.length)
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
             representation['subcontext'], 'SweptSolid',
