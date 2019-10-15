@@ -201,6 +201,25 @@ class SelectAudited(bpy.types.Operator):
                         object.select_set(True)
         return {'FINISHED'}
 
+class AssignPset(bpy.types.Operator):
+    bl_idname = 'bim.assign_pset'
+    bl_label = 'Assign Pset'
+
+    def execute(self, context):
+        for object in bpy.context.selected_objects:
+            object[bpy.context.scene.BIMProperties.pset_name] = bpy.context.scene.BIMProperties.pset_file
+        return {'FINISHED'}
+
+class RemovePset(bpy.types.Operator):
+    bl_idname = 'bim.remove_pset'
+    bl_label = 'Remove Pset'
+
+    def execute(self, context):
+        for object in bpy.context.selected_objects:
+            if bpy.context.scene.BIMProperties.pset_name in object.keys():
+                del(object[bpy.context.scene.BIMProperties.pset_name])
+        return {'FINISHED'}
+
 class AssignSweptSolidProfile(bpy.types.Operator):
     bl_idname = 'bim.assign_swept_solid_profile'
     bl_label = 'Assign Profile'
