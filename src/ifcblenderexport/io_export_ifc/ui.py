@@ -25,6 +25,16 @@ class BIMProperties(bpy.types.PropertyGroup):
                     continue
                 return [(e, e, '') for e in attribute['enum_values']]
 
+    def getPsetNames(self, context):
+        files = os.listdir(bpy.context.scene.BIMProperties.data_dir + 'pset/')
+        return [(f, f, '') for f in files]
+
+    def getPsetFiles(self, context):
+        if not bpy.context.scene.BIMProperties.pset_name:
+            return []
+        files = os.listdir(bpy.context.scene.BIMProperties.data_dir + 'pset/{}/'.format(bpy.context.scene.BIMProperties.pset_name))
+        return [(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files]
+
     schema_dir: bpy.props.StringProperty(default=cwd + 'schema/', name="Schema Directory")
     data_dir: bpy.props.StringProperty(default=cwd + 'data/', name="Data Directory")
     ifc_class: bpy.props.EnumProperty(items = getIfcClasses, name="Class")
@@ -33,7 +43,12 @@ class BIMProperties(bpy.types.PropertyGroup):
         name="Predefined Type", default=None)
     ifc_userdefined_type: bpy.props.StringProperty(name="Userdefined Type")
     export_has_representations: bpy.props.BoolProperty(name="Export Representations", default=True)
-    qa_reject_element_reason: bpy.props.StringProperty(name="Element rejection reason")
+    qa_reject_element_reason: bpy.props.StringProperty(name="Element Rejection Reason")
+    pset_name: bpy.props.EnumProperty(items=getPsetNames, name="Pset Name")
+    pset_file: bpy.props.EnumProperty(items=getPsetFiles, name="Pset File")
+
+class ObjectProperties(bpy.types.PropertyGroup):
+    global_id: bpy.props.StringProperty(name="GlobalId")
 
 class MaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
@@ -124,6 +139,16 @@ class BIMPanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("bim.select_class")
         row.operator("bim.select_type")
+
+        layout.label(text="Property Sets:")
+        row = layout.row()
+        row.prop(bim_properties, "pset_name")
+        row = layout.row()
+        row.prop(bim_properties, "pset_file")
+
+        row = layout.row(align=True)
+        row.operator("bim.assign_pset")
+        row.operator("bim.remove_pset")
 
         layout.label(text="Quality Auditing:")
 
