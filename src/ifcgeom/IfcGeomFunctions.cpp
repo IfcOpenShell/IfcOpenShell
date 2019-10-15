@@ -3684,7 +3684,9 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
 	
 	const double eps = faceset_helper_
-		? faceset_helper_->epsilon()
+		// eps is added to both ends of the parametric domain, so 3. is chosen to be on the safe side here.
+		? (faceset_helper_->epsilon() / 3.)
+		// @todo re-evaluate 2. here for the reasons above:
 		: (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 
 	for (int i = 2; i < n; ++i) {
