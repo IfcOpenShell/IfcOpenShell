@@ -594,7 +594,7 @@ class IfcParser():
         return results
 
     def get_styled_items(self):
-        results = {}
+        results = []
         if not self.ifc_export_settings.has_representations:
             return results
         for product in self.selected_products + self.type_products:
@@ -605,12 +605,12 @@ class IfcParser():
                 if slot.material.name in results \
                     or slot.link == 'DATA':
                     continue
-                results[slot.material.name] = {
+                results.append({
                     'ifc': None,
                     'raw': slot.material,
                     'related_product_name': product['raw'].name,
                     'attributes': { 'Name': slot.material.name },
-                    }
+                    })
         return results
 
     def get_qtos(self):
@@ -1049,7 +1049,7 @@ class IfcExporter():
                 self.owner_history, None, None, relating_object, related_objects)
 
     def create_styled_items(self):
-        for styled_item in self.ifc_parser.styled_items.values():
+        for styled_item in self.ifc_parser.styled_items:
             product = self.ifc_parser.products[
                 self.ifc_parser.get_product_index_from_raw_name(
                     styled_item['related_product_name'])]['ifc']
