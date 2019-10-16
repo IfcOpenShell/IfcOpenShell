@@ -1,6 +1,7 @@
 import bpy
 import time
 import logging
+from . import ifcopenshell
 from . import export_ifc
 from . import import_ifc
 from bpy_extras.io_utils import ImportHelper
@@ -78,14 +79,19 @@ class AssignClass(bpy.types.Operator):
                 object.name = '{}/{}'.format(
                     bpy.context.scene.BIMProperties.ifc_class,
                     object.name)
-            if existing_class != bpy.context.scene.BIMProperties.ifc_class \
-                and 'IfcPredefinedType' in object.keys():
-                del(object['IfcPredefinedType'])
-            object['IfcPredefinedType'] = bpy.context.scene.BIMProperties.ifc_predefined_type
+            predefined_type_index = object.ObjectProperties.attributes.find('PredefinedType')
+            if predefined_type_index >= 0:
+                object.ObjectProperties.attributes.remove(predefined_type_index)
+            object_type_index = object.ObjectProperties.attributes.find('ObjectType')
+            if object_type_index >= 0:
+                object.ObjectProperties.attributes.remove(object_type_index)
+            predefined_type = object.ObjectProperties.attributes.add()
+            predefined_type.name = 'PredefinedType'
+            predefined_type.string_value = bpy.context.scene.BIMProperties.ifc_predefined_type # TODO: make it an enum
             if bpy.context.scene.BIMProperties.ifc_predefined_type == 'USERDEFINED':
-                object['IfcObjectType'] = bpy.context.scene.BIMProperties.ifc_userdefined_type
-            elif 'IfcObjectType' in object.keys():
-                del(object['IfcObjectType'])
+                object_type = object.ObjectProperties.attributes.add()
+                object_type.name = 'ObjectType'
+                object_type.string_value = bpy.context.scene.BIMProperties.ifc_userdefined_type
         return {'FINISHED'}
 
 class SelectClass(bpy.types.Operator):
@@ -218,6 +224,41 @@ class RemovePset(bpy.types.Operator):
         for object in bpy.context.selected_objects:
             if bpy.context.scene.BIMProperties.pset_name in object.keys():
                 del(object[bpy.context.scene.BIMProperties.pset_name])
+        return {'FINISHED'}
+
+class GenerateGlobalId(bpy.types.Operator):
+    bl_idname = 'bim.generate_global_id'
+    bl_label = 'Generate GlobalId'
+
+    def execute(self, context):
+        global_id = None
+        for attribute in bpy.context.active_object.ObjectProperties.attributes:
+            if attribute.name == 'GlobalId':
+                global_id = attribute
+                break
+        if not global_id:
+            global_id = bpy.context.active_object.ObjectProperties.attributes.add()
+        global_id.name = 'GlobalId'
+        global_id.data_type = 'string'
+        global_id.string_value = ifcopenshell.guid.new()
+        return {'FINISHED'}
+
+class AddAttribute(bpy.types.Operator):
+    bl_idname = 'bim.add_attribute'
+    bl_label = 'Add Attribute'
+
+    # This is a temporary measure until we get a better UI
+    def execute(self, context):
+        bpy.context.active_object.ObjectProperties.attributes.add()
+        return {'FINISHED'}
+
+class RemoveAttribute(bpy.types.Operator):
+    bl_idname = 'bim.remove_attribute'
+    bl_label = 'Remove Attribute'
+    attribute_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.ObjectProperties.attributes.remove(self.attribute_index)
         return {'FINISHED'}
 
 class AssignSweptSolidProfile(bpy.types.Operator):

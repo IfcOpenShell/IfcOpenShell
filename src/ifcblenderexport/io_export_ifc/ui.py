@@ -47,8 +47,16 @@ class BIMProperties(bpy.types.PropertyGroup):
     pset_name: bpy.props.EnumProperty(items=getPsetNames, name="Pset Name")
     pset_file: bpy.props.EnumProperty(items=getPsetFiles, name="Pset File")
 
+class Attribute(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name")
+    data_type: bpy.props.StringProperty(name="Data Type")
+    string_value: bpy.props.StringProperty(name="Value")
+    bool_value: bpy.props.BoolProperty(name="Value")
+    int_value: bpy.props.IntProperty(name="Value")
+    float_value: bpy.props.FloatProperty(name="Value")
+
 class ObjectProperties(bpy.types.PropertyGroup):
-    global_id: bpy.props.StringProperty(name="GlobalId")
+    attributes: bpy.props.CollectionProperty(name="Attributes", type=Attribute)
 
 class MaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
@@ -59,6 +67,34 @@ class MaterialProperties(bpy.types.PropertyGroup):
 class MeshProperties(bpy.types.PropertyGroup):
     is_wireframe: bpy.props.BoolProperty(name="Is Wireframe")
     is_swept_solid: bpy.props.BoolProperty(name="Is Swept Solid")
+
+class ObjectPanel(bpy.types.Panel):
+    bl_label = 'IFC Object'
+    bl_idname = 'BIM_PT_object'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    def draw(self, context):
+        if not bpy.context.active_object:
+            return
+        layout = self.layout
+        layout.label(text="Software Identity:")
+        row = layout.row()
+        row.operator('bim.generate_global_id')
+
+        layout.label(text="Attributes:")
+        row = layout.row()
+        row.operator('bim.add_attribute')
+
+        for index, attribute in enumerate(bpy.context.active_object.ObjectProperties.attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, 'name', text='')
+            row.prop(attribute, 'string_value', text='')
+            row.operator('bim.remove_attribute', icon='CANCEL', text='').attribute_index = index
+
+        row = layout.row()
+        row.prop(bpy.context.active_object.ObjectProperties, 'attributes')
 
 class MeshPanel(bpy.types.Panel):
     bl_label = 'IFC Representations'
