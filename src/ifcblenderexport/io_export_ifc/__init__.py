@@ -33,7 +33,11 @@ classes = (
     operator.AssignSweptSolidExtrusion,
     operator.AssignPset,
     operator.RemovePset,
+    operator.GenerateGlobalId,
+    operator.AddAttribute,
+    operator.RemoveAttribute,
     ui.BIMProperties,
+    ui.Attribute,
     ui.ObjectProperties,
     ui.MaterialProperties,
     ui.MeshProperties,
@@ -41,6 +45,7 @@ classes = (
     ui.MVDPanel,
     ui.MaterialPanel,
     ui.MeshPanel,
+    ui.ObjectPanel,
     )
 
 def menu_func_export(self, context):
@@ -58,6 +63,7 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
     bpy.types.Object.ObjectProperties = bpy.props.PointerProperty(type=ui.ObjectProperties)
+    bpy.types.Collection.ObjectProperties = bpy.props.PointerProperty(type=ui.ObjectProperties)
     bpy.types.Material.MaterialProperties = bpy.props.PointerProperty(type=ui.MaterialProperties)
     bpy.types.Mesh.MeshProperties = bpy.props.PointerProperty(type=ui.MeshProperties)
 
@@ -68,6 +74,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del(bpy.types.Scene.BIMProperties)
     del(bpy.types.Object.ObjectProperties)
+    del(bpy.types.Collection.ObjectProperties)
     del(bpy.types.Material.MaterialProperties)
     del(bpy.types.Mesh.MeshProperties)
 

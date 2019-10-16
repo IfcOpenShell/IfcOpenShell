@@ -175,9 +175,11 @@ class IfcParser():
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
-        if 'IfcGlobalId' not in object:
-            object['IfcGlobalId'] = ifcopenshell.guid.new()
-        attributes.update({ key[3:]: object[key] for key in object.keys() if key[0:3] == 'Ifc'})
+        if object.ObjectProperties.attributes.find('GlobalId') == -1:
+            global_id = object.ObjectProperties.attributes.add()
+            global_id.name = 'GlobalId'
+            global_id.string_value = ifcopenshell.guid.new()
+        attributes.update({ a.name: a.string_value for a in object.ObjectProperties.attributes})
         return attributes
 
     def get_products(self):
