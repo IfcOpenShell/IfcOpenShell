@@ -110,7 +110,11 @@ class IfcImporter():
         if element.is_a('IfcOpeningElement'):
             return
 
-        shape = ifcopenshell.geom.create_shape(self.settings, element)
+        try:
+            shape = ifcopenshell.geom.create_shape(self.settings, element)
+        except:
+            print('Failed to generate shape for {}'.format(element))
+            return
         mesh_name = 'mesh-{}'.format(shape.geometry.id)
 
         mesh = self.meshes.get(mesh_name)
@@ -135,7 +139,8 @@ class IfcImporter():
         matrix.transpose()
         object.matrix_world = matrix
 
-        if element.ContainedInStructure \
+        if hasattr(element, 'ContainedInStructure') \
+            and element.ContainedInStructure \
             and element.ContainedInStructure[0].RelatingStructure:
             structure_name = self.get_name(element.ContainedInStructure[0].RelatingStructure)
             if structure_name in self.spatial_structure_elements:
