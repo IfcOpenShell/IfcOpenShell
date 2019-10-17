@@ -121,8 +121,8 @@ def display_shape(shape, clr=None, viewer_handle=None):
                 raise Exception("No color named '%s'" % clr.upper())
         elif isinstance(clr, Iterable):
             clr = tuple(clr)
-            if len(clr) < 3 and len(clr) > 4:
-                raise Exception("Need 3 or 4 colour components. Got '%r'." % clr)
+            if len(clr) < 3 or len(clr) > 4:
+                raise Exception("Need 3 or 4 color components. Got '%r'." % len(clr))
             qclr = OCC.Quantity.Quantity_Color(clr[0], clr[1], clr[2], OCC.Quantity.Quantity_TOC_RGB)
         elif isinstance(clr, OCC.Quantity.Quantity_Color):
             qclr = clr
