@@ -151,6 +151,9 @@ class BIMPanel(bpy.types.Panel):
 
         layout.label(text="System Setup:")
 
+        row = layout.row()
+        row.operator('bim.quick_project_setup')
+
         col = layout.column()
         row = col.row(align=True)
         row.prop(bim_properties, "schema_dir")

@@ -207,6 +207,21 @@ class SelectAudited(bpy.types.Operator):
                         object.select_set(True)
         return {'FINISHED'}
 
+class QuickProjectSetup(bpy.types.Operator):
+    bl_idname = 'bim.quick_project_setup'
+    bl_label = 'Quick Project Setup'
+
+    def execute(self, context):
+        project = bpy.data.collections.new('IfcProject/My Project')
+        bpy.context.scene.collection.children.link(project)
+        site = bpy.data.collections.new('IfcSite/My Site')
+        project.children.link(site)
+        building = bpy.data.collections.new('IfcBuilding/My Building')
+        site.children.link(building)
+        building_storey = bpy.data.collections.new('IfcBuildingStorey/Ground Floor')
+        building.children.link(building_storey)
+        return {'FINISHED'}
+
 class AssignPset(bpy.types.Operator):
     bl_idname = 'bim.assign_pset'
     bl_label = 'Assign Pset'
