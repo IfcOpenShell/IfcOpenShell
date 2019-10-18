@@ -2,6 +2,7 @@ import bpy
 import uuid
 import math
 import sys
+import lxml
 #sys.path.append('C:\Program Files\Python37\Lib\site-packages')
 import bspy
 from bspy import Gbxml
@@ -53,13 +54,22 @@ class GbxmlExporter():
         r_value = self.gbxml.add_element(material, 'R-value', '0.13')
         r_value.set('unit', 'SquareMeterKPerW')
 
-        self.gbxml.write('C:/cygwin64/home/moud308/Projects/New Folder/out.xml')
+        parser = lxml.etree.XMLParser(remove_blank_text=True)
+        template = lxml.etree.parse('C:/cygwin64/home/moud308/Projects/New Folder/presets/light-schedule.xml', parser).findall('.')[0]
+        for child in template.getchildren():
+            self.gbxml.root().append(child)
+
+        with open('C:/cygwin64/home/moud308/Projects/New Folder/out.xml', 'w') as out:
+            out.write(self.gbxml.xmlstring())
         print('# Validation results: {}'.format(self.gbxml.validate()))
         print('# Finish export')
 
     def create_space(self, object, building):
         space = self.gbxml.add_element(building, 'Space')
         space.set('id', object.name)
+        space.set('lightScheduleIdRef', 'aim0130') # hardcoded
+        light_power_per_area = self.gbxml.add_element(space, 'LightPowerPerArea', '5') # hardcoded test
+        light_power_per_area.set('unit', 'WattPerSquareMeter')
         calculated_area = 0
 
         shell_geometry = self.gbxml.add_element(space, 'ShellGeometry')
