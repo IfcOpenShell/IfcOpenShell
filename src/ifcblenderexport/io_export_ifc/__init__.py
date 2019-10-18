@@ -36,6 +36,7 @@ classes = (
     operator.GenerateGlobalId,
     operator.AddAttribute,
     operator.RemoveAttribute,
+    operator.QuickProjectSetup,
     ui.BIMProperties,
     ui.Attribute,
     ui.ObjectProperties,
