@@ -461,34 +461,34 @@ class IfcParser():
 
     def get_map_conversion(self):
         scene = bpy.context.scene
-        if 'HasMapConversion' not in scene:
+        if not scene.BIMProperties.has_georeferencing:
             return {}
         return {
             'ifc': None,
             'attributes': {
-                'Eastings': float(scene['Eastings']),
-                'Northings': float(scene['Northings']),
-                'OrthogonalHeight': float(scene['OrthogonalHeight']),
-                'XAxisAbscissa': float(scene['XAxisAbscissa']),
-                'XAxisOrdinate': float(scene['XAxisOrdinate']),
-                'Scale': float(scene['Scale'])
+                'Eastings': float(scene.MapConversion.eastings),
+                'Northings': float(scene.MapConversion.northings),
+                'OrthogonalHeight': float(scene.MapConversion.orthogonal_height),
+                'XAxisAbscissa': float(scene.MapConversion.x_axis_abscissa),
+                'XAxisOrdinate': float(scene.MapConversion.x_axis_ordinate),
+                'Scale': float(scene.MapConversion.scale)
                 }
             }
 
     def get_target_crs(self):
         scene = bpy.context.scene
-        if 'HasMapConversion' not in scene:
+        if not scene.BIMProperties.has_georeferencing:
             return {}
         return {
             'ifc': None,
             'attributes': {
-                'Name': scene['Name'],
-                'Description': scene['Description'],
-                'GeodeticDatum': scene['GeodeticDatum'],
-                'VerticalDatum': scene['VerticalDatum'],
-                'MapProjection': scene['MapProjection'],
-                'MapZone': str(scene['MapZone']),
-                'MapUnit': scene['MapUnit']
+                'Name': scene.TargetCRS.name,
+                'Description': scene.TargetCRS.description,
+                'GeodeticDatum': scene.TargetCRS.geodetic_datum,
+                'VerticalDatum': scene.TargetCRS.vertical_datum,
+                'MapProjection': scene.TargetCRS.map_projection,
+                'MapZone': str(scene.TargetCRS.map_zone),
+                'MapUnit': scene.TargetCRS.map_unit
                 }
             }
 
