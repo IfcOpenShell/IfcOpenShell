@@ -285,9 +285,10 @@ class AddAttribute(bpy.types.Operator):
     bl_idname = 'bim.add_attribute'
     bl_label = 'Add Attribute'
 
-    # This is a temporary measure until we get a better UI
     def execute(self, context):
-        bpy.context.active_object.ObjectProperties.attributes.add()
+        if bpy.context.active_object.ObjectProperties.applicable_attributes:
+            attribute = bpy.context.active_object.ObjectProperties.attributes.add()
+            attribute.name = bpy.context.active_object.ObjectProperties.applicable_attributes
         return {'FINISHED'}
 
 class RemoveAttribute(bpy.types.Operator):
