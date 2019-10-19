@@ -61,6 +61,19 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
 
+class SelectGlobalId(bpy.types.Operator):
+    bl_idname = 'bim.select_global_id'
+    bl_label = 'Select GlobalId'
+
+    def execute(self, context):
+        for object in bpy.context.visible_objects:
+            index = object.ObjectProperties.attributes.find('GlobalId')
+            if index != -1 \
+                and object.ObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
+                object.select_set(True)
+                break
+        return {'FINISHED'}
+
 class AssignClass(bpy.types.Operator):
     bl_idname = 'bim.assign_class'
     bl_label = 'Assign IFC Class'

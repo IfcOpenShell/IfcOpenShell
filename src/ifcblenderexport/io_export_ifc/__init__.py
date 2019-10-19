@@ -39,12 +39,16 @@ classes = (
     operator.AddAttribute,
     operator.RemoveAttribute,
     operator.QuickProjectSetup,
+    operator.SelectGlobalId,
     ui.BIMProperties,
+    ui.MapConversion,
+    ui.TargetCRS,
     ui.Attribute,
     ui.Pset,
     ui.ObjectProperties,
     ui.MaterialProperties,
     ui.MeshProperties,
+    ui.GISPanel,
     ui.BIMPanel,
     ui.MVDPanel,
     ui.MaterialPanel,
@@ -66,6 +70,8 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
+    bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=ui.MapConversion)
+    bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=ui.TargetCRS)
     bpy.types.Object.ObjectProperties = bpy.props.PointerProperty(type=ui.ObjectProperties)
     bpy.types.Collection.ObjectProperties = bpy.props.PointerProperty(type=ui.ObjectProperties)
     bpy.types.Material.MaterialProperties = bpy.props.PointerProperty(type=ui.MaterialProperties)
@@ -77,6 +83,8 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del(bpy.types.Scene.BIMProperties)
+    del(bpy.types.Scene.MapConversion)
+    del(bpy.types.Scene.TargetCRS)
     del(bpy.types.Object.ObjectProperties)
     del(bpy.types.Collection.ObjectProperties)
     del(bpy.types.Material.MaterialProperties)
