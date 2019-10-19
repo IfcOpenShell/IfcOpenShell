@@ -47,6 +47,7 @@ class BIMProperties(bpy.types.PropertyGroup):
     pset_name: bpy.props.EnumProperty(items=getPsetNames, name="Pset Name")
     pset_file: bpy.props.EnumProperty(items=getPsetFiles, name="Pset File")
     has_georeferencing: bpy.props.BoolProperty(name="Has Georeferencing", default=False)
+    global_id: bpy.props.StringProperty(name="GlobalId")
 
 class MapConversion(bpy.types.PropertyGroup):
     eastings: bpy.props.StringProperty(name="Eastings")
@@ -240,6 +241,13 @@ class BIMPanel(bpy.types.Panel):
         row = col.row(align=True)
         row.prop(bim_properties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+
+        layout.label(text="Software Identity:")
+
+        row = layout.row()
+        row.prop(bim_properties, 'global_id')
+        row = layout.row()
+        row.operator('bim.select_global_id')
 
         layout.label(text="IFC Categorisation:")
 
