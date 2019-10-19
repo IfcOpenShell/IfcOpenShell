@@ -228,17 +228,42 @@ class AssignPset(bpy.types.Operator):
 
     def execute(self, context):
         for object in bpy.context.selected_objects:
-            object[bpy.context.scene.BIMProperties.pset_name] = bpy.context.scene.BIMProperties.pset_file
+            index = object.ObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
+            if index >= 0:
+                global_id = object.ObjectProperties.psets[index]
+            else:
+                global_id = object.ObjectProperties.psets.add()
+            global_id.name = bpy.context.scene.BIMProperties.pset_name
+            global_id.file = bpy.context.scene.BIMProperties.pset_file
+        return {'FINISHED'}
+
+class UnassignPset(bpy.types.Operator):
+    bl_idname = 'bim.unassign_pset'
+    bl_label = 'Unassign Pset'
+
+    def execute(self, context):
+        for object in bpy.context.selected_objects:
+            index = object.ObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
+            if index != -1:
+                object.ObjectProperties.psets.remove(index)
+        return {'FINISHED'}
+
+class AddPset(bpy.types.Operator):
+    bl_idname = 'bim.add_pset'
+    bl_label = 'Add Pset'
+
+    # This is a temporary measure until we get a better UI
+    def execute(self, context):
+        bpy.context.active_object.ObjectProperties.psets.add()
         return {'FINISHED'}
 
 class RemovePset(bpy.types.Operator):
     bl_idname = 'bim.remove_pset'
     bl_label = 'Remove Pset'
+    pset_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        for object in bpy.context.selected_objects:
-            if bpy.context.scene.BIMProperties.pset_name in object.keys():
-                del(object[bpy.context.scene.BIMProperties.pset_name])
+        bpy.context.active_object.ObjectProperties.psets.remove(self.pset_index)
         return {'FINISHED'}
 
 class GenerateGlobalId(bpy.types.Operator):
@@ -246,12 +271,10 @@ class GenerateGlobalId(bpy.types.Operator):
     bl_label = 'Generate GlobalId'
 
     def execute(self, context):
-        global_id = None
-        for attribute in bpy.context.active_object.ObjectProperties.attributes:
-            if attribute.name == 'GlobalId':
-                global_id = attribute
-                break
-        if not global_id:
+        index = bpy.context.active_object.ObjectProperties.attributes.find('GlobalId')
+        if index >= 0:
+            global_id = bpy.context.active_object.ObjectProperties.attributes[index]
+        else:
             global_id = bpy.context.active_object.ObjectProperties.attributes.add()
         global_id.name = 'GlobalId'
         global_id.data_type = 'string'

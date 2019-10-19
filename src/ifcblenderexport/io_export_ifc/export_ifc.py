@@ -271,11 +271,12 @@ class IfcParser():
         if object.name in self.qtos:
             self.rel_defines_by_qto.setdefault(object.name, []).append(product)
 
+        for pset in object.ObjectProperties.psets:
+            self.rel_defines_by_pset.setdefault(
+                '{}/{}'.format(pset.name, pset.file), []).append(product)
+
         for key in object.keys():
-            if key[0:5] == 'Pset_':
-                self.rel_defines_by_pset.setdefault(
-                    '{}/{}'.format(key, object[key]), []).append(product)
-            elif key[0:3] == 'Doc':
+            if key[0:3] == 'Doc':
                 self.rel_associates_document_object.setdefault(
                     object[key], []).append(product)
             elif key[0:5] == 'Class':
@@ -651,8 +652,8 @@ class IfcParser():
                         'location': object.location,
                         'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
                         'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
-                        'psets': ['{}/{}'.format(key, object[key]) for key in
-                            object.keys() if key[0:5] == 'Pset_'],
+                        'psets': ['{}/{}'.format(pset.name, pset.file) for pset in
+                            object.ObjectProperties.psets],
                         'class': self.get_ifc_class(object.name),
                         'representations': self.get_object_representation_names(object),
                         'attributes': self.get_object_attributes(object)

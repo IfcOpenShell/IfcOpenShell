@@ -55,8 +55,13 @@ class Attribute(bpy.types.PropertyGroup):
     int_value: bpy.props.IntProperty(name="Value")
     float_value: bpy.props.FloatProperty(name="Value")
 
+class Pset(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name")
+    file: bpy.props.StringProperty(name="File")
+
 class ObjectProperties(bpy.types.PropertyGroup):
     attributes: bpy.props.CollectionProperty(name="Attributes", type=Attribute)
+    psets: bpy.props.CollectionProperty(name="Psets", type=Pset)
 
 class MaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
@@ -95,6 +100,19 @@ class ObjectPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(bpy.context.active_object.ObjectProperties, 'attributes')
+
+        layout.label(text="Property Sets:")
+        row = layout.row()
+        row.operator('bim.add_pset')
+
+        for index, pset in enumerate(bpy.context.active_object.ObjectProperties.psets):
+            row = layout.row(align=True)
+            row.prop(pset, 'name', text='')
+            row.prop(pset, 'file', text='')
+            row.operator('bim.remove_pset', icon='CANCEL', text='').pset_index = index
+
+        row = layout.row()
+        row.prop(bpy.context.active_object.ObjectProperties, 'psets')
 
 class MeshPanel(bpy.types.Panel):
     bl_label = 'IFC Representations'
@@ -187,7 +205,7 @@ class BIMPanel(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.operator("bim.assign_pset")
-        row.operator("bim.remove_pset")
+        row.operator("bim.unassign_pset")
 
         layout.label(text="Quality Auditing:")
 
