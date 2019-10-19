@@ -46,6 +46,24 @@ class BIMProperties(bpy.types.PropertyGroup):
     qa_reject_element_reason: bpy.props.StringProperty(name="Element Rejection Reason")
     pset_name: bpy.props.EnumProperty(items=getPsetNames, name="Pset Name")
     pset_file: bpy.props.EnumProperty(items=getPsetFiles, name="Pset File")
+    has_georeferencing: bpy.props.BoolProperty(name="Has Georeferencing", default=False)
+
+class MapConversion(bpy.types.PropertyGroup):
+    eastings: bpy.props.StringProperty(name="Eastings")
+    northings: bpy.props.StringProperty(name="Northings")
+    orthogonal_height: bpy.props.StringProperty(name="Orthogonal Height")
+    x_axis_abscissa: bpy.props.StringProperty(name="X Axis Abscissa")
+    x_axis_ordinate: bpy.props.StringProperty(name="X Axis Ordinate")
+    scale: bpy.props.StringProperty(name="Scale")
+
+class TargetCRS(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name")
+    description: bpy.props.StringProperty(name="Description")
+    geodetic_datum: bpy.props.StringProperty(name="Geodetic Datum")
+    vertical_datum: bpy.props.StringProperty(name="Vertical Datum")
+    map_projection: bpy.props.StringProperty(name="Map Projection")
+    map_zone: bpy.props.StringProperty(name="Map Zone")
+    map_unit: bpy.props.StringProperty(name="Map Unit")
 
 class Attribute(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Name")
@@ -164,6 +182,36 @@ class MaterialPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(bpy.context.active_object.active_material.MaterialProperties, 'name')
 
+class GISPanel(bpy.types.Panel):
+    bl_label = 'IFC Georeferencing'
+    bl_idname = "BIM_PT_gis"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        layout.row().prop(bpy.context.scene.BIMProperties, 'has_georeferencing')
+
+        layout.label(text="Map Conversion:")
+        layout.row().prop(bpy.context.scene.MapConversion, 'eastings')
+        layout.row().prop(bpy.context.scene.MapConversion, 'northings')
+        layout.row().prop(bpy.context.scene.MapConversion, 'orthogonal_height')
+        layout.row().prop(bpy.context.scene.MapConversion, 'x_axis_abscissa')
+        layout.row().prop(bpy.context.scene.MapConversion, 'x_axis_ordinate')
+        layout.row().prop(bpy.context.scene.MapConversion, 'scale')
+
+        layout.label(text="Target CRS:")
+        layout.row().prop(bpy.context.scene.TargetCRS, 'name')
+        layout.row().prop(bpy.context.scene.TargetCRS, 'description')
+        layout.row().prop(bpy.context.scene.TargetCRS, 'geodetic_datum')
+        layout.row().prop(bpy.context.scene.TargetCRS, 'vertical_datum')
+        layout.row().prop(bpy.context.scene.TargetCRS, 'map_projection')
+        layout.row().prop(bpy.context.scene.TargetCRS, 'map_zone')
+        layout.row().prop(bpy.context.scene.TargetCRS, 'map_unit')
+
 class BIMPanel(bpy.types.Panel):
     bl_label = "Building Information Modeling"
     bl_idname = "BIM_PT_bim"
@@ -173,6 +221,7 @@ class BIMPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
 
         scene = context.scene
         bim_properties = bpy.context.scene.BIMProperties
