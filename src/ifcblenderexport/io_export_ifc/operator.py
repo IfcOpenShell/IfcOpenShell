@@ -85,9 +85,10 @@ class AssignClass(bpy.types.Operator):
             object_type_index = object.ObjectProperties.attributes.find('ObjectType')
             if object_type_index >= 0:
                 object.ObjectProperties.attributes.remove(object_type_index)
-            predefined_type = object.ObjectProperties.attributes.add()
-            predefined_type.name = 'PredefinedType'
-            predefined_type.string_value = bpy.context.scene.BIMProperties.ifc_predefined_type # TODO: make it an enum
+            if bpy.context.scene.BIMProperties.ifc_predefined_type:
+                predefined_type = object.ObjectProperties.attributes.add()
+                predefined_type.name = 'PredefinedType'
+                predefined_type.string_value = bpy.context.scene.BIMProperties.ifc_predefined_type # TODO: make it an enum
             if bpy.context.scene.BIMProperties.ifc_predefined_type == 'USERDEFINED':
                 object_type = object.ObjectProperties.attributes.add()
                 object_type.name = 'ObjectType'
