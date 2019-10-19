@@ -886,6 +886,21 @@ class IfcExporter():
             pset['ifc'] = self.file.create_entity('IfcPropertySet', **pset['attributes'])
 
     def create_pset_properties(self, pset):
+        if pset['attributes']['Name'] in self.ifc_schema.psets:
+            return self.create_templated_pset_properties(pset)
+        return self.create_custom_pset_properties(pset)
+
+    def create_custom_pset_properties(self, pset):
+        properties = []
+        for key, value in pset['raw'].items():
+            properties.append(
+                self.file.create_entity('IfcPropertySingleValue', **{
+                    'Name': key,
+                    'NominalValue': self.file.create_entity('IfcLabel', value)
+                    }))
+        return properties
+
+    def create_templated_pset_properties(self, pset):
         properties = []
         templates = self.ifc_schema.psets[pset['attributes']['Name']]['HasPropertyTemplates']
         for name, data in templates.items():
