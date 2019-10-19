@@ -60,8 +60,17 @@ class Pset(bpy.types.PropertyGroup):
     file: bpy.props.StringProperty(name="File")
 
 class ObjectProperties(bpy.types.PropertyGroup):
+    def getApplicableAttributes(self, context):
+        if '/' in bpy.context.active_object.name \
+            and bpy.context.active_object.name.split('/')[0] in ifc_schema.elements:
+            return [(a['name'], a['name'], '') for a in
+                ifc_schema.elements[bpy.context.active_object.name.split('/')[0]]['attributes']
+                if bpy.context.active_object.ObjectProperties.attributes.find(a['name']) == -1]
+        return []
+
     attributes: bpy.props.CollectionProperty(name="Attributes", type=Attribute)
     psets: bpy.props.CollectionProperty(name="Psets", type=Pset)
+    applicable_attributes: bpy.props.EnumProperty(items=getApplicableAttributes, name="Attribute Names")
 
 class MaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
@@ -89,7 +98,8 @@ class ObjectPanel(bpy.types.Panel):
         row.operator('bim.generate_global_id')
 
         layout.label(text="Attributes:")
-        row = layout.row()
+        row = layout.row(align=True)
+        row.prop(bpy.context.active_object.ObjectProperties, 'applicable_attributes', text='')
         row.operator('bim.add_attribute')
 
         for index, attribute in enumerate(bpy.context.active_object.ObjectProperties.attributes):
