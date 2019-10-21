@@ -275,11 +275,12 @@ class IfcParser():
             self.rel_defines_by_pset.setdefault(
                 '{}/{}'.format(pset.name, pset.file), []).append(product)
 
+        for document in object.BIMObjectProperties.documents:
+            self.rel_associates_document_object.setdefault(
+                document.file, []).append(product)
+
         for key in object.keys():
-            if key[0:3] == 'Doc':
-                self.rel_associates_document_object.setdefault(
-                    object[key], []).append(product)
-            elif key[0:5] == 'Class':
+            if key[0:5] == 'Class':
                 self.rel_associates_classification_object.setdefault(
                     object[key], []).append(product)
             elif key[0:9] == 'Objective':
