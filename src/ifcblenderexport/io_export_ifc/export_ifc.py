@@ -175,11 +175,11 @@ class IfcParser():
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
-        if object.ObjectProperties.attributes.find('GlobalId') == -1:
-            global_id = object.ObjectProperties.attributes.add()
+        if object.BIMObjectProperties.attributes.find('GlobalId') == -1:
+            global_id = object.BIMObjectProperties.attributes.add()
             global_id.name = 'GlobalId'
             global_id.string_value = ifcopenshell.guid.new()
-        attributes.update({ a.name: a.string_value for a in object.ObjectProperties.attributes})
+        attributes.update({ a.name: a.string_value for a in object.BIMObjectProperties.attributes})
         return attributes
 
     def get_products(self):
@@ -271,7 +271,7 @@ class IfcParser():
         if object.name in self.qtos:
             self.rel_defines_by_qto.setdefault(object.name, []).append(product)
 
-        for pset in object.ObjectProperties.psets:
+        for pset in object.BIMObjectProperties.psets:
             self.rel_defines_by_pset.setdefault(
                 '{}/{}'.format(pset.name, pset.file), []).append(product)
 
@@ -550,8 +550,8 @@ class IfcParser():
             'raw_object': object,
             'context': context,
             'subcontext': subcontext,
-            'is_wireframe': mesh.MeshProperties.is_wireframe,
-            'is_swept_solid': mesh.MeshProperties.is_swept_solid,
+            'is_wireframe': mesh.BIMMeshProperties.is_wireframe,
+            'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid,
             'is_generated': is_generated,
             'attributes': { 'Name': mesh.name }
             }
@@ -653,7 +653,7 @@ class IfcParser():
                         'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
                         'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
                         'psets': ['{}/{}'.format(pset.name, pset.file) for pset in
-                            object.ObjectProperties.psets],
+                            object.BIMObjectProperties.psets],
                         'class': self.get_ifc_class(object.name),
                         'representations': self.get_object_representation_names(object),
                         'attributes': self.get_object_attributes(object)
@@ -1082,7 +1082,7 @@ class IfcExporter():
     def create_styled_item(self, item, representation_item=None):
         styles = []
         styles.append(self.create_surface_style_rendering(item))
-        if item['raw'].MaterialProperties.is_external:
+        if item['raw'].BIMMaterialProperties.is_external:
             styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
                 **self.get_material_external_definition(item['raw'])))
         surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
@@ -1123,9 +1123,9 @@ class IfcExporter():
 
     def get_material_external_definition(self, material):
         return {
-            'Location': material.MaterialProperties.location,
-            'Identification': material.MaterialProperties.identification if material.MaterialProperties.identification else material.name,
-            'Name': material.MaterialProperties.name if material.MaterialProperties.name else material.name
+            'Location': material.BIMMaterialProperties.location,
+            'Identification': material.BIMMaterialProperties.identification if material.BIMMaterialProperties.identification else material.name,
+            'Name': material.BIMMaterialProperties.name if material.BIMMaterialProperties.name else material.name
         }
 
     def create_colour_rgb(self, colour):

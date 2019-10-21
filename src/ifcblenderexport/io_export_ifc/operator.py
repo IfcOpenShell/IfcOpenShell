@@ -67,9 +67,9 @@ class SelectGlobalId(bpy.types.Operator):
 
     def execute(self, context):
         for object in bpy.context.visible_objects:
-            index = object.ObjectProperties.attributes.find('GlobalId')
+            index = object.BIMObjectProperties.attributes.find('GlobalId')
             if index != -1 \
-                and object.ObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
+                and object.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
                 object.select_set(True)
                 break
         return {'FINISHED'}
@@ -92,18 +92,18 @@ class AssignClass(bpy.types.Operator):
                 object.name = '{}/{}'.format(
                     bpy.context.scene.BIMProperties.ifc_class,
                     object.name)
-            predefined_type_index = object.ObjectProperties.attributes.find('PredefinedType')
+            predefined_type_index = object.BIMObjectProperties.attributes.find('PredefinedType')
             if predefined_type_index >= 0:
-                object.ObjectProperties.attributes.remove(predefined_type_index)
-            object_type_index = object.ObjectProperties.attributes.find('ObjectType')
+                object.BIMObjectProperties.attributes.remove(predefined_type_index)
+            object_type_index = object.BIMObjectProperties.attributes.find('ObjectType')
             if object_type_index >= 0:
-                object.ObjectProperties.attributes.remove(object_type_index)
+                object.BIMObjectProperties.attributes.remove(object_type_index)
             if bpy.context.scene.BIMProperties.ifc_predefined_type:
-                predefined_type = object.ObjectProperties.attributes.add()
+                predefined_type = object.BIMObjectProperties.attributes.add()
                 predefined_type.name = 'PredefinedType'
                 predefined_type.string_value = bpy.context.scene.BIMProperties.ifc_predefined_type # TODO: make it an enum
             if bpy.context.scene.BIMProperties.ifc_predefined_type == 'USERDEFINED':
-                object_type = object.ObjectProperties.attributes.add()
+                object_type = object.BIMObjectProperties.attributes.add()
                 object_type.name = 'ObjectType'
                 object_type.string_value = bpy.context.scene.BIMProperties.ifc_userdefined_type
         return {'FINISHED'}
@@ -242,11 +242,11 @@ class AssignPset(bpy.types.Operator):
 
     def execute(self, context):
         for object in bpy.context.selected_objects:
-            index = object.ObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
+            index = object.BIMObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
             if index >= 0:
-                global_id = object.ObjectProperties.psets[index]
+                global_id = object.BIMObjectProperties.psets[index]
             else:
-                global_id = object.ObjectProperties.psets.add()
+                global_id = object.BIMObjectProperties.psets.add()
             global_id.name = bpy.context.scene.BIMProperties.pset_name
             global_id.file = bpy.context.scene.BIMProperties.pset_file
         return {'FINISHED'}
@@ -257,9 +257,9 @@ class UnassignPset(bpy.types.Operator):
 
     def execute(self, context):
         for object in bpy.context.selected_objects:
-            index = object.ObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
+            index = object.BIMObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
             if index != -1:
-                object.ObjectProperties.psets.remove(index)
+                object.BIMObjectProperties.psets.remove(index)
         return {'FINISHED'}
 
 class AddPset(bpy.types.Operator):
@@ -268,7 +268,7 @@ class AddPset(bpy.types.Operator):
 
     # This is a temporary measure until we get a better UI
     def execute(self, context):
-        bpy.context.active_object.ObjectProperties.psets.add()
+        bpy.context.active_object.BIMObjectProperties.psets.add()
         return {'FINISHED'}
 
 class RemovePset(bpy.types.Operator):
@@ -277,7 +277,7 @@ class RemovePset(bpy.types.Operator):
     pset_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.ObjectProperties.psets.remove(self.pset_index)
+        bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
         return {'FINISHED'}
 
 class GenerateGlobalId(bpy.types.Operator):
@@ -285,11 +285,11 @@ class GenerateGlobalId(bpy.types.Operator):
     bl_label = 'Generate GlobalId'
 
     def execute(self, context):
-        index = bpy.context.active_object.ObjectProperties.attributes.find('GlobalId')
+        index = bpy.context.active_object.BIMObjectProperties.attributes.find('GlobalId')
         if index >= 0:
-            global_id = bpy.context.active_object.ObjectProperties.attributes[index]
+            global_id = bpy.context.active_object.BIMObjectProperties.attributes[index]
         else:
-            global_id = bpy.context.active_object.ObjectProperties.attributes.add()
+            global_id = bpy.context.active_object.BIMObjectProperties.attributes.add()
         global_id.name = 'GlobalId'
         global_id.data_type = 'string'
         global_id.string_value = ifcopenshell.guid.new()
@@ -300,9 +300,9 @@ class AddAttribute(bpy.types.Operator):
     bl_label = 'Add Attribute'
 
     def execute(self, context):
-        if bpy.context.active_object.ObjectProperties.applicable_attributes:
-            attribute = bpy.context.active_object.ObjectProperties.attributes.add()
-            attribute.name = bpy.context.active_object.ObjectProperties.applicable_attributes
+        if bpy.context.active_object.BIMObjectProperties.applicable_attributes:
+            attribute = bpy.context.active_object.BIMObjectProperties.attributes.add()
+            attribute.name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
         return {'FINISHED'}
 
 class RemoveAttribute(bpy.types.Operator):
@@ -311,7 +311,7 @@ class RemoveAttribute(bpy.types.Operator):
     attribute_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.ObjectProperties.attributes.remove(self.attribute_index)
+        bpy.context.active_object.BIMObjectProperties.attributes.remove(self.attribute_index)
         return {'FINISHED'}
 
 class AssignSweptSolidProfile(bpy.types.Operator):
@@ -352,7 +352,7 @@ class SelectExternalMaterialDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.active_object.active_material.MaterialProperties.location = self.filepath
+        bpy.context.active_object.active_material.BIMMaterialProperties.location = self.filepath
         return {'FINISHED'}
 
     def invoke(self, context, event):
