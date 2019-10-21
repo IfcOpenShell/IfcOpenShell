@@ -115,7 +115,8 @@ class IfcImporter():
         except:
             print('Failed to generate shape for {}'.format(element))
             return
-        mesh_name = 'mesh-{}'.format(shape.geometry.id)
+        representation_id = self.get_representation_id(element)
+        mesh_name = 'mesh-{}'.format(representation_id)
 
         mesh = self.meshes.get(mesh_name)
         if mesh is None:
@@ -147,6 +148,18 @@ class IfcImporter():
                 self.spatial_structure_elements[structure_name]['blender'].objects.link(object)
         else:
             bpy.context.scene.collection.objects.link(object)
+
+    def get_representation_id(self, element):
+        if not element.Representation:
+            return None
+        for representation in element.Representation.Representations:
+            if not representation.is_a('IfcShapeRepresentation'):
+                continue
+            if representation.RepresentationIdentifier == 'Body' \
+                and representation.RepresentationType != 'MappedRepresentation':
+                return representation.id()
+            elif representation.RepresentationIdentifier == 'Body':
+                return representation.Items[0].MappingSource.MappedRepresentation.id()
 
     def create_mesh(self, element, shape):
         try:
