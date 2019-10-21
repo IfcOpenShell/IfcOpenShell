@@ -280,6 +280,24 @@ class RemovePset(bpy.types.Operator):
         bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
         return {'FINISHED'}
 
+class AddDocument(bpy.types.Operator):
+    bl_idname = 'bim.add_document'
+    bl_label = 'Add Document'
+
+    def execute(self, context):
+        document = bpy.context.active_object.BIMObjectProperties.documents.add()
+        document.file = bpy.context.active_object.BIMObjectProperties.applicable_documents
+        return {'FINISHED'}
+
+class RemoveDocument(bpy.types.Operator):
+    bl_idname = 'bim.remove_document'
+    bl_label = 'Remove Document'
+    document_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.documents.remove(self.document_index)
+        return {'FINISHED'}
+
 class GenerateGlobalId(bpy.types.Operator):
     bl_idname = 'bim.generate_global_id'
     bl_label = 'Generate GlobalId'

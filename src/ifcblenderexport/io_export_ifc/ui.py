@@ -1,6 +1,7 @@
 import bpy
 import json
 import os
+from pathlib import Path
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 
@@ -78,6 +79,9 @@ class Pset(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Name")
     file: bpy.props.StringProperty(name="File")
 
+class Document(bpy.types.PropertyGroup):
+    file: bpy.props.StringProperty(name="File")
+
 class BIMObjectProperties(bpy.types.PropertyGroup):
     def getApplicableAttributes(self, context):
         if '/' in bpy.context.active_object.name \
@@ -87,9 +91,19 @@ class BIMObjectProperties(bpy.types.PropertyGroup):
                 if bpy.context.active_object.BIMObjectProperties.attributes.find(a['name']) == -1]
         return []
 
+    def getApplicableDocuments(self, context):
+        results = []
+        doc_path = bpy.context.scene.BIMProperties.data_dir + 'doc/'
+        for filename in Path(doc_path).glob('**/*'):
+            uri = str(filename.relative_to(doc_path).as_posix())
+            results.append((uri, uri, ''))
+        return results
+
     attributes: bpy.props.CollectionProperty(name="Attributes", type=Attribute)
     psets: bpy.props.CollectionProperty(name="Psets", type=Pset)
     applicable_attributes: bpy.props.EnumProperty(items=getApplicableAttributes, name="Attribute Names")
+    documents: bpy.props.CollectionProperty(name="Documents", type=Document)
+    applicable_documents: bpy.props.EnumProperty(items=getApplicableDocuments, name="Available Documents")
 
 class BIMMaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
@@ -142,6 +156,19 @@ class ObjectPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(bpy.context.active_object.BIMObjectProperties, 'psets')
+
+        layout.label(text="Documents:")
+        row = layout.row(align=True)
+        row.prop(bpy.context.active_object.BIMObjectProperties, 'applicable_documents', text='')
+        row.operator('bim.add_document')
+
+        for index, document in enumerate(bpy.context.active_object.BIMObjectProperties.documents):
+            row = layout.row(align=True)
+            row.prop(document, 'file', text='')
+            row.operator('bim.remove_document', icon='CANCEL', text='').document_index = index
+
+        row = layout.row()
+        row.prop(bpy.context.active_object.BIMObjectProperties, 'documents')
 
 class MeshPanel(bpy.types.Panel):
     bl_label = 'IFC Representations'
