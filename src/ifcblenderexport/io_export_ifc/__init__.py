@@ -45,9 +45,9 @@ classes = (
     ui.TargetCRS,
     ui.Attribute,
     ui.Pset,
-    ui.ObjectProperties,
-    ui.MaterialProperties,
-    ui.MeshProperties,
+    ui.BIMObjectProperties,
+    ui.BIMMaterialProperties,
+    ui.BIMMeshProperties,
     ui.GISPanel,
     ui.BIMPanel,
     ui.MVDPanel,
@@ -72,10 +72,10 @@ def register():
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
     bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=ui.MapConversion)
     bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=ui.TargetCRS)
-    bpy.types.Object.ObjectProperties = bpy.props.PointerProperty(type=ui.ObjectProperties)
-    bpy.types.Collection.ObjectProperties = bpy.props.PointerProperty(type=ui.ObjectProperties)
-    bpy.types.Material.MaterialProperties = bpy.props.PointerProperty(type=ui.MaterialProperties)
-    bpy.types.Mesh.MeshProperties = bpy.props.PointerProperty(type=ui.MeshProperties)
+    bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=ui.BIMObjectProperties)
+    bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=ui.BIMObjectProperties)
+    bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=ui.BIMMaterialProperties)
+    bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=ui.BIMMeshProperties)
 
 def unregister():
     for cls in reversed(classes):
@@ -85,10 +85,10 @@ def unregister():
     del(bpy.types.Scene.BIMProperties)
     del(bpy.types.Scene.MapConversion)
     del(bpy.types.Scene.TargetCRS)
-    del(bpy.types.Object.ObjectProperties)
-    del(bpy.types.Collection.ObjectProperties)
-    del(bpy.types.Material.MaterialProperties)
-    del(bpy.types.Mesh.MeshProperties)
+    del(bpy.types.Object.BIMObjectProperties)
+    del(bpy.types.Collection.BIMObjectProperties)
+    del(bpy.types.Material.BIMMaterialProperties)
+    del(bpy.types.Mesh.BIMMeshProperties)
 
 if __name__ == "__main__":
     register()

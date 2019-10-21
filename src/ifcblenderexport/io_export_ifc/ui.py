@@ -78,26 +78,26 @@ class Pset(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Name")
     file: bpy.props.StringProperty(name="File")
 
-class ObjectProperties(bpy.types.PropertyGroup):
+class BIMObjectProperties(bpy.types.PropertyGroup):
     def getApplicableAttributes(self, context):
         if '/' in bpy.context.active_object.name \
             and bpy.context.active_object.name.split('/')[0] in ifc_schema.elements:
             return [(a['name'], a['name'], '') for a in
                 ifc_schema.elements[bpy.context.active_object.name.split('/')[0]]['attributes']
-                if bpy.context.active_object.ObjectProperties.attributes.find(a['name']) == -1]
+                if bpy.context.active_object.BIMObjectProperties.attributes.find(a['name']) == -1]
         return []
 
     attributes: bpy.props.CollectionProperty(name="Attributes", type=Attribute)
     psets: bpy.props.CollectionProperty(name="Psets", type=Pset)
     applicable_attributes: bpy.props.EnumProperty(items=getApplicableAttributes, name="Attribute Names")
 
-class MaterialProperties(bpy.types.PropertyGroup):
+class BIMMaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
     location: bpy.props.StringProperty(name="Location")
     identification: bpy.props.StringProperty(name="Identification")
     name: bpy.props.StringProperty(name="Name")
 
-class MeshProperties(bpy.types.PropertyGroup):
+class BIMMeshProperties(bpy.types.PropertyGroup):
     is_wireframe: bpy.props.BoolProperty(name="Is Wireframe")
     is_swept_solid: bpy.props.BoolProperty(name="Is Swept Solid")
 
@@ -118,30 +118,30 @@ class ObjectPanel(bpy.types.Panel):
 
         layout.label(text="Attributes:")
         row = layout.row(align=True)
-        row.prop(bpy.context.active_object.ObjectProperties, 'applicable_attributes', text='')
+        row.prop(bpy.context.active_object.BIMObjectProperties, 'applicable_attributes', text='')
         row.operator('bim.add_attribute')
 
-        for index, attribute in enumerate(bpy.context.active_object.ObjectProperties.attributes):
+        for index, attribute in enumerate(bpy.context.active_object.BIMObjectProperties.attributes):
             row = layout.row(align=True)
             row.prop(attribute, 'name', text='')
             row.prop(attribute, 'string_value', text='')
             row.operator('bim.remove_attribute', icon='CANCEL', text='').attribute_index = index
 
         row = layout.row()
-        row.prop(bpy.context.active_object.ObjectProperties, 'attributes')
+        row.prop(bpy.context.active_object.BIMObjectProperties, 'attributes')
 
         layout.label(text="Property Sets:")
         row = layout.row()
         row.operator('bim.add_pset')
 
-        for index, pset in enumerate(bpy.context.active_object.ObjectProperties.psets):
+        for index, pset in enumerate(bpy.context.active_object.BIMObjectProperties.psets):
             row = layout.row(align=True)
             row.prop(pset, 'name', text='')
             row.prop(pset, 'file', text='')
             row.operator('bim.remove_pset', icon='CANCEL', text='').pset_index = index
 
         row = layout.row()
-        row.prop(bpy.context.active_object.ObjectProperties, 'psets')
+        row.prop(bpy.context.active_object.BIMObjectProperties, 'psets')
 
 class MeshPanel(bpy.types.Panel):
     bl_label = 'IFC Representations'
@@ -155,9 +155,9 @@ class MeshPanel(bpy.types.Panel):
             return
         layout = self.layout
         row = layout.row()
-        row.prop(bpy.context.active_object.data.MeshProperties, 'is_wireframe')
+        row.prop(bpy.context.active_object.data.BIMMeshProperties, 'is_wireframe')
         row = layout.row()
-        row.prop(bpy.context.active_object.data.MeshProperties, 'is_swept_solid')
+        row.prop(bpy.context.active_object.data.BIMMeshProperties, 'is_swept_solid')
         row = layout.row(align=True)
         row.operator('bim.assign_swept_solid_profile')
         row.operator('bim.assign_swept_solid_extrusion')
@@ -174,14 +174,14 @@ class MaterialPanel(bpy.types.Panel):
             return
         layout = self.layout
         row = layout.row()
-        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'is_external')
+        row.prop(bpy.context.active_object.active_material.BIMMaterialProperties, 'is_external')
         row = layout.row(align=True)
-        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'location')
+        row.prop(bpy.context.active_object.active_material.BIMMaterialProperties, 'location')
         row.operator('bim.select_external_material_dir', icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'identification')
+        row.prop(bpy.context.active_object.active_material.BIMMaterialProperties, 'identification')
         row = layout.row()
-        row.prop(bpy.context.active_object.active_material.MaterialProperties, 'name')
+        row.prop(bpy.context.active_object.active_material.BIMMaterialProperties, 'name')
 
 class GISPanel(bpy.types.Panel):
     bl_label = 'IFC Georeferencing'
