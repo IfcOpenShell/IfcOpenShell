@@ -183,7 +183,9 @@ class ApproveClass(bpy.types.Operator):
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
             for object in bpy.context.selected_objects:
                 file.write('Then the element {} is an {}\n'.format(
-                    object['IfcGlobalId'], object.name.split('/')[0]))
+                    object.BIMObjectProperties.attributes[
+                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                    object.name.split('/')[0]))
         return {'FINISHED'}
 
 class RejectClass(bpy.types.Operator):
@@ -194,7 +196,9 @@ class RejectClass(bpy.types.Operator):
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
             for object in bpy.context.selected_objects:
                 file.write('Then the element {} is an {}\n'.format(
-                    object['IfcGlobalId'], bpy.context.scene.BIMProperties.ifc_class))
+                    object.BIMObjectProperties.attributes[
+                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                    bpy.context.scene.BIMProperties.ifc_class))
         return {'FINISHED'}
 
 class RejectElement(bpy.types.Operator):
@@ -205,7 +209,9 @@ class RejectElement(bpy.types.Operator):
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
             for object in bpy.context.selected_objects:
                 file.write('Then the element {} should not exist because {}\n'.format(
-                    object['IfcGlobalId'], bpy.context.scene.BIMProperties.qa_reject_element_reason))
+                    object.BIMObjectProperties.attributes[
+                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                    bpy.context.scene.BIMProperties.qa_reject_element_reason))
         return {'FINISHED'}
 
 class SelectAudited(bpy.types.Operator):
@@ -216,8 +222,9 @@ class SelectAudited(bpy.types.Operator):
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt') as file:
             for line in file:
                 for object in bpy.context.visible_objects:
-                    if 'IfcGlobalId' in object.keys() \
-                        and object['IfcGlobalId'] == line.split(' ')[3]:
+                    index = object.BIMObjectProperties.attributes.find('GlobalId')
+                    if index != -1 \
+                        and object.BIMObjectProperties.attributes[index].string_value == line.split(' ')[3]:
                         object.select_set(True)
         return {'FINISHED'}
 

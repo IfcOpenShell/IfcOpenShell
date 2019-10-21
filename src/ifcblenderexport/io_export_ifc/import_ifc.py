@@ -1,7 +1,18 @@
 from . import ifcopenshell
 from .ifcopenshell import geom
 import bpy
+import os
+import json
 import mathutils
+
+cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
+
+class IfcSchema():
+    def __init__(self):
+        with open('{}ifc_elements_IFC4.json'.format(cwd + 'schema/')) as f:
+            self.elements = json.load(f)
+
+ifc_schema = IfcSchema()
 
 class MaterialCreator():
     def __init__(self):
@@ -107,6 +118,7 @@ class IfcImporter():
         return '{}/{}'.format(element.is_a(), element.Name)
 
     def create_object(self, element):
+        print('Creating object {}'.format(element))
         if element.is_a('IfcOpeningElement'):
             return
 
@@ -122,8 +134,6 @@ class IfcImporter():
         if mesh is None:
             mesh = self.create_mesh(element, shape)
             self.meshes[mesh_name] = mesh
-        else:
-            print('we reused a mesh!')
 
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesMaterial'):
@@ -140,6 +150,18 @@ class IfcImporter():
         matrix.transpose()
         object.matrix_world = matrix
 
+        attributes = element.get_info()
+        if element.is_a() in ifc_schema.elements:
+            applicable_attributes = [a['name'] for a in ifc_schema.elements[element.is_a()]['attributes']]
+            for key, value in attributes.items():
+                if key not in applicable_attributes \
+                    or value is None:
+                    continue
+                attribute = object.BIMObjectProperties.attributes.add()
+                attribute.name = key
+                attribute.data_type = 'string'
+                attribute.string_value = str(value)
+
         if hasattr(element, 'ContainedInStructure') \
             and element.ContainedInStructure \
             and element.ContainedInStructure[0].RelatingStructure:
@@ -147,6 +169,7 @@ class IfcImporter():
             if structure_name in self.spatial_structure_elements:
                 self.spatial_structure_elements[structure_name]['blender'].objects.link(object)
         else:
+            print('Warning: this object is outside the spatial hierarchy')
             bpy.context.scene.collection.objects.link(object)
 
     def get_representation_id(self, element):
