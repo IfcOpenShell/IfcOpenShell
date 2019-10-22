@@ -3,7 +3,9 @@ from .ifcopenshell import geom
 import bpy
 import os
 import json
+import time
 import mathutils
+import numpy as np
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 
@@ -13,6 +15,28 @@ class IfcSchema():
             self.elements = json.load(f)
 
 ifc_schema = IfcSchema()
+
+# Helper functions, to be refactored
+
+def a2p(o,z,x):
+    y = np.cross(z, x) 
+    r = np.eye(4) 
+    r[:-1,:-1] = x,y,z 
+    r[-1,:-1] = o 
+    return r.T
+    
+def get_axis2placement(plc): 
+    z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0,0,1)) 
+    x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
+    o = plc.Location.Coordinates 
+    return a2p(o,z,x) 
+    
+def get_local_placement(plc):
+    if plc.PlacementRelTo is None: 
+        parent = np.eye(4)
+    else:
+        parent = get_local_placement(plc.PlacementRelTo)
+    return np.dot(get_axis2placement(plc.RelativePlacement), parent)
 
 class MaterialCreator():
     def __init__(self):
@@ -72,11 +96,14 @@ class IfcImporter():
         self.spatial_structure_elements = {}
         self.elements = {}
         self.meshes = {}
+        self.time = 0
+        self.unit_scale = 1
 
         self.material_creator = MaterialCreator()
 
     def execute(self):
         self.load_file()
+        self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
@@ -86,6 +113,15 @@ class IfcImporter():
     def load_file(self):
         print('loading file {}'.format(self.ifc_import_settings.input_file))
         self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
+
+    def calculate_unit_scale(self):
+        units = self.file.by_type('IfcUnitAssignment')[0]
+        for unit in units.Units:
+            if unit.is_a('IfcSIUnit') \
+                and unit.UnitType == 'LENGTHUNIT':
+                if unit.Prefix:
+                    if unit.Prefix == 'MILLI':
+                        self.unit_scale *= 0.001
 
     def create_project(self):
         self.project = { 'ifc': self.file.by_type('IfcProject')[0] }
@@ -119,21 +155,29 @@ class IfcImporter():
 
     def create_object(self, element):
         print('Creating object {}'.format(element))
+        self.time = time.time()
         if element.is_a('IfcOpeningElement'):
             return
 
         try:
+            representation_id = self.get_representation_id(element)
+
+            mesh_name = 'mesh-{}'.format(representation_id)
+            mesh = self.meshes.get(mesh_name)
+            # TODO: Place the create_shape in the `if mesh is None` block
             shape = ifcopenshell.geom.create_shape(self.settings, element)
+            if mesh is None:
+                print('Shape was generated in {:.2f}'.format(time.time() - self.time))
+                self.time = time.time()
+
+                mesh = self.create_mesh(element, shape)
+                self.meshes[mesh_name] = mesh
+            else:
+                print('MESH REUSED')
+                return
         except:
             print('Failed to generate shape for {}'.format(element))
             return
-        representation_id = self.get_representation_id(element)
-        mesh_name = 'mesh-{}'.format(representation_id)
-
-        mesh = self.meshes.get(mesh_name)
-        if mesh is None:
-            mesh = self.create_mesh(element, shape)
-            self.meshes[mesh_name] = mesh
 
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesMaterial'):
@@ -141,6 +185,8 @@ class IfcImporter():
                 self.material_creator.create(association.RelatingMaterial)
 
         object = bpy.data.objects.new(self.get_name(element), mesh)
+
+        # Get matrix using a shape - slow (since shape needs to be created first), but correct
         m = shape.transformation.matrix.data
         matrix = mathutils.Matrix((
             [m[0], m[1], m[2], 0],
@@ -148,7 +194,24 @@ class IfcImporter():
             [m[6], m[7], m[8], 0],
             [m[9], m[10], m[11], 1]))
         matrix.transpose()
-        object.matrix_world = matrix
+
+        # Get matrix without using a shape - faster, but not correct
+        m = get_local_placement(element.ObjectPlacement)
+        # Dodgy way of implementing scale.
+        element_matrix = mathutils.Matrix((
+            [m[0][0], m[1][0], m[2][0], 0],
+            [m[0][1], m[1][1], m[2][1], 0],
+            [m[0][2], m[1][2], m[2][2], 0],
+            [m[0][3]*self.unit_scale, m[1][3]*self.unit_scale, m[2][3]*self.unit_scale, 1]))
+        # Why bother transposing? The original matrix `m` is correct anyway
+        element_matrix.transpose()
+
+        if matrix == element_matrix:
+            print('Same matrix!')
+        else:
+            print(matrix)
+            print(element_matrix)
+        object.matrix_world = matrix # element_matrix gives wrong results
 
         attributes = element.get_info()
         if element.is_a() in ifc_schema.elements:
