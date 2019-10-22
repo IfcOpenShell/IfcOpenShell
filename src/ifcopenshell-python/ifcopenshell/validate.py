@@ -14,6 +14,7 @@ attribute        = ifcopenshell.ifcopenshell_wrapper.attribute
 class ValidationError(Exception): pass
 
 simple_type_python_mapping = {
+    # @todo should include unicode for Python2
     "string": str,
     "integer": int,
     "real": float,
