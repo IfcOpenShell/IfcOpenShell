@@ -2,8 +2,8 @@ import bpy
 import uuid
 import math
 import sys
-import lxml
 #sys.path.append('C:\Program Files\Python37\Lib\site-packages')
+import lxml
 import bspy
 from bspy import Gbxml
 
@@ -54,15 +54,19 @@ class GbxmlExporter():
         r_value = self.gbxml.add_element(material, 'R-value', '0.13')
         r_value.set('unit', 'SquareMeterKPerW')
 
-        parser = lxml.etree.XMLParser(remove_blank_text=True)
-        template = lxml.etree.parse('C:/cygwin64/home/moud308/Projects/New Folder/presets/light-schedule.xml', parser).findall('.')[0]
-        for child in template.getchildren():
-            self.gbxml.root().append(child)
+        self.append_template('C:/cygwin64/home/moud308/Projects/New Folder/presets/light-schedule.xml')
+        self.append_template('C:/cygwin64/home/moud308/Projects/New Folder/presets/window-types.xml')
 
         with open('C:/cygwin64/home/moud308/Projects/New Folder/out.xml', 'w') as out:
             out.write(self.gbxml.xmlstring())
         print('# Validation results: {}'.format(self.gbxml.validate()))
         print('# Finish export')
+
+    def append_template(self, file):
+        parser = lxml.etree.XMLParser(remove_blank_text=True)
+        template = lxml.etree.parse(file, parser).findall('.')[0]
+        for child in template.getchildren():
+            self.gbxml.root().append(child)
 
     def create_space(self, object, building):
         space = self.gbxml.add_element(building, 'Space')
@@ -75,13 +79,27 @@ class GbxmlExporter():
         shell_geometry = self.gbxml.add_element(space, 'ShellGeometry')
         shell_geometry.set('id', 'shellid')
         closed_shell = self.gbxml.add_element(shell_geometry, 'ClosedShell')
+        vertices_in_vg = self.get_vertices_in_vg(object, 0)
         for polygon in object.data.polygons:
+            # First vg is reserved for surfaces
+            if not self.is_polygon_in_vg(polygon, vertices_in_vg):
+                continue
             calculated_area += polygon.area
             self.create_poly_loop(object, polygon, closed_shell)
             self.create_space_boundary(object, polygon, space)
             self.create_surface(object, polygon)
         self.gbxml.add_element(space, 'Area', str(calculated_area))
         self.gbxml.add_element(space, 'Volume', str(self.get_volume(object)))
+
+    def get_vertices_in_vg(self, object, vg_index):
+        return [ v.index for v in object.data.vertices if vg_index in [ g.group for g in v.groups ] ]
+
+    # Can move into a common Blender helper class?
+    def is_polygon_in_vg(self, polygon, vertices_in_vg):
+        for v in polygon.vertices:
+            if v not in vertices_in_vg:
+                return False
+        return True
 
     def create_space_boundary(self, object, polygon, parent):
         space_boundary = self.gbxml.add_element(parent, 'SpaceBoundary')
@@ -105,6 +123,20 @@ class GbxmlExporter():
             rectangular_geometry, 'Tilt',
             str(math.degrees(math.atan2(polygon.normal[2], polygon.normal[1])) - 90))
         planar_geometry = self.gbxml.add_element(surface, 'PlanarGeometry')
+        self.create_poly_loop(object, polygon, planar_geometry)
+        for vg in object.vertex_groups:
+            if '/'.join(vg.name.split('/')[0:2]) == 'openings/{}'.format(polygon.index):
+                vertices_in_vg = self.get_vertices_in_vg(object, vg.index)
+                for p in object.data.polygons:
+                    if self.is_polygon_in_vg(p, vertices_in_vg):
+                        self.create_opening(object, p, surface)
+
+    def create_opening(self, object, polygon, parent):
+        opening = self.gbxml.add_element(parent, 'Opening')
+        opening.set('id', 'opening-{}-{}'.format(object.name, polygon.index))
+        opening.set('windowTypeIdRef', 'STD_EX11') # harcoded
+        opening.set('openingType', 'FixedWindow') # hardcoded
+        planar_geometry = self.gbxml.add_element(opening, 'PlanarGeometry')
         self.create_poly_loop(object, polygon, planar_geometry)
 
     def create_poly_loop(self, object, polygon, parent):
