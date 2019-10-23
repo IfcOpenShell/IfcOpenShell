@@ -5,7 +5,6 @@ import os
 import json
 import time
 import mathutils
-import numpy as np
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 
@@ -19,24 +18,24 @@ ifc_schema = IfcSchema()
 # Helper functions, to be refactored
 
 def a2p(o,z,x):
-    y = np.cross(z, x) 
-    r = np.eye(4) 
-    r[:-1,:-1] = x,y,z 
-    r[-1,:-1] = o 
-    return r.T
+    y = z.cross(x)
+    r = mathutils.Matrix((x, y, z, o))
+    r.resize_4x4()
+    r.transpose()
+    return r
     
 def get_axis2placement(plc): 
-    z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0,0,1)) 
-    x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
+    z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1)) 
+    x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
     o = plc.Location.Coordinates 
     return a2p(o,z,x) 
     
 def get_local_placement(plc):
     if plc.PlacementRelTo is None: 
-        parent = np.eye(4)
+        parent = mathutils.Matrix()
     else:
         parent = get_local_placement(plc.PlacementRelTo)
-    return np.dot(get_axis2placement(plc.RelativePlacement), parent)
+    return parent @ get_axis2placement(plc.RelativePlacement)
 
 class MaterialCreator():
     def __init__(self):
@@ -164,9 +163,9 @@ class IfcImporter():
 
             mesh_name = 'mesh-{}'.format(representation_id)
             mesh = self.meshes.get(mesh_name)
-            # TODO: Place the create_shape in the `if mesh is None` block
-            shape = ifcopenshell.geom.create_shape(self.settings, element)
-            if mesh is None:
+            if mesh is None \
+                or representation_id is None:
+                shape = ifcopenshell.geom.create_shape(self.settings, element)
                 print('Shape was generated in {:.2f}'.format(time.time() - self.time))
                 self.time = time.time()
 
@@ -174,7 +173,6 @@ class IfcImporter():
                 self.meshes[mesh_name] = mesh
             else:
                 print('MESH REUSED')
-                return
         except:
             print('Failed to generate shape for {}'.format(element))
             return
@@ -186,32 +184,12 @@ class IfcImporter():
 
         object = bpy.data.objects.new(self.get_name(element), mesh)
 
-        # Get matrix using a shape - slow (since shape needs to be created first), but correct
-        m = shape.transformation.matrix.data
-        matrix = mathutils.Matrix((
-            [m[0], m[1], m[2], 0],
-            [m[3], m[4], m[5], 0],
-            [m[6], m[7], m[8], 0],
-            [m[9], m[10], m[11], 1]))
-        matrix.transpose()
+        element_matrix = get_local_placement(element.ObjectPlacement)
+        element_matrix[0][3] *= self.unit_scale
+        element_matrix[1][3] *= self.unit_scale
+        element_matrix[2][3] *= self.unit_scale
 
-        # Get matrix without using a shape - faster, but not correct
-        m = get_local_placement(element.ObjectPlacement)
-        # Dodgy way of implementing scale.
-        element_matrix = mathutils.Matrix((
-            [m[0][0], m[1][0], m[2][0], 0],
-            [m[0][1], m[1][1], m[2][1], 0],
-            [m[0][2], m[1][2], m[2][2], 0],
-            [m[0][3]*self.unit_scale, m[1][3]*self.unit_scale, m[2][3]*self.unit_scale, 1]))
-        # Why bother transposing? The original matrix `m` is correct anyway
-        element_matrix.transpose()
-
-        if matrix == element_matrix:
-            print('Same matrix!')
-        else:
-            print(matrix)
-            print(element_matrix)
-        object.matrix_world = matrix # element_matrix gives wrong results
+        object.matrix_world = element_matrix # element_matrix gives wrong results
 
         attributes = element.get_info()
         if element.is_a() in ifc_schema.elements:
