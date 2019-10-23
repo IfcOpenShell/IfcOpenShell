@@ -11,36 +11,37 @@ import sys
 def run_tests():
     behave_main(['features', '--junit', '--junit-directory', 'junit/'])
     print('# All tests have finished. Generating HTML reports now.')
-    with open('features/template.html') as template:
+    if not os.path.exists('report'):
         os.mkdir('report')
-        for file in os.listdir('junit/'):
-            if not file.endswith('.xml'):
-                continue
-            root = ET.parse('junit/{}'.format(file)).getroot()
-            data = {
-                'report_name': root.get('name'),
-                'testcases': []
-                }
-            for testcase in root.findall('testcase'):
-                steps = []
-                system_out = testcase.findall('system-out')[0].text.splitlines()
-                for line in system_out:
-                    if line.strip()[0:5] in ['Given', 'Then ', 'When ']:
-                        is_success = True if ' ... passed in ' in line else False
-                        steps.append({
-                            'name': line.strip().split(' ... ')[0],
-                            'time': line.strip().split(' ... ')[1],
-                            'is_success': is_success
-                            })
-                data['testcases'].append({
-                    'name': testcase.get('name'),
-                    'is_success': testcase.get('status') == 'passed',
-                    'time': testcase.get('time'),
-                    'steps': steps,
-                    'total_passes': len([s for s in steps if s['is_success'] == True]),
-                    'total_steps': len(steps)
-                    })
-            with open('report/{}.html'.format(file[0:-4]), 'w') as out:
+    for file in os.listdir('junit/'):
+        if not file.endswith('.xml'):
+            continue
+        root = ET.parse('junit/{}'.format(file)).getroot()
+        data = {
+            'report_name': root.get('name'),
+            'testcases': []
+            }
+        for testcase in root.findall('testcase'):
+            steps = []
+            system_out = testcase.findall('system-out')[0].text.splitlines()
+            for line in system_out:
+                if line.strip()[0:5] in ['Given', 'Then ', 'When ']:
+                    is_success = True if ' ... passed in ' in line else False
+                    steps.append({
+                        'name': line.strip().split(' ... ')[0],
+                        'time': line.strip().split(' ... ')[1],
+                        'is_success': is_success
+                        })
+            data['testcases'].append({
+                'name': testcase.get('name'),
+                'is_success': testcase.get('status') == 'passed',
+                'time': testcase.get('time'),
+                'steps': steps,
+                'total_passes': len([s for s in steps if s['is_success'] == True]),
+                'total_steps': len(steps)
+                })
+        with open('report/{}.html'.format(file[0:-4]), 'w') as out:
+            with open('features/template.html') as template:
                 out.write(pystache.render(template.read(), data))
 
 
