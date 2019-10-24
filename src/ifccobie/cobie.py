@@ -1,11 +1,30 @@
+# This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico bimtester.py`
+
+print('# IFC COBie')
+print('''
+IFC COBie is free software developed under the IfcOpenShell and BlenderBIM
+projects. IFC COBie will convert IFC files, ideally produced with the COBie MVD
+in mind, into a spreadsheet format for inspection. To learn more, visit:
+
+ - http://ifcopenshell.org
+ - https://blenderbim.org
+
+To run, a `input.ifc` file is required in the current folder.
+''')
+
+value = input('Would you like to run IFC COBie? [Y/n] ')
+if value == 'n':
+    quit()
+
+print('Loading libraries ...')
+
 import time
 import datetime
 import ifcopenshell
 import logging
-import pprint
 import csv
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill
+from xlsxwriter import Workbook
+
 
 class IfcCobieParser():
     def __init__(self, logger):
@@ -101,7 +120,7 @@ class IfcCobieParser():
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
     def parse(self):
-        self.file = ifcopenshell.open('C:/cygwin64/home/moud308/Projects/ifc2cobie/arch.ifc')
+        self.file = ifcopenshell.open('input.ifc')
         self.get_contacts()
         self.get_facilities()
         self.get_floors()
@@ -492,7 +511,7 @@ class IfcCobieParser():
                     'SheetName': 'Attributes',
                     'RowName': 'n/a', # I am not sure what this mapping is meant to be
                     'Value': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') else 'n/a',
-                    'Unit': '{}{}'.format(property.Unit.Prefix, property.Unit.Name) if hasattr(property, 'Unit') and property.Unit else 'n/a',
+                    'Unit': '{}{}'.format(property.Unit.Prefix if hasattr(property.Unit, 'Prefix') else '', property.Unit.Name if hasattr(property.Unit, 'Name') else 'n/a') if hasattr(property, 'Unit') and property.Unit else 'n/a',
                     'ExtSystem': self.get_ext_system_from_history(attribute.OwnerHistory),
                     'ExtObject': self.get_ext_object(attribute),
                     'ExtIdentifier': attribute.GlobalId,
@@ -595,7 +614,7 @@ class IfcCobieParser():
         if not connection.is_a('IfcRelConnectsPorts'):
             return None
         object = getattr(connection, key)
-        if self.is_object_a_component_asset(object):
+        if object and self.is_object_a_component_asset(object):
             return object.Name
         self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
 
@@ -679,7 +698,8 @@ class IfcCobieParser():
 
     def get_qto_from_object(self, object, name):
         for relationship in object.IsDefinedBy:
-            if relationship.RelatingPropertyDefinition.is_a('IfcQuantitySet') \
+            if relationship.is_a('IfcRelDefinesByProperties') \
+                and relationship.RelatingPropertyDefinition.is_a('IfcQuantitySet') \
                 and relationship.RelatingPropertyDefinition.Name == name:
                 return relationship.RelatingPropertyDefinition
         self.logger.warning('The qto {} was not found for {}'.format(name, object))
@@ -838,7 +858,7 @@ class IfcCobieParser():
 
     def get_name_from_person(self, person, attribute):
         name = getattr(person, attribute)
-        if not name.isalpha():
+        if not name or not name.isalpha():
             self.logger.warning('The person\'s {} seems to be badly formatted ("{}") for {}'.format(attribute, name, person))
         return name if name else 'n/a'
 
@@ -1042,7 +1062,7 @@ class CobieCsvWriter():
             'ExtIdentifier',])
 
     def write_file(self, csv_name, data, primary_key, fieldnames):
-        with open('C:/cygwin64/home/moud308/Projects/ifc2cobie/{}.csv'.format(csv_name), 'w', newline='') as file:
+        with open('{}.csv'.format(csv_name), 'w', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             for name, row in data.items():
@@ -1061,8 +1081,13 @@ class CobieXlsWriter(CobieCsvWriter):
             'n': '000000' # Not used
             }
         super().write()
-        self.workbook = Workbook()
-        self.workbook.remove(self.workbook.active)
+        self.workbook = Workbook('output.xlsx')
+
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            self.cell_formats[key] = self.workbook.add_format()
+            self.cell_formats[key].set_bg_color(value)
+
         self.write_worksheet('Contact', self.colours['r'], 'ririrreeeoooooooooo')
         self.write_worksheet('Facility', self.colours['r'], 'ririrriiiireeeeeeeoooo')
         self.write_worksheet('Floor', self.colours['r'], 'ririeeeooo')
@@ -1081,34 +1106,39 @@ class CobieXlsWriter(CobieCsvWriter):
         self.write_worksheet('Attribute', self.colours['r'], 'ririiirreeeoo')
         self.write_worksheet('Coordinate', self.colours['r'], 'ririiooooeeeooo')
         self.write_worksheet('Issue', self.colours['r'], 'ririooooooooooeee')
-        self.workbook.save(filename='C:/cygwin64/home/moud308/Projects/ifc2cobie/out.xlsx')
         self.workbook.close()
 
     def write_worksheet(self, name, tab_colour, fill_map):
-        worksheet = self.workbook.create_sheet(name)
-        worksheet.sheet_properties.tabColor = tab_colour
+        worksheet = self.workbook.add_worksheet(name)
 
-        with open('C:/cygwin64/home/moud308/Projects/ifc2cobie/{}.csv'.format(name),
-            'r') as f:
+        with open('{}.csv'.format(name), 'r') as f:
             reader = csv.reader(f)
             for r, row in enumerate(reader):
                 for c, col in enumerate(row):
-                    cell = worksheet.cell(column=c+1, row=r+1, value=col)
                     if r == 0:
-                        cell.fill = PatternFill(fill_type='solid', fgColor=self.colours['s'])
+                        cell = worksheet.write(r, c, col, self.cell_formats['s'])
                     else:
-                        cell.fill = PatternFill(fill_type='solid', fgColor=self.colours[fill_map[c]])
+                        cell = worksheet.write(r, c, col, self.cell_formats[fill_map[c]])
+
+print('Processing IFC file ...')
+print('Note: view issues with your file in `process.log` ...')
 
 start = time.time()
 logging.basicConfig(
-    filename='C:/cygwin64/home/moud308/Projects/ifc2cobie/process.log',
+    filename='process.log',
     filemode='a', level=logging.DEBUG)
 logger = logging.getLogger('IFCtoCOBie')
 logger.info('Starting conversion')
 parser = IfcCobieParser(logger)
 parser.parse()
+
+print('Generating reports ...')
+
 #writer = CobieCsvWriter(parser)
 #writer.write()
 writer = CobieXlsWriter(parser)
 writer.write()
 logger.info('Finished conversion in {}s'.format(time.time() - start))
+
+print('# All reports are complete :-)')
+input('Press <enter> to quit.')
