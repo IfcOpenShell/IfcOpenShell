@@ -114,32 +114,8 @@ int main() {
 	IfcEntityList::ptr face_set_instances(new IfcEntityList());
 	face_set_instances = f.instances_by_type("IfcPolygonalFaceSet");
 
-	
-
-
-
-
-
-
 	// Take the first polygonal face set of the list (and the only one for the file tested)
 	IfcSchema::IfcPolygonalFaceSet* pfs = (IfcSchema::IfcPolygonalFaceSet*)*face_set_instances->begin();
-
-
-	//int jecompte = 0;
-
-	//for (IfcEntityList::it it = face_set_instances->begin(); it != face_set_instances->end(); ++it) {
-	//	jecompte++;
-
-
-
-
-	//}
-
-
-	//std::cout << "JE COMPTE " << jecompte << std::endl;
-
-
-
 
 
 
@@ -159,174 +135,92 @@ int main() {
 	}
 
 	
-	//std::vector<IfcSchema::IfcIndexedPolygonalFace*>polygonal_faces = pfs->Faces();;
 	auto polygonal_faces = pfs->Faces();
 	int compt = 0;
-	/*for (IfcSchema::IfcIndexedPolygonalFace*it = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin()); polygonal_faces->size(); polygonal_faces->end() ){
-		compt++;
-	}*/
+
+
+
+
+
+	TopoDS_Compound all_faces;
+	BRep_Builder compound_builder;
+	compound_builder.MakeCompound(all_faces);
+	
+
 
 
 	for (int i =0; i < polygonal_faces->size(); i++) {
-		IfcSchema::IfcIndexedPolygonalFace* li = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
+		IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
+
+		// Gives the indexed points defining the face 
+		std::vector<int> test = la->CoordIndex();
+
+		// The points vector gathers all the indexed 
+		// points, sorted in order (cf BuildingSmart).
+		std::vector<gp_Pnt>face_points;
+		for (std::vector<int>::size_type i = 0; i != test.size(); i++) {
+			std::cout << test[i] << std::endl;
+			gp_Pnt point = points[test[i] - 1];
+			face_points.push_back(point);
+
+
+		}
+
+		
+		BRepBuilderAPI_MakePolygon wire_builder = BRepBuilderAPI_MakePolygon();
+
+
+		int firstcompt = 0;
+
+		for (std::vector<gp_Pnt>::const_iterator it = face_points.begin(); it != face_points.end(); ++it) {
+			firstcompt++;
+			TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(*it);
+			wire_builder.Add(vertex);
+
+		}
+		wire_builder.Close();
+
+
+
+		TopoDS_Wire wire = wire_builder.Wire();
+
+
+		//const gp_Pnt& a = points[test[0] - 1];
+		//const gp_Pnt& b = points[test[1] - 1];
+		//const gp_Pnt& c = points[test[2] - 1];
+		//const gp_Pnt& d = points[test[3] - 1];
+		//TopoDS_Wire wire = BRepBuilderAPI_MakePolygon(a, b, c, d, true).Wire();
+		//TopoDS_Wire wire = wire_builder.Wire();
+
+		TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
+
+		TopoDS_Iterator face_it(face, false);
+		const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
+		const bool reversed = w.Orientation() == TopAbs_REVERSED;
+		if (reversed) {
+			face.Reverse();
+		}
+
+
+	
+		compound_builder.Add(all_faces, face);
+		
 
 		compt++;
 	}
+
+	BRepTools::Write(all_faces, "pfs9.brep");
 	
 	std::cout <<"compt"<< compt<<std::endl;
 
-	//std::vector<std::vector<int>> points; 
-
-
-	
-	IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + 21);
-
-
-
-
-	//IfcSchema::IfcIndexedPolygonalFace* li = la +1; 
-		
-
-	// Gives the indexed points defining the face 
-	std::vector<int> test = la->CoordIndex();
-	//std::vector<int> test = li->CoordIndex();
-
-
-	// The points vector gathers all the indexed 
-	// points, sorted in order (cf BuildingSmart).
-	
-
-	std::vector<gp_Pnt>face_points;
-	for (std::vector<int>::size_type i = 0; i != test.size(); i++) {
-		std::cout << test[i]<<std::endl;
-		gp_Pnt point = points[test[i] - 1];
-		face_points.push_back(point);
 	
 	
-	}
-
-	//TopoDS_Wire wire = BRepBuilderAPI_MakePolygon();
-
-	BRepBuilderAPI_MakePolygon wire_builder = BRepBuilderAPI_MakePolygon();
-
-	
-	int firstcompt = 0;
-
-	for (std::vector<gp_Pnt>::const_iterator it = face_points.begin(); it != face_points.end(); ++it) {
-		firstcompt++;
-		TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(*it);
-		wire_builder.Add(vertex);
-		
-	}
-	wire_builder.Close();
-
-	std::cout << "Le vecteur contient " << firstcompt<< std::endl;
-
-	TopoDS_Wire wire = wire_builder.Wire();
+	//IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + 21);
 
 
-
-
-	//const gp_Pnt& a = points[test[0] - 1];
-	//const gp_Pnt& b = points[test[1] - 1];
-	//const gp_Pnt& c = points[test[2] - 1];
-	//const gp_Pnt& d = points[test[3] - 1];
-
-
-	//TopoDS_Wire wire = BRepBuilderAPI_MakePolygon(a, b, c, d, true).Wire();
-
-	//TopoDS_Wire wire = wire_builder.Wire();
-		
-	TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
-
-	TopoDS_Iterator face_it(face, false);
-	const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
-	const bool reversed = w.Orientation() == TopAbs_REVERSED;
-	if (reversed) {
-		face.Reverse();
-	}
-
-
-	TopoDS_Compound faces_compound;
-	BRep_Builder compound_builder;
-	compound_builder.MakeCompound(faces_compound);
-	compound_builder.Add(faces_compound, face);
-	BRepTools::Write(faces_compound, "pfs8.brep");
 
 
 
 	}
-
-/*
-	IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->begin();*/
-	
-//
-//	std::vector<int> test = la->CoordIndex();
-//
-//
-//	const gp_Pnt& a = points[test[0] - 1]; 
-//	const gp_Pnt& b = points[test[1] - 1];
-//	const gp_Pnt& c = points[test[2] - 1];
-//	const gp_Pnt& d = points[test[3] - 1];
-//	
-//	TopoDS_Wire wire = BRepBuilderAPI_MakePolygon(a, b, c, d, true).Wire();
-//	
-//	TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
-//
-//	TopoDS_Iterator face_it(face, false);
-//	const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
-//	const bool reversed = w.Orientation() == TopAbs_REVERSED;
-//	if (reversed) {
-//		face.Reverse();
-//	}
-//
-//
-//	TopoDS_Compound faces_compound;
-//	BRep_Builder compound_builder;
-//	compound_builder.MakeCompound(faces_compound);
-//	compound_builder.Add(faces_compound, face);
-//
-//	BRepTools::Write(faces_compound, "pfs.brep");
-//
-//
-//	//for (auto& point : test) {
-//	//	// Print Index of the point 
-//	//	std::cout << "POINT" << std::endl; 
-//	//	std::cout << point << std::endl; 
-//
-//	//	// Find the Gp point in the list
-//	//	gp_Pnt pt = points[point-1];
-//
-//	//	std::cout << "X: " << pt.X() << " Y: " <<pt.Y()<< "Z: "<<pt.Z()<<std::endl;
-//	//	
-//
-//
-//	//
-//	//}
-//	
-//
-//
-//	//for (IfcSchema::IfcIndexedPolygonalFace* it = (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->begin(); it != (IfcSchema::IfcIndexedPolygonalFace*)*polygonal_faces->end(); ++it) {
-//	//	compt++;
-//	//}
-//
-//	/*for (IfcEntityList::it it = polygonal_faces->begin(); it != polygonal_faces->end(); ++it) {
-//		compt++;
-//	}*/
-//
-//	std::cout << "compt"<<" "<<compt;
-//
-//	
-//	
-//}
-//
-//
-//
-//
-//
-
-
-
-
 
 
