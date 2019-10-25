@@ -114,8 +114,31 @@ int main() {
 	IfcEntityList::ptr face_set_instances(new IfcEntityList());
 	face_set_instances = f.instances_by_type("IfcPolygonalFaceSet");
 
+	
+
+
+
+
+
+
 	// Take the first polygonal face set of the list (and the only one for the file tested)
 	IfcSchema::IfcPolygonalFaceSet* pfs = (IfcSchema::IfcPolygonalFaceSet*)*face_set_instances->begin();
+
+
+	//int jecompte = 0;
+
+	//for (IfcEntityList::it it = face_set_instances->begin(); it != face_set_instances->end(); ++it) {
+	//	jecompte++;
+
+
+
+
+	//}
+
+
+	//std::cout << "JE COMPTE " << jecompte << std::endl;
+
+
 
 
 
@@ -138,18 +161,28 @@ int main() {
 	
 	//std::vector<IfcSchema::IfcIndexedPolygonalFace*>polygonal_faces = pfs->Faces();;
 	auto polygonal_faces = pfs->Faces();
-	
+	int compt = 0;
+	/*for (IfcSchema::IfcIndexedPolygonalFace*it = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin()); polygonal_faces->size(); polygonal_faces->end() ){
+		compt++;
+	}*/
 
+
+	for (int i =0; i < polygonal_faces->size(); i++) {
+		IfcSchema::IfcIndexedPolygonalFace* li = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
+
+		compt++;
+	}
+	
+	std::cout <<"compt"<< compt<<std::endl;
 
 	//std::vector<std::vector<int>> points; 
-	int compt = 0;
+
 
 	
-	IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + 1);
+	IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + 21);
 
 
 
-		
 
 	//IfcSchema::IfcIndexedPolygonalFace* li = la +1; 
 		
@@ -218,7 +251,7 @@ int main() {
 	BRep_Builder compound_builder;
 	compound_builder.MakeCompound(faces_compound);
 	compound_builder.Add(faces_compound, face);
-	BRepTools::Write(faces_compound, "pfs7.brep");
+	BRepTools::Write(faces_compound, "pfs8.brep");
 
 
 
