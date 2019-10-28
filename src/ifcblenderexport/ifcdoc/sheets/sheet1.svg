@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="root" version="1.1" height="594mm" width="841mm">
+  <defs />
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <use xlink:href="../templates/titleblock.svg#root" />
+  </svg>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="150mm" y="50mm">
+    <use xlink:href="../views/house.svg#root" />
+  </svg>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="150mm" y="50mm">
+    <use xlink:href="../templates/view-title.svg#root" />
+  </svg>
+
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="550mm" y="50mm">
+    <use xlink:href="../views/elevation.svg#root" />
+  </svg>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="150mm" y="50mm">
+    <use xlink:href="../templates/view-title.svg#root" />
+  </svg>
+
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="550mm" y="50mm">
+    <use xlink:href="../views/plan.svg#root" />
+  </svg>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="150mm" y="50mm">
+    <use xlink:href="../templates/view-title.svg#root" />
+  </svg>
+
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="550mm" y="50mm">
+    <use xlink:href="../views/section.svg#root" />
+  </svg>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="150mm" y="50mm">
+    <use xlink:href="../templates/view-title.svg#root" />
+  </svg>
+</svg>

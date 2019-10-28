@@ -1,0 +1,3084 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="841mm"
+   height="594mm"
+   version="1.1"
+   id="root"
+   sodipodi:docname="titleblock.svg"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14">
+  <metadata
+     id="metadata90683">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1055"
+     id="namedview90681"
+     showgrid="false"
+     units="mm"
+     inkscape:zoom="0.70710678"
+     inkscape:cx="3018.735"
+     inkscape:cy="167.08597"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g90667"
+     inkscape:snap-bbox="true"
+     inkscape:object-paths="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-text-baseline="false" />
+  <desc
+     id="desc89610">/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/titleblock.dxf - scale = 1.000000, origin = (0.000000, 0.000000), method = manual</desc>
+  <defs
+     id="defs90661">
+    <marker
+       id="DistanceX"
+       orient="auto"
+       refX="0"
+       refY="0"
+       style="overflow:visible">
+      <path
+         d="M 3,-3 -3,3 M 0,-5 V 5"
+         style="stroke:#000000;stroke-width:0.5"
+         id="path89612"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <pattern
+       height="8"
+       id="Hatch"
+       patternUnits="userSpaceOnUse"
+       width="8"
+       x="0"
+       y="0">
+      <path
+         d="M8 4 l-4,4"
+         linecap="square"
+         stroke="#000000"
+         stroke-width="0.25"
+         id="path89615" />
+      <path
+         d="M6 2 l-4,4"
+         linecap="square"
+         stroke="#000000"
+         stroke-width="0.25"
+         id="path89617" />
+      <path
+         d="M4 0 l-4,4"
+         linecap="square"
+         stroke="#000000"
+         stroke-width="0.25"
+         id="path89619" />
+    </pattern>
+    <symbol
+       id="*MODEL_SPACE" />
+    <symbol
+       id="*PAPER_SPACE" />
+    <symbol
+       id="logo">
+      <path
+         d="M 43.509642,1147.4047 H 33.031723 v 10.478 h 10.477919 z"
+         style="fill:#000000"
+         id="path89624"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 43.509642,1147.4047 H 33.031723 v 10.478 h 10.477919 z"
+         style="fill:none;stroke:#000000"
+         id="path89626"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 4.217444,1135.6171 a 2.619521,2.619521 0 0 1 2.61948,-2.6195 h 7.85844 a 2.619579,2.619579 0 0 1 2.61948,2.6195 2.619521,2.619521 0 0 1 2.61948,-2.6195 h 3.929219 a 6.548799,6.548799 0 0 1 6.5487,6.5487 v 46.6608 H 19.934324 v -42.7316 a 1.30974,1.30974 0 0 0 -2.61948,0 v 42.7316 H 6.836924 v -42.7316 a 1.30974,1.30974 0 0 0 -2.61948,0 v 42.7316 H -6.260475 v -53.2095 H 4.217444 Z"
+         style="fill:#000000"
+         id="path89628"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 4.217444,1135.6171 a 2.619521,2.619521 0 0 1 2.61948,-2.6195 h 7.85844 a 2.619579,2.619579 0 0 1 2.61948,2.6195 2.619521,2.619521 0 0 1 2.61948,-2.6195 h 3.929219 a 6.548799,6.548799 0 0 1 6.5487,6.5487 v 46.6608 H 19.934324 v -42.7316 a 1.30974,1.30974 0 0 0 -2.61948,0 v 42.7316 H 6.836924 v -42.7316 a 1.30974,1.30974 0 0 0 -2.61948,0 v 42.7316 H -6.260475 v -53.2095 H 4.217444 Z"
+         style="fill:none;stroke:#000000"
+         id="path89630"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -21.977354,1132.9976 h -10.47792"
+         style="fill:none;stroke:#000000"
+         id="path89632"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -32.455274,1132.9976 v 53.2095"
+         style="fill:none;stroke:#000000"
+         id="path89634"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -32.455274,1186.2071 h 10.47792"
+         style="fill:none;stroke:#000000"
+         id="path89636"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -21.977354,1186.2071 v -42.7315"
+         style="fill:none;stroke:#000000"
+         id="path89638"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -19.357874,1143.4755 a 1.30974,1.30974 0 1 0 -2.61948,0"
+         style="fill:none;stroke:#000000"
+         id="path89640"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -19.357874,1143.4755 v 9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89642"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -19.357874,1152.6437 H -8.879955"
+         style="fill:none;stroke:#000000"
+         id="path89644"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -8.879955,1152.6437 v -13.0974"
+         style="fill:none;stroke:#000000"
+         id="path89646"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -8.879955,1139.5463 a 6.548659,6.548659 0 0 0 -6.548658,-6.5487"
+         style="fill:none;stroke:#000000"
+         id="path89648"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -15.428613,1132.9976 h -3.92926"
+         style="fill:none;stroke:#000000"
+         id="path89650"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -19.357873,1132.9976 a 2.61948,2.61948 0 0 0 -2.619539,2.6194"
+         style="fill:none;stroke:#000000"
+         id="path89652"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -21.977412,1135.617 5.8e-5,-2.6194"
+         style="fill:none;stroke:#000000"
+         id="path89654"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -99.282989,1135.5073 h -26.206281 a 6.687716,6.687716 0 0 0 -6.54164,8.0782 l -1.54515,4.4887 h 5.09675 l -2.36747,11.1381 h -5.09681 l -4.49715,21.1577 h -14.25242 l 8.14069,-38.299 a 18.361027,18.361027 0 0 1 17.95974,-14.5434 h 31.005865 z"
+         style="fill:#ff0000"
+         id="path89656"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -99.282989,1135.5073 h -26.206281 a 6.687716,6.687716 0 0 0 -6.54164,5.2972 l -1.54515,7.2697 h 5.09675 l -2.36747,11.1381 h -5.09681 l -4.49715,21.1577 h -14.25242 l 8.14069,-38.299 a 18.361027,18.361027 0 0 1 17.95974,-14.5434 h 31.005865 z"
+         style="fill:none;stroke:#ff0000"
+         id="path89658"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -101.95417,1148.0742 h -12.96838 a 1.09436,1.09436 0 0 0 -1.07045,1.3219 l -0.52211,2.0011 a 1.094377,1.094377 0 0 0 1.07044,-0.8668 l 5.74607,2.1887 a 5.471798,5.471798 0 0 1 5.35223,6.6095 l -3.09062,14.5401 a 8.207705,8.207705 0 0 1 -8.02835,6.5013 h -22.99575 l 2.63369,-12.3906 h 17.07689 a 1.09436,1.09436 0 0 0 1.07044,-1.3219 l 0.5557,-2.1593 a 1.094358,1.094358 0 0 0 -1.07045,0.8669 l -3.4063,-2.1887 a 6.566167,6.566167 0 0 1 -6.42268,-7.9314 l 2.39997,-11.291 a 8.207704,8.207704 0 0 1 8.02834,-6.5012 h 17.898941 z"
+         style="fill:#ff0000"
+         id="path89660"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -88.954321,1122.4718 h -62.495269 l -12.55613,63.7353 h 62.49527 z m -2.254394,1.8536 -11.825795,60.0281 h -58.71681 l 11.82579,-60.0281 z m -37.383985,3.2022 h -3e-5 l -17.95974,14.5434 -2e-5,10e-5 z m 12.59971,21.4134 -0.52212,2.4562 1.07045,1.3219 h 5.74606 l 5.35224,6.6095 -3.09063,14.5401 -8.02835,6.5013 v 0 l 8.02835,-6.5013 3.09062,-14.5401 -5.35223,-6.6095 h -5.74607 l -1.07044,-1.3219 0.52211,-2.4562 z"
+         style="fill:#ff0000"
+         id="path89662"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -101.95417,1148.0742 h -12.96838 a 1.09436,1.09436 0 0 0 -1.07045,0.8668 l -0.52211,2.4562 a 1.094377,1.094377 0 0 0 1.07044,1.3219 h 5.74607 a 5.471798,5.471798 0 0 1 5.35223,6.6095 l -3.09062,14.5401 a 8.207705,8.207705 0 0 1 -8.02835,6.5013 h -22.99575 l 2.63369,-12.3906 h 17.07689 a 1.09436,1.09436 0 0 0 1.07044,-0.8669 l 0.5557,-2.6143 a 1.094358,1.094358 0 0 0 -1.07045,-1.3218 h -3.4063 a 6.566167,6.566167 0 0 1 -6.42268,-7.9314 l 2.39997,-11.291 a 8.207704,8.207704 0 0 1 8.02834,-6.5012 h 17.898941 z"
+         style="fill:none;stroke:#ff0000"
+         id="path89664"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -161.75132,1184.3535 11.82579,-60.0281 h 58.716815 l -11.825795,60.0281 z"
+         style="fill:none;stroke:#ff0000"
+         id="path89666"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -101.51045,1186.2071 h -62.49527 l 12.55613,-63.7353 h 62.495269 z"
+         style="fill:none;stroke:#ff0000"
+         id="path89668"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -59.959812,1132.9976 h -3.929278 l 2.61948,-2.6195 h 1.309798 v -7.8584 h -6.5487 l -7.85844,7.8584 v 2.6195 h -3.929219 v 9.1682 h 3.929219 v 44.0413 h 10.47792 v -44.0413 h 3.92922 z"
+         style="fill:#000000"
+         id="path89670"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -61.269552,1130.3781 a 2.61948,2.61948 0 0 0 -2.619538,2.6195"
+         style="fill:none;stroke:#000000"
+         id="path89672"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -59.959812,1130.3781 v -7.8584"
+         style="fill:none;stroke:#000000"
+         id="path89674"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -61.269552,1130.3781 h 1.30974"
+         style="fill:none;stroke:#000000"
+         id="path89676"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -78.296171,1142.1658 h 3.929219"
+         style="fill:none;stroke:#000000"
+         id="path89678"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -59.959812,1122.5197 h -6.5487"
+         style="fill:none;stroke:#000000"
+         id="path89680"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -66.508512,1122.5197 a 7.858381,7.858381 0 0 0 -7.85844,7.8584"
+         style="fill:none;stroke:#000000"
+         id="path89682"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -74.366952,1130.3781 v 2.6195"
+         style="fill:none;stroke:#000000"
+         id="path89684"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -74.366952,1132.9976 h -3.929219"
+         style="fill:none;stroke:#000000"
+         id="path89686"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -78.296171,1132.9976 v 9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89688"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -74.366952,1186.2071 h 10.47792"
+         style="fill:none;stroke:#000000"
+         id="path89690"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -74.366952,1142.1658 v 44.0413"
+         style="fill:none;stroke:#000000"
+         id="path89692"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -63.889032,1186.2071 v -44.0413"
+         style="fill:none;stroke:#000000"
+         id="path89694"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -63.889032,1142.1658 h 3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89696"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -35.074754,1139.5465 -6.548965,-6.5489 -10.477661,10e-5 -6.548692,6.5486 v 40.1121 l 6.548704,6.5487 h 10.477956 l 6.548658,-6.5487 z m -10.477919,36.1827 v -32.2537 10e-5 l -2.61948,-10e-5 v 32.2537 -10e-5 z"
+         style="fill:#000000"
+         id="path89698"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -45.552673,1143.4756 a 1.30974,1.30974 0 1 0 -2.61948,0"
+         style="fill:none;stroke:#000000"
+         id="path89700"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -48.172153,1175.7291 a 1.30974,1.30974 0 1 0 2.61948,0"
+         style="fill:none;stroke:#000000"
+         id="path89702"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -45.552673,1175.7291 v -32.2535"
+         style="fill:none;stroke:#000000"
+         id="path89704"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -35.074754,1139.5465 v 40.1119 a 6.548659,6.548659 0 0 1 -6.548658,6.5487 h -10.477956 a 6.5486,6.5486 0 0 1 -6.548704,-6.5487 v -40.1121 a 6.548641,6.548641 0 0 1 6.548692,-6.5486 l 10.477661,-10e-5 a 6.548799,6.548799 0 0 1 6.548965,6.5489 z"
+         style="fill:none;stroke:#000000"
+         id="path89706"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -48.172153,1143.4756 v 32.2535"
+         style="fill:none;stroke:#000000"
+         id="path89708"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -59.959812,1142.1658 v -9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89710"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -59.959812,1132.9976 H -63.88909"
+         style="fill:none;stroke:#000000"
+         id="path89712"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -19.357874,1143.4755 v 9.1682 h 10.477919 v -13.0974 l -6.548707,-6.5487 h 3.1e-5 -3.929242 l -2.619539,2.6195 v 0 l 5.8e-5,-2.6195 h -10.47792 v 53.2095 h 10.47792 v -42.7316 z"
+         style="fill:#000000"
+         id="path89714"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -15.428613,1132.9976 h -3.92926 a 2.61948,2.61948 0 0 0 -2.619539,2.6195 2.61948,2.61948 0 0 1 0,-10e-5 l 5.8e-5,-2.6194 h -10.47792 v 53.2095 h 10.47792 v -42.7316 a 1.30974,1.30974 0 0 1 2.61948,0 v 9.1682 h 10.477919 v -13.0974 a 6.548659,6.548659 0 0 0 -6.548707,-6.5487 6.548659,6.548659 0 0 1 4.9e-5,0 z"
+         style="fill:none;stroke:#000000"
+         id="path89716"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 69.704441,1139.5463 v 13.0974 H 59.226522 v -9.1682 a 1.309769,1.309769 0 0 0 -2.619538,0 l 5.8e-5,9.1682 10.826077,9.3386 a 6.548693,6.548693 0 0 1 2.271322,4.9588 v 12.7173 a 6.548799,6.548799 0 0 1 -6.5487,6.5487 l -10.477919,-10e-5 a 6.548641,6.548641 0 0 1 -6.5487,-6.5486 v -13.0974 h 10.47792 l -5.8e-5,9.1682 a 1.309769,1.309769 0 0 0 2.619538,0 v -9.1682 l -10.826121,-9.3386 a 6.548641,6.548641 0 0 1 -2.271279,-4.9588 v -12.7173 a 6.5486,6.5486 0 0 1 6.5487,-6.5487 l 10.477919,-10e-5 a 6.548758,6.548758 0 0 1 6.5487,6.5488 z"
+         style="fill:#000000"
+         id="path89718"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 69.704441,1139.5463 v 13.0974 H 59.226522 v -9.1682 a 1.309769,1.309769 0 1 0 -2.619538,0 l 5.8e-5,9.1682 10.826077,9.3386 a 6.548693,6.548693 0 0 1 2.271322,4.9588 v 12.7173 a 6.548799,6.548799 0 0 1 -6.5487,6.5487 l -10.477919,-10e-5 a 6.548641,6.548641 0 0 1 -6.5487,-6.5486 v -13.0974 h 10.47792 l -5.8e-5,9.1682 a 1.309769,1.309769 0 1 0 2.619538,0 v -9.1682 l -10.826121,-9.3386 a 6.548641,6.548641 0 0 1 -2.271279,-4.9588 v -12.7173 a 6.5486,6.5486 0 0 1 6.5487,-6.5487 l 10.477919,-10e-5 a 6.548758,6.548758 0 0 1 6.5487,6.5488 z"
+         style="fill:none;stroke:#000000"
+         id="path89720"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 95.89924,1139.5463 v 13.0974 H 85.42132 v -9.1682 a 1.30974,1.30974 0 0 0 -2.61948,0 v 32.2537 a 1.30974,1.30974 0 0 0 2.61948,0 v -9.1682 h 10.47792 v 13.0974 a 6.548659,6.548659 0 0 1 -6.5487,6.5487 H 78.872621 a 6.5486,6.5486 0 0 1 -6.5487,-6.5487 v -40.1121 a 6.548741,6.548741 0 0 1 6.5487,-6.5487 H 89.35054 a 6.548799,6.548799 0 0 1 6.5487,6.5487 z"
+         style="fill:#000000"
+         id="path89722"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 95.89924,1139.5463 v 13.0974 H 85.42132 v -9.1682 a 1.30974,1.30974 0 0 0 -2.61948,0 v 32.2537 a 1.30974,1.30974 0 0 0 2.61948,0 v -9.1682 h 10.47792 v 13.0974 a 6.548659,6.548659 0 0 1 -6.5487,6.5487 H 78.872621 a 6.5486,6.5486 0 0 1 -6.5487,-6.5487 v -40.1121 a 6.548741,6.548741 0 0 1 6.5487,-6.5487 H 89.35054 a 6.548799,6.548799 0 0 1 6.5487,6.5487 z"
+         style="fill:none;stroke:#000000"
+         id="path89724"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 143.04988,1132.9976 h -3.92928 l 2.61948,-2.6195 h 1.3098 v -7.8584 h -6.5487 l -7.85844,7.8584 v 2.6195 h -3.92922 v 9.1682 h 3.92922 v 44.0413 h 10.47792 v -44.0413 h 3.92922 z"
+         style="fill:#000000"
+         id="path89726"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 141.74014,1130.3781 a 2.61948,2.61948 0 0 0 -2.61954,2.6195"
+         style="fill:none;stroke:#000000"
+         id="path89728"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 143.04988,1130.3781 v -7.8584"
+         style="fill:none;stroke:#000000"
+         id="path89730"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 141.74014,1130.3781 h 1.30974"
+         style="fill:none;stroke:#000000"
+         id="path89732"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 124.71352,1142.1658 h 3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89734"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 143.04988,1122.5197 h -6.5487"
+         style="fill:none;stroke:#000000"
+         id="path89736"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 136.50118,1122.5197 a 7.858381,7.858381 0 0 0 -7.85844,7.8584"
+         style="fill:none;stroke:#000000"
+         id="path89738"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 128.64274,1130.3781 v 2.6195"
+         style="fill:none;stroke:#000000"
+         id="path89740"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 128.64274,1132.9976 h -3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89742"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 124.71352,1132.9976 v 9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89744"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 128.64274,1186.2071 h 10.47792"
+         style="fill:none;stroke:#000000"
+         id="path89746"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 128.64274,1142.1658 v 44.0413"
+         style="fill:none;stroke:#000000"
+         id="path89748"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 139.12066,1186.2071 v -44.0413"
+         style="fill:none;stroke:#000000"
+         id="path89750"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 139.12066,1142.1658 h 3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89752"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 143.04988,1142.1658 v -9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89754"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 143.04988,1132.9976 H 139.1206"
+         style="fill:none;stroke:#000000"
+         id="path89756"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 164.00572,1132.9976 h -3.92928 l 2.61948,-2.6195 h 1.3098 v -7.8584 h -6.5487 l -7.85844,7.8584 v 2.6195 h -3.92922 v 9.1682 h 3.92922 v 44.0413 h 10.47792 v -44.0413 h 3.92922 z"
+         style="fill:#000000"
+         id="path89758"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 162.69598,1130.3781 a 2.61948,2.61948 0 0 0 -2.61954,2.6195"
+         style="fill:none;stroke:#000000"
+         id="path89760"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 164.00572,1130.3781 v -7.8584"
+         style="fill:none;stroke:#000000"
+         id="path89762"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 162.69598,1130.3781 h 1.30974"
+         style="fill:none;stroke:#000000"
+         id="path89764"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 145.66936,1142.1658 h 3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89766"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 164.00572,1122.5197 h -6.5487"
+         style="fill:none;stroke:#000000"
+         id="path89768"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 157.45702,1122.5197 a 7.858381,7.858381 0 0 0 -7.85844,7.8584"
+         style="fill:none;stroke:#000000"
+         id="path89770"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 149.59858,1130.3781 v 2.6195"
+         style="fill:none;stroke:#000000"
+         id="path89772"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 149.59858,1132.9976 h -3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89774"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 145.66936,1132.9976 v 9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89776"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 149.59858,1186.2071 H 160.0765"
+         style="fill:none;stroke:#000000"
+         id="path89778"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 149.59858,1142.1658 v 44.0413"
+         style="fill:none;stroke:#000000"
+         id="path89780"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 160.0765,1186.2071 v -44.0413"
+         style="fill:none;stroke:#000000"
+         id="path89782"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 160.0765,1142.1658 h 3.92922"
+         style="fill:none;stroke:#000000"
+         id="path89784"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 164.00572,1142.1658 v -9.1682"
+         style="fill:none;stroke:#000000"
+         id="path89786"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 164.00572,1132.9976 h -3.92928"
+         style="fill:none;stroke:#000000"
+         id="path89788"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 108.99664,1177.0389 v -9.1682 a 1.30974,1.30974 0 0 1 2.61948,0 v 9.1682 a 1.30974,1.30974 0 0 1 -2.61948,0 z m 13.0974,9.1682 h -10.47792 v -2.6195 a 2.619439,2.619439 0 0 1 -2.61948,2.6195 h -3.92922 a 6.5487,6.5487 0 0 1 -6.548759,-6.5487 l 5.9e-5,-10.5005 a 6.549109,6.549109 0 0 1 1.77967,-4.488 l 11.31773,-12.0262 v -9.1682 a 1.30974,1.30974 0 0 0 -2.61948,0 v 9.1682 H 98.51872 v -13.0974 a 6.548641,6.548641 0 0 1 6.5487,-6.5486 l 10.47792,-10e-5 a 6.5487,6.5487 0 0 1 6.54864,6.5487 z"
+         style="fill:#000000"
+         id="path89790"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 122.09404,1186.2071 h -10.47792 v -2.6195 a 2.619439,2.619439 0 0 1 -2.61948,2.6195 h -3.92922 a 6.5487,6.5487 0 0 1 -6.548759,-6.5487 l 5.9e-5,-10.5005 a 6.549109,6.549109 0 0 1 1.77967,-4.488 l 11.31773,-12.0262 v -9.1682 a 1.30974,1.30974 0 0 0 -2.61948,0 v 9.1682 H 98.51872 v -13.0974 a 6.548641,6.548641 0 0 1 6.5487,-6.5486 l 10.47792,-10e-5 a 6.5487,6.5487 0 0 1 6.54864,6.5487 z"
+         style="fill:none;stroke:#000000"
+         id="path89792"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 108.99664,1177.0389 v -9.1682 a 1.30974,1.30974 0 0 1 2.61948,0 v 9.1682 a 1.30974,1.30974 0 0 1 -2.61948,0 z"
+         style="fill:none;stroke:#000000"
+         id="path89794"
+         inkscape:connector-curvature="0" />
+    </symbol>
+    <symbol
+       id="KZN_Titel">
+      <path
+         d="M 619.01916,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path89797"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.30975"
+         y="922.52252"
+         id="text89801">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89799"
+           x="562.30975"
+           y="922.52252">DATE</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="470.51599"
+         y="922.51929"
+         id="text89805">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89803"
+           x="470.51599"
+           y="922.51929">REV. BY</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="22.729275"
+         y="922.52576"
+         id="text89809">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89807"
+           x="22.729275"
+           y="922.52576">REV. NO.</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="194.29623"
+         y="922.52576"
+         id="text89813">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89811"
+           x="194.29623"
+           y="922.52576">DESCRIPTION TO REVISION</tspan>
+      </text>
+      <path
+         d="M 85.99015,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path89815"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 449.3426,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path89817"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 534.18088,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path89819"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="1781.3833"
+         y="919.38696"
+         id="text89823">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89821"
+           x="1781.3833"
+           y="919.38696">CUSTOMER</tspan>
+      </text>
+      <path
+         d="M 1773.3218,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path89825"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2960.1491,1093.2128 v 29.3069"
+         style="fill:none;stroke:#000000"
+         id="path89827"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2965.3264"
+         y="1105.9493"
+         id="text89831">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89829"
+           x="2965.3264"
+           y="1105.9493">REV.</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2571.7874"
+         y="1105.9493"
+         id="text89835">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89833"
+           x="2571.7874"
+           y="1105.9493">REFERENCE TO:</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2790.6934"
+         y="1105.9493"
+         id="text89839">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89837"
+           x="2790.6934"
+           y="1105.9493">DRG No.</tspan>
+      </text>
+      <path
+         d="M 3027.4016,1093.2128 H 2347.4318"
+         style="fill:none;stroke:#000000"
+         id="path89841"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2462.1982"
+         y="1105.9493"
+         id="text89845">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89843"
+           x="2462.1982"
+           y="1105.9493">SCALE</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2550.5693"
+         y="1105.9493"
+         id="text89849">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89847"
+           x="2550.5693"
+           y="1105.9493">A1</tspan>
+      </text>
+      <path
+         d="m 1773.3218,987.92906 h 1012.194"
+         style="fill:none;stroke:#000000"
+         id="path89851"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 2347.1597,903.76631 V 1122.5197"
+         style="fill:none;stroke:#000000"
+         id="path89853"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2457.0208,1052.2601 v 70.2596"
+         style="fill:none;stroke:#000000"
+         id="path89855"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2347.1597,1052.2601 h 438.3561"
+         style="fill:none;stroke:#000000"
+         id="path89857"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2352.3372"
+         y="1000.6655"
+         id="text89861">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89859"
+           x="2352.3372"
+           y="1000.6655">PROJECT PORTION</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2571.7874"
+         y="1064.9966"
+         id="text89865">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89863"
+           x="2571.7874"
+           y="1064.9966">CLIENT APPROVED</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2681.3762"
+         y="1064.9966"
+         id="text89869">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89867"
+           x="2681.3762"
+           y="1064.9966">ENGINEER APPROVED</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2352.3372"
+         y="1064.9966"
+         id="text89873">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89871"
+           x="2352.3372"
+           y="1064.9966">CHECKED PROPOSAL</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2462.1982"
+         y="1064.9966"
+         id="text89877">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89875"
+           x="2462.1982"
+           y="1064.9966">APPROVED PROPOSAL</tspan>
+      </text>
+      <path
+         d="M 2785.5158,903.76631 V 1122.5197"
+         style="fill:none;stroke:#000000"
+         id="path89879"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2352.6091"
+         y="1105.9493"
+         id="text89883">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89881"
+           x="2352.6091"
+           y="1105.9493">DRAWN BY:</tspan>
+      </text>
+      <path
+         d="m 2566.6099,1052.2601 v 70.2596"
+         style="fill:none;stroke:#000000"
+         id="path89885"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2676.1989,1052.2601 v 40.9527"
+         style="fill:none;stroke:#000000"
+         id="path89887"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="1781.3833"
+         y="1003.5497"
+         id="text89891">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89889"
+           x="1781.3833"
+           y="1003.5497">PROJECT</tspan>
+      </text>
+      <path
+         d="M 619.01916,1105.5118 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89893"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,1088.5039 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89895"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,1071.4961 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89897"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,1054.4882 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89899"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,1037.4803 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89901"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,1020.4724 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89903"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,1003.4646 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89905"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,986.45669 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89907"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,969.44882 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89909"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,952.44095 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89911"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 619.01916,935.43307 H -1e-6"
+         style="fill:none;stroke:#000000"
+         id="path89913"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 2347.1597,987.92906 H 1773.3218"
+         style="fill:none;stroke:#000000"
+         id="path89915"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 0,1122.5197 H 3027.4016 V 903.76631 H 0 Z"
+         style="fill:none;stroke:#000000"
+         id="path89917"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2785.5158,1093.2119 v 9e-4"
+         style="fill:none;stroke:#ff0000;stroke-dasharray:60, 12, 12, 12, 12, 12"
+         id="path89919"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2785.5158,1093.2119 v 9e-4"
+         style="fill:none;stroke:#414141;stroke-dasharray:12, 6"
+         id="path89921"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2785.5158,1093.2119 v 9e-4"
+         style="fill:none;stroke:#000000;stroke-dasharray:24, 12"
+         id="path89923"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m 2785.5158,1093.2119 v 9e-4"
+         style="fill:none;stroke:#000000;stroke-dasharray:72, 12, 12, 12"
+         id="path89925"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M 1392.0588,903.76631 V 1122.5197"
+         style="fill:none;stroke:#000000"
+         id="path89927"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2857.6833"
+         y="1119.9615"
+         id="text89931">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89929"
+           x="2857.6833"
+           y="1119.9615">DRAWING NUMBER?DRAWING</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2986.7556"
+         y="1119.9615"
+         id="text89935">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89933"
+           x="2986.7556"
+           y="1119.9615">DRAWING REVISION?REV</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2642.9895"
+         y="1119.9615"
+         id="text89939">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89937"
+           x="2642.9895"
+           y="1119.9615">REFERENCE DWG.REFERENCE</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2487.4795"
+         y="1120.4749"
+         id="text89943">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89941"
+           x="2487.4795"
+           y="1120.4749">SCALE?SCALE</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2354.3589"
+         y="1119.9615"
+         id="text89947">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89945"
+           x="2354.3589"
+           y="1119.9615">NAMENAME</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2014.4152"
+         y="947.43512"
+         id="text89951">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89949"
+           x="2014.4152"
+           y="947.43512">CUSTOMER - 1CUSTOMER</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2014.4152"
+         y="974.72223"
+         id="text89955">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89953"
+           x="2014.4152"
+           y="974.72223">CUSTOMER - 2CUSTOMER</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2022.8619"
+         y="1033.9188"
+         id="text89959">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89957"
+           x="2022.8619"
+           y="1033.9188">PROJECT - 1PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2022.8619"
+         y="1061.2061"
+         id="text89963">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89961"
+           x="2022.8619"
+           y="1061.2061">PROJECT - 2PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2022.8619"
+         y="1088.4932"
+         id="text89967">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89965"
+           x="2022.8619"
+           y="1088.4932">PROJECT - 3PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2022.8619"
+         y="1115.7706"
+         id="text89971">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89969"
+           x="2022.8619"
+           y="1115.7706">PROJECT - 4PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2507.7686"
+         y="1021.8051"
+         id="text89975">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89973"
+           x="2507.7686"
+           y="1021.8051">PORTION DISC 1PORTION</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="2507.7686"
+         y="1043.149"
+         id="text89979">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89977"
+           x="2507.7686"
+           y="1043.149">PORTION DISC 2PORTION</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.379257"
+         y="949.66302"
+         id="text89983">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89981"
+           x="39.379257"
+           y="949.66302">REV. NO. ATEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="949.66302"
+         id="text89987">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89985"
+           x="93.324814"
+           y="949.66302">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="949.66302"
+         id="text89991">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89989"
+           x="476.12866"
+           y="949.66302">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="949.66302"
+         id="text89995">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89993"
+           x="562.28925"
+           y="949.66302">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.385704"
+         y="966.6709"
+         id="text89999">
+        <tspan
+           sodipodi:role="line"
+           id="tspan89997"
+           x="39.385704"
+           y="966.6709">REV. NO. BTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="966.6709"
+         id="text90003">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90001"
+           x="93.324814"
+           y="966.6709">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="966.6709"
+         id="text90007">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90005"
+           x="476.12866"
+           y="966.6709">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="966.6709"
+         id="text90011">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90009"
+           x="562.28925"
+           y="966.6709">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.089218"
+         y="983.67877"
+         id="text90015">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90013"
+           x="39.089218"
+           y="983.67877">REV. NO. CTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="983.67877"
+         id="text90019">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90017"
+           x="93.324814"
+           y="983.67877">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="983.67877"
+         id="text90023">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90021"
+           x="476.12866"
+           y="983.67877">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="983.67877"
+         id="text90027">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90025"
+           x="562.28925"
+           y="983.67877">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.089218"
+         y="1000.6866"
+         id="text90031">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90029"
+           x="39.089218"
+           y="1000.6866">REV. NO. DTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1000.6866"
+         id="text90035">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90033"
+           x="93.324814"
+           y="1000.6866">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1000.6866"
+         id="text90039">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90037"
+           x="476.12866"
+           y="1000.6866">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1000.6866"
+         id="text90043">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90041"
+           x="562.28925"
+           y="1000.6866">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.385704"
+         y="1017.6945"
+         id="text90047">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90045"
+           x="39.385704"
+           y="1017.6945">REV. NO. ETEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1017.6945"
+         id="text90051">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90049"
+           x="93.324814"
+           y="1017.6945">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1017.6945"
+         id="text90055">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90053"
+           x="476.12866"
+           y="1017.6945">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1017.6945"
+         id="text90059">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90057"
+           x="562.28925"
+           y="1017.6945">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.688633"
+         y="1034.7024"
+         id="text90063">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90061"
+           x="39.688633"
+           y="1034.7024">REV. NO. FTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1034.7024"
+         id="text90067">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90065"
+           x="93.324814"
+           y="1034.7024">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1034.7024"
+         id="text90071">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90069"
+           x="476.12866"
+           y="1034.7024">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1034.7024"
+         id="text90075">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90073"
+           x="562.28925"
+           y="1034.7024">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="38.783066"
+         y="1051.7102"
+         id="text90079">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90077"
+           x="38.783066"
+           y="1051.7102">REV. NO. GTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1051.7102"
+         id="text90083">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90081"
+           x="93.324814"
+           y="1051.7102">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1051.7102"
+         id="text90087">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90085"
+           x="476.12866"
+           y="1051.7102">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1051.7102"
+         id="text90091">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90089"
+           x="562.28925"
+           y="1051.7102">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.089218"
+         y="1068.7181"
+         id="text90095">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90093"
+           x="39.089218"
+           y="1068.7181">REV. NO. HTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1068.7181"
+         id="text90099">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90097"
+           x="93.324814"
+           y="1068.7181">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1068.7181"
+         id="text90103">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90101"
+           x="476.12866"
+           y="1068.7181">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1068.7181"
+         id="text90107">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90105"
+           x="562.28925"
+           y="1068.7181">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="40.288048"
+         y="1085.726"
+         id="text90111">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90109"
+           x="40.288048"
+           y="1085.726">REV. NO. JTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1085.726"
+         id="text90115">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90113"
+           x="93.324814"
+           y="1085.726">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1085.726"
+         id="text90119">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90117"
+           x="476.12866"
+           y="1085.726">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1085.726"
+         id="text90123">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90121"
+           x="562.28925"
+           y="1085.726">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.385704"
+         y="1102.7339"
+         id="text90127">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90125"
+           x="39.385704"
+           y="1102.7339">REV. NO. KTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1102.7339"
+         id="text90131">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90129"
+           x="93.324814"
+           y="1102.7339">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1102.7339"
+         id="text90135">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90133"
+           x="476.12866"
+           y="1102.7339">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1102.7339"
+         id="text90139">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90137"
+           x="562.28925"
+           y="1102.7339">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="39.985119"
+         y="1119.7417"
+         id="text90143">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90141"
+           x="39.985119"
+           y="1119.7417">REV. NO. LTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="93.324814"
+         y="1119.7417"
+         id="text90147">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90145"
+           x="93.324814"
+           y="1119.7417">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="476.12866"
+         y="1119.7417"
+         id="text90151">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90149"
+           x="476.12866"
+           y="1119.7417">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="562.28925"
+         y="1119.7417"
+         id="text90155">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90153"
+           x="562.28925"
+           y="1119.7417">DATE OF REVISION?TEXT</tspan>
+      </text>
+    </symbol>
+    <symbol
+       id="KZN_A1_Titel">
+      <path
+         d="M -2408.3824,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path90158"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.0918"
+         y="922.52252"
+         id="text90162">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90160"
+           x="-2465.0918"
+           y="922.52252">DATE</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2556.8855"
+         y="922.51929"
+         id="text90166">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90164"
+           x="-2556.8855"
+           y="922.51929">REV. BY</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-3004.6724"
+         y="922.52576"
+         id="text90170">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90168"
+           x="-3004.6724"
+           y="922.52576">REV. NO.</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2833.1052"
+         y="922.52576"
+         id="text90174">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90172"
+           x="-2833.1052"
+           y="922.52576">DESCRIPTION TO REVISION</tspan>
+      </text>
+      <path
+         d="M -2941.4114,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path90176"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -2578.059,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path90178"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -2493.2207,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path90180"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1246.0182"
+         y="919.38696"
+         id="text90184">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90182"
+           x="-1246.0182"
+           y="919.38696">CUSTOMER</tspan>
+      </text>
+      <path
+         d="M -1254.0798,1122.5197 V 903.76631"
+         style="fill:none;stroke:#000000"
+         id="path90186"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -67.252517,1093.2128 v 29.3069"
+         style="fill:none;stroke:#000000"
+         id="path90188"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-62.075081"
+         y="1105.9493"
+         id="text90192">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90190"
+           x="-62.075081"
+           y="1105.9493">REV.</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-455.61429"
+         y="1105.9493"
+         id="text90196">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90194"
+           x="-455.61429"
+           y="1105.9493">REFERENCE TO:</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-236.7083"
+         y="1105.9493"
+         id="text90200">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90198"
+           x="-236.7083"
+           y="1105.9493">DRG No.</tspan>
+      </text>
+      <path
+         d="M 0,1093.2128 H -679.9698"
+         style="fill:none;stroke:#000000"
+         id="path90202"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-565.20331"
+         y="1105.9493"
+         id="text90206">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90204"
+           x="-565.20331"
+           y="1105.9493">SCALE</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-476.83218"
+         y="1105.9493"
+         id="text90210">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90208"
+           x="-476.83218"
+           y="1105.9493">A1</tspan>
+      </text>
+      <path
+         d="M -1254.0798,987.92906 H -241.88574"
+         style="fill:none;stroke:#000000"
+         id="path90212"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -680.2419,903.76631 V 1122.5197"
+         style="fill:none;stroke:#000000"
+         id="path90214"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -570.38076,1052.2601 v 70.2596"
+         style="fill:none;stroke:#000000"
+         id="path90216"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -680.2419,1052.2601 h 438.35616"
+         style="fill:none;stroke:#000000"
+         id="path90218"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-675.06445"
+         y="1000.6655"
+         id="text90222">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90220"
+           x="-675.06445"
+           y="1000.6655">PROJECT PORTION</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-455.61429"
+         y="1064.9966"
+         id="text90226">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90224"
+           x="-455.61429"
+           y="1064.9966">CLIENT APPROVED</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-346.02524"
+         y="1064.9966"
+         id="text90230">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90228"
+           x="-346.02524"
+           y="1064.9966">ENGINEER APPROVED</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-675.06445"
+         y="1064.9966"
+         id="text90234">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90232"
+           x="-675.06445"
+           y="1064.9966">CHECKED PROPOSAL</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-565.20331"
+         y="1064.9966"
+         id="text90238">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90236"
+           x="-565.20331"
+           y="1064.9966">APPROVED PROPOSAL</tspan>
+      </text>
+      <path
+         d="M -241.88574,903.76631 V 1122.5197"
+         style="fill:none;stroke:#000000"
+         id="path90240"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-674.79236"
+         y="1105.9493"
+         id="text90244">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90242"
+           x="-674.79236"
+           y="1105.9493">DRAWN BY:</tspan>
+      </text>
+      <path
+         d="m -460.79172,1052.2601 v 70.2596"
+         style="fill:none;stroke:#000000"
+         id="path90246"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -351.20267,1052.2601 v 40.9527"
+         style="fill:none;stroke:#000000"
+         id="path90248"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1246.0182"
+         y="1003.5497"
+         id="text90252">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90250"
+           x="-1246.0182"
+           y="1003.5497">PROJECT</tspan>
+      </text>
+      <path
+         d="m -2408.3824,1105.5118 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90254"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,1088.5039 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90256"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,1071.4961 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90258"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,1054.4882 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90260"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,1037.4803 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90262"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,1020.4724 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90264"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,1003.4646 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90266"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,986.45669 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90268"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,969.44882 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90270"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,952.44095 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90272"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -2408.3824,935.43307 h -619.0192"
+         style="fill:none;stroke:#000000"
+         id="path90274"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -680.2419,987.92906 h -573.8379"
+         style="fill:none;stroke:#000000"
+         id="path90276"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -3027.4016,1122.5197 H 0 V 903.76631 h -3027.4016 z"
+         style="fill:none;stroke:#000000"
+         id="path90278"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -241.88574,1093.2119 v 9e-4"
+         style="fill:none;stroke:#ff0000;stroke-dasharray:60, 12, 12, 12, 12, 12"
+         id="path90280"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -241.88574,1093.2119 v 9e-4"
+         style="fill:none;stroke:#414141;stroke-dasharray:12, 6"
+         id="path90282"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -241.88574,1093.2119 v 9e-4"
+         style="fill:none;stroke:#000000;stroke-dasharray:24, 12"
+         id="path90284"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -241.88574,1093.2119 v 9e-4"
+         style="fill:none;stroke:#000000;stroke-dasharray:72, 12, 12, 12"
+         id="path90286"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,942.30116 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90288"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,955.08355 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90290"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1616.309"
+         y="912.07086"
+         id="text90316">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90292"
+           x="-1616.309"
+           y="912.07086">This drawing has been prepared based on the following design criteria.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90294"
+           x="-1616.309"
+           y="921.57086" />
+        <tspan
+           sodipodi:role="line"
+           id="tspan90296"
+           x="-1616.309"
+           y="931.07086">Falsework:Concrete Mass=kN/m³</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90298"
+           x="-1616.309"
+           y="940.57086">Live Load=kN/m²</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90300"
+           x="-1616.309"
+           y="950.07086">Max. Axial Load on Standard / Prop=kN</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90302"
+           x="-1616.309"
+           y="959.57086">Max. Jack Thread Extension=mm (U.N.O)</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90304"
+           x="-1616.309"
+           y="969.07086">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90306"
+           x="-1616.309"
+           y="978.57086">Scaffolding:Max. Working Lifts=No.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90308"
+           x="-1616.309"
+           y="988.07086">Max. Working Lift Load=kg/m² (UDL)</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90310"
+           x="-1616.309"
+           y="997.57086">Max. Axial Load on Standard=kN</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90312"
+           x="-1616.309"
+           y="1007.0709">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90314"
+           x="-1616.309"
+           y="1016.5709">Back Propping / Re-propping: As per the Concrete Design Engineer's instruction.</tspan>
+      </text>
+      <path
+         d="m -1314.5963,967.86595 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90318"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,980.64834 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90320"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1000.7461 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90322"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1013.5285 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90324"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1026.3109 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90326"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1039.0933 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90328"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1051.8757 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90330"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1072.0772 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90332"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1084.8596 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90334"
+         inkscape:connector-curvature="0" />
+      <path
+         d="m -1314.5963,1097.642 h -82.9857"
+         style="fill:none;stroke:#000000;stroke-dasharray:0.5, 12"
+         id="path90336"
+         inkscape:connector-curvature="0" />
+      <path
+         d="M -1635.3428,903.76631 V 1122.5197"
+         style="fill:none;stroke:#000000"
+         id="path90338"
+         inkscape:connector-curvature="0" />
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2398.0249"
+         y="905.32922"
+         id="text90380">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90340"
+           x="-2398.0249"
+           y="905.32922">NOTES</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90342"
+           x="-2398.0249"
+           y="914.82922">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90344"
+           x="-2398.0249"
+           y="924.32922">1) This drawing is the exclusive property of Form-Scaff, a division of Waco Africa (Pty) Limited. It is subject to recall by Form-Scaff and must not be reproduced or its contents divulged</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90346"
+           x="-2398.0249"
+           y="933.82922">to third parties without Form-Scaff's prior written permission having been obtained.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90348"
+           x="-2398.0249"
+           y="943.32922">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90350"
+           x="-2398.0249"
+           y="952.82922">2) This drawing has been prepared from information supplied to Form-Scaff by the user, and is subject to final approval by user. It is the user's responsibility to ensure that the information supplied</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90352"
+           x="-2398.0249"
+           y="962.32922">to Form-Scaff has been correctly interpreted by Form-Scaff and that all dimensions and details shown are correct.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90354"
+           x="-2398.0249"
+           y="971.82922">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90356"
+           x="-2398.0249"
+           y="981.32922">3) Notwithstanding the provision of this drawing by Form-Scaff to the user, design responsibilityrests solely with the user.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90358"
+           x="-2398.0249"
+           y="990.82922" />
+        <tspan
+           sodipodi:role="line"
+           id="tspan90360"
+           x="-2398.0249"
+           y="1000.3292">4) The user is referred to the provisions of the OHS Act, the Construction Regulations, and any relevant Codes of Practice, and the user confirms by accepting this drawing that it is familiar with the</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90362"
+           x="-2398.0249"
+           y="1009.8292">provisions of the aforesaid statute, regulations and codes. It is further recommended that the user should have due regard to the provisions of British Standard BS5975.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90364"
+           x="-2398.0249"
+           y="1019.3292">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90366"
+           x="-2398.0249"
+           y="1028.8292">5) The user must ensure that &quot;Good Practice&quot; is adopted on site.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90368"
+           x="-2398.0249"
+           y="1038.3292">{</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90370"
+           x="-2398.0249"
+           y="1047.8292">6) This drawing has no status beyond that expressly denoted on the drawing. Where applicable, the user must ensure that any methods or specific instructions shown on this drawing are in</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90372"
+           x="-2398.0249"
+           y="1057.3292">accordance with the user's requirements.</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90374"
+           x="-2398.0249"
+           y="1066.8292" />
+        <tspan
+           sodipodi:role="line"
+           id="tspan90376"
+           x="-2398.0249"
+           y="1076.3292">7) The user must approach Form-Scaff for any advice or assistance in interpreting or complying with any of the above, or in the event of there being any ambiguity, contradiction, error or omission</tspan>
+        <tspan
+           sodipodi:role="line"
+           id="tspan90378"
+           x="-2398.0249"
+           y="1085.8292">apparent from this drawing or in respect of the specifications or use of any Form-Scaff equipment.</tspan>
+      </text>
+      <use
+         transform="translate(-241.88574,-134.59062)"
+         xlink:href="#KZN_Titel"
+         id="use90382"
+         x="0"
+         y="0"
+         width="100%"
+         height="100%" />
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-169.71829"
+         y="1119.9615"
+         id="text90386">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90384"
+           x="-169.71829"
+           y="1119.9615">DRAWING NUMBER?DRAWING</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-40.645969"
+         y="1119.9615"
+         id="text90390">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90388"
+           x="-40.645969"
+           y="1119.9615">DRAWING REVISION?REV</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-384.41199"
+         y="1119.9615"
+         id="text90394">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90392"
+           x="-384.41199"
+           y="1119.9615">REFERENCE DWG.REFERENCE</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-539.922"
+         y="1120.4749"
+         id="text90398">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90396"
+           x="-539.922"
+           y="1120.4749">SCALE?SCALE</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-673.04266"
+         y="1119.9615"
+         id="text90402">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90400"
+           x="-673.04266"
+           y="1119.9615">NAMENAME</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1012.9865"
+         y="947.43512"
+         id="text90406">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90404"
+           x="-1012.9865"
+           y="947.43512">CUSTOMER - 1CUSTOMER</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1012.9865"
+         y="974.72223"
+         id="text90410">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90408"
+           x="-1012.9865"
+           y="974.72223">CUSTOMER - 2CUSTOMER</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1004.5396"
+         y="1033.9188"
+         id="text90414">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90412"
+           x="-1004.5396"
+           y="1033.9188">PROJECT - 1PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1004.5396"
+         y="1061.2061"
+         id="text90418">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90416"
+           x="-1004.5396"
+           y="1061.2061">PROJECT - 2PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1004.5396"
+         y="1088.4932"
+         id="text90422">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90420"
+           x="-1004.5396"
+           y="1088.4932">PROJECT - 3PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:14px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1004.5396"
+         y="1115.7706"
+         id="text90426">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90424"
+           x="-1004.5396"
+           y="1115.7706">PROJECT - 4PROJECT</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-519.633"
+         y="1021.8051"
+         id="text90430">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90428"
+           x="-519.633"
+           y="1021.8051">PORTION DISC 1PORTION</tspan>
+      </text>
+      <text
+         style="font-size:13.80000019px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-519.633"
+         y="1043.149"
+         id="text90434">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90432"
+           x="-519.633"
+           y="1043.149">PORTION DISC 2PORTION</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="940.0788"
+         id="text90438">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90436"
+           x="-1337.3262"
+           y="940.0788">Falsework Concrete Mass?FALSEWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="952.86121"
+         id="text90442">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90440"
+           x="-1337.3262"
+           y="952.86121">Falsework Live Load?FALSEWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="965.64362"
+         id="text90446">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90444"
+           x="-1337.3262"
+           y="965.64362">Falsework Max. Axial load on Std / Prop?FALSEWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="978.42603"
+         id="text90450">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90448"
+           x="-1337.3262"
+           y="978.42603">Falsework Max. Jack Thread Ext?FALSEWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="998.52374"
+         id="text90454">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90452"
+           x="-1337.3262"
+           y="998.52374">Formwork Concrete pressure?FORMWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1011.3062"
+         id="text90458">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90456"
+           x="-1337.3262"
+           y="1011.3062">Formwork Max. Formwork Mass?FORMWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1024.0885"
+         id="text90462">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90460"
+           x="-1337.3262"
+           y="1024.0885">Formwork Max. Mass of Gang-formed unit?FORMWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1036.871"
+         id="text90466">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90464"
+           x="-1337.3262"
+           y="1036.871">Formwork Max. Rate of Pour?FORMWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1049.6533"
+         id="text90470">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90468"
+           x="-1337.3262"
+           y="1049.6533">Formwork Ambient Temperature?FORMWORK</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1069.8549"
+         id="text90474">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90472"
+           x="-1337.3262"
+           y="1069.8549">Scaffolding Max. Working Lifts?SCAFFOLDING</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1082.6373"
+         id="text90478">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90476"
+           x="-1337.3262"
+           y="1082.6373">Scaffolding Max. Working Lift Load?SCAFFOLDING</tspan>
+      </text>
+      <text
+         style="font-size:7.5999999px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-1337.3262"
+         y="1095.4197"
+         id="text90482">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90480"
+           x="-1337.3262"
+           y="1095.4197">Scaffolding Max. Axial Load on Standard?SCAFFOLDING</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.0222"
+         y="949.66302"
+         id="text90486">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90484"
+           x="-2988.0222"
+           y="949.66302">REV. NO. ATEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="949.66302"
+         id="text90490">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90488"
+           x="-2934.0767"
+           y="949.66302">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="949.66302"
+         id="text90494">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90492"
+           x="-2551.2729"
+           y="949.66302">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="949.66302"
+         id="text90498">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90496"
+           x="-2465.1123"
+           y="949.66302">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.0159"
+         y="966.6709"
+         id="text90502">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90500"
+           x="-2988.0159"
+           y="966.6709">REV. NO. BTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="966.6709"
+         id="text90506">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90504"
+           x="-2934.0767"
+           y="966.6709">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="966.6709"
+         id="text90510">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90508"
+           x="-2551.2729"
+           y="966.6709">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="966.6709"
+         id="text90514">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90512"
+           x="-2465.1123"
+           y="966.6709">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.3123"
+         y="983.67877"
+         id="text90518">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90516"
+           x="-2988.3123"
+           y="983.67877">REV. NO. CTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="983.67877"
+         id="text90522">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90520"
+           x="-2934.0767"
+           y="983.67877">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="983.67877"
+         id="text90526">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90524"
+           x="-2551.2729"
+           y="983.67877">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="983.67877"
+         id="text90530">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90528"
+           x="-2465.1123"
+           y="983.67877">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.3123"
+         y="1000.6866"
+         id="text90534">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90532"
+           x="-2988.3123"
+           y="1000.6866">REV. NO. DTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1000.6866"
+         id="text90538">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90536"
+           x="-2934.0767"
+           y="1000.6866">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1000.6866"
+         id="text90542">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90540"
+           x="-2551.2729"
+           y="1000.6866">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1000.6866"
+         id="text90546">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90544"
+           x="-2465.1123"
+           y="1000.6866">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.0159"
+         y="1017.6945"
+         id="text90550">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90548"
+           x="-2988.0159"
+           y="1017.6945">REV. NO. ETEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1017.6945"
+         id="text90554">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90552"
+           x="-2934.0767"
+           y="1017.6945">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1017.6945"
+         id="text90558">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90556"
+           x="-2551.2729"
+           y="1017.6945">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1017.6945"
+         id="text90562">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90560"
+           x="-2465.1123"
+           y="1017.6945">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2987.7129"
+         y="1034.7024"
+         id="text90566">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90564"
+           x="-2987.7129"
+           y="1034.7024">REV. NO. FTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1034.7024"
+         id="text90570">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90568"
+           x="-2934.0767"
+           y="1034.7024">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1034.7024"
+         id="text90574">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90572"
+           x="-2551.2729"
+           y="1034.7024">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1034.7024"
+         id="text90578">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90576"
+           x="-2465.1123"
+           y="1034.7024">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.6184"
+         y="1051.7102"
+         id="text90582">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90580"
+           x="-2988.6184"
+           y="1051.7102">REV. NO. GTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1051.7102"
+         id="text90586">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90584"
+           x="-2934.0767"
+           y="1051.7102">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1051.7102"
+         id="text90590">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90588"
+           x="-2551.2729"
+           y="1051.7102">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1051.7102"
+         id="text90594">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90592"
+           x="-2465.1123"
+           y="1051.7102">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.3123"
+         y="1068.7181"
+         id="text90598">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90596"
+           x="-2988.3123"
+           y="1068.7181">REV. NO. HTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1068.7181"
+         id="text90602">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90600"
+           x="-2934.0767"
+           y="1068.7181">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1068.7181"
+         id="text90606">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90604"
+           x="-2551.2729"
+           y="1068.7181">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1068.7181"
+         id="text90610">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90608"
+           x="-2465.1123"
+           y="1068.7181">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2987.1135"
+         y="1085.726"
+         id="text90614">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90612"
+           x="-2987.1135"
+           y="1085.726">REV. NO. JTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1085.726"
+         id="text90618">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90616"
+           x="-2934.0767"
+           y="1085.726">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1085.726"
+         id="text90622">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90620"
+           x="-2551.2729"
+           y="1085.726">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1085.726"
+         id="text90626">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90624"
+           x="-2465.1123"
+           y="1085.726">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2988.0159"
+         y="1102.7339"
+         id="text90630">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90628"
+           x="-2988.0159"
+           y="1102.7339">REV. NO. KTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1102.7339"
+         id="text90634">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90632"
+           x="-2934.0767"
+           y="1102.7339">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1102.7339"
+         id="text90638">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90636"
+           x="-2551.2729"
+           y="1102.7339">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1102.7339"
+         id="text90642">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90640"
+           x="-2465.1123"
+           y="1102.7339">DATE OF REVISION?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2987.4165"
+         y="1119.7417"
+         id="text90646">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90644"
+           x="-2987.4165"
+           y="1119.7417">REV. NO. LTEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2934.0767"
+         y="1119.7417"
+         id="text90650">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90648"
+           x="-2934.0767"
+           y="1119.7417">REVISION DESCRIPTION:-TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2551.2729"
+         y="1119.7417"
+         id="text90654">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90652"
+           x="-2551.2729"
+           y="1119.7417">REVISED BY?TEXT</tspan>
+      </text>
+      <text
+         style="font-size:9.39999962px;line-height:125%;font-family:Arial;fill:#000000"
+         x="-2465.1123"
+         y="1119.7417"
+         id="text90658">
+        <tspan
+           sodipodi:role="line"
+           id="tspan90656"
+           x="-2465.1123"
+           y="1119.7417">DATE OF REVISION?TEXT</tspan>
+      </text>
+    </symbol>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath91245">
+      <g
+         id="use91247"
+         inkscape:label="Clip">
+        <use
+           transform="translate(81.99999,-74.62138)"
+           xlink:href="#KZN_Titel"
+           id="use116612"
+           x="0"
+           y="0"
+           width="100%"
+           height="100%" />
+      </g>
+    </clipPath>
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="0"
+     id="g90667"
+     transform="translate(0,1122.5197)">
+    <rect
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.88976383;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect116616"
+       width="3027.1016"
+       height="2093.5583"
+       x="75.740562"
+       y="-1046.7792" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="113.66708"
+       y="907.56201"
+       id="text116526"><tspan
+         sodipodi:role="line"
+         id="tspan116524"
+         x="113.66708"
+         y="907.56201"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle">REV. NO.</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,895.24802 H 3102.9921"
+       id="path116530"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 151.6811,895.24802 V 1046.9291"
+       id="path116532"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path116534"
+       d="M 454.04331,895.24802 V 1046.9291"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 529.63386,895.24802 V 1046.4302"
+       id="path116536"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path116538"
+       d="M 605.22441,895.24802 V 1046.9291"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,914.14565 H 605.22441"
+       id="path116540"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path116542"
+       d="M 75.590564,933.04329 H 605.22441"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,951.94093 H 605.22441"
+       id="path116544"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path116546"
+       d="M 75.590564,970.83857 H 605.22441"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,989.73621 H 605.22441"
+       id="path116548"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path116550"
+       d="M 75.590564,1008.6338 H 605.22441"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,1027.5315 H 605.22441"
+       id="path116552"
+       inkscape:connector-curvature="0" />
+    <text
+       id="text116560"
+       y="907.56201"
+       x="302.89346"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle"
+         y="907.56201"
+         x="302.89346"
+         id="tspan116558"
+         sodipodi:role="line">DESCRIPTION</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="491.86008"
+       y="907.56201"
+       id="text116566"><tspan
+         sodipodi:role="line"
+         id="tspan116564"
+         x="491.86008"
+         y="907.56201"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle">AUTHOR</tspan></text>
+    <text
+       id="text116574"
+       y="907.56201"
+       x="567.45062"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle"
+         y="907.56201"
+         x="567.45062"
+         id="tspan116572"
+         sodipodi:role="line">DATE</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 2800.5,895.24802 V 1046.9291"
+       id="path116576"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 2800.5,1008.6338 h 302.4921"
+       id="path116578"
+       inkscape:connector-curvature="0" />
+    <text
+       id="text116574-9"
+       y="1019.1506"
+       x="2805.2446"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start"
+         y="1019.1506"
+         x="2805.2446"
+         id="tspan116572-6"
+         sodipodi:role="line">DRAWING NUMBER</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 3027.4027,1008.6338 v 38.2953"
+       id="path116598"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="3031.5188"
+       y="1019.1506"
+       id="text116602"><tspan
+         sodipodi:role="line"
+         id="tspan116600"
+         x="3031.5188"
+         y="1019.1506"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start">REV</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="2805.2446"
+       y="1036.6506"
+       id="text116606"><tspan
+         sodipodi:role="line"
+         id="tspan116604"
+         x="2805.2446"
+         y="1036.6506"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.33333302px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start">{{number}}</tspan></text>
+    <text
+       id="text116610"
+       y="1036.6506"
+       x="3032.1672"
+       style="font-style:normal;font-weight:normal;font-size:8px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.33333302px;line-height:100%;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start"
+         y="1036.6506"
+         x="3032.1672"
+         id="tspan116608"
+         sodipodi:role="line">{{revision}}</tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Centerline"
+     id="g90669"
+     transform="translate(0,1122.5197)" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Concrete"
+     id="g90671"
+     transform="translate(0,1122.5197)" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Dimension"
+     id="g90673"
+     transform="translate(0,1122.5197)" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="viewport"
+     id="g90675"
+     transform="translate(0,1122.5197)" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Defpoints"
+     id="g90677"
+     transform="translate(0,1122.5197)" />
+</svg>
