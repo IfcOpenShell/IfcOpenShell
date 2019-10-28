@@ -72,6 +72,8 @@ class GbxmlExporter():
         space = self.gbxml.add_element(building, 'Space')
         space.set('id', object.name)
         space.set('lightScheduleIdRef', 'aim0130') # hardcoded
+        self.gbxml.add_element(space, 'Name', object.name)
+
         light_power_per_area = self.gbxml.add_element(space, 'LightPowerPerArea', '5') # hardcoded test
         light_power_per_area.set('unit', 'WattPerSquareMeter')
         calculated_area = 0
@@ -82,7 +84,8 @@ class GbxmlExporter():
         vertices_in_vg = self.get_vertices_in_vg(object, 0)
         for polygon in object.data.polygons:
             # First vg is reserved for surfaces
-            if not self.is_polygon_in_vg(polygon, vertices_in_vg):
+            if object.vertex_groups \
+                and not self.is_polygon_in_vg(polygon, vertices_in_vg):
                 continue
             calculated_area += polygon.area
             self.create_poly_loop(object, polygon, closed_shell)
