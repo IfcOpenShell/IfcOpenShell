@@ -2,6 +2,7 @@ import os
 import math
 import svgwrite
 import time
+from pathlib import Path
 
 import OCC.gp
 import OCC.Geom
@@ -40,7 +41,7 @@ class IfcCutter:
         self.product_shapes = []
         self.background_elements = []
         self.cut_polygons = []
-        self.ifc_file = None
+        self.ifc_files = []
         self.unit = None
         self.section_box = {
             'top_left_corner': (-3., -2.45, 4.75),
@@ -53,17 +54,75 @@ class IfcCutter:
             'face': None
         }
 
+        self.section_box = {
+            'top_left_corner': (-3.097275733947754, 0.42036718130111694, 11.297039031982422),
+            'projection': (0.0, 1.0000001192092896, 0.0),
+            'x_axis': (1.0000001192092896, 0.0, 0.0),
+            'x': 16.4,
+            'y': 16.4,
+            'z': 16.5,
+            'shape': None,
+            'face': None
+        }
+        self.section_box = {
+            'projection': (0.0, 1.0000001192092896, 0.0),
+            #'top_left_corner': (11.5675630569458, -4.225902557373047, 7.368159770965576),
+            'top_left_corner': (11.5675630569458, 0.1, 7.368159770965576),
+            'x_axis': (1.0000001192092896, 0.0, 0.0),
+            'x': 17.4,
+            'y': 8.37,
+            'z': 5.23,
+            'shape': None,
+            'face': None
+            }
+        self.section_box = {
+            'projection': (0.0, 3.2584136988589307e-07, -1.0),
+            'top_left_corner': (12.898375511169434, 31.655664443969727, 2.339174270629883),
+            'x_axis': (1.0, 0.0, 0.0),
+            'x': 17.4,
+            'y': 34.4,
+            'z': 5.23,
+            'shape': None,
+            'face': None
+            }
+
     def cut(self):
-        self.ifc_file = ifcopenshell.open('output.ifc')
+        start_time = time.time()
+        print('# Load files')
+        self.load_ifc_files()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Get units')
         self.get_units()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Get product shapes')
         self.get_product_shapes()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Create section box')
         self.create_section_box()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Get cut polygons')
         self.get_cut_polygons()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Get background elements')
         self.get_background_elements()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Sort background elements')
         self.sort_background_elements()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+
+    def load_ifc_files(self):
+        for filename in Path('ifc/').glob('*.ifc'):
+            print('Loading file {} ...'.format(filename))
+            self.ifc_files.append(ifcopenshell.open(filename))
 
     def get_units(self):
-        unit_assignment = self.ifc_file.by_type('IfcUnitAssignment')[0]
+        unit_assignment = self.ifc_files[0].by_type('IfcUnitAssignment')[0]
         for unit in unit_assignment.Units:
             if unit.UnitType == 'LENGTHUNIT':
                 self.unit = unit
@@ -72,8 +131,12 @@ class IfcCutter:
     def get_product_shapes(self):
         settings = ifcopenshell.geom.settings()
         settings.set(settings.USE_PYTHON_OPENCASCADE, True)
-        products = self.ifc_file.by_type('IfcProduct')
-        for product in products:
+        products = []
+        for ifc_file in self.ifc_files:
+            products.extend(ifc_file.by_type('IfcProduct'))
+        total_products = len(products)
+        for i, product in enumerate(products):
+            print('{}/{} geometry processed ...'.format(i, total_products), end='\r', flush=True)
             if product.is_a('IfcOpeningElement') or product.is_a('IfcSite'):
                 continue
             if product.Representation is not None:
@@ -108,23 +171,19 @@ class IfcCutter:
 
         source = OCC.gp.gp_Ax3(axis)
         destination = OCC.gp.gp_Ax3(
-            top_left_corner,
-            OCC.gp.gp_Dir(0, 0, 1),
+            OCC.gp.gp_Pnt(0, 0, 0),
+            OCC.gp.gp_Dir(0, 0, -1),
             OCC.gp.gp_Dir(1, 0, 0))
         self.transformation = OCC.gp.gp_Trsf()
-        self.transformation.SetTransformation(source, destination)
-
-        transformed_face = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
-            self.section_box['face'], self.transformation).Shape()
-        exp = OCC.TopExp.TopExp_Explorer(transformed_face, OCC.TopAbs.TopAbs_VERTEX)
-        transformed_vertex = OCC.BRep.BRep_Tool.Pnt(topods.Vertex(exp.Current()))
-
-        self.transformation.SetTranslationPart(
-            OCC.gp.gp_Vec(-transformed_vertex.X(), -transformed_vertex.Y(), 0))
+        self.transformation.SetDisplacement(source, destination)
 
     def get_background_elements(self):
+        total_product_shapes = len(self.product_shapes)
+        n = 0
         for product, shape in self.product_shapes:
-            print('Processing product {} '.format(product.Name))
+            print('{}/{} background elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
+            #print('Processing product {} '.format(product.Name))
+            n += 1
             intersection = OCC.BRepAlgoAPI.BRepAlgoAPI_Common(self.section_box['shape'], shape).Shape()
             intersection_edges = self.get_booleaned_edges(intersection)
             if len(intersection_edges) <= 0:
@@ -161,7 +220,12 @@ class IfcCutter:
             adjface = OCC.TopoDS.TopoDS_Face()
             getadj = OCC.TopOpeBRepBuild.TopOpeBRepBuild_Tools.GetAdjacentFace(face, edge, edge_face_map, adjface)
             if getadj:
-                edge_angle = math.degrees(self.get_angle_between_faces(face, adjface))
+                try:
+                    edge_angle = math.degrees(self.get_angle_between_faces(face, adjface))
+                except:
+                    # TODO: Figure out when a math domain error might occur,
+                    # because it does, sometimes.
+                    edge_angle = 0
                 if edge_angle > 30 and edge_angle < 160:
                     newedge = self.build_new_edge(edge, zmax+0.01)
                     if newedge:
@@ -268,7 +332,8 @@ class IfcCutter:
                         'z': zpos
                         })
             except:
-                print('Could not build face')
+                #print('Could not build face')
+                pass
             exp.Next()
 
     def get_area(self, shape):
@@ -285,7 +350,11 @@ class IfcCutter:
         return edges
 
     def get_cut_polygons(self):
+        total_product_shapes = len(self.product_shapes)
+        n = 0
         for product, shape in self.product_shapes:
+            print('{}/{} cut elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
+            n += 1
             section = OCC.BRepAlgoAPI.BRepAlgoAPI_Section(self.section_box['face'], shape).Shape()
             section_edges = self.get_booleaned_edges(section)
             if len(section_edges) <= 0:
@@ -336,9 +405,9 @@ class IfcCutterDebug(IfcCutter):
 
     def display_everything_with_section_plane(self):
         section_face_display = ifcopenshell.geom.utils.display_shape(self.section_box['face'])
-        ifcopenshell.geom.utils.set_shape_transparency(section_face_display, 0.5)
+        ifcopenshell.geom.utils.set_shape_transparency(section_face_display, 0.8)
         section_box_display = ifcopenshell.geom.utils.display_shape(self.section_box['shape'])
-        ifcopenshell.geom.utils.set_shape_transparency(section_box_display, 0.2)
+        ifcopenshell.geom.utils.set_shape_transparency(section_box_display, 0.5)
 
         transformed_box = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
             self.section_box['shape'], self.transformation)
@@ -376,72 +445,83 @@ class SvgWriter():
 
     def write(self):
         self.calculate_scale()
-        self.svg = svgwrite.Drawing('test.svg',
+        self.svg = svgwrite.Drawing('output.svg',
+            debug=False,
             size=('{}mm'.format(self.ifc_cutter.section_box['x'] * self.scale),
                 '{}mm'.format(self.ifc_cutter.section_box['y'] * self.scale)),
             viewBox=('0 0 {} {}'.format(
                 self.ifc_cutter.section_box['x'] * self.scale,
                 self.ifc_cutter.section_box['y'] * self.scale)))
+        self.add_stylesheet()
         self.draw_background_elements()
         self.draw_cut_polygons()
-        self.svg.save()
+        self.svg.save(pretty=True)
 
     def calculate_scale(self):
         # TODO: properly handle units
         if self.ifc_cutter.unit.Name == 'METRE':
             self.scale *= 1000
 
+    def add_stylesheet(self):
+        with open('styles/default.css', 'r') as stylesheet:
+            self.svg.defs.add(self.svg.style(stylesheet.read()))
+
     def draw_background_elements(self):
         for element in self.ifc_cutter.background_elements:
             if element['type'] == 'polygon':
-                self.draw_polygon(element, 'white', 0)
+                self.draw_polygon(element, 'background')
             elif element['type'] == 'polyline':
-                self.draw_polyline(element)
+                self.draw_polyline(element, 'background')
             elif element['type'] == 'line':
-                self.draw_line(element)
+                self.draw_line(element, 'background')
 
     def draw_cut_polygons(self):
         for polygon in self.ifc_cutter.cut_polygons:
-            self.draw_polygon(polygon, 'red', 0.5)
+            self.draw_polygon(polygon, 'cut')
 
-    def draw_polyline(self, element):
+    def draw_polyline(self, element, position):
+        classes = self.get_classes(element['raw'], position)
         exp = OCC.BRepTools.BRepTools_WireExplorer(element['geometry'])
         points = []
         while exp.More():
             point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
             points.append((point.X() * self.scale, -point.Y() * self.scale))
             exp.Next()
-        self.svg.add(self.svg.polyline(points=points))
+        self.svg.add(self.svg.polyline(points=points, class_=' '.join(classes)))
 
-    def draw_line(self, element):
+    def draw_line(self, element, position):
+        classes = self.get_classes(element['raw'], position)
         exp = OCC.TopExp.TopExp_Explorer(element['geometry'], OCC.TopAbs.TopAbs_VERTEX)
         points = []
         while exp.More():
             point = OCC.BRep.BRep_Tool.Pnt(topods.Vertex(exp.Current()))
             points.append((point.X() * self.scale, -point.Y() * self.scale))
             exp.Next()
-        self.svg.add(self.svg.line(start=points[0], end=points[1],
-            stroke=svgwrite.rgb(0, 0, 0, '%'), stroke_width=0.2))
+        self.svg.add(self.svg.line(start=points[0], end=points[1], class_=' '.join(classes)))
 
-    def draw_polygon(self, polygon, fill, stroke_width):
+    def draw_polygon(self, polygon, position):
+        classes = self.get_classes(polygon['raw'], position)
         exp = OCC.BRepTools.BRepTools_WireExplorer(polygon['geometry'])
         points = []
         while exp.More():
             point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
             points.append((point.X() * self.scale, -point.Y() * self.scale))
             exp.Next()
-        self.svg.add(self.svg.polygon(
-            points=points, fill=fill,
-            stroke=svgwrite.rgb(0, 0, 0, '%'),
-            stroke_width=stroke_width,
-            stroke_linejoin='round'
-            ))
+        self.svg.add(self.svg.polygon(points=points, class_=' '.join(classes)))
+
+    def get_classes(self, element, position):
+        classes = [position, element.is_a()]
+        for association in element.HasAssociations:
+            if association.is_a('IfcRelAssociatesMaterial'):
+                classes.append('material-{}'.format(association.RelatingMaterial.Name))
+        classes.append('globalid-{}'.format(element.GlobalId))
+        return classes
 
 print('# Starting process')
-start_time = time.time()
 ifc_cutter = IfcCutter()
 #ifc_cutter = IfcCutterDebug()
 svg_writer = SvgWriter(ifc_cutter)
 ifc_cutter.cut()
+start_time = time.time()
 svg_writer.write()
-print('# Process finished in {:.2f} seconds'.format(time.time() - start_time))
+print('# SVG writing finished in {:.2f} seconds'.format(time.time() - start_time))
