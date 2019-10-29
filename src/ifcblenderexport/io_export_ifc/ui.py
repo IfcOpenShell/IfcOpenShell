@@ -49,6 +49,8 @@ class BIMProperties(bpy.types.PropertyGroup):
     pset_file: bpy.props.EnumProperty(items=getPsetFiles, name="Pset File")
     has_georeferencing: bpy.props.BoolProperty(name="Has Georeferencing", default=False)
     global_id: bpy.props.StringProperty(name="GlobalId")
+    features_dir: bpy.props.StringProperty(default='', name="Features Directory")
+    diff_json_file: bpy.props.StringProperty(default='', name="Diff JSON File")
 
 class MapConversion(bpy.types.PropertyGroup):
     eastings: bpy.props.StringProperty(name="Eastings")
@@ -301,6 +303,26 @@ class BIMPanel(bpy.types.Panel):
         row.operator("bim.assign_pset")
         row.operator("bim.unassign_pset")
 
+class QAPanel(bpy.types.Panel):
+    bl_label = "BIMTester Quality Auditing"
+    bl_idname = "BIM_PT_qa"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        bim_properties = bpy.context.scene.BIMProperties
+
+        layout.label(text="Gherkin Setup:")
+
+        row = layout.row(align=True)
+        row.prop(bim_properties, "features_dir")
+        row.operator("bim.select_features_dir", icon="FILE_FOLDER", text="")
+
         layout.label(text="Quality Auditing:")
 
         row = layout.row()
@@ -318,6 +340,26 @@ class BIMPanel(bpy.types.Panel):
 
         row = layout.row()
         row.operator("bim.select_audited")
+
+class DiffPanel(bpy.types.Panel):
+    bl_label = "IFC Diff"
+    bl_idname = "BIM_PT_diff"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        bim_properties = bpy.context.scene.BIMProperties
+
+        layout.label(text="IFC Diff Setup:")
+
+        row = layout.row(align=True)
+        row.prop(bim_properties, "diff_json_file")
+        row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
 
 class MVDPanel(bpy.types.Panel):
     bl_label = "Model View Definitions"

@@ -384,6 +384,32 @@ class SelectExternalMaterialDir(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+class SelectDiffJsonFile(bpy.types.Operator):
+    bl_idname = "bim.select_diff_json_file"
+    bl_label = "Select Diff JSON File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.diff_json_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+class SelectFeaturesDir(bpy.types.Operator):
+    bl_idname = "bim.select_features_dir"
+    bl_label = "Select Features Directory"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.features_dir = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
