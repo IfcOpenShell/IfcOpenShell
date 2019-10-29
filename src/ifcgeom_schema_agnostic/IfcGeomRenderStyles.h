@@ -65,7 +65,9 @@ namespace IfcGeom {
 			std::stringstream sstr; 
 			std::string sanitized = name;
             boost::to_lower(sanitized);
-            boost::replace_all(sanitized, " ", "-");
+			std::replace_if(sanitized.begin(), sanitized.end(), [](char c) {
+				return c < 0x21 || c > 0x7e;
+			}, '-');
 			sstr << "surface-style-" << id << "-" << sanitized;
 			this->name = sstr.str(); 
 		}
