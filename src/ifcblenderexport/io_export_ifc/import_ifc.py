@@ -29,6 +29,13 @@ def get_axis2placement(plc):
     x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
     o = plc.Location.Coordinates 
     return a2p(o,z,x) 
+
+def get_cartesiantransformationoperator(plc): 
+    #z = mathutils.Vector(plc.Axis3.DirectionRatios if plc.Axis3 else (0,0,1)) 
+    x = mathutils.Vector(plc.Axis1.DirectionRatios if plc.Axis1 else (1,0,0)) 
+    z = x.cross(mathutils.Vector(plc.Axis2.DirectionRatios if plc.Axis2 else (0,1,0)))
+    o = plc.LocalOrigin.Coordinates 
+    return a2p(o,z,x) 
     
 def get_local_placement(plc):
     if plc.PlacementRelTo is None: 
@@ -95,6 +102,7 @@ class IfcImporter():
         self.spatial_structure_elements = {}
         self.elements = {}
         self.meshes = {}
+        self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1
 
@@ -171,6 +179,7 @@ class IfcImporter():
 
                 mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
+                self.mesh_shapes[mesh_name] = shape
             else:
                 print('MESH REUSED')
         except:
@@ -185,6 +194,30 @@ class IfcImporter():
         object = bpy.data.objects.new(self.get_name(element), mesh)
 
         element_matrix = get_local_placement(element.ObjectPlacement)
+
+        # Blender supports reusing a mesh with a different transformation
+        # applied at the object level. In contrast, IFC supports reusing a mesh
+        # with a different transformation applied at the mesh level _as well as_
+        # the object level. For this reason, if the end-goal is to re-use mesh
+        # data, we must combine IFC's mesh-level transformation into Blender's
+        # object level transformation.
+
+        # The first step to do this is to _undo_ the mesh-level transformation
+        # from whatever shared mesh we are using, as it is not necessarily the
+        # same as the current mesh.
+        shared_shape_transformation = self.get_representation_cartesian_transformation(
+            self.file.by_id(self.mesh_shapes[mesh_name].product.id()))
+        if shared_shape_transformation:
+            shared_transform = get_cartesiantransformationoperator(shared_shape_transformation)
+            shared_transform.invert()
+            element_matrix = element_matrix @ shared_transform
+
+        # The next step is to apply the current element's mesh level
+        # transformation to our current element's object transformation
+        transformation = self.get_representation_cartesian_transformation(element)
+        if transformation:
+            element_matrix = get_cartesiantransformationoperator(transformation) @ element_matrix
+
         element_matrix[0][3] *= self.unit_scale
         element_matrix[1][3] *= self.unit_scale
         element_matrix[2][3] *= self.unit_scale
@@ -224,6 +257,16 @@ class IfcImporter():
                 return representation.id()
             elif representation.RepresentationIdentifier == 'Body':
                 return representation.Items[0].MappingSource.MappedRepresentation.id()
+
+    def get_representation_cartesian_transformation(self, element):
+        if not element.Representation:
+            return None
+        for representation in element.Representation.Representations:
+            if not representation.is_a('IfcShapeRepresentation'):
+                continue
+            if representation.RepresentationIdentifier == 'Body' \
+                and representation.RepresentationType == 'MappedRepresentation':
+                return representation.Items[0].MappingTarget
 
     def create_mesh(self, element, shape):
         try:
