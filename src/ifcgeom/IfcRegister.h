@@ -58,6 +58,12 @@ SHAPE(IfcCylindricalSurface);
 #ifdef SCHEMA_HAS_IfcAdvancedBrep
 SHAPE(IfcAdvancedBrep);
 #endif
+#ifdef SCHEMA_HAS_IfcToroidalSurface
+SHAPE(IfcToroidalSurface);
+#endif
+#ifdef SCHEMA_HAS_IfcSphericalSurface
+SHAPE(IfcSphericalSurface);
+#endif
 // FIXME: Surfaces should have a shape type of their own
 #ifdef SCHEMA_HAS_IfcBSplineSurfaceWithKnots
 SHAPE(IfcBSplineSurfaceWithKnots);
