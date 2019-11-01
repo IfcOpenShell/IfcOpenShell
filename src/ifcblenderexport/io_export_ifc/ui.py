@@ -51,6 +51,8 @@ class BIMProperties(bpy.types.PropertyGroup):
     global_id: bpy.props.StringProperty(name="GlobalId")
     features_dir: bpy.props.StringProperty(default='', name="Features Directory")
     diff_json_file: bpy.props.StringProperty(default='', name="Diff JSON File")
+    aggregate_class: bpy.props.EnumProperty(items = getIfcClasses, name="Aggregate Class")
+    aggregate_name: bpy.props.StringProperty(name="Aggregate Name")
 
 class MapConversion(bpy.types.PropertyGroup):
     eastings: bpy.props.StringProperty(name="Eastings")
@@ -302,6 +304,18 @@ class BIMPanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("bim.assign_pset")
         row.operator("bim.unassign_pset")
+
+        layout.label(text="Aggregates:")
+        row = layout.row()
+        row.prop(bim_properties, "aggregate_class")
+        row = layout.row()
+        row.prop(bim_properties, "aggregate_name")
+        row = layout.row()
+        row.operator("bim.create_aggregate")
+
+        row = layout.row(align=True)
+        row.operator("bim.edit_aggregate")
+        row.operator("bim.save_aggregate")
 
 class QAPanel(bpy.types.Panel):
     bl_label = "BIMTester Quality Auditing"
