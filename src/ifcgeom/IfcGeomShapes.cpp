@@ -108,6 +108,10 @@
 
 #include <memory>
 
+#ifdef SCHEMA_HAS_IfcToroidalSurface
+#include <Geom_ToroidalSurface.hxx>
+#endif
+
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
@@ -1187,12 +1191,10 @@ namespace {
 		}
 	}
 
-	void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
+	void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires) {
 		std::vector<TopoDS_Edge> sorted_edges;
 		sort_edges(wire, sorted_edges);
 		
-		bool segment_next = true;
-
 		BRep_Builder B;
 		double u, v;
 
@@ -1222,7 +1224,7 @@ namespace {
 	// @todo make this generic for other sweeps not just swept disk
 	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
 		std::vector<TopoDS_Wire> wires;
-		segment_adjacent_non_linear(wire, wires, 1.e-2);
+		segment_adjacent_non_linear(wire, wires);
 
 		TopoDS_Compound C;
 		BRep_Builder B;
@@ -1287,7 +1289,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 
 	if (hasInnerRadius) {
 		// Subtraction of pipes with small radii is unstable.
-		const double r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
+		r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
 	}
 
 	if (r2 > getValue(GV_PRECISION) * 10.) {
@@ -1334,11 +1336,33 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 	
 	// IfcElementarySurface.Position has unit scale factor
-#if OCC_VERSION_HEX < 0x60502
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT))).Face().Moved(trsf);
-#else
 	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
+	return true;
+}
+
 #endif
+
+#ifdef SCHEMA_HAS_IfcSphericalSurface
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcSphericalSurface* l, TopoDS_Shape& face) {
+	gp_Trsf trsf;
+	IfcGeom::Kernel::convert(l->Position(), trsf);
+
+	// IfcElementarySurface.Position has unit scale factor
+	face = BRepBuilderAPI_MakeFace(new Geom_SphericalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
+	return true;
+}
+
+#endif
+
+#ifdef SCHEMA_HAS_IfcToroidalSurface
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcToroidalSurface* l, TopoDS_Shape& face) {
+	gp_Trsf trsf;
+	IfcGeom::Kernel::convert(l->Position(), trsf);
+
+	// IfcElementarySurface.Position has unit scale factor
+	face = BRepBuilderAPI_MakeFace(new Geom_ToroidalSurface(gp::XOY(), l->MajorRadius() * getValue(GV_LENGTH_UNIT), l->MinorRadius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
 	return true;
 }
 

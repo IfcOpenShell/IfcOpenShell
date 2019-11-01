@@ -4322,15 +4322,15 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 			eps_ = Precision::Confusion();
 		}		
 
-		for (int i = 0; i < (int)pnts.size(); ++i) {
-			if (pnts[i]) {
+		for (int pnt_i = 0; pnt_i < (int)pnts.size(); ++pnt_i) {
+			if (pnts[pnt_i]) {
 				std::set<int> vs;
-				find_neighbours(tree, pnts, vs, i, eps_);
+				find_neighbours(tree, pnts, vs, pnt_i, eps_);
 
 				for (int v : vs) {
 					auto pt = *(points->begin() + v);
 					// NB: insert() ignores duplicate keys
-					vertex_mapping_.insert({ pt->data().id() , i });
+					vertex_mapping_.insert({ pt->data().id() , pnt_i });
 				}
 			}
 		}		
