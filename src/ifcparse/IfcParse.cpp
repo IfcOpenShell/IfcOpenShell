@@ -776,6 +776,11 @@ ArgumentList::operator IfcEntityListList::ptr() const {
 		if ((arg_list = dynamic_cast<const ArgumentList*>(arg)) != 0) {
 			IfcEntityList::ptr e = *arg_list;
 			l->push(e);
+		} else {
+			auto token = dynamic_cast<const TokenArgument*>(arg);
+			int startpos = token ? token->token.startPos : 0;
+			std::string string_rep = this->toString();
+			throw IfcInvalidTokenException(startpos, string_rep, "nested aggregate");
 		}
 	}
 	return l;
