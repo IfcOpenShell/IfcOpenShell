@@ -435,3 +435,71 @@ class SelectSchemaDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+class CreateAggregate(bpy.types.Operator):
+    bl_idname = 'bim.create_aggregate'
+    bl_label = 'Create Aggregate'
+
+    def execute(self, context):
+        spatial_container = None
+        for obj in bpy.context.selected_objects:
+            if obj.instance_collection:
+                return {'FINISHED'}
+            for collection in obj.users_collection:
+                if 'IfcRelAggregates' in collection.name:
+                    return {'FINISHED'}
+                elif collection.name[0:3] == 'Ifc':
+                    spatial_container = collection
+        if not spatial_container:
+            return {'FINISHED'}
+
+        aggregate = bpy.data.collections.new('IfcRelAggregates/{}'.format(
+            bpy.context.scene.BIMProperties.aggregate_class))
+        bpy.context.scene.collection.children.link(aggregate)
+        for obj in bpy.context.selected_objects:
+            for collection in obj.users_collection:
+                collection.objects.unlink(obj)
+            aggregate.objects.link(obj)
+
+        instance = bpy.data.objects.new('{}/{}'.format(
+            bpy.context.scene.BIMProperties.aggregate_class,
+            bpy.context.scene.BIMProperties.aggregate_name),
+            None)
+        instance.instance_type = 'COLLECTION'
+        instance.instance_collection = aggregate
+        spatial_container.objects.link(instance)
+
+        bpy.context.view_layer.layer_collection.children[aggregate.name].hide_viewport = True
+        return {'FINISHED'}
+
+class EditAggregate(bpy.types.Operator):
+    bl_idname = 'bim.edit_aggregate'
+    bl_label = 'Edit Aggregate'
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        if obj.instance_type != 'COLLECTION' \
+            or 'IfcRelAggregates' not in obj.instance_collection.name:
+            return {'FINISHED'}
+        bpy.context.view_layer.objects[obj.name].hide_viewport = True
+        bpy.context.view_layer.layer_collection.children[obj.instance_collection.name].hide_viewport = False
+        return {'FINISHED'}
+
+class SaveAggregate(bpy.types.Operator):
+    bl_idname = 'bim.save_aggregate'
+    bl_label = 'Save Aggregate'
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        aggregate = None
+        for collection in obj.users_collection:
+            if 'IfcRelAggregates' in collection.name:
+                bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
+                aggregate = collection
+                break
+        if not aggregate:
+            return {'FINISHED'}
+        for obj in bpy.context.view_layer.objects:
+            if obj.instance_collection == aggregate:
+                obj.hide_viewport = False
+        return {'FINISHED'}
