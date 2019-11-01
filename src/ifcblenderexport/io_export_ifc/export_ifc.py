@@ -279,11 +279,12 @@ class IfcParser():
             self.rel_associates_document_object.setdefault(
                 document.file, []).append(product)
 
+        for classification in object.BIMObjectProperties.classifications:
+            self.rel_associates_classification_object.setdefault(
+                classification.identification, []).append(product)
+
         for key in object.keys():
-            if key[0:5] == 'Class':
-                self.rel_associates_classification_object.setdefault(
-                    object[key], []).append(product)
-            elif key[0:9] == 'Objective':
+            if key[0:9] == 'Objective':
                 self.rel_associates_constraint_objective_object.setdefault(
                     object[key], []).append(product)
 

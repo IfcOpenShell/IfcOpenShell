@@ -503,3 +503,35 @@ class SaveAggregate(bpy.types.Operator):
             if obj.instance_collection == aggregate:
                 obj.hide_viewport = False
         return {'FINISHED'}
+
+class AssignClassification(bpy.types.Operator):
+    bl_idname = 'bim.assign_classification'
+    bl_label = 'Assign Classification'
+
+    def execute(self, context):
+        for obj in bpy.context.selected_objects:
+            classification = obj.BIMObjectProperties.classifications.add()
+            classification.identification = bpy.context.scene.BIMProperties.reference
+        return {'FINISHED'}
+
+class UnassignClassification(bpy.types.Operator):
+    bl_idname = 'bim.unassign_classification'
+    bl_label = 'Unassign Classification'
+
+    def execute(self, context):
+        for obj in bpy.context.selected_objects:
+            index = object.BIMObjectProperties.classifications.find(bpy.context.scene.BIMProperties.classification)
+            if index != -1:
+                object.BIMObjectProperties.classifications.remove(index)
+
+            obj.BIMObjectProperties.classification = ''
+        return {'FINISHED'}
+
+class RemoveClassification(bpy.types.Operator):
+    bl_idname = 'bim.remove_classification'
+    bl_label = 'Remove Classification'
+    classification_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.classifications.remove(self.classification_index)
+        return {'FINISHED'}

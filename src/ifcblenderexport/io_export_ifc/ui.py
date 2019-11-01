@@ -1,6 +1,7 @@
 import bpy
 import json
 import os
+import csv
 from pathlib import Path
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
@@ -36,6 +37,22 @@ class BIMProperties(bpy.types.PropertyGroup):
         files = os.listdir(bpy.context.scene.BIMProperties.data_dir + 'pset/{}/'.format(bpy.context.scene.BIMProperties.pset_name))
         return [(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files]
 
+    def getClassifications(self, context):
+        with open(bpy.context.scene.BIMProperties.data_dir + 'class/classifications.csv', 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            index = keys.index('Name')
+            return [(str(i), d[index], '') for i, d in enumerate(data)]
+
+    def getReferences(self, context):
+        if not bpy.context.scene.BIMProperties.classification:
+            return []
+        with open(bpy.context.scene.BIMProperties.data_dir + 'class/references.csv', 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            return [(d[0], '{} - {}'.format(d[0], d[1]), '') for d in data if
+                d[2] == bpy.context.scene.BIMProperties.classification]
+
     schema_dir: bpy.props.StringProperty(default=cwd + 'schema/', name="Schema Directory")
     data_dir: bpy.props.StringProperty(default=cwd + 'data/', name="Data Directory")
     ifc_class: bpy.props.EnumProperty(items = getIfcClasses, name="Class")
@@ -53,6 +70,8 @@ class BIMProperties(bpy.types.PropertyGroup):
     diff_json_file: bpy.props.StringProperty(default='', name="Diff JSON File")
     aggregate_class: bpy.props.EnumProperty(items = getIfcClasses, name="Aggregate Class")
     aggregate_name: bpy.props.StringProperty(name="Aggregate Name")
+    classification: bpy.props.EnumProperty(items = getClassifications, name="Classification")
+    reference: bpy.props.EnumProperty(items = getReferences, name="Reference")
 
 class MapConversion(bpy.types.PropertyGroup):
     eastings: bpy.props.StringProperty(name="Eastings")
@@ -86,6 +105,10 @@ class Pset(bpy.types.PropertyGroup):
 class Document(bpy.types.PropertyGroup):
     file: bpy.props.StringProperty(name="File")
 
+class Classification(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name")
+    identification: bpy.props.StringProperty(name="Identification")
+
 class BIMObjectProperties(bpy.types.PropertyGroup):
     def getApplicableAttributes(self, context):
         if '/' in bpy.context.active_object.name \
@@ -108,6 +131,7 @@ class BIMObjectProperties(bpy.types.PropertyGroup):
     applicable_attributes: bpy.props.EnumProperty(items=getApplicableAttributes, name="Attribute Names")
     documents: bpy.props.CollectionProperty(name="Documents", type=Document)
     applicable_documents: bpy.props.EnumProperty(items=getApplicableDocuments, name="Available Documents")
+    classifications: bpy.props.CollectionProperty(name="Classifications", type=Classification)
 
 class BIMMaterialProperties(bpy.types.PropertyGroup):
     is_external: bpy.props.BoolProperty(name="Has External Definition")
@@ -173,6 +197,18 @@ class ObjectPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(bpy.context.active_object.BIMObjectProperties, 'documents')
+
+        layout.label(text="Classification:")
+
+        for index, classification in enumerate(bpy.context.active_object.BIMObjectProperties.classifications):
+            row = layout.row(align=True)
+            row.prop(classification, 'identification', text='')
+            row.prop(classification, 'name', text='')
+            row.operator('bim.remove_classification', icon='CANCEL', text='').classification_index = index
+
+        row = layout.row()
+        row.prop(bpy.context.active_object.BIMObjectProperties, 'classifications')
+
 
 class MeshPanel(bpy.types.Panel):
     bl_label = 'IFC Representations'
@@ -316,6 +352,16 @@ class BIMPanel(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("bim.edit_aggregate")
         row.operator("bim.save_aggregate")
+
+        layout.label(text="Classifications:")
+        row = layout.row()
+        row.prop(bim_properties, "classification")
+        row = layout.row()
+        row.prop(bim_properties, "reference")
+
+        row = layout.row(align=True)
+        row.operator("bim.assign_classification")
+        row.operator("bim.unassign_classification")
 
 class QAPanel(bpy.types.Panel):
     bl_label = "BIMTester Quality Auditing"
