@@ -62,6 +62,9 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 
+#include <BRepGProp.hxx>
+#include <GProp_GProps.hxx>
+
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
@@ -1067,17 +1070,8 @@ namespace {
 	}
 }
 
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
-	TopoDS_Wire wire, section1, section2;
-
-	bool hasInnerRadius = l->hasInnerRadius();
-
-	if (!convert_wire(l->Directrix(), wire)) {
-		return false;
-	}
-	
-	gp_Ax2 directrix;
-	{
+namespace {
+	bool wire_to_ax(const TopoDS_Wire& wire, gp_Ax2& directrix) {
 		gp_Pnt directrix_origin;
 		gp_Vec directrix_tangent;
 
@@ -1088,10 +1082,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		TopExp::Vertices(wire, v0, v1);
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
-		if (map.Contains(v0) &&  map.FindFromKey(v0).Extent() == 1) {
+		if (map.Contains(v0) && map.FindFromKey(v0).Extent() == 1) {
 			edge = TopoDS::Edge(map.FindFromKey(v0).First());
 		} else {
-			Logger::Error("Unable to locate first edge of:", l->Directrix());
+			Logger::Error("Unable to locate first edge");
 			return false;
 		}
 
@@ -1099,56 +1093,229 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
 		directrix = gp_Ax2(directrix_origin, directrix_tangent);
+
+		return true;
 	}
 
-	const double r1 = l->Radius() * getValue(GV_LENGTH_UNIT);
-	Handle(Geom_Circle) circle = new Geom_Circle(directrix, r1);
-	section1 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+	bool is_single_linear_edge(const TopoDS_Wire& wire) {
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		if (!exp.More()) {
+			return false;
+		}
+		TopoDS_Edge e = TopoDS::Edge(exp.Current());
+		exp.Next();
+		if (exp.More()) {
+			return false;
+		}
+		double u, v;
+		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+		return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+	}
 
-	if (hasInnerRadius) {
-		const double r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
-		if (r2 < getValue(GV_PRECISION)) {
-			// Subtraction of pipes with small radii is unstable.
-			hasInnerRadius = false;
-		} else {
-			Handle(Geom_Circle) circle2 = new Geom_Circle(directrix, r2);
-			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle2));
+	void process_sweep_as_extrusion(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		TopoDS_Edge e = TopoDS::Edge(exp.Current());
+		double u, v;
+		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+		const auto& dir = Handle(Geom_Line)::DownCast(crv)->Position().Direction();
+		// OCCT line is normalized so diff in parametric coords equals length
+		const double depth = std::abs(u - v);
+		// @todo we could be extruding the wire only when we know this is an intermediate edge.
+		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
+		result = BRepPrimAPI_MakePrism(face, depth*dir).Shape();
+	}
+
+	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
+		BRepOffsetAPI_MakePipeShell builder(wire);
+		builder.Add(section);
+		builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
+		builder.Build();
+		builder.MakeSolid();
+		result = builder.Shape();
+	}
+
+	void sort_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Edge>& sorted_edges) {
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
+
+		TopoDS_Vertex v0, v1;
+		// @todo this creates the ancestor map twice
+		TopExp::Vertices(wire, v0, v1);
+
+		TopTools_ListOfShape es;
+		while (!v0.IsSame(v1)) {
+			if (!map.FindFromKey(v0, es)) {
+				throw std::runtime_error("Disconnected vertex");
+			}
+			TopoDS_Vertex ve0, ve1;
+			TopTools_ListIteratorOfListOfShape it(es);
+			bool added = false;
+			for (; it.More(); it.Next()) {
+				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+				TopExp::Vertices(e, ve0, ve1, true);
+				if (ve0.IsSame(v0)) {
+					sorted_edges.push_back(e);
+					v0 = ve1;
+					added = true;
+					break;
+				}
+			}
+			if (!added) {
+				throw std::runtime_error("Disconnected edge");
+			}
 		}
 	}
 
-	// This is not used anymore, BRepBuilderAPI_RightCorner is always used now.
-	// const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
+	void segment_tiny_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
+		std::vector<TopoDS_Edge> sorted_edges;
+		sort_edges(wire, sorted_edges);
+
+		bool segment_next = true;
+
+		BRep_Builder B;
+		
+		for (const auto& e : sorted_edges) {
+			GProp_GProps prop;
+			BRepGProp::LinearProperties(e, prop);
+			const double l = prop.Mass();
+			if (l < eps || segment_next) {
+				wires.emplace_back();
+				B.MakeWire(wires.back());
+				segment_next = l < eps;
+			}
+			B.Add(wires.back(), e);
+		}
+	}
+
+	void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
+		std::vector<TopoDS_Edge> sorted_edges;
+		sort_edges(wire, sorted_edges);
+		
+		bool segment_next = true;
+
+		BRep_Builder B;
+		double u, v;
+
+		wires.emplace_back();
+		B.MakeWire(wires.back());
+
+		for (size_t i = 0; i < sorted_edges.size() - 1; ++i) {
+			const auto& e = sorted_edges[i];
+			Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+			const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+
+			const auto& f = sorted_edges[i+1];
+			crv = BRep_Tool::Curve(f, u, v);
+			const bool next_is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+			
+			B.Add(wires.back(), e);
+
+			if (!is_linear && !next_is_linear) {
+				wires.emplace_back();
+				B.MakeWire(wires.back());
+			}
+		}
+
+		B.Add(wires.back(), sorted_edges.back());
+	}
+
+	// @todo make this generic for other sweeps not just swept disk
+	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
+		std::vector<TopoDS_Wire> wires;
+		segment_adjacent_non_linear(wire, wires, 1.e-2);
+
+		TopoDS_Compound C;
+		BRep_Builder B;
+		if (wires.size() > 1) {
+			B.MakeCompound(C);
+		}
+
+		for (auto& w : wires) {
+			TopoDS_Shape part;
+
+			gp_Ax2 directrix;
+			if (!wire_to_ax(w, directrix)) {
+				continue;
+			}
+			Handle(Geom_Circle) circle = new Geom_Circle(directrix, radius);
+			TopoDS_Wire section = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+
+			if (is_single_linear_edge(w)) {
+				process_sweep_as_extrusion(w, section, part);
+			} else {
+				process_sweep_as_pipe(w, section, part);
+			}
+			if (wires.size() > 1) {
+				B.Add(C, part);
+			} else {
+				result = part;
+			}
+		}
+
+		if (wires.size() > 1) {
+			result = C;
+		}
+	}
+}
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
+	TopoDS_Wire wire, section1, section2;
+
+	bool hasInnerRadius = l->hasInnerRadius();
+
+	if (!convert_wire(l->Directrix(), wire)) {
+		return false;
+	}
+
+	BRepTools::Write(wire, "debug-wire.brep");
+	{
+		std::ofstream fs("debug-wire.txt");
+		BRepTools::Dump(wire, fs);
+	}
+	
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
-	{ BRepOffsetAPI_MakePipeShell builder(wire);
-	builder.Add(section1);
-	builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
-	builder.Build();
-	builder.MakeSolid();
-	shape = builder.Shape(); }
+	
+	// This is not used anymore, BRepBuilderAPI_RightCorner is always used now.
+	// const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
+
+	process_sweep(wire, l->Radius() * getValue(GV_LENGTH_UNIT), shape);
+
+	double r2 = 0.;
 
 	if (hasInnerRadius) {
-		BRepOffsetAPI_MakePipeShell builder(wire);
-		builder.Add(section2);
-		builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
-		builder.Build();
-		builder.MakeSolid();
-		TopoDS_Shape inner = builder.Shape();
+		// Subtraction of pipes with small radii is unstable.
+		const double r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
+	}
 
-		BRepAlgoAPI_Cut brep_cut(shape, inner);
+	if (r2 > getValue(GV_PRECISION) * 10.) {
+		TopoDS_Shape inner;
+		process_sweep(wire, r2, inner);
+
 		bool is_valid = false;
-		if (brep_cut.IsDone()) {
-			TopoDS_Shape result = brep_cut;
 
-			ShapeFix_Shape fix(result);
-			fix.Perform();
-			result = fix.Shape();
-		
-			is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-			if (is_valid) {
-				shape = result;
+		// Boolean op on the compound of separately processed sweeps
+		// is not attempted.
+		// @todo iterate over compound subshapes and process boolean
+		// separately.
+		// @todo don't process as boolean op at all, since we know
+		// only the start and end faces intersect and we know they
+		// are co-planar and we know they are circles.
+		if (shape.ShapeType() != TopAbs_COMPOUND) {
+			BRepAlgoAPI_Cut brep_cut(shape, inner);
+			if (brep_cut.IsDone()) {
+				TopoDS_Shape result = brep_cut;
+
+				ShapeFix_Shape fix(result);
+				fix.Perform();
+				result = fix.Shape();
+
+				is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+				if (is_valid) {
+					shape = result;
+				}
 			}
 		}
 
