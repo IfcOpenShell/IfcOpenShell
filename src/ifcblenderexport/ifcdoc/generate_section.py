@@ -2,6 +2,7 @@ import os
 import math
 import svgwrite
 import time
+import pickle
 from pathlib import Path
 
 import OCC.gp
@@ -129,6 +130,12 @@ class IfcCutter:
                 break
 
     def get_product_shapes(self):
+        shape_map = {}
+
+        if os.path.isfile('shapes.pickle'):
+            with open('shapes.pickle', 'rb') as shape_file:
+                shape_map = pickle.load(shape_file)
+
         settings = ifcopenshell.geom.settings()
         settings.set(settings.USE_PYTHON_OPENCASCADE, True)
         products = []
@@ -140,8 +147,16 @@ class IfcCutter:
             if product.is_a('IfcOpeningElement') or product.is_a('IfcSite'):
                 continue
             if product.Representation is not None:
-                shape = ifcopenshell.geom.create_shape(settings, product).geometry
+                if product.GlobalId in shape_map:
+                    shape = shape_map[product.GlobalId]
+                else:
+                    shape = ifcopenshell.geom.create_shape(settings, product).geometry
+                    shape_map[product.GlobalId] = shape
                 self.product_shapes.append((product, shape))
+
+        if not os.path.isfile('shapes.pickle'):
+            with open('shapes.pickle', 'wb') as shape_file:
+                pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def sort_background_elements(self):
         new_list = sorted(self.background_elements, key=lambda k: k['z'])
@@ -201,6 +216,11 @@ class IfcCutter:
             exp = OCC.TopExp.TopExp_Explorer(intersection, OCC.TopAbs.TopAbs_FACE)
             while exp.More():
                 face = topods.Face(exp.Current())
+                normal = self.get_normal(face)
+                # Cull back-faces
+                if normal.Z() <= 0:
+                    exp.Next()
+                    continue
                 zpos, zmax = self.calculate_face_zpos(face)
                 self.build_new_face(face, zpos, product)
                 self.get_split_edges(edge_face_map, face, zmax, product)
@@ -314,23 +334,13 @@ class IfcCutter:
             try:
                 new_wire = new_wire_builder.Wire()
                 new_face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(new_wire).Face()
-                area = self.get_area(new_face)
-                if area == 0:
-                    self.background_elements.append({
-                        'raw': product,
-                        'geometry': new_wire,
-                        'geometry_face': new_face,
-                        'type': 'polyline',
-                        'z': zpos
-                        })
-                else:
-                    self.background_elements.append({
-                        'raw': product,
-                        'geometry': new_wire,
-                        'geometry_face': new_face,
-                        'type': 'polygon',
-                        'z': zpos
-                        })
+                self.background_elements.append({
+                    'raw': product,
+                    'geometry': new_wire,
+                    'geometry_face': new_face,
+                    'type': 'polygon',
+                    'z': zpos
+                    })
             except:
                 #print('Could not build face')
                 pass
