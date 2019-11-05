@@ -764,13 +764,19 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 				continue;
 			}
 
-			BRep_Builder builder;
-			TopoDS_Vertex v1, v2;
-			/// @todo project first and emit warnings accordingly
-			builder.MakeVertex(v1, a, getValue(GV_PRECISION));
-			builder.MakeVertex(v2, b, getValue(GV_PRECISION));
+			if (ecrv->IsClosed() && a.Distance(b) < getValue(GV_PRECISION)) {
+				// When vertices are close enough and the curve is closed,
+				// use the entire curve.
+				mw.Add(BRepBuilderAPI_MakeEdge(ecrv));
+			} else {
+				BRep_Builder builder;
+				TopoDS_Vertex v1, v2;
+				/// @todo project first and emit warnings accordingly
+				builder.MakeVertex(v1, a, getValue(GV_PRECISION));
+				builder.MakeVertex(v2, b, getValue(GV_PRECISION));
 
-			mw.Add(BRepBuilderAPI_MakeEdge(ecrv, v1, v2));
+				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, v1, v2));
+			}
 
 			first = false;
 		}
