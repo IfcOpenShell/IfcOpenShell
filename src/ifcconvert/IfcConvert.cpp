@@ -604,7 +604,7 @@ int main(int argc, char** argv) {
 
     if (!entity_filter.entity_names.empty()) { entity_filter.update_description(); Logger::Notice(entity_filter.description); }
     if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Notice(layer_filter.description); }
-	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); Logger::Notice(layer_filter.description); }
+	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); Logger::Notice(attribute_filter.description); }
 
 #ifdef _MSC_VER
 	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
