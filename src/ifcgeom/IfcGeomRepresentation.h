@@ -177,8 +177,9 @@ namespace IfcGeom {
 						TopLoc_Location loc;
 						Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face,loc);
 
-						if ( ! tri.IsNull() ) {
-
+						if (tri.IsNull()) {
+							Logger::Message(Logger::LOG_ERROR, "Triangulation missing for face");
+						} else {
 							// A 3x3 matrix to rotate the vertex normals
 							const gp_Mat rotation_matrix = trsf.VectorialPart();
 			
