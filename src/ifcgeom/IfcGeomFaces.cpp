@@ -318,17 +318,20 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 		}
 	} else if (!fd.all_outer()) {
 		BRepBuilderAPI_MakeFace mf(fd.surface(), fd.outer_wire());
+		TopoDS_Face f = mf.Face();
 
 		if (mf.IsDone()) {
-			// Is this necessary
-			TopoDS_Face f = mf.Face();
-			mf.Init(f);
+			if (std::distance(fd.inner_wires().first, fd.inner_wires().second)) {
+				mf.Init(f);
 
-			for (auto it = fd.inner_wires().first; it != fd.inner_wires().second; ++it) {
-				mf.Add(*it);
+				for (auto it = fd.inner_wires().first; it != fd.inner_wires().second; ++it) {
+					mf.Add(*it);
+				}
+
+				face_list.Append(mf.Face());
+			} else {
+				face_list.Append(f);
 			}
-
-			face_list.Append(mf.Face());
 		}		
 	} else {
 		for (const auto& w : fd.wires()) {
