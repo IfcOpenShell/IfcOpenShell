@@ -157,7 +157,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBSplineCurveWithKnots* l, Hand
 	TColStd_Array1OfReal    Knots(0, (int)knots.size() - 1);
 	TColStd_Array1OfInteger Mults(0, (int)mults.size() - 1);
 	Standard_Integer        Degree = l->Degree();
-	Standard_Boolean        Periodic = l->ClosedCurve();
+	Standard_Boolean        Periodic = false; 
+	// @tfk: it appears to be wrong to expect a period curve when the curve is closed, see #586
+	// Standard_Boolean     Periodic = l->ClosedCurve();
 	
 	int i;
 
