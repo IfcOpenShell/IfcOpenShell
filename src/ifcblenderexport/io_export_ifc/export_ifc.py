@@ -552,8 +552,9 @@ class IfcParser():
             'raw_object': object,
             'context': context,
             'subcontext': subcontext,
-            'is_wireframe': mesh.BIMMeshProperties.is_wireframe,
-            'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid,
+            'is_curve': isinstance(mesh, bpy.types.Curve),
+            'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
+            'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': is_generated,
             'attributes': { 'Name': mesh.name }
             }
@@ -1227,6 +1228,8 @@ class IfcExporter():
             or representation['subcontext'] == 'Axis' \
             or representation['is_wireframe']:
             return self.create_wireframe_representation(representation)
+        elif representation['is_curve']:
+            return self.create_curve_representation(representation)
         elif representation['is_swept_solid']:
             return self.create_swept_solid_representation(representation)
         else:
@@ -1260,6 +1263,38 @@ class IfcExporter():
             self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
             representation['subcontext'], 'Curve',
             self.ifc_edges)
+
+    def create_curve_representation(self, representation):
+        # TODO: support unclosed surfaces
+        swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
+            self.create_curve(representation['raw'].bevel_object.data))
+        swept_area_solids = []
+        for spline in representation['raw'].splines:
+            direction = spline.bezier_points[1].co - spline.bezier_points[0].co
+            unit_direction = direction.normalized()
+            swept_area_solids.append(self.file.createIfcExtrudedAreaSolid(
+                swept_area, self.origin,
+                self.file.createIfcDirection(
+                    (unit_direction.x, unit_direction.y, unit_direction.z)),
+                direction.length))
+        # TODO: support other types of swept areas
+        #swept_area_solid = self.file.createIfcFixedReferenceSweptAreaSolid(
+        #    swept_area, self.origin, self.create_curve(representation['raw']),
+        #    0., 1., self.file.createIfcDirection((0.0, -1.0, 0.0)))
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'AdvancedSweptSolid',
+            swept_area_solids)
+
+    def create_curve(self, curve):
+        # TODO: support interpolated curves, not just polylines
+        points = []
+        for point in curve.splines[0].bezier_points:
+            points.append(self.create_cartesian_point(
+                point.co.x, point.co.y, point.co.z))
+        if curve.splines[0].use_cyclic_u:
+            points.append(points[0])
+        return self.file.createIfcPolyline(points)
 
     def create_swept_solid_representation(self, representation):
         object = representation['raw_object']
