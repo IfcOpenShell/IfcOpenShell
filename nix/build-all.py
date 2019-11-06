@@ -28,6 +28,9 @@
 #   if building with USE_OCCT additionally:                                   #
 #     * freetype * glx.h                                                      #
 #                                                                             #
+#   if building with OCCT 7.4.0 additionally:                                 #
+#     * libfontconfig1-dev                                                    #
+#                                                                             #
 #   if building with -shared                                                  #
 #     * libgl1-mesa-dev libxext-dev libxmu-dev libxmu-headers libxi-dev       #
 #                                                                             #
@@ -36,11 +39,11 @@
 #                                                                             #
 #     on debian 7.8 these can be obtained with:                               #
 #          $ apt-get install git gcc g++ autoconf bison bzip2                 #
-#            libfreetype6-dev mesa-common-dev libffi-dev                      #
+#            libfreetype6-dev mesa-common-dev libffi-dev libfontconfig1-dev   #
 #                                                                             #
 #     on ubuntu 14.04:                                                        #
 #          $ apt-get install git gcc g++ autoconf bison make                  #
-#            libfreetype6-dev mesa-common-dev libffi-dev                      #
+#            libfreetype6-dev mesa-common-dev libffi-dev libfontconfig1-dev   #
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake freetype libffi         #
