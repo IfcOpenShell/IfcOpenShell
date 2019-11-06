@@ -539,11 +539,12 @@ if USE_OCCT and "occ" in targets:
             "-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}".format(**locals()),
             "-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}".format(**locals()),
             "-DBUILD_MODULE_Draw=0",
+            "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off"
         ],
         download_url = "https://git.dev.opencascade.org/repos/occt.git",
         download_name = "occt",
         download_tool=download_tool_git,
-        patch="./patches/occt/enable-exception-handling.patch",
+        patch=None if OCCT_VERSION >= "7.4" else "./patches/occt/enable-exception-handling.patch",
         revision="V" + OCCT_VERSION.replace('.', '_')
     )
 elif "occ" in targets:
