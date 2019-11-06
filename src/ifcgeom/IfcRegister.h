@@ -72,6 +72,7 @@ SHAPE(IfcBSplineSurfaceWithKnots);
 SHAPE(IfcTriangulatedFaceSet);
 #endif
 #ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
+SHAPE(IfcPolygonalFaceSet);
 SHAPE(IfcExtrudedAreaSolidTapered);
 #endif
 SHAPE(IfcPlane);
