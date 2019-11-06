@@ -73,6 +73,9 @@ class IfcSchema():
         with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
             self.type_map = json.load(f)
 
+        with open(self.schema_dir + 'ifc_elements_IFC4.json') as f:
+            self.elements = json.load(f)
+
     def load(self):
         for property in self.property_file.by_type('IfcPropertySetTemplate'):
             if property.Name[0:4] == 'Qto_':
@@ -933,7 +936,9 @@ class IfcExporter():
         return properties
 
     def cast_to_base_type(self, type, value):
-        if self.ifc_schema.type_map[type] == 'float':
+        if type not in self.ifc_schema.type_map:
+            return value
+        elif self.ifc_schema.type_map[type] == 'float':
             return float(value)
         elif self.ifc_schema.type_map[type] == 'integer':
             return int(value)
@@ -1171,10 +1176,25 @@ class IfcExporter():
             'Representation': self.get_product_shape(product)
             })
 
+        for key, value in product['attributes'].items():
+            type = self.get_product_attribute_type(product['class'], key)
+            if type is None:
+                continue
+            product['attributes'][key] = self.cast_to_base_type(type, value)
+
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
         except RuntimeError as e:
             self.ifc_export_settings.logger.error('The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'], e.args))
+
+    def get_product_attribute_type(self, product_class, attribute_name):
+        element_schema = self.ifc_schema.elements[product_class]
+        for a in element_schema['attributes']:
+            if a['name'] == attribute_name:
+                return a['type']
+        if element_schema['parent'] in self.ifc_schema.elements:
+            return self.get_product_attribute_type(element_schema['parent'], attribute_name)
+        return None
 
     def get_product_shape(self, product):
         try:
