@@ -62,9 +62,6 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 
-#include <BRepGProp.hxx>
-#include <GProp_GProps.hxx>
-
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
@@ -108,10 +105,6 @@
 
 #include <memory>
 
-#ifdef SCHEMA_HAS_IfcToroidalSurface
-#include <Geom_ToroidalSurface.hxx>
-#endif
-
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
@@ -126,7 +119,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -173,7 +166,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_S
 	return !shape.IsNull();
 }
 
-#ifdef SCHEMA_HAS_IfcExtrudedAreaSolidTapered
+#ifdef USE_IFC4
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, TopoDS_Shape& shape) {
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	if (height < getValue(GV_PRECISION)) {
@@ -187,7 +180,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolidTapered* l, T
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -287,7 +280,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfLinearExtrusion* l, T
 	
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -322,7 +315,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceOfRevolution* l, TopoDS
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -351,7 +344,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRevolvedAreaSolid* l, TopoDS_S
 
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -383,7 +376,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcManifoldSolidBrep* l, IfcRepre
 		if (l->declaration().is(IfcSchema::IfcFacetedBrepWithVoids::Class())) {
 			voids = l->as<IfcSchema::IfcFacetedBrepWithVoids>()->Voids();
 		}
-#ifdef SCHEMA_HAS_IfcAdvancedBrepWithVoids
+#ifdef USE_IFC4
 		if (l->declaration().is(IfcSchema::IfcAdvancedBrepWithVoids::Class())) {
 			voids = l->as<IfcSchema::IfcAdvancedBrepWithVoids>()->Voids();
 		}
@@ -484,13 +477,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcShellBasedSurfaceModel* l, Ifc
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape& shape) {
 
-	TopoDS_Shape s1;
-	IfcRepresentationShapeItems items1;
+	TopoDS_Shape s1, s2;
+	IfcRepresentationShapeItems items1, items2;
 	TopoDS_Wire boundary_wire;
 	IfcSchema::IfcBooleanOperand* operand1 = l->FirstOperand();
 	IfcSchema::IfcBooleanOperand* operand2 = l->SecondOperand();
-	bool has_halfspace_operand = false;
-	
+	bool is_halfspace = operand2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
+	bool is_unbounded_halfspace = is_halfspace && !operand2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
+
 	BOPAlgo_Operation occ_op;
 
 	const IfcSchema::IfcBooleanOperator::Value op = l->Operator();
@@ -507,18 +501,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	std::vector<IfcSchema::IfcBooleanOperand*> second_operands;
 	second_operands.push_back(operand2);
 
-	if (occ_op == BOPAlgo_CUT) {
-		int n_half_space_operands = 0;
-		bool process_as_list = false;
+	if (occ_op == BOPAlgo_CUT && !is_halfspace) {
+		bool process_as_list = true;
 		while (true) {
 			auto res1 = operand1->as<IfcSchema::IfcBooleanResult>();
-			if (res1 && res1->SecondOperand()->as<IfcSchema::IfcHalfSpaceSolid>() && ++n_half_space_operands > 8) {
-				// There is something peculiar about many half space subtraction operands that OCCT does not like.
-				// Often these are used to create a semi-curved arch, as is the case in 693. Supplying all these
-				// operands at once apparently leads to too many edge-edge interference checks.
-				process_as_list = false;
-				break;
-			}
 			if (res1) {
 				if (res1->Operator() == op) {
 					operand1 = res1->FirstOperand();
@@ -534,7 +520,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 		if (!process_as_list) {
 			operand1 = l->FirstOperand();
-			second_operands = { operand2 };
 		}
 	}
 
@@ -560,56 +545,47 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 
 	TopTools_ListOfShape second_operand_shapes;
 
-	for (auto& op2 : second_operands) {
-		TopoDS_Shape s2;
-
+	for (auto& operand2 : second_operands) {
 		bool shape2_processed = false;
-
-		bool is_halfspace = op2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class());
-		bool is_unbounded_halfspace = is_halfspace && !op2->declaration().is(IfcSchema::IfcPolygonalBoundedHalfSpace::Class());
-		has_halfspace_operand |= is_halfspace;
-
-		{
-			if (shape_type(op2) == ST_SHAPELIST) {
-				IfcRepresentationShapeItems items2;
-				shape2_processed = convert_shapes(op2, items2) && flatten_shape_list(items2, s2, true);
-			} else if (shape_type(op2) == ST_SHAPE) {
-				shape2_processed = convert_shape(op2, s2);
-				if (shape2_processed) {
-					TopoDS_Solid temp_solid;
-					s2 = ensure_fit_for_subtraction(s2, temp_solid);
-				}
-			} else {
-				Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", op2);
+		if (shape_type(operand2) == ST_SHAPELIST) {
+			shape2_processed = convert_shapes(operand2, items2) && flatten_shape_list(items2, s2, true);
+		} else if (shape_type(operand2) == ST_SHAPE) {
+			shape2_processed = convert_shape(operand2, s2);
+			if (shape2_processed && !is_halfspace) {
+				TopoDS_Solid temp_solid;
+				s2 = ensure_fit_for_subtraction(s2, temp_solid);
 			}
-		}
-
-		if (is_unbounded_halfspace) {
-			TopoDS_Shape temp;
-			double d;
-			if (fit_halfspace(s1, s2, temp, d)) {
-				if (d < getValue(GV_PRECISION)) {
-					Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", l);
-					continue;
-				} else {
-					s2 = temp;
-				}
-			}
+		} else {
+			Logger::Message(Logger::LOG_ERROR, "Invalid representation item for boolean operation", operand2);
 		}
 
 		if (!shape2_processed) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to convert SecondOperand:", op2);
+			Logger::Message(Logger::LOG_ERROR, "Failed to convert SecondOperand of:", l);
 			continue;
 		}
 
-		if (op2->declaration().is(IfcSchema::IfcHalfSpaceSolid::Class())) {
+		if (!is_halfspace) {
 			const double second_operand_volume = shape_volume(s2);
-			if (second_operand_volume <= ALMOST_ZERO) {
-				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", op2);
-			}
+			if (second_operand_volume <= ALMOST_ZERO)
+				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", operand2);
 		}
 
 		second_operand_shapes.Append(s2);
+	}
+
+	if (is_unbounded_halfspace) {
+		TopoDS_Shape temp;
+		double d;
+		if (fit_halfspace(s1, s2, temp, d)) {
+			if (d < getValue(GV_PRECISION)) {
+				Logger::Message(Logger::LOG_WARNING, "Subtraction yields unchanged volume:", l);
+				shape = s1;
+				return true;
+			} else {
+				s2 = temp;
+				second_operand_shapes.Append(s2);
+			}
+		}
 	}
 
 	/*
@@ -619,18 +595,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcBooleanResult* l, TopoDS_Shape
 	TopoDS_Compound compound;
 	builder.MakeCompound(compound);
 	builder.Add(compound, s1);
-	for (const auto& s2 : second_operand_shapes) {
-		builder.Add(compound, s2);
-	}
+	builder.Add(compound, s2);
 	shape = compound;
 	return true;
 	*/	
 
 #if OCC_VERSION_HEX < 0x60900
-	// @todo: this currently does not compile anymore, do we still need this?
 	bool valid_result = boolean_operation(s1, s2, occ_op, shape);
 #else
-	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape);
+	const double fuzz = is_halfspace ? getValue(GV_PRECISION) * 10. : -1.;
+	bool valid_result = boolean_operation(s1, second_operand_shapes, occ_op, shape, fuzz);
 #endif
 
 	if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
@@ -656,10 +630,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 	helper_scope.reset(new faceset_helper(this, l));
 
 	IfcSchema::IfcFace::list::ptr faces = l->CfsFaces();
-
-	double min_face_area = faceset_helper_
-		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)
-		: getValue(GV_MINIMAL_FACE_AREA);
 
 	TopTools_ListOfShape face_list;
 	for (IfcSchema::IfcFace::list::it it = faces->begin(); it != faces->end(); ++it) {
@@ -691,18 +661,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 				if (face_it.Value().ShapeType() == TopAbs_FACE) {
 					// This should really be the case. This is not asserted.
 					const TopoDS_Face& triangle = TopoDS::Face(face_it.Value());
-					if (face_area(triangle) > min_face_area) {
+					if (face_area(triangle) > getValue(GV_MINIMAL_FACE_AREA)) {
 						face_list.Append(triangle);
 					} else {
-						Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
+						Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it));
 					}
 				}
 			}
 		} else {
-			if (face_area(face) > min_face_area) {
+			if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
 				face_list.Append(face);
 			} else {
-				Logger::Message(Logger::LOG_WARNING, "Degenerate face:", (*it));
+				Logger::Message(Logger::LOG_WARNING, "Invalid face:", (*it));
 			}
 		}
 	}
@@ -711,7 +681,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcConnectedFaceSet* l, TopoDS_Sh
 		return false;
 	}
 
-	if (face_list.Extent() > getValue(GV_MAX_FACES_TO_ORIENT) || !create_solid_from_faces(face_list, shape)) {
+	if (!create_solid_from_faces(face_list, shape)) {
 		TopoDS_Compound compound;
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
@@ -954,7 +924,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcRectangularTrimmedSurface* l, 
 }
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l, TopoDS_Shape& shape) {
-	gp_Trsf directrix;
+	gp_Trsf directrix, position;
 	TopoDS_Shape face;
 	TopoDS_Wire wire, section;
 
@@ -965,7 +935,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	
 	gp_Trsf trsf;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 	has_position = l->hasPosition();
 #endif
 	if (has_position) {
@@ -1033,7 +1003,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* l,
 	if (has_position) {
 		// IfcSweptAreaSolid.Position (trsf) is an IfcAxis2Placement3D
 		// and therefore has a unit scale factor
-		shape.Move(trsf);
+		shape.Move(position);
 	}
 
 	return true;
@@ -1074,8 +1044,17 @@ namespace {
 	}
 }
 
-namespace {
-	bool wire_to_ax(const TopoDS_Wire& wire, gp_Ax2& directrix) {
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
+	TopoDS_Wire wire, section1, section2;
+
+	bool hasInnerRadius = l->hasInnerRadius();
+
+	if (!convert_wire(l->Directrix(), wire)) {
+		return false;
+	}
+	
+	gp_Ax2 directrix;
+	{
 		gp_Pnt directrix_origin;
 		gp_Vec directrix_tangent;
 
@@ -1086,10 +1065,10 @@ namespace {
 		TopExp::Vertices(wire, v0, v1);
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
-		if (map.Contains(v0) && map.FindFromKey(v0).Extent() == 1) {
+		if (map.Contains(v0) &&  map.FindFromKey(v0).Extent() == 1) {
 			edge = TopoDS::Edge(map.FindFromKey(v0).First());
 		} else {
-			Logger::Error("Unable to locate first edge");
+			Logger::Error("Unable to locate first edge of:", l->Directrix());
 			return false;
 		}
 
@@ -1097,227 +1076,63 @@ namespace {
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
 		directrix = gp_Ax2(directrix_origin, directrix_tangent);
-
-		return true;
 	}
 
-	bool is_single_linear_edge(const TopoDS_Wire& wire) {
-		TopExp_Explorer exp(wire, TopAbs_EDGE);
-		if (!exp.More()) {
-			return false;
-		}
-		TopoDS_Edge e = TopoDS::Edge(exp.Current());
-		exp.Next();
-		if (exp.More()) {
-			return false;
-		}
-		double u, v;
-		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
-		return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
-	}
+	const double r1 = l->Radius() * getValue(GV_LENGTH_UNIT);
+	Handle(Geom_Circle) circle = new Geom_Circle(directrix, r1);
+	section1 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
 
-	void process_sweep_as_extrusion(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
-		TopExp_Explorer exp(wire, TopAbs_EDGE);
-		TopoDS_Edge e = TopoDS::Edge(exp.Current());
-		double u, v;
-		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
-		const auto& dir = Handle(Geom_Line)::DownCast(crv)->Position().Direction();
-		// OCCT line is normalized so diff in parametric coords equals length
-		const double depth = std::abs(u - v);
-		// @todo we could be extruding the wire only when we know this is an intermediate edge.
-		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
-		result = BRepPrimAPI_MakePrism(face, depth*dir).Shape();
-	}
-
-	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
-		BRepOffsetAPI_MakePipeShell builder(wire);
-		builder.Add(section);
-		builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
-		builder.Build();
-		builder.MakeSolid();
-		result = builder.Shape();
-	}
-
-	void sort_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Edge>& sorted_edges) {
-		TopTools_IndexedDataMapOfShapeListOfShape map;
-		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
-
-		TopoDS_Vertex v0, v1;
-		// @todo this creates the ancestor map twice
-		TopExp::Vertices(wire, v0, v1);
-
-		TopTools_ListOfShape es;
-		while (!v0.IsSame(v1)) {
-			if (!map.FindFromKey(v0, es)) {
-				throw std::runtime_error("Disconnected vertex");
-			}
-			TopoDS_Vertex ve0, ve1;
-			TopTools_ListIteratorOfListOfShape it(es);
-			bool added = false;
-			for (; it.More(); it.Next()) {
-				const TopoDS_Edge& e = TopoDS::Edge(it.Value());
-				TopExp::Vertices(e, ve0, ve1, true);
-				if (ve0.IsSame(v0)) {
-					sorted_edges.push_back(e);
-					v0 = ve1;
-					added = true;
-					break;
-				}
-			}
-			if (!added) {
-				throw std::runtime_error("Disconnected edge");
-			}
+	if (hasInnerRadius) {
+		const double r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
+		if (r2 < getValue(GV_PRECISION)) {
+			// Subtraction of pipes with small radii is unstable.
+			hasInnerRadius = false;
+		} else {
+			Handle(Geom_Circle) circle2 = new Geom_Circle(directrix, r2);
+			section2 = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle2));
 		}
 	}
 
-	void segment_tiny_edges(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires, double eps) {
-		std::vector<TopoDS_Edge> sorted_edges;
-		sort_edges(wire, sorted_edges);
-
-		bool segment_next = true;
-
-		BRep_Builder B;
-		
-		for (const auto& e : sorted_edges) {
-			GProp_GProps prop;
-			BRepGProp::LinearProperties(e, prop);
-			const double l = prop.Mass();
-			if (l < eps || segment_next) {
-				wires.emplace_back();
-				B.MakeWire(wires.back());
-				segment_next = l < eps;
-			}
-			B.Add(wires.back(), e);
-		}
-	}
-
-	void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires) {
-		std::vector<TopoDS_Edge> sorted_edges;
-		sort_edges(wire, sorted_edges);
-		
-		BRep_Builder B;
-		double u, v;
-
-		wires.emplace_back();
-		B.MakeWire(wires.back());
-
-		for (size_t i = 0; i < sorted_edges.size() - 1; ++i) {
-			const auto& e = sorted_edges[i];
-			Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
-			const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
-
-			const auto& f = sorted_edges[i+1];
-			crv = BRep_Tool::Curve(f, u, v);
-			const bool next_is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
-			
-			B.Add(wires.back(), e);
-
-			if (!is_linear && !next_is_linear) {
-				wires.emplace_back();
-				B.MakeWire(wires.back());
-			}
-		}
-
-		B.Add(wires.back(), sorted_edges.back());
-	}
-
-	// @todo make this generic for other sweeps not just swept disk
-	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
-		std::vector<TopoDS_Wire> wires;
-		segment_adjacent_non_linear(wire, wires);
-
-		TopoDS_Compound C;
-		BRep_Builder B;
-		if (wires.size() > 1) {
-			B.MakeCompound(C);
-		}
-
-		for (auto& w : wires) {
-			TopoDS_Shape part;
-
-			gp_Ax2 directrix;
-			if (!wire_to_ax(w, directrix)) {
-				continue;
-			}
-			Handle(Geom_Circle) circle = new Geom_Circle(directrix, radius);
-			TopoDS_Wire section = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
-
-			if (is_single_linear_edge(w)) {
-				process_sweep_as_extrusion(w, section, part);
-			} else {
-				process_sweep_as_pipe(w, section, part);
-			}
-			if (wires.size() > 1) {
-				B.Add(C, part);
-			} else {
-				result = part;
-			}
-		}
-
-		if (wires.size() > 1) {
-			result = C;
-		}
-	}
-}
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shape& shape) {
-	TopoDS_Wire wire, section1, section2;
-
-	bool hasInnerRadius = l->hasInnerRadius();
-
-	if (!convert_wire(l->Directrix(), wire)) {
-		return false;
-	}
-
-	BRepTools::Write(wire, "debug-wire.brep");
-	{
-		std::ofstream fs("debug-wire.txt");
-		BRepTools::Dump(wire, fs);
-	}
-	
+	const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
-	
-	// This is not used anymore, BRepBuilderAPI_RightCorner is always used now.
-	// const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
-
-	process_sweep(wire, l->Radius() * getValue(GV_LENGTH_UNIT), shape);
-
-	double r2 = 0.;
+	// NB2: Contrary to IfcSurfaceCurveSweptAreaSolid the transition mode has been
+	// set to create round corners as this has proven to work better with the types
+	// of directrices encountered, which do not necessarily conform to a surface.
+	{ BRepOffsetAPI_MakePipeShell builder(wire);
+	builder.Add(section1);
+	if (!is_continuous) {
+		// Only perform round corners on wires that are not c1 continuous
+		builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+	}
+	builder.Build();
+	builder.MakeSolid();
+	shape = builder.Shape(); }
 
 	if (hasInnerRadius) {
-		// Subtraction of pipes with small radii is unstable.
-		r2 = l->InnerRadius() * getValue(GV_LENGTH_UNIT);
-	}
+		BRepOffsetAPI_MakePipeShell builder(wire);
+		builder.Add(section2);
+		if (!is_continuous) {
+			builder.SetTransitionMode(BRepBuilderAPI_RoundCorner);
+		}
+		builder.Build();
+		builder.MakeSolid();
+		TopoDS_Shape inner = builder.Shape();
 
-	if (r2 > getValue(GV_PRECISION) * 10.) {
-		TopoDS_Shape inner;
-		process_sweep(wire, r2, inner);
-
+		BRepAlgoAPI_Cut brep_cut(shape, inner);
 		bool is_valid = false;
+		if (brep_cut.IsDone()) {
+			TopoDS_Shape result = brep_cut;
 
-		// Boolean op on the compound of separately processed sweeps
-		// is not attempted.
-		// @todo iterate over compound subshapes and process boolean
-		// separately.
-		// @todo don't process as boolean op at all, since we know
-		// only the start and end faces intersect and we know they
-		// are co-planar and we know they are circles.
-		if (shape.ShapeType() != TopAbs_COMPOUND) {
-			BRepAlgoAPI_Cut brep_cut(shape, inner);
-			if (brep_cut.IsDone()) {
-				TopoDS_Shape result = brep_cut;
-
-				ShapeFix_Shape fix(result);
-				fix.Perform();
-				result = fix.Shape();
-
-				is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
-				if (is_valid) {
-					shape = result;
-				}
+			ShapeFix_Shape fix(result);
+			fix.Perform();
+			result = fix.Shape();
+		
+			is_valid = BRepCheck_Analyzer(result).IsValid() != 0;
+			if (is_valid) {
+				shape = result;
 			}
 		}
 
@@ -1329,54 +1144,24 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	return true;
 }
 
-#ifdef SCHEMA_HAS_IfcCylindricalSurface
+#ifdef USE_IFC4
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcCylindricalSurface* l, TopoDS_Shape& face) {
 	gp_Trsf trsf;
 	IfcGeom::Kernel::convert(l->Position(),trsf);
 	
 	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
+#if OCC_VERSION_HEX < 0x60502
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius())).Face().Moved(trsf);
+#else
+	face = BRepBuilderAPI_MakeFace(new Geom_CylindricalSurface(gp::XOY(), l->Radius()), getValue(GV_PRECISION)).Face().Moved(trsf);
+#endif
 	return true;
 }
-
-#endif
-
-#ifdef SCHEMA_HAS_IfcSphericalSurface
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcSphericalSurface* l, TopoDS_Shape& face) {
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(), trsf);
-
-	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_SphericalSurface(gp::XOY(), l->Radius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
-	return true;
-}
-
-#endif
-
-#ifdef SCHEMA_HAS_IfcToroidalSurface
-
-bool IfcGeom::Kernel::convert(const IfcSchema::IfcToroidalSurface* l, TopoDS_Shape& face) {
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(l->Position(), trsf);
-
-	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_ToroidalSurface(gp::XOY(), l->MajorRadius() * getValue(GV_LENGTH_UNIT), l->MinorRadius() * getValue(GV_LENGTH_UNIT)), getValue(GV_PRECISION)).Face().Moved(trsf);
-	return true;
-}
-
-#endif
-
-#ifdef SCHEMA_HAS_IfcAdvancedBrep
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcAdvancedBrep* l, TopoDS_Shape& shape) {
 	return convert(l->Outer(), shape);
 }
-
-#endif
-
-#ifdef SCHEMA_HAS_IfcTriangulatedFaceSet
 
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS_Shape& shape) {
 	IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
@@ -1438,18 +1223,18 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	bool valid_shell = false;
 
 	// @todo Do this more efficiently by creating proper half-edge pairs.
-	BRepOffsetAPI_Sewing sewing_builder;
-	sewing_builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	sewing_builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
-	sewing_builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	BRepOffsetAPI_Sewing builder;
+	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
 		
 	for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
-		sewing_builder.Add(*it);
+		builder.Add(*it);
 	}
 
 	try {
-		sewing_builder.Perform();
-		shape = sewing_builder.SewedShape();
+		builder.Perform();
+		shape = builder.SewedShape();
 		valid_shell = BRepCheck_Analyzer(shape).IsValid();
 	} catch(...) {}
 
@@ -1483,5 +1268,176 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 
 	return true;
 }
+
+
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_Shape& shape) {
+
+
+	IfcSchema::IfcCartesianPointList3D* point_list = pfs->Coordinates();
+	const std::vector< std::vector<double> > coordinates = point_list->CoordList();
+	std::vector<gp_Pnt> points;
+	points.reserve(coordinates.size());
+
+	for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
+		const std::vector<double>& coords = *it;
+		points.push_back(gp_Pnt(coords[0], coords[1], coords[2]));
+	}
+
+
+	auto polygonal_faces = pfs->Faces();
+
+	std::vector<TopoDS_Face> faces;
+	
+	TopoDS_Compound all_faces;
+	BRep_Builder compound_builder;
+	compound_builder.MakeCompound(all_faces);
+
+
+
+	for (int i = 0; i < polygonal_faces->size(); i++) {
+		IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
+
+			TopoDS_Face face; 
+
+			// Gives the indexed points defining the face 
+			std::vector<int> test = la->CoordIndex();
+
+			// The points vector gathers all the indexed 
+			// points, sorted in order (cf BuildingSmart https://urlz.fr/aXN6)
+			std::vector<gp_Pnt>face_points;
+			for (std::vector<int>::size_type i = 0; i != test.size(); i++) {
+				gp_Pnt point = points[test[i] - 1];
+				face_points.push_back(point);}
+
+
+			BRepBuilderAPI_MakePolygon wire_builder = BRepBuilderAPI_MakePolygon();
+
+			for (std::vector<gp_Pnt>::const_iterator it = face_points.begin(); it != face_points.end(); ++it) {
+				TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(*it);
+				wire_builder.Add(vertex);
+
+			}
+			wire_builder.Close();
+
+
+
+			TopoDS_Wire wire = wire_builder.Wire();
+
+			if (la->declaration().is(IfcSchema::IfcIndexedPolygonalFaceWithVoids::Class())) {
+				IfcSchema::IfcIndexedPolygonalFaceWithVoids* converted = (IfcSchema::IfcIndexedPolygonalFaceWithVoids*)la;
+				std::vector< std::vector<int> > innercoordinates = converted->InnerCoordIndices();
+
+				BRepBuilderAPI_MakeFace facemaker = BRepBuilderAPI_MakeFace(wire);
+				std::vector<TopoDS_Wire> vectorofwires;
+				for (std::vector< std::vector<int> >::const_iterator it = innercoordinates.begin(); it != innercoordinates.end(); ++it) {
+
+					std::vector <int> mycoords = *it;
+					BRepBuilderAPI_MakePolygon inner_wire_builder = BRepBuilderAPI_MakePolygon();
+					for (std::vector<int>::size_type i = 0; i != mycoords.size(); i++) {
+						gp_Pnt apoint = points[mycoords[i] - 1];
+						TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(apoint);
+						inner_wire_builder.Add(vertex);
+					}
+
+					TopoDS_Wire mywire = inner_wire_builder.Wire();
+					vectorofwires.push_back(mywire);
+					inner_wire_builder.Close();}
+
+
+				for (std::vector<TopoDS_Wire>::const_iterator it = vectorofwires.begin(); it != vectorofwires.end(); ++it) {
+					TopoDS_Wire w = *it;
+					facemaker.Add(w);}
+
+				face = facemaker.Face();
+			}
+
+			else {
+
+				face = BRepBuilderAPI_MakeFace(wire).Face();
+			}
+
+
+
+			TopoDS_Iterator face_it(face, false);
+			const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
+			const bool reversed = w.Orientation() == TopAbs_REVERSED;
+			if (reversed) {
+				face.Reverse();
+			}
+
+			if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+				faces.push_back(face);
+			}}
+
+
+
+
+	if (faces.empty()) return false;
+
+	bool valid_shell = false;
+
+	// @todo Do this more efficiently by creating proper half-edge pairs.
+	BRepOffsetAPI_Sewing builder;
+	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+
+	for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
+		builder.Add(*it);
+	}
+
+	try {
+		builder.Perform();
+		shape = builder.SewedShape();
+		valid_shell = BRepCheck_Analyzer(shape).IsValid();
+	}
+	catch (...) {}
+
+	if (valid_shell) {
+		try {
+			ShapeFix_Solid solid;
+			solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+			TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
+			if (!solid_shape.IsNull()) {
+				try {
+					BRepClass3d_SolidClassifier classifier(solid_shape);
+					shape = solid_shape;
+				}
+				catch (...) {}
+			}
+		}
+		catch (...) {}
+	}
+	else {
+		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", pfs);
+	}
+
+	if (!valid_shell) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+
+		for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
+			builder.Add(compound, *it);
+		}
+
+		shape = compound;
+	}
+
+	return true;
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 #endif

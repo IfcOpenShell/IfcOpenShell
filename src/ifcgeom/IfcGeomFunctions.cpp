@@ -26,7 +26,6 @@
 #include <set>
 #include <cassert>
 #include <algorithm>
-#include <numeric>
 
 #include <Standard_Version.hxx>
 
@@ -109,8 +108,6 @@
 #include <ShapeAnalysis_Surface.hxx>
 #include <ShapeAnalysis_ShapeTolerance.hxx>
 
-#include <ShapeUpgrade_UnifySameDomain.hxx>
-
 #include <BRepFilletAPI_MakeFillet2d.hxx>
 
 #include <TopLoc_Location.hxx>
@@ -143,17 +140,12 @@
 
 #include <GCPnts_AbscissaPoint.hxx>
 
-#include <BRepTopAdaptor_FClass2d.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 
 #include <GeomAPI_ExtremaCurveCurve.hxx>
 
-#include <Extrema_ExtCS.hxx>
 #include <Extrema_ExtPC.hxx>
 #include <BRepAdaptor_Curve.hxx>
-
-#include <ShapeAnalysis_Edge.hxx>
-#include <BRepExtrema_DistShapeShape.hxx>
 
 #include "../ifcparse/macros.h"
 #include "../ifcparse/IfcSIPrefix.h"
@@ -322,153 +314,6 @@ namespace {
 		return M;
 	}
 
-	class points_on_planar_face_generator {
-	private:
-		const TopoDS_Face& f_;
-		Handle(Geom_Surface) plane_;
-		BRepTopAdaptor_FClass2d cls_;
-		double u0, u1, v0, v1;
-		int i, j;
-		bool inset_;
-		static const int N = 10;
-
-	public:
-		points_on_planar_face_generator(const TopoDS_Face& f, bool inset=false)
-			: f_(f)
-			, plane_(BRep_Tool::Surface(f_))
-			, cls_(f_, BRep_Tool::Tolerance(f_))
-			, i((int)inset), j((int)inset)
-			, inset_(inset)
-		{
-			BRepTools::UVBounds(f_, u0, u1, v0, v1);
-		}
-
-		void reset() {
-			i = j = (int)inset_;
-		}
-
-		bool operator()(gp_Pnt& p) {
-			while (j < N) {
-				double u = u0 + (u1 - u0) * i / N;
-				double v = v0 + (v1 - v0) * j / N;
-				
-				i++;
-				if (i == N) {
-					i = 0;
-					j++;
-				}
-
-				// Specifically does not consider ON
-				if (cls_.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
-					plane_->D0(u, v, p);
-					return true;
-				}
-			}
-
-			return false;
-		}
-	};
-
-	bool faces_overlap(const TopoDS_Face& f, const TopoDS_Face& g) {
-		points_on_planar_face_generator pgen(f);
-
-		BRep_Builder B;
-		gp_Pnt test;
-		double eps = BRep_Tool::Tolerance(f) + BRep_Tool::Tolerance(g);
-
-		BRepExtrema_DistShapeShape x;
-		x.LoadS1(g);
-
-		while (pgen(test)) {
-			TopoDS_Vertex V;
-			B.MakeVertex(V, test, Precision::Confusion());
-			x.LoadS2(V);
-			x.Perform();
-			if (x.IsDone() && x.NbSolution() == 1) {
-				if (x.Value() > eps) {
-					return false;
-				}
-			}
-		}
-
-		return true;
-	}
-
-	double min_face_face_distance(const TopoDS_Shape& a, double max_search) {
-		/*
-		NB: This is currently only implemented for planar surfaces.
-		*/
-		double M = std::numeric_limits<double>::infinity();
-
-		TopTools_IndexedMapOfShape faces;
-
-		TopExp::MapShapes(a, TopAbs_FACE, faces);
-
-		IfcGeom::impl::tree<int> tree;
-
-		// Add faces to tree
-		for (int i = 1; i <= faces.Extent(); ++i) {
-			if (BRep_Tool::Surface(TopoDS::Face(faces(i)))->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
-				tree.add(i, faces(i));
-			}
-		}
-
-		for (int j = 1; j <= faces.Extent(); ++j) {
-			const TopoDS_Face& f = TopoDS::Face(faces(j));
-			const Handle(Geom_Surface)& fs = BRep_Tool::Surface(f);
-
-			if (fs->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
-				continue;
-			}
-
-			points_on_planar_face_generator pgen(f);
-
-			Bnd_Box b;
-			BRepBndLib::AddClose(f, b);
-			b.Enlarge(max_search);
-
-			std::vector<int> face_idxs = tree.select_box(b, false);
-			std::vector<int>::const_iterator it = face_idxs.begin();
-			for (; it != face_idxs.end(); ++it) {
-				if (*it == j) {
-					continue;
-				}
-
-				const TopoDS_Face& g = TopoDS::Face(faces(*it));
-				const Handle(Geom_Surface)& gs = BRep_Tool::Surface(g);
-
-				auto p0 = Handle(Geom_Plane)::DownCast(fs);
-				auto p1 = Handle(Geom_Plane)::DownCast(gs);
-
-				if (p0->Position().IsCoplanar(p1->Position(), max_search, asin(max_search))) {
-					pgen.reset();
-
-					BRepTopAdaptor_FClass2d cls(g, BRep_Tool::Tolerance(g));
-
-					gp_Pnt test;
-					while (pgen(test)) {						
-						gp_Vec d = test.XYZ() - p1->Position().Location().XYZ();
-						double u = d.Dot(p1->Position().XDirection());
-						double v = d.Dot(p1->Position().YDirection());
-
-						// nb: TopAbs_ON is explicitly not considered to prevent matching adjacent faces
-						// with similar orientations.
-						if (cls.Perform(gp_Pnt2d(u, v)) == TopAbs_IN) {
-							gp_Pnt test2;
-							p1->D0(u, v, test2);
-							double w = std::abs(gp_Vec(p1->Position().Direction().XYZ()).Dot(test2.XYZ() - test.XYZ()));
-							if (w < M) {
-								M = w;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return M;
-	}
-
 	void bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c) {
 		Bnd_Box A;
 		BRepBndLib::Add(a, A);
@@ -490,20 +335,6 @@ namespace {
 				c.Append(it.Value());
 			}
 		}
-	}
-
-	TopoDS_Shape unify(const TopoDS_Shape& s, double tolerance) {
-		tolerance = (std::min)(min_edge_length(s) / 2., tolerance);
-		ShapeUpgrade_UnifySameDomain usd(s);
-#if OCC_VERSION_HEX >= 0x70200
-		usd.SetSafeInputMode(true);
-#endif
-#if OCC_VERSION_HEX >= 0x70100
-		usd.SetLinearTolerance(tolerance);
-		usd.SetAngularTolerance(1.e-3);
-#endif
-		usd.Build();
-		return usd.Shape();
 	}
 }
 
@@ -538,12 +369,7 @@ bool IfcGeom::Kernel::create_solid_from_faces(const TopTools_ListOfShape& face_l
 	bool has_shared_edges = false;
 	TopTools_MapOfShape edge_set;
 
-	// In case there are wire interesections or failures in non-planar wire triangulations
-	// the idea is to let occt do an exhaustive search of edge partners. But we have not
-	// found a case where this actually improves boolean ops later on.
-	// if (!faceset_helper_ || !faceset_helper_->non_manifold()) {
-
-	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
+	for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {		
 		// As soon as is detected one of the edges is shared, the assumption is made no
 		// additional sewing is necessary.
 		if (!has_shared_edges) {
@@ -1302,6 +1128,12 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DEFLECTION_TOLERANCE:
 		deflection_tolerance = value;
 		break;
+	case GV_WIRE_CREATION_TOLERANCE:
+		wire_creation_tolerance = value;
+		break;
+	case GV_POINT_EQUALITY_TOLERANCE:
+		point_equality_tolerance = value;
+		break;
 	case GV_LENGTH_UNIT:
 		ifc_length_unit = value;
 		break;
@@ -1314,11 +1146,8 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DIMENSIONALITY:
 		dimensionality = value;
 		break;
-	case GV_MAX_FACES_TO_ORIENT:
-		max_faces_to_orient = value;
-		break;
 	default:
-		throw std::runtime_error("Invalid setting");
+		assert(!"never reach here");
 	}
 }
 
@@ -1326,24 +1155,29 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 	switch (var) {
 	case GV_DEFLECTION_TOLERANCE:
 		return deflection_tolerance;
+	case GV_WIRE_CREATION_TOLERANCE:
+		return wire_creation_tolerance;
 	case GV_MINIMAL_FACE_AREA:
 		// Considering a right-angled triangle, this about the smallest
 		// area you can obtain without the vertices being confused.
-		return modelling_precision * modelling_precision / 20.;
+		return modelling_precision * modelling_precision / 2.;
 	case GV_POINT_EQUALITY_TOLERANCE:
-		return modelling_precision;
+		return point_equality_tolerance;
 	case GV_LENGTH_UNIT:
 		return ifc_length_unit;
+		break;
 	case GV_PLANEANGLE_UNIT:
 		return ifc_planeangle_unit;
+		break;
 	case GV_PRECISION:
 		return modelling_precision;
+		break;
 	case GV_DIMENSIONALITY:
 		return dimensionality;
-	case GV_MAX_FACES_TO_ORIENT:
-		return max_faces_to_orient;
+		break;
 	}
-	throw std::runtime_error("Invalid setting");
+	assert(!"never reach here");
+	return 0;
 }
 
 namespace {
@@ -1623,7 +1457,11 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
 	IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
 	for (;;) {
-		auto decomposes = obdef->Decomposes();
+#ifdef USE_IFC4
+		IfcSchema::IfcRelAggregates::list::ptr decomposes = obdef->Decomposes();
+#else
+		IfcSchema::IfcRelDecomposes::list::ptr decomposes = obdef->Decomposes();
+#endif
 		if (decomposes->size() != 1) break;
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
 		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
@@ -1663,6 +1501,14 @@ template <typename P, typename PP>
 IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and_product(
     const IteratorSettings& settings, IfcSchema::IfcRepresentation* representation, IfcSchema::IfcProduct* product)
 {
+	if(representation == nullptr) {
+		representation = find_representation(product, "Body");
+	}
+
+	if (representation == nullptr) {
+		throw IfcParse::IfcException("No representation");
+	}
+
 	std::stringstream representation_id_builder;
 
 	representation_id_builder << representation->data().id();
@@ -2207,7 +2053,7 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 		gp_Trsf extrusion_position;
 
 		bool has_position = true;
-#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+#ifdef USE_IFC4
 		has_position = extrusion->hasPosition();
 #endif
 		if (has_position) {
@@ -2255,8 +2101,6 @@ bool IfcGeom::Kernel::convert_layerset(const IfcSchema::IfcProduct* product, std
 	}
 
 	if (positive) {
-		std::reverse(thicknesses.begin(), thicknesses.end());
-		std::reverse(styles.begin(), styles.end());
 		std::reverse(surfaces.begin(), surfaces.end());
 	}
 
@@ -2372,11 +2216,6 @@ bool IfcGeom::Kernel::find_wall_end_points(const IfcSchema::IfcWall* wall, gp_Pn
 }
 
 bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepresentationShapeItems& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<double>& thicknesses, std::vector< std::vector<Handle_Geom_Surface> >& result) {
-	/*
-	 * @todo isn't it easier to do this based on the non-folded surfaces of
-	 * the connected walls and fold both pairs of layersets simultaneously?
-	*/
-
 	bool folds_made = false;
 	
 	IfcSchema::IfcRelConnectsPathElements::list::ptr connections(new IfcSchema::IfcRelConnectsPathElements::list);
@@ -2390,8 +2229,6 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	typedef std::vector< std::vector<Handle_Geom_Surface> > result_t;
 	endpoint_connections_t endpoint_connections;
 
-	// Find the semantic connections ot other wall elements when they are not connected 'AT_PATH' because
-	// in that latter case no folds need to be made.
 	for (IfcSchema::IfcRelConnectsPathElements::list::it it = connections->begin(); it != connections->end(); ++it) {
 		IfcSchema::IfcRelConnectsPathElements* connection = *it;
 		IfcSchema::IfcConnectionTypeEnum::Value own_type = connection->RelatedElement() == wall
@@ -2416,8 +2253,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	if (endpoint_connections.size() == 0) {
 		return false;
 	}
-	
-	// Count how many connections are made AT_START and AT_END respectively
+
 	int connection_type_count[2] = {0,0};
 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 		const int idx = it->first.first == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
@@ -2443,13 +2279,11 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 	gp_Pnt own_axis_start, own_axis_end;
 	find_wall_end_points(wall, own_axis_start, own_axis_end);
 
-	// Sometimes duplicate IfcRelConnectsPathElements exist. These are detected
-	// and the counts of connections are decremented accordingly.
 	for (int idx = 0; idx < 2; ++idx) {
 		if (connection_type_count[idx] <= 1) {
 			continue;
 		}
-
+		
 		/*
 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = idx == 1
 			? IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
@@ -2462,44 +2296,48 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			const IfcSchema::IfcProduct* other = it->second;
 			if (others.find(other) != others.end()) {
 				it = endpoint_connections.erase(it);
-				--connection_type_count[idx];
+				-- connection_type_count[idx];
 			} else {
 				others.insert(other);
 				++it;
 			}
 		}
-	}
 
-	// Check whether the end points are of the wall are really ~1 LayerThickness away from each other
-	/*
-	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
-		IfcSchema::IfcConnectionTypeEnum::Value own_type = it->first.first;
-		IfcSchema::IfcConnectionTypeEnum::Value other_type = it->first.second;
+		/*
+		Additionally one could check whether the end points are of the wall are really ~1 LayerThickness away from each other
+		for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
+			IfcSchema::IfcConnectionTypeEnum::Value relating_connection_type = it->first.first;
+			IfcSchema::IfcConnectionTypeEnum::Value related_connection_type = it->first.second;
 
-		gp_Pnt other_axis_start, other_axis_end;
-		find_wall_end_points(it->second->as<IfcSchema::IfcWall>(), other_axis_start, other_axis_end);
+			if (connection_type != relating_connection_type) {
+				continue;
+			}
 
-		gp_Trsf other;
-		if (!convert(it->second->ObjectPlacement(), other)) {
-			continue;
+			gp_Pnt other_axis_start, other_axis_end;
+			find_wall_end_points(it->second->as<IfcSchema::IfcWall>(), other_axis_start, other_axis_end);
+
+			gp_Trsf other;
+			if (!convert(it->second->ObjectPlacement(), other)) {
+				continue;
+			}
+
+			other.Transforms(other_axis_start.ChangeCoord());
+			local.Transforms(other_axis_start.ChangeCoord());
+			other.Transforms(other_axis_end.ChangeCoord());
+			local.Transforms(other_axis_end.ChangeCoord());
+
+			const gp_Pnt& a = relating_connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
+				? own_axis_start
+				: own_axis_end;
+
+			const gp_Pnt& b = related_connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
+				? other_axis_start
+				: other_axis_end;
+
+			const double d = a.Distance(b);
 		}
-
-		other.Transforms(other_axis_start.ChangeCoord());
-		local.Transforms(other_axis_start.ChangeCoord());
-		other.Transforms(other_axis_end.ChangeCoord());
-		local.Transforms(other_axis_end.ChangeCoord());
-
-		const gp_Pnt& a = own_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
-			? own_axis_start
-			: own_axis_end;
-
-		const gp_Pnt& b = other_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART
-			? other_axis_start
-			: other_axis_end;
-
-		const double d = a.Distance(b);
+		*/
 	}
-	*/
 
 	for (endpoint_connections_t::const_iterator it = endpoint_connections.begin(); it != endpoint_connections.end(); ++it) {
 		IfcSchema::IfcConnectionTypeEnum::Value connection_type = it->first.first;
@@ -2508,7 +2346,6 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		const int idx = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATSTART;
 		if (connection_type_count[idx] > 1) continue;
 
-		// Pick the corresponding point from the axis
 		const gp_Pnt& own_end_point = connection_type == IfcSchema::IfcConnectionTypeEnum::IfcConnectionType_ATEND
 			? own_axis_end
 			: own_axis_start;
@@ -2545,12 +2382,9 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		TopoDS_Shape body_shape;
 		flatten_shape_list(items, body_shape, false);
 
-		// Create a single paremetric range over a single curve
-		// that represents the entire 1d domain of the other wall
-		// Sometimes there are multiple edges in the Axis shape
-		// but it is assumed these are colinear.
-		Handle_Geom_Curve other_axis_curve;
+		Handle_Geom_Curve axis_curve;
 		double axis_u1, axis_u2;
+				
 		{ 
 			TopExp_Explorer exp(axis_shape, TopAbs_EDGE);
 			if (!exp.More()) {
@@ -2558,11 +2392,11 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 			}
 
 			TopoDS_Edge axis_edge = TopoDS::Edge(exp.Current());
-			other_axis_curve = BRep_Tool::Curve(axis_edge, axis_u1, axis_u2);
+			axis_curve = BRep_Tool::Curve(axis_edge, axis_u1, axis_u2);
 
 			gp_Pnt other_a_1, other_a_2;
-			other_axis_curve->D0(axis_u1, other_a_1);
-			other_axis_curve->D0(axis_u2, other_a_2);
+			axis_curve->D0(axis_u1, other_a_1);
+			axis_curve->D0(axis_u2, other_a_2);
 
 			if (axis_u2 < axis_u1) {
 				std::swap(axis_u1, axis_u2);
@@ -2576,7 +2410,7 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 					gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(exp2.Current()));
 					gp_Pnt pp;
 					double u, d;
-					if (project(other_axis_curve, p, pp, u, d)) {
+					if (project(axis_curve, p, pp, u, d)) {
 						if (u < axis_u1) axis_u1 = u;
 						if (u > axis_u2) axis_u2 = u;
 					}
@@ -2585,33 +2419,27 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 		}
 		
 		double layer_offset = 0;
-
-		const double total_thickness = std::accumulate(thicknesses.begin(), thicknesses.end(), 0);
 		
 		std::vector<double>::const_iterator thickness = thicknesses.begin();
 		result_t::iterator result_vector = result.begin() + 1;
 
-		// nb The first layer is never folded, because it corresponds
-		// to one of the longitudonal faces of the wall. Hence the +1
 		for (surfaces_t::const_iterator jt = surfaces.begin() + 1; jt != surfaces.end() - 1; ++jt, ++result_vector) {
 			layer_offset += *thickness++;
 
 			bool found_intersection = false;
 			boost::optional<gp_Pnt> point_outside_param_range;
+			//double param;
 				
 			const Handle_Geom_Surface& surface = *jt;
 
-			// Find the intersection point between the layerset surface
-			// and the other axis curve. If it's within the parametric
-			// range of the other wall it means the walls are connected
-			// with an angle.
-			GeomAPI_IntCS intersections(other_axis_curve, surface);
+			GeomAPI_IntCS intersections(axis_curve, surface);
 			if (intersections.IsDone() && intersections.NbPoints() == 1) {
 				const gp_Pnt& p = intersections.Point(1);
 				double u, v, w;
 				intersections.Parameters(1, u, v, w);
 				if (w < axis_u1 || w > axis_u2) {
 					point_outside_param_range = p;
+					//param = w;
 				} else {
 					// Found an intersection. Layer end point is covered by connecting wall
 					found_intersection = true;
@@ -2635,7 +2463,6 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 				
 				Handle_Geom_Surface plane = new Geom_Plane(*point_outside_param_range, gp::DZ());
 
-				// vertical edges at wall end point face.
 				curves_on_surfaces_t layer_ends;
 				intersect(surface, body_shape, layer_ends);
 
@@ -2651,37 +2478,18 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 						// Filter horizontal curves
 						continue;
 					}
-					// Find vertical wall end point edge closest to end point associated with semantic connection
 					if (project(kt->second, own_end_point, p, u, d)) {
-						// In addition to closest, there is a length threshold based on thickness.
-						// @todo ideally, first, the point closest to end-point is selected, and
-						// after that the parallel check is performed. But threshold probably
-						// functions good enough.
-						if (d < total_thickness * 3 && d < mind) {
-							GeomAdaptor_Curve GAC(other_axis_curve);
-							GeomAdaptor_Surface GAS(kt->first);
-
-							Extrema_ExtCS x(GAC, GAS, getValue(GV_PRECISION), getValue(GV_PRECISION));
-
-							if (x.IsParallel()) {
-								body_surface = kt->first;
-								layer_body_intersection = kt->second;
-								mind = d;
-							}
+						if (d < mind) {
+							body_surface = kt->first;
+							layer_body_intersection = kt->second;
+							mind = d;
 						}
 					}
 				}
 
-				if (body_surface.IsNull()) {
-					continue;
-				}
-
-				// Intersect vertical edge with ground plane for point.
 				GeomAPI_IntCS intersection2(layer_body_intersection, plane);
 				if (intersection2.IsDone() && intersection2.NbPoints() == 1) {
 					const gp_Pnt& layer_end_point = intersection2.Point(1);
-
-					// Intersect layerset surface with ground plane
 					GeomAPI_IntSS intersection3(surface, plane, 1.e-7);
 					if (intersection3.IsDone() && intersection3.NbLines() == 1) {
 						Handle_Geom_Curve layer_line = intersection3.Line(1);
@@ -2690,10 +2498,8 @@ bool IfcGeom::Kernel::fold_layers(const IfcSchema::IfcWall* wall, const IfcRepre
 						gp_Pnt layer_end_point_projected; double layer_end_point_param;
 						sac.Project(layer_line, layer_end_point, 1e-3, layer_end_point_projected, layer_end_point_param, false);
 
-						// Move point inwards by distance from other layerset
 						GCPnts_AbscissaPoint dst(layer_line_adaptor, layer_offset, layer_end_point_param);
 						if (dst.IsDone()) {
-							// Convert parameter to point
 							gp_Pnt layer_fold_point;
 							layer_line->D0(dst.Parameter(), layer_fold_point);
 							
@@ -3279,14 +3085,11 @@ bool IfcGeom::Kernel::is_identity_transform(IfcUtil::IfcBaseClass* l) {
 	}
 }
 
-bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane, double eps) {
+bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp_Pln& plane) {
 	// Newell's Method is used for the normal calculation
 	// as a simple edge cross product can give opposite results
 	// for a concave face boundary.
 	// Reference: Graphics Gems III p. 231
-
-	const double eps_ = eps < 1. ? getValue(GV_PRECISION) : eps;
-	const double eps2 = eps_ * eps_;
 
 	double x = 0, y = 0, z = 0;
 	gp_Pnt current, previous, first;
@@ -3327,18 +3130,8 @@ bool IfcGeom::Kernel::approximate_plane_through_wire(const TopoDS_Wire& wire, gp
 	if (n < 3) {
 		return false;
 	}
-	
+
 	plane = gp_Pln(center / n, gp_Dir(x, y, z));
-
-	exp.Init(wire);
-	for (; exp.More(); exp.Next()) {
-		const TopoDS_Vertex& v = exp.CurrentVertex();
-		current = BRep_Tool::Pnt(v);
-		if (plane.SquareDistance(current) > eps2) {
-			return false;
-		}
-	}
-
 	return true;
 }
 
@@ -3363,7 +3156,7 @@ bool IfcGeom::Kernel::flatten_wire(TopoDS_Wire& wire) {
 	return true;
 }
 
-bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces) {
+bool IfcGeom::Kernel::triangulate_wire(const TopoDS_Wire& wire, TopTools_ListOfShape& faces) {
 	// This is a bit of a precarious approach, but seems to work for the 
 	// versions of OCCT tested for. OCCT has a Delaunay triangulation function 
 	// BRepMesh_Delaun, but it is notoriously hard to interpret the results 
@@ -3371,85 +3164,43 @@ bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, To
 	// alternatively we use the regular OCCT incremental mesher on a new face 
 	// created from the UV coordinates of the original wire. Pray to our gods 
 	// that the vertex coordinates are unaffected by the meshing algorithm and 
-	// map them back to 3d coordinates when iterating over the mesh triangles.
-
-	// In addition, to maintain a manifold shell, we need to make sure that 
-	// every edge from the input wire is used exactly once in the list of 
-	// resulting faces. And that other internal edges are used twice.
+	// map them back to 3d coordinates when iterating over the mesh triangles. 
 
 	typedef std::pair<double, double> uv_node;
 
 	gp_Pln pln;
-	if (!approximate_plane_through_wire(wires.front(), pln, std::numeric_limits<double>::infinity())) {
+	if (!approximate_plane_through_wire(wire, pln)) {
 		return false;
 	}
 
 	const gp_XYZ& udir = pln.Position().XDirection().XYZ();
 	const gp_XYZ& vdir = pln.Position().YDirection().XYZ();
 	const gp_XYZ& pnt = pln.Position().Location().XYZ();
+	
+	BRepTools_WireExplorer exp(wire);
+	BRepBuilderAPI_MakePolygon mp;
+	std::map<uv_node, gp_Pnt> mapping;
 
-	std::map<uv_node, TopoDS_Vertex> mapping;
-	std::map<std::pair<uv_node, uv_node>, TopoDS_Edge> existing_edges, new_edges;
-
-	std::unique_ptr<BRepBuilderAPI_MakeFace> mf;
-
-	for (auto it = wires.begin(); it != wires.end(); ++it) {
-		const TopoDS_Wire& wire = *it;
-		BRepTools_WireExplorer exp(wire);
-		BRepBuilderAPI_MakePolygon mp;
-
-		// Add UV coordinates to a newly created polygon
-		for (; exp.More(); exp.Next()) {
-			// Project onto plane
-			const TopoDS_Vertex& V = exp.CurrentVertex();
-			gp_Pnt p = BRep_Tool::Pnt(V);
-			double u = (p.XYZ() - pnt).Dot(udir);
-			double v = (p.XYZ() - pnt).Dot(vdir);
-			mp.Add(gp_Pnt(u, v, 0.));
-
-			mapping.insert(std::make_pair(std::make_pair(u, v), V));
-
-			// Store existing edges in a map so that triangles can
-			// actually reference the preexisting edges.
-			const TopoDS_Edge& e = exp.Current();
-			TopoDS_Vertex V0, V1;
-			TopExp::Vertices(e, V0, V1, true);
-			gp_Pnt p0 = BRep_Tool::Pnt(V0);
-			gp_Pnt p1 = BRep_Tool::Pnt(V1);
-			double u0 = (p0.XYZ() - pnt).Dot(udir);
-			double v0 = (p0.XYZ() - pnt).Dot(vdir);
-			double u1 = (p1.XYZ() - pnt).Dot(udir);
-			double v1 = (p1.XYZ() - pnt).Dot(vdir);
-			uv_node uv0 = std::make_pair(u0, v0);
-			uv_node uv1 = std::make_pair(u1, v1);
-			existing_edges.insert(std::make_pair(std::make_pair(uv0, uv1), e));
-			existing_edges.insert(std::make_pair(std::make_pair(uv1, uv0), TopoDS::Edge(e.Reversed())));
-		}
-
-		// Not closed by default
-		mp.Close();
-
-		if (mf) {
-			if (it - 1 == wires.begin()) {
-				// @todo is this necessary?
-				TopoDS_Face f = mf->Face();
-				mf->Init(f);
-			} 
-			mf->Add(mp.Wire());
-		} else {
-			mf.reset(new BRepBuilderAPI_MakeFace(mp.Wire()));
-		}
+	// Add UV coordinates to a newly created polygon
+	for (; exp.More(); exp.Next()) {
+		gp_Pnt p = BRep_Tool::Pnt(exp.CurrentVertex());
+		double u = (p.XYZ() - pnt).Dot(udir);
+		double v = (p.XYZ() - pnt).Dot(vdir);
+		mp.Add(gp_Pnt(u, v, 0));
+		mapping.insert(std::make_pair(std::make_pair(u, v), p));
 	}
 
-	const TopoDS_Face& face = mf->Face();
+	// Not closed by default
+	mp.Close();
 
-	// Create a triangular mesh from the face
+	// Create a new face from the {u,v,0} wire and mesh the face
+	TopoDS_Face face = BRepBuilderAPI_MakeFace(mp.Wire());
 	BRepMesh_IncrementalMesh(face, Precision::Confusion());
 
 	int n123[3]; 
 	TopLoc_Location loc;
 	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
-
+	
 	if (!tri.IsNull()) {
 		const TColgp_Array1OfPnt& nodes = tri->Nodes();
 
@@ -3460,108 +3211,32 @@ bool IfcGeom::Kernel::triangulate_wire(const std::vector<TopoDS_Wire>& wires, To
 			else triangles(i).Get(n123[0], n123[1], n123[2]);
 			
 			// Create polygons from the mesh vertices
-			BRepBuilderAPI_MakeWire mp2;
+			BRepBuilderAPI_MakePolygon mp2;
 			for (int j = 0; j < 3; ++j) {
-				
-				uv_node uvnodes[2];
-				TopoDS_Vertex vs[2];
+				const gp_Pnt& uv = nodes.Value(n123[j]);
+				uv_node key = std::make_pair(uv.X(), uv.Y());
 
-				for (int k = 0; k < 2; ++k) {
-					const gp_Pnt& uv = nodes.Value(n123[(j + k) % 3]);
-					uvnodes[k] = std::make_pair(uv.X(), uv.Y());
-
-					auto it = mapping.find(uvnodes[k]);
-					if (it == mapping.end()) {
-						Logger::Error("Internal error: unable to unproject uv-mesh");
-						return false;
-					}
-
-					vs[k] = it->second;
+				if (mapping.find(key) == mapping.end()) {
+					Logger::Error("Internal error: unable to unproject uv-mesh");
+					return false;
 				}
 
-				auto it = existing_edges.find(std::make_pair(uvnodes[0], uvnodes[1]));
-				if (it != existing_edges.end()) {
-					// This is a boundary edge, reuse existing edge from wire
-					mp2.Add(it->second);
-				} else {
-					auto jt = new_edges.find(std::make_pair(uvnodes[0], uvnodes[1]));
-					if (jt != new_edges.end()) {
-						// We have already added the reverse as part of another
-						// triangle, reuse this edge.
-						mp2.Add(TopoDS::Edge(jt->second));
-					} else {
-						// This is a new internal edge. Register the reverse
-						// for reuse later. We need to be sure to reuse vertices
-						// for the edge construction because otherwise the wire
-						// builder will use geometrical proximity for vertex
-						// connections in which case the edge will be copied
-						// and no longer partner with other edges from the shell.
-						TopoDS_Edge ne = BRepBuilderAPI_MakeEdge(vs[0], vs[1]);
-						mp2.Add(ne);
-						// Store the reverse to be picked up later.
-						new_edges.insert(std::make_pair(std::make_pair(uvnodes[1], uvnodes[0]), TopoDS::Edge(ne.Reversed())));
-					}
-				}
+				const gp_Pnt& p = mapping.find(key)->second;
+				mp2.Add(p);
 			}
+			mp2.Close();
 
-			BRepBuilderAPI_MakeFace mft(mp2.Wire());
-			if (mft.IsDone()) {
-				TopoDS_Face triangle_face = mft.Face();
+			BRepBuilderAPI_MakeFace mf(mp2.Wire());
+			if (mf.IsDone()) {
+				TopoDS_Face triangle_face = mf.Face();
 				TopoDS_Iterator jt(triangle_face, false);
 				for (; jt.More(); jt.Next()) {
 					const TopoDS_Wire& w = TopoDS::Wire(jt.Value());
-					if (w.Orientation() != wires.front().Orientation()) {
+					if (w.Orientation() != wire.Orientation()) {
 						triangle_face.Reverse();
 					}
 				}
 				faces.Append(triangle_face);
-			} else {
-				Logger::Error("Internal error: missing face");
-				return false;
-			}
-		}
-	}
-
-	TopTools_IndexedDataMapOfShapeListOfShape mape, mapn;
-	for (auto& wire : wires) {
-		TopExp::MapShapesAndAncestors(wire, TopAbs_EDGE, TopAbs_WIRE, mape);
-	}
-	TopTools_ListIteratorOfListOfShape it(faces);
-	for (; it.More(); it.Next()) {
-		TopExp::MapShapesAndAncestors(it.Value(), TopAbs_EDGE, TopAbs_WIRE, mapn);
-	}
-
-	// Validation
-
-	for (int i = 1; i <= mape.Extent(); ++i) {
-#if OCC_VERSION_HEX >= 0x70000
-		TopTools_ListOfShape val;
-		if (!mapn.FindFromKey(mape.FindKey(i), val)) {
-#else
-		bool contains = false;
-		try {
-			TopTools_ListOfShape val = mapn.FindFromKey(mape.FindKey(i));
-			contains = true;
-		} catch (Standard_NoSuchObject&) {}
-		if (!contains) {
-#endif
-			// All existing edges need to exist in the new faces
-			Logger::Error("Internal error, missing edge from triangulation");
-			if (faceset_helper_ != nullptr) {
-				faceset_helper_->non_manifold() = true;
-			}
-		}
-	}
-
-	for (int i = 1; i <= mapn.Extent(); ++i) {
-		const TopoDS_Shape& v = mapn.FindKey(i);
-		int n = mapn.FindFromIndex(i).Extent();
-		// Existing edges are boundaries with use 1
-		// New edges are internal with use 2
-		if (n != (mape.Contains(v) ? 1 : 2)) {
-			Logger::Error("Internal error, non-manifold result from triangulation");
-			if (faceset_helper_ != nullptr) {
-				faceset_helper_->non_manifold() = true;
 			}
 		}
 	}
@@ -3684,9 +3359,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
 	
 	const double eps = faceset_helper_
-		// eps is added to both ends of the parametric domain, so 3. is chosen to be on the safe side here.
-		? (faceset_helper_->epsilon() / 3.)
-		// @todo re-evaluate 2. here for the reasons above:
+		? faceset_helper_->epsilon()
 		: (std::min)(min_edge_length(wire) / 2., getValue(GV_PRECISION) * 10.);
 
 	for (int i = 2; i < n; ++i) {
@@ -4008,24 +3681,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopoDS_Shap
 	return succesful;
 }
 #else
-
-bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_ListOfShape& b__, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
-	
-	if (fuzziness < 0.) {
-		fuzziness = getValue(GV_PRECISION) / 10.;
-	}
-
-	// @todo, it does seem a bit odd, we first triangulate non-planar faces
-	// to later unify them again. Can we make this a bit more intelligent?
-	TopoDS_Shape a = unify(a_, fuzziness);
-	TopTools_ListOfShape b_;
-	{
-		TopTools_ListIteratorOfListOfShape it(b__);
-		for (; it.More(); it.Next()) {
-			b_.Append(unify(it.Value(), fuzziness));
-		}
-	}
-
+bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a, const TopTools_ListOfShape& b_, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	bool success = false;
 	BRepAlgoAPI_BooleanOperation* builder;
 	TopTools_ListOfShape B, b;
@@ -4047,11 +3703,15 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 		return true;
 	}
 
+	if (fuzziness < 0.) {
+		fuzziness = getValue(GV_PRECISION);
+	}
+
 	// Find a sensible value for the fuzziness, based on precision
 	// and limited by edge lengths and vertex-edge distances.
-	const double len_a = min_edge_length(a_);
-	double min_length_orig = (std::min)(len_a, min_vertex_edge_distance(a_, getValue(GV_PRECISION), len_a));
-	TopTools_ListIteratorOfListOfShape it(b__);
+	const double len_a = min_edge_length(a);
+	double min_length_orig = (std::min)(len_a, min_vertex_edge_distance(a, getValue(GV_PRECISION), len_a));
+	TopTools_ListIteratorOfListOfShape it(b);
 	for (; it.More(); it.Next()) {
 		double d = min_edge_length(it.Value());
 		if (d < min_length_orig) {
@@ -4063,7 +3723,7 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 		}
 	}
 
-	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
+	const double fuzz = (std::min)(min_length_orig / 10., fuzziness);
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
@@ -4095,87 +3755,18 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 
 			success = !is_manifold(a) || is_manifold(r);
 
-			if (!success) {
-				// An excemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
-				bool operands_nonmanifold = false;
-				if (op == BOPAlgo_CUT) {
-					TopTools_IndexedMapOfShape edges;
-					TopTools_IndexedDataMapOfShapeListOfShape map;
-					for (TopTools_ListIteratorOfListOfShape it(B); it.More(); it.Next()) {
-						auto& bb = it.Value();
-						TopExp::MapShapes(bb, TopAbs_EDGE, edges);
-						TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
-					}
-					IfcGeom::impl::tree<int> tree;
-					for (int i = 1; i <= edges.Extent(); ++i) {
-						tree.add(i, edges.FindKey(i));
-					}
-					for (int i = 1; i <= edges.Extent(); ++i) {
-						const TopoDS_Edge& ei = TopoDS::Edge(edges.FindKey(i));
-						Bnd_Box b;
-						BRepBndLib::Add(ei, b);
-						b.Enlarge(fuzziness);
-						auto ii = tree.select_box(b, false);
-						for (int j : ii) {
-							if (j != i) {
-								const TopoDS_Edge& ej = TopoDS::Edge(edges.FindKey(j));
-								ShapeAnalysis_Edge sae;
-								double f = fuzziness;
-								bool edges_overlapping = sae.CheckOverlapping(ei, ej, f, 0.) ||
-									sae.CheckOverlapping(ej, ei, f, 0.);
-
-								if (edges_overlapping) {
-									auto faces_i = map.FindFromKey(edges.FindKey(i));
-									auto faces_j = map.FindFromKey(edges.FindKey(j));
-									bool overlap = false;
-									for (TopTools_ListIteratorOfListOfShape it(faces_i); it.More(); it.Next()) {
-										auto& fi = it.Value();
-										for (TopTools_ListIteratorOfListOfShape it2(faces_j); it2.More(); it2.Next()) {
-											auto& fj = it2.Value();
-											if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
-												overlap = true;
-											}
-										}
-										if (overlap) {
-											break;
-										}
-									}
-									operands_nonmanifold = !overlap;
-									break;
-								}
-							}
-						}
-						if (operands_nonmanifold) {
-							break;
-						}
-					}
-				}
-				success = operands_nonmanifold;
-			}
-
 			if (success) {
 				
 				// when there are edges or vertex-edge distances close to the used fuzziness, the  
 				// output is not trusted and the operation is attempted with a higher fuzziness.
-				int reason = 0;
-				double v;
-				if ((v = min_edge_length(r)) < fuzziness * 3.) {
-					reason = 0;
-					success = false;
-				} else if ((v = min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 3.)) < fuzziness * 3.) {
-					reason = 1;
-					success = false;
-				} else if ((v = min_face_face_distance(r, 1.e-4)) < 1.e-4) {
-					reason = 2;
-					success = false;
-				}
-				
+				double min_lengh_result = (std::min)(min_edge_length(r), min_vertex_edge_distance(r, getValue(GV_PRECISION), fuzziness * 10.));
+				success = min_lengh_result <= min_length_orig || min_lengh_result > fuzziness * 10.;
+
 				if (success) {
 					result = r;
 				} else {
-					static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
 					std::stringstream str;
-					str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
+					str << "Boolean operation result failing interference check, with fuzziness " << fuzziness << " min length " << min_lengh_result << " originally " << min_length_orig;
 					Logger::Notice(str.str());
 				}
 			} else {
@@ -4189,21 +3780,16 @@ bool IfcGeom::Kernel::boolean_operation(const TopoDS_Shape& a_, const TopTools_L
 #if OCC_VERSION_HEX >= 0x70000
 		builder->DumpErrors(str);
 #else
-		str << "Error code: " << builder->ErrorStatus();
+		str << "Error code :" << builder->ErrorStatus();
 #endif
-		std::string str_str = str.str();
-		if (str_str.size()) {
-			Logger::Notice(str_str);
-		}
+	Logger::Notice(str.str());
 	}
 	delete builder;
 	if (!success) {
         const double new_fuzziness = fuzziness * 10.;
-        if (new_fuzziness - 1e-15 <= getValue(GV_PRECISION) * 10000. && new_fuzziness < min_length_orig) {
+        if (new_fuzziness + 1e-15 <= getValue(GV_PRECISION) * 1000. && new_fuzziness < min_length_orig) {
             return boolean_operation(a, b, op, result, new_fuzziness);
-		} else {
-			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
-		}
+        }
 	}
 	return success;
 }
@@ -4243,7 +3829,6 @@ IfcGeom::Kernel::faceset_helper::~faceset_helper() {
 
 IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema::IfcConnectedFaceSet* l)
 	: kernel_(kernel) 
-	, non_manifold_(false)
 {
 	kernel->faceset_helper_ = this;
 
@@ -4268,17 +3853,6 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 		}		
 	}
 
-	// Use the bbox diagonal to influence local epsilon
-	// double bdiff = std::sqrt(box.SquareExtent());
-
-	// @todo the bounding box diagonal is not used (see above)
-	// because we're explicitly interested in the miminal
-	// dimension of the element to limit the tolerance (for sheet-
-	// like elements for example). But the way below is very
-	// dependent on orientation due to the usage of the
-	// axis-aligned bounding box. Use PCA to find three non-aligned
-	// set of dimensions and use the one with the smallest eigenvalue.
-
 	// Find the minimal bounding box edge
 	double bmin[3], bmax[3];
 	box.Get(bmin[0], bmin[1], bmin[2], bmax[0], bmax[1], bmax[2]);
@@ -4291,85 +3865,47 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	}
 
 	eps_ = kernel->getValue(GV_PRECISION) * 10. * (std::min)(1.0, bdiff);
-
-	// @todo, there a tiny possibility that the duplicate faces are triggered
-	// for an internal boundary, that is also present as an external boundary.
-	// This will result in non-manifold configuration then, but this is deemed
-	// such as corner-case that it is not considered.
-	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
-
-	size_t loops_removed, non_manifold, duplicate_faces;
+	
+	if (eps_ < Precision::Confusion()) {
+		// occt uses some hard coded precision values, don't go smaller than that.
+		// @todo, can be reset though with BRepLib::Precision(double)
+		eps_ = Precision::Confusion();
+	}
 
 	std::map<std::pair<int, int>, int> edge_use;
 
-	for (int i = 0; i < 3; ++i) {
-		// Some times files, have large tolerance values specified collapsing too many vertices.
-		// This case we detect below and re-run the loop with smaller epsilon. Normally
-		// the body of this loop would only be executed once.
+	for (int i = 0; i < (int) pnts.size(); ++i) {
+		if (pnts[i]) {
+			std::set<int> vs;
+			find_neighbours(tree, pnts, vs, i, eps_);
 
-		loops_removed = 0;
-		non_manifold = 0;
-		duplicate_faces = 0;
-
-		vertex_mapping_.clear();
-		duplicates_.clear();
-
-		edge_use.clear();
-
-		if (eps_ < Precision::Confusion()) {
-			// occt uses some hard coded precision values, don't go smaller than that.
-			// @todo, can be reset though with BRepLib::Precision(double)
-			eps_ = Precision::Confusion();
-		}		
-
-		for (int pnt_i = 0; pnt_i < (int)pnts.size(); ++pnt_i) {
-			if (pnts[pnt_i]) {
-				std::set<int> vs;
-				find_neighbours(tree, pnts, vs, pnt_i, eps_);
-
-				for (int v : vs) {
-					auto pt = *(points->begin() + v);
-					// NB: insert() ignores duplicate keys
-					vertex_mapping_.insert({ pt->data().id() , pnt_i });
-				}
-			}
-		}		
-
-		typedef std::array<int, 2> edge_t;
-		typedef std::set<edge_t> edge_set_t;
-		std::set<edge_set_t> edge_sets;
-
-		for (auto& loop : *loops) {
-			auto ps = loop->Polygon();
-
-			std::vector<std::pair<int, int> > segments;
-			edge_set_t segment_set;
-
-			loop_(ps, [&segments, &segment_set](int C, int D, bool) {
-				segment_set.insert({ { C, D } });
-				segments.push_back({ C, D });
-			});
-
-			if (edge_sets.find(segment_set) != edge_sets.end()) {
-				duplicate_faces++;
-				duplicates_.insert(loop);
-				continue;
-			}
-			edge_sets.insert(segment_set);
-
-			if (segments.size() >= 3) {
-				for (auto& p : segments) {
-					edge_use[p] ++;
-				}
-			} else {
-				loops_removed += 1;
+			for (int v : vs) {
+				auto pt = *(points->begin() + v);
+				// NB: insert() ignores duplicate keys
+				vertex_mapping_.insert({ pt->data().id() , i });
 			}
 		}
+	}
 
-		if (edge_use.size() != 0) {
-			break;
+	IfcSchema::IfcPolyLoop::list::ptr loops = IfcParse::traverse((IfcUtil::IfcBaseClass*)l)->as<IfcSchema::IfcPolyLoop>();
+
+	size_t loops_removed = 0, non_manifold = 0;
+
+	for (auto& loop : *loops) {
+		auto ps = loop->Polygon();
+
+		std::vector<std::pair<int, int> > segments;
+
+		loop_(ps, [&segments](int C, int D, bool) {
+			segments.push_back({ C, D });
+		});
+
+		if (segments.size() >= 3) {
+			for (auto& p : segments) {
+				edge_use[p] ++;
+			}
 		} else {
-			eps_ /= 10.;
+			loops_removed += 1;
 		}
 	}
 
@@ -4384,6 +3920,6 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 	}
 
 	if (loops_removed || (non_manifold && l->declaration().is(IfcSchema::IfcClosedShell::Class()))) {
-		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
+		Logger::Warning(boost::lexical_cast<std::string>(loops_removed) + " loops removed and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges for:", l);
 	}
 }
