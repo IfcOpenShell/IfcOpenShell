@@ -3,7 +3,7 @@ import csv
 import json
 import time
 from pathlib import Path
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from . import ifcopenshell
 
 class ArrayModifier:
@@ -1264,6 +1264,24 @@ class IfcExporter():
             representation['subcontext'], 'Curve',
             self.ifc_edges)
 
+    # https://medium.com/@behreajj/scripting-curves-in-blender-with-python-c487097efd13
+    # https://blender.stackexchange.com/questions/30597/python-up-vector-math-for-curve
+    def bezier_tangent(self, pt0=Vector(), pt1=Vector(), pt2=Vector(), pt3=Vector(), step=0.5):
+        # Return early if step is out of bounds [0, 1].
+        if step <= 0.0:
+            return pt1 - pt0
+        if step >= 1.0:
+            return pt3 - pt2
+
+        # Find coefficients.
+        u = 1.0 - step
+        ut6 = u * step * 6.0
+        tsq3 = step * step * 3.0
+        usq3 = u * u * 3.0
+
+        # Find tangent and return.
+        return (pt1 - pt0) * usq3 + (pt2 - pt1) * ut6 + (pt3 - pt2) * tsq3
+
     def create_curve_representation(self, representation):
         # TODO: support unclosed surfaces
         swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
@@ -1272,10 +1290,29 @@ class IfcExporter():
         for spline in representation['raw'].splines:
             direction = spline.bezier_points[1].co - spline.bezier_points[0].co
             unit_direction = direction.normalized()
+
+            # This can be used in the future when dealing with non vector curves
+            #curr_point = spline.bezier_points[0]
+            #next_point = spline.bezier_points[1]
+            #j_percent = 0
+            #direction = self.bezier_tangent(
+            #    pt0=curr_point.co,
+            #    pt1=curr_point.handle_right,
+            #    pt2=next_point.handle_left,
+            #    pt3=next_point.co,
+            #    step=j_percent)
+            tilt_matrix = Matrix.Rotation(-spline.bezier_points[0].tilt, 4, 'Z')
+            print(spline.bezier_points[0].tilt)
+            print(tilt_matrix)
+            x_axis = unit_direction.to_track_quat('-Y', 'Z') @ Vector((1, 0, 0)) @ tilt_matrix
+            print((tilt_matrix @ Vector((1, 0, 0))))
+            print(x_axis)
+
+            position = self.create_ifc_axis_2_placement_3d(
+                spline.bezier_points[0].co, unit_direction, x_axis)
             swept_area_solids.append(self.file.createIfcExtrudedAreaSolid(
-                swept_area, self.origin,
-                self.file.createIfcDirection(
-                    (unit_direction.x, unit_direction.y, unit_direction.z)),
+                swept_area, position,
+                self.file.createIfcDirection((0., 0., 1.)),
                 direction.length))
         # TODO: support other types of swept areas
         #swept_area_solid = self.file.createIfcFixedReferenceSweptAreaSolid(
