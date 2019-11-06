@@ -98,6 +98,7 @@ class IfcImporter():
         self.ifc_import_settings = ifc_import_settings
         self.file = None
         self.settings = ifcopenshell.geom.settings()
+        self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
@@ -272,12 +273,18 @@ class IfcImporter():
         try:
             mesh = bpy.data.meshes.new(shape.geometry.id)
             f = shape.geometry.faces
+            e = shape.geometry.edges
             v = shape.geometry.verts
             vertices = [[v[i], v[i + 1], v[i + 2]]
                      for i in range(0, len(v), 3)]
             faces = [[f[i], f[i + 1], f[i + 2]]
                      for i in range(0, len(f), 3)]
-            mesh.from_pydata(vertices, [], faces)
+            if faces:
+                edges = []
+            else:
+                edges = [[e[i], e[i + 1]]
+                         for i in range(0, len(e), 2)]
+            mesh.from_pydata(vertices, edges, faces)
             return mesh
         except:
             print('Could not create mesh for {}: {}/{}'.format(
