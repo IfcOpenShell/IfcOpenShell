@@ -97,6 +97,9 @@
 
 #include <BRepLib_FindSurface.hxx>
 
+#include <ShapeFix_Shape.hxx>
+#include <ShapeExtend_MsgRegistrator.hxx>
+
 #include "../ifcgeom/IfcGeom.h"
 
 #ifdef SCHEMA_HAS_IfcBSplineSurfaceWithKnots
@@ -352,14 +355,26 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcFace* l, TopoDS_Shape& result)
 			// For planar faces, Open Cascade generates p-curves on the fly.
 
 			for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
-				// Small chance there are multiple faces
-				const TopoDS_Face& face = TopoDS::Face(it.Value());
-				for (TopExp_Explorer exp2(face, TopAbs_EDGE); exp2.More(); exp2.Next()) {
-					const TopoDS_Edge& edge = TopoDS::Edge(exp2.Current());
-						ShapeFix_Edge fix_edge;
-						fix_edge.FixAddPCurve(edge, face, false, getValue(GV_PRECISION));
+				ShapeFix_Shape sfs(it.Value());
+
+				Handle(ShapeExtend_MsgRegistrator) msg;
+				msg = new ShapeExtend_MsgRegistrator;
+				sfs.SetMsgRegistrator(msg);
+
+				sfs.Perform();
+				it.Value() = sfs.Shape();
+				
+				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				for (; jt.More(); jt.Next()) {
+					Message_ListIteratorOfListOfMsg kt(jt.Value());
+					for (; kt.More(); kt.Next()) {
+						char* c = new char[kt.Value().Value().LengthOfCString() + 1];
+						kt.Value().Value().ToUTF8CString(c);
+						Logger::Notice(c, l);
+						delete[] c;
+					}
 				}
-			}
+			}			
 		}
 
 		for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
