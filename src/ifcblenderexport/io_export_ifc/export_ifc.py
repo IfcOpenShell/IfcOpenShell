@@ -134,6 +134,7 @@ class IfcParser():
 
     def parse(self):
         self.units = self.get_units()
+        self.unit_scale = self.get_unit_scale()
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.documents = self.get_documents()
@@ -176,6 +177,22 @@ class IfcParser():
                 'is_metric': bpy.context.scene.unit_settings.system == 'METRIC',
                 'raw': bpy.context.scene.unit_settings.length_unit
             }}
+
+    def get_unit_scale(self):
+        unit_settings = bpy.context.scene.unit_settings
+        conversions = {
+            'KILOMETERS': 1e3,
+            'CENTIMETERS': 1e-2,
+            'MILLIMETERS': 1e-3,
+            'MICROMETERS': 1e-6,
+            'FEET': 0.3048,
+            'INCHES': 0.0254}
+        if unit_settings.system in {'METRIC', 'IMPERIAL'}:
+            scale = unit_settings.scale_length
+            if unit_settings.length_unit in conversions.keys():
+                scale *= conversions[unit_settings.length_unit]
+            return scale
+        return 1
 
     def get_object_attributes(self, object):
         attributes = { 'Name': self.get_ifc_name(object.name) }
@@ -811,21 +828,44 @@ class IfcExporter():
     def create_units(self):
         for type, data in self.ifc_parser.units.items():
             if data['is_metric']:
-                type_prefix = ''
-                if type == 'area':
-                    type_prefix = 'SQUARE_'
-                elif type == 'volume':
-                    type_prefix = 'CUBIC_'
-                data['ifc'] = self.file.createIfcSIUnit(None,
-                    '{}UNIT'.format(type.upper()),
-                    SIUnitHelper.get_prefix(data['raw']),
-                    type_prefix + SIUnitHelper.get_unit_name(data['raw']))
+                data['ifc'] = self.create_metric_unit(type, data)
             else:
-                self.create_imperial_unit(type, data)
+                data['ifc'] = self.create_imperial_unit(type, data)
         self.file.createIfcUnitAssignment([u['ifc'] for u in self.ifc_parser.units.values()])
 
+    def create_metric_unit(self, type, data):
+        type_prefix = ''
+        if type == 'area':
+            type_prefix = 'SQUARE_'
+        elif type == 'volume':
+            type_prefix = 'CUBIC_'
+        return self.file.createIfcSIUnit(None,
+            '{}UNIT'.format(type.upper()),
+            SIUnitHelper.get_prefix(data['raw']),
+            type_prefix + SIUnitHelper.get_unit_name(data['raw']))
+
     def create_imperial_unit(self, type, data):
-        pass # TODO
+        if type == 'length':
+            dimensional_exponents = self.file.createIfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0)
+            name_prefix = ''
+        elif type == 'area':
+            dimensional_exponents = self.file.createIfcDimensionalExponents(2, 0, 0, 0, 0, 0, 0)
+            name_prefix = 'square'
+        elif type == 'volume':
+            dimensional_exponents = self.file.createIfcDimensionalExponents(3, 0, 0, 0, 0, 0, 0)
+            name_prefix = 'cubic'
+        si_unit = self.file.createIfcSIUnit(None,'{}UNIT'.format(type.upper()), None,
+            '{}METRE'.format(name_prefix.upper() + '_' if name_prefix else ''))
+        if data['raw'] == 'INCHES':
+            name = '{}inch'.format(name_prefix + ' ' if name_prefix else '')
+        elif data['raw'] == 'FEET':
+            name = '{}foot'.format(name_prefix + ' ' if name_prefix else '')
+        value_component = self.file.create_entity('IfcReal',
+            **{'wrappedValue': SIUnitHelper.si_conversions[name]})
+        conversion_factor = self.file.createIfcMeasureWithUnit(value_component, si_unit)
+        return self.file.createIfcConversionBasedUnit(
+            dimensional_exponents, '{}UNIT'.format(type.upper()),
+            name, conversion_factor)
 
     def create_documents(self):
         for document in self.ifc_parser.documents.values():
@@ -1210,7 +1250,7 @@ class IfcExporter():
 
     def create_ifc_axis_2_placement_3d(self, point, up, forward):
         return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint((point.x, point.y, point.z)),
+            self.create_cartesian_point(point.x, point.y, point.z),
             self.file.createIfcDirection((up.x, up.y, up.z)),
             self.file.createIfcDirection((forward.x, forward.y, forward.z)))
 
@@ -1301,18 +1341,14 @@ class IfcExporter():
             #    pt3=next_point.co,
             #    step=j_percent)
             tilt_matrix = Matrix.Rotation(-spline.bezier_points[0].tilt, 4, 'Z')
-            print(spline.bezier_points[0].tilt)
-            print(tilt_matrix)
             x_axis = unit_direction.to_track_quat('-Y', 'Z') @ Vector((1, 0, 0)) @ tilt_matrix
-            print((tilt_matrix @ Vector((1, 0, 0))))
-            print(x_axis)
 
             position = self.create_ifc_axis_2_placement_3d(
                 spline.bezier_points[0].co, unit_direction, x_axis)
             swept_area_solids.append(self.file.createIfcExtrudedAreaSolid(
                 swept_area, position,
                 self.file.createIfcDirection((0., 0., 1.)),
-                direction.length))
+                self.convert_si_to_unit(direction.length)))
         # TODO: support other types of swept areas
         #swept_area_solid = self.file.createIfcFixedReferenceSweptAreaSolid(
         #    swept_area, self.origin, self.create_curve(representation['raw']),
@@ -1358,7 +1394,8 @@ class IfcExporter():
         direction = self.get_extrusion_direction(mesh, start, end)
         unit_direction = direction.normalized()
         extruded_area_solid = self.file.createIfcExtrudedAreaSolid(curve, self.origin,
-            self.file.createIfcDirection((unit_direction.x, unit_direction.y, unit_direction.z)), direction.length)
+            self.file.createIfcDirection((unit_direction.x, unit_direction.y, unit_direction.z)),
+            self.convert_si_to_unit(direction.length))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
             representation['subcontext'], 'SweptSolid',
@@ -1432,8 +1469,11 @@ class IfcExporter():
                 vertice.co.x, vertice.co.y, vertice.co.z))
 
     def create_cartesian_point(self, x, y, z=None):
+        x = self.convert_si_to_unit(x)
+        y = self.convert_si_to_unit(y)
         if z is None:
             return self.file.createIfcCartesianPoint((x, y))
+        z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
 
     def relate_elements_to_spatial_structures(self):
@@ -1533,7 +1573,7 @@ class IfcExporter():
                 for vertice in polygon.vertices]),
             True)],
             self.file.createIfcPlane(self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((center.x, center.y, center.z)),
+                self.create_cartesian_point(center.x, center.y, center.z),
                 self.file.createIfcDirection((normal.x, normal.y, normal.z)),
                 self.file.createIfcDirection((forward.x, forward.y, forward.z)))),
             True)
@@ -1558,6 +1598,9 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects], None,
                 self.ifc_parser.objectives[relating_key]['ifc'])
+
+    def convert_si_to_unit(self, co):
+        return co / self.ifc_parser.unit_scale
 
 class IfcExportSettings:
     def __init__(self):
