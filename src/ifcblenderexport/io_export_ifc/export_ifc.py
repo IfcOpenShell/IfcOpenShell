@@ -1267,6 +1267,8 @@ class IfcExporter():
             or representation['subcontext'] == 'Axis' \
             or representation['is_wireframe']:
             return self.create_wireframe_representation(representation)
+        elif representation['subcontext'] == 'SurveyPoints':
+            return self.create_geometric_curve_set_representation(representation)
         elif representation['is_curve']:
             return self.create_curve_representation(representation)
         elif representation['is_swept_solid']:
@@ -1302,6 +1304,27 @@ class IfcExporter():
             self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
             representation['subcontext'], 'Curve',
             self.ifc_edges)
+
+    def create_geometric_curve_set_representation(self, representation):
+        mesh = representation['raw']
+        self.create_vertices(mesh.vertices)
+        edges = list(mesh.edges)
+        loop_vertices = []
+        loops = []
+        # Not a fast algorithm, but easy
+        while edges:
+            for i, edge in enumerate(edges):
+                if edge.vertices[0] in loop_vertices \
+                    and edge.vertices[1] in loop_vertices:
+                    del edges[i]
+            loop_vertex_indices = self.get_loop_from_edges(edges)
+            loop_vertices.extend(loop_vertex_indices)
+            loops.append(self.file.createIfcPolyline([
+                self.ifc_vertices[i] for i in loop_vertex_indices]))
+        geometric_curve_set = self.file.createIfcGeometricCurveSet(loops)
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']]['ifc'],
+            representation['subcontext'], 'GeometricCurveSet', [geometric_curve_set])
 
     # https://medium.com/@behreajj/scripting-curves-in-blender-with-python-c487097efd13
     # https://blender.stackexchange.com/questions/30597/python-up-vector-math-for-curve
@@ -1610,5 +1633,5 @@ class IfcExportSettings:
         self.output_file = None
         self.has_representations = True
         self.has_quantities = True
-        self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG']
+        self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'SurveyPoints']
         self.generated_subcontexts = ['Box']
