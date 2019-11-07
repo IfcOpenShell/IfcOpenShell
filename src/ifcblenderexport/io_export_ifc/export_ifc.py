@@ -4,6 +4,7 @@ import json
 import time
 from pathlib import Path
 from mathutils import Vector, Matrix
+from .helper import SIUnitHelper
 from . import ifcopenshell
 
 class ArrayModifier:
@@ -753,28 +754,6 @@ class IfcParser():
 
     def is_a_type(self, class_name):
         return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
-
-class SIUnitHelper:
-    prefixes = ["EXA", "PETA", "TERA", "GIGA", "MEGA", "KILO", "HECTO",
-        "DECA", "DECI", "CENTI", "MILLI", "MICRO", "NANO", "PICO", "FEMTO",
-        "ATTO"]
-    unit_names = ["AMPERE", "BECQUEREL", "CANDELA", "COULOMB",
-        "CUBIC_METRE", "DEGREE CELSIUS", "FARAD", "GRAM", "GRAY", "HENRY",
-        "HERTZ", "JOULE", "KELVIN", "LUMEN", "LUX", "MOLE", "NEWTON", "OHM",
-        "PASCAL", "RADIAN", "SECOND", "SIEMENS", "SIEVERT", "SQUARE METRE",
-        "METRE", "STERADIAN", "TESLA", "VOLT", "WATT", "WEBER"]
-
-    @staticmethod
-    def get_prefix(text):
-        for prefix in SIUnitHelper.prefixes:
-            if prefix in text.upper():
-                return prefix
-
-    @staticmethod
-    def get_unit_name(text):
-        for name in SIUnitHelper.unit_names:
-            if name in text.upper().replace('METER', 'METRE'):
-                return name
 
 class IfcExporter():
     def __init__(self, ifc_export_settings, ifc_schema, ifc_parser, qto_calculator):

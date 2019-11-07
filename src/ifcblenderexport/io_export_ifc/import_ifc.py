@@ -5,6 +5,7 @@ import os
 import json
 import time
 import mathutils
+from .helper import SIUnitHelper
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 
@@ -125,11 +126,14 @@ class IfcImporter():
     def calculate_unit_scale(self):
         units = self.file.by_type('IfcUnitAssignment')[0]
         for unit in units.Units:
-            if unit.is_a('IfcSIUnit') \
-                and unit.UnitType == 'LENGTHUNIT':
-                if unit.Prefix:
-                    if unit.Prefix == 'MILLI':
-                        self.unit_scale *= 0.001
+            if not hasattr(unit, 'UnitType') \
+                or unit.UnitType != 'LENGTHUNIT':
+                continue
+            while unit.is_a('IfcConversionBasedUnit'):
+                self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
+                unit = unit.ConversionFactor.UnitComponent
+            if unit.is_a('IfcSIUnit'):
+                self.unit_scale *= SIUnitHelper.get_prefix_multiplier(unit.Prefix)
 
     def create_project(self):
         self.project = { 'ifc': self.file.by_type('IfcProject')[0] }
