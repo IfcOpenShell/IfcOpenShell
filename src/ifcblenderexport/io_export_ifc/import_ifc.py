@@ -99,7 +99,8 @@ class IfcImporter():
         self.ifc_import_settings = ifc_import_settings
         self.file = None
         self.settings = ifcopenshell.geom.settings()
-        self.settings.set(self.settings.INCLUDE_CURVES, True)
+        if self.ifc_import_settings.should_import_curves:
+            self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
@@ -148,6 +149,9 @@ class IfcImporter():
             for element in elements:
                 name = self.get_name(element)
                 if name in self.spatial_structure_elements:
+                    continue
+                # Occurs when some naughty programs export IFC site objects
+                if not element.Decomposes:
                     continue
                 parent = element.Decomposes[0].RelatingObject
                 parent_name = self.get_name(parent)
@@ -298,3 +302,4 @@ class IfcImportSettings:
     def __init__(self):
         self.logger = None
         self.input_file = None
+        self.should_import_curves = False

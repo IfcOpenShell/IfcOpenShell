@@ -58,6 +58,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.logger = logging.getLogger('ImportIFC')
         ifc_import_settings.logger.info('Starting import')
         ifc_import_settings.input_file = self.filepath
+        ifc_import_settings.should_import_curves = bpy.context.scene.BIMProperties.import_should_import_curves
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.execute()
         ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))
