@@ -32,6 +32,8 @@ class ExportIFC(bpy.types.Operator):
         ifc_export_settings.schema_dir = bpy.context.scene.BIMProperties.schema_dir
         ifc_export_settings.output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_export_settings.has_representations = bpy.context.scene.BIMProperties.export_has_representations
+        ifc_export_settings.should_export_all_materials_as_styled_items = bpy.context.scene.BIMProperties.export_should_export_all_materials_as_styled_items
+        ifc_export_settings.should_use_presentation_style_assignment = bpy.context.scene.BIMProperties.export_should_use_presentation_style_assignment
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         ifc_schema = export_ifc.IfcSchema(ifc_export_settings)
         qto_calculator = export_ifc.QtoCalculator()
