@@ -212,15 +212,25 @@ class IfcParser():
     def resolve_array_modifier(self, product):
         object = product['raw']
         instance_objects = [(object, object.location)]
+        global_id_index = 0
         for instance in self.get_instances(object):
             created_instances = []
             for n in range(instance.count-1):
                 for o in instance_objects:
                     location = o[1] + ((n+1) * instance.offset)
                     self.add_product(self.get_product({ 'raw': o[0], 'metadata': product['metadata'] },
-                        {'location': location}, {'GlobalId': ifcopenshell.guid.new()}))
+                        {'location': location}, {'GlobalId': self.get_parametric_global_id(object, global_id_index)}))
                     created_instances.append((o[0], location))
             instance_objects.extend(created_instances)
+
+    def get_parametric_global_id(self, object, index):
+        global_ids = object.BIMObjectProperties.global_ids
+        total_global_ids = len(global_ids)
+        if index < total_global_ids:
+            return global_ids[index].name
+        global_id = object.BIMObjectProperties.global_ids.add()
+        global_id.name = ifcopenshell.guid.new()
+        return global_id.name
 
     def add_product(self, product):
         self.products.append(product)
