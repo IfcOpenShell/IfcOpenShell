@@ -16,35 +16,6 @@ class IfcSchema():
 
 ifc_schema = IfcSchema()
 
-# Helper functions, to be refactored
-
-def a2p(o,z,x):
-    y = z.cross(x)
-    r = mathutils.Matrix((x, y, z, o))
-    r.resize_4x4()
-    r.transpose()
-    return r
-    
-def get_axis2placement(plc): 
-    z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1)) 
-    x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
-    o = plc.Location.Coordinates 
-    return a2p(o,z,x) 
-
-def get_cartesiantransformationoperator(plc): 
-    #z = mathutils.Vector(plc.Axis3.DirectionRatios if plc.Axis3 else (0,0,1)) 
-    x = mathutils.Vector(plc.Axis1.DirectionRatios if plc.Axis1 else (1,0,0)) 
-    z = x.cross(mathutils.Vector(plc.Axis2.DirectionRatios if plc.Axis2 else (0,1,0)))
-    o = plc.LocalOrigin.Coordinates 
-    return a2p(o,z,x) 
-    
-def get_local_placement(plc):
-    if plc.PlacementRelTo is None: 
-        parent = mathutils.Matrix()
-    else:
-        parent = get_local_placement(plc.PlacementRelTo)
-    return parent @ get_axis2placement(plc.RelativePlacement)
-
 class MaterialCreator():
     def __init__(self):
         self.mesh = None
@@ -202,7 +173,7 @@ class IfcImporter():
 
         object = bpy.data.objects.new(self.get_name(element), mesh)
 
-        element_matrix = get_local_placement(element.ObjectPlacement)
+        element_matrix = self.get_local_placement(element.ObjectPlacement)
 
         # Blender supports reusing a mesh with a different transformation
         # applied at the object level. In contrast, IFC supports reusing a mesh
@@ -217,7 +188,7 @@ class IfcImporter():
         shared_shape_transformation = self.get_representation_cartesian_transformation(
             self.file.by_id(self.mesh_shapes[mesh_name].product.id()))
         if shared_shape_transformation:
-            shared_transform = get_cartesiantransformationoperator(shared_shape_transformation)
+            shared_transform = self.get_cartesiantransformationoperator(shared_shape_transformation)
             shared_transform.invert()
             element_matrix = element_matrix @ shared_transform
 
@@ -225,7 +196,7 @@ class IfcImporter():
         # transformation to our current element's object transformation
         transformation = self.get_representation_cartesian_transformation(element)
         if transformation:
-            element_matrix = get_cartesiantransformationoperator(transformation) @ element_matrix
+            element_matrix = self.get_cartesiantransformationoperator(transformation) @ element_matrix
 
         element_matrix[0][3] *= self.unit_scale
         element_matrix[1][3] *= self.unit_scale
@@ -298,8 +269,39 @@ class IfcImporter():
             print('Could not create mesh for {}: {}/{}'.format(
                 element.GlobalId, self.get_name(element)))
 
+    def a2p(self, o, z, x):
+        y = z.cross(x)
+        r = mathutils.Matrix((x, y, z, o))
+        r.resize_4x4()
+        r.transpose()
+        return r
+        
+    def get_axis2placement(self, plc): 
+        z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1)) 
+        x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
+        o = plc.Location.Coordinates 
+        return self.a2p(o,z,x) 
+
+    def get_cartesiantransformationoperator(self, plc): 
+        #z = mathutils.Vector(plc.Axis3.DirectionRatios if plc.Axis3 else (0,0,1)) 
+        x = mathutils.Vector(plc.Axis1.DirectionRatios if plc.Axis1 else (1,0,0)) 
+        z = x.cross(mathutils.Vector(plc.Axis2.DirectionRatios if plc.Axis2 else (0,1,0)))
+        o = plc.LocalOrigin.Coordinates 
+        return self.a2p(o,z,x) 
+        
+    def get_local_placement(self, plc):
+        if plc.PlacementRelTo is None: 
+            parent = mathutils.Matrix()
+        else:
+            parent = self.get_local_placement(plc.PlacementRelTo)
+        if self.ifc_import_settings.should_ignore_site_coordinates \
+            and 'IfcSite' in [o.is_a() for o in plc.PlacesObject]:
+            return parent
+        return parent @ self.get_axis2placement(plc.RelativePlacement)
+
 class IfcImportSettings:
     def __init__(self):
         self.logger = None
         self.input_file = None
+        self.should_ignore_site_coordinates = False
         self.should_import_curves = False
