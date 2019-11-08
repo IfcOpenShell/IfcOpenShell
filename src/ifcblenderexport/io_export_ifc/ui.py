@@ -112,6 +112,9 @@ class Classification(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="Name")
     identification: bpy.props.StringProperty(name="Identification")
 
+class GlobalId(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name")
+
 class BIMObjectProperties(bpy.types.PropertyGroup):
     def getApplicableAttributes(self, context):
         if '/' in bpy.context.active_object.name \
@@ -129,6 +132,7 @@ class BIMObjectProperties(bpy.types.PropertyGroup):
             results.append((uri, uri, ''))
         return results
 
+    global_ids: bpy.props.CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: bpy.props.CollectionProperty(name="Attributes", type=Attribute)
     psets: bpy.props.CollectionProperty(name="Psets", type=Pset)
     applicable_attributes: bpy.props.EnumProperty(items=getApplicableAttributes, name="Attribute Names")

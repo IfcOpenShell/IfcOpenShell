@@ -58,6 +58,7 @@ classes = (
     ui.Pset,
     ui.Document,
     ui.Classification,
+    ui.GlobalId,
     ui.BIMObjectProperties,
     ui.BIMMaterialProperties,
     ui.BIMMeshProperties,
