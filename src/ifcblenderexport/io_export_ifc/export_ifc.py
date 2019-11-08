@@ -1383,35 +1383,63 @@ class IfcExporter():
     def create_swept_solid_representation(self, representation):
         object = representation['raw_object']
         mesh = representation['raw']
-        profile_index = None
+        outer_curve_index = None
+        inner_curve_indices = []
         extrusion_index = None
+
         for index, vg in enumerate(object.vertex_groups):
-            if vg.name == 'profile':
-                profile_index = index
+            if vg.name == 'outer-curve':
+                outer_curve_index = index
+            elif 'inner-curve' in vg.name:
+                inner_curve_indices.append(index)
             elif vg.name == 'extrusion':
                 extrusion_index = index
-        profile_edges = self.get_edges_in_vg_index(object, profile_index)
+
         extrusion_edge = self.get_edges_in_vg_index(object, extrusion_index)[0]
-        loop = self.get_loop_from_edges(profile_edges)
-        points = []
-        for point in loop:
-            points.append(self.create_cartesian_point(
-                mesh.vertices[point].co.x,
-                mesh.vertices[point].co.y,
-                mesh.vertices[point].co.z))
-        points.append(points[0])
-        curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
-            self.file.createIfcPolyline(points))
-        start, end = self.get_start_and_end_of_extrusion(points, extrusion_edge)
+
+        inner_curves = []
+        for index in inner_curve_indices:
+            inner_curves.append(
+                self.file.createIfcPolyline(
+                    self.get_polyline_points_from_vg_index(object, index)))
+
+        outer_curve_points = self.get_polyline_points_from_vg_index(object, outer_curve_index)
+        outer_curve = self.file.createIfcPolyline(outer_curve_points)
+
+        if inner_curves:
+            curve = self.file.createIfcArbitraryProfileDefWithVoids('AREA', None,
+                outer_curve, inner_curves)
+        else:
+            curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None, outer_curve)
+
+        start, end = self.get_start_and_end_of_extrusion(outer_curve_points, extrusion_edge)
         direction = self.get_extrusion_direction(mesh, start, end)
         unit_direction = direction.normalized()
-        extruded_area_solid = self.file.createIfcExtrudedAreaSolid(curve, self.origin,
-            self.file.createIfcDirection((unit_direction.x, unit_direction.y, unit_direction.z)),
+        x_axis = object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+        position = self.create_ifc_axis_2_placement_3d(
+            mesh.vertices[start].co, unit_direction, x_axis)
+
+        self.file.createIfcDirection((unit_direction.x, unit_direction.y, unit_direction.z))
+
+        extruded_area_solid = self.file.createIfcExtrudedAreaSolid(
+            curve, position, self.file.createIfcDirection((0., 0., 1.)),
             self.convert_si_to_unit(direction.length))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][representation['target_view']]['ifc'],
             representation['subcontext'], 'SweptSolid',
             [extruded_area_solid])
+
+    def get_polyline_points_from_vg_index(self, object, vg_index):
+        outer_curve_edges = self.get_edges_in_vg_index(object, vg_index)
+        outer_curve_loop = self.get_loop_from_edges(outer_curve_edges)
+        outer_curve_points = []
+        for point in outer_curve_loop:
+            outer_curve_points.append(self.create_cartesian_point(
+                object.data.vertices[point].co.x,
+                object.data.vertices[point].co.y,
+                object.data.vertices[point].co.z))
+        outer_curve_points.append(outer_curve_points[0])
+        return outer_curve_points
 
     def get_start_and_end_of_extrusion(self, profile_points, extrusion_edge):
         if extrusion_edge.vertices[0] in profile_points:

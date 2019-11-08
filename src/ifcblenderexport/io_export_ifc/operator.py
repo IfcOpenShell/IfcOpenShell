@@ -339,20 +339,31 @@ class RemoveAttribute(bpy.types.Operator):
         bpy.context.active_object.BIMObjectProperties.attributes.remove(self.attribute_index)
         return {'FINISHED'}
 
-class AssignSweptSolidProfile(bpy.types.Operator):
-    bl_idname = 'bim.assign_swept_solid_profile'
-    bl_label = 'Assign Profile'
+class AssignSweptSolidOuterCurve(bpy.types.Operator):
+    bl_idname = 'bim.assign_swept_solid_outer_curve'
+    bl_label = 'Assign Outer Curve'
 
     def execute(self, context):
         if bpy.context.mode != 'EDIT_MESH':
             return {'FINISHED'}
         for vg in bpy.context.active_object.vertex_groups:
-            if vg.name == 'profile':
+            if vg.name == 'outer-curve':
                 bpy.ops.object.vertex_group_set_active(group=vg.name)
                 bpy.ops.object.vertex_group_remove()
                 break
         bpy.ops.object.vertex_group_assign_new()
-        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'profile'
+        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'outer-curve'
+        return {'FINISHED'}
+
+class AddSweptSolidInnerCurve(bpy.types.Operator):
+    bl_idname = 'bim.add_swept_solid_inner_curve'
+    bl_label = 'Add Inner Curve'
+
+    def execute(self, context):
+        if bpy.context.mode != 'EDIT_MESH':
+            return {'FINISHED'}
+        bpy.ops.object.vertex_group_assign_new()
+        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'inner-curve'
         return {'FINISHED'}
 
 class AssignSweptSolidExtrusion(bpy.types.Operator):
