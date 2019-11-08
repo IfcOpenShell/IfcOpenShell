@@ -226,7 +226,9 @@ class MeshPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(bpy.context.active_object.data.BIMMeshProperties, 'is_swept_solid')
         row = layout.row(align=True)
-        row.operator('bim.assign_swept_solid_profile')
+        row.operator('bim.assign_swept_solid_outer_curve')
+        row.operator('bim.add_swept_solid_inner_curve')
+        row = layout.row()
         row.operator('bim.assign_swept_solid_extrusion')
 
 class MaterialPanel(bpy.types.Panel):
