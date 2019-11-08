@@ -618,9 +618,10 @@ class IfcParser():
             if not object.data:
                 continue
             for slot in object.material_slots:
-                if slot.material.name in results \
-                    or slot.link == 'DATA':
-                    continue
+                if not self.ifc_export_settings.should_export_all_materials_as_styled_items:
+                    if slot.material.name in results \
+                        or slot.link == 'DATA':
+                        continue
                 results.append({
                     'ifc': None,
                     'raw': slot.material,
@@ -1101,7 +1102,10 @@ class IfcExporter():
         if item['raw'].BIMMaterialProperties.is_external:
             styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
                 **self.get_material_external_definition(item['raw'])))
-        surface_style = self.file.createIfcSurfaceStyle(None, 'BOTH', styles)
+        # Name is filled out because Revit treats this incorrectly as the material name
+        surface_style = self.file.createIfcSurfaceStyle(item['attributes']['Name'], 'BOTH', styles)
+        if self.ifc_export_settings.should_use_presentation_style_assignment:
+            surface_style = self.file.createIfcPresentationStyleAssignment([surface_style])
         return self.file.createIfcStyledItem(representation_item, [surface_style], item['attributes']['Name'])
 
     def create_materials(self):
@@ -1654,6 +1658,8 @@ class IfcExportSettings:
         self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'SurveyPoints']
         self.generated_subcontexts = ['Box']
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW', 'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
+        self.should_export_all_materials_as_styled_items = False
+        self.should_use_presentation_style_assignment = False
         # TODO make this configurable via UI
         self.context_tree = self.build_context_tree()
 

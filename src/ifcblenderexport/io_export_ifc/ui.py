@@ -61,6 +61,8 @@ class BIMProperties(bpy.types.PropertyGroup):
         name="Predefined Type", default=None)
     ifc_userdefined_type: bpy.props.StringProperty(name="Userdefined Type")
     export_has_representations: bpy.props.BoolProperty(name="Export Representations", default=True)
+    export_should_export_all_materials_as_styled_items: bpy.props.BoolProperty(name="Export All Materials as Styled Items", default=False)
+    export_should_use_presentation_style_assignment: bpy.props.BoolProperty(name="Export with Presentation Style Assignment", default=False)
     qa_reject_element_reason: bpy.props.StringProperty(name="Element Rejection Reason")
     pset_name: bpy.props.EnumProperty(items=getPsetNames, name="Pset Name")
     pset_file: bpy.props.EnumProperty(items=getPsetFiles, name="Pset File")
@@ -440,3 +442,7 @@ class MVDPanel(bpy.types.Panel):
 
         row = layout.row()
         row.prop(bim_properties, "export_has_representations")
+        row = layout.row()
+        row.prop(bim_properties, "export_should_export_all_materials_as_styled_items")
+        row = layout.row()
+        row.prop(bim_properties, "export_should_use_presentation_style_assignment")
