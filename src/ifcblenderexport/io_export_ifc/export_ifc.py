@@ -1413,12 +1413,14 @@ class IfcExporter():
 
         inner_curves = []
         for index in inner_curve_indices:
+            loop = self.get_loop_from_vg_index(object, index)
+            curve_ucs = self.get_curve_profile_coordinate_system(object, loop)
             inner_curves.append(
-                self.file.createIfcPolyline(
-                    self.get_polyline_points_from_vg_index(object, index)))
+                self.create_polyline_from_loop(object, loop, curve_ucs))
 
-        outer_curve_points = self.get_polyline_points_from_vg_index(object, outer_curve_index)
-        outer_curve = self.file.createIfcPolyline(outer_curve_points)
+        outer_curve_loop = self.get_loop_from_vg_index(object, outer_curve_index)
+        curve_ucs = self.get_curve_profile_coordinate_system(object, outer_curve_loop)
+        outer_curve = self.create_polyline_from_loop(object, outer_curve_loop, curve_ucs)
 
         if inner_curves:
             curve = self.file.createIfcArbitraryProfileDefWithVoids('AREA', None,
@@ -1426,42 +1428,66 @@ class IfcExporter():
         else:
             curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None, outer_curve)
 
-        start, end = self.get_start_and_end_of_extrusion(outer_curve_points, extrusion_edge)
-        direction = self.get_extrusion_direction(mesh, start, end)
+        direction = self.get_extrusion_direction(object, outer_curve_loop, extrusion_edge, curve_ucs)
         unit_direction = direction.normalized()
-        x_axis = object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
         position = self.create_ifc_axis_2_placement_3d(
-            mesh.vertices[start].co, unit_direction, x_axis)
-
-        self.file.createIfcDirection((unit_direction.x, unit_direction.y, unit_direction.z))
+            curve_ucs['center'], curve_ucs['z_axis'], curve_ucs['x_axis'])
 
         extruded_area_solid = self.file.createIfcExtrudedAreaSolid(
-            curve, position, self.file.createIfcDirection((0., 0., 1.)),
+            curve, position, self.file.createIfcDirection((
+                unit_direction.x, unit_direction.y, unit_direction.z)),
             self.convert_si_to_unit(direction.length))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][representation['target_view']]['ifc'],
             representation['subcontext'], 'SweptSolid',
             [extruded_area_solid])
 
-    def get_polyline_points_from_vg_index(self, object, vg_index):
-        outer_curve_edges = self.get_edges_in_vg_index(object, vg_index)
-        outer_curve_loop = self.get_loop_from_edges(outer_curve_edges)
-        outer_curve_points = []
-        for point in outer_curve_loop:
-            outer_curve_points.append(self.create_cartesian_point(
-                object.data.vertices[point].co.x,
-                object.data.vertices[point].co.y,
-                object.data.vertices[point].co.z))
-        outer_curve_points.append(outer_curve_points[0])
-        return outer_curve_points
-
     def get_start_and_end_of_extrusion(self, profile_points, extrusion_edge):
         if extrusion_edge.vertices[0] in profile_points:
             return (extrusion_edge.vertices[0], extrusion_edge.vertices[1])
         return (extrusion_edge.vertices[1], extrusion_edge.vertices[0])
 
-    def get_extrusion_direction(self, mesh, start, end):
-        return mesh.vertices[end].co - mesh.vertices[start].co
+    def get_curve_profile_coordinate_system(self, object, loop):
+        profile_face = bpy.data.meshes.new('profile_face')
+        profile_verts = [(
+            object.data.vertices[p].co.x,
+            object.data.vertices[p].co.y,
+            object.data.vertices[p].co.z
+            ) for p in loop]
+        profile_faces = [tuple(range(0, len(profile_verts)))]
+        profile_face.from_pydata(profile_verts, [], profile_faces)
+        center = profile_face.polygons[0].center
+        x_axis = (object.data.vertices[loop[0]].co - center).normalized()
+        z_axis = profile_face.polygons[0].normal.normalized()
+        y_axis = z_axis.cross(x_axis).normalized()
+        matrix = Matrix((x_axis, y_axis, z_axis))
+        matrix.normalize()
+        return {
+            'center': center,
+            'x_axis': x_axis,
+            'y_axis': y_axis,
+            'z_axis': z_axis,
+            'matrix': Matrix.Translation(-center) @ matrix.to_4x4()
+            }
+
+    def create_polyline_from_loop(self, object, loop, curve_ucs):
+        points = []
+        for point in loop:
+            transformed_point = curve_ucs['matrix'] @ object.data.vertices[point].co
+            points.append(self.create_cartesian_point(
+                transformed_point.x, transformed_point.y))
+        points.append(points[0])
+        return self.file.createIfcPolyline(points)
+
+    def get_extrusion_direction(self, object, outer_curve_loop, extrusion_edge, curve_ucs):
+        start, end = self.get_start_and_end_of_extrusion(outer_curve_loop, extrusion_edge)
+        return curve_ucs['matrix'] @ (curve_ucs['center'] + (object.data.vertices[end].co - object.data.vertices[start].co))
+
+    def get_loop_from_vg_index(self, object, vg_index):
+        edges = self.get_edges_in_vg_index(object, vg_index)
+        loop = self.get_loop_from_edges(edges)
+        loop.pop(-1)
+        return loop
 
     def get_edges_in_vg_index(self, object, index):
         return [ e for e in object.data.edges if (
