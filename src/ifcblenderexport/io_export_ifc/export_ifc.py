@@ -1397,50 +1397,40 @@ class IfcExporter():
     def create_swept_solid_representation(self, representation):
         object = representation['raw_object']
         mesh = representation['raw']
-        outer_curve_index = None
-        inner_curve_indices = []
-        extrusion_index = None
+        items = []
+        for swept_solid in mesh.BIMMeshProperties.swept_solids:
+            extrusion_edge = self.get_edges_in_v_indices(object, json.loads(swept_solid.extrusion))[0]
 
-        for index, vg in enumerate(object.vertex_groups):
-            if vg.name == 'outer-curve':
-                outer_curve_index = index
-            elif 'inner-curve' in vg.name:
-                inner_curve_indices.append(index)
-            elif vg.name == 'extrusion':
-                extrusion_index = index
+            inner_curves = []
+            if swept_solid.inner_curves:
+                for indices in json.loads(swept_solid.inner_curves):
+                    loop = self.get_loop_from_v_indices(object, indices)
+                    curve_ucs = self.get_curve_profile_coordinate_system(object, loop)
+                    inner_curves.append(
+                        self.create_polyline_from_loop(object, loop, curve_ucs))
 
-        extrusion_edge = self.get_edges_in_vg_index(object, extrusion_index)[0]
+            outer_curve_loop = self.get_loop_from_v_indices(object, json.loads(swept_solid.outer_curve))
+            curve_ucs = self.get_curve_profile_coordinate_system(object, outer_curve_loop)
+            outer_curve = self.create_polyline_from_loop(object, outer_curve_loop, curve_ucs)
 
-        inner_curves = []
-        for index in inner_curve_indices:
-            loop = self.get_loop_from_vg_index(object, index)
-            curve_ucs = self.get_curve_profile_coordinate_system(object, loop)
-            inner_curves.append(
-                self.create_polyline_from_loop(object, loop, curve_ucs))
+            if inner_curves:
+                curve = self.file.createIfcArbitraryProfileDefWithVoids('AREA', None,
+                    outer_curve, inner_curves)
+            else:
+                curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None, outer_curve)
 
-        outer_curve_loop = self.get_loop_from_vg_index(object, outer_curve_index)
-        curve_ucs = self.get_curve_profile_coordinate_system(object, outer_curve_loop)
-        outer_curve = self.create_polyline_from_loop(object, outer_curve_loop, curve_ucs)
+            direction = self.get_extrusion_direction(object, outer_curve_loop, extrusion_edge, curve_ucs)
+            unit_direction = direction.normalized()
+            position = self.create_ifc_axis_2_placement_3d(
+                curve_ucs['center'], curve_ucs['z_axis'], curve_ucs['x_axis'])
 
-        if inner_curves:
-            curve = self.file.createIfcArbitraryProfileDefWithVoids('AREA', None,
-                outer_curve, inner_curves)
-        else:
-            curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None, outer_curve)
-
-        direction = self.get_extrusion_direction(object, outer_curve_loop, extrusion_edge, curve_ucs)
-        unit_direction = direction.normalized()
-        position = self.create_ifc_axis_2_placement_3d(
-            curve_ucs['center'], curve_ucs['z_axis'], curve_ucs['x_axis'])
-
-        extruded_area_solid = self.file.createIfcExtrudedAreaSolid(
-            curve, position, self.file.createIfcDirection((
-                unit_direction.x, unit_direction.y, unit_direction.z)),
-            self.convert_si_to_unit(direction.length))
+            items.append(self.file.createIfcExtrudedAreaSolid(
+                curve, position, self.file.createIfcDirection((
+                    unit_direction.x, unit_direction.y, unit_direction.z)),
+                self.convert_si_to_unit(direction.length)))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][representation['target_view']]['ifc'],
-            representation['subcontext'], 'SweptSolid',
-            [extruded_area_solid])
+            representation['subcontext'], 'SweptSolid', items)
 
     def get_start_and_end_of_extrusion(self, profile_points, extrusion_edge):
         if extrusion_edge.vertices[0] in profile_points:
@@ -1483,17 +1473,15 @@ class IfcExporter():
         start, end = self.get_start_and_end_of_extrusion(outer_curve_loop, extrusion_edge)
         return curve_ucs['matrix'] @ (curve_ucs['center'] + (object.data.vertices[end].co - object.data.vertices[start].co))
 
-    def get_loop_from_vg_index(self, object, vg_index):
-        edges = self.get_edges_in_vg_index(object, vg_index)
+    def get_loop_from_v_indices(self, object, indices):
+        edges = self.get_edges_in_v_indices(object, indices)
         loop = self.get_loop_from_edges(edges)
         loop.pop(-1)
         return loop
 
-    def get_edges_in_vg_index(self, object, index):
+    def get_edges_in_v_indices(self, object, indices):
         return [ e for e in object.data.edges if (
-            index in [ g.group for g in object.data.vertices[e.vertices[0]].groups ] and
-            index in [ g.group for g in object.data.vertices[e.vertices[1]].groups ]
-            ) ]
+            e.vertices[0] in indices and e.vertices[1] in indices) ]
 
     def get_loop_from_edges(self, edges):
         while edges:
