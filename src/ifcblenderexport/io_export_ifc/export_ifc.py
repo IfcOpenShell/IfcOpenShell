@@ -1457,7 +1457,7 @@ class IfcExporter():
             'x_axis': x_axis,
             'y_axis': y_axis,
             'z_axis': z_axis,
-            'matrix': Matrix.Translation(-center) @ matrix.to_4x4()
+            'matrix': matrix.to_4x4() @ Matrix.Translation(-center)
             }
 
     def create_polyline_from_loop(self, object, loop, curve_ucs):
