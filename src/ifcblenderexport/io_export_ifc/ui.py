@@ -147,9 +147,16 @@ class BIMMaterialProperties(bpy.types.PropertyGroup):
     identification: bpy.props.StringProperty(name="Identification")
     name: bpy.props.StringProperty(name="Name")
 
+class SweptSolid(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(name="Name")
+    outer_curve: bpy.props.StringProperty(name="Outer Curve")
+    inner_curves: bpy.props.StringProperty(name="Inner Curves")
+    extrusion: bpy.props.StringProperty(name="Extrusion")
+
 class BIMMeshProperties(bpy.types.PropertyGroup):
     is_wireframe: bpy.props.BoolProperty(name="Is Wireframe")
     is_swept_solid: bpy.props.BoolProperty(name="Is Swept Solid")
+    swept_solids: bpy.props.CollectionProperty(name="Swept Solids", type=SweptSolid)
 
 class ObjectPanel(bpy.types.Panel):
     bl_label = 'IFC Object'
@@ -175,7 +182,7 @@ class ObjectPanel(bpy.types.Panel):
             row = layout.row(align=True)
             row.prop(attribute, 'name', text='')
             row.prop(attribute, 'string_value', text='')
-            row.operator('bim.remove_attribute', icon='CANCEL', text='').attribute_index = index
+            row.operator('bim.remove_attribute', icon='X', text='').attribute_index = index
 
         row = layout.row()
         row.prop(bpy.context.active_object.BIMObjectProperties, 'attributes')
@@ -188,7 +195,7 @@ class ObjectPanel(bpy.types.Panel):
             row = layout.row(align=True)
             row.prop(pset, 'name', text='')
             row.prop(pset, 'file', text='')
-            row.operator('bim.remove_pset', icon='CANCEL', text='').pset_index = index
+            row.operator('bim.remove_pset', icon='X', text='').pset_index = index
 
         row = layout.row()
         row.prop(bpy.context.active_object.BIMObjectProperties, 'psets')
@@ -201,7 +208,7 @@ class ObjectPanel(bpy.types.Panel):
         for index, document in enumerate(bpy.context.active_object.BIMObjectProperties.documents):
             row = layout.row(align=True)
             row.prop(document, 'file', text='')
-            row.operator('bim.remove_document', icon='CANCEL', text='').document_index = index
+            row.operator('bim.remove_document', icon='X', text='').document_index = index
 
         row = layout.row()
         row.prop(bpy.context.active_object.BIMObjectProperties, 'documents')
@@ -212,7 +219,7 @@ class ObjectPanel(bpy.types.Panel):
             row = layout.row(align=True)
             row.prop(classification, 'identification', text='')
             row.prop(classification, 'name', text='')
-            row.operator('bim.remove_classification', icon='CANCEL', text='').classification_index = index
+            row.operator('bim.remove_classification', icon='X', text='').classification_index = index
 
         row = layout.row()
         row.prop(bpy.context.active_object.BIMObjectProperties, 'classifications')
@@ -233,11 +240,25 @@ class MeshPanel(bpy.types.Panel):
         row.prop(bpy.context.active_object.data.BIMMeshProperties, 'is_wireframe')
         row = layout.row()
         row.prop(bpy.context.active_object.data.BIMMeshProperties, 'is_swept_solid')
-        row = layout.row(align=True)
-        row.operator('bim.assign_swept_solid_outer_curve')
-        row.operator('bim.add_swept_solid_inner_curve')
+
         row = layout.row()
-        row.operator('bim.assign_swept_solid_extrusion')
+        row.operator('bim.add_swept_solid')
+        for index, swept_solid in enumerate(bpy.context.active_object.data.BIMMeshProperties.swept_solids):
+            row = layout.row(align=True)
+            row.prop(swept_solid, 'name', text='')
+            row.operator('bim.remove_swept_solid', icon='X', text='').index = index
+            row = layout.row()
+            sub = row.row(align=True)
+            sub.operator('bim.assign_swept_solid_outer_curve').index = index
+            sub.operator('bim.select_swept_solid_outer_curve', icon='RESTRICT_SELECT_OFF', text='').index = index
+            sub = row.row(align=True)
+            sub.operator('bim.add_swept_solid_inner_curve').index = index
+            sub.operator('bim.select_swept_solid_inner_curves', icon='RESTRICT_SELECT_OFF', text='').index = index
+            row = layout.row(align=True)
+            row.operator('bim.assign_swept_solid_extrusion').index = index
+            row.operator('bim.select_swept_solid_extrusion', icon='RESTRICT_SELECT_OFF', text='').index = index
+        row = layout.row()
+        row.prop(bpy.context.active_object.data.BIMMeshProperties, 'swept_solids')
 
 class MaterialPanel(bpy.types.Panel):
     bl_label = 'IFC Materials'

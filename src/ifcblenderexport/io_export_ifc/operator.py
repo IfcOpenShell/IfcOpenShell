@@ -1,5 +1,6 @@
 import bpy
 import time
+import json
 import logging
 from . import ifcopenshell
 from . import export_ifc
@@ -343,47 +344,127 @@ class RemoveAttribute(bpy.types.Operator):
         bpy.context.active_object.BIMObjectProperties.attributes.remove(self.attribute_index)
         return {'FINISHED'}
 
+class AddSweptSolid(bpy.types.Operator):
+    bl_idname = 'bim.add_swept_solid'
+    bl_label = 'Add Swept Solid'
+
+    def execute(self, context):
+        swept_solids = bpy.context.active_object.data.BIMMeshProperties.swept_solids
+        swept_solid = swept_solids.add()
+        swept_solid.name = 'Swept Solid {}'.format(len(swept_solids))
+        return {'FINISHED'}
+
+class RemoveSweptSolid(bpy.types.Operator):
+    bl_idname = 'bim.remove_swept_solid'
+    bl_label = 'Remove Swept Solid'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.data.BIMMeshProperties.swept_solids.remove(self.index)
+        return {'FINISHED'}
+
 class AssignSweptSolidOuterCurve(bpy.types.Operator):
     bl_idname = 'bim.assign_swept_solid_outer_curve'
     bl_label = 'Assign Outer Curve'
+    index: bpy.props.IntProperty()
 
     def execute(self, context):
         if bpy.context.mode != 'EDIT_MESH':
             return {'FINISHED'}
-        for vg in bpy.context.active_object.vertex_groups:
-            if vg.name == 'outer-curve':
-                bpy.ops.object.vertex_group_set_active(group=vg.name)
-                bpy.ops.object.vertex_group_remove()
-                break
-        bpy.ops.object.vertex_group_assign_new()
-        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'outer-curve'
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode='EDIT')
+        vertices = [v.index for v in bpy.context.active_object.data.vertices if v.select == True]
+        print(vertices)
+        bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index].outer_curve = json.dumps(vertices)
+        return {'FINISHED'}
+
+class SelectSweptSolidOuterCurve(bpy.types.Operator):
+    bl_idname = 'bim.select_swept_solid_outer_curve'
+    bl_label = 'Select Outer Curve'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        if bpy.context.mode != 'EDIT_MESH':
+            return {'FINISHED'}
+        bpy.ops.object.mode_set(mode='OBJECT')
+        outer_curve = bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index].outer_curve
+        if not outer_curve:
+            return {'FINISHED'}
+        indices = json.loads(outer_curve)
+        for index in indices:
+            bpy.context.active_object.data.vertices[index].select = True
+        bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
 
 class AddSweptSolidInnerCurve(bpy.types.Operator):
     bl_idname = 'bim.add_swept_solid_inner_curve'
     bl_label = 'Add Inner Curve'
+    index: bpy.props.IntProperty()
 
     def execute(self, context):
         if bpy.context.mode != 'EDIT_MESH':
             return {'FINISHED'}
-        bpy.ops.object.vertex_group_assign_new()
-        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'inner-curve'
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode='EDIT')
+        vertices = [v.index for v in bpy.context.active_object.data.vertices if v.select == True]
+        swept_solid = bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index]
+        if swept_solid.inner_curves:
+            curves = json.loads(swept_solid.inner_curves)
+        else:
+            curves = []
+        curves.append(vertices)
+        swept_solid.inner_curves = json.dumps(curves)
+        return {'FINISHED'}
+
+class SelectSweptSolidInnerCurves(bpy.types.Operator):
+    bl_idname = 'bim.select_swept_solid_inner_curves'
+    bl_label = 'Select Inner Curves'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        if bpy.context.mode != 'EDIT_MESH':
+            return {'FINISHED'}
+        bpy.ops.object.mode_set(mode='OBJECT')
+        inner_curves = bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index].inner_curves
+        if not inner_curves:
+            return {'FINISHED'}
+        curves = json.loads(inner_curves)
+        for curve in curves:
+            for index in curve:
+                bpy.context.active_object.data.vertices[index].select = True
+        bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
 
 class AssignSweptSolidExtrusion(bpy.types.Operator):
     bl_idname = 'bim.assign_swept_solid_extrusion'
     bl_label = 'Assign Extrusion'
+    index: bpy.props.IntProperty()
 
     def execute(self, context):
         if bpy.context.mode != 'EDIT_MESH':
             return {'FINISHED'}
-        for vg in bpy.context.active_object.vertex_groups:
-            if vg.name == 'extrusion':
-                bpy.ops.object.vertex_group_set_active(group=vg.name)
-                bpy.ops.object.vertex_group_remove()
-                break
-        bpy.ops.object.vertex_group_assign_new()
-        bpy.context.active_object.vertex_groups[bpy.context.active_object.vertex_groups[-1].name].name = 'extrusion'
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode='EDIT')
+        vertices = [v.index for v in bpy.context.active_object.data.vertices if v.select == True]
+        bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index].extrusion = json.dumps(vertices)
+        return {'FINISHED'}
+
+class SelectSweptSolidExtrusion(bpy.types.Operator):
+    bl_idname = 'bim.select_swept_solid_extrusion'
+    bl_label = 'Select Extrusion'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        if bpy.context.mode != 'EDIT_MESH':
+            return {'FINISHED'}
+        bpy.ops.object.mode_set(mode='OBJECT')
+        extrusion = bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index].extrusion
+        if not extrusion:
+            return {'FINISHED'}
+        indices = json.loads(extrusion)
+        for index in indices:
+            bpy.context.active_object.data.vertices[index].select = True
+        bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
 
 class SelectExternalMaterialDir(bpy.types.Operator):
