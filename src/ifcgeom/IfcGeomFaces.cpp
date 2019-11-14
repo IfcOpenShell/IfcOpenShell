@@ -464,6 +464,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryProfileDefWithVoids* 
 	assert_closed_wire(profile);
 
 	BRepBuilderAPI_MakeFace mf(profile);
+	if (mf.Error() != BRepBuilderAPI_FaceDone) {
+		return false;
+	}
 
 	IfcSchema::IfcCurve::list::ptr voids = l->InnerCurves();
 
