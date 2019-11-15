@@ -98,6 +98,8 @@ class IfcParser():
         self.product_name_index_map = {}
 
         self.units = {}
+        self.people = []
+        self.organisations = []
         self.psets = {}
         self.documents = {}
         self.classifications = []
@@ -135,6 +137,8 @@ class IfcParser():
     def parse(self):
         self.units = self.get_units()
         self.unit_scale = self.get_unit_scale()
+        self.people = self.get_people()
+        self.organisations = self.get_organisations()
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.documents = self.get_documents()
@@ -453,6 +457,14 @@ class IfcParser():
                     'attributes': dict(zip(keys, row))
                     }
         return results
+
+    def get_people(self):
+        with open(self.data_dir + 'owner/person.json') as file:
+            return json.load(file)
+
+    def get_organisations(self):
+        with open(self.data_dir + 'owner/organisation.json') as file:
+            return json.load(file)
 
     def get_documents(self):
         documents = {}
@@ -784,6 +796,8 @@ class IfcExporter():
         self.set_common_definitions()
         self.ifc_parser.parse()
         self.create_units()
+        self.create_people()
+        self.create_organisations()
         self.create_rep_context()
         self.create_project()
         self.create_documents()
@@ -865,6 +879,42 @@ class IfcExporter():
         return self.file.createIfcConversionBasedUnit(
             dimensional_exponents, '{}UNIT'.format(type.upper()),
             name, conversion_factor)
+
+    def create_people(self):
+        for person in self.ifc_parser.people:
+            if person['Roles']:
+                person['Roles'] = self.create_roles(person['Roles'])
+            if person['Addresses']:
+                person['Addresses'] = self.create_addresses(person['Addresses'])
+            self.file.create_entity('IfcPerson', **person)
+
+    def create_organisations(self):
+        for organisation in self.ifc_parser.organisations:
+            if organisation['Roles']:
+                organisation['Roles'] = self.create_roles(organisation['Roles'])
+            if organisation['Addresses']:
+                organisation['Addresses'] = self.create_addresses(organisation['Addresses'])
+            self.file.create_entity('IfcOrganization', **organisation)
+
+    def create_roles(self, roles):
+        results = []
+        for role in roles:
+            results.append(self.file.create_entity('IfcActorRole', **role))
+        return results
+
+    def create_addresses(self, addresses):
+        results = []
+        for address in addresses:
+            is_postal_address = False
+            for key in ['InternalLocation', 'AddressLines', 'PostalBox', 'Town',
+                    'Region', 'PostalCode', 'Country']:
+                if key in address:
+                    is_postal_address = True
+            if is_postal_address:
+                results.append(self.file.create_entity('IfcPostalAddress', **address))
+            else:
+                results.append(self.file.create_entity('IfcTelecomAddress', **address))
+        return results
 
     def create_documents(self):
         for document in self.ifc_parser.documents.values():
