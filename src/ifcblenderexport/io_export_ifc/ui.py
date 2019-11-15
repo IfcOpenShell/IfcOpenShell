@@ -14,11 +14,11 @@ from bpy.props import (
 )
 
 
-cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
+cwd = os.path.dirname(os.path.realpath(__file__))
 
 class IfcSchema():
     def __init__(self):
-        with open('{}schema{}ifc_elements_IFC4.json'.format(cwd, os.path.sep)) as f:
+        with open(os.path.join(cwd, 'schema', 'ifc_elements_IFC4.json')) as f:
             self.elements = json.load(f)
 
 ifc_schema = IfcSchema()
@@ -39,78 +39,108 @@ documents_enum = []
 
 def getIfcPredefinedTypes(self, context):
     global types_enum
-    types_enum.clear()
-    for name, data in ifc_schema.elements.items():
-        if name != bpy.context.scene.BIMProperties.ifc_class:
-            continue
-        for attribute in data['attributes']:
-            if attribute['name'] != 'PredefinedType':
+    if len(types_enum) < 1:
+        types_enum.append((' ', 'None',''))
+        for name, data in ifc_schema.elements.items():
+            if name != self.ifc_class.strip():
                 continue
-            types_enum.extend([(e, e, '') for e in attribute['enum_values']])
+            for attribute in data['attributes']:
+                if attribute['name'] != 'PredefinedType':
+                    continue
+                types_enum.extend([(e, e, '') for e in attribute['enum_values']])
     return types_enum
+
+
+def refreshPredefinedTypes(self, context):
+    global types_enum
+    types_enum.clear()
+    getIfcPredefinedTypes(self, context)
+    # set to None
+    self.ifc_predefined_type = " "
+
 
 def getIfcClasses(self, context):
     global classes_enum
-    classes_enum.clear()
-    classes_enum.extend([(e, e, '') for e in ifc_schema.elements])
+    if len(classes_enum) < 1:
+        classes_enum.append((' ', 'None', ''))
+        classes_enum.extend([(e, e, '') for e in ifc_schema.elements])
     return classes_enum
+
 
 def getPsetNames(self, context):
     global psetnames_enum
-    psetnames_enum.clear()
-    files = os.listdir(bpy.context.scene.BIMProperties.data_dir + 'pset' + os.path.sep)
-    psetnames_enum.extend([(f, f, '') for f in files])
+    if len(psetnames_enum) < 1:
+        psetnames_enum.clear()
+        psetnames_enum.append((' ', 'None', ''))
+        files = os.listdir(os.path.join(self.data_dir, 'pset'))
+        psetnames_enum.extend([(f, f, '') for f in files])
     return psetnames_enum
+
+def refreshPsetFiles(self, context):
+    global psetfiles_enum
+    psetfiles_enum.clear()
+    getPsetFiles(self, context)
+    # set to None
+    self.pset_file = " "
 
 def getPsetFiles(self, context):
     global psetfiles_enum
-    psetfiles_enum.clear()
-    if not bpy.context.scene.BIMProperties.pset_name:
-        return psetfiles_enum
-    files = os.listdir(
-        bpy.context.scene.BIMProperties.data_dir + 'pset{}{}{}'.format(
-            os.path.sep,
-            bpy.context.scene.BIMProperties.pset_name,
-            os.path.sep))
-    psetfiles_enum.extend([(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files])
+    if len(psetfiles_enum) < 1:
+        psetfiles_enum.append((' ', 'None', ''))
+        if not self.pset_name.strip():
+            return psetfiles_enum
+        files = os.listdir(os.path.join(self.data_dir, 'pset', self.pset_name.strip()))
+        psetfiles_enum.extend([(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files])
     return psetfiles_enum
 
 def getClassifications(self, context):
     global classification_enum
-    classification_enum.clear()
-    with open(bpy.context.scene.BIMProperties.data_dir + 'class/classifications.csv', 'r') as f:
-        data = list(csv.reader(f))
-        keys = data.pop(0)
-        index = keys.index('Name')
-        classification_enum.extend([(str(i), d[index], '') for i, d in enumerate(data)])
+    if len(classification_enum) < 1:
+        classification_enum.clear()
+        classification_enum.append((' ', 'None', ''))
+        with open(os.path.join(self.data_dir, 'class', 'classifications.csv'), 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            index = keys.index('Name')
+            classification_enum.extend([(str(i), d[index], '') for i, d in enumerate(data)])
     return classification_enum
+
+def refreshReferences(self, context):
+    global reference_enum
+    reference_enum.clear()
+    getReferences(self, context)
+    # set to None
+    self.reference = " "
 
 def getReferences(self, context):
     global reference_enum
-    reference_enum.clear()
-    if not bpy.context.scene.BIMProperties.classification:
-        return reference_enum
-    with open(bpy.context.scene.BIMProperties.data_dir + 'class' + os.path.sep + 'references.csv', 'r') as f:
-        data = list(csv.reader(f))
-        keys = data.pop(0)
-        reference_enum.extend([(d[0], '{} - {}'.format(d[0], d[1]), '') for d in data if
-                d[2] == bpy.context.scene.BIMProperties.classification])
+    if len(reference_enum) < 1:
+        reference_enum.append((' ', 'None', ''))
+        if not self.classification.strip():
+            return reference_enum
+        with open(os.path.join(self.data_dir, 'class', 'references.csv'), 'r') as f:
+            data = list(csv.reader(f))
+            keys = data.pop(0)
+            reference_enum.extend([(d[0], '{} - {}'.format(d[0], d[1]), '') for d in data if
+                    d[2] == self.classification.strip()])
     return reference_enum
 
 def getApplicableAttributes(self, context):
     global attributes_enum
     attributes_enum.clear()
-    if '/' in bpy.context.active_object.name \
-        and bpy.context.active_object.name.split('/')[0] in ifc_schema.elements:
+    attributes_enum.append((' ', 'None', ''))
+    if '/' in context.active_object.name \
+        and context.active_object.name.split('/')[0] in ifc_schema.elements:
         attributes_enum.extend([(a['name'], a['name'], '') for a in
-            ifc_schema.elements[bpy.context.active_object.name.split('/')[0]]['attributes']
-            if bpy.context.active_object.BIMObjectProperties.attributes.find(a['name']) == -1])
+            ifc_schema.elements[context.active_object.name.split('/')[0]]['attributes']
+            if self.attributes.find(a['name']) == -1])
     return attributes_enum
 
 def getApplicableDocuments(self, context):
     global documents_enum
     documents_enum.clear()
-    doc_path = bpy.context.scene.BIMProperties.data_dir + 'doc' + os.path.sep
+    documents_enum.append((' ', 'None', ''))
+    doc_path = os.path.join(context.scene.BIMProperties.data_dir, 'doc')
     for filename in Path(doc_path).glob('**/*'):
         uri = str(filename.relative_to(doc_path).as_posix())
         documents_enum.append((uri, uri, ''))
@@ -119,9 +149,9 @@ def getApplicableDocuments(self, context):
 
 class BIMProperties(PropertyGroup):
 
-    schema_dir: StringProperty(default=cwd + 'schema' + os.path.sep, name="Schema Directory")
-    data_dir: StringProperty(default=cwd + 'data'  + os.path.sep, name="Data Directory")
-    ifc_class: EnumProperty(items = getIfcClasses, name="Class")
+    schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
+    data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
+    ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(
         items = getIfcPredefinedTypes,
         name="Predefined Type", default=None)
@@ -132,16 +162,16 @@ class BIMProperties(PropertyGroup):
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
-    pset_name: EnumProperty(items=getPsetNames, name="Pset Name")
+    pset_name: EnumProperty(items=getPsetNames, name="Pset Name", update=refreshPsetFiles)
     pset_file: EnumProperty(items=getPsetFiles, name="Pset File")
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     global_id: StringProperty(name="GlobalId")
     features_dir: StringProperty(default='', name="Features Directory")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
-    aggregate_class: EnumProperty(items = getIfcClasses, name="Aggregate Class")
+    aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
     aggregate_name: StringProperty(name="Aggregate Name")
-    classification: EnumProperty(items = getClassifications, name="Classification")
-    reference: EnumProperty(items = getReferences, name="Reference")
+    classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
+    reference: EnumProperty(items=getReferences, name="Reference")
 
 class MapConversion(PropertyGroup):
     eastings: StringProperty(name="Eastings")
