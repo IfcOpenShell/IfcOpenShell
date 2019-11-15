@@ -29,6 +29,7 @@ types_enum = []
 psetnames_enum = []
 psetfiles_enum = []
 classification_enum = []
+reference_enum = []
 attributes_enum = []
 documents_enum = []
 
