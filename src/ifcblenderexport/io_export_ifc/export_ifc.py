@@ -215,7 +215,7 @@ class IfcParser():
 
     def resolve_array_modifier(self, product):
         object = product['raw']
-        instance_objects = [(object, object.location)]
+        instance_objects = [(object, object.matrix_world.translation)]
         global_id_index = 0
         for instance in self.get_instances(object):
             created_instances = []
@@ -251,7 +251,7 @@ class IfcParser():
         product = {
             'ifc': None,
             'raw': object,
-            'location': object.location,
+            'location': object.matrix_world.translation,
             'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'class': self.get_ifc_class(object.name),
@@ -685,7 +685,7 @@ class IfcParser():
                     type = {
                         'ifc': None,
                         'raw': object,
-                        'location': object.location,
+                        'location': object.translation,
                         'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
                         'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
                         'psets': ['{}/{}'.format(pset.name, pset.file) for pset in
