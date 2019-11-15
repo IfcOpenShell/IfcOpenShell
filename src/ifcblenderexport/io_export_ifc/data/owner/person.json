@@ -1,0 +1,35 @@
+[
+  {
+    "Identification": "Moult",
+    "FamilyName": "Moult",
+    "GivenName": "Dion",
+    "MiddleNames": ["Sebastian", "Isan", "Tan"],
+    "PrefixTitles": ["Mr"],
+    "SuffixTitles": ["UE"],
+    "Roles": [{
+      "Role": "ARCHITECT",
+      "UserDefinedRole": null,
+      "Description": "Draws the pretty pictures"
+      }],
+    "Addresses": [{
+      "Purpose": "OFFICE",
+      "Description": "Headquarters",
+      "UserDefinedPurpose": null,
+      "InternalLocation": "Cupboard under the stairs",
+      "AddressLines": [ "221B Baker Street" ],
+      "PostalBox": null,
+      "Town": "MyTown",
+      "Region": "Middle-Earth",
+      "PostalCode": "42",
+      "Country": "Narnia"
+    }, {
+      "Purpose": "OFFICE",
+      "Description": "Headquarters",
+      "UserDefinedPurpose": null,
+      "TelephoneNumbers": ["0123456789"],
+      "ElectronicMailAddresses": ["dion@thinkmoult.com"],
+      "WWWHomePageURL": "https://thinkmoult.com",
+      "MessagingIDs": ["irc://irc.freenode.net##architect"]
+    }]
+  }
+]

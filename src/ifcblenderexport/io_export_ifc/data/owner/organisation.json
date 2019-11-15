@@ -1,0 +1,13 @@
+[
+  {
+    "Name": "ACME",
+    "Description": "Does everything",
+    "Roles": [ { "Role": "ARCHITECT" } ],
+    "Addresses": [{
+      "Purpose": "OFFICE",
+      "Description": "Headquarters",
+      "ElectronicMailAddresses": ["acme@example.com"],
+      "WWWHomePageURL": "https://example.com"
+    }]
+  }
+]
