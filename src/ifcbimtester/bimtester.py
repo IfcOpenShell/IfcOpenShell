@@ -3,10 +3,12 @@
 from behave.__main__ import main as behave_main
 import behave.formatter.pretty # Needed for pyinstaller to package it
 import xml.etree.ElementTree as ET
-import ifcopenshell # Needed for pyinstaller to package it
+import ifcopenshell
 import pystache
 import os
 import sys
+import json
+from pathlib import Path
 
 def run_tests():
     behave_main(['features', '--junit', '--junit-directory', 'junit/'])
@@ -45,6 +47,38 @@ def run_tests():
                 out.write(pystache.render(template.read(), data))
 
 
+class TestPurger:
+    def __init__(self):
+        self.file = None
+
+    def purge(self):
+        for filename in Path('features/').glob('*.feature'):
+            with open(filename, 'r') as feature_file:
+                with open('{}.purged'.format(filename), 'w') as new_file:
+                    for line in feature_file:
+                        if 'Given the IFC file ' in line:
+                            filename = line.split('"')[1]
+                            print('Loading file {} ...'.format(filename))
+                            self.file = ifcopenshell.open(filename)
+                        if line.strip()[0:4] == 'Then':
+                            words = line.strip().split()
+                            for word in words:
+                                if self.is_a_global_id(word):
+                                    if not self.does_global_id_exist(word):
+                                        print('Test for {} purged ...'.format(word))
+                                        continue
+                        new_file.write(line)
+
+    def is_a_global_id(self, word):
+        return word[0] in ['0', '1', '2', '3'] and len(word) == 22
+
+    def does_global_id_exist(self, global_id):
+        try:
+            self.file.by_guid(global_id)
+            return True
+        except:
+            return False
+
 print('# BIMTester')
 print('''
 BIMTester is free software developed under the IfcOpenShell and BlenderBIM
@@ -55,11 +89,19 @@ and can be run automatically on open-source BIM servers. To learn more, visit:
  - https://blenderbim.org
 
 To run, a `features/` folder is required in the current folder.
+
+Please choose from the following options:
+
+ 1. Run all tests
+ 2. Purge non-existent element tests
 ''')
 
-value = input('Would you like to run the tests? [Y/n] ')
-if value == 'n':
+value = input('Please select an option: [1-2] ')
+if value == '1':
+    run_tests()
+elif value == '2':
+    TestPurger().purge()
+else:
     quit()
-run_tests()
-print('# All tests and reports are complete :-)')
+print('# All tasks are complete :-)')
 input('Press <enter> to quit.')
