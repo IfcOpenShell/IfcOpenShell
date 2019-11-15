@@ -36,7 +36,7 @@ documents_enum = []
 # enums should be cached especially when file io is involved
 # we may clear on need to regen
 
-def getIfcPredefinedTypes(self):
+def getIfcPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
     for name, data in ifc_schema.elements.items():
@@ -48,20 +48,20 @@ def getIfcPredefinedTypes(self):
             types_enum.extend([(e, e, '') for e in attribute['enum_values']])
     return types_enum
 
-def getIfcClasses(self):
+def getIfcClasses(self, context):
     global classes_enum
     classes_enum.clear()
     classes_enum.extend([(e, e, '') for e in ifc_schema.elements])
     return classes_enum
 
-def getPsetNames(self):
+def getPsetNames(self, context):
     global psetnames_enum
     psetnames_enum.clear()
     files = os.listdir(bpy.context.scene.BIMProperties.data_dir + 'pset' + os.path.sep)
     psetnames_enum.extend([(f, f, '') for f in files])
     return psetnames_enum
 
-def getPsetFiles(self):
+def getPsetFiles(self, context):
     global psetfiles_enum
     psetfiles_enum.clear()
     if not bpy.context.scene.BIMProperties.pset_name:
@@ -74,7 +74,7 @@ def getPsetFiles(self):
     psetfiles_enum.extend([(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files])
     return psetfiles_enum
 
-def getClassifications(self):
+def getClassifications(self, context):
     global classification_enum
     classification_enum.clear()
     with open(bpy.context.scene.BIMProperties.data_dir + 'class/classifications.csv', 'r') as f:
@@ -84,7 +84,7 @@ def getClassifications(self):
         classification_enum.extend([(str(i), d[index], '') for i, d in enumerate(data)])
     return classification_enum
 
-def getReferences(self):
+def getReferences(self, context):
     global reference_enum
     reference_enum.clear()
     if not bpy.context.scene.BIMProperties.classification:
@@ -96,7 +96,7 @@ def getReferences(self):
                 d[2] == bpy.context.scene.BIMProperties.classification])
     return reference_enum
 
-def getApplicableAttributes(self):
+def getApplicableAttributes(self, context):
     global attributes_enum
     attributes_enum.clear()
     if '/' in bpy.context.active_object.name \
@@ -106,7 +106,7 @@ def getApplicableAttributes(self):
             if bpy.context.active_object.BIMObjectProperties.attributes.find(a['name']) == -1])
     return attributes_enum
 
-def getApplicableDocuments(self):
+def getApplicableDocuments(self, context):
     global documents_enum
     documents_enum.clear()
     doc_path = bpy.context.scene.BIMProperties.data_dir + 'doc' + os.path.sep
