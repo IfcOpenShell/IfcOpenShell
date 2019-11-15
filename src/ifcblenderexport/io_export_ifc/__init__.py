@@ -68,14 +68,14 @@ classes = (
     ui.BIMMaterialProperties,
     ui.SweptSolid,
     ui.BIMMeshProperties,
-    ui.GISPanel,
-    ui.BIMPanel,
-    ui.QAPanel,
-    ui.DiffPanel,
-    ui.MVDPanel,
-    ui.MaterialPanel,
-    ui.MeshPanel,
-    ui.ObjectPanel,
+    ui.BIM_PT_gis,
+    ui.BIM_PT_bim,
+    ui.BIM_PT_qa,
+    ui.BIM_PT_diff,
+    ui.BIM_PT_mvd,
+    ui.BIM_PT_material,
+    ui.BIM_PT_mesh,
+    ui.BIM_PT_object,
     )
 
 def menu_func_export(self, context):
