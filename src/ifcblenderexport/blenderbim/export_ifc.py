@@ -286,8 +286,8 @@ class IfcParser():
         obj = selected_product['raw']
         product = {
             'ifc': None,
-            'raw': object,
-            'location': object.matrix_world.translation,
+            'raw': obj,
+            'location': obj.matrix_world.translation,
             'up_axis': self.get_axis(obj.matrix_world, 2),
             'forward_axis': self.get_axis(obj.matrix_world, 0),
             'right_axis': self.get_axis(obj.matrix_world, 1),
