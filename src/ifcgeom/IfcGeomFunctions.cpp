@@ -1959,6 +1959,11 @@ IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const 
 	}
 	
 	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
+
+	if (products->size() && maps->size()) {
+		Logger::Warning("Representation used by IfcRepresentationMap and IfcProductDefinitionShape", representation);
+	}
+
 	if (maps->size() == 1) {
 		IfcSchema::IfcRepresentationMap* map = *maps->begin();
 		if (is_identity_transform(map->MappingOrigin())) {
