@@ -126,6 +126,8 @@ class IfcParser():
         self.rel_associates_constraint_objective_object = {}
         self.rel_associates_constraint_objective_type = {}
         self.rel_aggregates = {}
+        self.rel_voids_elements = {}
+        self.rel_fills_elements = {}
         self.representations = {}
         self.type_products = []
         self.door_attributes = {}
@@ -212,7 +214,8 @@ class IfcParser():
             object = product['raw']
             self.add_product(self.get_product(product))
             self.resolve_array_modifier(product)
-
+            self.resolve_boolean_modifier(product)
+            
     def resolve_array_modifier(self, product):
         object = product['raw']
         instance_objects = [(object, object.matrix_world.translation)]
@@ -227,6 +230,20 @@ class IfcParser():
                     created_instances.append((o[0], location))
             instance_objects.extend(created_instances)
 
+    def resolve_boolean_modifier(self, product):
+        obj = product['raw']
+        for m in obj.modifiers:
+            if m.type == 'BOOLEAN' and m.object is not None:
+                void = m.object
+                if obj not in self.rel_voids_elements:
+                    self.rel_voids_elements[obj] = []
+                self.rel_voids_elements[obj].append(void)
+                fill = void.parent
+                if fill:
+                    if void not in self.rel_fills_elements:
+                        self.rel_fills_elements[void] = []
+                    self.rel_fills_elements[void].append(fill)
+    
     def get_parametric_global_id(self, object, index):
         global_ids = object.BIMObjectProperties.global_ids
         total_global_ids = len(global_ids)
@@ -821,6 +838,10 @@ class IfcExporter():
         self.relate_objects_to_types()
         self.relate_objects_to_qtos()
         self.relate_objects_to_psets()
+        
+        self.relate_voids_elements()
+        self.relate_fills_elements()
+        
         self.relate_objects_to_materials()
         self.relate_objects_to_material_layer_sets()
         self.relate_objects_to_material_constituent_sets()
@@ -1593,7 +1614,25 @@ class IfcExporter():
             return self.file.createIfcCartesianPoint((x, y))
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
-
+    
+    def relate_voids_elements(self):
+        for relate_object, related_voids in self.ifc_parser.rel_voids_elements.items():
+            for related_void in related_voids:
+                self.file.createIfcRelVoidsElement(
+                    ifcopenshell.guid.new(), self.owner_history, None, None,
+                    self.ifc_parser.products[relate_object]['ifc'],
+                    self.ifc_parser.products[related_void]['ifc']
+                )
+            
+    def relate_fills_elements(self):
+        for relate_object, related_fills in self.ifc_parser.rel_fills_elements.items():
+            for related_fill in related_fills:
+                self.file.createIfcRelFillsElement(
+                    ifcopenshell.guid.new(), self.owner_history, None, None,
+                    self.ifc_parser.products[relate_object]['ifc'],
+                    self.ifc_parser.products[related_fill]['ifc']
+                )
+            
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
             self.file.createIfcRelContainedInSpatialStructure(
