@@ -1,10 +1,11 @@
 bl_info = {
-    "name": "IfcBlenderExport",
-    "description": "Export files in the "
+    "name": "BlenderBIM",
+    "description": "Author, import, and export files in the "
         "Industry Foundation Classes (.ifc) file format",
     "author": "Dion Moult, IfcOpenShell",
     "blender": (2, 80, 0),
-    "location": "File > Export",
+    "version": (0, 0, 99999),
+    "location": "File > Export, File > Import, Scene / Object / Material / Mesh Properties",
     "tracker_url": "https://sourceforge.net/p/ifcopenshell/"
         "_list/tickets?source=navbar",
     "category": "Import-Export"
