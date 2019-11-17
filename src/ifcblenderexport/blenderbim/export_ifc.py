@@ -161,6 +161,7 @@ class IfcParser():
         self.window_attributes = self.get_window_attributes()
         self.type_products = self.get_type_products()
         self.get_products()
+        self.resolve_boolean_modifiers()
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
@@ -214,7 +215,6 @@ class IfcParser():
             object = product['raw']
             self.add_product(self.get_product(product))
             self.resolve_array_modifier(product)
-            self.resolve_boolean_modifier(product)
             
     def resolve_array_modifier(self, product):
         object = product['raw']
@@ -230,19 +230,22 @@ class IfcParser():
                     created_instances.append((o[0], location))
             instance_objects.extend(created_instances)
 
-    def resolve_boolean_modifier(self, product):
-        obj = product['raw']
-        for m in obj.modifiers:
-            if m.type == 'BOOLEAN' and m.object is not None:
-                void = m.object
-                if obj not in self.rel_voids_elements:
-                    self.rel_voids_elements[obj] = []
-                self.rel_voids_elements[obj].append(void)
-                fill = void.parent
-                if fill:
-                    if void not in self.rel_fills_elements:
-                        self.rel_fills_elements[void] = []
-                    self.rel_fills_elements[void].append(fill)
+    def resolve_boolean_modifiers(self):
+        for product in self.products:
+            obj = product['raw']
+            for m in obj.modifiers:
+                if m.type == 'BOOLEAN' and m.object is not None:
+                    void = self.get_product_from_raw_name(m.object.name)
+                    if void is not None:
+                        if product['ifc'] not in self.rel_voids_elements:
+                            self.rel_voids_elements[product['ifc']] = []
+                        self.rel_voids_elements[product['ifc']].append(void['ifc'])
+                        if m.object.parent:
+                            fill = self.get_product_from_raw_name(m.object.parent.name)
+                            if fill is not None:
+                                if void['ifc'] not in self.rel_fills_elements:
+                                    self.rel_fills_elements[void['ifc']] = []
+                                self.rel_fills_elements[void['ifc']].append(fill['ifc'])
     
     def get_parametric_global_id(self, object, index):
         global_ids = object.BIMObjectProperties.global_ids
@@ -1620,22 +1623,23 @@ class IfcExporter():
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
     
+    
     def relate_voids_elements(self):
         for relate_object, related_voids in self.ifc_parser.rel_voids_elements.items():
             for related_void in related_voids:
                 self.file.createIfcRelVoidsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    self.ifc_parser.get_product_from_raw_name(relate_object.name)['ifc'],
-                    self.ifc_parser.get_product_from_raw_name(related_void.name)['ifc']
+                    relate_object,
+                    related_void
                 )
-            
+
     def relate_fills_elements(self):
         for relate_object, related_fills in self.ifc_parser.rel_fills_elements.items():
             for related_fill in related_fills:
                 self.file.createIfcRelFillsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    self.ifc_parser.get_product_from_raw_name(relate_object.name)['ifc'],
-                    self.ifc_parser.get_product_from_raw_name(related_fill.name)['ifc']
+                    relate_object,
+                    related_fill
                 )
             
     def relate_elements_to_spatial_structures(self):
