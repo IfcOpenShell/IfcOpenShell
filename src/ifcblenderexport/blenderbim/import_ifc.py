@@ -68,6 +68,7 @@ class MaterialCreator():
 class IfcImporter():
     def __init__(self, ifc_import_settings):
         self.ifc_import_settings = ifc_import_settings
+        self.diff = None
         self.file = None
         self.settings = ifcopenshell.geom.settings()
         if self.ifc_import_settings.should_import_curves:
@@ -83,13 +84,21 @@ class IfcImporter():
         self.material_creator = MaterialCreator()
 
     def execute(self):
+        self.load_diff()
         self.load_file()
         self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
+        self.purge_diff()
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
         for element in elements:
             self.create_object(element)
+
+    def load_diff(self):
+        if not self.ifc_import_settings.diff_file:
+            return
+        with open(self.ifc_import_settings.diff_file, 'r') as file:
+            self.diff = json.load(file)
 
     def load_file(self):
         print('loading file {}'.format(self.ifc_import_settings.input_file))
@@ -140,7 +149,23 @@ class IfcImporter():
     def get_name(self, element):
         return '{}/{}'.format(element.is_a(), element.Name)
 
+    def purge_diff(self):
+        objects_to_purge = []
+        for obj in bpy.data.objects:
+            if 'GlobalId' not in obj.BIMObjectProperties.attributes:
+                continue
+            global_id = obj.BIMObjectProperties.attributes['GlobalId'].string_value
+            if global_id in self.diff['deleted'] \
+                or global_id in self.diff['changed'].keys():
+                objects_to_purge.append(obj)
+        bpy.ops.object.delete({'selected_objects': objects_to_purge})
+
     def create_object(self, element):
+        if self.diff:
+            if element.GlobalId not in self.diff['added'] \
+                and element.GlobalId not in self.diff['changed'].keys():
+                return
+
         print('Creating object {}'.format(element))
         self.time = time.time()
         if element.is_a('IfcOpeningElement'):
@@ -305,3 +330,4 @@ class IfcImportSettings:
         self.input_file = None
         self.should_ignore_site_coordinates = False
         self.should_import_curves = False
+        self.diff_file = None
