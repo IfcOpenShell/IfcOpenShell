@@ -54,19 +54,22 @@ class TestPurger:
     def purge(self):
         for filename in Path('features/').glob('*.feature'):
             with open(filename, 'r') as feature_file:
-                with open('{}.purged'.format(filename), 'w') as new_file:
-                    for line in feature_file:
-                        if 'Given the IFC file ' in line:
-                            filename = line.split('"')[1]
-                            print('Loading file {} ...'.format(filename))
-                            self.file = ifcopenshell.open(filename)
-                        if line.strip()[0:4] == 'Then':
-                            words = line.strip().split()
-                            for word in words:
-                                if self.is_a_global_id(word):
-                                    if not self.does_global_id_exist(word):
-                                        print('Test for {} purged ...'.format(word))
-                                        continue
+                old_file = feature_file.readlines()
+            with open(filename, 'w') as new_file:
+                for line in old_file:
+                    is_purged = False
+                    if 'Given the IFC file ' in line:
+                        filename = line.split('"')[1]
+                        print('Loading file {} ...'.format(filename))
+                        self.file = ifcopenshell.open(filename)
+                    if line.strip()[0:4] == 'Then':
+                        words = line.strip().split()
+                        for word in words:
+                            if self.is_a_global_id(word):
+                                if not self.does_global_id_exist(word):
+                                    print('Test for {} purged ...'.format(word))
+                                    is_purged = True
+                    if not is_purged:
                         new_file.write(line)
 
     def is_a_global_id(self, word):
