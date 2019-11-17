@@ -262,7 +262,12 @@ class IfcParser():
         for index, product in enumerate(self.products):
             if product['raw'].name == name:
                 return index
-
+    
+    def get_product_from_raw_name(self, name):
+        for index, product in enumerate(self.products):
+            if product['raw'].name == name:
+                return product
+            
     def get_product(self, selected_product, metadata_override={}, attribute_override={}):
         object = selected_product['raw']
         product = {
@@ -1620,8 +1625,8 @@ class IfcExporter():
             for related_void in related_voids:
                 self.file.createIfcRelVoidsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    self.ifc_parser.products[relate_object]['ifc'],
-                    self.ifc_parser.products[related_void]['ifc']
+                    self.ifc_parser.get_product_from_raw_name(relate_object.name)['ifc'],
+                    self.ifc_parser.get_product_from_raw_name(related_void.name)['ifc']
                 )
             
     def relate_fills_elements(self):
@@ -1629,8 +1634,8 @@ class IfcExporter():
             for related_fill in related_fills:
                 self.file.createIfcRelFillsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    self.ifc_parser.products[relate_object]['ifc'],
-                    self.ifc_parser.products[related_fill]['ifc']
+                    self.ifc_parser.get_product_from_raw_name(relate_object.name)['ifc'],
+                    self.ifc_parser.get_product_from_raw_name(related_fill.name)['ifc']
                 )
             
     def relate_elements_to_spatial_structures(self):
