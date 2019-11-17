@@ -254,6 +254,9 @@ class IfcParser():
             'location': object.matrix_world.translation,
             'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
+            'right_axis': object.matrix_world.to_quaternion() @ Vector((0, 1, 0)),
+            'has_scale': object.matrix_world.to_scale() != Vector((1, 1, 1)),
+            'scale': object.matrix_world.to_scale(),
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
             'relating_host': None,
@@ -1237,10 +1240,13 @@ class IfcExporter():
         else:
             placement_rel_to = None
 
-        placement = self.file.createIfcLocalPlacement(placement_rel_to,
-            self.create_ifc_axis_2_placement_3d(product['location'],
-                product['up_axis'],
-                product['forward_axis']))
+        if product['has_scale']:
+            placement = self.file.createIfcLocalPlacement(placement_rel_to, self.origin)
+        else:
+            placement = self.file.createIfcLocalPlacement(placement_rel_to,
+                self.create_ifc_axis_2_placement_3d(product['location'],
+                    product['up_axis'],
+                    product['forward_axis']))
 
         product['attributes'].update({
             'OwnerHistory': self.owner_history, # TODO: unhardcode
@@ -1271,10 +1277,49 @@ class IfcExporter():
     def get_product_shape(self, product):
         try:
             shape = self.file.createIfcProductDefinitionShape(None, None,
-                [self.ifc_parser.representations[p]['ifc'] for p in product['representations']])
+                self.get_product_shape_representations(product))
         except:
             shape = None
         return shape
+
+    def get_product_shape_representations(self, product):
+        results = []
+        for representation_name in product['representations']:
+            shape_representation = self.ifc_parser.representations[representation_name]['ifc']
+            if product['has_scale']:
+                results.append(self.get_product_mapped_geometry(product, shape_representation))
+            else:
+                results.append(shape_representation)
+        return results
+
+    def get_product_mapped_geometry(self, product, shape_representation):
+        mapping_source = self.file.createIfcRepresentationMap(self.origin, shape_representation)
+        mapping_target = self.file.createIfcCartesianTransformationOperator3DnonUniform(
+                self.file.createIfcDirection((
+                    product['forward_axis'].x,
+                    product['forward_axis'].y,
+                    product['forward_axis'].z)),
+                self.file.createIfcDirection((
+                    product['right_axis'].x,
+                    product['right_axis'].y,
+                    product['right_axis'].z)),
+                self.create_cartesian_point(
+                    product['location'].x,
+                    product['location'].y,
+                    product['location'].z),
+                product['scale'].x,
+                self.file.createIfcDirection((
+                    product['up_axis'].x,
+                    product['up_axis'].y,
+                    product['up_axis'].z)),
+                product['scale'].y,
+                product['scale'].z)
+        mapped_item = self.file.createIfcMappedItem(mapping_source, mapping_target)
+        return self.file.createIfcShapeRepresentation(
+                shape_representation.ContextOfItems,
+                shape_representation.RepresentationIdentifier,
+                shape_representation.RepresentationType,
+                [mapped_item])
 
     def calculate_quantities(self, qto_name, object):
         quantities = []
