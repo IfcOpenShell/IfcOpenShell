@@ -11,8 +11,7 @@ bl_info = {
     }
 
 import bpy
-from . import ui
-from . import operator
+from . import ui, prop, operator
 
 classes = (
     operator.AssignClass,
@@ -56,18 +55,18 @@ classes = (
     operator.AssignClassification,
     operator.UnassignClassification,
     operator.RemoveClassification,
-    ui.BIMProperties,
-    ui.MapConversion,
-    ui.TargetCRS,
-    ui.Attribute,
-    ui.Pset,
-    ui.Document,
-    ui.Classification,
-    ui.GlobalId,
-    ui.BIMObjectProperties,
-    ui.BIMMaterialProperties,
-    ui.SweptSolid,
-    ui.BIMMeshProperties,
+    prop.BIMProperties,
+    prop.MapConversion,
+    prop.TargetCRS,
+    prop.Attribute,
+    prop.Pset,
+    prop.Document,
+    prop.Classification,
+    prop.GlobalId,
+    prop.BIMObjectProperties,
+    prop.BIMMaterialProperties,
+    prop.SweptSolid,
+    prop.BIMMeshProperties,
     ui.BIM_PT_gis,
     ui.BIM_PT_bim,
     ui.BIM_PT_qa,
@@ -91,13 +90,13 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=ui.BIMProperties)
-    bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=ui.MapConversion)
-    bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=ui.TargetCRS)
-    bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=ui.BIMObjectProperties)
-    bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=ui.BIMObjectProperties)
-    bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=ui.BIMMaterialProperties)
-    bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=ui.BIMMeshProperties)
+    bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
+    bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
+    bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
+    bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
+    bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
+    bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
 
 def unregister():
     for cls in reversed(classes):
