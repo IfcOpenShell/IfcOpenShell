@@ -255,8 +255,8 @@ class IfcParser():
             'up_axis': object.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
             'forward_axis': object.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
             'right_axis': object.matrix_world.to_quaternion() @ Vector((0, 1, 0)),
-            'has_scale': object.matrix_world.to_scale() != Vector((1, 1, 1)),
-            'scale': object.matrix_world.to_scale(),
+            'has_scale': object.scale != Vector((1, 1, 1)),
+            'scale': object.scale,
             'class': self.get_ifc_class(object.name),
             'relating_structure': None,
             'relating_host': None,
@@ -1295,23 +1295,14 @@ class IfcExporter():
     def get_product_mapped_geometry(self, product, shape_representation):
         mapping_source = self.file.createIfcRepresentationMap(self.origin, shape_representation)
         mapping_target = self.file.createIfcCartesianTransformationOperator3DnonUniform(
-                self.file.createIfcDirection((
-                    product['forward_axis'].x,
-                    product['forward_axis'].y,
-                    product['forward_axis'].z)),
-                self.file.createIfcDirection((
-                    product['right_axis'].x,
-                    product['right_axis'].y,
-                    product['right_axis'].z)),
+                self.create_direction(product['forward_axis']),
+                self.create_direction(product['right_axis']),
                 self.create_cartesian_point(
                     product['location'].x,
                     product['location'].y,
                     product['location'].z),
                 product['scale'].x,
-                self.file.createIfcDirection((
-                    product['up_axis'].x,
-                    product['up_axis'].y,
-                    product['up_axis'].z)),
+                self.create_direction(product['up_axis']),
                 product['scale'].y,
                 product['scale'].z)
         mapped_item = self.file.createIfcMappedItem(mapping_source, mapping_target)
@@ -1638,6 +1629,9 @@ class IfcExporter():
             return self.file.createIfcCartesianPoint((x, y))
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
+
+    def create_direction(self, vector):
+        return self.file.createIfcDirection((vector.x, vector.y, vector.z))
 
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
