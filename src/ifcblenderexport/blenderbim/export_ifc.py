@@ -232,9 +232,7 @@ class IfcParser():
                 for o in instance_objects:
                     location = o[1] + ((n + 1) * instance.offset)
                     self.add_product(self.get_product({'raw': o[0], 'metadata': product['metadata']},
-                                                      {'location': location}, {
-                                                          'GlobalId': self.get_parametric_global_id(obj,
-                                                                                                    global_id_index)}))
+                        {'location': location}, {'GlobalId': self.get_parametric_global_id(obj,
                     created_instances.append((o[0], location))
             instance_objects.extend(created_instances)
 
@@ -418,8 +416,10 @@ class IfcParser():
             if not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({'raw': obj, 'metadata': metadata})
             if obj.instance_type == 'COLLECTION':
-                self.convert_selected_objects_into_products(obj.instance_collection.objects,
-                                                            {'rel_aggregates_relating_object': obj})
+                self.convert_selected_objects_into_products(
+                    obj.instance_collection.objects,
+                    {'rel_aggregates_relating_object': obj}
+                )
 
     def get_psets(self):
         psets = {}
@@ -596,8 +596,7 @@ class IfcParser():
             return results
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if not obj.data \
-                    or obj.data.name in results:
+            if obj.data is None or obj.data.name in results:
                 continue
 
             self.append_default_representation(obj, results)
@@ -651,7 +650,7 @@ class IfcParser():
             return results
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if not obj.data:
+            if obj.data is None:
                 continue
             for slot in obj.material_slots:
                 if slot.material.name in results \
@@ -757,7 +756,7 @@ class IfcParser():
 
     def get_object_representation_names(self, obj):
         names = []
-        if not obj.data:
+        if obj.data is None:
             return names
         if not self.is_mesh_context_sensitive(obj.data.name):
             names.append('Model/Body/MODEL_VIEW/{}'.format(obj.data.name))
@@ -1134,21 +1133,26 @@ class IfcExporter():
 
             if product['class'] == 'IfcDoorType' \
                     and product['attributes']['Name'] in self.ifc_parser.door_attributes:
-                self.add_predefined_attributes_to_type_product(product,
-                                                               self.ifc_parser.door_attributes[
-                                                                   product['attributes']['Name']])
+                self.add_predefined_attributes_to_type_product(
+                    product,
+                    self.ifc_parser.door_attributes[product['attributes']['Name']]
+                )
             elif product['class'] == 'IfcWindowType' \
                     and product['attributes']['Name'] in self.ifc_parser.window_attributes:
-                self.add_predefined_attributes_to_type_product(product,
-                                                               self.ifc_parser.window_attributes[
-                                                                   product['attributes']['Name']])
+                self.add_predefined_attributes_to_type_product(
+                    product,
+                    self.ifc_parser.window_attributes[product['attributes']['Name']]
+                )
 
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 self.ifc_export_settings.logger.error(
-                    'The type product "{}/{}" could not be created: {}'.format(product['class'],
-                                                                               product['attributes']['Name'], e.args))
+                    'The type product "{}/{}" could not be created: {}'.format(
+                        product['class'],
+                        product['attributes']['Name'],
+                        e.args)
+                )
 
     def add_predefined_attributes_to_type_product(self, product, attributes):
         self.create_predefined_attributes(attributes)
@@ -1158,9 +1162,13 @@ class IfcExporter():
 
     def create_predefined_attributes(self, attributes):
         for attribute in attributes:
-            attribute['ifc'] = self.file.create_entity(attribute['pset_name'],
-                                                       **{k: float(v) if v.replace('.', '', 1).isdigit() else v for k, v
-                                                          in attribute['raw'].items()})
+            attribute['ifc'] = self.file.create_entity(
+                attribute['pset_name'],
+                **{
+                    k: float(v) if v.replace('.', '', 1).isdigit() else v
+                    for k, v in attribute['raw'].items()
+                }
+            )
 
     def relate_definitions_to_contexts(self):
         for library in self.ifc_parser.libraries:
@@ -1217,7 +1225,7 @@ class IfcExporter():
         styles.append(self.create_surface_style_rendering(item))
         if item['raw'].BIMMaterialProperties.is_external:
             styles.append(self.file.create_entity('IfcExternallyDefinedSurfaceStyle',
-                                                  **self.get_material_external_definition(item['raw'])))
+                **self.get_material_external_definition(item['raw'])))
         # Name is filled out because Revit treats this incorrectly as the material name
         surface_style = self.file.createIfcSurfaceStyle(item['attributes']['Name'], 'BOTH', styles)
         if self.ifc_export_settings.should_use_presentation_style_assignment:
@@ -1235,11 +1243,11 @@ class IfcExporter():
             if material['is_material_layer_set']:
                 material['layer_attributes']['Material'] = material['ifc']
                 material['layer_ifc'] = self.file.create_entity('IfcMaterialLayer',
-                                                                **material['layer_attributes'])
+                    **material['layer_attributes'])
             elif material['is_material_constituent_set']:
                 material['constituent_attributes']['Material'] = material['ifc']
                 material['constituent_ifc'] = self.file.create_entity('IfcMaterialConstituent',
-                                                                      **material['constituent_attributes'])
+                    **material['constituent_attributes'])
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
@@ -1294,10 +1302,13 @@ class IfcExporter():
         else:
             placement_rel_to = None
 
-        placement = self.file.createIfcLocalPlacement(placement_rel_to,
-                                                      self.create_ifc_axis_2_placement_3d(product['location'],
-                                                                                          product['up_axis'],
-                                                                                          product['forward_axis']))
+        if product['has_scale']:
+            placement = self.file.createIfcLocalPlacement(placement_rel_to, self.origin)
+        else:
+            placement = self.file.createIfcLocalPlacement(placement_rel_to,
+                self.create_ifc_axis_2_placement_3d(product['location'],
+                    product['up_axis'],
+                    product['forward_axis']))
 
         product['attributes'].update({
             'OwnerHistory': self.owner_history,  # TODO: unhardcode
@@ -1330,11 +1341,40 @@ class IfcExporter():
     def get_product_shape(self, product):
         try:
             shape = self.file.createIfcProductDefinitionShape(None, None,
-                                                              [self.ifc_parser.representations[p]['ifc'] for p in
-                                                               product['representations']])
+                self.get_product_shape_representations(product))
         except:
             shape = None
         return shape
+
+    def get_product_shape_representations(self, product):
+        results = []
+        for representation_name in product['representations']:
+            shape_representation = self.ifc_parser.representations[representation_name]['ifc']
+            if product['has_scale']:
+                results.append(self.get_product_mapped_geometry(product, shape_representation))
+            else:
+                results.append(shape_representation)
+        return results
+
+    def get_product_mapped_geometry(self, product, shape_representation):
+        mapping_source = self.file.createIfcRepresentationMap(self.origin, shape_representation)
+        mapping_target = self.file.createIfcCartesianTransformationOperator3DnonUniform(
+                self.create_direction(product['forward_axis']),
+                self.create_direction(product['right_axis']),
+                self.create_cartesian_point(
+                    product['location'].x,
+                    product['location'].y,
+                    product['location'].z),
+                product['scale'].x,
+                self.create_direction(product['up_axis']),
+                product['scale'].y,
+                product['scale'].z)
+        mapped_item = self.file.createIfcMappedItem(mapping_source, mapping_target)
+        return self.file.createIfcShapeRepresentation(
+                shape_representation.ContextOfItems,
+                shape_representation.RepresentationIdentifier,
+                shape_representation.RepresentationType,
+                [mapped_item])
 
     def calculate_quantities(self, qto_name, obj):
         quantities = []
@@ -1393,8 +1433,12 @@ class IfcExporter():
         obj = representation['raw_object']
         bounding_box = self.file.createIfcBoundingBox(
             self.create_cartesian_point(
-                obj.bound_box[0][0], obj.bound_box[0][1], obj.bound_box[0][2]),
-            obj.dimensions[0], obj.dimensions[1], obj.dimensions[2])
+                obj.bound_box[0][0],
+                obj.bound_box[0][1],
+                obj.bound_box[0][2]),
+            obj.dimensions[0],
+            obj.dimensions[1],
+            obj.dimensions[2])
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
@@ -1464,8 +1508,7 @@ class IfcExporter():
     def create_curve_representation(self, representation):
         # TODO: support unclosed surfaces
         swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
-                                                                  self.create_curve(
-                                                                      representation['raw'].bevel_object.data))
+            self.create_curve(representation['raw'].bevel_object.data))
         swept_area_solids = []
         for spline in representation['raw'].splines:
             direction = spline.bezier_points[1].co - spline.bezier_points[0].co
@@ -1662,6 +1705,9 @@ class IfcExporter():
             return self.file.createIfcCartesianPoint((x, y))
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
+
+    def create_direction(self, vector):
+        return self.file.createIfcDirection((vector.x, vector.y, vector.z))
 
     def relate_voids_elements(self):
         for relate_object, related_voids in self.ifc_parser.rel_voids_elements.items():
