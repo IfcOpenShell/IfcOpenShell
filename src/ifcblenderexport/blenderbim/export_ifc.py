@@ -286,7 +286,7 @@ class IfcParser():
             'location': obj.matrix_world.translation,
             'up_axis': self.get_axis(obj.matrix_world, 2),
             'forward_axis': self.get_axis(obj.matrix_world, 0),
-            'right_axis': -self.get_axis(obj.matrix_world, 1),
+            'right_axis': self.get_axis(obj.matrix_world, 1),
             'has_scale': obj.scale != Vector((1, 1, 1)),
             'scale': obj.scale,
             'class': self.get_ifc_class(obj.name),
