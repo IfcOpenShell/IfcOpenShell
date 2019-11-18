@@ -737,9 +737,9 @@ class IfcParser():
                     type = {
                         'ifc': None,
                         'raw': obj,
-                        'location': obj.translation,
-                        'up_axis': obj.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
-                        'forward_axis': obj.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
+                        'location': obj.matrix_world.translation,
+                        'up_axis': self.get_axis(obj.matrix_world, 2),
+                        'forward_axis': self.get_axis(obj.matrix_world, 0),
                         'psets': ['{}/{}'.format(pset.name, pset.file) 
                                   for pset in obj.BIMObjectProperties.psets],
                         'class': self.get_ifc_class(obj.name),
