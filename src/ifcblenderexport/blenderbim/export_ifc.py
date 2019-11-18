@@ -240,24 +240,24 @@ class IfcParser():
             instance_objects.extend(created_instances)
 
     def resolve_boolean_modifiers(self):
-        for product in self.products:
+        for i, product in enumerate(self.products):
             obj = product['raw']
             for m in obj.modifiers:
                 if m.type == 'BOOLEAN' and m.object is not None:
-                    void = self.get_product_from_raw_name(m.object.name)
+                    void = self.get_product_index_from_raw_name(m.object.name)
                     if void is not None:
-                        if product['ifc'] not in self.rel_voids_elements:
-                            self.rel_voids_elements[product['ifc']] = []
-                        self.rel_voids_elements[product['ifc']].append(void['ifc'])
+                        if i not in self.rel_voids_elements:
+                            self.rel_voids_elements[i] = []
+                        self.rel_voids_elements[i].append(void)
                         if m.object.parent:
-                            fill = self.get_product_from_raw_name(m.object.parent.name)
+                            fill = self.get_product_index_from_raw_name(m.object.parent.name)
                             if fill is not None:
-                                if void['ifc'] not in self.rel_fills_elements:
-                                    self.rel_fills_elements[void['ifc']] = []
-                                self.rel_fills_elements[void['ifc']].append(fill['ifc'])
+                                if void not in self.rel_fills_elements:
+                                    self.rel_fills_elements[void] = []
+                                self.rel_fills_elements[void].append(fill)
 
     def get_axis(self, matrix, axis):
-        return matrix.row[axis].to_3d().normalized()
+        return matrix.col[axis].to_3d().normalized()
 
     def get_parametric_global_id(self, obj, index):
         global_ids = obj.BIMObjectProperties.global_ids
@@ -277,11 +277,6 @@ class IfcParser():
         for index, product in enumerate(self.products):
             if product['raw'].name == name:
                 return index
-
-    def get_product_from_raw_name(self, name):
-        for index, product in enumerate(self.products):
-            if product['raw'].name == name:
-                return product
 
     def get_product(self, selected_product, metadata_override={}, attribute_override={}):
         obj = selected_product['raw']
@@ -342,6 +337,7 @@ class IfcParser():
             product['location'] = inverted @ product['location']
             product['up_axis'] = self.get_axis(inverted @ obj.matrix_world, 2)
             product['forward_axis'] = self.get_axis(inverted @ obj.matrix_world, 0)
+            product['right_axis'] = self.get_axis(inverted @ obj.matrix_world, 1)
             self.aggregates.setdefault(relating_object.name, []).append(self.product_index)
 
         if obj.name in self.qtos:
@@ -1755,8 +1751,8 @@ class IfcExporter():
             for related_opening_element in related_opening_elements:
                 self.file.createIfcRelVoidsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    related_building_element,
-                    related_opening_element
+                    self.ifc_parser.products[relating_building_element]['ifc'],
+                    self.ifc_parser.products[related_opening_element]['ifc']
                 )
 
     def relate_opening_elements_to_fillings(self):
@@ -1764,10 +1760,10 @@ class IfcExporter():
             for related_building_element in related_building_elements:
                 self.file.createIfcRelFillsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    relating_opening_element,
-                    related_building_element
+                    self.ifc_parser.products[relating_opening_element]['ifc'],
+                    self.ifc_parser.products[related_building_element]['ifc']
                 )
-
+                
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
             self.file.createIfcRelContainedInSpatialStructure(
