@@ -1,5 +1,3 @@
-# -*- coding:utf-8 -*-
-
 import bpy
 import csv
 import json
@@ -297,7 +295,6 @@ class IfcParser():
             'has_scale': obj.scale != Vector((1, 1, 1)),
             'scale': obj.scale,
             'class': self.get_ifc_class(obj.name),
-
             'relating_structure': None,
             'relating_host': None,
             'relating_qtos_key': None,
@@ -448,9 +445,9 @@ class IfcParser():
     def get_window_attributes(self):
         return self.get_predefined_attributes('window')
 
-    def get_predefined_attributes(self, type):
+    def get_predefined_attributes(self, attr):
         results = {}
-        for filename in Path(self.data_dir + type + '/').glob('**/*.csv'):
+        for filename in Path(self.data_dir + attr + '/').glob('**/*.csv'):
             with open(filename, 'r') as f:
                 type_name = filename.parts[-2]
                 pset_name = filename.stem
@@ -659,25 +656,26 @@ class IfcParser():
             if obj.data is None:
                 continue
             for slot in obj.material_slots:
-                if slot.material.name in results \
-                        or slot.link == 'OBJECT':
+                if slot.material is None:
+                    continue
+                if slot.material.name in results or slot.link == 'OBJECT':
                     continue
                 results[slot.material.name] = {
                     'ifc': None,
                     'layer_ifc': None,
                     'constituent_ifc': None,
                     'raw': slot.material,
-                    'is_material_layer_set': True if 'IsMaterialLayerSet' in obj.keys() else False,
-                    'is_material_constituent_set': True if 'IsMaterialConstituentSet' in obj.keys() else False,
+                    'is_material_layer_set': 'IsMaterialLayerSet' in obj.keys(),
+                    'is_material_constituent_set': 'IsMaterialConstituentSet' in obj.keys(),
                     'attributes': {'Name': slot.material.name},
                     'layer_attributes': {
-                        key[3:]: slot.material[key] 
-                        for key in slot.material.keys() 
+                        key[3:]: slot.material[key]
+                        for key in slot.material.keys()
                         if key[0:3] == 'Ifc'
                     },
                     'constituent_attributes': {
-                        key[3:]: slot.material[key] 
-                        for key in slot.material.keys() 
+                        key[3:]: slot.material[key]
+                        for key in slot.material.keys()
                         if key[0:3] == 'Ifc'
                     }
                 }
@@ -689,13 +687,14 @@ class IfcParser():
             return results
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if not obj.data:
+            if obj.data is None:
                 continue
             for slot in obj.material_slots:
-                if not self.ifc_export_settings.should_export_all_materials_as_styled_items:
-                    if slot.material.name in results \
-                            or slot.link == 'DATA':
-                        continue
+                if slot.material is None:
+                    continue
+                if not self.ifc_export_settings.should_export_all_materials_as_styled_items and (
+                        slot.material.name in results or slot.link == 'DATA'):
+                    continue
                 results.append({
                     'ifc': None,
                     'raw': slot.material,
@@ -734,31 +733,31 @@ class IfcParser():
                 if not self.is_a_type(self.get_ifc_class(obj.name)):
                     continue
                 try:
-                    type = {
+                    type_product = {
                         'ifc': None,
                         'raw': obj,
                         'location': obj.matrix_world.translation,
                         'up_axis': self.get_axis(obj.matrix_world, 2),
                         'forward_axis': self.get_axis(obj.matrix_world, 0),
-                        'psets': ['{}/{}'.format(pset.name, pset.file) 
-                                  for pset in obj.BIMObjectProperties.psets],
+                        'psets': ['{}/{}'.format(pset.name, pset.file) for pset in
+                                  obj.BIMObjectProperties.psets],
                         'class': self.get_ifc_class(obj.name),
                         'representations': self.get_object_representation_names(obj),
                         'attributes': self.get_object_attributes(obj)
                     }
-                    results.append(type)
+                    results.append(type_product)
                     library['rel_declares_type_products'].append(index)
 
                     for key in obj.keys():
                         if key[0:3] == 'Doc':
                             self.rel_associates_document_type.setdefault(
-                                obj[key], []).append(type)
+                                obj[key], []).append(type_product)
                         elif key[0:5] == 'Class':
                             self.rel_associates_classification_type.setdefault(
-                                obj[key], []).append(type)
+                                obj[key], []).append(type_product)
                         elif key[0:9] == 'Objective':
                             self.rel_associates_constraint_objective_type.setdefault(
-                                obj[key], []).append(type)
+                                obj[key], []).append(type_product)
 
                     index += 1
                 except Exception as e:
@@ -802,11 +801,12 @@ class IfcParser():
         return collection_tree
 
     def get_spatial_structure_element_reference(self, name):
-        return ['{}/{}'.format(e['class'], e['attributes']['Name']) for e in
-                self.spatial_structure_elements].index(name)
+        return ['{}/{}'.format(e['class'], e['attributes']['Name'])
+                for e in self.spatial_structure_elements].index(name)
 
     def get_type_product_reference(self, name):
-        return [p['attributes']['Name'] for p in self.type_products].index(self.get_ifc_name(name))
+        return [p['attributes']['Name']
+                for p in self.type_products].index(self.get_ifc_name(name))
 
     def get_ifc_class(self, name):
         return name.split('/')[0]
@@ -876,10 +876,8 @@ class IfcExporter():
         self.relate_objects_to_types()
         self.relate_objects_to_qtos()
         self.relate_objects_to_psets()
-
-        self.relate_voids_elements()
-        self.relate_fills_elements()
-
+        self.relate_objects_to_opening_elements()
+        self.relate_opening_elements_to_fillings()
         self.relate_objects_to_materials()
         self.relate_objects_to_material_layer_sets()
         self.relate_objects_to_material_constituent_sets()
@@ -898,46 +896,57 @@ class IfcExporter():
         self.owner_history = self.file.by_type('IfcOwnerHistory')[0]
 
     def create_units(self):
-        for type, data in self.ifc_parser.units.items():
+        for unit_type, data in self.ifc_parser.units.items():
             if data['is_metric']:
-                data['ifc'] = self.create_metric_unit(type, data)
+                data['ifc'] = self.create_metric_unit(unit_type, data)
             else:
-                data['ifc'] = self.create_imperial_unit(type, data)
+                data['ifc'] = self.create_imperial_unit(unit_type, data)
         self.file.createIfcUnitAssignment([u['ifc'] for u in self.ifc_parser.units.values()])
 
-    def create_metric_unit(self, type, data):
+    def create_metric_unit(self, unit_type, data):
         type_prefix = ''
-        if type == 'area':
+        if unit_type == 'area':
             type_prefix = 'SQUARE_'
-        elif type == 'volume':
+        elif unit_type == 'volume':
             type_prefix = 'CUBIC_'
-        return self.file.createIfcSIUnit(None,
-                                         '{}UNIT'.format(type.upper()),
-                                         SIUnitHelper.get_prefix(data['raw']),
-                                         type_prefix + SIUnitHelper.get_unit_name(data['raw']))
+        return self.file.createIfcSIUnit(
+            None,
+            '{}UNIT'.format(unit_type.upper()),
+            SIUnitHelper.get_prefix(data['raw']),
+            type_prefix + SIUnitHelper.get_unit_name(data['raw'])
+        )
 
-    def create_imperial_unit(self, type, data):
-        if type == 'length':
+    def create_imperial_unit(self, unit_type, data):
+        if unit_type == 'length':
             dimensional_exponents = self.file.createIfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0)
             name_prefix = ''
-        elif type == 'area':
+        elif unit_type == 'area':
             dimensional_exponents = self.file.createIfcDimensionalExponents(2, 0, 0, 0, 0, 0, 0)
             name_prefix = 'square'
-        elif type == 'volume':
+        elif unit_type == 'volume':
             dimensional_exponents = self.file.createIfcDimensionalExponents(3, 0, 0, 0, 0, 0, 0)
             name_prefix = 'cubic'
-        si_unit = self.file.createIfcSIUnit(None, '{}UNIT'.format(type.upper()), None,
-                                            '{}METRE'.format(name_prefix.upper() + '_' if name_prefix else ''))
+        si_unit = self.file.createIfcSIUnit(
+            None,
+            '{}UNIT'.format(unit_type.upper()),
+            None,
+            '{}METRE'.format(name_prefix.upper() + '_' if name_prefix else '')
+        )
         if data['raw'] == 'INCHES':
             name = '{}inch'.format(name_prefix + ' ' if name_prefix else '')
         elif data['raw'] == 'FEET':
             name = '{}foot'.format(name_prefix + ' ' if name_prefix else '')
-        value_component = self.file.create_entity('IfcReal',
-                                                  **{'wrappedValue': SIUnitHelper.si_conversions[name]})
+        value_component = self.file.create_entity(
+            'IfcReal',
+            **{'wrappedValue': SIUnitHelper.si_conversions[name]}
+        )
         conversion_factor = self.file.createIfcMeasureWithUnit(value_component, si_unit)
         return self.file.createIfcConversionBasedUnit(
-            dimensional_exponents, '{}UNIT'.format(type.upper()),
-            name, conversion_factor)
+            dimensional_exponents,
+            '{}UNIT'.format(unit_type.upper()),
+            name,
+            conversion_factor
+        )
 
     def create_people(self):
         for person in self.ifc_parser.people:
@@ -986,7 +995,9 @@ class IfcExporter():
     def create_classifications(self):
         for classification in self.ifc_parser.classifications:
             classification['ifc'] = self.file.create_entity(
-                'IfcClassification', **classification['attributes'])
+                'IfcClassification',
+                **classification['attributes']
+            )
             self.file.createIfcRelAssociatesClassification(
                 ifcopenshell.guid.new(), None, None, None,
                 [self.ifc_parser.project['ifc']], classification['ifc'])
@@ -994,7 +1005,7 @@ class IfcExporter():
     def create_classification_references(self):
         for reference in self.ifc_parser.classification_references.values():
             reference['attributes']['ReferencedSource'] = \
-            self.ifc_parser.classifications[reference['referenced_source']]['ifc']
+                self.ifc_parser.classifications[reference['referenced_source']]['ifc']
             reference['ifc'] = self.file.create_entity(
                 'IfcClassificationReference', **reference['attributes'])
 
@@ -1063,14 +1074,14 @@ class IfcExporter():
                     invalid_pset_keys))
         return properties
 
-    def cast_to_base_type(self, type, value):
-        if type not in self.ifc_schema.type_map:
+    def cast_to_base_type(self, var_type, value):
+        if var_type not in self.ifc_schema.type_map:
             return value
-        elif self.ifc_schema.type_map[type] == 'float':
+        elif self.ifc_schema.type_map[var_type] == 'float':
             return float(value)
-        elif self.ifc_schema.type_map[type] == 'integer':
+        elif self.ifc_schema.type_map[var_type] == 'integer':
             return int(value)
-        elif self.ifc_schema.type_map[type] == 'bool':
+        elif self.ifc_schema.type_map[var_type] == 'bool':
             return True if value.lower() in ['1', 't', 'true', 'yes', 'y', 'uh-huh'] else False
         return str(value)
 
@@ -1115,21 +1126,30 @@ class IfcExporter():
         # TODO should this be hardcoded?
         self.ifc_parser.map_conversion['attributes']['SourceCRS'] = self.ifc_rep_context['Model']['ifc']
         self.ifc_parser.map_conversion['attributes']['TargetCRS'] = self.ifc_parser.target_crs['ifc']
-        self.ifc_parser.map_conversion['ifc'] = self.file.create_entity('IfcMapConversion',
-                                                                        **self.ifc_parser.map_conversion['attributes'])
+        self.ifc_parser.map_conversion['ifc'] = self.file.create_entity(
+            'IfcMapConversion',
+            **self.ifc_parser.map_conversion['attributes']
+        )
 
     def create_target_crs(self):
         self.ifc_parser.target_crs['attributes']['MapUnit'] = self.file.createIfcSIUnit(
-            None, 'LENGTHUNIT',
+            None,
+            'LENGTHUNIT',
             SIUnitHelper.get_prefix(self.ifc_parser.target_crs['attributes']['MapUnit']),
-            SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit']))
+            SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit'])
+        )
         self.ifc_parser.target_crs['ifc'] = self.file.create_entity(
-            'IfcProjectedCRS', **self.ifc_parser.target_crs['attributes'])
+            'IfcProjectedCRS',
+            **self.ifc_parser.target_crs['attributes']
+        )
 
     def create_type_products(self):
         for product in self.ifc_parser.type_products:
-            placement = self.create_ifc_axis_2_placement_3d(product['location'], product['up_axis'],
-                                                            product['forward_axis'])
+            placement = self.create_ifc_axis_2_placement_3d(
+                product['location'],
+                product['up_axis'],
+                product['forward_axis']
+            )
 
             if product['representations']:
                 maps = []
@@ -1139,9 +1159,10 @@ class IfcExporter():
                 product['attributes']['RepresentationMaps'] = maps
 
             if product['psets']:
-                product['attributes'].update({'HasPropertySets':
-                                                  [self.ifc_parser.psets[pset]['ifc'] for pset in
-                                                   product['psets']]})
+                product['attributes'].update({'HasPropertySets':[
+                    self.ifc_parser.psets[pset]['ifc']
+                    for pset in product['psets']]
+                })
 
             if product['class'] == 'IfcDoorType' \
                     and product['attributes']['Name'] in self.ifc_parser.door_attributes:
@@ -1163,7 +1184,8 @@ class IfcExporter():
                     'The type product "{}/{}" could not be created: {}'.format(
                         product['class'],
                         product['attributes']['Name'],
-                        e.args)
+                        e.args
+                    )
                 )
 
     def add_predefined_attributes_to_type_product(self, product, attributes):
@@ -1176,10 +1198,8 @@ class IfcExporter():
         for attribute in attributes:
             attribute['ifc'] = self.file.create_entity(
                 attribute['pset_name'],
-                **{
-                    k: float(v) if v.replace('.', '', 1).isdigit() else v
-                    for k, v in attribute['raw'].items()
-                }
+                **{k: float(v) if v.replace('.', '', 1).isdigit() else v
+                for k, v in attribute['raw'].items()}
             )
 
     def relate_definitions_to_contexts(self):
@@ -1192,8 +1212,8 @@ class IfcExporter():
     def relate_objects_to_objects(self):
         for relating_object, related_objects_reference in self.ifc_parser.rel_aggregates.items():
             relating_object = self.ifc_parser.products[relating_object]
-            related_objects = [self.ifc_parser.products[o]['ifc'] for o in
-                               self.ifc_parser.aggregates[related_objects_reference]]
+            related_objects = [self.ifc_parser.products[o]['ifc']
+                               for o in self.ifc_parser.aggregates[related_objects_reference]]
             self.file.createIfcRelAggregates(
                 ifcopenshell.guid.new(), self.owner_history, relating_object['attributes']['Name'], None,
                 relating_object['ifc'], related_objects)
@@ -1329,17 +1349,20 @@ class IfcExporter():
         })
 
         for key, value in product['attributes'].items():
-            type = self.get_product_attribute_type(product['class'], key)
-            if type is None:
+            var_type = self.get_product_attribute_type(product['class'], key)
+            if var_type is None:
                 continue
-            product['attributes'][key] = self.cast_to_base_type(type, value)
+            product['attributes'][key] = self.cast_to_base_type(var_type, value)
 
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
         except RuntimeError as e:
             self.ifc_export_settings.logger.error(
-                'The product "{}/{}" could not be created: {}'.format(product['class'], product['attributes']['Name'],
-                                                                      e.args))
+                'The product "{}/{}" could not be created: {}'.format(
+                    product['class'],
+                    product['attributes']['Name'],
+                    e.args)
+            )
 
     def get_product_attribute_type(self, product_class, attribute_name):
         element_schema = self.ifc_schema.elements[product_class]
@@ -1376,7 +1399,8 @@ class IfcExporter():
                 self.create_cartesian_point(
                     product['location'].x,
                     product['location'].y,
-                    product['location'].z),
+                    product['location'].z
+                ),
                 product['scale'].x,
                 self.create_direction(product['up_axis']),
                 product['scale'].y,
@@ -1387,7 +1411,6 @@ class IfcExporter():
                 shape_representation.RepresentationIdentifier,
                 shape_representation.RepresentationType,
                 [mapped_item])
-
 
     def calculate_quantities(self, qto_name, obj):
         quantities = []
@@ -1448,10 +1471,12 @@ class IfcExporter():
             self.create_cartesian_point(
                 obj.bound_box[0][0],
                 obj.bound_box[0][1],
-                obj.bound_box[0][2]),
+                obj.bound_box[0][2]
+            ),
             obj.dimensions[0],
             obj.dimensions[1],
-            obj.dimensions[2])
+            obj.dimensions[2]
+        )
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
@@ -1464,7 +1489,9 @@ class IfcExporter():
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
-            representation['subcontext'], 'BoundingBox', [cog])
+            representation['subcontext'],
+            'BoundingBox',
+            [cog])
 
     def create_wireframe_representation(self, representation):
         mesh = representation['raw']
@@ -1475,7 +1502,8 @@ class IfcExporter():
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
-            representation['subcontext'], 'Curve',
+            representation['subcontext'],
+            'Curve',
             self.ifc_edges)
 
     def create_geometric_curve_set_representation(self, representation):
@@ -1654,8 +1682,8 @@ class IfcExporter():
         return loop
 
     def get_edges_in_v_indices(self, obj, indices):
-        return [e for e in obj.data.edges if (
-                e.vertices[0] in indices and e.vertices[1] in indices)]
+        return [e for e in obj.data.edges
+                if (e.vertices[0] in indices and e.vertices[1] in indices)]
 
     def get_loop_from_edges(self, edges):
         while edges:
@@ -1707,9 +1735,9 @@ class IfcExporter():
             [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(self.ifc_faces))])
 
     def create_vertices(self, vertices):
-        for vertice in vertices:
-            self.ifc_vertices.append(self.create_cartesian_point(
-                vertice.co.x, vertice.co.y, vertice.co.z))
+        self.ifc_vertices.extend(
+            [self.file.createIfcCartesianPoint(self.convert_si_to_unit(v.co)) for v in vertices]
+        )
 
     def create_cartesian_point(self, x, y, z=None):
         x = self.convert_si_to_unit(x)
@@ -1722,22 +1750,22 @@ class IfcExporter():
     def create_direction(self, vector):
         return self.file.createIfcDirection((vector.x, vector.y, vector.z))
 
-    def relate_voids_elements(self):
-        for relate_object, related_voids in self.ifc_parser.rel_voids_elements.items():
-            for related_void in related_voids:
+    def relate_objects_to_opening_elements(self):
+        for relating_building_element, related_opening_elements in self.ifc_parser.rel_voids_elements.items():
+            for related_opening_element in related_opening_elements:
                 self.file.createIfcRelVoidsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    relate_object,
-                    related_void
+                    related_building_element,
+                    related_opening_element
                 )
 
-    def relate_fills_elements(self):
-        for relate_object, related_fills in self.ifc_parser.rel_fills_elements.items():
-            for related_fill in related_fills:
+    def relate_opening_elements_to_fillings(self):
+        for relating_opening_element, related_building_elements in self.ifc_parser.rel_fills_elements.items():
+            for related_building_element in related_building_elements:
                 self.file.createIfcRelFillsElement(
                     ifcopenshell.guid.new(), self.owner_history, None, None,
-                    relate_object,
-                    related_fill
+                    relating_opening_element,
+                    related_building_element
                 )
 
     def relate_elements_to_spatial_structures(self):
