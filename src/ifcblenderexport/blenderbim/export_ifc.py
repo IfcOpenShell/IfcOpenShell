@@ -297,6 +297,7 @@ class IfcParser():
             'has_scale': obj.scale != Vector((1, 1, 1)),
             'scale': obj.scale,
             'class': self.get_ifc_class(obj.name),
+
             'relating_structure': None,
             'relating_host': None,
             'relating_qtos_key': None,
@@ -669,10 +670,16 @@ class IfcParser():
                     'is_material_layer_set': True if 'IsMaterialLayerSet' in obj.keys() else False,
                     'is_material_constituent_set': True if 'IsMaterialConstituentSet' in obj.keys() else False,
                     'attributes': {'Name': slot.material.name},
-                    'layer_attributes': {key[3:]: slot.material[key] for key in
-                                         slot.material.keys() if key[0:3] == 'Ifc'},
-                    'constituent_attributes': {key[3:]: slot.material[key] for key in
-                                               slot.material.keys() if key[0:3] == 'Ifc'}
+                    'layer_attributes': {
+                        key[3:]: slot.material[key] 
+                        for key in slot.material.keys() 
+                        if key[0:3] == 'Ifc'
+                    },
+                    'constituent_attributes': {
+                        key[3:]: slot.material[key] 
+                        for key in slot.material.keys() 
+                        if key[0:3] == 'Ifc'
+                    }
                 }
         return results
 
@@ -733,8 +740,8 @@ class IfcParser():
                         'location': obj.translation,
                         'up_axis': obj.matrix_world.to_quaternion() @ Vector((0, 0, 1)),
                         'forward_axis': obj.matrix_world.to_quaternion() @ Vector((1, 0, 0)),
-                        'psets': ['{}/{}'.format(pset.name, pset.file) for pset in
-                                  obj.BIMObjectProperties.psets],
+                        'psets': ['{}/{}'.format(pset.name, pset.file) 
+                                  for pset in obj.BIMObjectProperties.psets],
                         'class': self.get_ifc_class(obj.name),
                         'representations': self.get_object_representation_names(obj),
                         'attributes': self.get_object_attributes(obj)
@@ -1380,6 +1387,7 @@ class IfcExporter():
                 shape_representation.RepresentationIdentifier,
                 shape_representation.RepresentationType,
                 [mapped_item])
+
 
     def calculate_quantities(self, qto_name, obj):
         quantities = []
