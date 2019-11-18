@@ -225,13 +225,15 @@ class SelectAudited(bpy.types.Operator):
     bl_label = 'Select Audited'
 
     def execute(self, context):
+        audited_global_ids = []
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt') as file:
             for line in file:
-                for object in bpy.context.visible_objects:
-                    index = object.BIMObjectProperties.attributes.find('GlobalId')
-                    if index != -1 \
-                        and object.BIMObjectProperties.attributes[index].string_value == line.split(' ')[3]:
-                        object.select_set(True)
+                audited_global_ids.append(line.split(' ')[3])
+        for object in bpy.context.visible_objects:
+            index = object.BIMObjectProperties.attributes.find('GlobalId')
+            if index != -1 \
+                and object.BIMObjectProperties.attributes[index].string_value in audited_global_ids:
+                object.select_set(True)
         return {'FINISHED'}
 
 class QuickProjectSetup(bpy.types.Operator):
