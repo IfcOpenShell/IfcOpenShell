@@ -1964,6 +1964,14 @@ IfcSchema::IfcProduct::list::ptr IfcGeom::Kernel::products_represented_by(const 
 		Logger::Warning("Representation used by IfcRepresentationMap and IfcProductDefinitionShape", representation);
 	}
 
+	if (prodreps->size() > 1) {
+		Logger::Warning("Multiple IfcProductDefinitionShapes for representation", representation);
+	}
+
+	if (maps->size() > 1) {
+		Logger::Warning("Multiple IfcRepresentationMaps for representation", representation);
+	}
+
 	if (maps->size() == 1) {
 		IfcSchema::IfcRepresentationMap* map = *maps->begin();
 		if (is_identity_transform(map->MappingOrigin())) {
