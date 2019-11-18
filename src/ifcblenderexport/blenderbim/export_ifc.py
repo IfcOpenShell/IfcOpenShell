@@ -231,8 +231,13 @@ class IfcParser():
             for n in range(instance.count - 1):
                 for o in instance_objects:
                     location = o[1] + ((n + 1) * instance.offset)
-                    self.add_product(self.get_product({'raw': o[0], 'metadata': product['metadata']},
-                        {'location': location}, {'GlobalId': self.get_parametric_global_id(obj,
+                    self.add_product(
+                        self.get_product(
+                            {'raw': o[0], 'metadata': product['metadata']},
+                            {'location': location},
+                            {'GlobalId': self.get_parametric_global_id(obj, global_id_index)}
+                        )
+                    )
                     created_instances.append((o[0], location))
             instance_objects.extend(created_instances)
 
