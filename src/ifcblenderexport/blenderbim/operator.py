@@ -59,6 +59,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.logger = logging.getLogger('ImportIFC')
         ifc_import_settings.logger.info('Starting import')
         ifc_import_settings.input_file = self.filepath
+        ifc_import_settings.diff_file = bpy.context.scene.BIMProperties.diff_json_file
         ifc_import_settings.should_ignore_site_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_site_coordinates
         ifc_import_settings.should_import_curves = bpy.context.scene.BIMProperties.import_should_import_curves
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
@@ -224,13 +225,15 @@ class SelectAudited(bpy.types.Operator):
     bl_label = 'Select Audited'
 
     def execute(self, context):
+        audited_global_ids = []
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt') as file:
             for line in file:
-                for object in bpy.context.visible_objects:
-                    index = object.BIMObjectProperties.attributes.find('GlobalId')
-                    if index != -1 \
-                        and object.BIMObjectProperties.attributes[index].string_value == line.split(' ')[3]:
-                        object.select_set(True)
+                audited_global_ids.append(line.split(' ')[3])
+        for object in bpy.context.visible_objects:
+            index = object.BIMObjectProperties.attributes.find('GlobalId')
+            if index != -1 \
+                and object.BIMObjectProperties.attributes[index].string_value in audited_global_ids:
+                object.select_set(True)
         return {'FINISHED'}
 
 class QuickProjectSetup(bpy.types.Operator):
