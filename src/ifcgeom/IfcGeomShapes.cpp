@@ -1485,3 +1485,125 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 }
 
 #endif
+
+#ifdef SCHEMA_HAS_IfcPolygonalFaceSet
+
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* l, TopoDS_Shape& shape) {
+	IfcSchema::IfcCartesianPointList3D* point_list = l->Coordinates();
+	const std::vector< std::vector<double> > coordinates = point_list->CoordList();
+	std::vector<gp_Pnt> points;
+	points.reserve(coordinates.size());
+	for (std::vector< std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
+		const std::vector<double>& coords = *it;
+		if (coords.size() != 3) {
+			Logger::Message(Logger::LOG_ERROR, "Invalid dimensions encountered on Coordinates", l);
+			return false;
+		}
+		points.push_back(gp_Pnt(coords[0] * getValue(GV_LENGTH_UNIT),
+			coords[1] * getValue(GV_LENGTH_UNIT),
+			coords[2] * getValue(GV_LENGTH_UNIT)));
+	}
+
+	auto facelist = l->Faces();
+
+	std::vector<TopoDS_Face> faces;
+	faces.reserve(facelist->size());
+
+	for (auto currentFace : *facelist) {
+
+		const std::vector<int>& poly = currentFace->CoordIndex();
+
+
+		const int min_index = *std::min_element(poly.begin(), poly.end());
+		const int max_index = *std::max_element(poly.begin(), poly.end());
+
+		if (min_index < 1 || max_index >(int) points.size()) {
+			Logger::Message(Logger::LOG_ERROR, "Contents of CoordIndex out of bounds", l);
+			return false;
+		}
+
+		BRepBuilderAPI_MakePolygon	createPoly;
+
+		for (auto pt : poly)
+		{
+			const gp_Pnt& a = points[pt - 1]; // account for zero- vs
+			createPoly.Add(a);
+		}
+		if (l->hasClosed())
+		{
+			if (l->Closed())
+				createPoly.Close();
+		}
+
+
+		TopoDS_Wire wire = createPoly.Wire();
+		TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
+
+		TopoDS_Iterator face_it(face, false);
+		const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
+		const bool reversed = w.Orientation() == TopAbs_REVERSED;
+		if (reversed) {
+			face.Reverse();
+		}
+
+		if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+			faces.push_back(face);
+		}
+	}
+
+	if (faces.empty()) return false;
+
+	bool valid_shell = false;
+
+	// @todo Do this more efficiently by creating proper half-edge pairs.
+	BRepOffsetAPI_Sewing builder;
+	builder.SetTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMaxTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+	builder.SetMinTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+
+	for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
+		builder.Add(*it);
+	}
+
+	try {
+		builder.Perform();
+		shape = builder.SewedShape();
+		valid_shell = BRepCheck_Analyzer(shape).IsValid();
+	}
+	catch (...) {}
+
+	if (valid_shell) {
+		try {
+			ShapeFix_Solid solid;
+			solid.LimitTolerance(getValue(GV_POINT_EQUALITY_TOLERANCE));
+			TopoDS_Solid solid_shape = solid.SolidFromShell(TopoDS::Shell(shape));
+			if (!solid_shape.IsNull()) {
+				try {
+					BRepClass3d_SolidClassifier classifier(solid_shape);
+					shape = solid_shape;
+				}
+				catch (...) {}
+			}
+		}
+		catch (...) {}
+	}
+	else {
+		Logger::Message(Logger::LOG_WARNING, "Failed to sew faceset:", l);
+	}
+
+	if (!valid_shell) {
+		TopoDS_Compound compound;
+		BRep_Builder builder;
+		builder.MakeCompound(compound);
+
+		for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
+			builder.Add(compound, *it);
+		}
+
+		shape = compound;
+	}
+
+	return true;
+}
+
+#endif
