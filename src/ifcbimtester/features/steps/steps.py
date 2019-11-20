@@ -16,6 +16,10 @@ class IfcFile(object):
 def step_impl(context, file):
     IfcFile.load(file)
 
+@given('the IFC file "{file}" exists')
+def step_impl(context, file):
+    assert True
+
 @given('that an IFC file is loaded')
 def step_impl(context):
     assert IfcFile.get()
@@ -31,3 +35,7 @@ def step_impl(context, id, ifc_class):
 @then('the element {id} should not exist because {reason}')
 def step_impl(context, id, reason):
     assert not IfcFile.get().by_id(id)
+
+@then('the file is exempt from auditing because {reason}')
+def step_impl(context, id, reason):
+    assert True
