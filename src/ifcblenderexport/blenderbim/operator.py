@@ -614,6 +614,7 @@ class AssignClassification(bpy.types.Operator):
             classification.identification = bpy.context.scene.BIMProperties.reference
         return {'FINISHED'}
 
+
 class UnassignClassification(bpy.types.Operator):
     bl_idname = 'bim.unassign_classification'
     bl_label = 'Unassign Classification'
@@ -627,6 +628,7 @@ class UnassignClassification(bpy.types.Operator):
             obj.BIMObjectProperties.classification = ''
         return {'FINISHED'}
 
+
 class RemoveClassification(bpy.types.Operator):
     bl_idname = 'bim.remove_classification'
     bl_label = 'Remove Classification'
@@ -634,4 +636,13 @@ class RemoveClassification(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.classifications.remove(self.classification_index)
+        return {'FINISHED'}
+
+
+class FetchLibraryInformation(bpy.types.Operator):
+    bl_idname = 'bim.fetch_library_information'
+    bl_label = 'Fetch Library Information'
+
+    def execute(self, context):
+        # TODO
         return {'FINISHED'}

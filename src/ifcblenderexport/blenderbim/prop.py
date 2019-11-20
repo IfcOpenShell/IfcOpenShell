@@ -127,7 +127,6 @@ def getApplicableDocuments(self, context):
 
 
 class BIMProperties(PropertyGroup):
-
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
@@ -144,6 +143,7 @@ class BIMProperties(PropertyGroup):
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name", update=refreshPsetFiles)
     pset_file: EnumProperty(items=getPsetFiles, name="Pset File")
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
+    has_library: BoolProperty(name="Has Project Library", default=False)
     global_id: StringProperty(name="GlobalId")
     features_dir: StringProperty(default='', name="Features Directory")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
@@ -168,6 +168,15 @@ class TargetCRS(PropertyGroup):
     map_projection: StringProperty(name="Map Projection")
     map_zone: StringProperty(name="Map Zone")
     map_unit: StringProperty(name="Map Unit")
+
+class BIMLibrary(PropertyGroup):
+    name: StringProperty(name="Name")
+    version: StringProperty(name="Version")
+    publisher: StringProperty(name="Publisher")
+    version_date: StringProperty(name="Version Date")
+    location: StringProperty(name="Location")
+    description: StringProperty(name="Description")
+
 
 class Attribute(PropertyGroup):
     name: StringProperty(name="Name")

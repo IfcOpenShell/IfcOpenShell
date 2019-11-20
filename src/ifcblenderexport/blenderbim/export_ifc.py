@@ -168,6 +168,7 @@ class IfcParser():
         self.resolve_boolean_modifiers()
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
+        self.library_information = self.get_library_information()
         self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
             self.project['raw'].children, self.collection_name_filter)
 
@@ -577,6 +578,21 @@ class IfcParser():
             }
         }
 
+    def get_library_information(self):
+        scene = bpy.context.scene
+        if not scene.BIMProperties.has_library:
+            return {}
+        return {
+            'ifc': None,
+            'attributes': {
+                'Name': scene.BIMLibrary.name,
+                'Version': scene.BIMLibrary.version,
+                'VersionDate': scene.BIMLibrary.version_date,
+                'Location': scene.BIMLibrary.location,
+                'Description': scene.BIMLibrary.description
+            }
+        }
+
     def get_spatial_structure_elements(self):
         elements = []
         for collection in bpy.data.collections:
@@ -849,6 +865,7 @@ class IfcExporter():
         self.create_units()
         self.create_people()
         self.create_organisations()
+        self.create_library_information()
         self.create_rep_context()
         self.create_project()
         self.create_documents()
@@ -979,6 +996,12 @@ class IfcExporter():
             else:
                 results.append(self.file.create_entity('IfcTelecomAddress', **address))
         return results
+
+    def create_library_information(self):
+        information = self.ifc_parser.library_information
+        if not information:
+            return
+        # TODO
 
     def create_documents(self):
         for document in self.ifc_parser.documents.values():
