@@ -58,7 +58,7 @@ class TestPurger:
             with open(filename, 'w') as new_file:
                 for line in old_file:
                     is_purged = False
-                    if 'Given the IFC file ' in line:
+                    if 'Given the IFC file ' in line and 'exists' not in line:
                         filename = line.split('"')[1]
                         print('Loading file {} ...'.format(filename))
                         self.file = ifcopenshell.open(filename)
