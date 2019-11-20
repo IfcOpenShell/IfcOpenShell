@@ -133,13 +133,14 @@ class SelectType(bpy.types.Operator):
     def execute(self, context):
         for object in bpy.context.visible_objects:
             if '/' in object.name \
-                and object.name[0:3] == 'Ifc' \
-                and object.name.split('/')[0] == bpy.context.scene.BIMProperties.ifc_class \
-                and 'IfcPredefinedType' in object.keys() \
-                and object['IfcPredefinedType'] == bpy.context.scene.BIMProperties.ifc_predefined_type:
+                    and object.name[0:3] == 'Ifc' \
+                    and object.name.split('/')[0] == bpy.context.scene.BIMProperties.ifc_class \
+                    and 'PredefinedType' in object.BIMObjectProperties.attributes \
+                    and object.BIMObjectProperties.attributes['PredefinedType'].string_value == bpy.context.scene.BIMProperties.ifc_predefined_type:
                 if bpy.context.scene.BIMProperties.ifc_predefined_type != 'USERDEFINED':
                     object.select_set(True)
-                elif object['IfcObjectType'] == bpy.context.scene.BIMProperties.ifc_userdefined_type:
+                elif 'ObjectType' in object.BIMObjectProperties.attributes \
+                        and object.BIMObjectProperties.attributes['ObjectType'].string_value == bpy.context.scene.BIMProperties.ifc_userdefined_type:
                     object.select_set(True)
         return {'FINISHED'}
 
