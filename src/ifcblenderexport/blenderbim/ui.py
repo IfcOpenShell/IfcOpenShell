@@ -147,6 +147,7 @@ class BIM_PT_material(Panel):
 class BIM_PT_gis(Panel):
     bl_label = 'IFC Georeferencing'
     bl_idname = "BIM_PT_gis"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -262,6 +263,7 @@ class BIM_PT_bim(Panel):
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
     bl_idname = "BIM_PT_qa"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
