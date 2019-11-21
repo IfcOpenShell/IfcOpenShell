@@ -95,6 +95,7 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
     bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
     bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)

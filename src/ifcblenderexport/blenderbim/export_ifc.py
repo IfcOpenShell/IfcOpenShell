@@ -865,9 +865,9 @@ class IfcExporter():
         self.create_units()
         self.create_people()
         self.create_organisations()
-        self.create_library_information()
         self.create_rep_context()
         self.create_project()
+        self.create_library_information()
         self.create_documents()
         self.create_classifications()
         self.create_classification_references()
@@ -1001,7 +1001,18 @@ class IfcExporter():
         information = self.ifc_parser.library_information
         if not information:
             return
-        # TODO
+        information['attributes']['Publisher'] = self.owner_history.OwningUser
+        information['ifc'] = self.file.create_entity('IfcLibraryInformation',
+                **information['attributes'])
+        print(information['ifc'])
+        print(self.ifc_parser.project['ifc'])
+        self.file.createIfcRelAssociatesLibrary(
+                ifcopenshell.guid.new(),
+                self.owner_history,
+                information['attributes']['Name'],
+                information['attributes']['Description'],
+                [self.ifc_parser.project['ifc']],
+                information['ifc'])
 
     def create_documents(self):
         for document in self.ifc_parser.documents.values():

@@ -313,7 +313,7 @@ class BIM_PT_library(Panel):
         scene = context.scene
         bim_properties = scene.BIMProperties
 
-        layout.row().prop(scene.BIMProperties, 'has_georeferencing')
+        layout.row().prop(scene.BIMProperties, 'has_library')
 
         layout.label(text="Project Library:")
         layout.row().prop(scene.BIMLibrary, 'location')
