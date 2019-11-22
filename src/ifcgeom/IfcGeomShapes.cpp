@@ -1484,4 +1484,93 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 	return true;
 }
 
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_Shape& shape) {
+    IfcSchema::IfcCartesianPointList3D* point_list = pfs->Coordinates();
+    const std::vector<std::vector<double> > coordinates = point_list->CoordList();
+    std::vector<gp_Pnt> points;
+    points.reserve(coordinates.size());
+
+    for (std::vector<std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
+        const std::vector<double>& coords = *it;
+        points.push_back(gp_Pnt(coords[0], coords[1], coords[2]));
+    }
+
+    auto polygonal_faces = pfs->Faces();
+
+    std::vector<TopoDS_Face> faces;
+
+    TopoDS_Compound all_faces;
+    BRep_Builder compound_builder;
+    compound_builder.MakeCompound(all_faces);
+
+    for (int i = 0; i < polygonal_faces->size(); i++) {
+        IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
+        TopoDS_Face face;
+        // Gives the indexed points defining the face
+        std::vector<int> test = la->CoordIndex();
+
+        // The points vector gathers all the indexed
+        // points, sorted in order (cf BuildingSmart https://urlz.fr/aXN6)
+        std::vector<gp_Pnt> face_points;
+        BRepBuilderAPI_MakePolygon wire_builder = BRepBuilderAPI_MakePolygon();
+        for (std::vector<int>::size_type i = 0; i != test.size(); i++) {
+            const gp_Pnt& point = points[test[i] - 1];
+            TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(point);
+            wire_builder.Add(vertex);
+        }
+
+        wire_builder.Close();
+        TopoDS_Wire wire = wire_builder.Wire();
+
+        if (la->declaration().is(IfcSchema::IfcIndexedPolygonalFaceWithVoids::Class())) {
+            IfcSchema::IfcIndexedPolygonalFaceWithVoids* converted = (IfcSchema::IfcIndexedPolygonalFaceWithVoids*)la;
+            std::vector<std::vector<int> > innercoordinates = converted->InnerCoordIndices();
+
+            BRepBuilderAPI_MakeFace facemaker = BRepBuilderAPI_MakeFace(wire);
+            std::vector<TopoDS_Wire> vectorofwires;
+            for (std::vector<std::vector<int> >::const_iterator it = innercoordinates.begin(); it != innercoordinates.end(); ++it) {
+                std::vector<int> mycoords = *it;
+                BRepBuilderAPI_MakePolygon inner_wire_builder = BRepBuilderAPI_MakePolygon();
+                for (std::vector<int>::size_type i = 0; i != mycoords.size(); i++) {
+                    gp_Pnt apoint = points[mycoords[i] - 1];
+                    TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(apoint);
+                    inner_wire_builder.Add(vertex);
+                }
+
+                TopoDS_Wire mywire = inner_wire_builder.Wire();
+                inner_wire_builder.Close();
+                facemaker.Add(mywire);
+            }
+
+            face = facemaker.Face();
+        } else {
+            face = BRepBuilderAPI_MakeFace(wire).Face();
+        }
+
+        TopoDS_Iterator face_it(face, false);
+        const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
+        const bool reversed = w.Orientation() == TopAbs_REVERSED;
+        if (reversed) {
+            face.Reverse();
+        }
+
+        if (face_area(face) > getValue(GV_MINIMAL_FACE_AREA)) {
+            faces.push_back(face);
+        }
+    }
+
+    if (faces.empty()) return false;
+
+    bool valid_shell = false;
+
+    TopTools_ListOfShape faces_list;
+    for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
+        faces_list.Append(*it);
+    }
+
+    create_solid_from_faces(faces_list, shape);
+
+    return true;
+}
+
 #endif
