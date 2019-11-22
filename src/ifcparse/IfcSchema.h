@@ -25,6 +25,28 @@
 #include <algorithm>
 #include <iterator>
 
+#if (__cplusplus > 201402L || _MSVC_LANG > 201402L)
+namespace std
+{
+	// if c++ 17
+	template<class ArgumentType, class ResultType>
+	struct unary_function
+	{
+		typedef ArgumentType argument_type;
+		typedef ResultType result_type;
+	};
+
+	template<class Arg1, class Arg2, class Result>
+	struct binary_function
+	{
+		using first_argument_type = Arg1;
+		using second_argument_type = Arg2;
+		using result_type = Result;
+	};
+}
+
+#endif
+
 #include <boost/algorithm/string.hpp>
 
 #include "../ifcparse/IfcException.h"
