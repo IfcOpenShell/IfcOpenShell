@@ -92,7 +92,7 @@ BOOST_VERSION="1.59.0"
 PCRE_VERSION="8.41"
 #LIBXML2_VERSION="2.9.3"
 LIBXML2_VERSION="2.9.9"
-CMAKE_VERSION="3.4.1"
+CMAKE_VERSION="3.4.3"
 #CMAKE_VERSION="3.14.5"
 SWIG_VERSION="3.0.12"
 #SWIG_VERSION="4.0.0"
@@ -598,6 +598,7 @@ if "OpenCOLLADA" in targets:
         download_url="https://github.com/KhronosGroup/OpenCOLLADA.git",
         download_name="OpenCOLLADA",
         download_tool=download_tool_git,
+        patch="./patches/opencollada/pr622.patch",
         revision=OPENCOLLADA_VERSION
     )
 
@@ -625,13 +626,19 @@ if "python" in targets:
                 yield v, unicode_conf, abi_tag
 
     for PYTHON_VERSION, unicode_conf, abi_tag in PYTHON_VERSION_CONFS():
-        build_dependency(
-            "python-{PYTHON_VERSION}{abi_tag}".format(**locals()),
-            "autoconf",
-            PYTHON_CONFIGURE_ARGS + [unicode_conf],
-            "http://www.python.org/ftp/python/{PYTHON_VERSION}/".format(**locals()),
-            "Python-{PYTHON_VERSION}.tgz".format(**locals())
-        )
+        try:
+            build_dependency(
+                "python-{PYTHON_VERSION}{abi_tag}".format(**locals()),
+                "autoconf",
+                PYTHON_CONFIGURE_ARGS + [unicode_conf],
+                "http://www.python.org/ftp/python/{PYTHON_VERSION}/".format(**locals()),
+                "Python-{PYTHON_VERSION}.tgz".format(**locals())
+            )
+        except Exception as e:
+            pyver2 = PYTHON_VERSION[:PYTHON_VERSION.rfind('.')]
+            if os.path.exists("{DEPS_DIR}/install/python-{PYTHON_VERSION}{abi_tag}/bin/python{pyver2}".format(**locals())):
+                print("Installation partially failed")
+            else: raise e
 
     os.environ["CXXFLAGS"]=OLD_CXX_FLAGS
     os.environ["CFLAGS"]=OLD_C_FLAGS
