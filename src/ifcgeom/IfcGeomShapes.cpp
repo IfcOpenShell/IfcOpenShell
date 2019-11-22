@@ -1146,11 +1146,12 @@ namespace {
 		// @todo this creates the ancestor map twice
 		TopExp::Vertices(wire, v0, v1);
 
-		TopTools_ListOfShape es;
+		
 		while (!v0.IsSame(v1)) {
-			if (!map.FindFromKey(v0, es)) {
+			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
 			}
+			const TopTools_ListOfShape& es = map.FindFromKey(v0);
 			TopoDS_Vertex ve0, ve1;
 			TopTools_ListIteratorOfListOfShape it(es);
 			bool added = false;
