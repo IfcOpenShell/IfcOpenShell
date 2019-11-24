@@ -1004,8 +1004,6 @@ class IfcExporter():
         information['attributes']['Publisher'] = self.owner_history.OwningUser
         information['ifc'] = self.file.create_entity('IfcLibraryInformation',
                 **information['attributes'])
-        print(information['ifc'])
-        print(self.ifc_parser.project['ifc'])
         self.file.createIfcRelAssociatesLibrary(
                 ifcopenshell.guid.new(),
                 self.owner_history,
@@ -1414,27 +1412,31 @@ class IfcExporter():
     def get_product_shape_representations(self, product):
         results = []
         for representation_name in product['representations']:
-            shape_representation = self.ifc_parser.representations[representation_name]['ifc']
-            if product['has_scale']:
-                results.append(self.get_product_mapped_geometry(product, shape_representation))
-            else:
-                results.append(shape_representation)
+            results.append(self.get_product_mapped_geometry(product, representation_name))
         return results
 
-    def get_product_mapped_geometry(self, product, shape_representation):
-        mapping_source = self.file.createIfcRepresentationMap(self.origin, shape_representation)
-        mapping_target = self.file.createIfcCartesianTransformationOperator3DnonUniform(
-                self.create_direction(product['forward_axis']),
-                self.create_direction(product['right_axis']),
-                self.create_cartesian_point(
-                    product['location'].x,
-                    product['location'].y,
-                    product['location'].z
-                ),
-                product['scale'].x,
-                self.create_direction(product['up_axis']),
-                product['scale'].y,
-                product['scale'].z)
+    def get_product_mapped_geometry(self, product, representation_name):
+        mapping_source = self.ifc_parser.representations[representation_name]['ifc']
+        shape_representation = mapping_source.MappedRepresentation
+        if product['has_scale']:
+            mapping_target = self.file.createIfcCartesianTransformationOperator3DnonUniform(
+                    self.create_direction(product['forward_axis']),
+                    self.create_direction(product['right_axis']),
+                    self.create_cartesian_point(
+                        product['location'].x,
+                        product['location'].y,
+                        product['location'].z
+                    ),
+                    abs(product['scale'].x),
+                    self.create_direction(product['up_axis']),
+                    abs(product['scale'].y),
+                    abs(product['scale'].z))
+        else:
+            mapping_target = self.file.createIfcCartesianTransformationOperator3D(
+                    self.create_direction(Vector((1, 0, 0))),
+                    self.create_direction(Vector((0, 1, 0))),
+                    self.create_cartesian_point(0, 0, 0),
+                    1, self.create_direction(Vector((0, 0, 1))))
         mapped_item = self.file.createIfcMappedItem(mapping_source, mapping_target)
         return self.file.createIfcShapeRepresentation(
                 shape_representation.ContextOfItems,
@@ -1479,21 +1481,27 @@ class IfcExporter():
         self.ifc_faces = []
         if representation['is_generated'] \
                 and representation['subcontext'] == 'Box':
-            return self.create_box_representation(representation)
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_box_representation(representation))
         elif representation['subcontext'] == 'CoG':
-            return self.create_cog_representation(representation)
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_cog_representation(representation))
         elif representation['context'] == 'Plan' \
                 or representation['subcontext'] == 'Axis' \
                 or representation['is_wireframe']:
-            return self.create_wireframe_representation(representation)
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_wireframe_representation(representation))
         elif representation['subcontext'] == 'SurveyPoints':
-            return self.create_geometric_curve_set_representation(representation)
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_geometric_curve_set_representation(representation))
         elif representation['is_curve']:
-            return self.create_curve_representation(representation)
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_curve_representation(representation))
         elif representation['is_swept_solid']:
-            return self.create_swept_solid_representation(representation)
-        else:
-            return self.create_solid_representation(representation)
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_swept_solid_representation(representation))
+        return self.file.createIfcRepresentationMap(self.origin,
+                self.create_solid_representation(representation))
 
     def create_box_representation(self, representation):
         obj = representation['raw_object']
