@@ -219,26 +219,94 @@ class IfcParser():
         for product in self.selected_products:
             obj = product['raw']
             self.add_product(self.get_product(product))
-            self.resolve_array_modifier(product)
+            self.resolve_modifiers(product)
 
-    def resolve_array_modifier(self, product):
+    def resolve_modifiers(self, product):
         obj = product['raw']
-        instance_objects = [(obj, obj.matrix_world.translation)]
-        global_id_index = 0
-        for instance in self.get_instances(obj):
+        instance_objects = [(obj, {
+            'location': obj.matrix_world.translation,
+            'scale': obj.scale
+        })]
+
+        for modifier in obj.modifiers:
             created_instances = []
-            for n in range(instance.count - 1):
-                for o in instance_objects:
-                    location = o[1] + ((n + 1) * instance.offset)
-                    self.add_product(
-                        self.get_product(
-                            {'raw': o[0], 'metadata': product['metadata']},
-                            {'location': location},
-                            {'GlobalId': self.get_parametric_global_id(obj, global_id_index)}
-                        )
+            if modifier.type == 'ARRAY':
+                instance_objects.extend(
+                    self.resolve_array_modifier(product, modifier, instance_objects)
+                )
+            elif modifier.type == 'MIRROR':
+                instance_objects.extend(
+                    self.resolve_mirror_modifier(product, modifier, instance_objects)
+                )
+
+    def get_array_modifier(self, product, modifier):
+        obj = product['raw']
+        array = ArrayModifier()
+        world_rotation = obj.matrix_world.decompose()[1]
+        array.offset = world_rotation @ Vector(
+            (
+                modifier.constant_offset_displace[0],
+                modifier.constant_offset_displace[1],
+                modifier.constant_offset_displace[2]
+            )
+        )
+        if modifier.fit_type == 'FIXED_COUNT':
+            array.count = modifier.count
+        elif modifier.fit_type == 'FIT_LENGTH':
+            array.count = int(modifier.fit_length / array.offset.length)
+        return array
+
+    def resolve_array_modifier(self, product, modifier, instance_objects):
+        modifier = self.get_array_modifier(product, modifier)
+        created_instances = []
+        for obj in instance_objects:
+            for n in range(modifier.count - 1):
+                override = obj[1].copy()
+                location = override['location'] + ((n + 1) * modifier.offset)
+                override['location'] = location
+                self.add_product(
+                    self.get_product(
+                        {'raw': obj[0], 'metadata': product['metadata']},
+                        metadata_override=override,
+                        attribute_override={'GlobalId': self.get_parametric_global_id(
+                                product['raw'],
+                                len(instance_objects)+len(created_instances)-1
+                            )
+                        }
                     )
-                    created_instances.append((o[0], location))
-            instance_objects.extend(created_instances)
+                )
+                created_instances.append((obj[0], override))
+        return created_instances
+
+    def resolve_mirror_modifier(self, product, modifier, instance_objects):
+        return [] # TODO: not yet stable
+        created_instances = []
+        mirrors = []
+        for axis in [0, 1, 2]:
+            if modifier.use_axis[axis]:
+                mirrors.append(axis)
+        for mirror in mirrors:
+            axis_instances = []
+            for obj in instance_objects:
+                override = obj[1].copy()
+                override['has_scale'] = True
+                override['has_mirror'] = True
+                override['scale'][mirror] *= -1
+                self.add_product(
+                    self.get_product(
+                        {'raw': obj[0], 'metadata': product['metadata']},
+                        metadata_override=override,
+                        attribute_override={'GlobalId': self.get_parametric_global_id(
+                                product['raw'],
+                                len(instance_objects)+len(created_instances)-1
+                            )
+                        }
+                    )
+                )
+                created_instances.append((obj[0], override))
+                axis_instances.append((obj[0], override))
+            instance_objects.extend(axis_instances)
+        return created_instances
 
     def resolve_boolean_modifiers(self):
         for i, product in enumerate(self.products):
@@ -289,6 +357,7 @@ class IfcParser():
             'forward_axis': self.get_axis(obj.matrix_world, 0),
             'right_axis': self.get_axis(obj.matrix_world, 1),
             'has_scale': obj.scale != Vector((1, 1, 1)),
+            'has_mirror': False,
             'scale': obj.scale,
             'class': self.get_ifc_class(obj.name),
             'relating_structure': None,
@@ -393,21 +462,6 @@ class IfcParser():
             for child in parent_collection.children:
                 if child.name == child_collection.name:
                     return parent_collection
-
-    def get_instances(self, obj):
-        instances = []
-        for m in obj.modifiers:
-            if m.type == 'ARRAY':
-                array = ArrayModifier()
-                world_rotation = obj.matrix_world.decompose()[1]
-                array.offset = world_rotation @ Vector(
-                    (m.constant_offset_displace[0], m.constant_offset_displace[1], m.constant_offset_displace[2]))
-                if m.fit_type == 'FIXED_COUNT':
-                    array.count = m.count
-                elif m.fit_type == 'FIT_LENGTH':
-                    array.count = int(m.fit_length / array.offset.length)
-                instances.append(array)
-        return instances
 
     def convert_selected_objects_into_products(self, objects_to_sort, metadata=None):
         if not metadata:
@@ -1419,6 +1473,12 @@ class IfcExporter():
         mapping_source = self.ifc_parser.representations[representation_name]['ifc']
         shape_representation = mapping_source.MappedRepresentation
         if product['has_scale']:
+            if not product['has_mirror']:
+                product['scale'] = Vector((
+                    abs(product['scale'].x),
+                    abs(product['scale'].y),
+                    abs(product['scale'].z)
+                ))
             mapping_target = self.file.createIfcCartesianTransformationOperator3DnonUniform(
                     self.create_direction(product['forward_axis']),
                     self.create_direction(product['right_axis']),
@@ -1427,10 +1487,10 @@ class IfcExporter():
                         product['location'].y,
                         product['location'].z
                     ),
-                    abs(product['scale'].x),
+                    product['scale'].x,
                     self.create_direction(product['up_axis']),
-                    abs(product['scale'].y),
-                    abs(product['scale'].z))
+                    product['scale'].y,
+                    product['scale'].z)
         else:
             mapping_target = self.file.createIfcCartesianTransformationOperator3D(
                     self.create_direction(Vector((1, 0, 0))),
@@ -1805,7 +1865,7 @@ class IfcExporter():
                     self.ifc_parser.products[relating_opening_element]['ifc'],
                     self.ifc_parser.products[related_building_element]['ifc']
                 )
-                
+
     def relate_elements_to_spatial_structures(self):
         for relating_structure, related_elements in self.ifc_parser.rel_contained_in_spatial_structure.items():
             self.file.createIfcRelContainedInSpatialStructure(
