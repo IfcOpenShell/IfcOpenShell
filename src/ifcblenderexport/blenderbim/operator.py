@@ -189,9 +189,11 @@ class ApproveClass(bpy.types.Operator):
     def execute(self, context):
         with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
             for object in bpy.context.selected_objects:
+                index = object.BIMObjectProperties.attributes.find('GlobalId')
+                if index == -1:
+                    continue
                 file.write('Then the element {} is an {}\n'.format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                    object.BIMObjectProperties.attributes[index].string_value,
                     object.name.split('/')[0]))
         return {'FINISHED'}
 
@@ -205,7 +207,7 @@ class RejectClass(bpy.types.Operator):
                 file.write('Then the element {} is an {}\n'.format(
                     object.BIMObjectProperties.attributes[
                         object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
-                    bpy.context.scene.BIMProperties.ifc_class))
+                    bpy.context.scene.BIMProperties.audit_ifc_class))
         return {'FINISHED'}
 
 class RejectElement(bpy.types.Operator):

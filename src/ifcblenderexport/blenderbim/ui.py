@@ -292,6 +292,9 @@ class BIM_PT_qa(Panel):
         row.operator("bim.colour_by_class")
         row.operator("bim.reset_object_colours")
 
+        row = layout.row()
+        row.prop(bim_properties, "audit_ifc_class")
+
         row = layout.row(align=True)
         row.operator("bim.approve_class")
         row.operator("bim.reject_class")

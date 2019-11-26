@@ -129,6 +129,7 @@ def getApplicableDocuments(self, context):
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
+    audit_ifc_class: EnumProperty(items=getIfcClasses, name="Audit Class")
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(
         items = getIfcPredefinedTypes,
