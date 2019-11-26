@@ -225,6 +225,7 @@ class IfcParser():
         obj = product['raw']
         instance_objects = [(obj, {
             'location': obj.matrix_world.translation,
+            'array_offset': Vector((0, 0, 0)),
             'scale': obj.scale
         })]
 
@@ -262,6 +263,8 @@ class IfcParser():
         for obj in instance_objects:
             for n in range(modifier.count - 1):
                 override = obj[1].copy()
+                override['array_offset'] = ((n + 1) * modifier.offset)
+                override['location'] = obj[1]['location'].copy()
                 location = override['location'] + ((n + 1) * modifier.offset)
                 override['location'] = location
                 self.add_product(
@@ -279,7 +282,6 @@ class IfcParser():
         return created_instances
 
     def resolve_mirror_modifier(self, product, modifier, instance_objects):
-        return [] # TODO: not yet stable
         created_instances = []
         mirrors = []
         for axis in [0, 1, 2]:
@@ -291,7 +293,15 @@ class IfcParser():
                 override = obj[1].copy()
                 override['has_scale'] = True
                 override['has_mirror'] = True
+                override['scale'] = obj[1]['scale'].copy()
                 override['scale'][mirror] *= -1
+                mirror_axis = Vector((0, 0, 0))
+                mirror_axis[mirror] = 1
+                world_rotation = obj[0].matrix_world.decompose()[1].to_matrix().to_4x4()
+                unrotated_offset = world_rotation.inverted() @ override['array_offset']
+                mirrored_offset = unrotated_offset @ Matrix.Scale(-1, 4, mirror_axis)
+                rotated_offset = world_rotation @ mirrored_offset
+                override['location'] = override['location'] - override['array_offset'] + rotated_offset
                 self.add_product(
                     self.get_product(
                         {'raw': obj[0], 'metadata': product['metadata']},
@@ -358,6 +368,7 @@ class IfcParser():
             'right_axis': self.get_axis(obj.matrix_world, 1),
             'has_scale': obj.scale != Vector((1, 1, 1)),
             'has_mirror': False,
+            'array_offset': Vector((0, 0, 0)),
             'scale': obj.scale,
             'class': self.get_ifc_class(obj.name),
             'relating_structure': None,
