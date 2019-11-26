@@ -98,6 +98,8 @@
 #include <BRepLib_FindSurface.hxx>
 
 #include <ShapeFix_Shape.hxx>
+#include <ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg.hxx>
+#include <Message_ListIteratorOfListOfMsg.hxx>
 #include <ShapeExtend_MsgRegistrator.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
