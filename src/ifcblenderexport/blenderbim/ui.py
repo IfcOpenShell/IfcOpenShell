@@ -7,7 +7,7 @@ class BIM_PT_object(Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'object'
-    
+
     @classmethod
     def poll(cls, context):
         return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
@@ -142,6 +142,9 @@ class BIM_PT_material(Panel):
         row.prop(props, 'identification')
         row = layout.row()
         row.prop(props, 'name')
+
+        row = layout.row()
+        row.operator('bim.fetch_external_material')
 
 
 class BIM_PT_gis(Panel):

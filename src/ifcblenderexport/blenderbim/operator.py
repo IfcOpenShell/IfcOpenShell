@@ -1,3 +1,4 @@
+import os
 import bpy
 import time
 import json
@@ -639,6 +640,37 @@ class RemoveClassification(bpy.types.Operator):
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.classifications.remove(self.classification_index)
         return {'FINISHED'}
+
+
+class FetchExternalMaterial(bpy.types.Operator):
+    bl_idname = 'bim.fetch_external_material'
+    bl_label = 'Fetch External Material'
+
+    def execute(self, context):
+        location = bpy.context.active_object.active_material.BIMMaterialProperties.location
+        if location[-6:] != '.mpass':
+            return {'FINISHED'}
+        with open(location) as f:
+            self.material_pass = json.load(f)
+        if bpy.context.scene.render.engine == 'BLENDER_EEVEE' \
+                and 'eevee' in self.material_pass:
+            self.fetch_eevee_or_cycles('eevee')
+        elif bpy.context.scene.render.engine == 'CYCLES' \
+                and 'cycles' in self.material_pass:
+            self.fetch_eevee_or_cycles('cycles')
+        return {'FINISHED'}
+
+    def fetch_eevee_or_cycles(self, name):
+        identification = bpy.context.active_object.active_material.BIMMaterialProperties.identification
+        bpy.ops.wm.link(
+            filename=identification,
+            directory=os.path.join(self.material_pass[name]['uri'], 'Material')
+        )
+        for material in bpy.data.materials:
+            if material.name == identification \
+                    and material.library:
+                bpy.context.active_object.material_slots[0].material = material
+                return
 
 
 class FetchLibraryInformation(bpy.types.Operator):
