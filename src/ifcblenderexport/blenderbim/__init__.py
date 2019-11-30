@@ -57,6 +57,7 @@ classes = (
     operator.UnassignClassification,
     operator.RemoveClassification,
     operator.FetchLibraryInformation,
+    operator.FetchExternalMaterial,
     prop.BIMProperties,
     prop.BIMLibrary,
     prop.MapConversion,
