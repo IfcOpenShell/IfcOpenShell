@@ -21,12 +21,25 @@ class MaterialCreator():
         self.mesh = None
         self.materials = {}
 
-    def set_mesh(self, mesh):
+    def create(self, element, object, mesh):
+        self.object = object
         self.mesh = mesh
-
-    def create(self, material_select):
-        if material_select.is_a('IfcMaterialDefinition'):
-            return self.create_definition(material_select)
+        if not element.Representation:
+            return
+        for item in element.Representation.Representations[0].Items:
+            if item.StyledByItem:
+                styled_item = item.StyledByItem[0]
+                material_name = str(styled_item.Name if styled_item.Name else styled_item.id())
+                if material_name not in self.materials:
+                    self.materials[material_name] = bpy.data.materials.new(material_name)
+                self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
+                self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
+                return # styled items override material styles
+        for association in element.HasAssociations:
+            if association.is_a('IfcRelAssociatesMaterial'):
+                material_select = association.RelatingMaterial
+                if material_select.is_a('IfcMaterialDefinition'):
+                    self.create_definition(material_select)
 
     def create_definition(self, material):
         if material.is_a('IfcMaterial'):
@@ -48,22 +61,32 @@ class MaterialCreator():
             for item in representation.Items:
                 if not item.is_a('IfcStyledItem'):
                     continue
-                for style in item.Styles:
-                    if not style.is_a('IfcSurfaceStyle'):
-                        continue
-                    for surface_style in style.Styles:
-                        if surface_style.is_a('IfcSurfaceStyleShading'):
-                            alpha = 1.
-                            if surface_style.Transparency:
-                                alpha = 1 - surface_style.Transparency
-                            self.materials[material.Name].diffuse_color = (
-                                surface_style.SurfaceColour.Red,
-                                surface_style.SurfaceColour.Green,
-                                surface_style.SurfaceColour.Blue,
-                                alpha)
+                self.parse_styled_item(item, self.materials[material.Name])
 
-    def assign_material_to_mesh(self, material):
+    def parse_styled_item(self, styled_item, material):
+        for style in styled_item.Styles:
+            # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
+            # but we still support it as it is widely used
+            if style.is_a('IfcPresentationStyleAssignment'):
+                style = style.Styles[0]
+            if not style.is_a('IfcSurfaceStyle'):
+                continue
+            for surface_style in style.Styles:
+                if surface_style.is_a('IfcSurfaceStyleShading'):
+                    alpha = 1.
+                    if surface_style.Transparency:
+                        alpha = 1 - surface_style.Transparency
+                    material.diffuse_color = (
+                        surface_style.SurfaceColour.Red,
+                        surface_style.SurfaceColour.Green,
+                        surface_style.SurfaceColour.Blue,
+                        alpha)
+
+    def assign_material_to_mesh(self, material, is_styled_item=False):
         self.mesh.materials.append(material)
+        if is_styled_item:
+            self.object.material_slots[0].link = 'OBJECT'
+            self.object.material_slots[0].material = material
 
 class IfcImporter():
     def __init__(self, ifc_import_settings):
@@ -191,12 +214,8 @@ class IfcImporter():
             print('Failed to generate shape for {}'.format(element))
             return
 
-        for association in element.HasAssociations:
-            if association.is_a('IfcRelAssociatesMaterial'):
-                self.material_creator.set_mesh(mesh)
-                self.material_creator.create(association.RelatingMaterial)
-
         object = bpy.data.objects.new(self.get_name(element), mesh)
+        self.material_creator.create(element, object, mesh)
 
         element_matrix = self.get_local_placement(element.ObjectPlacement)
 
