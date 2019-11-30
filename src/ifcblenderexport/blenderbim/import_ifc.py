@@ -71,6 +71,7 @@ class MaterialCreator():
                 style = style.Styles[0]
             if not style.is_a('IfcSurfaceStyle'):
                 continue
+            external_style = None
             for surface_style in style.Styles:
                 if surface_style.is_a('IfcSurfaceStyleShading'):
                     alpha = 1.
@@ -81,6 +82,13 @@ class MaterialCreator():
                         surface_style.SurfaceColour.Green,
                         surface_style.SurfaceColour.Blue,
                         alpha)
+                elif surface_style.is_a('IfcExternallyDefinedSurfaceStyle'):
+                    external_style = surface_style
+            if external_style:
+                material.BIMMaterialProperties.is_external = True
+                material.BIMMaterialProperties.location = external_style.Location
+                material.BIMMaterialProperties.identification = external_style.Identification
+                material.BIMMaterialProperties.name = external_style.Name
 
     def assign_material_to_mesh(self, material, is_styled_item=False):
         self.mesh.materials.append(material)
