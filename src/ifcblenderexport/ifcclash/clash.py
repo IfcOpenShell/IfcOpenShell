@@ -2,6 +2,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import numpy as np
 import fcl
+import json
 
 class IfcClasher:
     def __init__(self):
@@ -34,11 +35,19 @@ class IfcClasher:
         for contact in rdata.result.contacts:
             if contact.penetration_depth < self.tolerance:
                 continue
+            a_global_id = self.a_geom_to_global_id[id(contact.o1)]
+            b_global_id = self.b_geom_to_global_id[id(contact.o2)]
+            a = self.a.by_guid(a_global_id)
+            b = self.b.by_guid(b_global_id)
             self.clashes.append({
-                'a': self.a_geom_to_global_id[id(contact.o1)],
-                'b': self.b_geom_to_global_id[id(contact.o2)],
-                'normal': contact.normal,
-                'position': contact.pos,
+                'a_global_id': a_global_id,
+                'b_global_id': b_global_id,
+                'a_ifc_class': a.is_a(),
+                'b_ifc_class': b.is_a(),
+                'a_name': a.Name,
+                'b_name': b.Name,
+                'normal': list(contact.normal),
+                'position': list(contact.pos),
                 'penetration_depth': contact.penetration_depth
             })
 
@@ -121,5 +130,6 @@ class IfcClasher:
 
 ifc_clasher = IfcClasher()
 ifc_clasher.clash()
-import pprint
-pprint.pprint(ifc_clasher.clashes)
+
+with open('clashes.json', 'w', encoding='utf-8') as clashes_file:
+    json.dump(ifc_clasher.clashes, clashes_file, indent=4)
