@@ -680,3 +680,29 @@ class FetchLibraryInformation(bpy.types.Operator):
     def execute(self, context):
         # TODO
         return {'FINISHED'}
+
+
+class FetchObjectPassport(bpy.types.Operator):
+    bl_idname = 'bim.fetch_object_passport'
+    bl_label = 'Fetch Object Passport'
+
+    def execute(self, context):
+        for document in bpy.context.active_object.BIMObjectProperties.documents:
+            if not document.file[-6:] == '.opass':
+                continue
+            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, 'doc', document.file)) as f:
+                self.object_pass = json.load(f)
+            if 'blender' in self.object_pass:
+                self.fetch_blender()
+        return {'FINISHED'}
+
+    def fetch_blender(self):
+        identification = self.object_pass['blender']['identification']
+        uri = os.path.join(bpy.context.scene.BIMProperties.data_dir,
+                           'doc',
+                           self.object_pass['blender']['uri'])
+        bpy.ops.wm.link(
+            filename=identification,
+            directory=os.path.join(uri, 'Mesh')
+        )
+        bpy.context.active_object.data = bpy.data.meshes[identification]

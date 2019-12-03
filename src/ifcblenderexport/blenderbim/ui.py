@@ -11,9 +11,9 @@ class BIM_PT_object(Panel):
     @classmethod
     def poll(cls, context):
         return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
-    
+
     def draw(self, context):
-        
+
         if context.active_object is None:
             return
         layout = self.layout
@@ -55,6 +55,9 @@ class BIM_PT_object(Panel):
         row.prop(props, 'applicable_documents', text='')
         row.operator('bim.add_document')
 
+        row = layout.row()
+        row.operator('bim.fetch_object_passport')
+
         for index, document in enumerate(props.documents):
             row = layout.row(align=True)
             row.prop(document, 'file', text='')
@@ -86,7 +89,7 @@ class BIM_PT_mesh(Panel):
     def poll(cls, context):
         return context.active_object is not None and context.active_object.type == "MESH" and \
                hasattr(context.active_object.data, "BIMMeshProperties")
-    
+
     def draw(self, context):
         if not context.active_object.data:
             return
@@ -123,11 +126,11 @@ class BIM_PT_material(Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'material'
-    
+
     @classmethod
     def poll(cls, context):
         return context.active_object is not None and context.active_object.active_material is not None
-    
+
     def draw(self, context):
         if not bpy.context.active_object.active_material:
             return
