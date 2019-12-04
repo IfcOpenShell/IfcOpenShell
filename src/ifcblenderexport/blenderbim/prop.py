@@ -2,6 +2,7 @@ import json
 import os
 import csv
 from pathlib import Path
+from . import export_ifc
 from bpy.types import PropertyGroup
 from bpy.props import (
     StringProperty,
@@ -29,6 +30,9 @@ classification_enum = []
 reference_enum = []
 attributes_enum = []
 documents_enum = []
+contexts_enum = []
+subcontexts_enum = []
+target_views_enum = []
 
 def getIfcPredefinedTypes(self, context):
     global types_enum
@@ -64,10 +68,12 @@ def getPsetNames(self, context):
         psetnames_enum.extend([(f, f, '') for f in files])
     return psetnames_enum
 
+
 def refreshPsetFiles(self, context):
     global psetfiles_enum
     psetfiles_enum.clear()
     getPsetFiles(self, context)
+
 
 def getPsetFiles(self, context):
     global psetfiles_enum
@@ -77,6 +83,7 @@ def getPsetFiles(self, context):
         files = os.listdir(os.path.join(self.data_dir, 'pset', self.pset_name.strip()))
         psetfiles_enum.extend([(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files])
     return psetfiles_enum
+
 
 def getClassifications(self, context):
     global classification_enum
@@ -89,10 +96,12 @@ def getClassifications(self, context):
             classification_enum.extend([(str(i), d[index], '') for i, d in enumerate(data)])
     return classification_enum
 
+
 def refreshReferences(self, context):
     global reference_enum
     reference_enum.clear()
     getReferences(self, context)
+
 
 def getReferences(self, context):
     global reference_enum
@@ -106,6 +115,7 @@ def getReferences(self, context):
                     d[2] == self.classification.strip()])
     return reference_enum
 
+
 def getApplicableAttributes(self, context):
     global attributes_enum
     attributes_enum.clear()
@@ -116,6 +126,7 @@ def getApplicableAttributes(self, context):
             if self.attributes.find(a['name']) == -1])
     return attributes_enum
 
+
 def getApplicableDocuments(self, context):
     global documents_enum
     documents_enum.clear()
@@ -124,6 +135,43 @@ def getApplicableDocuments(self, context):
         uri = str(filename.relative_to(doc_path).as_posix())
         documents_enum.append((uri, uri, ''))
     return documents_enum
+
+
+def getContexts(self, context):
+    global contexts_enum
+    contexts_enum.clear()
+    for context in export_ifc.IfcExportSettings().contexts:
+        contexts_enum.append((context, context, ''))
+    return contexts_enum
+
+
+def getSubcontexts(self, context):
+    global subcontexts_enum
+    subcontexts_enum.clear()
+    # TODO: allow override of generated subcontexts?
+    subcontexts = export_ifc.IfcExportSettings().subcontexts
+    for subcontext in subcontexts:
+        subcontexts_enum.append((subcontext, subcontext, ''))
+    return subcontexts_enum
+
+
+def getTargetViews(self, context):
+    global target_views_enum
+    target_views_enum.clear()
+    for target_view in export_ifc.IfcExportSettings().target_views:
+        target_views_enum.append((target_view, target_view, ''))
+    return target_views_enum
+
+
+class Subcontext(PropertyGroup):
+    name: StringProperty(name='Name')
+    target_view: StringProperty(name='Target View')
+
+
+class Context(PropertyGroup):
+    name: StringProperty(name='Name')
+    foobar: StringProperty(name='foobar')
+    subcontexts: CollectionProperty(name='Subcontexts', type=Subcontext)
 
 
 class BIMProperties(PropertyGroup):
@@ -152,6 +200,11 @@ class BIMProperties(PropertyGroup):
     aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     reference: EnumProperty(items=getReferences, name="Reference")
+    contexts: CollectionProperty(name="Contexts", type=Context)
+    available_contexts: EnumProperty(items=getContexts, name="Available Contexts")
+    available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
+    available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
+
 
 class MapConversion(PropertyGroup):
     eastings: StringProperty(name="Eastings")
