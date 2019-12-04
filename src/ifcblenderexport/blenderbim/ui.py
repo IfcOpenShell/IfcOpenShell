@@ -182,6 +182,42 @@ class BIM_PT_gis(Panel):
         layout.row().prop(scene.TargetCRS, 'map_unit')
 
 
+class BIM_PT_context(Panel):
+    bl_label = "Geometric Representation Contexts"
+    bl_idname = "BIM_PT_context"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row(align=True)
+        row.prop(props, 'available_contexts', text='')
+        row.operator('bim.add_context', icon='ADD', text='')
+
+        for index, context in enumerate(props.contexts):
+            layout.label(text="Geometric Representation Context:")
+
+            row = layout.row(align=True)
+            row.prop(context, 'name', text='')
+            row.operator('bim.remove_context', icon='X', text='').index = index
+
+            row = layout.row(align=True)
+            row.prop(props, 'available_subcontexts', text='')
+            row.prop(props, 'available_target_views', text='')
+            row.operator('bim.add_subcontext', icon='ADD', text='').context_index = index
+
+            for subcontext_index, subcontext in enumerate(context.subcontexts):
+                row = layout.row(align=True)
+                row.prop(subcontext, 'name', text='')
+                row.prop(subcontext, 'target_view', text='')
+                row.operator('bim.remove_subcontext', icon='X', text='').indexes = '{}-{}'.format(index, subcontext_index)
+
+
 class BIM_PT_bim(Panel):
     bl_label = "Building Information Modeling"
     bl_idname = "BIM_PT_bim"
