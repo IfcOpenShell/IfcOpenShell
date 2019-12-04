@@ -650,6 +650,9 @@ class FetchExternalMaterial(bpy.types.Operator):
         location = bpy.context.active_object.active_material.BIMMaterialProperties.location
         if location[-6:] != '.mpass':
             return {'FINISHED'}
+        if not os.path.isabs(location):
+            location = os.path.join(os.path.join(
+                bpy.context.scene.BIMProperties.data_dir, location))
         with open(location) as f:
             self.material_pass = json.load(f)
         if bpy.context.scene.render.engine == 'BLENDER_EEVEE' \
@@ -662,9 +665,13 @@ class FetchExternalMaterial(bpy.types.Operator):
 
     def fetch_eevee_or_cycles(self, name):
         identification = bpy.context.active_object.active_material.BIMMaterialProperties.identification
+        uri = self.material_pass[name]['uri']
+        if not os.path.isabs(uri):
+            uri = os.path.join(os.path.join(
+                bpy.context.scene.BIMProperties.data_dir, uri))
         bpy.ops.wm.link(
             filename=identification,
-            directory=os.path.join(self.material_pass[name]['uri'], 'Material')
+            directory=os.path.join(uri, 'Material')
         )
         for material in bpy.data.materials:
             if material.name == identification \
