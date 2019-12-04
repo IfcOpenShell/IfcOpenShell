@@ -1,7 +1,11 @@
+#!/usr/bin/python
+
 import ifcopenshell
 from deepdiff import DeepDiff
 import time
 import json
+import argparse
+
 
 class IfcDiff():
     def __init__(self, old_file, new_file):
@@ -91,8 +95,6 @@ class IfcDiff():
             elif representation.RepresentationIdentifier == 'Body':
                 return representation.Items[0].MappingSource.MappedRepresentation.id()
 
-ifc_diff = IfcDiff('old.ifc', 'new.ifc')
-ifc_diff.diff()
 
 class DiffEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -101,9 +103,26 @@ class DiffEncoder(json.JSONEncoder):
         except:
             return str(obj)
 
-with open('diff.json', 'w', encoding='utf-8') as diff_file:
+parser = argparse.ArgumentParser(description='Show the difference between two IFC files')
+parser.add_argument('old', type=str, help='The old IFC file')
+parser.add_argument('new', type=str, help='The new IFC file')
+parser.add_argument(
+    '-o',
+    '--output',
+    type=str,
+    help='The JSON diff file to output. Defaults to diff.json',
+    default='diff.json')
+args = parser.parse_args()
+
+ifc_diff = IfcDiff(args.old, args.new)
+ifc_diff.diff()
+
+with open(args.output, 'w', encoding='utf-8') as diff_file:
     json.dump({
-        'added': list(ifc_diff.added_elements),
-        'deleted': list(ifc_diff.deleted_elements),
-        'changed': ifc_diff.change_register,
-        }, diff_file, indent=4, cls=DiffEncoder)
+            'added': list(ifc_diff.added_elements),
+            'deleted': list(ifc_diff.deleted_elements),
+            'changed': ifc_diff.change_register,
+        },
+        diff_file,
+        indent=4,
+        cls=DiffEncoder)
