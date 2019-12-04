@@ -1,0 +1,8 @@
+{
+    "eevee": {
+        "uri": "mpass/shader.blend"
+    },
+    "cycles": {
+        "uri": "mpass/shader.blend"
+    }
+}
