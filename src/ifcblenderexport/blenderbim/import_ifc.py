@@ -222,9 +222,45 @@ class IfcImporter():
             print('Failed to generate shape for {}'.format(element))
             return
 
-        object = bpy.data.objects.new(self.get_name(element), mesh)
-        self.material_creator.create(element, object, mesh)
+        obj = bpy.data.objects.new(self.get_name(element), mesh)
+        self.material_creator.create(element, obj, mesh)
+        obj.matrix_world = self.get_element_matrix(element, mesh_name)
+        self.add_element_attributes(element, obj)
+        self.add_element_document_relations(element, obj)
+        self.place_object_in_spatial_tree(element, obj)
 
+    def add_element_document_relations(self, element, obj):
+        for association in element.HasAssociations:
+            if association.is_a('IfcRelAssociatesDocument'):
+                document_reference = association.RelatingDocument
+                document = obj.BIMObjectProperties.documents.add()
+                document.file = document_reference.Location
+
+    def place_object_in_spatial_tree(self, element, obj):
+        if hasattr(element, 'ContainedInStructure') \
+            and element.ContainedInStructure \
+            and element.ContainedInStructure[0].RelatingStructure:
+            structure_name = self.get_name(element.ContainedInStructure[0].RelatingStructure)
+            if structure_name in self.spatial_structure_elements:
+                self.spatial_structure_elements[structure_name]['blender'].objects.link(obj)
+        else:
+            print('Warning: this object is outside the spatial hierarchy')
+            bpy.context.scene.collection.objects.link(obj)
+
+    def add_element_attributes(self, element, obj):
+        attributes = element.get_info()
+        if element.is_a() in ifc_schema.elements:
+            applicable_attributes = [a['name'] for a in ifc_schema.elements[element.is_a()]['attributes']]
+            for key, value in attributes.items():
+                if key not in applicable_attributes \
+                        or value is None:
+                    continue
+                attribute = obj.BIMObjectProperties.attributes.add()
+                attribute.name = key
+                attribute.data_type = 'string'
+                attribute.string_value = str(value)
+
+    def get_element_matrix(self, element, mesh_name):
         element_matrix = self.get_local_placement(element.ObjectPlacement)
 
         # Blender supports reusing a mesh with a different transformation
@@ -254,29 +290,7 @@ class IfcImporter():
         element_matrix[1][3] *= self.unit_scale
         element_matrix[2][3] *= self.unit_scale
 
-        object.matrix_world = element_matrix # element_matrix gives wrong results
-
-        attributes = element.get_info()
-        if element.is_a() in ifc_schema.elements:
-            applicable_attributes = [a['name'] for a in ifc_schema.elements[element.is_a()]['attributes']]
-            for key, value in attributes.items():
-                if key not in applicable_attributes \
-                    or value is None:
-                    continue
-                attribute = object.BIMObjectProperties.attributes.add()
-                attribute.name = key
-                attribute.data_type = 'string'
-                attribute.string_value = str(value)
-
-        if hasattr(element, 'ContainedInStructure') \
-            and element.ContainedInStructure \
-            and element.ContainedInStructure[0].RelatingStructure:
-            structure_name = self.get_name(element.ContainedInStructure[0].RelatingStructure)
-            if structure_name in self.spatial_structure_elements:
-                self.spatial_structure_elements[structure_name]['blender'].objects.link(object)
-        else:
-            print('Warning: this object is outside the spatial hierarchy')
-            bpy.context.scene.collection.objects.link(object)
+        return element_matrix
 
     def get_representation_id(self, element):
         if not element.Representation:
@@ -327,22 +341,21 @@ class IfcImporter():
         r.resize_4x4()
         r.transpose()
         return r
-        
-    def get_axis2placement(self, plc): 
-        z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1)) 
-        x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0)) 
-        o = plc.Location.Coordinates 
-        return self.a2p(o,z,x) 
 
-    def get_cartesiantransformationoperator(self, plc): 
-        #z = mathutils.Vector(plc.Axis3.DirectionRatios if plc.Axis3 else (0,0,1)) 
-        x = mathutils.Vector(plc.Axis1.DirectionRatios if plc.Axis1 else (1,0,0)) 
+    def get_axis2placement(self, plc):
+        z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1))
+        x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0))
+        o = plc.Location.Coordinates
+        return self.a2p(o,z,x)
+
+    def get_cartesiantransformationoperator(self, plc):
+        x = mathutils.Vector(plc.Axis1.DirectionRatios if plc.Axis1 else (1,0,0))
         z = x.cross(mathutils.Vector(plc.Axis2.DirectionRatios if plc.Axis2 else (0,1,0)))
-        o = plc.LocalOrigin.Coordinates 
-        return self.a2p(o,z,x) 
-        
+        o = plc.LocalOrigin.Coordinates
+        return self.a2p(o,z,x)
+
     def get_local_placement(self, plc):
-        if plc.PlacementRelTo is None: 
+        if plc.PlacementRelTo is None:
             parent = mathutils.Matrix()
         else:
             parent = self.get_local_placement(plc.PlacementRelTo)
