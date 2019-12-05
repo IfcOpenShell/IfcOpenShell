@@ -1,15 +1,20 @@
+#!python
+
 import ifcopenshell
 import ifcopenshell.geom
 import numpy as np
 import fcl
 import json
+import argparse
 
 class IfcClasher:
-    def __init__(self):
+    def __init__(self, a_file, b_file):
         self.settings = ifcopenshell.geom.settings()
         self.tolerance = 0.01
         self.a = None
         self.b = None
+        self.a_file = a_file
+        self.b_file = b_file
         self.a_geoms = []
         self.b_geoms = []
         self.a_objs = []
@@ -52,8 +57,8 @@ class IfcClasher:
             })
 
     def load_files(self):
-        self.a = ifcopenshell.open('/home/dion/a.ifc')
-        self.b = ifcopenshell.open('/home/dion/b.ifc')
+        self.a = ifcopenshell.open(self.a_file)
+        self.b = ifcopenshell.open(self.b_file)
 
     def create_collision_objects(self, ab):
         elements = getattr(self, ab).by_type('IfcElement')
@@ -128,8 +133,26 @@ class IfcClasher:
         o = plc.Location.Coordinates
         return self.a2p(o,z,x)
 
-ifc_clasher = IfcClasher()
+parser = argparse.ArgumentParser(
+    description='Clashes geometry between two IFC files')
+parser.add_argument(
+    'a',
+    type=str,
+    help='The IFC file containing group A of objects to clash')
+parser.add_argument(
+    'b',
+    type=str,
+    help='The IFC file containing group B of objects to clash')
+parser.add_argument(
+    '-o',
+    '--output',
+    type=str,
+    help='The JSON diff file to output. Defaults to clashes.json',
+    default='clashes.json')
+args = parser.parse_args()
+
+ifc_clasher = IfcClasher(args.a, args.b)
 ifc_clasher.clash()
 
-with open('clashes.json', 'w', encoding='utf-8') as clashes_file:
+with open(args.output, 'w', encoding='utf-8') as clashes_file:
     json.dump(ifc_clasher.clashes, clashes_file, indent=4)
