@@ -715,33 +715,14 @@ class FetchObjectPassport(bpy.types.Operator):
         bpy.context.active_object.data = bpy.data.meshes[identification]
 
 
-class AddContext(bpy.types.Operator):
-    bl_idname = 'bim.add_context'
-    bl_label = 'Add Context'
-
-    def execute(self, context):
-        context = bpy.context.scene.BIMProperties.contexts.add()
-        context.name = bpy.context.scene.BIMProperties.available_contexts
-        return {'FINISHED'}
-
-
-class RemoveContext(bpy.types.Operator):
-    bl_idname = 'bim.remove_context'
-    bl_label = 'Remove Context'
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.contexts.remove(self.index)
-        return {'FINISHED'}
-
-
 class AddSubcontext(bpy.types.Operator):
     bl_idname = 'bim.add_subcontext'
     bl_label = 'Add Subcontext'
-    context_index: bpy.props.IntProperty()
+    context: bpy.props.StringProperty()
 
     def execute(self, context):
-        subcontext = bpy.context.scene.BIMProperties.contexts[self.context_index].subcontexts.add()
+        props = bpy.context.scene.BIMProperties
+        subcontext = getattr(bpy.context.scene.BIMProperties, '{}_subcontexts'.format(self.context)).add()
         subcontext.name = bpy.context.scene.BIMProperties.available_subcontexts
         subcontext.target_view = bpy.context.scene.BIMProperties.available_target_views
         return {'FINISHED'}
@@ -753,8 +734,7 @@ class RemoveSubcontext(bpy.types.Operator):
     indexes: bpy.props.StringProperty()
 
     def execute(self, context):
-        context_index, subcontext_index = self.indexes.split('-')
-        context_index = int(context_index)
+        context, subcontext_index = self.indexes.split('-')
         subcontext_index = int(subcontext_index)
-        bpy.context.scene.BIMProperties.contexts[context_index].subcontexts.remove(subcontext_index)
+        getattr(bpy.context.scene.BIMProperties, '{}_subcontexts'.format(context)).remove(subcontext_index)
         return {'FINISHED'}

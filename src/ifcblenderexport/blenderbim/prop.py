@@ -137,14 +137,6 @@ def getApplicableDocuments(self, context):
     return documents_enum
 
 
-def getContexts(self, context):
-    global contexts_enum
-    contexts_enum.clear()
-    for context in export_ifc.IfcExportSettings().contexts:
-        contexts_enum.append((context, context, ''))
-    return contexts_enum
-
-
 def getSubcontexts(self, context):
     global subcontexts_enum
     subcontexts_enum.clear()
@@ -166,12 +158,6 @@ def getTargetViews(self, context):
 class Subcontext(PropertyGroup):
     name: StringProperty(name='Name')
     target_view: StringProperty(name='Target View')
-
-
-class Context(PropertyGroup):
-    name: StringProperty(name='Name')
-    foobar: StringProperty(name='foobar')
-    subcontexts: CollectionProperty(name='Subcontexts', type=Subcontext)
 
 
 class BIMProperties(PropertyGroup):
@@ -200,8 +186,10 @@ class BIMProperties(PropertyGroup):
     aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
     reference: EnumProperty(items=getReferences, name="Reference")
-    contexts: CollectionProperty(name="Contexts", type=Context)
-    available_contexts: EnumProperty(items=getContexts, name="Available Contexts")
+    has_model_context: BoolProperty(name="Has Model Context", default=True)
+    has_plan_context: BoolProperty(name="Has Plan Context", default=False)
+    model_subcontexts: CollectionProperty(name='Model Subcontexts', type=Subcontext)
+    plan_subcontexts: CollectionProperty(name='Plan Subcontexts', type=Subcontext)
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
 

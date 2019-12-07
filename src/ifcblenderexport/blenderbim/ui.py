@@ -195,27 +195,21 @@ class BIM_PT_context(Panel):
         scene = context.scene
         props = scene.BIMProperties
 
-        row = layout.row(align=True)
-        row.prop(props, 'available_contexts', text='')
-        row.operator('bim.add_context', icon='ADD', text='')
-
-        for index, context in enumerate(props.contexts):
-            layout.label(text="Geometric Representation Context:")
-
+        for context in ['model', 'plan']:
             row = layout.row(align=True)
-            row.prop(context, 'name', text='')
-            row.operator('bim.remove_context', icon='X', text='').index = index
+            row.prop(props, 'has_{}_context'.format(context))
+            layout.label(text="Geometric Representation Subcontexts:")
 
             row = layout.row(align=True)
             row.prop(props, 'available_subcontexts', text='')
             row.prop(props, 'available_target_views', text='')
-            row.operator('bim.add_subcontext', icon='ADD', text='').context_index = index
+            row.operator('bim.add_subcontext', icon='ADD', text='').context = context
 
-            for subcontext_index, subcontext in enumerate(context.subcontexts):
+            for subcontext_index, subcontext in enumerate(getattr(props, '{}_subcontexts'.format(context))):
                 row = layout.row(align=True)
                 row.prop(subcontext, 'name', text='')
                 row.prop(subcontext, 'target_view', text='')
-                row.operator('bim.remove_subcontext', icon='X', text='').indexes = '{}-{}'.format(index, subcontext_index)
+                row.operator('bim.remove_subcontext', icon='X', text='').indexes = '{}-{}'.format(context, subcontext_index)
 
 
 class BIM_PT_bim(Panel):
