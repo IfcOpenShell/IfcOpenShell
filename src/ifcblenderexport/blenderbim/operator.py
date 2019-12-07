@@ -36,6 +36,19 @@ class ExportIFC(bpy.types.Operator):
         ifc_export_settings.has_representations = bpy.context.scene.BIMProperties.export_has_representations
         ifc_export_settings.should_export_all_materials_as_styled_items = bpy.context.scene.BIMProperties.export_should_export_all_materials_as_styled_items
         ifc_export_settings.should_use_presentation_style_assignment = bpy.context.scene.BIMProperties.export_should_use_presentation_style_assignment
+        ifc_export_settings.context_tree = []
+        for context in ['model', 'plan']:
+            if getattr(bpy.context.scene.BIMProperties, 'has_{}_context'.format(context)):
+                subcontexts = {}
+                for subcontext in getattr(bpy.context.scene.BIMProperties, '{}_subcontexts'.format(context)):
+                    subcontexts.setdefault(subcontext.name, []).append(subcontext.target_view)
+                ifc_export_settings.context_tree.append({
+                    'name': context.title(),
+                    'subcontexts': [
+                        { 'name': key, 'target_views': value }
+                        for key, value in subcontexts.items()
+                    ]
+                })
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         ifc_schema = export_ifc.IfcSchema(ifc_export_settings)
         qto_calculator = export_ifc.QtoCalculator()
