@@ -3,7 +3,9 @@ import os
 import csv
 from pathlib import Path
 from . import export_ifc
+import bpy
 from bpy.types import PropertyGroup
+from bpy.app.handlers import persistent
 from bpy.props import (
     StringProperty,
     EnumProperty,
@@ -33,6 +35,15 @@ documents_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
+
+@persistent
+def setDefaultProperties(scene):
+    if bpy.context.scene.BIMProperties.has_model_context \
+            and len(bpy.context.scene.BIMProperties.model_subcontexts) == 0:
+        subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
+        subcontext.name = 'Body'
+        subcontext.target_view = 'MODEL_VIEW'
+
 
 def getIfcPredefinedTypes(self, context):
     global types_enum

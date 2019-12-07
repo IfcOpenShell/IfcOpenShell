@@ -2019,29 +2019,4 @@ class IfcExportSettings:
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
         self.should_export_all_materials_as_styled_items = False
         self.should_use_presentation_style_assignment = False
-        # TODO make this configurable via UI
-        self.context_tree = self.build_context_tree()
-
-    def build_context_tree(self):
-        tree = []
-        for context in self.contexts:
-            subcontexts = []
-            for subcontext in self.subcontexts + self.generated_subcontexts:
-                target_views = []
-                for target_view in self.target_views:
-                    if context == 'Model' \
-                            and target_view != 'MODEL_VIEW':
-                        continue
-                    elif context == 'Plan' \
-                            and target_view == 'MODEL_VIEW':
-                        continue
-                    target_views.append(target_view)
-                subcontexts.append({
-                    'name': subcontext,
-                    'target_views': target_views
-                })
-            tree.append({
-                'name': context,
-                'subcontexts': subcontexts
-            })
-        return tree
+        self.context_tree = []
