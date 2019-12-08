@@ -33,13 +33,13 @@ def has_occ():
     try:
         import OCC.Core.BRepTools
         return True
-    except ModuleNotFoundError:
+    except ImportError:
         pass
 
     try:
         import OCC.BRepTools
         return True
-    except ModuleNotFoundError:
+    except ImportError:
         pass
 
     return False
@@ -57,7 +57,7 @@ if has_occ:
 
     try:
         from OCC.Core import TopoDS
-    except ModuleNotFoundError:
+    except ImportError:
         from OCC import TopoDS
 
     def wrap_shape_creation(settings, shape): return utils.create_shape_from_serialization(shape) if getattr(settings,
