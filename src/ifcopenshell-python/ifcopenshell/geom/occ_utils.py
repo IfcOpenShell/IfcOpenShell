@@ -29,7 +29,7 @@ from collections import namedtuple, Iterable
 
 try:
     from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
-except ModuleNotFoundError:
+except ImportError:
     from OCC import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
 
 shape_tuple = namedtuple('shape_tuple', ('data', 'geometry', 'styles'))
