@@ -31,10 +31,18 @@ from ..entity_instance import entity_instance
 
 def has_occ():
     try:
+        import OCC.Core.BRepTools
+        return True
+    except ModuleNotFoundError:
+        pass
+
+    try:
         import OCC.BRepTools
-    except BaseException:
-        return False
-    return True
+        return True
+    except ModuleNotFoundError:
+        pass
+
+    return False
 
 
 has_occ = has_occ()
@@ -46,6 +54,11 @@ def wrap_shape_creation(settings, shape):
 
 if has_occ:
     from . import occ_utils as utils
+
+    try:
+        from OCC.Core import TopoDS
+    except ModuleNotFoundError:
+        from OCC import TopoDS
 
     def wrap_shape_creation(settings, shape): return utils.create_shape_from_serialization(shape) if getattr(settings,
                                                                                                              'use_python_opencascade',
@@ -118,8 +131,7 @@ class tree(ifcopenshell_wrapper.tree):
         if isinstance(value, entity_instance):
             args.append(kwargs.get("completely_within", False))
         elif has_occ:
-            import OCC.TopoDS
-            if isinstance(value, OCC.TopoDS.TopoDS_Shape):
+            if isinstance(value, TopoDS.TopoDS_Shape):
                 args[1] = utils.serialize_shape(value)
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
 
@@ -183,10 +195,8 @@ def make_shape_function(fn):
         return None if e is None else entity_instance(e)
 
     if has_occ:
-        import OCC.TopoDS
-
         def _(string_or_shape, *args):
-            if isinstance(string_or_shape, OCC.TopoDS.TopoDS_Shape):
+            if isinstance(string_or_shape, TopoDS.TopoDS_Shape):
                 string_or_shape = utils.serialize_shape(string_or_shape)
             return entity_instance_or_none(fn(string_or_shape, *args))
     else:
