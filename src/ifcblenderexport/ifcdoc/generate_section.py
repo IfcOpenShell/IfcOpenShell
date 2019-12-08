@@ -2,6 +2,7 @@ import os
 import math
 import svgwrite
 import time
+import numpy
 import pickle
 from pathlib import Path
 
@@ -13,7 +14,6 @@ import OCC.BRep
 import OCC.BRepPrimAPI
 import OCC.BRepAlgoAPI
 import OCC.BRepBuilderAPI
-import OCC.BRepAlgo
 import OCC.TopOpeBRepTool
 import OCC.TopOpeBRepBuild
 import OCC.ShapeExtend
@@ -31,6 +31,7 @@ import OCC.BRepBndLib
 import OCC.BRepTools
 import OCC.TopoDS
 import OCC.GeomLProp
+import OCC.IntCurvesFace
 
 from OCC.TopoDS import topods
 
@@ -44,6 +45,7 @@ class IfcCutter:
         self.cut_polygons = []
         self.ifc_files = []
         self.unit = None
+        self.resolved_pixels = set()
         self.section_box = {
             'top_left_corner': (-3., -2.45, 4.75),
             'projection': (0., 1., 0.),
@@ -82,7 +84,18 @@ class IfcCutter:
             'x_axis': (1.0, 0.0, 0.0),
             'x': 17.4,
             'y': 34.4,
-            'z': 5.23,
+            'z': 1.9,
+            'shape': None,
+            'face': None
+            }
+        self.section_boxno = {
+            'projection': (0, 1, 0),
+            'x_axis': (1, 0, 0),
+            'y_axis': (0, 0, -1),
+            'top_left_corner': (-2, 2, 8),
+            'x': 14,
+            'y': 9,
+            'z': 2,
             'shape': None,
             'face': None
             }
@@ -111,6 +124,14 @@ class IfcCutter:
         start_time = time.time()
         print('# Get background elements')
         self.get_background_elements()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Sort background elements')
+        self.sort_background_elements(reverse=True)
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Merge background_elements')
+        self.merge_background_elements()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
         start_time = time.time()
         print('# Sort background elements')
@@ -158,9 +179,103 @@ class IfcCutter:
             with open('shapes.pickle', 'wb') as shape_file:
                 pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def sort_background_elements(self):
-        new_list = sorted(self.background_elements, key=lambda k: k['z'])
+    def sort_background_elements(self, reverse=None):
+        if reverse:
+            new_list = sorted(self.background_elements, key=lambda k: -k['z'])
+        else:
+            new_list = sorted(self.background_elements, key=lambda k: k['z'])
         self.background_elements = new_list
+
+    def process_grid(self, face, resolution):
+        try:
+            bbox = self.get_bbox(face)
+            xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+        except:
+            return
+        current_x = 0
+        current_y = 0
+        is_visible = False
+        while current_x < self.section_box['x']:
+            current_y = 0
+            while current_y > -self.section_box['y']:
+                if current_x < xmin \
+                    or current_x > xmax \
+                    or current_y < ymin \
+                    or current_y > ymax:
+                    current_y -= resolution
+                    continue
+                if (current_x, current_y) in self.resolved_pixels:
+                    current_y -= resolution
+                    continue
+                point = numpy.array((current_x, current_y, 0))
+                hit = self.raycast(face, point)
+                if hit:
+                    is_visible = True
+                    self.resolved_pixels.add((current_x, current_y))
+                current_y -= resolution
+            current_x += resolution
+        return is_visible
+
+    def merge_background_elements(self):
+        background_elements = []
+
+        resolution = 0.1 # 10cm
+
+        # DO CUT
+        total_product_shapes = len(self.cut_polygons)
+        n = 0
+        for element in self.cut_polygons:
+            #print('{}/{} background elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
+            print('{}/{} cut polygons processed ...'.format(n, total_product_shapes))
+            print('{} resolved pixels'.format(len(self.resolved_pixels)))
+            n += 1
+            self.process_grid(element['geometry_face'], resolution)
+
+        # DO BACKGROUND
+        total_product_shapes = len(self.background_elements)
+        n = 0
+        for element in self.background_elements:
+            #print('{}/{} background elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
+            print('{}/{} background elements processed ...'.format(n, total_product_shapes))
+            print('{} resolved pixels'.format(len(self.resolved_pixels)))
+            n += 1
+            if element['type'] != 'polygon':
+                background_elements.append(element)
+                continue
+            is_visible = self.process_grid(element['geometry_face'], resolution)
+            if is_visible:
+                background_elements.append(element)
+
+        print('##### BEFORE it had {} and after it had {}'.format(
+            len(self.background_elements), len(background_elements)))
+        self.background_elements = background_elements
+
+        return
+        # my previous attempt
+        fused_elements = []
+        previous_element = None
+        for element in self.background_elements:
+            if previous_element is None:
+                previous_element = element
+                continue
+            if element['type'] == previous_element['type'] \
+                and element['raw'].GlobalId == previous_element['raw'].GlobalId \
+                and element['type'] == 'polygon':
+                fuse = OCC.BRepAlgoAPI.BRepAlgoAPI_Fuse(
+                    previous_element['geometry'], element['geometry']).Shape()
+                print('FUSING')
+                exp = OCC.TopExp.TopExp_Explorer(fuse, OCC.TopAbs.TopAbs_WIRE)
+                previous_element = {
+                    'raw': element['raw'],
+                    'geometry': exp.Current(),
+                    'geometry_face': fuse,
+                    'type': 'polygon',
+                    'z': element['z']
+                    }
+            else:
+                fused_elements.append(element)
+            #print(element)
+        self.background_elements = fused_elements
 
     def create_section_box(self):
         top_left_corner = OCC.gp.gp_Pnt(
@@ -195,14 +310,22 @@ class IfcCutter:
     def get_background_elements(self):
         total_product_shapes = len(self.product_shapes)
         n = 0
+        intersections = []
+        compound = OCC.TopoDS.TopoDS_Compound()
+        builder = OCC.BRep.BRep_Builder()
+        builder.MakeCompound(compound)
         for product, shape in self.product_shapes:
+            builder.Add(compound, shape)
+
             print('{}/{} background elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
             #print('Processing product {} '.format(product.Name))
             n += 1
+
             intersection = OCC.BRepAlgoAPI.BRepAlgoAPI_Common(self.section_box['shape'], shape).Shape()
             intersection_edges = self.get_booleaned_edges(intersection)
             if len(intersection_edges) <= 0:
                 continue
+            intersections.append(intersection)
 
             transformed_intersection = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
                 intersection, self.transformation)
@@ -226,9 +349,62 @@ class IfcCutter:
                 self.get_split_edges(edge_face_map, face, zmax, product)
                 exp.Next()
 
-    def calculate_face_zpos(self, face):
+        #print('test')
+        #print(compound)
+        #hits = self.get_raycast_hits(compound)
+        #print(hits)
+
+
+    def get_raycast_hits(self, shape):
+        resolution = 0.1 # 5cm
+        hits = []
+        current_x = 0
+        current_y = 0
+        while current_x < self.section_box['x'] /2:
+            current_y = 0
+            while current_y < self.section_box['y']/4:
+                point = numpy.array(self.section_box['top_left_corner'])
+                point = numpy.add(point, current_x * numpy.array(self.section_box['x_axis']))
+                point = numpy.add(point, current_y * numpy.array(self.section_box['y_axis']))
+                hit = self.raycast(shape, point)
+                if hit:
+                    hits.append(hit)
+                current_y += resolution
+            current_x += resolution
+            print('row down')
+        return hits
+
+    def raycast(self, shape, point):
+        raycast = OCC.IntCurvesFace.IntCurvesFace_ShapeIntersector()
+        raycast.Load(shape, 0.01)
+        line = OCC.gp.gp_Lin(
+            OCC.gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
+            OCC.gp.gp_Dir( 0, 0, -1))
+        raycast.Perform(line, 0, self.section_box['z'])
+        return raycast.NbPnt() != 0
+
+    def raycast_at_projection_dir(self, shape, point):
+        raycast = OCC.IntCurvesFace.IntCurvesFace_ShapeIntersector()
+        raycast.Load(shape, 0.01)
+        line = OCC.gp.gp_Lin(
+            OCC.gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
+            OCC.gp.gp_Dir(
+                self.section_box['projection'][0],
+                self.section_box['projection'][1],
+                self.section_box['projection'][2]))
+        raycast.Perform(line, 0, self.section_box['z'])
+        if raycast.NbPnt() != 0:
+            # The smaller WParameter is the closer z-index
+            # Should be the first
+            return { 'face': raycast.Face(1), 'z': raycast.WParameter(1) }
+
+    def get_bbox(self, shape):
         bbox = OCC.Bnd.Bnd_Box()
-        OCC.BRepBndLib.brepbndlib_Add(face, bbox)
+        OCC.BRepBndLib.brepbndlib_Add(shape, bbox)
+        return bbox
+
+    def calculate_face_zpos(self, face):
+        bbox = self.get_bbox(face)
         xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
         zpos = zmin + ((zmax - zmin)/2)
         return zpos, zmax
@@ -378,10 +554,12 @@ class IfcCutter:
                 wire_shape = transformed_wire.Shape()
 
                 wire = topods.Wire(wire_shape)
+                face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(wire).Face()
 
                 self.cut_polygons.append({
                     'raw': product,
-                    'geometry': wire
+                    'geometry': wire,
+                    'geometry_face': face
                     })
 
     def connect_edges_into_wires(self, unconnected_edges):
