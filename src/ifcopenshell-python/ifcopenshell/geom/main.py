@@ -28,24 +28,7 @@ from .. import ifcopenshell_wrapper
 from ..file import file
 from ..entity_instance import entity_instance
 
-
-def has_occ():
-    try:
-        import OCC.Core.BRepTools
-        return True
-    except ImportError:
-        pass
-
-    try:
-        import OCC.BRepTools
-        return True
-    except ImportError:
-        pass
-
-    return False
-
-
-has_occ = has_occ()
+from . import has_occ
 
 
 def wrap_shape_creation(settings, shape):
