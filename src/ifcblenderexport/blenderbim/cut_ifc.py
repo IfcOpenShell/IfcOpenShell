@@ -46,49 +46,9 @@ class IfcCutter:
         self.ifc_files = []
         self.unit = None
         self.resolved_pixels = set()
+        self.should_get_background = False
+        self.pickle_file = 'shapes.pickle'
         self.section_box = {
-            'top_left_corner': (-3., -2.45, 4.75),
-            'projection': (0., 1., 0.),
-            'x_axis': (1., 0., 0.),
-            'x': 15.,
-            'y': 7.,
-            'z': 3.5,
-            'shape': None,
-            'face': None
-        }
-
-        self.section_box = {
-            'top_left_corner': (-3.097275733947754, 0.42036718130111694, 11.297039031982422),
-            'projection': (0.0, 1.0000001192092896, 0.0),
-            'x_axis': (1.0000001192092896, 0.0, 0.0),
-            'x': 16.4,
-            'y': 16.4,
-            'z': 16.5,
-            'shape': None,
-            'face': None
-        }
-        self.section_box = {
-            'projection': (0.0, 1.0000001192092896, 0.0),
-            #'top_left_corner': (11.5675630569458, -4.225902557373047, 7.368159770965576),
-            'top_left_corner': (11.5675630569458, 0.1, 7.368159770965576),
-            'x_axis': (1.0000001192092896, 0.0, 0.0),
-            'x': 17.4,
-            'y': 8.37,
-            'z': 5.23,
-            'shape': None,
-            'face': None
-            }
-        self.section_box = {
-            'projection': (0.0, 3.2584136988589307e-07, -1.0),
-            'top_left_corner': (12.898375511169434, 31.655664443969727, 2.339174270629883),
-            'x_axis': (1.0, 0.0, 0.0),
-            'x': 17.4,
-            'y': 34.4,
-            'z': 1.9,
-            'shape': None,
-            'face': None
-            }
-        self.section_boxno = {
             'projection': (0, 1, 0),
             'x_axis': (1, 0, 0),
             'y_axis': (0, 0, -1),
@@ -98,7 +58,7 @@ class IfcCutter:
             'z': 2,
             'shape': None,
             'face': None
-            }
+        }
 
     def cut(self):
         start_time = time.time()
@@ -121,6 +81,10 @@ class IfcCutter:
         print('# Get cut polygons')
         self.get_cut_polygons()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+
+        if not self.should_get_background:
+            return
+
         start_time = time.time()
         print('# Get background elements')
         self.get_background_elements()
@@ -153,8 +117,8 @@ class IfcCutter:
     def get_product_shapes(self):
         shape_map = {}
 
-        if os.path.isfile('shapes.pickle'):
-            with open('shapes.pickle', 'rb') as shape_file:
+        if os.path.isfile(self.pickle_file):
+            with open(self.pickle_file, 'rb') as shape_file:
                 shape_map = pickle.load(shape_file)
 
         settings = ifcopenshell.geom.settings()
@@ -175,8 +139,8 @@ class IfcCutter:
                     shape_map[product.GlobalId] = shape
                 self.product_shapes.append((product, shape))
 
-        if not os.path.isfile('shapes.pickle'):
-            with open('shapes.pickle', 'wb') as shape_file:
+        if not os.path.isfile(self.pickle_file):
+            with open(self.pickle_file, 'wb') as shape_file:
                 pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def sort_background_elements(self, reverse=None):
@@ -249,33 +213,7 @@ class IfcCutter:
         print('##### BEFORE it had {} and after it had {}'.format(
             len(self.background_elements), len(background_elements)))
         self.background_elements = background_elements
-
         return
-        # my previous attempt
-        fused_elements = []
-        previous_element = None
-        for element in self.background_elements:
-            if previous_element is None:
-                previous_element = element
-                continue
-            if element['type'] == previous_element['type'] \
-                and element['raw'].GlobalId == previous_element['raw'].GlobalId \
-                and element['type'] == 'polygon':
-                fuse = OCC.BRepAlgoAPI.BRepAlgoAPI_Fuse(
-                    previous_element['geometry'], element['geometry']).Shape()
-                print('FUSING')
-                exp = OCC.TopExp.TopExp_Explorer(fuse, OCC.TopAbs.TopAbs_WIRE)
-                previous_element = {
-                    'raw': element['raw'],
-                    'geometry': exp.Current(),
-                    'geometry_face': fuse,
-                    'type': 'polygon',
-                    'z': element['z']
-                    }
-            else:
-                fused_elements.append(element)
-            #print(element)
-        self.background_elements = fused_elements
 
     def create_section_box(self):
         top_left_corner = OCC.gp.gp_Pnt(
@@ -348,12 +286,6 @@ class IfcCutter:
                 self.build_new_face(face, zpos, product)
                 self.get_split_edges(edge_face_map, face, zmax, product)
                 exp.Next()
-
-        #print('test')
-        #print(compound)
-        #hits = self.get_raycast_hits(compound)
-        #print(hits)
-
 
     def get_raycast_hits(self, shape):
         resolution = 0.1 # 5cm
