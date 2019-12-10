@@ -61,8 +61,10 @@ classes = (
     operator.FetchObjectPassport,
     operator.AddSubcontext,
     operator.RemoveSubcontext,
+    operator.CutSection,
     prop.Subcontext,
     prop.BIMProperties,
+    prop.DocProperties,
     prop.BIMLibrary,
     prop.MapConversion,
     prop.TargetCRS,
@@ -75,6 +77,7 @@ classes = (
     prop.BIMMaterialProperties,
     prop.SweptSolid,
     prop.BIMMeshProperties,
+    ui.BIM_PT_documentation,
     ui.BIM_PT_bim,
     ui.BIM_PT_context,
     ui.BIM_PT_qa,
@@ -102,6 +105,7 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
     bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
     bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
     bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
@@ -117,6 +121,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del(bpy.types.Scene.BIMProperties)
+    del(bpy.types.Scene.DocProperties)
     del(bpy.types.Scene.MapConversion)
     del(bpy.types.Scene.TargetCRS)
     del(bpy.types.Object.BIMObjectProperties)

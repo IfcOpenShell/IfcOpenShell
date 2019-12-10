@@ -1,11 +1,19 @@
 import os
 import math
-import svgwrite
 import time
 import numpy
 import pickle
+import sys
 from pathlib import Path
+from mathutils import Vector
+import xml.etree.ElementTree as ET
 
+# This hack is required to get the svgwrite dependency to load
+# TODO: decouple cutter into its own binary
+cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
+sys.path.append(cwd)
+
+import svgwrite
 import OCC.gp
 import OCC.Geom
 import OCC.Bnd
@@ -43,11 +51,14 @@ class IfcCutter:
         self.product_shapes = []
         self.background_elements = []
         self.cut_polygons = []
+        self.data_dir = ''
         self.ifc_files = []
         self.unit = None
         self.resolved_pixels = set()
         self.should_get_background = False
         self.pickle_file = 'shapes.pickle'
+        self.diagram_name = None
+        self.background_image = None
         self.section_box = {
             'projection': (0, 1, 0),
             'x_axis': (1, 0, 0),
@@ -103,7 +114,7 @@ class IfcCutter:
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
 
     def load_ifc_files(self):
-        for filename in Path('ifc/').glob('*.ifc'):
+        for filename in Path(self.data_dir).glob('*.ifc'):
             print('Loading file {} ...'.format(filename))
             self.ifc_files.append(ifcopenshell.open(filename))
 
@@ -558,6 +569,24 @@ class IfcCutterDebug(IfcCutter):
                 ifcopenshell.geom.utils.display_shape(element['geometry_face'])
         input('Debug: showing background elements.')
 
+
+class External(svgwrite.container.Group):
+    def __init__(self, xml, **extra):
+        self.xml = xml
+
+        # Remove namespace
+        ns = u'{http://www.w3.org/2000/svg}'
+        nsl = len(ns)
+        for elem in self.xml.getiterator():
+            if elem.tag.startswith(ns):
+                elem.tag = elem.tag[nsl:]
+
+        super(External, self).__init__(**extra)
+
+    def get_xml(self):
+        return self.xml
+
+
 class SvgWriter():
     def __init__(self, ifc_cutter):
         self.ifc_cutter = ifc_cutter
@@ -565,26 +594,51 @@ class SvgWriter():
 
     def write(self):
         self.calculate_scale()
-        self.svg = svgwrite.Drawing('output.svg',
+        self.output = os.path.join(
+            self.ifc_cutter.data_dir,
+            'diagrams',
+            self.ifc_cutter.diagram_name + '.svg'
+        )
+        self.svg = svgwrite.Drawing(
+            self.output,
             debug=False,
-            size=('{}mm'.format(self.ifc_cutter.section_box['x'] * self.scale),
-                '{}mm'.format(self.ifc_cutter.section_box['y'] * self.scale)),
-            viewBox=('0 0 {} {}'.format(
-                self.ifc_cutter.section_box['x'] * self.scale,
-                self.ifc_cutter.section_box['y'] * self.scale)))
+            size=('{}mm'.format(self.width), '{}mm'.format(self.height)),
+            viewBox=('0 0 {} {}'.format(self.width, self.height)))
+
         self.add_stylesheet()
+        self.add_defs()
+        self.draw_background_image()
         self.draw_background_elements()
         self.draw_cut_polygons()
+        self.draw_annotations()
         self.svg.save(pretty=True)
 
     def calculate_scale(self):
         # TODO: properly handle units
         if self.ifc_cutter.unit.Name == 'METRE':
             self.scale *= 1000
+        self.raw_width = self.ifc_cutter.section_box['x']
+        self.raw_height = self.ifc_cutter.section_box['y']
+        self.width = self.raw_width * self.scale
+        self.height = self.raw_height * self.scale
 
     def add_stylesheet(self):
-        with open('styles/default.css', 'r') as stylesheet:
+        with open('{}styles/default.css'.format(self.ifc_cutter.data_dir), 'r') as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
+
+    def add_defs(self):
+        tree = ET.parse('{}styles/defs.svg'.format(self.ifc_cutter.data_dir))
+        root = tree.getroot()
+        for child in root.getchildren():
+            self.svg.defs.add(External(child))
+
+    def draw_background_image(self):
+        self.svg.add(self.svg.image(
+            os.path.basename(self.ifc_cutter.background_image), **{
+                'width': self.width,
+                'height': self.height
+            }
+        ))
 
     def draw_background_elements(self):
         for element in self.ifc_cutter.background_elements:
@@ -594,6 +648,19 @@ class SvgWriter():
                 self.draw_polyline(element, 'background')
             elif element['type'] == 'line':
                 self.draw_line(element, 'background')
+
+    def draw_annotations(self):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        for edge in self.ifc_cutter.annotation_obj.data.edges:
+            classes = ['annotation', 'dimension']
+            v0 = self.ifc_cutter.annotation_obj.data.vertices[edge.vertices[0]].co
+            v1 = self.ifc_cutter.annotation_obj.data.vertices[edge.vertices[1]].co
+            start = ((x_offset + v0.x) * self.scale, (y_offset - v0.y) * self.scale)
+            end = ((x_offset + v1.x) * self.scale, (y_offset - v1.y) * self.scale)
+            line = self.svg.add(self.svg.line(start=start, end=end, class_=' '.join(classes)))
+            line['marker-start'] = 'url(#dimension-marker)'
+            line['marker-end'] = 'url(#dimension-marker)'
 
     def draw_cut_polygons(self):
         for polygon in self.ifc_cutter.cut_polygons:
@@ -636,12 +703,3 @@ class SvgWriter():
                 classes.append('material-{}'.format(association.RelatingMaterial.Name))
         classes.append('globalid-{}'.format(element.GlobalId))
         return classes
-
-print('# Starting process')
-ifc_cutter = IfcCutter()
-#ifc_cutter = IfcCutterDebug()
-svg_writer = SvgWriter(ifc_cutter)
-ifc_cutter.cut()
-start_time = time.time()
-svg_writer.write()
-print('# SVG writing finished in {:.2f} seconds'.format(time.time() - start_time))

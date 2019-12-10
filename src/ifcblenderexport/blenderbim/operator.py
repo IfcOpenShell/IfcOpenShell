@@ -6,8 +6,10 @@ import logging
 from . import ifcopenshell
 from . import export_ifc
 from . import import_ifc
+from . import cut_ifc
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
+from mathutils import Vector
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -751,3 +753,59 @@ class RemoveSubcontext(bpy.types.Operator):
         subcontext_index = int(subcontext_index)
         getattr(bpy.context.scene.BIMProperties, '{}_subcontexts'.format(context)).remove(subcontext_index)
         return {'FINISHED'}
+
+
+class CutSection(bpy.types.Operator):
+    bl_idname = 'bim.cut_section'
+    bl_label = 'Cut Section'
+
+    def execute(self, context):
+        camera = bpy.context.active_object
+        if not (camera.type == 'CAMERA' and camera.data.type == 'ORTHO'):
+            return {'FINISHED'}
+        self.diagram_name = camera.name
+        bpy.context.scene.render.filepath = os.path.join(
+            bpy.context.scene.BIMProperties.data_dir,
+            'diagrams',
+            '{}.png'.format(self.diagram_name)
+        )
+        bpy.ops.render.render(write_still=True)
+        location = camera.location
+        render = bpy.context.scene.render
+        if self.is_landscape():
+            width = camera.data.ortho_scale
+            height = width / render.resolution_x * render.resolution_y
+        else:
+            height = camera.data.ortho_scale
+            width = height / render.resolution_y * render.resolution_x
+        depth = camera.data.clip_end
+        projection = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+        x_axis = camera.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+        y_axis = camera.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+        top_left_corner = location - (width / 2 * x_axis) - (height / 2 * y_axis)
+        ifc_cutter = cut_ifc.IfcCutter()
+        ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
+        ifc_cutter.diagram_name = self.diagram_name
+        ifc_cutter.background_image = bpy.context.scene.render.filepath
+        ifc_cutter.annotation_obj = bpy.data.objects['{}-Annotation'.format(
+            self.diagram_name
+        )]
+        ifc_cutter.section_box = {
+            'projection': tuple(projection),
+            'x_axis': tuple(x_axis),
+            'y_axis': tuple(y_axis),
+            'top_left_corner': tuple(top_left_corner),
+            'x': width,
+            'y': height,
+            'z': depth,
+            'shape': None,
+            'face': None
+        }
+        ifc_cutter.pickle_file = os.path.join(ifc_cutter.data_dir, 'shapes.pickle')
+        svg_writer = cut_ifc.SvgWriter(ifc_cutter)
+        ifc_cutter.cut()
+        svg_writer.write()
+        return {'FINISHED'}
+
+    def is_landscape(self):
+        return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y

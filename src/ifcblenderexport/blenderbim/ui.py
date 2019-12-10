@@ -182,6 +182,20 @@ class BIM_PT_gis(Panel):
         layout.row().prop(scene.TargetCRS, 'map_unit')
 
 
+class BIM_PT_documentation(Panel):
+    bl_label = "Diagrammatic Documentation"
+    bl_idname = "BIM_PT_documentation"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        props = bpy.context.scene.DocProperties
+
+        row = layout.row()
+        row.operator('bim.cut_section')
+
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
