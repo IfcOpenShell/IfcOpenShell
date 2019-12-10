@@ -171,6 +171,10 @@ class Subcontext(PropertyGroup):
     target_view: StringProperty(name='Target View')
 
 
+class DocProperties(PropertyGroup):
+    blah: StringProperty(name="Blah")
+
+
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
