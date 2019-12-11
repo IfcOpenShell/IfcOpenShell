@@ -598,7 +598,9 @@ class SvgWriter():
             self.output,
             debug=False,
             size=('{}mm'.format(self.width), '{}mm'.format(self.height)),
-            viewBox=('0 0 {} {}'.format(self.width, self.height)))
+            viewBox=('0 0 {} {}'.format(self.width, self.height)),
+            id='root'
+        )
 
         self.add_stylesheet()
         self.add_defs()
@@ -622,7 +624,7 @@ class SvgWriter():
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_defs(self):
-        tree = ET.parse('{}styles/defs.svg'.format(self.ifc_cutter.data_dir))
+        tree = ET.parse('{}templates/defs.svg'.format(self.ifc_cutter.data_dir))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
@@ -651,11 +653,18 @@ class SvgWriter():
             classes = ['annotation', 'dimension']
             v0 = self.ifc_cutter.annotation_obj.data.vertices[edge.vertices[0]].co
             v1 = self.ifc_cutter.annotation_obj.data.vertices[edge.vertices[1]].co
-            start = ((x_offset + v0.x) * self.scale, (y_offset - v0.y) * self.scale)
-            end = ((x_offset + v1.x) * self.scale, (y_offset - v1.y) * self.scale)
-            line = self.svg.add(self.svg.line(start=start, end=end, class_=' '.join(classes)))
+            start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+            end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+            mid = ((end - start) / 2) + start
+            # TODO: hardcoded meters to mm conversion, until I properly do units
+            dimension = (end - start).length * 1000
+            line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                end=tuple(end * self.scale), class_=' '.join(classes)))
             line['marker-start'] = 'url(#dimension-marker)'
             line['marker-end'] = 'url(#dimension-marker)'
+            self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(mid * self.scale), **{
+                'font-size': '0.2mm'
+            }))
 
     def draw_cut_polygons(self):
         for polygon in self.ifc_cutter.cut_polygons:

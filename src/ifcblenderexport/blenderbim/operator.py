@@ -7,6 +7,7 @@ import ifcopenshell
 from . import export_ifc
 from . import import_ifc
 from . import cut_ifc
+from . import sheeter
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector
@@ -809,3 +810,13 @@ class CutSection(bpy.types.Operator):
 
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
+
+class CreateSheets(bpy.types.Operator):
+    bl_idname = 'bim.create_sheets'
+    bl_label = 'Create Sheets'
+
+    def execute(self, context):
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.build()
+        return {'FINISHED'}

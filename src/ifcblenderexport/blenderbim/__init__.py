@@ -62,6 +62,7 @@ classes = (
     operator.AddSubcontext,
     operator.RemoveSubcontext,
     operator.CutSection,
+    operator.CreateSheets,
     prop.Subcontext,
     prop.BIMProperties,
     prop.DocProperties,
