@@ -196,6 +196,9 @@ class BIM_PT_documentation(Panel):
         row = layout.row()
         row.operator('bim.cut_section')
 
+        row = layout.row()
+        row.operator('bim.create_sheets')
+
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
