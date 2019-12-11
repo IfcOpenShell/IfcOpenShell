@@ -8,11 +8,6 @@ from pathlib import Path
 from mathutils import Vector
 import xml.etree.ElementTree as ET
 
-# This hack is required to get the svgwrite dependency to load
-# TODO: decouple cutter into its own binary
-cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
-sys.path.append(cwd)
-
 import svgwrite
 import OCC.gp
 import OCC.Geom
