@@ -3,7 +3,7 @@ import bpy
 import time
 import json
 import logging
-from . import ifcopenshell
+import ifcopenshell
 from . import export_ifc
 from . import import_ifc
 from . import cut_ifc

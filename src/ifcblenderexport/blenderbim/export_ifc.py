@@ -5,8 +5,7 @@ import time
 from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper
-from . import ifcopenshell
-
+import ifcopenshell
 
 class ArrayModifier:
     count: int

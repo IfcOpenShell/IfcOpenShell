@@ -1,5 +1,5 @@
-from . import ifcopenshell
-from .ifcopenshell import geom
+import ifcopenshell
+import ifcopenshell.geom
 import bpy
 import os
 import json
