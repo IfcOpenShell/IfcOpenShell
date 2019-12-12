@@ -138,12 +138,15 @@ class IfcCutter:
             if product.is_a('IfcOpeningElement') or product.is_a('IfcSite'):
                 continue
             if product.Representation is not None:
-                if product.GlobalId in shape_map:
-                    shape = shape_map[product.GlobalId]
-                else:
-                    shape = ifcopenshell.geom.create_shape(settings, product).geometry
-                    shape_map[product.GlobalId] = shape
-                self.product_shapes.append((product, shape))
+                try:
+                    if product.GlobalId in shape_map:
+                        shape = shape_map[product.GlobalId]
+                    else:
+                        shape = ifcopenshell.geom.create_shape(settings, product).geometry
+                        shape_map[product.GlobalId] = shape
+                    self.product_shapes.append((product, shape))
+                except:
+                    print('Failed to create shape for {}'.format(product))
 
         if not os.path.isfile(self.pickle_file):
             with open(self.pickle_file, 'wb') as shape_file:
