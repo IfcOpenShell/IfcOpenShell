@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <svg baseProfile="full" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <marker id="dimension-marker" markerHeight="20" markerWidth="20" refX="7.5" refY="10" orient="auto">
-        <path d="M 7.5 0 L 7.5 20" class="annotation" style="stroke-width:2px;" />
-        <path d="M 0 0 L 15 20" class="annotation" style="stroke-width:3px;" />
+    <marker id="dimension-marker" markerHeight="20" markerWidth="20" refX="10" refY="15" orient="auto">
+        <path d="M 0 15 L 20 15" class="annotation" style="stroke-width:1;" />
+        <path d="M 10 0 L 10 30" class="annotation" style="stroke-width:1;" />
+        <path d="M 5 20 L 15 10" class="annotation" style="stroke-width:3;" />
     </marker>
 </svg>
