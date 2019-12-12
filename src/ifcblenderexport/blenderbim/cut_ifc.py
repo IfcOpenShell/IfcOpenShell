@@ -6,6 +6,7 @@ import pickle
 import sys
 from pathlib import Path
 from mathutils import Vector
+from math import degrees
 import xml.etree.ElementTree as ET
 
 import svgwrite
@@ -679,13 +680,29 @@ class SvgWriter():
             end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
             mid = ((end - start) / 2) + start
             # TODO: hardcoded meters to mm conversion, until I properly do units
-            dimension = (end - start).length * 1000
+            vector = end - start
+            if (end.y - start.y) * self.scale > 1:
+                perpendicular = Vector((-vector.y, vector.x)).normalized()
+            else:
+                perpendicular = Vector((vector.y, -vector.x)).normalized()
+            text_position = (mid * self.scale) + perpendicular
+            dimension = vector.length * 1000
+            rotation = -degrees(vector.angle(Vector((1, 0))))
             line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
                 end=tuple(end * self.scale), class_=' '.join(classes)))
             line['marker-start'] = 'url(#dimension-marker)'
             line['marker-end'] = 'url(#dimension-marker)'
-            self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(mid * self.scale), **{
-                'font-size': '0.2mm'
+            # Standard font sizes 1.8, 2.5, 3.5, 5, 7
+            # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
+            self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(text_position), **{
+                'transform': 'rotate({} {} {})'.format(
+                    rotation,
+                    text_position.x,
+                    text_position.y
+                ),
+                'font-size': '4.13', # 2.5
+                'font-family': 'OpenGost Type B TT',
+                'text-anchor': 'middle'
             }))
 
     def draw_cut_polygons(self):
