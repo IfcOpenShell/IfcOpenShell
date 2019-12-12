@@ -51,7 +51,9 @@ class IfcCutter:
         self.unit = None
         self.resolved_pixels = set()
         self.should_get_background = False
-        self.pickle_file = 'shapes.pickle'
+        self.shapes_pickle_file = 'shapes.pickle'
+        self.cut_pickle_file = 'cut.pickle'
+        self.should_recut = True
         self.diagram_name = None
         self.background_image = None
         self.section_box = {
@@ -121,10 +123,13 @@ class IfcCutter:
                 break
 
     def get_product_shapes(self):
+        if os.path.isfile(self.cut_pickle_file):
+            return
+
         shape_map = {}
 
-        if os.path.isfile(self.pickle_file):
-            with open(self.pickle_file, 'rb') as shape_file:
+        if os.path.isfile(self.shapes_pickle_file):
+            with open(self.shapes_pickle_file, 'rb') as shape_file:
                 shape_map = pickle.load(shape_file)
 
         settings = ifcopenshell.geom.settings()
@@ -148,8 +153,8 @@ class IfcCutter:
                 except:
                     print('Failed to create shape for {}'.format(product))
 
-        if not os.path.isfile(self.pickle_file):
-            with open(self.pickle_file, 'wb') as shape_file:
+        if not os.path.isfile(self.shapes_pickle_file):
+            with open(self.shapes_pickle_file, 'wb') as shape_file:
                 pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def sort_background_elements(self, reverse=None):
@@ -477,6 +482,11 @@ class IfcCutter:
         return edges
 
     def get_cut_polygons(self):
+        if os.path.isfile(self.cut_pickle_file):
+            with open(self.cut_pickle_file, 'rb') as pickle_file:
+                self.cut_polygons = pickle.load(pickle_file)
+                return
+
         total_product_shapes = len(self.product_shapes)
         n = 0
         for product, shape in self.product_shapes:
@@ -497,11 +507,20 @@ class IfcCutter:
                 wire = topods.Wire(wire_shape)
                 face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(wire).Face()
 
+                points = []
+                exp = OCC.BRepTools.BRepTools_WireExplorer(wire)
+                while exp.More():
+                    point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
+                    points.append((point.X(), -point.Y()))
+                    exp.Next()
                 self.cut_polygons.append({
-                    'raw': product,
-                    'geometry': wire,
-                    'geometry_face': face
-                    })
+                    'global_id': product.GlobalId,
+                    'points': points
+                })
+
+        if not os.path.isfile(self.cut_pickle_file):
+            with open(self.cut_pickle_file, 'wb') as pickle_file:
+                pickle.dump(self.cut_polygons, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def connect_edges_into_wires(self, unconnected_edges):
         edges = OCC.TopTools.TopTools_HSequenceOfShape()
@@ -694,14 +713,19 @@ class SvgWriter():
         self.svg.add(self.svg.line(start=points[0], end=points[1], class_=' '.join(classes)))
 
     def draw_polygon(self, polygon, position):
-        classes = self.get_classes(polygon['raw'], position)
-        exp = OCC.BRepTools.BRepTools_WireExplorer(polygon['geometry'])
-        points = []
-        while exp.More():
-            point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
-            points.append((point.X() * self.scale, -point.Y() * self.scale))
-            exp.Next()
+        classes = self.get_classes(self.get_ifc_element(polygon['global_id']), position)
+        points = [(p[0] * self.scale, p[1] * self.scale) for p in polygon['points']]
         self.svg.add(self.svg.polygon(points=points, class_=' '.join(classes)))
+
+    def get_ifc_element(self, global_id):
+        # TODO: make this less bad
+        element = None
+        for ifc_file in self.ifc_cutter.ifc_files:
+            try:
+                element = ifc_file.by_id(global_id)
+                return element
+            except:
+                pass
 
     def get_classes(self, element, position):
         classes = [position, element.is_a()]

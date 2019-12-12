@@ -193,6 +193,9 @@ class BIM_PT_documentation(Panel):
         layout = self.layout
         props = bpy.context.scene.DocProperties
 
+        row = layout.row()
+        row.prop(props, 'should_recut')
+
         row = layout.row(align=True)
         row.prop(props, 'diagram_scale', text='')
         row.operator('bim.cut_section')
