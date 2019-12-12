@@ -804,6 +804,8 @@ class CutSection(bpy.types.Operator):
         }
         ifc_cutter.pickle_file = os.path.join(ifc_cutter.data_dir, 'shapes.pickle')
         svg_writer = cut_ifc.SvgWriter(ifc_cutter)
+        numerator, denominator = bpy.context.scene.DocProperties.diagram_scale.split(':')
+        svg_writer.scale = float(numerator) / float(denominator)
         ifc_cutter.cut()
         svg_writer.write()
         return {'FINISHED'}

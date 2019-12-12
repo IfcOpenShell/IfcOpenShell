@@ -24,6 +24,7 @@ class IfcSchema():
 
 ifc_schema = IfcSchema()
 
+diagram_scales_enum = []
 classes_enum = []
 types_enum = []
 psetnames_enum = []
@@ -62,6 +63,26 @@ def refreshPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
     getIfcPredefinedTypes(self, context)
+
+
+def getDiagramScales(self, context):
+    global diagram_scales_enum
+    if len(diagram_scales_enum) < 1:
+        diagram_scales_enum.extend([
+            ('1:5000', '1:5000', ''),
+            ('1:2000', '1:2000', ''),
+            ('1:1000', '1:1000', ''),
+            ('1:500', '1:500', ''),
+            ('1:200', '1:200', ''),
+            ('1:100', '1:100', ''),
+            ('1:50', '1:50', ''),
+            ('1:20', '1:20', ''),
+            ('1:10', '1:10', ''),
+            ('1:5', '1:5', ''),
+            ('1:2', '1:2', ''),
+            ('1:1', '1:1', '')
+        ])
+    return diagram_scales_enum
 
 
 def getIfcClasses(self, context):
@@ -172,7 +193,7 @@ class Subcontext(PropertyGroup):
 
 
 class DocProperties(PropertyGroup):
-    blah: StringProperty(name="Blah")
+    diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
 
 
 class BIMProperties(PropertyGroup):
