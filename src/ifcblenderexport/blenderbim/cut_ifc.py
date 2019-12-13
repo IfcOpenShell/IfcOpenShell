@@ -5,7 +5,9 @@ import numpy
 import pickle
 import sys
 from pathlib import Path
-from mathutils import Vector
+mathutils = sys.modules.get('mathutils')
+if mathutils is not None:
+    from mathutils import Vector
 from math import degrees
 import xml.etree.ElementTree as ET
 
@@ -41,6 +43,80 @@ from OCC.TopoDS import topods
 
 import ifcopenshell
 import ifcopenshell.geom
+
+cwd = os.path.dirname(os.path.realpath(__file__))
+this_file = os.path.join(cwd, 'cut_ifc.py')
+
+def get_booleaned_edges(shape):
+    edges = []
+    exp = OCC.TopExp.TopExp_Explorer(shape, OCC.TopAbs.TopAbs_EDGE)
+    while exp.More():
+        edges.append(topods.Edge(exp.Current()))
+        exp.Next()
+    return edges
+
+def connect_edges_into_wires(unconnected_edges):
+    edges = OCC.TopTools.TopTools_HSequenceOfShape()
+    edges_handle = OCC.TopTools.Handle_TopTools_HSequenceOfShape(edges)
+    wires = OCC.TopTools.TopTools_HSequenceOfShape()
+    wires_handle = OCC.TopTools.Handle_TopTools_HSequenceOfShape(wires)
+
+    for edge in unconnected_edges:
+        edges.Append(edge)
+
+    OCC.ShapeAnalysis.ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, 1e-5, True, wires_handle)
+    return wires_handle.GetObject()
+
+def do_cut(process_data):
+    global_id, shape, section, trsf_data = process_data
+
+    axis = OCC.gp.gp_Ax2(
+        OCC.gp.gp_Pnt(
+            trsf_data['top_left_corner'][0],
+            trsf_data['top_left_corner'][1],
+            trsf_data['top_left_corner'][2]),
+        OCC.gp.gp_Dir(
+            trsf_data['projection'][0],
+            trsf_data['projection'][1],
+            trsf_data['projection'][2]),
+        OCC.gp.gp_Dir(
+            trsf_data['x_axis'][0],
+            trsf_data['x_axis'][1],
+            trsf_data['x_axis'][2])
+        )
+    source = OCC.gp.gp_Ax3(axis)
+    destination = OCC.gp.gp_Ax3(
+        OCC.gp.gp_Pnt(0, 0, 0),
+        OCC.gp.gp_Dir(0, 0, -1),
+        OCC.gp.gp_Dir(1, 0, 0))
+    transformation = OCC.gp.gp_Trsf()
+    transformation.SetDisplacement(source, destination)
+
+    cut_polygons = []
+    section = OCC.BRepAlgoAPI.BRepAlgoAPI_Section(section, shape).Shape()
+    section_edges = get_booleaned_edges(section)
+    if len(section_edges) <= 0:
+        return cut_polygons
+    wires = connect_edges_into_wires(section_edges)
+    for i in range(wires.Length()):
+        wire_shape = wires.Value(i+1)
+
+        transformed_wire = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
+            wire_shape, transformation)
+        wire_shape = transformed_wire.Shape()
+
+        wire = topods.Wire(wire_shape)
+        face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(wire).Face()
+
+        points = []
+        exp = OCC.BRepTools.BRepTools_WireExplorer(wire)
+        while exp.More():
+            point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
+            points.append((point.X(), -point.Y()))
+            exp.Next()
+        cut_polygons.append({ 'global_id': global_id, 'points': points })
+    return cut_polygons
+
 
 class IfcCutter:
     def __init__(self):
@@ -253,10 +329,16 @@ class IfcCutter:
         self.section_box['face'] = section_box.BottomFace()
 
         source = OCC.gp.gp_Ax3(axis)
+        self.transformation_data = {
+            'top_left_corner': self.section_box['top_left_corner'],
+            'projection': self.section_box['projection'],
+            'x_axis': self.section_box['x_axis']
+        }
         destination = OCC.gp.gp_Ax3(
             OCC.gp.gp_Pnt(0, 0, 0),
             OCC.gp.gp_Dir(0, 0, -1),
             OCC.gp.gp_Dir(1, 0, 0))
+        self.transformation_dest = destination
         self.transformation = OCC.gp.gp_Trsf()
         self.transformation.SetDisplacement(source, destination)
 
@@ -489,51 +571,22 @@ class IfcCutter:
                 return
 
         total_product_shapes = len(self.product_shapes)
-        n = 0
-        for product, shape in self.product_shapes:
-            print('{}/{} cut elements processed ...'.format(n, total_product_shapes), end='\r', flush=True)
-            n += 1
-            section = OCC.BRepAlgoAPI.BRepAlgoAPI_Section(self.section_box['face'], shape).Shape()
-            section_edges = self.get_booleaned_edges(section)
-            if len(section_edges) <= 0:
-                continue
-            wires = self.connect_edges_into_wires(section_edges)
-            for i in range(wires.Length()):
-                wire_shape = wires.Value(i+1)
+        process_data = [(p.GlobalId, s, self.section_box['face'], self.transformation_data) for p, s in self.product_shapes]
 
-                transformed_wire = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
-                    wire_shape, self.transformation)
-                wire_shape = transformed_wire.Shape()
+        import multiprocessing
+        import bpy
+        multiprocessing.set_executable(bpy.app.binary_path_python)
 
-                wire = topods.Wire(wire_shape)
-                face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(wire).Face()
-
-                points = []
-                exp = OCC.BRepTools.BRepTools_WireExplorer(wire)
-                while exp.More():
-                    point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
-                    points.append((point.X(), -point.Y()))
-                    exp.Next()
-                self.cut_polygons.append({
-                    'global_id': product.GlobalId,
-                    'points': points
-                })
+        with multiprocessing.Pool(9) as p:
+            results = p.map(do_cut, process_data)
+            for result in results:
+                polygons = [p for p in result if p['points']]
+                self.cut_polygons.extend(polygons)
 
         if not os.path.isfile(self.cut_pickle_file):
             with open(self.cut_pickle_file, 'wb') as pickle_file:
                 pickle.dump(self.cut_polygons, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def connect_edges_into_wires(self, unconnected_edges):
-        edges = OCC.TopTools.TopTools_HSequenceOfShape()
-        edges_handle = OCC.TopTools.Handle_TopTools_HSequenceOfShape(edges)
-        wires = OCC.TopTools.TopTools_HSequenceOfShape()
-        wires_handle = OCC.TopTools.Handle_TopTools_HSequenceOfShape(wires)
-
-        for edge in unconnected_edges:
-            edges.Append(edge)
-
-        OCC.ShapeAnalysis.ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, 1e-5, True, wires_handle)
-        return wires_handle.GetObject()
 
 class IfcCutterDebug(IfcCutter):
     def cut(self):
@@ -672,37 +725,132 @@ class SvgWriter():
     def draw_annotations(self):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
-        for edge in self.ifc_cutter.annotation_obj.data.edges:
-            classes = ['annotation', 'dimension']
-            v0 = self.ifc_cutter.annotation_obj.data.vertices[edge.vertices[0]].co
-            v1 = self.ifc_cutter.annotation_obj.data.vertices[edge.vertices[1]].co
-            start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-            end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-            mid = ((end - start) / 2) + start
-            # TODO: hardcoded meters to mm conversion, until I properly do units
-            vector = end - start
-            if (end.y - start.y) * self.scale > 1:
-                perpendicular = Vector((-vector.y, vector.x)).normalized()
+        if self.ifc_cutter.dimension_obj:
+            for edge in self.ifc_cutter.dimension_obj.data.edges:
+                classes = ['annotation', 'dimension']
+                v0 = self.ifc_cutter.dimension_obj.data.vertices[edge.vertices[0]].co
+                v1 = self.ifc_cutter.dimension_obj.data.vertices[edge.vertices[1]].co
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                mid = ((end - start) / 2) + start
+                # TODO: hardcoded meters to mm conversion, until I properly do units
+                vector = end - start
+                if (end.y - start.y) * self.scale > 1:
+                    perpendicular = Vector((-vector.y, vector.x)).normalized()
+                else:
+                    perpendicular = Vector((vector.y, -vector.x)).normalized()
+                text_position = (mid * self.scale) + perpendicular
+                dimension = vector.length * 1000
+                rotation = -degrees(vector.angle(Vector((1, 0))))
+                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                    end=tuple(end * self.scale), class_=' '.join(classes)))
+                line['marker-start'] = 'url(#dimension-marker)'
+                line['marker-end'] = 'url(#dimension-marker)'
+                # Standard font sizes 1.8, 2.5, 3.5, 5, 7
+                # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
+                self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(text_position), **{
+                    'transform': 'rotate({} {} {})'.format(
+                        rotation,
+                        text_position.x,
+                        text_position.y
+                    ),
+                    'font-size': '4.13', # 2.5
+                    'font-family': 'OpenGost Type B TT',
+                    'text-anchor': 'middle'
+                }))
+
+        for grid_obj in self.ifc_cutter.grid_objs:
+            for edge in grid_obj.data.edges:
+                classes = ['annotation', 'grid']
+                v0 = grid_obj.data.vertices[edge.vertices[0]].co
+                v1 = grid_obj.data.vertices[edge.vertices[1]].co
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                vector = end - start
+                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                    end=tuple(end * self.scale), class_=' '.join(classes)))
+                line['marker-start'] = 'url(#grid-marker)'
+                line['marker-end'] = 'url(#grid-marker)'
+                line['stroke-dasharray'] = '12.5, 3, 3, 3'
+                self.svg.add(self.svg.text(grid_obj.name.split('/')[1], insert=tuple(start * self.scale), **{
+                    'font-size': '8.25', # 5
+                    'font-family': 'OpenGost Type B TT',
+                    'text-anchor': 'middle',
+                    'alignment-baseline': 'middle',
+                    'dominant-baseline': 'middle'
+                }))
+                self.svg.add(self.svg.text(grid_obj.name.split('/')[1], insert=tuple(end * self.scale), **{
+                    'font-size': '8.25', # 5
+                    'font-family': 'OpenGost Type B TT',
+                    'text-anchor': 'middle',
+                    'alignment-baseline': 'middle',
+                    'dominant-baseline': 'middle'
+                }))
+
+        if self.ifc_cutter.hidden_obj:
+            for edge in self.ifc_cutter.hidden_obj.data.edges:
+                classes = ['annotation', 'hidden']
+                v0 = self.ifc_cutter.hidden_obj.data.vertices[edge.vertices[0]].co
+                v1 = self.ifc_cutter.hidden_obj.data.vertices[edge.vertices[1]].co
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                vector = end - start
+                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                    end=tuple(end * self.scale), class_=' '.join(classes)))
+                line['stroke-dasharray'] = '3, 2'
+
+        if self.ifc_cutter.leader_obj:
+            for spline in self.ifc_cutter.leader_obj.data.splines:
+                classes = ['annotation', 'leader']
+                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
+                d = 'M{}'.format(d[1:])
+                path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
+                path['marker-end'] = 'url(#leader-marker)'
+
+        if self.ifc_cutter.stair_obj:
+            for spline in self.ifc_cutter.stair_obj.data.splines:
+                classes = ['annotation', 'stair']
+                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
+                d = 'M{}'.format(d[1:])
+                start = Vector(((x_offset + spline.points[0].co.x), (y_offset - spline.points[0].co.y)))
+                next_point = Vector(((x_offset + spline.points[1].co.x), (y_offset - spline.points[1].co.y)))
+                text_position = (start * self.scale) - ((next_point - start).normalized() * 5)
+                path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
+                path['marker-start'] = 'url(#stair-marker-start)'
+                path['marker-end'] = 'url(#stair-marker-end)'
+                self.svg.add(self.svg.text('UP', insert=tuple(text_position), **{
+                    'font-size': '4.13', # 2.5
+                    'font-family': 'OpenGost Type B TT',
+                    'text-anchor': 'middle',
+                    'alignment-baseline': 'middle',
+                    'dominant-baseline': 'middle'
+                }))
+
+        for text_obj in self.ifc_cutter.text_objs:
+            loc, rot, scale = self.ifc_cutter.camera_obj.matrix_world.decompose()
+            pos = (text_obj.location - self.ifc_cutter.camera_obj.location) @ rot.to_matrix()
+            text_position = Vector(((x_offset + pos.x), (y_offset - pos.y)))
+
+            if text_obj.data.align_x == 'CENTER':
+                text_anchor = 'middle'
+            elif text_obj.data.align_x == 'RIGHT':
+                text_anchor = 'end'
             else:
-                perpendicular = Vector((vector.y, -vector.x)).normalized()
-            text_position = (mid * self.scale) + perpendicular
-            dimension = vector.length * 1000
-            rotation = -degrees(vector.angle(Vector((1, 0))))
-            line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
-                end=tuple(end * self.scale), class_=' '.join(classes)))
-            line['marker-start'] = 'url(#dimension-marker)'
-            line['marker-end'] = 'url(#dimension-marker)'
-            # Standard font sizes 1.8, 2.5, 3.5, 5, 7
-            # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
-            self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(text_position), **{
-                'transform': 'rotate({} {} {})'.format(
-                    rotation,
-                    text_position.x,
-                    text_position.y
-                ),
+                text_anchor = 'start'
+
+            if text_obj.data.align_y == 'CENTER':
+                alignment_baseline = 'middle'
+            elif text_obj.data.align_y == 'TOP':
+                alignment_baseline = 'hanging'
+            else:
+                alignment_baseline = 'baseline'
+
+            self.svg.add(self.svg.text(text_obj.data.body, insert=tuple(text_position * self.scale), **{
                 'font-size': '4.13', # 2.5
                 'font-family': 'OpenGost Type B TT',
-                'text-anchor': 'middle'
+                'text-anchor': text_anchor,
+                'alignment-baseline': alignment_baseline,
+                'dominant-baseline': alignment_baseline
             }))
 
     def draw_cut_polygons(self):

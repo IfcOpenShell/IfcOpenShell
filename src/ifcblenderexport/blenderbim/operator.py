@@ -788,9 +788,27 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
-        ifc_cutter.annotation_obj = bpy.data.objects['{}-Annotation'.format(
-            self.diagram_name
-        )]
+        ifc_cutter.leader_obj = None
+        ifc_cutter.stair_obj = None
+        ifc_cutter.dimension_obj = None
+        ifc_cutter.hidden_obj = None
+        ifc_cutter.grid_objs = []
+        ifc_cutter.text_objs = []
+        for obj in bpy.context.selected_objects:
+            if 'Leader' in obj.name:
+                ifc_cutter.leader_obj = obj
+            elif 'Stair' in obj.name:
+                ifc_cutter.stair_obj = obj
+            elif 'Dimension' in obj.name:
+                ifc_cutter.dimension_obj = obj
+            elif 'Hidden' in obj.name:
+                ifc_cutter.hidden_obj = obj
+            elif 'IfcGrid' in obj.name:
+                ifc_cutter.grid_objs.append(obj)
+            elif obj.type == 'CAMERA':
+                ifc_cutter.camera_obj = obj
+            elif obj.type == 'FONT':
+                ifc_cutter.text_objs.append(obj)
         ifc_cutter.section_box = {
             'projection': tuple(projection),
             'x_axis': tuple(x_axis),
