@@ -970,7 +970,7 @@ namespace IfcGeom {
 				delete ifc_file;
 			}
 
-			if (settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
+			if (!settings.get(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION)) {
 				for (auto& p : all_processed_native_elements_) {
 					delete p;
 				}
