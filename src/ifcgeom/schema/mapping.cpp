@@ -700,12 +700,15 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
 			continue;
 		}
 
-		geometry_conversion_task task;
-		task.index = task_index++;
-		task.representation = representation;
-		task.products = ifcproducts->generalize();
+		// @todo, fix this properly by considering the mapped geometry types in the representation.
+		if (representation->hasRepresentationIdentifier() && representation->RepresentationIdentifier() == "Body") {
+			geometry_conversion_task task;
+			task.index = task_index++;
+			task.representation = representation;
+			task.products = ifcproducts->generalize();
 
-		tasks.emplace_back(task);
+			tasks.emplace_back(task);
+		}
 	}
 }
 
