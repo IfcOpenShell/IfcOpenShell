@@ -1576,15 +1576,14 @@ namespace {
 
 		cgal_shape_t polyhedron, polyhedron2, flattened;
 
-		remove_thickness(const cgal_shape_t& p) 
+		remove_thickness(const cgal_shape_t& p)
 			// edge_collapse(p) still does not work :(
 			: polyhedron(p)
-			, polyhedron2(p)
-		{
+			, polyhedron2(p) {
 			CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 			CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron2);
 
-			std::list<cgal_shape_t::Facet_handle> non_degenerate, longitudonal;
+			std::list<cgal_shape_t::Facet_handle> non_degenerate, degenerate, longitudonal;
 			std::set<cgal_shape_t::Facet_iterator> thin_sides;
 
 			std::wcout << "ALL FACES:" << std::endl;
@@ -1593,6 +1592,9 @@ namespace {
 				dump_facet(f);
 				if (facet_area(f) > 1.e-20) {
 					non_degenerate.push_back(f);
+				} else {
+					degenerate.push_front(f);
+					std::wcout << "Degenerate, area: " << facet_area(f) << std::endl;
 				}
 			}
 
@@ -1606,20 +1608,41 @@ namespace {
 			bo.input = non_degenerate;
 			enlarged_non_degenerate_triangles.delegate(bo);
 
-			Tree tree(non_degenerate.begin(), non_degenerate.end(), polyhedron);
+			// @todo, first on non-enlarged faces, then on enlarged; to fix projection on concave surfaces where the enlarging operation shortens projection distances.
+
+			Tree tree(faces(enlarged_non_degenerate_triangles).first, faces(enlarged_non_degenerate_triangles).second, enlarged_non_degenerate_triangles);
 
 			std::map<cgal_face_descriptor_t, Kernel_::Vector_3> face_normals;
 			boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel_::Vector_3>> face_normals_map(face_normals);
 			CGAL::Polygon_mesh_processing::compute_face_normals(polyhedron, face_normals_map);
-			
+
 			for (auto& f : non_degenerate) {
 				auto O = CGAL::centroid(
 					f->facet_begin()->vertex()->point(),
 					f->facet_begin()->next()->vertex()->point(),
 					f->facet_begin()->next()->next()->vertex()->point()
-				);	
+				);
 
 				Ray ray(O, -face_normals_map[f]);
+
+				std::list<Ray_intersection> intersections;
+				tree.all_intersections(ray, std::back_inserter(intersections));
+				double N = std::numeric_limits<double>::infinity();
+				Point P;
+				for (auto& intersection : intersections) {
+					if (boost::get<Point>(&(intersection->first))) {
+						const Point* p = boost::get<Point>(&(intersection->first));
+						const double d = std::sqrt(CGAL::to_double((*p - O).squared_length()));
+						if (d > 1.e-20 && d < N) {
+							N = d;
+						}
+					}
+				}
+				if (N != std::numeric_limits<double>::infinity() && N > 1.e-4) {
+					thin_sides.insert(f);
+				}
+
+				/*
 				Ray_intersection intersection = tree.first_intersection(ray, [f](const cgal_shape_t::Facet_handle& p) {
 					return p == f;
 				});
@@ -1634,6 +1657,7 @@ namespace {
 				} else {
 					std::wcout << "No intersection :((!!!" << std::endl;
 				}
+				*/
 			}
 
 			std::wcout << "THIN SIDES:" << std::endl;
@@ -1651,6 +1675,8 @@ namespace {
 			for (auto& f : longitudonal) {
 				dump_facet(f);
 			}
+
+			std::wcout << "faces " << faces(polyhedron).size() << "long " << longitudonal.size() << "thin " << thin_sides.size() << "non-degen " << non_degenerate.size() << std::endl;
 
 			cgal_shape_t enlarged_indiv_triangles;
 			Build_Offset<cgal_shape_t::HDS> bo2;
@@ -1700,7 +1726,7 @@ namespace {
 
 			for (auto& v : vertices(polyhedron)) {
 				auto O = v->point();
-				
+
 				Kernel_::Vector_3 norm;
 				Kernel_::Vector_3 accum;
 				int count = 0;
@@ -1751,6 +1777,7 @@ namespace {
 				std::wcout << "count " << count << std::endl;
 
 				if (count == 0) {
+					// part of only degenerate or only thin sides
 					continue;
 				}
 
@@ -1761,6 +1788,7 @@ namespace {
 				oss << O << " -> " << norm;
 				auto osss = oss.str();
 				std::wcout << osss.c_str() << std::endl;
+
 				//// skip does not work anymore because we have offset the facets
 				// auto skip = [this, &v](const cgal_shape_t::Facet_handle& p) {
 				// 	CGAL::Face_around_target_circulator<cgal_shape_t> it(v->halfedge(), polyhedron), end(it);
@@ -1771,10 +1799,14 @@ namespace {
 				// 	} while (++it != end);
 				// 	return false;
 				// };
+
 				std::list<Ray_intersection> intersections;
 				tree2.all_intersections(ray, std::back_inserter(intersections));
 				double N = std::numeric_limits<double>::infinity();
 				Point P;
+
+				bool used_intersection = false;
+
 				if (intersections.size()) {
 					for (auto& intersection : intersections) {
 						if (boost::get<Point>(&(intersection->first))) {
@@ -1783,15 +1815,18 @@ namespace {
 							if (d < N && d > 1.e-20) {
 								N = d;
 								P = *p;
+								std::wcout << "intersection @ " << d << std::endl;
 							}
-							std::wcout << "intersection @ " << d << std::endl;
 						}
 					}
 					std::wcout << "-----------" << std::endl;
 
 					// average the new point
 					new_points[O] = CGAL::ORIGIN + (((O - CGAL::ORIGIN) + (P - CGAL::ORIGIN))) / 2;
-				} else {
+					used_intersection = true;
+				}
+
+				if (!used_intersection) {
 					std::wcout << "no intersection :(" << std::endl;
 				}
 			}
@@ -1803,7 +1838,31 @@ namespace {
 			}
 			*/
 
-			auto connected = connected_faces(*longitudonal.begin(), thin_sides);
+			auto thin_sides_degenerate = thin_sides;
+			thin_sides_degenerate.insert(degenerate.begin(), degenerate.end());
+
+			// @todo choose connected / connected_opposing based on largest combined area of facets?
+
+			auto connected = connected_faces(*longitudonal.begin(), thin_sides_degenerate);
+			decltype(connected) connected_opposing;
+
+			for (auto& f : longitudonal) {
+				if (std::find(connected.begin(), connected.end(), f) == connected.end()) {
+					connected_opposing = connected_faces(f, thin_sides_degenerate);
+
+					std::set<cgal_shape_t::Facet_handle> longi(longitudonal.begin(), longitudonal.end());
+					std::set<cgal_shape_t::Facet_handle> both_sides(connected.begin(), connected.end());
+					both_sides.insert(connected_opposing.begin(), connected_opposing.end());
+
+					if (longi == both_sides) {
+						std::wcout << "Facet connection functioning properly" << std::endl;
+					} else {
+						std::wcout << "Facet connection functioning incorrectly" << std::endl;
+					}
+
+					break;
+				}
+			}
 
 			Builder_With_Map<cgal_shape_t::HDS> b2;
 			b2.input = connected;
