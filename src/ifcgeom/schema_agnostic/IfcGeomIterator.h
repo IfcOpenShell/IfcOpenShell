@@ -622,7 +622,7 @@ namespace ifcopenshell { namespace geometry {
 				delete ifc_file;
 			}
 
-			if (settings_.get(settings::DISABLE_TRIANGULATION)) {
+			if (!settings_.get(settings::DISABLE_TRIANGULATION)) {
 				for (auto& p : all_processed_native_elements_) {
 					delete p;
 				}
