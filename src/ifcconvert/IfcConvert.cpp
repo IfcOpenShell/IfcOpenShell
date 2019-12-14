@@ -1481,8 +1481,21 @@ namespace {
 				B.begin_facet();
 				cgal_shape_t::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
 				do {
-					auto it = used_points.find(circ->vertex()->point());
-					B.add_vertex_to_facet(std::distance(used_points.begin(), it));
+					auto P = circ->vertex()->point();
+					auto it = mapping.find(P);
+					if (it == mapping.end()) {
+						std::wcout << "WARNING unprojected point :(" << std::endl;
+					} else {
+						P = it->second;
+					}
+
+					auto jt = used_points.find(P);
+					if (jt == used_points.end()) {
+						throw std::runtime_error("Unable to map point");
+					}
+					size_t idx = std::distance(used_points.begin(), jt);
+					std::wcout << "idx " << idx << std::endl;
+					B.add_vertex_to_facet(idx);
 				} while (++circ != end);
 
 				B.end_facet();
@@ -1640,9 +1653,9 @@ namespace {
 			}
 
 			cgal_shape_t enlarged_indiv_triangles;
-			Build_Offset<cgal_shape_t::HDS> bo;
-			bo.input = longitudonal;
-			enlarged_indiv_triangles.delegate(bo);
+			Build_Offset<cgal_shape_t::HDS> bo2;
+			bo2.input = longitudonal;
+			enlarged_indiv_triangles.delegate(bo2);
 
 			{
 				std::ofstream ofs("enlarged.off");
@@ -1767,7 +1780,7 @@ namespace {
 						if (boost::get<Point>(&(intersection->first))) {
 							const Point* p = boost::get<Point>(&(intersection->first));
 							const double d = std::sqrt(CGAL::to_double((*p - O).squared_length()));
-							if (d < N) {
+							if (d < N && d > 1.e-20) {
 								N = d;
 								P = *p;
 							}
@@ -1776,7 +1789,8 @@ namespace {
 					}
 					std::wcout << "-----------" << std::endl;
 
-					new_points[O] = P;
+					// average the new point
+					new_points[O] = CGAL::ORIGIN + (((O - CGAL::ORIGIN) + (P - CGAL::ORIGIN))) / 2;
 				} else {
 					std::wcout << "no intersection :(" << std::endl;
 				}
