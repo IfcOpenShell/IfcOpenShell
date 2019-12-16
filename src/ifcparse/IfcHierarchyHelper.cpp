@@ -466,6 +466,17 @@ Ifc4::IfcStyledItem* create_styled_item(Ifc4::IfcRepresentationItem* item, Ifc4:
 	return new Ifc4::IfcStyledItem(item, style_assignments, boost::none);
 }
 
+Ifc4x1::IfcStyledItem* create_styled_item(Ifc4x1::IfcRepresentationItem* item, Ifc4x1::IfcPresentationStyleAssignment* style_assignment) {
+	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	style_assignments->push(style_assignment);
+	return new Ifc4x1::IfcStyledItem(item, style_assignments, boost::none);
+}
+
+Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, Ifc4x2::IfcPresentationStyleAssignment* style_assignment) {
+	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	style_assignments->push(style_assignment);
+	return new Ifc4x2::IfcStyledItem(item, style_assignments, boost::none);
+}
 template <typename Schema>
 void IfcHierarchyHelper<Schema>::setSurfaceColour(typename Schema::IfcRepresentation* rep, 
 	typename Schema::IfcPresentationStyleAssignment* style_assignment) 
@@ -560,3 +571,5 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
 
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc2x3>;
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc4>;
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x1>;
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x2>;
