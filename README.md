@@ -216,9 +216,9 @@ Usage examples
     >>> f.write("out.ifc")
 
 [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING "LGPL"
-[IFC]: http://www.buildingsmart-tech.org/specifications/ifc-overview "IFC"
-[IFC2x3 TC1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc2x3-tc1-release "IFC2x3 TC1"
-[IFC4 Add1]: http://www.buildingsmart-tech.org/specifications/ifc-releases/ifc4-add1-release "IFC4 Add1"
+[IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"
+[IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
+[IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"
 [Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
 [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
 [MSYS2]: https://msys2.github.io/ "MSYS2"
