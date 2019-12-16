@@ -28,16 +28,7 @@ from .. import ifcopenshell_wrapper
 from ..file import file
 from ..entity_instance import entity_instance
 
-
-def has_occ():
-    try:
-        import OCC.BRepTools
-    except BaseException:
-        return False
-    return True
-
-
-has_occ = has_occ()
+from . import has_occ
 
 
 def wrap_shape_creation(settings, shape):
@@ -47,17 +38,19 @@ def wrap_shape_creation(settings, shape):
 if has_occ:
     from . import occ_utils as utils
 
+    try:
+        from OCC.Core import TopoDS
+    except ImportError:
+        from OCC import TopoDS
+
     def wrap_shape_creation(settings, shape):
         if getattr(settings, 'use_python_opencascade', False):
             return utils.create_shape_from_serialization(shape)
         else:
             return shape
 
-
 # Subclass the settings module to provide an additional
 # setting to enable pythonOCC when available
-
-
 class settings(ifcopenshell_wrapper.settings):
     if has_occ:
         USE_PYTHON_OPENCASCADE = -1
@@ -122,8 +115,7 @@ class tree(ifcopenshell_wrapper.tree):
         if isinstance(value, entity_instance):
             args.append(kwargs.get("completely_within", False))
         elif has_occ:
-            import OCC.TopoDS
-            if isinstance(value, OCC.TopoDS.TopoDS_Shape):
+            if isinstance(value, TopoDS.TopoDS_Shape):
                 args[1] = utils.serialize_shape(value)
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
 
@@ -187,10 +179,8 @@ def make_shape_function(fn):
         return None if e is None else entity_instance(e)
 
     if has_occ:
-        import OCC.TopoDS
-
         def _(schema, string_or_shape, *args):
-            if isinstance(string_or_shape, OCC.TopoDS.TopoDS_Shape):
+            if isinstance(string_or_shape, TopoDS.TopoDS_Shape):
                 string_or_shape = utils.serialize_shape(string_or_shape)
             return entity_instance_or_none(fn(schema, string_or_shape, *args))
     else:
