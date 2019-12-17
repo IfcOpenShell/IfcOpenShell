@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <svg baseProfile="full" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink">
     <marker id="dimension-marker" markerHeight="30" markerWidth="20" refX="10" refY="15" orient="auto">
-        <path d="M 0 15 L 20 15" class="annotation" style="stroke-width:1;" />
-        <path d="M 10 0 L 10 30" class="annotation" style="stroke-width:1;" />
-        <path d="M 5 20 L 15 10" class="annotation" style="stroke-width:3;" />
+        <g>
+            <path d="M 0 15 L 20 15" class="annotation" style="stroke-width:1;" />
+            <path d="M 10 0 L 10 30" class="annotation" style="stroke-width:1;" />
+            <path d="M 5 20 L 15 10" class="annotation" style="stroke-width:3;" />
+        </g>
     </marker>
     <marker id="grid-marker" markerHeight="35" markerWidth="35" orient="auto" refX="17.5" refY="17.5">
         <circle cx="17.5" cy="17.5" fill="white" stroke="black" r="15" style="stroke-width: 2"/>
@@ -16,5 +18,17 @@
     </marker>
     <marker id="stair-marker-end" markerHeight="42" markerWidth="21" orient="auto" refX="21" refY="21">
         <path d="M 0 0 L 21 21 L 0 42" class="annotation stair" style="stroke-width:2" />
+    </marker>
+    <marker id="plan-level-marker" markerHeight="30" markerWidth="30" refX="15" refY="15">
+        <g>
+            <path d="M 15 0 L 15 30" class="annotation" style="stroke-width:1;" />
+            <path d="M 0 15 L 30 15" class="annotation" style="stroke-width:1;" />
+            <circle cx="15" cy="15" fill="white" stroke="black" r="7.5" style="stroke-width: 2"/>
+            <path d="M 15 15 L 7.5 15 A 7.5 7.5 0 0 1 15 7.5 Z" fill="black"/>
+            <path d="M 15 15 L 22.5 15 A 7.5 7.5 0 0 1 15 22.5 Z" fill="black"/>
+        </g>
+    </marker>
+    <marker id="section-level-marker" markerHeight="15" markerWidth="30" refX="15" refY="15">
+        <path d="M 0 0 L 30 0 L 15 15 Z" fill="black" />
     </marker>
 </svg>
