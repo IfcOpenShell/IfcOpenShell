@@ -791,7 +791,10 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.leader_obj = None
         ifc_cutter.stair_obj = None
         ifc_cutter.dimension_obj = None
+        ifc_cutter.equal_obj = None
         ifc_cutter.hidden_obj = None
+        ifc_cutter.plan_level_obj = None
+        ifc_cutter.section_level_obj = None
         ifc_cutter.grid_objs = []
         ifc_cutter.text_objs = []
         for obj in bpy.context.selected_objects:
@@ -799,12 +802,18 @@ class CutSection(bpy.types.Operator):
                 ifc_cutter.leader_obj = obj
             elif 'Stair' in obj.name:
                 ifc_cutter.stair_obj = obj
+            elif 'Equal' in obj.name:
+                ifc_cutter.equal_obj = obj
             elif 'Dimension' in obj.name:
                 ifc_cutter.dimension_obj = obj
             elif 'Hidden' in obj.name:
                 ifc_cutter.hidden_obj = obj
             elif 'IfcGrid' in obj.name:
                 ifc_cutter.grid_objs.append(obj)
+            elif 'Plan Level' in obj.name:
+                ifc_cutter.plan_level_obj = obj
+            elif 'Section Level' in obj.name:
+                ifc_cutter.section_level_obj = obj
             elif obj.type == 'CAMERA':
                 ifc_cutter.camera_obj = obj
             elif obj.type == 'FONT':
@@ -821,7 +830,7 @@ class CutSection(bpy.types.Operator):
             'face': None
         }
         ifc_cutter.shapes_pickle_file = os.path.join(ifc_cutter.data_dir, 'shapes.pickle')
-        ifc_cutter.cut_pickle_file = os.path.join(ifc_cutter.data_dir, 'cut.pickle')
+        ifc_cutter.cut_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-cut.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
         svg_writer = cut_ifc.SvgWriter(ifc_cutter)
         numerator, denominator = bpy.context.scene.DocProperties.diagram_scale.split(':')
