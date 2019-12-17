@@ -1,5 +1,3 @@
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; }
 .background { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.annotation { stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
-.annotation.leader { fill: none; }
-.annotation.stair { fill: none; }
+.annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
