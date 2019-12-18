@@ -737,17 +737,13 @@ class SvgWriter():
                     end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
                     mid = ((end - start) / 2) + start
                     vector = end - start
-                    if (end.y - start.y) * self.scale > 1:
-                        perpendicular = Vector((-vector.y, vector.x)).normalized()
-                    else:
-                        perpendicular = Vector((vector.y, -vector.x)).normalized()
                     perpendicular = Vector((vector.y, -vector.x)).normalized()
                     text_position = (mid * self.scale) + perpendicular
-                    rotation = degrees(vector.angle(Vector((1, 0))))
+                    rotation = degrees(vector.angle_signed(Vector((1, 0))))
                     line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
                         end=tuple(end * self.scale), class_=' '.join(classes)))
-                    line['marker-start'] = 'url(#dimension-marker)'
-                    line['marker-end'] = 'url(#dimension-marker)'
+                    line['marker-start'] = 'url(#dimension-marker-start)'
+                    line['marker-end'] = 'url(#dimension-marker-end)'
                     # Standard font sizes 1.8, 2.5, 3.5, 5, 7
                     # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
                     self.svg.add(self.svg.text('EQ', insert=tuple(text_position), **{
@@ -774,18 +770,20 @@ class SvgWriter():
                     mid = ((end - start) / 2) + start
                     # TODO: hardcoded meters to mm conversion, until I properly do units
                     vector = end - start
-                    if (end.y - start.y) * self.scale > 1:
-                        perpendicular = Vector((-vector.y, vector.x)).normalized()
-                    else:
-                        perpendicular = Vector((vector.y, -vector.x)).normalized()
                     perpendicular = Vector((vector.y, -vector.x)).normalized()
-                    text_position = (mid * self.scale) + perpendicular
                     dimension = vector.length * 1000
-                    rotation = degrees(vector.angle(Vector((1, 0))))
+                    sheet_dimension = ((end*self.scale) - (start*self.scale)).length
+                    if sheet_dimension < 5: # annotation can't fit
+                        # offset text to right of marker
+                        text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
+                    else:
+                        text_position = (mid * self.scale) + perpendicular
+                    print(sheet_dimension)
+                    rotation = degrees(vector.angle_signed(Vector((1, 0))))
                     line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
                         end=tuple(end * self.scale), class_=' '.join(classes)))
-                    line['marker-start'] = 'url(#dimension-marker)'
-                    line['marker-end'] = 'url(#dimension-marker)'
+                    line['marker-start'] = 'url(#dimension-marker-start)'
+                    line['marker-end'] = 'url(#dimension-marker-end)'
                     # Standard font sizes 1.8, 2.5, 3.5, 5, 7
                     # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
                     self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(text_position), **{
@@ -853,20 +851,24 @@ class SvgWriter():
                 d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
                 d = 'M{}'.format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
-                path['marker-start'] = 'url(#plan-level-marker)'
+                path['marker-end'] = 'url(#plan-level-marker)'
                 text_position = Vector((
                     (x_offset + spline.points[0].co.x) * self.scale,
-                    ((y_offset - spline.points[0].co.y) * self.scale) - 5
+                    ((y_offset - spline.points[0].co.y) * self.scale) - 2.5
                 ))
-                # TODO: unhardcode mm unit
-                rl = round(((self.ifc_cutter.plan_level_obj.matrix_world @
-                    spline.points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z * 1000)
-                self.svg.add(self.svg.text('RL +{}'.format(rl), insert=tuple(text_position), **{
+                # TODO: unhardcode m unit
+                rl = ((self.ifc_cutter.plan_level_obj.matrix_world @
+                    spline.points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z
+                if spline.points[0].co.x > spline.points[-1].co.x:
+                    text_anchor = 'end'
+                else:
+                    text_anchor = 'start'
+                self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
                     'font-size': '4.13', # 2.5
                     'font-family': 'OpenGost Type B TT',
-                    'text-anchor': 'middle',
-                    'alignment-baseline': 'middle',
-                    'dominant-baseline': 'middle'
+                    'text-anchor': text_anchor,
+                    'alignment-baseline': 'baseline',
+                    'dominant-baseline': 'baseline'
                 }))
 
         if self.ifc_cutter.section_level_obj:

@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <svg baseProfile="full" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <marker id="dimension-marker" markerHeight="30" markerWidth="20" refX="10" refY="15" orient="auto">
+    <marker id="eng-dimension-marker-start" markerHeight="14" markerWidth="11" orient="auto" refX="1" refY="7">
+        <g>
+            <path d="M 11 3.5 L 11 10.5 L 1 7" class="annotation" style="fill:black;" />
+            <path d="M 1 0 L 1 14" class="annotation" style="stroke-width:1;" />
+        </g>
+    </marker>
+    <marker id="eng-dimension-marker-end" markerHeight="14" markerWidth="11" orient="auto" refX="10" refY="7">
+        <g>
+            <path d="M 0 3.5 L 0 10.5 L 10 7" class="annotation" style="fill:black;" />
+            <path d="M 10 0 L 10 14" class="annotation" style="stroke-width:1;" />
+        </g>
+    </marker>
+    <marker id="dimension-marker-start" markerHeight="30" markerWidth="20" refX="10" refY="15" orient="auto">
+        <g>
+            <path d="M 0 15 L 20 15" class="annotation" style="stroke-width:1;" />
+            <path d="M 10 0 L 10 30" class="annotation" style="stroke-width:1;" />
+            <path d="M 5 20 L 15 10" class="annotation" style="stroke-width:3;" />
+        </g>
+    </marker>
+    <marker id="dimension-marker-end" markerHeight="30" markerWidth="20" refX="10" refY="15" orient="auto">
         <g>
             <path d="M 0 15 L 20 15" class="annotation" style="stroke-width:1;" />
             <path d="M 10 0 L 10 30" class="annotation" style="stroke-width:1;" />
@@ -28,7 +47,9 @@
             <path d="M 15 15 L 22.5 15 A 7.5 7.5 0 0 1 15 22.5 Z" fill="black"/>
         </g>
     </marker>
-    <marker id="section-level-marker" markerHeight="15" markerWidth="30" refX="15" refY="15">
-        <path d="M 0 0 L 30 0 L 15 15 Z" fill="black" />
+    <marker id="section-level-marker" markerHeight="10" markerWidth="20" refX="10" refY="10">
+        <g>
+            <path d="M 0 0 L 20 0 L 10 10 Z" fill="black" />
+        <g>
     </marker>
 </svg>

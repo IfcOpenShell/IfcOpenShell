@@ -797,7 +797,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.section_level_obj = None
         ifc_cutter.grid_objs = []
         ifc_cutter.text_objs = []
-        for obj in bpy.context.selected_objects:
+        for obj in camera.users_collection[0].objects:
             if 'Leader' in obj.name:
                 ifc_cutter.leader_obj = obj
             elif 'Stair' in obj.name:
