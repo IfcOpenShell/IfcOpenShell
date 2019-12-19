@@ -47,9 +47,10 @@
             <path d="M 15 15 L 22.5 15 A 7.5 7.5 0 0 1 15 22.5 Z" fill="black"/>
         </g>
     </marker>
-    <marker id="section-level-marker" markerHeight="10" markerWidth="20" refX="10" refY="10">
+    <marker id="section-level-marker" markerHeight="11" markerWidth="90" refX="20" refY="10">
         <g>
-            <path d="M 0 0 L 20 0 L 10 10 Z" fill="black" />
-        <g>
+            <path d="M 0 1 L 20 1 L 10 11 Z" fill="black" />
+            <path d="M 0 1 L 90 1" class="annotation" style="stroke-width:1;" />
+        </g>
     </marker>
 </svg>

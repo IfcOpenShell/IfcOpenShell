@@ -778,7 +778,6 @@ class SvgWriter():
                         text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
                     else:
                         text_position = (mid * self.scale) + perpendicular
-                    print(sheet_dimension)
                     rotation = degrees(vector.angle_signed(Vector((1, 0))))
                     line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
                         end=tuple(end * self.scale), class_=' '.join(classes)))
@@ -881,17 +880,17 @@ class SvgWriter():
                 path['stroke-dasharray'] = '12.5, 3, 3, 3'
                 text_position = Vector((
                     (x_offset + spline.points[0].co.x) * self.scale,
-                    ((y_offset - spline.points[0].co.y) * self.scale) - 7
+                    ((y_offset - spline.points[0].co.y) * self.scale) - 3.5
                 ))
-                # TODO: unhardcode mm unit
-                rl = round(((self.ifc_cutter.section_level_obj.matrix_world @
-                    spline.points[0].co).xyz + self.ifc_cutter.section_level_obj.location).z * 1000)
-                self.svg.add(self.svg.text('RL +{}'.format(rl), insert=tuple(text_position), **{
+                # TODO: unhardcode m unit
+                rl = ((self.ifc_cutter.section_level_obj.matrix_world @
+                    spline.points[0].co).xyz + self.ifc_cutter.section_level_obj.location).z
+                self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
                     'font-size': '4.13', # 2.5
                     'font-family': 'OpenGost Type B TT',
-                    'text-anchor': 'middle',
-                    'alignment-baseline': 'middle',
-                    'dominant-baseline': 'middle'
+                    'text-anchor': 'start',
+                    'alignment-baseline': 'baseline',
+                    'dominant-baseline': 'baseline'
                 }))
 
         if self.ifc_cutter.stair_obj:
@@ -932,13 +931,18 @@ class SvgWriter():
             else:
                 alignment_baseline = 'baseline'
 
-            self.svg.add(self.svg.text(text_obj.data.body, insert=tuple(text_position * self.scale), **{
-                'font-size': '4.13', # 2.5
-                'font-family': 'OpenGost Type B TT',
-                'text-anchor': text_anchor,
-                'alignment-baseline': alignment_baseline,
-                'dominant-baseline': alignment_baseline
-            }))
+            for line_number, text_line in enumerate(text_obj.data.body.split('\n')):
+                self.svg.add(self.svg.text(
+                    text_line,
+                    insert=tuple((text_position * self.scale) + Vector((0, 3.5*line_number))),
+                    **{
+                        'font-size': '4.13', # 2.5
+                        'font-family': 'OpenGost Type B TT',
+                        'text-anchor': text_anchor,
+                        'alignment-baseline': alignment_baseline,
+                        'dominant-baseline': alignment_baseline
+                    }
+                ))
 
     def draw_cut_polygons(self):
         for polygon in self.ifc_cutter.cut_polygons:
