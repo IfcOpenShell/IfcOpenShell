@@ -25,7 +25,7 @@ if bpy is not None:
         import shutil
         files = os.listdir(lib_dir)
         for f in files:
-            shutil.move(lib_dir+f, os.path.join(lib_dir, '..', '..', '..'))
+            shutil.move(os.path.join(lib_dir, f), os.path.join(lib_dir, '..', '..', '..'))
 
     import bpy
     from . import ui, prop, operator
@@ -115,9 +115,14 @@ if bpy is not None:
         self.layout.operator(operator.ImportIFC.bl_idname,
              text="Industry Foundation Classes (.ifc)")
 
+    def on_register(scene):
+        prop.setDefaultProperties(scene)
+        bpy.app.handlers.scene_update_post.remove(on_register)
+
     def register():
         for cls in classes:
             bpy.utils.register_class(cls)
+        bpy.app.handlers.depsgraph_update_post.append(on_register)
         bpy.app.handlers.load_post.append(prop.setDefaultProperties)
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
