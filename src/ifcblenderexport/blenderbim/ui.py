@@ -203,6 +203,9 @@ class BIM_PT_documentation(Panel):
         row = layout.row()
         row.operator('bim.create_sheets')
 
+        row = layout.row()
+        row.operator('bim.generate_digital_twin')
+
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
@@ -430,3 +433,4 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, "import_should_ignore_site_coordinates")
         row = layout.row()
         row.prop(bim_properties, "import_should_import_curves")
+
