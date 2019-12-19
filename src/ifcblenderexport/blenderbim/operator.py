@@ -761,7 +761,7 @@ class CutSection(bpy.types.Operator):
     bl_label = 'Cut Section'
 
     def execute(self, context):
-        camera = bpy.context.active_object
+        camera = bpy.context.scene.camera
         if not (camera.type == 'CAMERA' and camera.data.type == 'ORTHO'):
             return {'FINISHED'}
         self.diagram_name = camera.name
