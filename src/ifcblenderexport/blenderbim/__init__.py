@@ -11,10 +11,22 @@ bl_info = {
     "category": "Import-Export"
     }
 
-# are we running inside Blender?
+# Check if we are running in Blender before loading, to allow for multiprocessing
 import sys
+import os
 bpy = sys.modules.get('bpy')
+
 if bpy is not None:
+    cwd = os.path.dirname(os.path.realpath(__file__))
+    # This workaround is for Mac and Linux Conda builds, which have an rpath set
+    # to $ORIGIN/../../../
+    lib_dir = os.path.join(cwd, '..', 'lib')
+    if os.path.isdir(lib_dir):
+        import shutil
+        files = os.listdir(lib_dir)
+        for f in files:
+            shutil.move(lib_dir+f, os.path.join(lib_dir, '..', '..', '..'))
+
     import bpy
     from . import ui, prop, operator
 
