@@ -23,6 +23,9 @@ endif
 	rm -rf dist
 	mkdir -p dist/working
 	mkdir -p dist/blenderbim
+ifneq ($(PLATFORM), win)
+	mkdir -p dist/lib
+endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-9bcd932-$(PLATFORM)64.zip
@@ -46,7 +49,7 @@ endif
 ifeq ($(PLATFORM), win)
 	cd dist/working && cp -r Library/bin/* ../OCC/
 else
-	cd dist/working && cp -r lib/* ../OCC/
+	cd dist/working && cp -r lib/* ../lib/
 endif
 	rm -rf dist/working
 
@@ -56,9 +59,17 @@ endif
 ifeq ($(PLATFORM), win)
 	cd dist/working && cp -r Library/bin/* ../OCC/
 else
-	cd dist/working && cp -r lib/* ../OCC/
+	cd dist/working && cp -r lib/* ../lib/
 endif
 	rm -rf dist/working
+
+ifeq ($(PLATFORM), macos)
+	mkdir dist/working
+	cd dist/working && wget https://blenderbim.org/builds/patch-blender28-bim-macos.zip
+	cd dist/working && unzip patch*
+	cd dist/working && cp -r *.dylib ../lib/
+	rm -rf dist/working
+endif
 
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/d6/fd/eb8c212053addd941cc90baac307c00ac246ac3fce7166b86434c6eae963/pystache-0.5.4.tar.gz
@@ -86,6 +97,9 @@ endif
 	rm -rf dist/pystache
 	rm -rf dist/svgwrite
 	rm -rf dist/pyparsing.py
+ifneq ($(PLATFORM), win)
+	rm -rf dist/lib
+endif
 
 .PHONY: clean
 clean:
