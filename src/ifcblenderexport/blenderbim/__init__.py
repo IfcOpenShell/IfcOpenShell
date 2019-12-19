@@ -79,6 +79,7 @@ if bpy is not None:
         operator.RemoveSubcontext,
         operator.CutSection,
         operator.CreateSheets,
+        operator.GenerateDigitalTwin,
         prop.Subcontext,
         prop.BIMProperties,
         prop.DocProperties,

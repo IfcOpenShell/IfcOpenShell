@@ -851,3 +851,11 @@ class CreateSheets(bpy.types.Operator):
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         sheet_builder.build()
         return {'FINISHED'}
+
+class GenerateDigitalTwin(bpy.types.Operator):
+    bl_idname = 'bim.generate_digital_twin'
+    bl_label = 'Generate Digital Twin'
+
+    def execute(self, context):
+        # Does absolutely nothing at all :D
+        return {'FINISHED'}
