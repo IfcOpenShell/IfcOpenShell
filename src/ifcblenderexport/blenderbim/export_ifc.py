@@ -477,6 +477,8 @@ class IfcParser():
         if not metadata:
             metadata = {}
         for obj in objects_to_sort:
+            if obj.name[0:3] != 'Ifc':
+                continue
             if not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({'raw': obj, 'metadata': metadata})
             if obj.instance_type == 'COLLECTION':
@@ -716,7 +718,11 @@ class IfcParser():
         }
 
     def is_mesh_context_sensitive(self, name):
-        return '/' in name
+        return '/' in name \
+            and ( \
+                name[0:6] == 'Model/' \
+                or name[0:5] == 'Plan/' \
+            )
 
     def get_ifc_representation_name(self, name):
         if self.is_mesh_context_sensitive(name):
