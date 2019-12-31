@@ -425,12 +425,22 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, "export_has_representations")
         row = layout.row()
+        row.prop(bim_properties, "import_should_import_curves")
+
+        layout.label(text="Experimental Modes:")
+
+        row = layout.row()
+        row.prop(bim_properties, "import_should_use_legacy")
+        row = layout.row()
+        row.prop(bim_properties, "import_should_use_cpu_multiprocessing")
+
+        layout.label(text="Revit Workarounds:")
+
+        row = layout.row()
         row.prop(bim_properties, "export_should_export_all_materials_as_styled_items")
         row = layout.row()
         row.prop(bim_properties, "export_should_use_presentation_style_assignment")
-
         row = layout.row()
         row.prop(bim_properties, "import_should_ignore_site_coordinates")
         row = layout.row()
-        row.prop(bim_properties, "import_should_import_curves")
-
+        row.prop(bim_properties, "import_should_treat_styled_item_as_material")
