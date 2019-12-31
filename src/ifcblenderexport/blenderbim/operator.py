@@ -79,6 +79,9 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.diff_file = bpy.context.scene.BIMProperties.diff_json_file
         ifc_import_settings.should_ignore_site_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_site_coordinates
         ifc_import_settings.should_import_curves = bpy.context.scene.BIMProperties.import_should_import_curves
+        ifc_import_settings.should_treat_styled_item_as_material = bpy.context.scene.BIMProperties.import_should_treat_styled_item_as_material
+        ifc_import_settings.should_use_cpu_multiprocessing = bpy.context.scene.BIMProperties.import_should_use_cpu_multiprocessing
+        ifc_import_settings.should_use_legacy = bpy.context.scene.BIMProperties.import_should_use_legacy
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.execute()
         ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))

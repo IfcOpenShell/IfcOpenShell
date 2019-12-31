@@ -5,6 +5,7 @@ import os
 import json
 import time
 import mathutils
+import multiprocessing
 from .helper import SIUnitHelper
 
 cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
@@ -17,9 +18,11 @@ class IfcSchema():
 ifc_schema = IfcSchema()
 
 class MaterialCreator():
-    def __init__(self):
+    def __init__(self, ifc_import_settings):
         self.mesh = None
         self.materials = {}
+        self.parsed_meshes = []
+        self.ifc_import_settings = ifc_import_settings
 
     def create(self, element, object, mesh):
         self.object = object
@@ -27,13 +30,37 @@ class MaterialCreator():
         if not element.Representation:
             return
         for item in element.Representation.Representations[0].Items:
+            if item.is_a('IfcMappedItem'):
+                item = item.MappingSource.MappedRepresentation.Items[0]
             if item.StyledByItem:
                 styled_item = item.StyledByItem[0]
-                material_name = str(styled_item.Name if styled_item.Name else styled_item.id())
+                if styled_item.Name:
+                    material_name = styled_item.Name
+                # This is for a bug in Revit where Revit exports this in IFC4
+                elif styled_item.Styles[0] \
+                        and styled_item.Styles[0].is_a('IfcPresentationStyleAssignment') \
+                        and styled_item.Styles[0].Styles[0].Name:
+                    material_name = styled_item.Styles[0].Styles[0].Name
+                elif styled_item.Styles[0] \
+                        and styled_item.Styles[0].is_a('IfcPresentationStyle') \
+                        and styled_item.Styles[0].Name:
+                    material_name = styled_item.Styles[0].Name
+                else:
+                    material_name = str(styled_item.id())
                 if material_name not in self.materials:
                     self.materials[material_name] = bpy.data.materials.new(material_name)
-                self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
-                self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
+                    self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
+                if self.ifc_import_settings.should_treat_styled_item_as_material:
+                    # Revit workaround: since Revit exports all material
+                    # assignments as individual object styled items. Treating
+                    # them as reusable materials makes things much more
+                    # efficient in Blender.
+                    if self.mesh.name not in self.parsed_meshes:
+                        self.parsed_meshes.append(self.mesh.name)
+                        self.assign_material_to_mesh(self.materials[material_name])
+                else:
+                    # Proper behaviour
+                    self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
                 return # styled items override material styles
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesMaterial'):
@@ -66,7 +93,7 @@ class MaterialCreator():
     def parse_styled_item(self, styled_item, material):
         for style in styled_item.Styles:
             # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
-            # but we still support it as it is widely used
+            # but we still support it as it is widely used, gee thanks Revit :(
             if style.is_a('IfcPresentationStyleAssignment'):
                 style = style.Styles[0]
             if not style.is_a('IfcSurfaceStyle'):
@@ -112,7 +139,7 @@ class IfcImporter():
         self.time = 0
         self.unit_scale = 1
 
-        self.material_creator = MaterialCreator()
+        self.material_creator = MaterialCreator(ifc_import_settings)
 
     def execute(self):
         self.load_diff()
@@ -121,9 +148,79 @@ class IfcImporter():
         self.create_project()
         self.create_spatial_hierarchy()
         self.purge_diff()
+        self.patch_ifc()
+        if self.ifc_import_settings.should_use_legacy:
+            # TODO: deprecate after we confirm stability of iterator based import
+            self.create_products_legacy()
+        else:
+            self.create_products()
+
+    def patch_ifc(self):
+        if self.ifc_import_settings.should_ignore_site_coordinates:
+            project = self.file.by_type('IfcProject')[0]
+            rel_aggregates = project.IsDecomposedBy
+            for rel_aggregate in rel_aggregates:
+                for site in rel_aggregate.RelatedObjects:
+                    if not site.is_a('IfcSite'):
+                        continue
+                    site.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
+                    site.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
+                    site.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+
+    def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
         for element in elements:
             self.create_object(element)
+
+    def create_products(self):
+        if self.ifc_import_settings.should_use_cpu_multiprocessing:
+            iterator = ifcopenshell.geom.iterator(self.settings, self.file, multiprocessing.cpu_count())
+        else:
+            iterator = ifcopenshell.geom.iterator(self.settings, self.file)
+        valid_file = iterator.initialize()
+        if not valid_file:
+            self.create_products_legacy() # Sometimes, this can still work, not 100% sure why yet
+            return False
+        while True:
+            self.create_product(iterator.get())
+            if not iterator.next():
+                break
+
+    def create_product(self, shape):
+        if shape is None:
+            return
+
+        element = self.file.by_id(shape.guid)
+
+        if self.diff:
+            if element.GlobalId not in self.diff['added'] \
+                and element.GlobalId not in self.diff['changed'].keys():
+                return
+
+        print('Creating object {}'.format(element))
+
+        # TODO: make names more meaningful
+        mesh_name = f'mesh-{shape.geometry.id}'
+        mesh = self.meshes.get(mesh_name)
+        if mesh is None:
+            mesh = self.create_mesh(element, shape)
+            self.meshes[mesh_name] = mesh
+            self.mesh_shapes[mesh_name] = shape
+
+        obj = bpy.data.objects.new(self.get_name(element), mesh)
+
+        m = shape.transformation.matrix.data
+        mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
+                                [m[3], m[4], m[5], 0],
+                                [m[6], m[7], m[8], 0],
+                                [m[9], m[10], m[11], 1]))
+        mat.transpose()
+        obj.matrix_world = mat
+
+        self.material_creator.create(element, obj, mesh)
+        self.add_element_attributes(element, obj)
+        self.add_element_document_relations(element, obj)
+        self.place_object_in_spatial_tree(element, obj)
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
@@ -181,6 +278,8 @@ class IfcImporter():
         return '{}/{}'.format(element.is_a(), element.Name)
 
     def purge_diff(self):
+        if not self.diff:
+            return
         objects_to_purge = []
         for obj in bpy.data.objects:
             if 'GlobalId' not in obj.BIMObjectProperties.attributes:
@@ -370,4 +469,7 @@ class IfcImportSettings:
         self.input_file = None
         self.should_ignore_site_coordinates = False
         self.should_import_curves = False
+        self.should_treat_styled_item_as_material = False
+        self.should_use_cpu_multiprocessing = False
+        self.should_use_legacy = False
         self.diff_file = None
