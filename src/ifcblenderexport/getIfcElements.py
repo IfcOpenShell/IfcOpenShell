@@ -1,7 +1,7 @@
-"""This script converts the computer iterpretable listing ifcXML XSD into a list
-of non-abstract children of IfcProduct"""
+"""This script converts the computer iterpretable listing ifcXML XSD into a JSON file"""
 
 import xml.etree.ElementTree as ET
+import collections
 import json
 
 class IFC4Extractor:
@@ -12,7 +12,7 @@ class IFC4Extractor:
         self.ns = {'xs': 'http://www.w3.org/2001/XMLSchema'}
         self.elements = {}
         #self.filters = ['IfcBuildingElement']
-        self.filters = ['IfcElement']
+        self.filters = ['IfcElement', 'IfcSpatialStructureElement']
         self.filtered_elements = {}
 
     def extract(self):
@@ -31,11 +31,11 @@ class IFC4Extractor:
                         self.filtered_elements.setdefault(filter, {})[element.attrib['name']] = data
 
     def export(self):
+        final = {}
         for filter in self.filters:
-            with open("{}.json".format(filter), "w") as file:
-                file.write(json.dumps(self.filtered_elements[filter], indent=4))
-        #with open("ifc_rooted_IFC2X3.json", "w") as file:
-        #    file.write(json.dumps(self.elements, indent=4))
+            final.update(self.filtered_elements[filter])
+        with open("output.json", "w") as file:
+            file.write(json.dumps(collections.OrderedDict(sorted(final.items())), indent=4))
 
     def is_descendant_from_class(self, element, class_name):
         if element is None \
