@@ -200,7 +200,7 @@ class IfcCutter:
                 break
 
     def get_product_shapes(self):
-        if os.path.isfile(self.cut_pickle_file):
+        if not self.should_recut:
             return
 
         shape_map = {}
@@ -565,11 +565,17 @@ class IfcCutter:
         return edges
 
     def get_cut_polygons(self):
-        if os.path.isfile(self.cut_pickle_file):
-            with open(self.cut_pickle_file, 'rb') as pickle_file:
-                self.cut_polygons = pickle.load(pickle_file)
-                return
+        if self.should_recut:
+            self.get_fresh_cut_polygons()
+            self.pickle_cut_polygons()
+        else:
+            self.get_pickled_cut_polygons()
 
+    def pickle_cut_polygons(self):
+        with open(self.cut_pickle_file, 'wb') as pickle_file:
+            pickle.dump(self.cut_polygons, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def get_fresh_cut_polygons(self):
         total_product_shapes = len(self.product_shapes)
         process_data = [(p.GlobalId, s, self.section_box['face'], self.transformation_data) for p, s in self.product_shapes]
 
@@ -583,9 +589,10 @@ class IfcCutter:
                 polygons = [p for p in result if p['points']]
                 self.cut_polygons.extend(polygons)
 
-        if not os.path.isfile(self.cut_pickle_file):
-            with open(self.cut_pickle_file, 'wb') as pickle_file:
-                pickle.dump(self.cut_polygons, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
+    def get_pickled_cut_polygons(self):
+        if os.path.isfile(self.cut_pickle_file):
+            with open(self.cut_pickle_file, 'rb') as pickle_file:
+                self.cut_polygons = pickle.load(pickle_file)
 
 
 class IfcCutterDebug(IfcCutter):
