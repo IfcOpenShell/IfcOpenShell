@@ -15,6 +15,8 @@ def run_tests():
     print('# All tests have finished. Generating HTML reports now.')
     if not os.path.exists('report'):
         os.mkdir('report')
+    if not os.path.exists('junit'):
+        os.mkdir('junit')
     for file in os.listdir('junit/'):
         if not file.endswith('.xml'):
             continue
