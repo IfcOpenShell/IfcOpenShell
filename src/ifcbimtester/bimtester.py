@@ -8,11 +8,20 @@ import pystache
 import os
 import sys
 import json
+import argparse
 from pathlib import Path
 
-def run_tests():
-    behave_main(['features', '--junit', '--junit-directory', 'junit/'])
-    print('# All tests have finished. Generating HTML reports now.')
+def run_tests(args):
+    behave_args = ['features', '--junit', '--junit-directory', 'junit/']
+    if args.advanced_arguments:
+        behave_args = args.advanced_arguments.split()
+    behave_main(behave_args)
+    print('# All tests are finished.')
+    if args.report:
+        generate_report()
+
+def generate_report():
+    print('# Generating HTML reports now.')
     if not os.path.exists('report'):
         os.mkdir('report')
     if not os.path.exists('junit'):
@@ -84,29 +93,35 @@ class TestPurger:
         except:
             return False
 
-print('# BIMTester')
-print('''
-BIMTester is free software developed under the IfcOpenShell and BlenderBIM
-projects. BIMTester allows advanced, fast, and human-readable BIM data analysis,
-and can be run automatically on open-source BIM servers. To learn more, visit:
+parser = argparse.ArgumentParser(
+    description='Runs unit tests for BIM data')
+parser.add_argument(
+    '-p',
+    '--purge',
+    action='store_true',
+    help='Purge tests of deleted elements')
+parser.add_argument(
+    '-r',
+    '--report',
+    action='store_true',
+    help='Generate a HTML report')
+parser.add_argument(
+    '-a',
+    '--advanced-arguments',
+    type=str,
+    help='Specify your own arguments to Python\'s Behave',
+    default='')
+args = parser.parse_args()
 
- - http://ifcopenshell.org
- - https://blenderbim.org
+if not os.path.exists('features'):
+    quit('''
+    BIMTester requires a features folder to exist within the current folder.
+    Visit https://blenderbim.org/ to learn more about how to use BIMTester.
+    ''')
 
-To run, a `features/` folder is required in the current folder.
-
-Please choose from the following options:
-
- 1. Run all tests
- 2. Purge non-existent element tests
-''')
-
-value = input('Please select an option: [1-2] ')
-if value == '1':
-    run_tests()
-elif value == '2':
+if args.purge:
     TestPurger().purge()
 else:
-    quit()
+    run_tests(args)
+
 print('# All tasks are complete :-)')
-input('Press <enter> to quit.')
