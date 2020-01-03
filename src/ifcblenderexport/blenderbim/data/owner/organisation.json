@@ -1,13 +1,30 @@
 [
   {
-    "Name": "ACME",
-    "Description": "Does everything",
-    "Roles": [ { "Role": "ARCHITECT" } ],
-    "Addresses": [{
-      "Purpose": "OFFICE",
-      "Description": "Headquarters",
-      "ElectronicMailAddresses": ["acme@example.com"],
-      "WWWHomePageURL": "https://example.com"
-    }]
+    "Name": "IfcOpenShell",
+    "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+    "Roles": [{
+      "Role": "USERDEFINED",
+      "UserDefinedRole": "CONTRIBUTOR"
+    }],
+    "Addresses": [
+      {
+        "Purpose": "USERDEFINED",
+        "UserDefinedPurpose": "WEBPAGE",
+        "Description": "The main webpage of the software collection.",
+        "WWWHomePageURL": "https://ifcopenshell.org"
+      },
+      {
+        "Purpose": "USERDEFINED",
+        "UserDefinedPurpose": "WEBPAGE",
+        "Description": "The BlenderBIM webpage of the software collection.",
+        "WWWHomePageURL": "https://blenderbim.org"
+      },
+      {
+        "Purpose": "USERDEFINED",
+        "UserDefinedPurpose": "REPOSITORY",
+        "Description": "The source code repository of the software collection.",
+        "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git"
+      }
+    ]
   }
 ]

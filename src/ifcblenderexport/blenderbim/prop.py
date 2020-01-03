@@ -36,6 +36,8 @@ documents_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
+persons_enum = []
+organisations_enum = []
 
 @persistent
 def setDefaultProperties(scene):
@@ -90,6 +92,26 @@ def getIfcClasses(self, context):
     if len(classes_enum) < 1:
         classes_enum.extend([(e, e, '') for e in ifc_schema.elements])
     return classes_enum
+
+
+def getPersons(self, context):
+    global persons_enum
+    if len(persons_enum) < 1:
+        persons_enum.clear()
+        with open(os.path.join(self.data_dir, 'owner', 'person.json'), 'r') as f:
+            persons = json.load(f)
+        persons_enum.extend([(p['Identification'], p['Identification'], '') for p in persons])
+    return persons_enum
+
+
+def getOrganisations(self, context):
+    global organisations_enum
+    if len(organisations_enum) < 1:
+        organisations_enum.clear()
+        with open(os.path.join(self.data_dir, 'owner', 'organisation.json'), 'r') as f:
+            organisations = json.load(f)
+        organisations_enum.extend([(o['Name'], o['Name'], '') for o in organisations])
+    return organisations_enum
 
 
 def getPsetNames(self, context):
@@ -215,6 +237,8 @@ class BIMProperties(PropertyGroup):
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=False)
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
+    person: EnumProperty(items=getPersons, name="Person")
+    organisation: EnumProperty(items=getOrganisations, name="Organisation")
     pset_name: EnumProperty(items=getPsetNames, name="Pset Name", update=refreshPsetFiles)
     pset_file: EnumProperty(items=getPsetFiles, name="Pset File")
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)

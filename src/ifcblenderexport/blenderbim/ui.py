@@ -206,6 +206,27 @@ class BIM_PT_documentation(Panel):
         row = layout.row()
         row.operator('bim.generate_digital_twin')
 
+
+class BIM_PT_owner(Panel):
+    bl_label = "Owner History"
+    bl_idname = "BIM_PT_owner"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'person')
+
+        row = layout.row()
+        row.prop(props, 'organisation')
+
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"

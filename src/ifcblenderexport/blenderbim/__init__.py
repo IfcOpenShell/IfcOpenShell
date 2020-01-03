@@ -97,6 +97,7 @@ if bpy is not None:
         prop.BIMMeshProperties,
         ui.BIM_PT_documentation,
         ui.BIM_PT_bim,
+        ui.BIM_PT_owner,
         ui.BIM_PT_context,
         ui.BIM_PT_qa,
         ui.BIM_PT_library,
