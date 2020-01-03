@@ -29,6 +29,9 @@ class MaterialCreator():
         self.mesh = mesh
         if not element.Representation:
             return
+        if self.ifc_import_settings.should_treat_styled_item_as_material \
+            and self.mesh.name in self.parsed_meshes:
+            return
         for item in element.Representation.Representations[0].Items:
             if item.is_a('IfcMappedItem'):
                 item = item.MappingSource.MappedRepresentation.Items[0]
@@ -56,7 +59,6 @@ class MaterialCreator():
                     # them as reusable materials makes things much more
                     # efficient in Blender.
                     if self.mesh.name not in self.parsed_meshes:
-                        self.parsed_meshes.append(self.mesh.name)
                         self.assign_material_to_mesh(self.materials[material_name])
                 else:
                     # Proper behaviour
@@ -118,6 +120,7 @@ class MaterialCreator():
                 material.BIMMaterialProperties.name = external_style.Name
 
     def assign_material_to_mesh(self, material, is_styled_item=False):
+        self.parsed_meshes.append(self.mesh.name)
         self.mesh.materials.append(material)
         if is_styled_item:
             self.object.material_slots[0].link = 'OBJECT'
