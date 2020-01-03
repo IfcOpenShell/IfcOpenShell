@@ -686,7 +686,8 @@ class SvgWriter():
         )
 
         self.add_stylesheet()
-        self.add_defs()
+        self.add_markers()
+        self.add_patterns()
         self.draw_background_image()
         self.draw_background_elements()
         self.draw_cut_polygons()
@@ -706,8 +707,14 @@ class SvgWriter():
         with open('{}styles/default.css'.format(self.ifc_cutter.data_dir), 'r') as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
-    def add_defs(self):
-        tree = ET.parse('{}templates/defs.svg'.format(self.ifc_cutter.data_dir))
+    def add_markers(self):
+        tree = ET.parse('{}templates/markers.svg'.format(self.ifc_cutter.data_dir))
+        root = tree.getroot()
+        for child in root.getchildren():
+            self.svg.defs.add(External(child))
+
+    def add_patterns(self):
+        tree = ET.parse('{}templates/patterns.svg'.format(self.ifc_cutter.data_dir))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
