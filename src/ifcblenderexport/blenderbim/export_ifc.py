@@ -6,6 +6,7 @@ from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper
 import ifcopenshell
+import addon_utils
 
 class ArrayModifier:
     count: int
@@ -567,11 +568,11 @@ class IfcParser():
 
     def get_people(self):
         with open(self.data_dir + 'owner/person.json') as file:
-            return json.load(file)
+            return [{'raw': p} for p in json.load(file)]
 
     def get_organisations(self):
         with open(self.data_dir + 'owner/organisation.json') as file:
-            return json.load(file)
+            return [{'raw': o} for o in json.load(file)]
 
     def get_documents(self):
         documents = {}
@@ -930,11 +931,11 @@ class IfcExporter():
 
     def export(self):
         self.file = ifcopenshell.open(self.template_file)
-        self.set_common_definitions()
         self.ifc_parser.parse()
         self.create_units()
         self.create_people()
         self.create_organisations()
+        self.set_common_definitions()
         self.create_rep_context()
         self.create_project()
         self.create_library_information()
@@ -976,7 +977,38 @@ class IfcExporter():
     def set_common_definitions(self):
         # Owner history doesn't actually work like this, but for now, it does :)
         self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
-        self.owner_history = self.file.by_type('IfcOwnerHistory')[0]
+        self.create_owner_history()
+
+    def create_owner_history(self):
+        for person in self.ifc_parser.people:
+            if person['ifc'].Identification == bpy.context.scene.BIMProperties.person:
+                break
+        for organisation in self.ifc_parser.organisations:
+            if organisation['ifc'].Name == bpy.context.scene.BIMProperties.organisation:
+                break
+        person_and_organisation = self.file.create_entity('IfcPersonAndOrganization', **{
+            'ThePerson': person['ifc'],
+            'TheOrganization': organisation['ifc'],
+            'Roles': None # TODO
+        })
+        version = '.'.join([str(x) for x in [addon.bl_info.get('version', (-1,-1,-1)) for addon in addon_utils.modules() if addon.bl_info['name'] == 'BlenderBIM'][0]])
+        developer_organisation = [o for o in self.ifc_parser.organisations if o['ifc'].Name == 'IfcOpenShell'][0]['ifc']
+        application = self.file.create_entity('IfcApplication', **{
+            'ApplicationDeveloper': developer_organisation,
+            'Version': version,
+            'ApplicationFullName': 'BlenderBIM',
+            'ApplicationIdentifier': 'BlenderBIM'
+        })
+        self.owner_history = self.file.create_entity('IfcOwnerHistory', **{
+            'OwningUser': person_and_organisation,
+            'OwningApplication': application,
+            'State': 'READWRITE',
+            'ChangeAction': 'NOTDEFINED',
+            'LastModifiedDate': int(time.time()),
+            'LastModifyingUser': person_and_organisation,
+            'LastModifyingApplication': application,
+            'CreationDate': int(time.time()) # illegal, but better than nothing ...
+        })
 
     def create_units(self):
         for unit_type, data in self.ifc_parser.units.items():
@@ -1033,19 +1065,21 @@ class IfcExporter():
 
     def create_people(self):
         for person in self.ifc_parser.people:
-            if person['Roles']:
-                person['Roles'] = self.create_roles(person['Roles'])
-            if person['Addresses']:
-                person['Addresses'] = self.create_addresses(person['Addresses'])
-            self.file.create_entity('IfcPerson', **person)
+            data = person['raw'].copy()
+            if data['Roles']:
+                data['Roles'] = self.create_roles(data['Roles'])
+            if data['Addresses']:
+                data['Addresses'] = self.create_addresses(data['Addresses'])
+            person['ifc'] = self.file.create_entity('IfcPerson', **data)
 
     def create_organisations(self):
         for organisation in self.ifc_parser.organisations:
-            if organisation['Roles']:
-                organisation['Roles'] = self.create_roles(organisation['Roles'])
-            if organisation['Addresses']:
-                organisation['Addresses'] = self.create_addresses(organisation['Addresses'])
-            self.file.create_entity('IfcOrganization', **organisation)
+            data = organisation['raw'].copy()
+            if data['Roles']:
+                data['Roles'] = self.create_roles(data['Roles'])
+            if data['Addresses']:
+                data['Addresses'] = self.create_addresses(data['Addresses'])
+            organisation['ifc'] = self.file.create_entity('IfcOrganization', **data)
 
     def create_roles(self, roles):
         results = []
