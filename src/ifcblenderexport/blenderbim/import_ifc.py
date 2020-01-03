@@ -164,8 +164,10 @@ class IfcImporter():
                     if not site.is_a('IfcSite'):
                         continue
                     site.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
-                    site.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
-                    site.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+                    if site.ObjectPlacement.RelativePlacement.Axis:
+                        site.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
+                    if site.ObjectPlacement.RelativePlacement.RefDirection:
+                        site.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
     def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
