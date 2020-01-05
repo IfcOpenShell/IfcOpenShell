@@ -759,6 +759,25 @@ class RemoveSubcontext(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class CreateView(bpy.types.Operator):
+    bl_idname = 'bim.create_view'
+    bl_label = 'Create View'
+
+    def execute(self, context):
+        if not bpy.data.collections.get('Views'):
+            bpy.context.scene.collection.children.link(bpy.data.collections.new('Views'))
+        views_collection = bpy.data.collections.get('Views')
+        view_collection = bpy.data.collections.new(bpy.context.scene.DocProperties.view_name)
+        views_collection.children.link(view_collection)
+        camera = bpy.data.objects.new(bpy.context.scene.DocProperties.view_name, bpy.data.cameras.new(bpy.context.scene.DocProperties.view_name))
+        camera.data.type = 'ORTHO'
+        bpy.context.scene.camera = camera
+        view_collection.objects.link(camera)
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+        return {'FINISHED'}
+
+
 class CutSection(bpy.types.Operator):
     bl_idname = 'bim.cut_section'
     bl_label = 'Cut Section'

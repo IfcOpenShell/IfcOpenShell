@@ -191,7 +191,12 @@ class BIM_PT_documentation(Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
         props = bpy.context.scene.DocProperties
+
+        row = layout.row()
+        row.prop(props, 'view_name')
+        row.operator('bim.create_view', icon='ADD', text='')
 
         row = layout.row()
         row.prop(props, 'should_recut')
