@@ -81,6 +81,7 @@ if bpy is not None:
         operator.CreateSheets,
         operator.GenerateDigitalTwin,
         operator.CreateView,
+        operator.ActivateView,
         prop.Subcontext,
         prop.BIMProperties,
         prop.DocProperties,

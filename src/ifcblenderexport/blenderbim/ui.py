@@ -199,6 +199,10 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.create_view', icon='ADD', text='')
 
         row = layout.row()
+        row.prop(props, 'available_views')
+        row.operator('bim.activate_view', icon='SCENE', text='')
+
+        row = layout.row()
         row.operator('bim.create_sheets')
 
         row = layout.row()

@@ -38,6 +38,7 @@ subcontexts_enum = []
 target_views_enum = []
 persons_enum = []
 organisations_enum = []
+views_enum = []
 
 @persistent
 def setDefaultProperties(scene):
@@ -209,6 +210,19 @@ def getTargetViews(self, context):
     return target_views_enum
 
 
+def getViews(self, context):
+    global views_enum
+    views_enum.clear()
+    views_collection = bpy.data.collections.get('Views')
+    if not views_collection:
+        return views_enum
+    for collection in views_collection.children:
+        for obj in collection.objects:
+            if obj.type == 'CAMERA':
+                views_enum.append((obj.name, obj.name, ''))
+    return views_enum
+
+
 class Subcontext(PropertyGroup):
     name: StringProperty(name='Name')
     target_view: StringProperty(name='Target View')
@@ -217,6 +231,7 @@ class Subcontext(PropertyGroup):
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     view_name: StringProperty(name="View Name")
+    available_views: EnumProperty(items=getViews, name="Available Views")
 
 
 class BIMCameraProperties(PropertyGroup):
