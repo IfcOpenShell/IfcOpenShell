@@ -215,9 +215,13 @@ class Subcontext(PropertyGroup):
 
 
 class DocProperties(PropertyGroup):
-    diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
     should_recut: BoolProperty(name="Should Recut", default=True)
     view_name: StringProperty(name="View Name")
+
+
+class BIMCameraProperties(PropertyGroup):
+    view_name: StringProperty(name="View Name")
+    diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
 
 
 class BIMProperties(PropertyGroup):

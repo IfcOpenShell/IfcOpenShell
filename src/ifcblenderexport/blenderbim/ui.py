@@ -199,17 +199,37 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.create_view', icon='ADD', text='')
 
         row = layout.row()
-        row.prop(props, 'should_recut')
-
-        row = layout.row(align=True)
-        row.prop(props, 'diagram_scale', text='')
-        row.operator('bim.cut_section')
-
-        row = layout.row()
         row.operator('bim.create_sheets')
 
         row = layout.row()
         row.operator('bim.generate_digital_twin')
+
+
+class BIM_PT_camera(Panel):
+    bl_label = "Diagrams and Documentation"
+    bl_idname = "BIM_PT_camera"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'data'
+
+    @classmethod
+    def poll(cls, context):
+        engine = context.engine
+        return context.camera and (engine in cls.COMPAT_ENGINES) and \
+               hasattr(context.active_object.data, "BIMCameraProperties")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        dprops = bpy.context.scene.DocProperties
+        props = context.active_object.data.BIMCameraProperties
+
+        row = layout.row()
+        row.prop(dprops, 'should_recut')
+
+        row = layout.row(align=True)
+        row.prop(props, 'diagram_scale', text='')
+        row.operator('bim.cut_section')
 
 
 class BIM_PT_owner(Panel):
