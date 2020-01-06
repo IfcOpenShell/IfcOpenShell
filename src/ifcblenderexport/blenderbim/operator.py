@@ -881,3 +881,22 @@ class GenerateDigitalTwin(bpy.types.Operator):
     def execute(self, context):
         # Does absolutely nothing at all :D
         return {'FINISHED'}
+
+class ActivateView(bpy.types.Operator):
+    bl_idname = 'bim.activate_view'
+    bl_label = 'Activate View'
+
+    def execute(self, context):
+        camera = bpy.data.objects.get(bpy.context.scene.DocProperties.available_views)
+        if not camera:
+            return {'FINISHED'}
+        bpy.context.scene.camera = camera
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+        views_collection = bpy.data.collections.get('Views')
+        for collection in views_collection.children:
+            bpy.context.view_layer.layer_collection.children['Views'].children[collection.name].hide_viewport = True
+            bpy.data.collections.get(collection.name).hide_render = True
+        bpy.context.view_layer.layer_collection.children['Views'].children[camera.users_collection[0].name].hide_viewport = False
+        bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
+        return {'FINISHED'}
