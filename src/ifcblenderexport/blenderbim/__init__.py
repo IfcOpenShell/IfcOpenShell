@@ -80,6 +80,7 @@ if bpy is not None:
         operator.CutSection,
         operator.CreateSheets,
         operator.GenerateDigitalTwin,
+        operator.CreateView,
         prop.Subcontext,
         prop.BIMProperties,
         prop.DocProperties,
@@ -95,6 +96,7 @@ if bpy is not None:
         prop.BIMMaterialProperties,
         prop.SweptSolid,
         prop.BIMMeshProperties,
+        prop.BIMCameraProperties,
         ui.BIM_PT_documentation,
         ui.BIM_PT_bim,
         ui.BIM_PT_owner,
@@ -107,6 +109,7 @@ if bpy is not None:
         ui.BIM_PT_material,
         ui.BIM_PT_mesh,
         ui.BIM_PT_object,
+        ui.BIM_PT_camera,
         )
 
     def menu_func_export(self, context):
@@ -137,6 +140,7 @@ if bpy is not None:
         bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
+        bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
 
     def unregister():
         for cls in reversed(classes):
@@ -152,6 +156,7 @@ if bpy is not None:
         del(bpy.types.Collection.BIMObjectProperties)
         del(bpy.types.Material.BIMMaterialProperties)
         del(bpy.types.Mesh.BIMMeshProperties)
+        del(bpy.types.Mesh.BIMCameraProperties)
 
     if __name__ == "__main__":
         register()

@@ -855,7 +855,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.cut_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-cut.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
         svg_writer = cut_ifc.SvgWriter(ifc_cutter)
-        numerator, denominator = bpy.context.scene.DocProperties.diagram_scale.split(':')
+        numerator, denominator = camera.data.BIMCameraProperties.diagram_scale.split(':')
         svg_writer.scale = float(numerator) / float(denominator)
         ifc_cutter.cut()
         svg_writer.write()
