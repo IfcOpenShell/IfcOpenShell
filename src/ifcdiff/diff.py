@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico diff.py`
 
 import ifcopenshell
 from deepdiff import DeepDiff
