@@ -9,9 +9,10 @@ import argparse
 
 
 class IfcDiff():
-    def __init__(self, old_file, new_file):
+    def __init__(self, old_file, new_file, output_file):
         self.old_file = old_file
         self.new_file = new_file
+        self.output_file = output_file
         self.change_register = {}
         self.representation_ids = []
 
@@ -50,6 +51,17 @@ class IfcDiff():
         print(' - {} item(s) were changed either geometrically or with data'.format(
             len(self.change_register.keys())))
         print('# Diff finished in {:.2f} seconds'.format(time.time() - start))
+
+    def export(self):
+        with open(self.output_file, 'w', encoding='utf-8') as diff_file:
+            json.dump({
+                    'added': list(self.added_elements),
+                    'deleted': list(self.deleted_elements),
+                    'changed': self.change_register,
+                },
+                diff_file,
+                indent=4,
+                cls=DiffEncoder)
 
     def load(self):
         print('Loading old file ...')
@@ -104,26 +116,18 @@ class DiffEncoder(json.JSONEncoder):
         except:
             return str(obj)
 
-parser = argparse.ArgumentParser(description='Show the difference between two IFC files')
-parser.add_argument('old', type=str, help='The old IFC file')
-parser.add_argument('new', type=str, help='The new IFC file')
-parser.add_argument(
-    '-o',
-    '--output',
-    type=str,
-    help='The JSON diff file to output. Defaults to diff.json',
-    default='diff.json')
-args = parser.parse_args()
-
-ifc_diff = IfcDiff(args.old, args.new)
-ifc_diff.diff()
-
-with open(args.output, 'w', encoding='utf-8') as diff_file:
-    json.dump({
-            'added': list(ifc_diff.added_elements),
-            'deleted': list(ifc_diff.deleted_elements),
-            'changed': ifc_diff.change_register,
-        },
-        diff_file,
-        indent=4,
-        cls=DiffEncoder)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Show the difference between two IFC files')
+    parser.add_argument('old', type=str, help='The old IFC file')
+    parser.add_argument('new', type=str, help='The new IFC file')
+    parser.add_argument(
+        '-o',
+        '--output',
+        type=str,
+        help='The JSON diff file to output. Defaults to diff.json',
+        default='diff.json')
+    args = parser.parse_args()
+    
+    ifc_diff = IfcDiff(args.old, args.new, args.output)
+    ifc_diff.diff()
+    ifc_diff.export()

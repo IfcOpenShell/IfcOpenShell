@@ -456,6 +456,17 @@ class BIM_PT_diff(Panel):
         row.prop(bim_properties, "diff_json_file")
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
 
+        row = layout.row(align=True)
+        row.prop(bim_properties, "diff_old_file")
+        row.operator("bim.select_diff_old_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row(align=True)
+        row.prop(bim_properties, "diff_new_file")
+        row.operator("bim.select_diff_new_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.operator('bim.execute_ifc_diff')
+
 
 class BIM_PT_mvd(Panel):
     bl_label = "Model View Definitions"
