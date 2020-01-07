@@ -152,8 +152,8 @@ class IfcImporter():
         self.create_spatial_hierarchy()
         self.purge_diff()
         self.patch_ifc()
-        if self.ifc_import_settings.should_use_legacy:
-            # TODO: deprecate after we confirm stability of iterator based import
+        # TODO: Deprecate after bug #682 is fixed and the new importer is stable
+        if self.ifc_import_settings.should_use_legacy or self.diff:
             self.create_products_legacy()
         else:
             self.create_products()
@@ -196,11 +196,6 @@ class IfcImporter():
             return
 
         element = self.file.by_id(shape.guid)
-
-        if self.diff:
-            if element.GlobalId not in self.diff['added'] \
-                and element.GlobalId not in self.diff['changed'].keys():
-                return
 
         print('Creating object {}'.format(element))
 
