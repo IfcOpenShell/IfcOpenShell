@@ -2,6 +2,8 @@ import bpy
 import csv
 import json
 import time
+import datetime
+import os
 from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper
@@ -978,6 +980,18 @@ class IfcExporter():
         # Owner history doesn't actually work like this, but for now, it does :)
         self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
         self.create_owner_history()
+        self.set_header()
+
+    def set_header(self):
+        # TODO: add all metadata, pending bug #747
+        self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
+        self.file.wrapped_data.header.file_name.time_stamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone().replace(microsecond=0).isoformat()
+        self.file.wrapped_data.header.file_name.preprocessor_version = 'IfcOpenShell {}'.format(ifcopenshell.version)
+        self.file.wrapped_data.header.file_name.originating_system = '{} {}'.format(
+            self.owner_history.OwningApplication.ApplicationFullName,
+            self.owner_history.OwningApplication.Version,
+        )
+        self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Identification
 
     def create_owner_history(self):
         for person in self.ifc_parser.people:
