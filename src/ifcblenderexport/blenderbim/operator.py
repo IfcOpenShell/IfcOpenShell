@@ -519,6 +519,51 @@ class SelectDiffJsonFile(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+
+class SelectDiffOldFile(bpy.types.Operator):
+    bl_idname = "bim.select_diff_old_file"
+    bl_label = "Select Diff Old File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.diff_old_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class SelectDiffNewFile(bpy.types.Operator):
+    bl_idname = "bim.select_diff_new_file"
+    bl_label = "Select Diff New File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.diff_new_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ExecuteIfcDiff(bpy.types.Operator):
+    bl_idname = 'bim.execute_ifc_diff'
+    bl_label = 'Execute IFC Diff'
+
+    def execute(self, context):
+        import ifcdiff
+        ifc_diff = ifcdiff.IfcDiff(
+            bpy.context.scene.BIMProperties.diff_old_file,
+            bpy.context.scene.BIMProperties.diff_new_file,
+            bpy.context.scene.BIMProperties.diff_json_file
+        )
+        ifc_diff.diff()
+        ifc_diff.export()
+        return {'FINISHED'}
+
+
 class SelectFeaturesDir(bpy.types.Operator):
     bl_idname = "bim.select_features_dir"
     bl_label = "Select Features Directory"

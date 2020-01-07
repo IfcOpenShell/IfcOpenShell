@@ -266,6 +266,8 @@ class BIMProperties(PropertyGroup):
     global_id: StringProperty(name="GlobalId")
     features_dir: StringProperty(default='', name="Features Directory")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
+    diff_old_file: StringProperty(default='', name="Diff Old IFC File")
+    diff_new_file: StringProperty(default='', name="Diff New IFC File")
     aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
     aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
