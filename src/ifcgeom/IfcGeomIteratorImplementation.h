@@ -162,7 +162,7 @@ namespace {
 		for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
 			auto brep2 = kernel->create_brep_for_processed_representation<P, PP>(settings, representation, *it, brep);
 			if (brep2) {
-				auto elem2 = process_based_on_settings(settings, brep, dynamic_cast<IfcGeom::TriangulationElement<P, PP>*>(elem));
+				auto elem2 = process_based_on_settings(settings, brep2, dynamic_cast<IfcGeom::TriangulationElement<P, PP>*>(elem));
 				if (elem2) {
 					rep->breps.push_back(brep2);
 					rep->elements.push_back(elem2);
