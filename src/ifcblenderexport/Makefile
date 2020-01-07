@@ -84,6 +84,24 @@ endif
 	rm -rf dist/working
 
 	mkdir dist/working
+	cd dist/working && wget https://github.com/Moult/deepdiff/archive/master.zip
+	cd dist/working && unzip master.zip
+	cp -r dist/working/deepdiff-master/deepdiff dist/
+	rm -rf dist/working
+
+	mkdir dist/working
+cd dist/working && wget https://files.pythonhosted.org/packages/00/55/ce2cbc6d64034b30cad81a29ba61bdba456f190f5e83c09831304bf68d6b/jsonpickle-1.2.tar.gz
+	cd dist/working && tar -xzvf jsonpickle*
+	cp -r dist/working/jsonpickle-1.2/jsonpickle dist/
+	rm -rf dist/working
+
+	mkdir dist/working
+cd dist/working && wget https://files.pythonhosted.org/packages/a3/b7/d4d69641cbe707a45c23b190f2d717466ba5accc4c70b5f7a8a450387895/ordered-set-3.1.1.tar.gz
+	cd dist/working && tar -xzvf ordered-set*
+	cp -r dist/working/ordered-set-3.1.1/ordered_set.py dist/
+	rm -rf dist/working
+
+	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/00/32/8076fa13e832bb4dcff379f18f228e5a53412be0631808b9ca2610c0f566/pyparsing-2.4.5.tar.gz
 	cd dist/working && tar -xzvf pyparsing*
 	cp -r dist/working/pyparsing-2.4.5/pyparsing.py dist/
@@ -96,6 +114,9 @@ endif
 	rm -rf dist/OCC
 	rm -rf dist/pystache
 	rm -rf dist/svgwrite
+	rm -rf dist/deepdiff
+	rm -rf dist/jsonpickle
+	rm -rf dist/ordered_set.py
 	rm -rf dist/pyparsing.py
 ifneq ($(PLATFORM), win)
 	rm -rf dist/lib
