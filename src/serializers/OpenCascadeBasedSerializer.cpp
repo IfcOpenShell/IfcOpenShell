@@ -38,15 +38,12 @@ bool OpenCascadeBasedSerializer::ready() {
 
 void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 	TopoDS_Shape compound = o->geometry().as_compound();
-
-	if (o->geometry().settings().get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS)) {
-		gp_Trsf scale;
-		scale.SetScaleFactor(1.0 / o->geometry().settings().unit_magnitude());
-		
-		compound = BRepBuilderAPI_Transform(compound, scale, true).Shape();
+	gp_Trsf trsf = o->transformation().data();
+	const IfcGeom::ElementSettings& settings = o->geometry().settings();
+	if (settings.get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS) && settings.unit_magnitude() != 1.0) {
+		trsf.SetTranslationPart(trsf.TranslationPart() / settings.unit_magnitude());
 	}
-
-	writeShape(compound);
+	writeShape(compound.Moved(trsf));
 }
 
 #define RATHER_SMALL (1e-3)
