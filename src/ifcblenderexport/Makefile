@@ -107,6 +107,8 @@ cd dist/working && wget https://files.pythonhosted.org/packages/a3/b7/d4d69641cb
 	cp -r dist/working/pyparsing-2.4.5/pyparsing.py dist/
 	rm -rf dist/working
 
+	cd dist/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
+
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blender28-bim-$(VERSION)-$(PLATFORM).zip ./*
 	rm -rf dist/blenderbim
