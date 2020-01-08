@@ -150,6 +150,7 @@ class IfcImporter():
         self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
+        self.create_aggregates()
         self.purge_diff()
         self.patch_ifc()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
@@ -274,6 +275,25 @@ class IfcImporter():
                         self.spatial_structure_elements[name]['blender'])
             attempts += 1
 
+    def create_aggregates(self):
+        rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
+                if a.RelatingObject.is_a('IfcElement')]
+        for rel_aggregate in rel_aggregates:
+            if rel_aggregate.Name:
+                name = rel_aggregate.Name
+            else:
+                name = rel_aggregate.RelatingObject.Name
+            collection = bpy.data.collections.new(f'IfcRelAggregates/{name}')
+            bpy.context.scene.collection.children.link(collection)
+
+            instance = bpy.data.objects.new('{}/{}'.format(
+                rel_aggregate.RelatingObject.is_a(),
+                rel_aggregate.RelatingObject.Name),
+                None)
+            instance.instance_type = 'COLLECTION'
+            instance.instance_collection = collection
+            self.place_object_in_spatial_tree(rel_aggregate.RelatingObject, instance)
+
     def get_name(self, element):
         return '{}/{}'.format(element.is_a(), element.Name)
 
@@ -337,11 +357,20 @@ class IfcImporter():
 
     def place_object_in_spatial_tree(self, element, obj):
         if hasattr(element, 'ContainedInStructure') \
-            and element.ContainedInStructure \
-            and element.ContainedInStructure[0].RelatingStructure:
+                and element.ContainedInStructure \
+                and element.ContainedInStructure[0].RelatingStructure:
             structure_name = self.get_name(element.ContainedInStructure[0].RelatingStructure)
             if structure_name in self.spatial_structure_elements:
                 self.spatial_structure_elements[structure_name]['blender'].objects.link(obj)
+        elif hasattr(element, 'Decomposes') \
+                and element.Decomposes:
+            if element.Decomposes[0].Name:
+                name = element.Decomposes[0].Name
+            else:
+                name = element.Decomposes[0].RelatingObject.Name
+            collection = bpy.data.collections.get(f'IfcRelAggregates/{name}')
+            if collection:
+                collection.objects.link(obj)
         else:
             print('Warning: this object is outside the spatial hierarchy')
             bpy.context.scene.collection.objects.link(obj)
