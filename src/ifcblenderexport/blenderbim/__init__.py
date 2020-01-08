@@ -71,6 +71,7 @@ if bpy is not None:
         operator.CreateAggregate,
         operator.EditAggregate,
         operator.SaveAggregate,
+        operator.ExplodeAggregate,
         operator.AssignClassification,
         operator.UnassignClassification,
         operator.RemoveClassification,
