@@ -95,6 +95,14 @@ class BIM_PT_mesh(Panel):
             return
         layout = self.layout
         props = context.active_object.data.BIMMeshProperties
+
+        row = layout.row(align=True)
+        row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
+        row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
+        row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
+        row = layout.row()
+        row.operator('bim.assign_context')
+
         row = layout.row()
         row.prop(props, 'is_wireframe')
         row = layout.row()
@@ -271,9 +279,12 @@ class BIM_PT_context(Panel):
 
         for context in ['model', 'plan']:
             row = layout.row(align=True)
-            row.prop(props, 'has_{}_context'.format(context))
-            layout.label(text="Geometric Representation Subcontexts:")
+            row.prop(props, f'has_{context}_context')
 
+            if not getattr(props, f'has_{context}_context'):
+                continue
+
+            layout.label(text="Geometric Representation Subcontexts:")
             row = layout.row(align=True)
             row.prop(props, 'available_subcontexts', text='')
             row.prop(props, 'available_target_views', text='')

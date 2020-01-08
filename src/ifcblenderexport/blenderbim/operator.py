@@ -947,6 +947,7 @@ class GenerateDigitalTwin(bpy.types.Operator):
         # Does absolutely nothing at all :D
         return {'FINISHED'}
 
+
 class ActivateView(bpy.types.Operator):
     bl_idname = 'bim.activate_view'
     bl_label = 'Activate View'
@@ -965,3 +966,32 @@ class ActivateView(bpy.types.Operator):
         bpy.context.view_layer.layer_collection.children['Views'].children[camera.users_collection[0].name].hide_viewport = False
         bpy.data.collections.get(camera.users_collection[0].name).hide_render = False
         return {'FINISHED'}
+
+
+class AssignContext(bpy.types.Operator):
+    bl_idname = 'bim.assign_context'
+    bl_label = 'Assign Context'
+
+    def execute(self, context):
+        if not self.is_mesh_context_sensitive(bpy.context.active_object.data.name):
+            bpy.context.active_object.data.name = '{}/{}/{}/{}'.format(
+                bpy.context.scene.BIMProperties.available_contexts,
+                bpy.context.scene.BIMProperties.available_subcontexts,
+                bpy.context.scene.BIMProperties.available_target_views,
+                bpy.context.active_object.data.name
+            )
+        else:
+            bpy.context.active_object.data.name = '{}/{}/{}/{}'.format(
+                bpy.context.scene.BIMProperties.available_contexts,
+                bpy.context.scene.BIMProperties.available_subcontexts,
+                bpy.context.scene.BIMProperties.available_target_views,
+                bpy.context.active_object.data.name.split('/')[3]
+            )
+        return {'FINISHED'}
+
+    def is_mesh_context_sensitive(self, name):
+        return '/' in name \
+            and ( \
+                name[0:6] == 'Model/' \
+                or name[0:5] == 'Plan/' \
+            )

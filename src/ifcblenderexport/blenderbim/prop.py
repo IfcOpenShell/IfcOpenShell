@@ -276,6 +276,7 @@ class BIMProperties(PropertyGroup):
     has_plan_context: BoolProperty(name="Has Plan Context", default=False)
     model_subcontexts: CollectionProperty(name='Model Subcontexts', type=Subcontext)
     plan_subcontexts: CollectionProperty(name='Plan Subcontexts', type=Subcontext)
+    available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
 
