@@ -671,6 +671,26 @@ class SaveAggregate(bpy.types.Operator):
                 obj.hide_viewport = False
         return {'FINISHED'}
 
+
+class ExplodeAggregate(bpy.types.Operator):
+    bl_idname = 'bim.explode_aggregate'
+    bl_label = 'Explode Aggregate'
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        if obj.instance_type != 'COLLECTION' \
+            or 'IfcRelAggregates' not in obj.instance_collection.name:
+            return {'FINISHED'}
+        aggregate_collection = bpy.data.collections.get(obj.instance_collection.name)
+        spatial_collection = obj.users_collection[0]
+        for part in aggregate_collection.objects:
+            spatial_collection.objects.link(part)
+            aggregate_collection.objects.unlink(part)
+        bpy.data.objects.remove(obj, do_unlink=True)
+        bpy.data.collections.remove(aggregate_collection, do_unlink=True)
+        return {'FINISHED'}
+
+
 class AssignClassification(bpy.types.Operator):
     bl_idname = 'bim.assign_classification'
     bl_label = 'Assign Classification'

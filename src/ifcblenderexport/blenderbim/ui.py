@@ -352,8 +352,10 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "aggregate_class")
         row = layout.row()
         row.prop(bim_properties, "aggregate_name")
-        row = layout.row()
+
+        row = layout.row(align=True)
         row.operator("bim.create_aggregate")
+        row.operator("bim.explode_aggregate")
 
         row = layout.row(align=True)
         row.operator("bim.edit_aggregate")
