@@ -86,6 +86,7 @@ if bpy is not None:
         operator.CreateView,
         operator.ActivateView,
         operator.ExecuteIfcDiff,
+        operator.AssignContext,
         prop.Subcontext,
         prop.BIMProperties,
         prop.DocProperties,
