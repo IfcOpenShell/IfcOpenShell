@@ -151,6 +151,7 @@ class IfcImporter():
         self.create_project()
         self.create_spatial_hierarchy()
         self.create_aggregates()
+        self.create_openings_collection()
         self.purge_diff()
         self.patch_ifc()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
@@ -279,20 +280,28 @@ class IfcImporter():
         rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
                 if a.RelatingObject.is_a('IfcElement')]
         for rel_aggregate in rel_aggregates:
-            if rel_aggregate.Name:
-                name = rel_aggregate.Name
-            else:
-                name = rel_aggregate.RelatingObject.Name
-            collection = bpy.data.collections.new(f'IfcRelAggregates/{name}')
-            bpy.context.scene.collection.children.link(collection)
+            self.create_aggregate(rel_aggregate)
 
-            instance = bpy.data.objects.new('{}/{}'.format(
-                rel_aggregate.RelatingObject.is_a(),
-                rel_aggregate.RelatingObject.Name),
-                None)
-            instance.instance_type = 'COLLECTION'
-            instance.instance_collection = collection
-            self.place_object_in_spatial_tree(rel_aggregate.RelatingObject, instance)
+    def create_aggregate(self, rel_aggregate):
+        if rel_aggregate.Name:
+            name = rel_aggregate.Name
+        else:
+            name = rel_aggregate.RelatingObject.Name
+        collection = bpy.data.collections.new(f'IfcRelAggregates/{name}')
+        bpy.context.scene.collection.children.link(collection)
+        bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
+
+        instance = bpy.data.objects.new('{}/{}'.format(
+            rel_aggregate.RelatingObject.is_a(),
+            rel_aggregate.RelatingObject.Name),
+            None)
+        instance.instance_type = 'COLLECTION'
+        instance.instance_collection = collection
+        self.place_object_in_spatial_tree(rel_aggregate.RelatingObject, instance)
+
+    def create_openings_collection(self):
+        collection = bpy.data.collections.new('IfcOpeningElements')
+        bpy.context.scene.collection.children.link(collection)
 
     def get_name(self, element):
         return '{}/{}'.format(element.is_a(), element.Name)
@@ -371,6 +380,9 @@ class IfcImporter():
             collection = bpy.data.collections.get(f'IfcRelAggregates/{name}')
             if collection:
                 collection.objects.link(obj)
+        elif hasattr(element, 'HasFillings') \
+                and element.HasFillings:
+            bpy.data.collections.get('IfcOpeningElements').objects.link(obj)
         else:
             print('Warning: this object is outside the spatial hierarchy')
             bpy.context.scene.collection.objects.link(obj)
