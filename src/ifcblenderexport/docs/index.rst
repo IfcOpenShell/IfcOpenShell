@@ -11,6 +11,7 @@ Welcome to BlenderBIM's documentation!
    :caption: Contents:
 
    installation
+   scene
 
 
 Indices and tables

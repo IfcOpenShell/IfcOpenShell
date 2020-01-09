@@ -32,9 +32,9 @@ System Setup
 Software Identity
 ^^^^^^^^^^^^^^^^^
 
- * **Global ID** - this field let's you enter an IFC element's ``GlobalId``. It
+ * **GlobalId** - this field let's you enter an IFC element's ``GlobalId``. It
    must be in the 22-character encoded form.
- * **Select Global ID** - this will select an element that has the same
+ * **Select GlobalId** - this will select an element that has the same
    ``GlobalId`` attribute as what you have specified, based on what is currently
    visible in the scene.
 
@@ -90,3 +90,62 @@ Property Sets
    to reassign the data.
  - **Unassign Pset** - this removes the link to the property set ``.csv``
    file for all currently selected objects.
+
+Aggregates
+^^^^^^^^^^
+
+ - **Aggregate Class** - this lets you select what type of class you want an
+   aggregate of parts to be.
+ - **Aggregate name** - this lets you set the name of an aggregate that you can
+   can create.
+ - **Create Aggregate** - this will create a new aggregate from one or more
+   currently selected objects. The selected objects will be moved out of the
+   spatial tree into an ``IfcRelAggregates/*`` collection. Then, a collection
+   instance will be created to represent the aggregation, and will be placed in
+   the current location of the spatial tree, and the  The parts will then be
+   hidden so only the whole composition (i.e. the aggregate object) will be
+   shown.
+ - **Explode Aggregate** - this does the opposite of *Create Aggregate*, and
+   will remove the aggregation.
+ - **Edit Aggregate** - this will hide the collection instance that represents
+   the aggregate object, and show all of the individual parts. This allows you
+   to select and modify the aggregate parts.
+ - **Save Aggregate** - this does the opposite of *Edit Aggregate*.
+
+Classifications
+^^^^^^^^^^^^^^^
+
+ - **Classification** - this lets you select which classification system you'd
+   like to use. The list of possible classification systems is derived from the
+   ``{DATA_DIR}/class/classifications.csv`` file. By default, BlenderBIM comes
+   with Uniclass 2015 and Omniclass. If you need another classification system,
+   you can add it to this ``.csv`` file.
+ - **Reference** - this lets you select a single classification reference item,
+   filtered depending on the currently active *Classification*. The list is
+   derived from the ``{DATA_DIR}/class/references.csv`` file. Out of the box,
+   BlenderBIM only lists a single Uniclass reference as an example. It is
+   advised to make a list of all the references you require for a project and
+   add it to this ``.csv`` file.
+ - **Assign Classification** - this assigns the currently active *Reference* to
+   all of the selected objects. You can see the results in the *Object
+   Properties* pane.
+ - **Unassign Classification** - this removes the currently active *Reference*
+   in all of the selected objects. 
+
+Owner History Panel
+-------------------
+
+ - **Person** - this lets you select who you are. The values are derived from
+   the ``{DATA_DIR}/owner/person.json`` file, particularly the
+   ``Identification`` attribute, which is mandatory and a requirement in COBie
+   data. You are encouraged to edit this file to add your own details. This
+   information will be stored in the IFC file as part of the owner history to
+   keep track of any objects which you edit. You will also be recorded as the
+   author of the IFC file.
+ - **Organisation** - this lets you select which organisation you are part of.
+   The values are derived from the ``{DATA_DIR}/owner/organisation.json`` file,
+   in particular the ``Name`` attribute, which is mandatory and a requirement in
+   COBie data. You are encouraged to edit this file to add your own organisation
+   details.  This information will be stored in the IFC file as part of the
+   owner history to keep track of any objects which you edit. The organisation
+   will also be recorded as the author of the IFC file.
