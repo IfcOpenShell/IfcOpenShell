@@ -307,11 +307,7 @@ class IfcImporter():
             self.create_aggregate(rel_aggregate)
 
     def create_aggregate(self, rel_aggregate):
-        if rel_aggregate.Name:
-            name = rel_aggregate.Name
-        else:
-            name = rel_aggregate.RelatingObject.Name
-        collection = bpy.data.collections.new(f'IfcRelAggregates/{name}')
+        collection = bpy.data.collections.new(f'IfcRelAggregates/{rel_aggregate.id()}')
         bpy.context.scene.collection.children.link(collection)
         bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
 
@@ -397,11 +393,7 @@ class IfcImporter():
                 self.spatial_structure_elements[structure_name]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
-            if element.Decomposes[0].Name:
-                name = element.Decomposes[0].Name
-            else:
-                name = element.Decomposes[0].RelatingObject.Name
-            collection = bpy.data.collections.get(f'IfcRelAggregates/{name}')
+            collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
             if collection:
                 collection.objects.link(obj)
         elif hasattr(element, 'HasFillings') \
