@@ -147,6 +147,8 @@ class IfcImporter():
     def execute(self):
         self.load_diff()
         self.load_file()
+        if self.ifc_import_settings.should_auto_set_workarounds:
+            self.auto_set_workarounds()
         self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
@@ -159,6 +161,28 @@ class IfcImporter():
             self.create_products_legacy()
         else:
             self.create_products()
+
+    def auto_set_workarounds(self):
+        applications = self.file.by_type('IfcApplication')
+        if not applications:
+            return
+        if applications[0].ApplicationIdentifier == 'Revit':
+            self.ifc_import_settings.should_treat_styled_item_as_material = True
+            if self.is_site_far_away():
+                self.ifc_import_settings.should_ignore_site_coordinates = True
+
+    def is_site_far_away(self):
+        for site in self.file.by_type('IfcSite'):
+            if not site.ObjectPlacement \
+                    or not site.ObjectPlacement.RelativePlacement \
+                    or not site.ObjectPlacement.RelativePlacement.Location:
+                continue
+            coordinates = site.ObjectPlacement.RelativePlacement.Location.Coordinates
+            # Arbitrary threshold based on experience
+            if abs(coordinates[0]) > 1000000 \
+                    or abs(coordinates[1]) > 1000000 \
+                    or abs(coordinates[2]) > 1000000:
+                return True
 
     def patch_ifc(self):
         if self.ifc_import_settings.should_ignore_site_coordinates:
@@ -508,6 +532,7 @@ class IfcImportSettings:
     def __init__(self):
         self.logger = None
         self.input_file = None
+        self.should_auto_set_workarounds = True
         self.should_ignore_site_coordinates = False
         self.should_import_curves = False
         self.should_treat_styled_item_as_material = False
