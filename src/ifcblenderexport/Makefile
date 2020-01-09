@@ -90,13 +90,13 @@ endif
 	rm -rf dist/working
 
 	mkdir dist/working
-cd dist/working && wget https://files.pythonhosted.org/packages/00/55/ce2cbc6d64034b30cad81a29ba61bdba456f190f5e83c09831304bf68d6b/jsonpickle-1.2.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/00/55/ce2cbc6d64034b30cad81a29ba61bdba456f190f5e83c09831304bf68d6b/jsonpickle-1.2.tar.gz
 	cd dist/working && tar -xzvf jsonpickle*
 	cp -r dist/working/jsonpickle-1.2/jsonpickle dist/
 	rm -rf dist/working
 
 	mkdir dist/working
-cd dist/working && wget https://files.pythonhosted.org/packages/a3/b7/d4d69641cbe707a45c23b190f2d717466ba5accc4c70b5f7a8a450387895/ordered-set-3.1.1.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/a3/b7/d4d69641cbe707a45c23b190f2d717466ba5accc4c70b5f7a8a450387895/ordered-set-3.1.1.tar.gz
 	cd dist/working && tar -xzvf ordered-set*
 	cp -r dist/working/ordered-set-3.1.1/ordered_set.py dist/
 	rm -rf dist/working
@@ -120,6 +120,7 @@ cd dist/working && wget https://files.pythonhosted.org/packages/a3/b7/d4d69641cb
 	rm -rf dist/jsonpickle
 	rm -rf dist/ordered_set.py
 	rm -rf dist/pyparsing.py
+	rm -rf dist/ifcdiff.py
 ifneq ($(PLATFORM), win)
 	rm -rf dist/lib
 endif
