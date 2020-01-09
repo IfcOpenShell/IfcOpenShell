@@ -511,6 +511,8 @@ class BIM_PT_mvd(Panel):
         layout.label(text="Revit Workarounds:")
 
         row = layout.row()
+        row.prop(bim_properties, "import_should_auto_set_workarounds")
+        row = layout.row()
         row.prop(bim_properties, "export_should_export_all_materials_as_styled_items")
         row = layout.row()
         row.prop(bim_properties, "export_should_use_presentation_style_assignment")
