@@ -114,7 +114,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 if not os.path.exists('features'):
-    quit('''
+    sys.exit('''
     BIMTester requires a features folder to exist within the current folder.
     Visit https://blenderbim.org/ to learn more about how to use BIMTester.
     ''')
