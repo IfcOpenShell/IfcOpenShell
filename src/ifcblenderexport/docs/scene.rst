@@ -130,7 +130,7 @@ Classifications
    all of the selected objects. You can see the results in the *Object
    Properties* pane.
  - **Unassign Classification** - this removes the currently active *Reference*
-   in all of the selected objects. 
+   in all of the selected objects.
 
 Owner History Panel
 -------------------
@@ -149,3 +149,33 @@ Owner History Panel
    details.  This information will be stored in the IFC file as part of the
    owner history to keep track of any objects which you edit. The organisation
    will also be recorded as the author of the IFC file.
+
+
+Geometric Representation Contexts Panel
+---------------------------------------
+
+ - **Has Model Context** - enabling this will allow you to export geometric data
+   related to the model view of your BIM data. This is generally 3D
+   representations. It may also contain wireframe representations such as an
+   Axis model for structural members. This defaults to being enabled, as most
+   people want to export model geometry.
+
+   - **Available Subcontexts** - this lets you select a possible subcontext to
+     be used underneath the Model context.
+   - **Available Target Views** - subcontexts may have a particular target view,
+     which you can set here.
+   - **Add Subcontext** - This will add a new subcontext based on the currently
+     selected *Available Subcontext* and *Available Target View*.
+
+     - **Subcontext Name** - for each subcontext you have added, it will show
+       you the subcontext name. By default, the ``Body`` subcontext is added,
+       as most people want to export the body geometry of products in their BIM
+       data.
+     - **Subcontext Target View** - same as *Subcontext Name*, but shows the
+       target view. By default, the ``MODEL_VIEW`` target view is added, as most
+       people will be viewing the model geometry of your BIM data.
+     - **Remove Subcontext** - this will remove the subcontext.
+
+ - **Has Plan Context** - the same as *Has Model Context*, but it lets you add
+   subcontexts and target views related to the ``PLAN`` context of your BIM
+   data. This is usually plans, sections, RCPs, and other documentation views.
