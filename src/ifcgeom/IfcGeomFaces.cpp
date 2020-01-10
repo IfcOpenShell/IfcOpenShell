@@ -101,6 +101,7 @@
 #include <ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg.hxx>
 #include <Message_ListIteratorOfListOfMsg.hxx>
 #include <ShapeExtend_MsgRegistrator.hxx>
+#include <Message_Msg.hxx>
 
 #include "../ifcgeom/IfcGeom.h"
 
