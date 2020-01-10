@@ -393,7 +393,10 @@ class IfcImporter():
                 self.spatial_structure_elements[structure_name]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
-            collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
+            if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
+                collection = bpy.data.collections.get(f'IfcProject/{element.Decomposes[0].RelatingObject.Name}')
+            else:
+                collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
             if collection:
                 collection.objects.link(obj)
         elif hasattr(element, 'HasFillings') \
