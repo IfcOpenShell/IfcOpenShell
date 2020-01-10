@@ -1752,6 +1752,9 @@ class IfcExporter():
         for point in curve.splines[0].bezier_points:
             points.append(self.create_cartesian_point(
                 point.co.x, point.co.y, point.co.z))
+        for point in curve.splines[0].points:
+            points.append(self.create_cartesian_point(
+                point.co.x, point.co.y, point.co.z))
         if curve.splines[0].use_cyclic_u:
             points.append(points[0])
         return self.file.createIfcPolyline(points)
