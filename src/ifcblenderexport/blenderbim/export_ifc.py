@@ -1619,8 +1619,16 @@ class IfcExporter():
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_geometric_curve_set_representation(representation))
         elif representation['is_curve']:
-            return self.file.createIfcRepresentationMap(self.origin,
-                    self.create_curve_representation(representation))
+            self.file.createIfcRepresentationMap(self.origin,
+                self.create_curve_representation(representation))
+            if 'Model' in self.ifc_rep_context \
+                    and 'Axis' in self.ifc_rep_context['Model'] \
+                    and 'GRAPH_VIEW' in self.ifc_rep_context['Model']['Axis']:
+                representation['subcontext'] = 'Axis'
+                representation['target_view'] = 'GRAPH_VIEW'
+                self.file.createIfcRepresentationMap(
+                    self.origin, self.create_axis_representation(representation))
+            return
         elif representation['is_swept_solid']:
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_swept_solid_representation(representation))
@@ -1707,6 +1715,13 @@ class IfcExporter():
 
         # Find tangent and return.
         return (pt1 - pt0) * usq3 + (pt2 - pt1) * ut6 + (pt3 - pt2) * tsq3
+
+    def create_axis_representation(self, representation):
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'Curve3D',
+            [self.create_curve(representation['raw'])])
 
     def create_curve_representation(self, representation):
         # TODO: support unclosed surfaces
