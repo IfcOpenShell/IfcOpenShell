@@ -1116,6 +1116,21 @@ namespace {
 		return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 	}
 
+	bool is_single_circular_edge(const TopoDS_Wire& wire) {
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		if (!exp.More()) {
+			return false;
+		}
+		TopoDS_Edge e = TopoDS::Edge(exp.Current());
+		exp.Next();
+		if (exp.More()) {
+			return false;
+		}
+		double u, v;
+		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+		return crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
+	}
+
 	void process_sweep_as_extrusion(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
 		TopExp_Explorer exp(wire, TopAbs_EDGE);
 		TopoDS_Edge e = TopoDS::Edge(exp.Current());
@@ -1129,10 +1144,24 @@ namespace {
 		result = BRepPrimAPI_MakePrism(face, depth*dir).Shape();
 	}
 
+	void process_sweep_as_revolution(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
+		TopExp_Explorer exp(wire, TopAbs_EDGE);
+		TopoDS_Edge e = TopoDS::Edge(exp.Current());
+		double u, v;
+		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
+		auto circ = Handle(Geom_Circle)::DownCast(crv);
+		// @todo we could be extruding the wire only when we know this is an intermediate edge.
+		const double depth = std::abs(u - v);
+		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
+		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), v - u).Shape();
+	}
+
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
+		// This tolerance is fairly high due to the linear edge substitution for small (or large radii) conical curves.
+		const bool is_continuous = wire_is_c1_continuous(wire, 1.e-2);
 		BRepOffsetAPI_MakePipeShell builder(wire);
 		builder.Add(section);
-		builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
+		builder.SetTransitionMode(is_continuous ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
 		builder.Build();
 		builder.MakeSolid();
 		result = builder.Shape();
@@ -1224,6 +1253,49 @@ namespace {
 
 	// @todo make this generic for other sweeps not just swept disk
 	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
+		gp_Ax2 directrix;
+		if (!wire_to_ax(wire, directrix)) {
+			return;
+		}
+
+		Handle(Geom_Circle) circle = new Geom_Circle(directrix, radius);
+		TopoDS_Wire section = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+		if (is_single_circular_edge(wire)) {
+			process_sweep_as_revolution(wire, section, result);
+		} else if (is_single_linear_edge(wire)) {
+			process_sweep_as_extrusion(wire, section, result);
+		} else {
+			process_sweep_as_pipe(wire, section, result);
+		}		
+		return;
+
+		/*
+		// Eliminate Swept Surfaces?
+		result = ShapeCustom::SweptToElementary(result);
+
+		// Eliminate Trimmed Surfaces?
+		ShapeBuild_ReShape sbrs;
+		BRep_Builder b;
+		TopExp_Explorer exp(result, TopAbs_FACE);
+		for (; exp.More(); exp.Next()) {
+			const TopoDS_Face& f = TopoDS::Face(exp.Current());
+			auto S = BRep_Tool::Surface(f);
+			if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {
+				auto RTS = Handle(Geom_RectangularTrimmedSurface)::DownCast(S);
+				auto B = RTS->BasisSurface();
+				TopoDS_Shape newf = f.EmptyCopied();
+				// @todo Is it ok to assume no location?
+				b.MakeFace(TopoDS::Face(newf), B, BRep_Tool::Tolerance(f));
+				sbrs.Replace(f, newf);
+			}
+		}
+		result = sbrs.Apply(result);
+		*/
+		
+		/*
+		// This code is no longer active, as with the BRepBuilderAPI_Transformed
+		// transitioning mode on the pipe, issues no longer seem to occur.
+
 		std::vector<TopoDS_Wire> wires;
 		segment_adjacent_non_linear(wire, wires);
 
@@ -1258,6 +1330,7 @@ namespace {
 		if (wires.size() > 1) {
 			result = C;
 		}
+		*/
 	}
 }
 
@@ -1270,20 +1343,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 		return false;
 	}
 
-	BRepTools::Write(wire, "debug-wire.brep");
-	{
-		std::ofstream fs("debug-wire.txt");
-		BRepTools::Dump(wire, fs);
-	}
-	
-
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
 	
-	// This is not used anymore, BRepBuilderAPI_RightCorner is always used now.
-	// const bool is_continuous = wire_is_c1_continuous(wire, 1.e-3);
-
 	process_sweep(wire, l->Radius() * getValue(GV_LENGTH_UNIT), shape);
 
 	double r2 = 0.;
