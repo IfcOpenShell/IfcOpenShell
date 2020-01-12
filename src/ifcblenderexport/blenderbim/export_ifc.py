@@ -149,6 +149,7 @@ class IfcParser():
         self.organisations = self.get_organisations()
         self.convert_selected_objects_into_products(bpy.context.selected_objects)
         self.psets = self.get_psets()
+        self.material_psets = self.get_material_psets()
         self.documents = self.get_documents()
         self.classifications = self.get_classifications()
         self.classification_references = self.get_classification_references()
@@ -497,6 +498,23 @@ class IfcParser():
                 name = filename.parts[-2]
                 description = filename.stem
                 psets['{}/{}'.format(name, description)] = {
+                    'ifc': None,
+                    'raw': {x[0]: x[1] for x in list(csv.reader(f))},
+                    'attributes': {
+                        'Name': name,
+                        'Description': description}
+                }
+        return psets
+
+    def get_material_psets(self):
+        psets = {}
+        for filename in Path(self.data_dir + 'material/').glob('**/*.csv'):
+            with open(filename, 'r') as f:
+                description = filename.parts[-2]
+                name = filename.stem
+                if description not in psets:
+                    psets[description] = {}
+                psets[description][name] = {
                     'ifc': None,
                     'raw': {x[0]: x[1] for x in list(csv.reader(f))},
                     'attributes': {
@@ -1176,6 +1194,16 @@ class IfcExporter():
             })
             pset['ifc'] = self.file.create_entity('IfcPropertySet', **pset['attributes'])
 
+    def create_material_psets(self, material):
+        for pset_dir in material['raw'].BIMMaterialProperties.psets:
+            for name, properties in self.ifc_parser.material_psets[pset_dir.name].items():
+                self.file.create_entity('IfcMaterialProperties', **{
+                    'Name': name,
+                    'Description': pset_dir.name,
+                    'Properties': self.create_pset_properties(properties),
+                    'Material': material['ifc']
+                })
+
     def create_pset_properties(self, pset):
         if pset['attributes']['Name'] in self.ifc_schema.psets:
             return self.create_templated_pset_properties(pset)
@@ -1416,6 +1444,7 @@ class IfcExporter():
             styled_representation = self.file.createIfcStyledRepresentation(
                 self.ifc_rep_context['Model']['Body']['MODEL_VIEW']['ifc'], None, None, [styled_item])
             material['ifc'] = self.file.createIfcMaterial(material['raw'].name, None, None)
+            self.create_material_psets(material)
             self.file.createIfcMaterialDefinitionRepresentation(
                 material['raw'].name, None, [styled_representation], material['ifc'])
             if material['is_material_layer_set']:
