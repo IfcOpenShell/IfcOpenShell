@@ -575,7 +575,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			// The formula in deflection_for_approximating_circle() is for circles, but probably good enough
 			radius = Handle(Geom_Ellipse)::DownCast(crv)->MajorRadius();
 		}
-		if (radius > 0. && deflection_for_approximating_circle(radius, b - a) < 100 * getValue(GV_PRECISION)) {
+		if (radius > 0. && deflection_for_approximating_circle(radius, b - a) < 100 * getValue(GV_PRECISION) && std::abs(b-a) < M_PI/4.) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
