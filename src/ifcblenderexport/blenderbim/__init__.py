@@ -61,6 +61,8 @@ if bpy is not None:
         operator.UnassignPset,
         operator.AddPset,
         operator.RemovePset,
+        operator.AddMaterialPset,
+        operator.RemoveMaterialPset,
         operator.AddDocument,
         operator.RemoveDocument,
         operator.GenerateGlobalId,
