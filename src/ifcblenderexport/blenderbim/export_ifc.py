@@ -698,12 +698,20 @@ class IfcParser():
             return results
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if obj.data is None or obj.data.name in results:
+            if self.is_point_cloud(obj):
+                results['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
+                    obj.point_cloud_visualizer, obj, 'Model', 'Body', 'MODEL_VIEW')
+                continue
+            elif obj.data is None or obj.data.name in results:
                 continue
 
             self.append_default_representation(obj, results)
             self.append_representation_per_context(obj, results)
         return results
+
+    def is_point_cloud(self, obj):
+        return hasattr(obj, 'point_cloud_visualizer') \
+                and obj.point_cloud_visualizer.uuid
 
     def append_default_representation(self, obj, results):
         if not self.is_mesh_context_sensitive(obj.data.name):
@@ -735,6 +743,7 @@ class IfcParser():
             'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': is_generated,
+            'is_point_cloud': self.is_point_cloud(obj),
             'attributes': {'Name': mesh.name}
         }
 
@@ -870,6 +879,8 @@ class IfcParser():
 
     def get_object_representation_names(self, obj):
         names = []
+        if self.is_point_cloud(obj):
+            names.append('Model/Body/MODEL_VIEW/{}'.format(obj.name))
         if obj.data is None:
             return names
         if not self.is_mesh_context_sensitive(obj.data.name):
@@ -1594,7 +1605,7 @@ class IfcExporter():
         return self.file.createIfcShapeRepresentation(
                 shape_representation.ContextOfItems,
                 shape_representation.RepresentationIdentifier,
-                shape_representation.RepresentationType,
+                'MappedRepresentation',
                 [mapped_item])
 
     def calculate_quantities(self, qto_name, obj):
@@ -1661,6 +1672,9 @@ class IfcExporter():
         elif representation['is_swept_solid']:
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_swept_solid_representation(representation))
+        elif representation['is_point_cloud']:
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_point_cloud_representation(representation))
         return self.file.createIfcRepresentationMap(self.origin,
                 self.create_solid_representation(representation))
 
@@ -1928,6 +1942,17 @@ class IfcExporter():
                         ok = 1
                         del edges[i]
             return polyLine
+
+    def create_point_cloud_representation(self, representation):
+        import space_view3d_point_cloud_visualizer as pcv
+        if representation['raw'].uuid not in pcv.PCVManager.cache:
+            return
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'PointCloud',
+            [self.file.createIfcCartesianPointList3D(
+                pcv.PCVManager.cache[representation['raw'].uuid]['points'].tolist())])
 
     def create_solid_representation(self, representation):
         mesh = representation['raw']
