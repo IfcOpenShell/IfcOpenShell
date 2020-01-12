@@ -1253,21 +1253,42 @@ namespace {
 
 	// @todo make this generic for other sweeps not just swept disk
 	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
-		gp_Ax2 directrix;
-		if (!wire_to_ax(wire, directrix)) {
-			return;
+		std::vector<TopoDS_Wire> wires;
+		segment_adjacent_non_linear(wire, wires);
+
+		TopoDS_Compound C;
+		BRep_Builder B;
+		if (wires.size() > 1) {
+			B.MakeCompound(C);
 		}
 
-		Handle(Geom_Circle) circle = new Geom_Circle(directrix, radius);
-		TopoDS_Wire section = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
-		if (is_single_circular_edge(wire)) {
-			process_sweep_as_revolution(wire, section, result);
-		} else if (is_single_linear_edge(wire)) {
-			process_sweep_as_extrusion(wire, section, result);
-		} else {
-			process_sweep_as_pipe(wire, section, result);
-		}		
-		return;
+		for (auto& w : wires) {
+			TopoDS_Shape part;
+
+			gp_Ax2 directrix;
+			if (!wire_to_ax(w, directrix)) {
+				continue;
+			}
+			Handle(Geom_Circle) circle = new Geom_Circle(directrix, radius);
+			TopoDS_Wire section = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+
+			if (is_single_circular_edge(w)) {
+				process_sweep_as_revolution(w, section, part);
+			} else if (is_single_linear_edge(w)) {
+				process_sweep_as_extrusion(w, section, part);
+			} else {
+				process_sweep_as_pipe(w, section, part);
+			}
+			if (wires.size() > 1) {
+				B.Add(C, part);
+			} else {
+				result = part;
+			}
+		}
+
+		if (wires.size() > 1) {
+			result = C;
+		}
 
 		/*
 		// Eliminate Swept Surfaces?
@@ -1290,46 +1311,6 @@ namespace {
 			}
 		}
 		result = sbrs.Apply(result);
-		*/
-		
-		/*
-		// This code is no longer active, as with the BRepBuilderAPI_Transformed
-		// transitioning mode on the pipe, issues no longer seem to occur.
-
-		std::vector<TopoDS_Wire> wires;
-		segment_adjacent_non_linear(wire, wires);
-
-		TopoDS_Compound C;
-		BRep_Builder B;
-		if (wires.size() > 1) {
-			B.MakeCompound(C);
-		}
-
-		for (auto& w : wires) {
-			TopoDS_Shape part;
-
-			gp_Ax2 directrix;
-			if (!wire_to_ax(w, directrix)) {
-				continue;
-			}
-			Handle(Geom_Circle) circle = new Geom_Circle(directrix, radius);
-			TopoDS_Wire section = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
-
-			if (is_single_linear_edge(w)) {
-				process_sweep_as_extrusion(w, section, part);
-			} else {
-				process_sweep_as_pipe(w, section, part);
-			}
-			if (wires.size() > 1) {
-				B.Add(C, part);
-			} else {
-				result = part;
-			}
-		}
-
-		if (wires.size() > 1) {
-			result = C;
-		}
 		*/
 	}
 }
