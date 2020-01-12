@@ -39,6 +39,10 @@ class BIM_PT_object(Panel):
 
         layout.label(text="Property Sets:")
         row = layout.row()
+        row.prop(context.scene.BIMProperties, "pset_name")
+        row = layout.row()
+        row.prop(context.scene.BIMProperties, "pset_file")
+        row = layout.row()
         row.operator('bim.add_pset')
 
         for index, pset in enumerate(props.psets):
@@ -156,6 +160,19 @@ class BIM_PT_material(Panel):
 
         row = layout.row()
         row.operator('bim.fetch_external_material')
+
+        layout.label(text="Property Sets:")
+        row = layout.row(align=True)
+        row.prop(props, 'available_material_psets', text='')
+        row.operator('bim.add_material_pset')
+
+        for index, pset in enumerate(props.psets):
+            row = layout.row(align=True)
+            row.prop(pset, 'name', text='')
+            row.operator('bim.remove_material_pset', icon='X', text='').pset_index = index
+
+        row = layout.row()
+        row.prop(props, 'psets', text='')
 
 
 class BIM_PT_gis(Panel):

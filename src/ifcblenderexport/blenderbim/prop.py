@@ -27,6 +27,7 @@ ifc_schema = IfcSchema()
 diagram_scales_enum = []
 classes_enum = []
 types_enum = []
+availablematerialpsets_enum = []
 psetnames_enum = []
 psetfiles_enum = []
 classification_enum = []
@@ -113,6 +114,15 @@ def getOrganisations(self, context):
             organisations = json.load(f)
         organisations_enum.extend([(o['Name'], o['Name'], '') for o in organisations])
     return organisations_enum
+
+
+def getAvailableMaterialPsets(self, context):
+    global availablematerialpsets_enum
+    if len(availablematerialpsets_enum) < 1:
+        availablematerialpsets_enum.clear()
+        files = os.listdir(os.path.join(context.scene.BIMProperties.data_dir, 'material'))
+        availablematerialpsets_enum.extend([(f, f, '') for f in files])
+    return availablematerialpsets_enum
 
 
 def getPsetNames(self, context):
@@ -347,6 +357,8 @@ class BIMMaterialProperties(PropertyGroup):
     location: StringProperty(name="Location")
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
+    available_material_psets: EnumProperty(items=getAvailableMaterialPsets, name="Material Pset")
+    psets: CollectionProperty(name="Psets", type=Pset)
 
 
 class SweptSolid(PropertyGroup):

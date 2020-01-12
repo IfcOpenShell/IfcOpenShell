@@ -283,11 +283,11 @@ class AssignPset(bpy.types.Operator):
         for object in bpy.context.selected_objects:
             index = object.BIMObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
             if index >= 0:
-                global_id = object.BIMObjectProperties.psets[index]
+                pset = object.BIMObjectProperties.psets[index]
             else:
-                global_id = object.BIMObjectProperties.psets.add()
-            global_id.name = bpy.context.scene.BIMProperties.pset_name
-            global_id.file = bpy.context.scene.BIMProperties.pset_file
+                pset = object.BIMObjectProperties.psets.add()
+            pset.name = bpy.context.scene.BIMProperties.pset_name
+            pset.file = bpy.context.scene.BIMProperties.pset_file
         return {'FINISHED'}
 
 class UnassignPset(bpy.types.Operator):
@@ -305,10 +305,12 @@ class AddPset(bpy.types.Operator):
     bl_idname = 'bim.add_pset'
     bl_label = 'Add Pset'
 
-    # This is a temporary measure until we get a better UI
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.psets.add()
+        pset = bpy.context.active_object.BIMObjectProperties.psets.add()
+        pset.name = bpy.context.scene.BIMProperties.pset_name
+        pset.file = bpy.context.scene.BIMProperties.pset_file
         return {'FINISHED'}
+
 
 class RemovePset(bpy.types.Operator):
     bl_idname = 'bim.remove_pset'
@@ -318,6 +320,27 @@ class RemovePset(bpy.types.Operator):
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
         return {'FINISHED'}
+
+
+class AddMaterialPset(bpy.types.Operator):
+    bl_idname = 'bim.add_material_pset'
+    bl_label = 'Add Material Pset'
+
+    def execute(self, context):
+        pset = bpy.context.active_object.active_material.BIMMaterialProperties.psets.add()
+        pset.name = bpy.context.active_object.active_material.BIMMaterialProperties.available_material_psets
+        return {'FINISHED'}
+
+
+class RemoveMaterialPset(bpy.types.Operator):
+    bl_idname = 'bim.remove_material_pset'
+    bl_label = 'Remove Pset'
+    pset_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.active_material.BIMMaterialProperties.psets.remove(self.pset_index)
+        return {'FINISHED'}
+
 
 class AddDocument(bpy.types.Operator):
     bl_idname = 'bim.add_document'
