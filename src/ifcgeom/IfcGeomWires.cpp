@@ -387,7 +387,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 		TopoDS_Wire segment;
 
 		if (!convert_wire(curve, segment)) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to convert curve:", curve);
+			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
+			Logger::Message(failed_on_purpose ? Logger::LOG_WARNING : Logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;
 		}
 
@@ -625,6 +626,9 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolyline* l, TopoDS_Wire& resu
 	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 
 	if (polygon.Length() < 2) {
+		// We somehow need to signal we fail this curve on purpose not to trigger an error.
+		BRep_Builder B;
+		B.MakeWire(result);
 		return false;
 	}
 	
