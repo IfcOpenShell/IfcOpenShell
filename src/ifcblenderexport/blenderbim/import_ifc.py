@@ -7,13 +7,7 @@ import time
 import mathutils
 import multiprocessing
 from .helper import SIUnitHelper
-
-cwd = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
-
-class IfcSchema():
-    def __init__(self):
-        with open('{}ifc_elements_IFC4.json'.format(cwd + 'schema/')) as f:
-            self.elements = json.load(f)
+from .schema import IfcSchema
 
 ifc_schema = IfcSchema()
 

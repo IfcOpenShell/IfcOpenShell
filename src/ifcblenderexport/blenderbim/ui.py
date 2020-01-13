@@ -353,6 +353,8 @@ class BIM_PT_bim(Panel):
         layout.label(text="IFC Categorisation:")
 
         row = layout.row()
+        row.prop(bim_properties, "ifc_product")
+        row = layout.row()
         row.prop(bim_properties, "ifc_class")
         row = layout.row()
         row.prop(bim_properties, "ifc_predefined_type")
