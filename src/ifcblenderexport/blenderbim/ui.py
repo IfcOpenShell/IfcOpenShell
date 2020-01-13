@@ -356,10 +356,12 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "ifc_product")
         row = layout.row()
         row.prop(bim_properties, "ifc_class")
-        row = layout.row()
-        row.prop(bim_properties, "ifc_predefined_type")
-        row = layout.row()
-        row.prop(bim_properties, "ifc_userdefined_type")
+        if bim_properties.ifc_predefined_type:
+            row = layout.row()
+            row.prop(bim_properties, "ifc_predefined_type")
+        if bim_properties.ifc_predefined_type == 'USERDEFINED':
+            row = layout.row()
+            row.prop(bim_properties, "ifc_userdefined_type")
         row = layout.row()
         row.operator("bim.assign_class")
 
