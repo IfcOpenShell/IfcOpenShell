@@ -12,7 +12,9 @@ class IFC4Extractor:
         self.ns = {'xs': 'http://www.w3.org/2001/XMLSchema'}
         self.elements = {}
         #self.filters = ['IfcBuildingElement']
-        self.filters = ['IfcElement', 'IfcSpatialStructureElement']
+        #self.filters = ['IfcElement']
+        #self.filters = ['IfcSpatialStructureElement']
+        self.filters = ['IfcStructuralActivity', 'IfcStructuralItem']
         self.filtered_elements = {}
 
     def extract(self):

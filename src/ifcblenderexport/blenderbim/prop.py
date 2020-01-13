@@ -3,6 +3,7 @@ import os
 import csv
 from pathlib import Path
 from . import export_ifc
+from .schema import IfcSchema
 import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
@@ -17,14 +18,10 @@ from bpy.props import (
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
-class IfcSchema():
-    def __init__(self):
-        with open(os.path.join(cwd, 'schema', 'ifc_elements_IFC4.json')) as f:
-            self.elements = json.load(f)
-
 ifc_schema = IfcSchema()
 
 diagram_scales_enum = []
+products_enum = []
 classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
@@ -63,6 +60,12 @@ def getIfcPredefinedTypes(self, context):
     return types_enum
 
 
+def refreshClasses(self, context):
+    global classes_enum
+    classes_enum.clear()
+    getIfcClasses(self, context)
+
+
 def refreshPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
@@ -89,10 +92,18 @@ def getDiagramScales(self, context):
     return diagram_scales_enum
 
 
+def getIfcProducts(self, context):
+    global products_enum
+    if len(products_enum) < 1:
+        products_enum.extend([(e, e, '') for e in
+            ['IfcElement', 'IfcSpatialStructureElement', 'IfcStructural']])
+    return products_enum
+
+
 def getIfcClasses(self, context):
     global classes_enum
     if len(classes_enum) < 1:
-        classes_enum.extend([(e, e, '') for e in ifc_schema.elements])
+        classes_enum.extend([(e, e, '') for e in getattr(ifc_schema, self.ifc_product)])
     return classes_enum
 
 
@@ -253,6 +264,7 @@ class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
     audit_ifc_class: EnumProperty(items=getIfcClasses, name="Audit Class")
+    ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
     ifc_predefined_type: EnumProperty(
         items = getIfcPredefinedTypes,

@@ -68,30 +68,6 @@ class QtoCalculator():
         return volume
 
 
-class IfcSchema():
-    def __init__(self, ifc_export_settings):
-        self.schema_dir = ifc_export_settings.schema_dir
-        self.property_file = ifcopenshell.open(self.schema_dir + 'IFC4_ADD2.ifc')
-        self.psets = {}
-        self.qtos = {}
-        self.load()
-
-        with open(self.schema_dir + 'ifc_types_IFC4.json') as f:
-            self.type_map = json.load(f)
-
-        with open(self.schema_dir + 'ifc_elements_IFC4.json') as f:
-            self.elements = json.load(f)
-
-    def load(self):
-        for property in self.property_file.by_type('IfcPropertySetTemplate'):
-            if property.Name[0:4] == 'Qto_':
-                # self.qtos.append({ })
-                pass
-            else:
-                self.psets[property.Name] = {
-                    'HasPropertyTemplates': {p.Name: p for p in property.HasPropertyTemplates}}
-
-
 class IfcParser():
     def __init__(self, ifc_export_settings):
         self.data_dir = ifc_export_settings.data_dir
@@ -699,13 +675,13 @@ class IfcParser():
         for product in self.selected_products + self.type_products:
             obj = product['raw']
             if self.is_point_cloud(obj):
-                results['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
-                    obj.point_cloud_visualizer, obj, 'Model', 'Body', 'MODEL_VIEW')
+                self.append_point_cloud_representation(obj, results)
                 continue
             elif obj.data is None or obj.data.name in results:
                 continue
 
             self.append_default_representation(obj, results)
+            self.append_curve_axis_representation(obj, results)
             self.append_representation_per_context(obj, results)
         return results
 
@@ -717,6 +693,15 @@ class IfcParser():
         if not self.is_mesh_context_sensitive(obj.data.name):
             results['Model/Body/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
                 obj.data, obj, 'Model', 'Body', 'MODEL_VIEW')
+
+    def append_point_cloud_representation(self, obj, results):
+        results['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
+            obj.point_cloud_visualizer, obj, 'Model', 'Body', 'MODEL_VIEW')
+
+    def append_curve_axis_representation(self, obj, results):
+        if obj.type == 'CURVE':
+            results['Model/Axis/GRAPH_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+                obj.data, obj, 'Model', 'Axis', 'GRAPH_VIEW')
 
     def append_representation_per_context(self, obj, results):
         name = self.get_ifc_representation_name(obj.data.name)
@@ -890,6 +875,14 @@ class IfcParser():
             for subcontext in context['subcontexts']:
                 for target_view in subcontext['target_views']:
                     mesh_name = '/'.join([context['name'], subcontext['name'], target_view, name])
+
+                    if context['name'] == 'Model' \
+                            and subcontext['name'] == 'Axis' \
+                            and target_view == 'GRAPH_VIEW' \
+                            and obj.type == 'CURVE':
+                        names.append(mesh_name)
+                        continue
+
                     try:
                         mesh = bpy.data.meshes[mesh_name]
                     except:
@@ -1650,6 +1643,12 @@ class IfcExporter():
         elif representation['subcontext'] == 'CoG':
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_cog_representation(representation))
+        elif representation['is_curve'] \
+                and representation['context'] == 'Model' \
+                and representation['subcontext'] == 'Axis' \
+                and representation['target_view'] == 'GRAPH_VIEW':
+            return self.file.createIfcRepresentationMap(
+                self.origin, self.create_axis_representation(representation))
         elif representation['context'] == 'Plan' \
                 or representation['subcontext'] == 'Axis' \
                 or representation['is_wireframe']:
@@ -1659,16 +1658,8 @@ class IfcExporter():
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_geometric_curve_set_representation(representation))
         elif representation['is_curve']:
-            self.file.createIfcRepresentationMap(self.origin,
+            return self.file.createIfcRepresentationMap(self.origin,
                 self.create_curve_representation(representation))
-            if 'Model' in self.ifc_rep_context \
-                    and 'Axis' in self.ifc_rep_context['Model'] \
-                    and 'GRAPH_VIEW' in self.ifc_rep_context['Model']['Axis']:
-                representation['subcontext'] = 'Axis'
-                representation['target_view'] = 'GRAPH_VIEW'
-                self.file.createIfcRepresentationMap(
-                    self.origin, self.create_axis_representation(representation))
-            return
         elif representation['is_swept_solid']:
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_swept_solid_representation(representation))

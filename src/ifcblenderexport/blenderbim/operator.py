@@ -11,6 +11,7 @@ from . import sheeter
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector
+from .schema import IfcSchema
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -53,7 +54,7 @@ class ExportIFC(bpy.types.Operator):
                     ]
                 })
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
-        ifc_schema = export_ifc.IfcSchema(ifc_export_settings)
+        ifc_schema = IfcSchema()
         qto_calculator = export_ifc.QtoCalculator()
         ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
         ifc_exporter.export()
