@@ -130,7 +130,7 @@ class IfcParser():
         self.classifications = self.get_classifications()
         self.classification_references = self.get_classification_references()
         self.objectives = self.get_objectives()
-        self.representations = self.get_representations()
+        self.load_representations()
         self.materials = self.get_materials()
         self.styled_items = self.get_styled_items()
         self.qtos = self.get_qtos()
@@ -668,55 +668,67 @@ class IfcParser():
                 })
         return elements
 
-    def get_representations(self):
-        results = {}
+    def load_representations(self):
         if not self.ifc_export_settings.has_representations:
-            return results
+            return
         for product in self.selected_products + self.type_products:
-            obj = product['raw']
-            if self.is_point_cloud(obj):
-                self.append_point_cloud_representation(obj, results)
-                continue
-            elif obj.data is None or obj.data.name in results:
-                continue
+            self.load_product_representations(product)
 
-            self.append_default_representation(obj, results)
-            self.append_curve_axis_representation(obj, results)
-            self.append_representation_per_context(obj, results)
-        return results
+    def load_product_representations(self, product):
+        obj = product['raw']
+
+        if obj.data and obj.data.name in self.representations:
+            return
+
+        self.append_default_representation(obj)
+
+        if self.is_point_cloud(obj):
+            self.append_point_cloud_representation(obj)
+        elif self.is_structural(obj):
+            self.append_structural_reference_representation(obj)
+        elif obj.type == 'CURVE':
+            self.append_curve_axis_representation(obj)
+
+        self.append_representation_per_context(obj)
 
     def is_point_cloud(self, obj):
         return hasattr(obj, 'point_cloud_visualizer') \
                 and obj.point_cloud_visualizer.uuid
 
-    def append_default_representation(self, obj, results):
-        if not self.is_mesh_context_sensitive(obj.data.name):
-            results['Model/Body/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+    def is_structural(self, obj):
+        return 'IfcStructural' in obj.name
+
+    def append_default_representation(self, obj):
+        if obj.data and not self.is_mesh_context_sensitive(obj.data.name):
+            self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
                 obj.data, obj, 'Model', 'Body', 'MODEL_VIEW')
 
-    def append_point_cloud_representation(self, obj, results):
-        results['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
+    def append_point_cloud_representation(self, obj):
+        self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
             obj.point_cloud_visualizer, obj, 'Model', 'Body', 'MODEL_VIEW')
 
-    def append_curve_axis_representation(self, obj, results):
-        if obj.type == 'CURVE':
-            results['Model/Axis/GRAPH_VIEW/{}'.format(obj.data.name)] = self.get_representation(
-                obj.data, obj, 'Model', 'Axis', 'GRAPH_VIEW')
+    def append_curve_axis_representation(self, obj):
+        self.representations['Model/Axis/GRAPH_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+            obj.data, obj, 'Model', 'Axis', 'GRAPH_VIEW')
 
-    def append_representation_per_context(self, obj, results):
+    def append_structural_reference_representation(self, obj):
+        self.representations['Model/Reference/GRAPH_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+            obj.data, obj, 'Model', 'Reference', 'GRAPH_VIEW')
+
+    def append_representation_per_context(self, obj):
         name = self.get_ifc_representation_name(obj.data.name)
         for context in self.ifc_export_settings.context_tree:
             for subcontext in context['subcontexts']:
                 for target_view in subcontext['target_views']:
                     mesh_name = '/'.join([context['name'], subcontext['name'], target_view, name])
-                    try:
-                        mesh = bpy.data.meshes[mesh_name]
-                    except:
-                        continue
-                    results[mesh_name] = self.get_representation(
-                        mesh, obj, context['name'], subcontext['name'], target_view)
+                    mesh = bpy.data.meshes.get(mesh_name)
+                    if not mesh:
+                        mesh = bpy.data.curves.get(mesh_name)
+                    if mesh:
+                        self.representations[mesh_name] = self.get_representation(
+                            mesh, obj, context['name'], subcontext['name'], target_view)
 
-    def get_representation(self, mesh, obj, context, subcontext, target_view, is_generated=False):
+    def get_representation(self, mesh, obj, context, subcontext, target_view):
         return {
             'ifc': None,
             'raw': mesh,
@@ -725,10 +737,11 @@ class IfcParser():
             'subcontext': subcontext,
             'target_view': target_view,
             'is_curve': isinstance(mesh, bpy.types.Curve),
+            'is_point_cloud': self.is_point_cloud(obj),
+            'is_structural': self.is_structural(obj),
             'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
-            'is_generated': is_generated,
-            'is_point_cloud': self.is_point_cloud(obj),
+            'is_generated': False,
             'attributes': {'Name': mesh.name}
         }
 
@@ -866,28 +879,14 @@ class IfcParser():
         names = []
         if self.is_point_cloud(obj):
             names.append('Model/Body/MODEL_VIEW/{}'.format(obj.name))
-        if obj.data is None:
             return names
-        if not self.is_mesh_context_sensitive(obj.data.name):
-            names.append('Model/Body/MODEL_VIEW/{}'.format(obj.data.name))
         name = self.get_ifc_representation_name(obj.data.name)
         for context in self.ifc_export_settings.context_tree:
             for subcontext in context['subcontexts']:
                 for target_view in subcontext['target_views']:
                     mesh_name = '/'.join([context['name'], subcontext['name'], target_view, name])
-
-                    if context['name'] == 'Model' \
-                            and subcontext['name'] == 'Axis' \
-                            and target_view == 'GRAPH_VIEW' \
-                            and obj.type == 'CURVE':
+                    if mesh_name in self.representations:
                         names.append(mesh_name)
-                        continue
-
-                    try:
-                        mesh = bpy.data.meshes[mesh_name]
-                    except:
-                        continue
-                    names.append(mesh_name)
         return names
 
     def get_spatial_structure_elements_tree(self, collections, name_filter):
@@ -1648,7 +1647,13 @@ class IfcExporter():
                 and representation['subcontext'] == 'Axis' \
                 and representation['target_view'] == 'GRAPH_VIEW':
             return self.file.createIfcRepresentationMap(
-                self.origin, self.create_axis_representation(representation))
+                self.origin, self.create_curve_axis_representation(representation))
+        elif representation['is_structural'] \
+                and representation['context'] == 'Model' \
+                and representation['subcontext'] == 'Reference' \
+                and representation['target_view'] == 'GRAPH_VIEW':
+            return self.file.createIfcRepresentationMap(
+                self.origin, self.create_structural_reference_representation(representation))
         elif representation['context'] == 'Plan' \
                 or representation['subcontext'] == 'Axis' \
                 or representation['is_wireframe']:
@@ -1750,12 +1755,19 @@ class IfcExporter():
         # Find tangent and return.
         return (pt1 - pt0) * usq3 + (pt2 - pt1) * ut6 + (pt3 - pt2) * tsq3
 
-    def create_axis_representation(self, representation):
+    def create_curve_axis_representation(self, representation):
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'Curve3D',
             [self.create_curve(representation['raw'])])
+
+    def create_structural_reference_representation(self, representation):
+        return self.file.createIfcTopologyRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'Edge',
+            [self.create_edge(representation['raw'])])
 
     def create_curve_representation(self, representation):
         # TODO: support unclosed surfaces
@@ -1794,6 +1806,21 @@ class IfcExporter():
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'AdvancedSweptSolid',
             swept_area_solids)
+
+    def create_vertex_point(self, point):
+        return self.file.createIfcVertexPoint(
+            self.create_cartesian_point(point.x, point.y, point.z))
+
+    def create_edge(self, curve):
+        if curve.splines[0].bezier_points:
+            points = curve.splines[0].bezier_points
+        elif curve.splines[0].points:
+            points = curve.splines[0].points
+        if not points:
+            return
+        return self.file.createIfcEdge(
+            self.create_vertex_point(points[0].co),
+            self.create_vertex_point(points[1].co))
 
     def create_curve(self, curve):
         # TODO: support interpolated curves, not just polylines
