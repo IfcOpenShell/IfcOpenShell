@@ -1448,12 +1448,21 @@ class IfcExporter():
             self.create_material_psets(material)
             self.file.createIfcMaterialDefinitionRepresentation(
                 material['raw'].name, None, [styled_representation], material['ifc'])
-            if material['material_type'] != 'IfcMaterial':
-                material_type = material['material_type'][0:-3]
-                self.cast_attributes(material_type, material['attributes'])
-                material['attributes']['Material'] = material['ifc']
-                material['part_ifc'] = self.file.create_entity(material_type,
-                    **material['attributes'])
+            if material['material_type'] == 'IfcMaterial':
+                continue
+            material_type = material['material_type'][0:-3]
+            self.cast_attributes(material_type, material['attributes'])
+            material['attributes']['Material'] = material['ifc']
+            if material_type == 'IfcMaterialProfile':
+                material['attributes']['Profile'] = self.create_material_profile(material)
+            material['part_ifc'] = self.file.create_entity(material_type,
+                **material['attributes'])
+
+    def create_material_profile(self, material):
+        ifc_class = material['raw'].BIMMaterialProperties.profile_def
+        attributes = {a.name: a.string_value for a in material['raw'].BIMMaterialProperties.profile_attributes}
+        self.cast_attributes(ifc_class, attributes)
+        return self.file.create_entity(ifc_class, **attributes)
 
     def cast_attributes(self, ifc_class, attributes):
         for key, value in attributes.items():
