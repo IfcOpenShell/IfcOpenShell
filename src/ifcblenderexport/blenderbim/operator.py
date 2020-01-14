@@ -386,6 +386,18 @@ class AddAttribute(bpy.types.Operator):
             attribute.name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
         return {'FINISHED'}
 
+
+class AddMaterialAttribute(bpy.types.Operator):
+    bl_idname = 'bim.add_material_attribute'
+    bl_label = 'Add Material Attribute'
+
+    def execute(self, context):
+        if bpy.context.active_object.active_material.BIMMaterialProperties.applicable_attributes:
+            attribute = bpy.context.active_object.active_material.BIMMaterialProperties.attributes.add()
+            attribute.name = bpy.context.active_object.active_material.BIMMaterialProperties.applicable_attributes
+        return {'FINISHED'}
+
+
 class RemoveAttribute(bpy.types.Operator):
     bl_idname = 'bim.remove_attribute'
     bl_label = 'Remove Attribute'
@@ -394,6 +406,17 @@ class RemoveAttribute(bpy.types.Operator):
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.attributes.remove(self.attribute_index)
         return {'FINISHED'}
+
+
+class RemoveMaterialAttribute(bpy.types.Operator):
+    bl_idname = 'bim.remove_material_attribute'
+    bl_label = 'Remove Material Attribute'
+    attribute_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.active_material.BIMMaterialProperties.attributes.remove(self.attribute_index)
+        return {'FINISHED'}
+
 
 class AddSweptSolid(bpy.types.Operator):
     bl_idname = 'bim.add_swept_solid'

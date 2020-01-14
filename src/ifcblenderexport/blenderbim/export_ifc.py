@@ -772,25 +772,17 @@ class IfcParser():
                     continue
                 results[slot.material.name] = {
                     'ifc': None,
-                    'layer_ifc': None,
-                    'constituent_ifc': None,
+                    'part_ifc': None,
                     'raw': slot.material,
                     'material_type': obj.BIMObjectProperties.material_type,
-                    'attributes': {'Name': slot.material.name},
-                    # TODO: turn into non-custom attributes
-                    'layer_attributes': {
-                        key[3:]: slot.material[key]
-                        for key in slot.material.keys()
-                        if key[0:3] == 'Ifc'
-                    },
-                    # TODO: turn into non-custom attributes
-                    'constituent_attributes': {
-                        key[3:]: slot.material[key]
-                        for key in slot.material.keys()
-                        if key[0:3] == 'Ifc'
-                    }
+                    'attributes': self.get_material_attributes(slot.material)
                 }
         return results
+
+    def get_material_attributes(self, material):
+        attributes = {'Name': material.name}
+        attributes.update({a.name: a.string_value for a in material.BIMMaterialProperties.attributes})
+        return attributes
 
     def get_styled_items(self):
         results = []
@@ -1451,14 +1443,19 @@ class IfcExporter():
             self.create_material_psets(material)
             self.file.createIfcMaterialDefinitionRepresentation(
                 material['raw'].name, None, [styled_representation], material['ifc'])
-            if material['material_type'] == 'IfcMaterialLayerSet':
-                material['layer_attributes']['Material'] = material['ifc']
-                material['layer_ifc'] = self.file.create_entity('IfcMaterialLayer',
-                    **material['layer_attributes'])
-            elif material['material_type'] == 'IfcMaterialConstituentSet':
-                material['constituent_attributes']['Material'] = material['ifc']
-                material['constituent_ifc'] = self.file.create_entity('IfcMaterialConstituent',
-                    **material['constituent_attributes'])
+            if material['material_type'] != 'IfcMaterial':
+                material_type = material['material_type'][0:-3]
+                self.cast_attributes(material_type, material['attributes'])
+                material['attributes']['Material'] = material['ifc']
+                material['part_ifc'] = self.file.create_entity(material_type,
+                    **material['attributes'])
+
+    def cast_attributes(self, ifc_class, attributes):
+        for key, value in attributes.items():
+            var_type = self.get_product_attribute_type(ifc_class, key)
+            if var_type is None:
+                continue
+            attributes[key] = self.cast_to_base_type(var_type, value)
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
@@ -1527,11 +1524,7 @@ class IfcExporter():
             'Representation': self.get_product_shape(product)
         })
 
-        for key, value in product['attributes'].items():
-            var_type = self.get_product_attribute_type(product['class'], key)
-            if var_type is None:
-                continue
-            product['attributes'][key] = self.cast_to_base_type(var_type, value)
+        self.cast_attributes(product['class'], product['attributes'])
 
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
@@ -2070,7 +2063,7 @@ class IfcExporter():
             return
         for product_index, related_materials in self.ifc_parser.rel_associates_material_layer_set.items():
             material_layer_set = self.file.create_entity('IfcMaterialLayerSet', **{
-                'MaterialLayers': [self.ifc_parser.materials[m]['layer_ifc'] for m in related_materials]
+                'MaterialLayers': [self.ifc_parser.materials[m]['part_ifc'] for m in related_materials]
             })
             self.file.createIfcRelAssociatesMaterial(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
@@ -2082,7 +2075,7 @@ class IfcExporter():
             return
         for product_index, related_materials in self.ifc_parser.rel_associates_material_constituent_set.items():
             material_constituent_set = self.file.create_entity('IfcMaterialConstituentSet', **{
-                'MaterialConstituents': [self.ifc_parser.materials[m]['constituent_ifc'] for m in related_materials]
+                'MaterialConstituents': [self.ifc_parser.materials[m]['part_ifc'] for m in related_materials]
             })
             self.file.createIfcRelAssociatesMaterial(
                 ifcopenshell.guid.new(), self.owner_history, None, None,

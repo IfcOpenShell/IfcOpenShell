@@ -7,9 +7,8 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 class IfcSchema():
     def __init__(self):
         self.schema_dir = os.path.join(cwd, 'schema') # TODO: make configurable
-        self.products = ['IfcElement', 'IfcSpatialStructureElement', 'IfcStructural']
+        self.products = ['IfcElement', 'IfcSpatialStructureElement', 'IfcStructural', 'IfcMaterialDefinition']
         self.elements = {}
-        print(os.path.join(self.schema_dir, 'IFC4_ADD2.ifc'))
         self.property_file = ifcopenshell.open(os.path.join(self.schema_dir, 'IFC4_ADD2.ifc'))
         self.psets = {}
         self.qtos = {}
