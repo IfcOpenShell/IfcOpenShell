@@ -164,6 +164,20 @@ class BIM_PT_material(Panel):
         row = layout.row()
         row.operator('bim.fetch_external_material')
 
+        layout.label(text="Attributes:")
+        row = layout.row(align=True)
+        row.prop(props, 'applicable_attributes', text='')
+        row.operator('bim.add_material_attribute')
+
+        for index, attribute in enumerate(props.attributes):
+            row = layout.row(align=True)
+            row.prop(attribute, 'name', text='')
+            row.prop(attribute, 'string_value', text='')
+            row.operator('bim.remove_material_attribute', icon='X', text='').attribute_index = index
+
+        row = layout.row()
+        row.prop(props, 'attributes')
+
         layout.label(text="Property Sets:")
         row = layout.row(align=True)
         row.prop(props, 'available_material_psets', text='')

@@ -30,6 +30,7 @@ psetfiles_enum = []
 classification_enum = []
 reference_enum = []
 attributes_enum = []
+materialattributes_enum = []
 documents_enum = []
 materialtypes_enum = []
 contexts_enum = []
@@ -197,11 +198,25 @@ def getApplicableAttributes(self, context):
     global attributes_enum
     attributes_enum.clear()
     if '/' in context.active_object.name \
-        and context.active_object.name.split('/')[0] in ifc_schema.elements:
+            and context.active_object.name.split('/')[0] in ifc_schema.elements:
         attributes_enum.extend([(a['name'], a['name'], '') for a in
             ifc_schema.elements[context.active_object.name.split('/')[0]]['attributes']
             if self.attributes.find(a['name']) == -1])
     return attributes_enum
+
+
+def getApplicableMaterialAttributes(self, context):
+    global materialattributes_enum
+    materialattributes_enum.clear()
+    if '/' in context.active_object.name \
+            and context.active_object.name.split('/')[0] in ifc_schema.elements:
+        material_type = context.active_object.BIMObjectProperties.material_type
+        if material_type[-3:] == 'Set':
+            material_type = material_type[0:-3]
+        materialattributes_enum.extend([(a['name'], a['name'], '') for a in
+            ifc_schema.IfcMaterialDefinition[material_type]['attributes']
+            if self.attributes.find(a['name']) == -1])
+    return materialattributes_enum
 
 
 def getApplicableDocuments(self, context):
@@ -384,6 +399,8 @@ class BIMMaterialProperties(PropertyGroup):
     name: StringProperty(name="Name")
     available_material_psets: EnumProperty(items=getAvailableMaterialPsets, name="Material Pset")
     psets: CollectionProperty(name="Psets", type=Pset)
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+    applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
 
 
 class SweptSolid(PropertyGroup):

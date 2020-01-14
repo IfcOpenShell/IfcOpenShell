@@ -68,6 +68,8 @@ if bpy is not None:
         operator.GenerateGlobalId,
         operator.AddAttribute,
         operator.RemoveAttribute,
+        operator.AddMaterialAttribute,
+        operator.RemoveMaterialAttribute,
         operator.QuickProjectSetup,
         operator.SelectGlobalId,
         operator.CreateAggregate,
