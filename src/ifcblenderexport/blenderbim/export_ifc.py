@@ -105,6 +105,7 @@ class IfcParser():
         self.rel_associates_material = {}
         self.rel_associates_material_layer_set = {}
         self.rel_associates_material_constituent_set = {}
+        self.rel_associates_material_profile_set = {}
         self.rel_associates_constraint_objective_object = {}
         self.rel_associates_constraint_objective_type = {}
         self.rel_aggregates = {}
@@ -424,9 +425,13 @@ class IfcParser():
             if slot.link == 'OBJECT':
                 continue
             if obj.BIMObjectProperties.material_type == 'IfcMaterialLayerSet':
-                self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(slot.material.name)
+                self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(
+                    slot.material.name)
             elif obj.BIMObjectProperties.material_type == 'IfcMaterialConstituentSet':
                 self.rel_associates_material_constituent_set.setdefault(self.product_index, []).append(
+                    slot.material.name)
+            elif obj.BIMObjectProperties.material_type == 'IfcMaterialProfileSet':
+                self.rel_associates_material_profile_set.setdefault(self.product_index, []).append(
                     slot.material.name)
             else:
                 self.rel_associates_material.setdefault(slot.material.name, []).append(product)
@@ -979,8 +984,8 @@ class IfcExporter():
         self.relate_objects_to_opening_elements()
         self.relate_opening_elements_to_fillings()
         self.relate_objects_to_materials()
-        self.relate_objects_to_material_layer_sets()
-        self.relate_objects_to_material_constituent_sets()
+        for set_type in ['constituent', 'layer', 'profile']:
+            self.relate_objects_to_material_sets(set_type)
         self.relate_spaces_to_boundary_elements()
         self.relate_to_documents(self.ifc_parser.rel_associates_document_object)
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
@@ -2058,29 +2063,17 @@ class IfcExporter():
                 [o['ifc'] for o in related_objects],
                 self.ifc_parser.materials[relating_material_key]['ifc'])
 
-    def relate_objects_to_material_layer_sets(self):
+    def relate_objects_to_material_sets(self, set_type):
         if not self.ifc_export_settings.has_representations:
             return
-        for product_index, related_materials in self.ifc_parser.rel_associates_material_layer_set.items():
-            material_layer_set = self.file.create_entity('IfcMaterialLayerSet', **{
-                'MaterialLayers': [self.ifc_parser.materials[m]['part_ifc'] for m in related_materials]
+        for product_index, related_materials in getattr(self.ifc_parser, f'rel_associates_material_{set_type}_set').items():
+            material_set = self.file.create_entity(f'IfcMaterial{set_type.capitalize()}Set', **{
+                f'Material{set_type.capitalize()}s': [self.ifc_parser.materials[m]['part_ifc'] for m in related_materials]
             })
             self.file.createIfcRelAssociatesMaterial(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [self.ifc_parser.products[product_index]['ifc']],
-                material_layer_set)
-
-    def relate_objects_to_material_constituent_sets(self):
-        if not self.ifc_export_settings.has_representations:
-            return
-        for product_index, related_materials in self.ifc_parser.rel_associates_material_constituent_set.items():
-            material_constituent_set = self.file.create_entity('IfcMaterialConstituentSet', **{
-                'MaterialConstituents': [self.ifc_parser.materials[m]['part_ifc'] for m in related_materials]
-            })
-            self.file.createIfcRelAssociatesMaterial(
-                ifcopenshell.guid.new(), self.owner_history, None, None,
-                [self.ifc_parser.products[product_index]['ifc']],
-                material_constituent_set)
+                material_set)
 
     def relate_spaces_to_boundary_elements(self):
         for relating_space_index, relationships, in self.ifc_parser.rel_space_boundaries.items():
