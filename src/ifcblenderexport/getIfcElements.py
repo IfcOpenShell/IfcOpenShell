@@ -15,13 +15,15 @@ class IFC4Extractor:
         #self.filters = ['IfcElement']
         #self.filters = ['IfcSpatialStructureElement']
         #self.filters = ['IfcStructuralActivity', 'IfcStructuralItem']
-        self.filters = ['IfcMaterialDefinition']
+        #self.filters = ['IfcMaterialDefinition']
+        self.filters = ['IfcParameterizedProfileDef']
         self.filtered_elements = {}
 
     def extract(self):
         for element in self.root.findall("xs:element", self.ns):
             #if self.is_descendant_from_class(element, "IfcRoot"):
-            if self.is_descendant_from_class(element, "IfcMaterialDefinition"):
+            #if self.is_descendant_from_class(element, "IfcMaterialDefinition"):
+            if self.is_descendant_from_class(element, "IfcParameterizedProfileDef"):
                 print('Processing {}'.format(element.attrib['name']))
                 data = {
                     'is_abstract': self.is_abstract(element),

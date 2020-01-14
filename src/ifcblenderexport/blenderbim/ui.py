@@ -191,6 +191,16 @@ class BIM_PT_material(Panel):
         row = layout.row()
         row.prop(props, 'psets', text='')
 
+        if context.active_object.BIMObjectProperties.material_type == 'IfcMaterialProfileSet':
+            layout.label(text="Profile Definition:")
+            row = layout.row()
+            row.prop(props, 'profile_def')
+
+            for index, attribute in enumerate(props.profile_attributes):
+                row = layout.row(align=True)
+                row.prop(attribute, 'name', text='')
+                row.prop(attribute, 'string_value', text='')
+
 
 class BIM_PT_gis(Panel):
     bl_label = 'IFC Georeferencing'

@@ -22,6 +22,7 @@ ifc_schema = IfcSchema()
 
 diagram_scales_enum = []
 products_enum = []
+profiledef_enum = []
 classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
@@ -107,6 +108,13 @@ def getIfcClasses(self, context):
     if len(classes_enum) < 1:
         classes_enum.extend([(e, e, '') for e in getattr(ifc_schema, self.ifc_product)])
     return classes_enum
+
+
+def getProfileDef(self, context):
+    global profiledef_enum
+    if len(profiledef_enum) < 1:
+        profiledef_enum.extend([(e, e, '') for e in getattr(ifc_schema, 'IfcParameterizedProfileDef')])
+    return profiledef_enum
 
 
 def getPersons(self, context):
@@ -217,6 +225,14 @@ def getApplicableMaterialAttributes(self, context):
             ifc_schema.IfcMaterialDefinition[material_type]['attributes']
             if self.attributes.find(a['name']) == -1])
     return materialattributes_enum
+
+
+def refreshProfileAttributes(self, context):
+    while len(context.active_object.active_material.BIMMaterialProperties.profile_attributes) > 0:
+        context.active_object.active_material.BIMMaterialProperties.profile_attributes.remove(0)
+    for attribute in ifc_schema.IfcParameterizedProfileDef[self.profile_def]['attributes']:
+        profile_attribute = context.active_object.active_material.BIMMaterialProperties.profile_attributes.add()
+        profile_attribute.name = attribute['name']
 
 
 def getApplicableDocuments(self, context):
@@ -401,6 +417,8 @@ class BIMMaterialProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=Pset)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     applicable_attributes: EnumProperty(items=getApplicableMaterialAttributes, name="Attribute Names")
+    profile_def: EnumProperty(items=getProfileDef, name='Parameterized Profile Def', update=refreshProfileAttributes)
+    profile_attributes: CollectionProperty(name='Profile Attributes', type=Attribute)
 
 
 class SweptSolid(PropertyGroup):
