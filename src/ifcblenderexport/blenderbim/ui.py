@@ -81,6 +81,9 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'classifications')
 
+        row = layout.row()
+        row.prop(props, 'material_type')
+
 
 class BIM_PT_mesh(Panel):
     bl_label = 'IFC Representations'

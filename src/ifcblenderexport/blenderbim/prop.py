@@ -31,6 +31,7 @@ classification_enum = []
 reference_enum = []
 attributes_enum = []
 documents_enum = []
+materialtypes_enum = []
 contexts_enum = []
 subcontexts_enum = []
 target_views_enum = []
@@ -213,6 +214,17 @@ def getApplicableDocuments(self, context):
     return documents_enum
 
 
+def getMaterialTypes(self, context):
+    global materialtypes_enum
+    materialtypes_enum.clear()
+    materialtypes_enum = [(m, m, '') for m in [
+        'IfcMaterial',
+        'IfcMaterialConstituentSet',
+        'IfcMaterialLayerSet',
+        'IfcMaterialProfileSet']]
+    return materialtypes_enum
+
+
 def getSubcontexts(self, context):
     global subcontexts_enum
     subcontexts_enum.clear()
@@ -362,6 +374,7 @@ class BIMObjectProperties(PropertyGroup):
     documents: CollectionProperty(name="Documents", type=Document)
     applicable_documents: EnumProperty(items=getApplicableDocuments, name="Available Documents")
     classifications: CollectionProperty(name="Classifications", type=Classification)
+    material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
 
 
 class BIMMaterialProperties(PropertyGroup):
