@@ -423,9 +423,9 @@ class IfcParser():
         for slot in obj.material_slots:
             if slot.link == 'OBJECT':
                 continue
-            if 'IsMaterialLayerSet' in obj:
+            if obj.BIMObjectProperties.material_type == 'IfcMaterialLayerSet':
                 self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(slot.material.name)
-            elif 'IsMaterialConstituentSet' in obj:
+            elif obj.BIMObjectProperties.material_type == 'IfcMaterialConstituentSet':
                 self.rel_associates_material_constituent_set.setdefault(self.product_index, []).append(
                     slot.material.name)
             else:
@@ -775,14 +775,15 @@ class IfcParser():
                     'layer_ifc': None,
                     'constituent_ifc': None,
                     'raw': slot.material,
-                    'is_material_layer_set': 'IsMaterialLayerSet' in obj.keys(),
-                    'is_material_constituent_set': 'IsMaterialConstituentSet' in obj.keys(),
+                    'material_type': obj.BIMObjectProperties.material_type,
                     'attributes': {'Name': slot.material.name},
+                    # TODO: turn into non-custom attributes
                     'layer_attributes': {
                         key[3:]: slot.material[key]
                         for key in slot.material.keys()
                         if key[0:3] == 'Ifc'
                     },
+                    # TODO: turn into non-custom attributes
                     'constituent_attributes': {
                         key[3:]: slot.material[key]
                         for key in slot.material.keys()
@@ -1450,11 +1451,11 @@ class IfcExporter():
             self.create_material_psets(material)
             self.file.createIfcMaterialDefinitionRepresentation(
                 material['raw'].name, None, [styled_representation], material['ifc'])
-            if material['is_material_layer_set']:
+            if material['material_type'] == 'IfcMaterialLayerSet':
                 material['layer_attributes']['Material'] = material['ifc']
                 material['layer_ifc'] = self.file.create_entity('IfcMaterialLayer',
                     **material['layer_attributes'])
-            elif material['is_material_constituent_set']:
+            elif material['material_type'] == 'IfcMaterialConstituentSet':
                 material['constituent_attributes']['Material'] = material['ifc']
                 material['constituent_ifc'] = self.file.create_entity('IfcMaterialConstituent',
                     **material['constituent_attributes'])
