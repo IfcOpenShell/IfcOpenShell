@@ -527,6 +527,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 			}
 		} else {
 			e = me.Edge();
+			// BRepBuilderAPI_MakeEdge swaps v1 and v2 if the parameter value of v2 is 
+			// smaller than that of v1. In that case the edge has to be reversed so that
+			// the vertex order is consistent with Trim1 and Trim2. Otherwise the
+			// IfcOpenShell wire builder will create intermediate edges automatically.
+			// The alternative would be to reverse the underlying curve instead.
+			if (!TopExp::FirstVertex(e, true).IsSame(v1)) {
+				e.Reverse();
+			}
 		}
 	}
 
