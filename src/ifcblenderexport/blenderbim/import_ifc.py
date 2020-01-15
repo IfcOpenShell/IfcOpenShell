@@ -7,9 +7,7 @@ import time
 import mathutils
 import multiprocessing
 from .helper import SIUnitHelper
-from .schema import IfcSchema
-
-ifc_schema = IfcSchema()
+from . import schema
 
 class MaterialCreator():
     def __init__(self, ifc_import_settings):
@@ -402,8 +400,8 @@ class IfcImporter():
 
     def add_element_attributes(self, element, obj):
         attributes = element.get_info()
-        if element.is_a() in ifc_schema.elements:
-            applicable_attributes = [a['name'] for a in ifc_schema.elements[element.is_a()]['attributes']]
+        if element.is_a() in schema.ifc.elements:
+            applicable_attributes = [a['name'] for a in schema.ifc.elements[element.is_a()]['attributes']]
             for key, value in attributes.items():
                 if key not in applicable_attributes \
                         or value is None:

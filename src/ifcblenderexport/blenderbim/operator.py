@@ -8,10 +8,10 @@ from . import export_ifc
 from . import import_ifc
 from . import cut_ifc
 from . import sheeter
+from . import schema
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector
-from .schema import IfcSchema
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -54,9 +54,8 @@ class ExportIFC(bpy.types.Operator):
                     ]
                 })
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
-        ifc_schema = IfcSchema()
         qto_calculator = export_ifc.QtoCalculator()
-        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_schema, ifc_parser, qto_calculator)
+        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
         ifc_exporter.export()
         ifc_export_settings.logger.info('Export finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
@@ -320,6 +319,32 @@ class RemovePset(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
+        return {'FINISHED'}
+
+
+class AddOverridePset(bpy.types.Operator):
+    bl_idname = 'bim.add_override_pset'
+    bl_label = 'Add Override Pset'
+
+    def execute(self, context):
+        pset_name = bpy.context.active_object.BIMObjectProperties.override_pset_name
+        if pset_name not in schema.ifc.psets:
+            return {'FINISHED'}
+        pset = bpy.context.active_object.BIMObjectProperties.override_psets.add()
+        pset.name = pset_name
+        for prop_name in schema.ifc.psets[pset_name]['HasPropertyTemplates'].keys():
+            prop = pset.properties.add()
+            prop.name = prop_name
+        return {'FINISHED'}
+
+
+class RemoveOverridePset(bpy.types.Operator):
+    bl_idname = 'bim.remove_override_pset'
+    bl_label = 'Remove Override Pset'
+    pset_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.override_psets.remove(self.pset_index)
         return {'FINISHED'}
 
 

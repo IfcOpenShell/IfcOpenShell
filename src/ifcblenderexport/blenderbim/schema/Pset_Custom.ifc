@@ -1,0 +1,14 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((),'2;1');
+FILE_NAME('Pset_Custom.ifc','2020-01-01T00:00:00',(),(),'Sample','Sample',$);
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+
+DATA;
+#1= IFCPROPERTYSETTEMPLATE('05N2Dhepb9ouTCSmWBh22D',$,'Custom_Pset','An example custom pset.',.PSET_TYPEDRIVENOVERRIDE.,'IfcObject',(#2,#3));
+#2= IFCSIMPLEPROPERTYTEMPLATE('37EpTDq4v96gTZh196BBXQ',$,'NumericProperty','An example numeric property',.P_SINGLEVALUE.,'IfcCountMeasure','',$,$,$,$,.READWRITE.);
+#3= IFCSIMPLEPROPERTYTEMPLATE('22H7CzDvz1XfVHKkGWoYUK',$,'StringProperty','An example string property',.P_SINGLEVALUE.,'IfcLabel','',$,$,$,$,.READWRITE.);
+ENDSEC;
+
+END-ISO-10303-21;

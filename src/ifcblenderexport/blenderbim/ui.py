@@ -54,6 +54,19 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'psets')
 
+        row = layout.row(align=True)
+        row.prop(props, 'override_pset_name', text='')
+        row.operator('bim.add_override_pset')
+
+        for index, pset in enumerate(props.override_psets):
+            row = layout.row(align=True)
+            row.prop(pset, 'name', text='')
+            row.operator('bim.remove_override_pset', icon='X', text='').pset_index = index
+            for prop in pset.properties:
+                row = layout.row(align=True)
+                row.prop(prop, 'name', text='')
+                row.prop(prop, 'string_value', text='')
+
         layout.label(text="Documents:")
         row = layout.row(align=True)
         row.prop(props, 'applicable_documents', text='')

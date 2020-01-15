@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper
+from . import schema
 import ifcopenshell
 import addon_utils
 
@@ -407,6 +408,18 @@ class IfcParser():
         for pset in obj.BIMObjectProperties.psets:
             self.rel_defines_by_pset.setdefault(
                 '{}/{}'.format(pset.name, pset.file), []).append(product)
+
+        for pset in obj.BIMObjectProperties.override_psets:
+            pset_key = '{}/{}'.format(pset.name, obj.name)
+            raw = {p.name: p.string_value for p in pset.properties if p.string_value}
+            if not raw:
+                continue
+            self.psets[pset_key] = {
+                'ifc': None,
+                'raw': raw,
+                'attributes': { 'Name': pset.name }
+            }
+            self.rel_defines_by_pset.setdefault(pset_key, []).append(product)
 
         for document in obj.BIMObjectProperties.documents:
             self.rel_associates_document_object.setdefault(
@@ -943,10 +956,9 @@ class IfcParser():
 
 
 class IfcExporter():
-    def __init__(self, ifc_export_settings, ifc_schema, ifc_parser, qto_calculator):
+    def __init__(self, ifc_export_settings, ifc_parser, qto_calculator):
         self.template_file = '{}template.ifc'.format(ifc_export_settings.schema_dir)
         self.ifc_export_settings = ifc_export_settings
-        self.ifc_schema = ifc_schema
         self.ifc_parser = ifc_parser
         self.qto_calculator = qto_calculator
 
@@ -1206,7 +1218,7 @@ class IfcExporter():
                 })
 
     def create_pset_properties(self, pset):
-        if pset['attributes']['Name'] in self.ifc_schema.psets:
+        if pset['attributes']['Name'] in schema.ifc.psets:
             return self.create_templated_pset_properties(pset)
         return self.create_custom_pset_properties(pset)
 
@@ -1222,7 +1234,7 @@ class IfcExporter():
 
     def create_templated_pset_properties(self, pset):
         properties = []
-        templates = self.ifc_schema.psets[pset['attributes']['Name']]['HasPropertyTemplates']
+        templates = schema.ifc.psets[pset['attributes']['Name']]['HasPropertyTemplates']
         for name, data in templates.items():
             if name not in pset['raw']:
                 continue
@@ -1250,13 +1262,13 @@ class IfcExporter():
         return properties
 
     def cast_to_base_type(self, var_type, value):
-        if var_type not in self.ifc_schema.type_map:
+        if var_type not in schema.ifc.type_map:
             return value
-        elif self.ifc_schema.type_map[var_type] == 'float':
+        elif schema.ifc.type_map[var_type] == 'float':
             return float(value)
-        elif self.ifc_schema.type_map[var_type] == 'integer':
+        elif schema.ifc.type_map[var_type] == 'integer':
             return int(value)
-        elif self.ifc_schema.type_map[var_type] == 'bool':
+        elif schema.ifc.type_map[var_type] == 'bool':
             return True if value.lower() in ['1', 't', 'true', 'yes', 'y', 'uh-huh'] else False
         return str(value)
 
@@ -1551,11 +1563,11 @@ class IfcExporter():
             )
 
     def get_product_attribute_type(self, product_class, attribute_name):
-        element_schema = self.ifc_schema.elements[product_class]
+        element_schema = schema.ifc.elements[product_class]
         for a in element_schema['attributes']:
             if a['name'] == attribute_name:
                 return a['type']
-        if element_schema['parent'] in self.ifc_schema.elements:
+        if element_schema['parent'] in schema.ifc.elements:
             return self.get_product_attribute_type(element_schema['parent'], attribute_name)
         return None
 
