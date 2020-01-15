@@ -730,10 +730,16 @@ class IfcParser():
             obj.data, obj, 'Model', 'Axis', 'GRAPH_VIEW')
 
     def append_structural_reference_representation(self, obj):
-        self.representations['Model/Reference/GRAPH_VIEW/{}'.format(obj.data.name)] = self.get_representation(
-            obj.data, obj, 'Model', 'Reference', 'GRAPH_VIEW')
+        if obj.type == 'EMPTY':
+            self.representations['Model/Reference/GRAPH_VIEW/{}'.format(obj.name)] = self.get_representation(
+                obj, obj, 'Model', 'Reference', 'GRAPH_VIEW')
+        else:
+            self.representations['Model/Reference/GRAPH_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+                obj.data, obj, 'Model', 'Reference', 'GRAPH_VIEW')
 
     def append_representation_per_context(self, obj):
+        if not obj.data:
+            return
         name = self.get_ifc_representation_name(obj.data.name)
         for context in self.ifc_export_settings.context_tree:
             for subcontext in context['subcontexts']:
@@ -890,6 +896,9 @@ class IfcParser():
         names = []
         if self.is_point_cloud(obj):
             names.append('Model/Body/MODEL_VIEW/{}'.format(obj.name))
+            return names
+        elif self.is_structural(obj) and obj.type == 'EMPTY':
+            names.append('Model/Reference/GRAPH_VIEW/{}'.format(obj.name))
             return names
         name = self.get_ifc_representation_name(obj.data.name)
         for context in self.ifc_export_settings.context_tree:
@@ -1783,6 +1792,12 @@ class IfcExporter():
             [self.create_curve(representation['raw'])])
 
     def create_structural_reference_representation(self, representation):
+        if representation['raw_object'].type == 'EMPTY':
+            return self.file.createIfcTopologyRepresentation(
+                self.ifc_rep_context[representation['context']][representation['subcontext']][
+                    representation['target_view']]['ifc'],
+                representation['subcontext'], 'Vertex',
+                [self.create_vertex_point(Vector((0, 0, 0)))])
         return self.file.createIfcTopologyRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
