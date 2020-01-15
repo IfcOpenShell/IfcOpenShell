@@ -3,7 +3,7 @@ import os
 import csv
 from pathlib import Path
 from . import export_ifc
-from .schema import IfcSchema
+from . import schema
 import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
@@ -17,8 +17,6 @@ from bpy.props import (
 )
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-
-ifc_schema = IfcSchema()
 
 diagram_scales_enum = []
 products_enum = []
@@ -53,7 +51,7 @@ def setDefaultProperties(scene):
 def getIfcPredefinedTypes(self, context):
     global types_enum
     if len(types_enum) < 1:
-        for name, data in ifc_schema.elements.items():
+        for name, data in schema.ifc.elements.items():
             if name != self.ifc_class.strip():
                 continue
             for attribute in data['attributes']:
@@ -106,14 +104,14 @@ def getIfcProducts(self, context):
 def getIfcClasses(self, context):
     global classes_enum
     if len(classes_enum) < 1:
-        classes_enum.extend([(e, e, '') for e in getattr(ifc_schema, self.ifc_product)])
+        classes_enum.extend([(e, e, '') for e in getattr(schema.ifc, self.ifc_product)])
     return classes_enum
 
 
 def getProfileDef(self, context):
     global profiledef_enum
     if len(profiledef_enum) < 1:
-        profiledef_enum.extend([(e, e, '') for e in getattr(ifc_schema, 'IfcParameterizedProfileDef')])
+        profiledef_enum.extend([(e, e, '') for e in getattr(schema.ifc, 'IfcParameterizedProfileDef')])
     return profiledef_enum
 
 
@@ -206,9 +204,9 @@ def getApplicableAttributes(self, context):
     global attributes_enum
     attributes_enum.clear()
     if '/' in context.active_object.name \
-            and context.active_object.name.split('/')[0] in ifc_schema.elements:
+            and context.active_object.name.split('/')[0] in schema.ifc.elements:
         attributes_enum.extend([(a['name'], a['name'], '') for a in
-            ifc_schema.elements[context.active_object.name.split('/')[0]]['attributes']
+            schema.ifc.elements[context.active_object.name.split('/')[0]]['attributes']
             if self.attributes.find(a['name']) == -1])
     return attributes_enum
 
@@ -217,12 +215,12 @@ def getApplicableMaterialAttributes(self, context):
     global materialattributes_enum
     materialattributes_enum.clear()
     if '/' in context.active_object.name \
-            and context.active_object.name.split('/')[0] in ifc_schema.elements:
+            and context.active_object.name.split('/')[0] in schema.ifc.elements:
         material_type = context.active_object.BIMObjectProperties.material_type
         if material_type[-3:] == 'Set':
             material_type = material_type[0:-3]
         materialattributes_enum.extend([(a['name'], a['name'], '') for a in
-            ifc_schema.IfcMaterialDefinition[material_type]['attributes']
+            schema.ifc.IfcMaterialDefinition[material_type]['attributes']
             if self.attributes.find(a['name']) == -1])
     return materialattributes_enum
 
@@ -230,7 +228,7 @@ def getApplicableMaterialAttributes(self, context):
 def refreshProfileAttributes(self, context):
     while len(context.active_object.active_material.BIMMaterialProperties.profile_attributes) > 0:
         context.active_object.active_material.BIMMaterialProperties.profile_attributes.remove(0)
-    for attribute in ifc_schema.IfcParameterizedProfileDef[self.profile_def]['attributes']:
+    for attribute in schema.ifc.IfcParameterizedProfileDef[self.profile_def]['attributes']:
         profile_attribute = context.active_object.active_material.BIMMaterialProperties.profile_attributes.add()
         profile_attribute.name = attribute['name']
 
@@ -384,6 +382,7 @@ class Attribute(PropertyGroup):
 class Pset(PropertyGroup):
     name: StringProperty(name="Name")
     file: StringProperty(name="File")
+    properties: CollectionProperty(name="Properties", type=Attribute)
 
 class Document(PropertyGroup):
     file: StringProperty(name="File")
@@ -406,6 +405,8 @@ class BIMObjectProperties(PropertyGroup):
     applicable_documents: EnumProperty(items=getApplicableDocuments, name="Available Documents")
     classifications: CollectionProperty(name="Classifications", type=Classification)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
+    override_psets: CollectionProperty(name="Override Psets", type=Pset)
+    override_pset_name: StringProperty(name="Override Pset Name")
 
 
 class BIMMaterialProperties(PropertyGroup):
