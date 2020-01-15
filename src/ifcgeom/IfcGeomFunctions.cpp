@@ -3237,10 +3237,10 @@ const IfcSchema::IfcRepresentationItem* IfcGeom::Kernel::find_item_carrying_styl
 		return item;
 	}
 
-	while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
+	while (item->declaration().is(IfcSchema::IfcBooleanResult::Class())) {
 		// All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
 		// IfcGeometricRepresentationItem
-		item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
+		item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanResult*) item)->FirstOperand();
 		if (item->StyledByItem()->size()) {
 			return item;
 		}
