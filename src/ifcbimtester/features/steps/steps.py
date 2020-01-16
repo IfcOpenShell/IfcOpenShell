@@ -3,6 +3,7 @@ from behave import given, when, then, step
 
 class IfcFile(object):
     file = None
+    bookmarks = {}
 
     @classmethod
     def load(cls, path=None):
@@ -12,6 +13,23 @@ class IfcFile(object):
     def get(cls):
         return cls.file
 
+    @classmethod
+    def get_pset(cls, element, pset_name):
+        if not element.IsDefinedBy:
+            return
+        for relationship in element.IsDefinedBy:
+            if relationship.RelatingPropertyDefinition.Name == pset_name:
+                return relationship.RelatingPropertyDefinition
+
+    @classmethod
+    def get_property(cls, element, pset_name, property_name):
+        pset = cls.get_pset(element, pset_name)
+        if not pset:
+            return
+        for prop in pset.HasProperties:
+            if prop.Name == property_name:
+                return prop
+
 
 @given('the IFC file "{file}"')
 def step_impl(context, file):
@@ -20,7 +38,7 @@ def step_impl(context, file):
 
 @given('the IFC file "{file}" exists')
 def step_impl(context, file):
-    assert True
+    pass
 
 
 @given('that an IFC file is loaded')
@@ -45,7 +63,7 @@ def step_impl(context, id, reason):
 
 @then('the file is exempt from auditing because {reason}')
 def step_impl(context, id, reason):
-    assert True
+    pass
 
 
 @then('all {ifc_class} elements have a name matching the pattern "{pattern}"')
@@ -55,7 +73,6 @@ def step_impl(context, ifc_class, pattern):
     for element in elements:
         if not re.search(pattern, element.Name):
             assert False
-    assert True
 
 
 @then('all {ifc_class} elements have an {representation_class} representation')
@@ -85,7 +102,6 @@ def step_impl(context, ifc_class, representation_class):
                         has_representation = True
         if not has_representation:
             assert False
-    assert True
 
 use_step_matcher('re')
 @then('all (?P<ifc_class>.*) elements have an? (?P<attribute>.*) attribute')
@@ -94,7 +110,6 @@ def step_impl(context, ifc_class, attribute):
     for element in elements:
         if not getattr(element, attribute):
             assert False
-    assert True
 
 
 @then('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property')
@@ -102,40 +117,34 @@ def step_impl(context, ifc_class, property_path):
     pset_name, property_name = property_path.split('.')
     elements = IfcFile.get().by_type(ifc_class)
     for element in elements:
-        is_successful = False
-        if not element.IsDefinedBy:
+        if not IfcFile.get_property(element, pset_name, property_name):
             assert False
-        for relationship in element.IsDefinedBy:
-            if relationship.RelatingPropertyDefinition.Name == pset_name:
-                for prop in relationship.RelatingPropertyDefinition.HasProperties:
-                    if prop.Name == property_name:
-                        is_successful = True
-        if not is_successful:
-            assert False
-    assert True
 
 
-@then('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property value matching pattern "(?P<pattern>.*)"')
+@then('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property value matching the pattern "(?P<pattern>.*)"')
 def step_impl(context, ifc_class, property_path, pattern):
     import re
     pset_name, property_name = property_path.split('.')
     elements = IfcFile.get().by_type(ifc_class)
     for element in elements:
-        is_successful = False
-        if not element.IsDefinedBy:
+        prop = IfcFile.get_property(element, pset_name, property_name)
+        if not prop:
             assert False
-        for relationship in element.IsDefinedBy:
-            if relationship.RelatingPropertyDefinition.Name == pset_name:
-                for prop in relationship.RelatingPropertyDefinition.HasProperties:
-                    if prop.Name == property_name:
-                        # For now, we only check single values
-                        if prop.is_a('IfcPropertySingleValue'):
-                            if prop.NominalValue \
-                                    and re.search(pattern, prop.NominalValue):
-                                is_successful = True
-        if not is_successful:
-            assert False
-    assert True
+        # For now, we only check single values
+        if prop.is_a('IfcPropertySingleValue'):
+            if not (prop.NominalValue \
+                    and re.search(pattern, prop.NominalValue.wrappedValue)):
+                assert False
+
+
+@then('all (?P<ifc_class>.*) elements have an? (?P<attribute>.*) matching the pattern "(?P<pattern>.*)"')
+def step_impl(context, ifc_class, attribute, pattern):
+    import re
+    elements = IfcFile.get().by_type(ifc_class)
+    for element in elements:
+        value = getattr(element, attribute)
+        print(f'Checking value "{value}" for {element}')
+        assert re.search(pattern, value)
 
 
 use_step_matcher('parse')
@@ -153,4 +162,78 @@ def step_impl(context, ifc_class, qto_name, quantity_name):
                         is_successful = True
         if not is_successful:
             assert False
-    assert True
+
+@then(u'the project should have geolocation data')
+def step_impl(context):
+    if IfcFile.get().schema == 'IFC2X3':
+        for site in IfcFile.get().by_type('IfcSite'):
+            if not IfcFile.get_pset(site, 'EPset_MapConversion'):
+                assert False
+    else:
+        project = IfcFile.get().by_type('IfcProject')[0]
+        for context in project.RepresentationContexts:
+            if context.is_a('IfcGeometricRepresentationContext') \
+                    and context.ContextType == 'Model' \
+                    and context.HasCoordinateOperation:
+                IfcFile.bookmarks['geolocation'] = context.HasCoordinateOperation[0].id()
+                return
+        assert False
+
+@then(u'the project geolocation uses the "{crs_name}" CRS')
+def step_impl(context, crs_name):
+    if IfcFile.get().schema == 'IFC2X3':
+        for site in IfcFile.get().by_type('IfcSite'):
+            if IfcFile.get_property(site, 'EPset_ProjectedCRS', 'Name').NominalValue.wrappedValue != crs_name:
+                assert False
+    else:
+        assert IfcFile.get().by_id(IfcFile.bookmarks['geolocation']).TargetCRS.Name == crs_name
+
+
+use_step_matcher('re')
+@then(u'the geolocated datum has an? (?P<attribute>.*) of "(?P<value>.*)"')
+def step_impl(context, attribute, value):
+    if IfcFile.get().schema == 'IFC2X3':
+        site = IfcFile.get().by_type('IfcSite')[0]
+        actual_value = IfcFile.get_property(site, 'EPset_MapConversion', attribute).NominalValue.wrappedValue
+    else:
+        actual_value = getattr(IfcFile.get().by_id(IfcFile.bookmarks['geolocation']), attribute)
+    assert str(actual_value) == value, f'The value was {actual_value}' 
+
+
+use_step_matcher('parse')
+@then(u'the project name is "{name}"')
+def step_impl(context, name):
+    project_name = IfcFile.get().by_type('IfcProject')[0].Name
+    assert project_name == name, f'The name was {project_name}'
+
+
+@then(u'there is a site named "{name}"')
+def step_impl(context, name):
+    project = IfcFile.get().by_type('IfcProject')[0]
+    if not project.IsDecomposedBy:
+        assert False
+    for relationship in project.IsDecomposedBy:
+        for part in relationship.RelatedObjects:
+            if part.is_a('IfcSite'):
+                assert part.Name == name, f'The name was {part.Name}'
+
+
+@then(u'there is a building named "{name}"')
+def step_impl(context, name):
+    for building in IfcFile.get().by_type('IfcBuilding'):
+        if building.Name == name:
+            return
+        print(f'A building named {building.Name} was found.')
+    assert False
+
+
+@then(u'all buildings have an address')
+def step_impl(context):
+    for building in IfcFile.get().by_type('IfcBuilding'):
+        if not building.BuildingAddress:
+            assert False, f'The building "{building.Name}" has no address.'
+
+
+@then(u'all the IFC files have the same building storeys')
+def step_impl(context):
+    raise NotImplementedError(u'STEP: Then all the IFC files have the same building storeys')
