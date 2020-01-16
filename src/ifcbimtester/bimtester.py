@@ -38,7 +38,7 @@ def generate_report():
             steps = []
             system_out = testcase.findall('system-out')[0].text.splitlines()
             for line in system_out:
-                if line.strip()[0:5] in ['Given', 'Then ', 'When ']:
+                if line.strip()[0:4] in ['Give', 'Then', 'When', 'And ']:
                     is_success = True if ' ... passed in ' in line else False
                     steps.append({
                         'name': line.strip().split(' ... ')[0],
