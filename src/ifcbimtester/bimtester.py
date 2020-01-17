@@ -12,21 +12,21 @@ import argparse
 from pathlib import Path
 
 def run_tests(args):
-    behave_args = ['features', '--junit', '--junit-directory', 'junit/']
+    behave_args = ['features', '--junit', '--junit-directory', args.junit_directory]
     if args.advanced_arguments:
         behave_args = args.advanced_arguments.split()
     behave_main(behave_args)
     print('# All tests are finished.')
     if args.report:
-        generate_report()
+        generate_report(args)
 
-def generate_report():
+def generate_report(args):
     print('# Generating HTML reports now.')
     if not os.path.exists('report'):
         os.mkdir('report')
-    if not os.path.exists('junit'):
-        os.mkdir('junit')
-    for file in os.listdir('junit/'):
+    if not os.path.exists(args.junit_directory):
+        os.mkdir(args.junit_directory)
+    for file in os.listdir(args.junit_directory):
         if not file.endswith('.xml'):
             continue
         root = ET.parse('junit/{}'.format(file)).getroot()
@@ -105,6 +105,12 @@ parser.add_argument(
     '--report',
     action='store_true',
     help='Generate a HTML report')
+parser.add_argument(
+    '-j',
+    '--junit-directory',
+    type=str,
+    help='Specify your own JUnit directory',
+    default='junit/')
 parser.add_argument(
     '-a',
     '--advanced-arguments',
