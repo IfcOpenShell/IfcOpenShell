@@ -29,7 +29,7 @@ def generate_report(args):
     for file in os.listdir(args.junit_directory):
         if not file.endswith('.xml'):
             continue
-        root = ET.parse('junit/{}'.format(file)).getroot()
+        root = ET.parse('{}{}'.format(args.junit_directory, file)).getroot()
         data = {
             'report_name': root.get('name'),
             'testcases': []
