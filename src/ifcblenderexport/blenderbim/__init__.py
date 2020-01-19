@@ -100,6 +100,7 @@ if bpy is not None:
         prop.MapConversion,
         prop.TargetCRS,
         prop.Attribute,
+        prop.BoundaryCondition,
         prop.Pset,
         prop.Document,
         prop.Classification,

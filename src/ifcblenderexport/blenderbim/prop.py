@@ -8,6 +8,7 @@ import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
 from bpy.props import (
+    PointerProperty,
     StringProperty,
     EnumProperty,
     BoolProperty,
@@ -91,6 +92,20 @@ def getDiagramScales(self, context):
             ('1:1', '1:1', '')
         ])
     return diagram_scales_enum
+
+
+def getBoundaryConditionClasses(self, context):
+    return [(c, c, '') for c in
+        ['IfcBoundaryEdgeCondition', 'IfcBoundaryFaceCondition',
+            'IfcBoundaryNodeCondition', 'IfcBoundaryNodeConditionWarping']]
+
+
+def refreshBoundaryConditionAttributes(self, context):
+    while len(context.active_object.BIMObjectProperties.boundary_condition.attributes) > 0:
+        context.active_object.BIMObjectProperties.boundary_condition.attributes.remove(0)
+    for attribute in schema.ifc.elements[context.active_object.BIMObjectProperties.boundary_condition.name]['complex_attributes']:
+        new_attribute = context.active_object.BIMObjectProperties.boundary_condition.attributes.add()
+        new_attribute.name = attribute['name']
 
 
 def getIfcProducts(self, context):
@@ -396,6 +411,11 @@ class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
 
 
+class BoundaryCondition(PropertyGroup):
+    name: EnumProperty(items=getBoundaryConditionClasses, name='Boundary Type', update=refreshBoundaryConditionAttributes)
+    attributes: CollectionProperty(name="Attributes", type=Attribute)
+
+
 class BIMObjectProperties(PropertyGroup):
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
@@ -407,6 +427,8 @@ class BIMObjectProperties(PropertyGroup):
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     override_psets: CollectionProperty(name="Override Psets", type=Pset)
     override_pset_name: StringProperty(name="Override Pset Name")
+    has_boundary_condition: BoolProperty(name='Has Boundary Condition')
+    boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)
 
 
 class BIMMaterialProperties(PropertyGroup):

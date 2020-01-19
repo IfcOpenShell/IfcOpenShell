@@ -97,6 +97,19 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'material_type')
 
+        layout.label(text='Structural Boundary Condition:')
+
+        row = layout.row()
+        row.prop(props, 'has_boundary_condition')
+
+        if bpy.context.active_object.BIMObjectProperties.has_boundary_condition:
+            row = layout.row()
+            row.prop(props.boundary_condition, 'name')
+            for index, attribute in enumerate(props.boundary_condition.attributes):
+                row = layout.row(align=True)
+                row.prop(attribute, 'name', text='')
+                row.prop(attribute, 'string_value', text='')
+
 
 class BIM_PT_mesh(Panel):
     bl_label = 'IFC Representations'
