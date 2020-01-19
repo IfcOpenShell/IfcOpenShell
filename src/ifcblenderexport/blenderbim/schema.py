@@ -8,12 +8,14 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 class IfcSchema():
     def __init__(self):
         self.schema_dir = os.path.join(cwd, 'schema') # TODO: make configurable
+        # TODO: Make it less troublesome
         self.products = [
             'IfcElement',
             'IfcSpatialStructureElement',
             'IfcStructural',
             'IfcMaterialDefinition',
-            'IfcParameterizedProfileDef'
+            'IfcParameterizedProfileDef',
+            'IfcBoundaryCondition'
         ]
         self.elements = {}
         self.property_files = []
