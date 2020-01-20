@@ -112,6 +112,7 @@ class IfcParser():
         self.rel_aggregates = {}
         self.rel_voids_elements = {}
         self.rel_fills_elements = {}
+        self.rel_connects_structural_member = {}
         self.representations = {}
         self.type_products = []
         self.door_attributes = {}
@@ -146,7 +147,7 @@ class IfcParser():
         self.window_attributes = self.get_window_attributes()
         self.type_products = self.get_type_products()
         self.get_products()
-        self.resolve_boolean_modifiers()
+        self.resolve_product_relationships()
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
         self.library_information = self.get_library_information()
@@ -299,22 +300,32 @@ class IfcParser():
             instance_objects.extend(axis_instances)
         return created_instances
 
-    def resolve_boolean_modifiers(self):
+    def resolve_product_relationships(self):
         for i, product in enumerate(self.products):
             obj = product['raw']
-            for m in obj.modifiers:
-                if m.type == 'BOOLEAN' and m.object is not None:
-                    void = self.get_product_index_from_raw_name(m.object.name)
-                    if void is not None:
-                        if i not in self.rel_voids_elements:
-                            self.rel_voids_elements[i] = []
-                        self.rel_voids_elements[i].append(void)
-                        if m.object.parent:
-                            fill = self.get_product_index_from_raw_name(m.object.parent.name)
-                            if fill is not None:
-                                if void not in self.rel_fills_elements:
-                                    self.rel_fills_elements[void] = []
-                                self.rel_fills_elements[void].append(fill)
+            self.resolve_voids_and_fills(i, obj)
+            self.resolve_structural_connections(i, obj)
+
+    def resolve_structural_connections(self, i, obj):
+        if not obj.BIMObjectProperties.structural_member_connection:
+            return
+        self.rel_connects_structural_member[i] = self.get_product_index_from_raw_name(
+            obj.BIMObjectProperties.structural_member_connection.name)
+
+    def resolve_voids_and_fills(self, i, obj):
+        for m in obj.modifiers:
+            if m.type == 'BOOLEAN' and m.object is not None:
+                void = self.get_product_index_from_raw_name(m.object.name)
+                if void is not None:
+                    if i not in self.rel_voids_elements:
+                        self.rel_voids_elements[i] = []
+                    self.rel_voids_elements[i].append(void)
+                    if m.object.parent:
+                        fill = self.get_product_index_from_raw_name(m.object.parent.name)
+                        if fill is not None:
+                            if void not in self.rel_fills_elements:
+                                self.rel_fills_elements[void] = []
+                            self.rel_fills_elements[void].append(fill)
 
     def get_axis(self, matrix, axis):
         return matrix.col[axis].to_3d().normalized()
@@ -359,7 +370,8 @@ class IfcParser():
             'attributes': self.get_object_attributes(obj),
             'has_boundary_condition': obj.BIMObjectProperties.has_boundary_condition,
             'boundary_condition_class': None,
-            'boundary_condition_attributes': {}
+            'boundary_condition_attributes': {},
+            'structural_member_connection': None
         }
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
@@ -378,6 +390,7 @@ class IfcParser():
             self.parse_product_collection(product, collection)
 
         if 'IfcRelNests' in obj.constraints:
+            # TODO: I think get_product_index_from_raw_name should not be used
             parent_product_index = self.get_product_index_from_raw_name(
                 obj.constraints['IfcRelNests'].target.name)
             self.rel_nests.setdefault(parent_product_index, []).append(product)
@@ -1032,6 +1045,7 @@ class IfcExporter():
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_object)
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
+        self.relate_structure_members()
         self.file.write(self.ifc_export_settings.output_file)
 
     def set_common_definitions(self):
@@ -2211,6 +2225,13 @@ class IfcExporter():
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects], None,
                 self.ifc_parser.objectives[relating_key]['ifc'])
+
+    def relate_structure_members(self):
+        for relating_member, relating_connection in self.ifc_parser.rel_connects_structural_member.items():
+            self.file.create_entity('IfcRelConnectsStructuralMember', **{
+                'RelatingStructuralMember': self.ifc_parser.products[relating_member]['ifc'],
+                'RelatedStructuralConnection': self.ifc_parser.products[relating_connection]['ifc']
+            })
 
     def convert_si_to_unit(self, co):
         return co / self.ifc_parser.unit_scale
