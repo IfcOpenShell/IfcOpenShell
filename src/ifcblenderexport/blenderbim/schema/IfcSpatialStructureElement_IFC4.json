@@ -57,48 +57,40 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
+                "select_types": [], 
                 "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory"
+                "name": "OwnerHistory", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelNests", 
-                "name": "IsNestedBy"
-            }, 
-            {
-                "type": "IfcRelAggregates", 
-                "name": "IsDecomposedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy"
+                "name": "IsDeclaredBy", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy"
+                "name": "IsTypedBy", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelDefinesByProperties", 
-                "name": "IsDefinedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement"
+                "name": "ObjectPlacement", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcProductRepresentation", 
-                "name": "Representation"
+                "name": "Representation", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelContainedInSpatialStructure", 
-                "name": "ContainsElements"
-            }, 
-            {
-                "type": "IfcRelReferencedInSpatialStructure", 
-                "name": "ReferencesElements"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcPostalAddress", 
-                "name": "BuildingAddress"
+                "name": "BuildingAddress", 
+                "is_select": false
             }
         ], 
         "parent": "IfcSpatialStructureElement"
@@ -155,44 +147,34 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
+                "select_types": [], 
                 "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory"
+                "name": "OwnerHistory", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelNests", 
-                "name": "IsNestedBy"
-            }, 
-            {
-                "type": "IfcRelAggregates", 
-                "name": "IsDecomposedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy"
+                "name": "IsDeclaredBy", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy"
+                "name": "IsTypedBy", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelDefinesByProperties", 
-                "name": "IsDefinedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement"
+                "name": "ObjectPlacement", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcProductRepresentation", 
-                "name": "Representation"
-            }, 
-            {
-                "type": "IfcRelContainedInSpatialStructure", 
-                "name": "ContainsElements"
-            }, 
-            {
-                "type": "IfcRelReferencedInSpatialStructure", 
-                "name": "ReferencesElements"
+                "name": "Representation", 
+                "is_select": false
             }
         ], 
         "parent": "IfcSpatialStructureElement"
@@ -267,48 +249,40 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
+                "select_types": [], 
                 "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory"
+                "name": "OwnerHistory", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelNests", 
-                "name": "IsNestedBy"
-            }, 
-            {
-                "type": "IfcRelAggregates", 
-                "name": "IsDecomposedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy"
+                "name": "IsDeclaredBy", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy"
+                "name": "IsTypedBy", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelDefinesByProperties", 
-                "name": "IsDefinedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement"
+                "name": "ObjectPlacement", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcProductRepresentation", 
-                "name": "Representation"
+                "name": "Representation", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelContainedInSpatialStructure", 
-                "name": "ContainsElements"
-            }, 
-            {
-                "type": "IfcRelReferencedInSpatialStructure", 
-                "name": "ReferencesElements"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcPostalAddress", 
-                "name": "SiteAddress"
+                "name": "SiteAddress", 
+                "is_select": false
             }
         ], 
         "parent": "IfcSpatialStructureElement"
@@ -379,44 +353,34 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
+                "select_types": [], 
                 "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory"
+                "name": "OwnerHistory", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelNests", 
-                "name": "IsNestedBy"
-            }, 
-            {
-                "type": "IfcRelAggregates", 
-                "name": "IsDecomposedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy"
+                "name": "IsDeclaredBy", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy"
+                "name": "IsTypedBy", 
+                "is_select": false
             }, 
             {
-                "type": "IfcRelDefinesByProperties", 
-                "name": "IsDefinedBy"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement"
+                "name": "ObjectPlacement", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcProductRepresentation", 
-                "name": "Representation"
-            }, 
-            {
-                "type": "IfcRelContainedInSpatialStructure", 
-                "name": "ContainsElements"
-            }, 
-            {
-                "type": "IfcRelReferencedInSpatialStructure", 
-                "name": "ReferencesElements"
+                "name": "Representation", 
+                "is_select": false
             }
         ], 
         "parent": "IfcSpatialStructureElement"
