@@ -114,6 +114,7 @@ class IfcParser():
         self.rel_voids_elements = {}
         self.rel_fills_elements = {}
         self.rel_connects_structural_member = {}
+        self.rel_assigns_to_group = {}
         self.representations = {}
         self.type_products = []
         self.door_attributes = {}
@@ -483,6 +484,9 @@ class IfcParser():
             self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
             product['relating_structure'] = reference
             self.collection_name_filter.append(collection.name)
+        elif self.is_a_structural_analysis_model(class_name):
+            reference = self.get_structural_analysis_model_reference(collection.name)
+            self.rel_assigns_to_group.setdefault(reference, []).append(self.product_index)
         elif self.is_a_rel_aggregates(class_name):
             pass
         else:
@@ -975,6 +979,10 @@ class IfcParser():
         return ['{}/{}'.format(e['class'], e['attributes']['Name'])
                 for e in self.spatial_structure_elements].index(name)
 
+    def get_structural_analysis_model_reference(self, name):
+        return ['{}/{}'.format(e['class'], e['attributes']['Name'])
+                for e in self.structural_analysis_models].index(name)
+
     def get_type_product_reference(self, name):
         return [p['attributes']['Name']
                 for p in self.type_products].index(self.get_ifc_name(name))
@@ -1064,7 +1072,8 @@ class IfcExporter():
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_object)
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
-        self.relate_structure_members()
+        self.relate_structural_members_to_connections()
+        self.relate_objects_to_groups()
         self.file.write(self.ifc_export_settings.output_file)
 
     def set_common_definitions(self):
@@ -2253,12 +2262,19 @@ class IfcExporter():
                 [o['ifc'] for o in related_objects], None,
                 self.ifc_parser.objectives[relating_key]['ifc'])
 
-    def relate_structure_members(self):
+    def relate_structural_members_to_connections(self):
         for relating_member, relating_connection in self.ifc_parser.rel_connects_structural_member.items():
             self.file.create_entity('IfcRelConnectsStructuralMember', **{
                 'RelatingStructuralMember': self.ifc_parser.products[relating_member]['ifc'],
                 'RelatedStructuralConnection': self.ifc_parser.products[relating_connection]['ifc']
             })
+
+    def relate_objects_to_groups(self):
+        for relating_group, related_objects in self.ifc_parser.rel_assigns_to_group.items():
+            self.file.createIfcRelAssignsToGroup(
+                ifcopenshell.guid.new(), self.owner_history, None, None,
+                [self.ifc_parser.products[o]['ifc'] for o in related_objects], None,
+                self.ifc_parser.structural_analysis_models[relating_group]['ifc'])
 
     def convert_si_to_unit(self, co):
         return co / self.ifc_parser.unit_scale
