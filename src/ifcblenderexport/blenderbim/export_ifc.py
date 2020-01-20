@@ -93,6 +93,7 @@ class IfcParser():
         self.materials = {}
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
+        self.structural_analysis_models = []
         self.rel_contained_in_spatial_structure = {}
         self.rel_nests = {}
         self.rel_space_boundaries = {}
@@ -138,6 +139,7 @@ class IfcParser():
         self.styled_items = self.get_styled_items()
         self.qtos = self.get_qtos()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
+        self.structural_analysis_models = self.get_structural_analysis_models()
 
         self.collection_name_filter = []
 
@@ -707,6 +709,18 @@ class IfcParser():
                 })
         return elements
 
+    def get_structural_analysis_models(self):
+        elements = []
+        for collection in bpy.data.collections:
+            if 'IfcStructuralAnalysisModel' in collection.name:
+                elements.append({
+                    'ifc': None,
+                    'raw': collection,
+                    'class': self.get_ifc_class(collection.name),
+                    'attributes': self.get_object_attributes(collection)
+                })
+        return elements
+
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
             return
@@ -980,7 +994,8 @@ class IfcParser():
         return class_name[0:3] == 'Ifc' \
                and not self.is_a_project(class_name) \
                and not self.is_a_library(class_name) \
-               and not self.is_a_rel_aggregates(class_name)
+               and not self.is_a_rel_aggregates(class_name) \
+               and not self.is_a_structural_analysis_model(class_name)
 
     def is_a_rel_aggregates(self, class_name):
         return class_name == 'IfcRelAggregates'
@@ -990,6 +1005,9 @@ class IfcParser():
 
     def is_a_library(self, class_name):
         return class_name == 'IfcProjectLibrary'
+
+    def is_a_structural_analysis_model(self, class_name):
+        return class_name == 'IfcStructuralAnalysisModel'
 
     def is_a_type(self, class_name):
         return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
@@ -1023,6 +1041,7 @@ class IfcExporter():
         self.create_materials()
         self.create_type_products()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
+        self.create_structural_analysis_models()
         self.create_qtos()
         self.create_products()
         self.create_styled_items()
@@ -1342,10 +1361,12 @@ class IfcExporter():
     def create_libraries(self):
         for library in self.ifc_parser.libraries:
             library['ifc'] = self.file.create_entity(library['class'], **library['attributes'])
-        self.file.createIfcRelDeclares(
-            ifcopenshell.guid.new(), self.owner_history,
-            None, None,
-            self.ifc_parser.project['ifc'], [l['ifc'] for l in self.ifc_parser.libraries])
+        libraries = [l['ifc'] for l in self.ifc_parser.libraries]
+        if libraries:
+            self.file.createIfcRelDeclares(
+                ifcopenshell.guid.new(), self.owner_history,
+                None, None,
+                self.ifc_parser.project['ifc'], libraries)
 
     def create_map_conversion(self):
         if not self.ifc_parser.map_conversion:
@@ -1466,6 +1487,12 @@ class IfcExporter():
             self.file.createIfcRelAggregates(
                 ifcopenshell.guid.new(),
                 self.owner_history, None, None, relating_object, related_objects)
+
+    def create_structural_analysis_models(self):
+        for model in self.ifc_parser.structural_analysis_models:
+            model['ifc'] = self.file.create_entity('IfcStructuralAnalysisModel', **model['attributes'])
+            self.file.createIfcRelDeclares(ifcopenshell.guid.new(),
+                self.owner_history, None, None, self.ifc_parser.project['ifc'], [model['ifc']])
 
     def create_styled_items(self):
         for styled_item in self.ifc_parser.styled_items:
