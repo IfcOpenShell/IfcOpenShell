@@ -23,12 +23,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcMaterialDefinitionRepresentation", 
-                "name": "HasRepresentation"
+                "name": "HasRepresentation", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialDefinition"
@@ -63,12 +61,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcMaterial", 
-                "name": "Material"
+                "name": "Material", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialDefinition"
@@ -89,16 +85,7 @@
             }
         ], 
         "is_abstract": false, 
-        "complex_attributes": [
-            {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
-                "type": "IfcMaterialConstituent", 
-                "name": "MaterialConstituents"
-            }
-        ], 
+        "complex_attributes": [], 
         "parent": "IfcMaterialDefinition"
     }, 
     "IfcMaterialLayer": {
@@ -143,12 +130,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcMaterial", 
-                "name": "Material"
+                "name": "Material", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialDefinition"
@@ -169,16 +154,7 @@
             }
         ], 
         "is_abstract": false, 
-        "complex_attributes": [
-            {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
-                "type": "IfcMaterialLayer", 
-                "name": "MaterialLayers"
-            }
-        ], 
+        "complex_attributes": [], 
         "parent": "IfcMaterialDefinition"
     }, 
     "IfcMaterialLayerWithOffsets": {
@@ -233,12 +209,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcMaterial", 
-                "name": "Material"
+                "name": "Material", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialLayer"
@@ -273,16 +247,16 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcMaterial", 
-                "name": "Material"
+                "name": "Material", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcProfileDef", 
-                "name": "Profile"
+                "name": "Profile", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialDefinition"
@@ -305,16 +279,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
-                "type": "IfcMaterialProfile", 
-                "name": "MaterialProfiles"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcCompositeProfileDef", 
-                "name": "CompositeProfile"
+                "name": "CompositeProfile", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialDefinition"
@@ -349,16 +317,16 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcMaterialProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcMaterial", 
-                "name": "Material"
+                "name": "Material", 
+                "is_select": false
             }, 
             {
+                "select_types": [], 
                 "type": "IfcProfileDef", 
-                "name": "Profile"
+                "name": "Profile", 
+                "is_select": false
             }
         ], 
         "parent": "IfcMaterialProfile"

@@ -11,38 +11,31 @@ class IFC4Extractor:
         self.root = tree.getroot()
         self.ns = {'xs': 'http://www.w3.org/2001/XMLSchema'}
         self.elements = {}
-        #self.filters = ['IfcBuildingElement']
-        #self.filters = ['IfcElement']
-        #self.filters = ['IfcSpatialStructureElement']
-        #self.filters = ['IfcStructuralActivity', 'IfcStructuralItem']
-        #self.filters = ['IfcMaterialDefinition']
-        #self.filters = ['IfcParameterizedProfileDef']
-        self.filters = ['IfcBoundaryCondition']
+        self.filters = []
         self.filtered_elements = {}
 
     def extract(self):
         for element in self.root.findall("xs:element", self.ns):
-            #if self.is_descendant_from_class(element, "IfcRoot"):
-            #if self.is_descendant_from_class(element, "IfcMaterialDefinition"):
-            #if self.is_descendant_from_class(element, "IfcParameterizedProfileDef"):
-            if self.is_descendant_from_class(element, "IfcBoundaryCondition"):
-                print('Processing {}'.format(element.attrib['name']))
-                data = {
-                    'is_abstract': self.is_abstract(element),
-                    'parent': element.attrib['substitutionGroup'].replace('ifc:', ''),
-                    'attributes': self.get_attributes(element),
-                    'complex_attributes': self.get_complex_attributes(element)
-                }
-                self.elements[element.attrib['name']] = data
-                for filter in self.filters:
-                    if self.is_descendant_from_class(element, filter):
-                        self.filtered_elements.setdefault(filter, {})[element.attrib['name']] = data
+            print('Processing {}'.format(element.attrib['name']))
+            if not 'substitutionGroup' in element.attrib \
+                    or self.is_descendant_from_class(element, 'uos'):
+                continue
+            data = {
+                'is_abstract': self.is_abstract(element),
+                'parent': element.attrib['substitutionGroup'].replace('ifc:', ''),
+                'attributes': self.get_attributes(element),
+                'complex_attributes': self.get_complex_attributes(element)
+            }
+            self.elements[element.attrib['name']] = data
+            for filter in self.filters:
+                if self.is_descendant_from_class(element, filter):
+                    self.filtered_elements.setdefault(filter, {})[element.attrib['name']] = data
 
-    def export(self):
+    def export(self, filename):
         final = {}
         for filter in self.filters:
             final.update(self.filtered_elements[filter])
-        with open("output.json", "w") as file:
+        with open(filename, "w") as file:
             file.write(json.dumps(collections.OrderedDict(sorted(final.items())), indent=4))
 
     def is_descendant_from_class(self, element, class_name):
@@ -91,7 +84,9 @@ class IFC4Extractor:
             if 'type' in attribute.attrib:
                 attributes.append({
                     'name': attribute.attrib['name'],
-                    'type': attribute.attrib['type'].replace('ifc:', '')
+                    'type': attribute.attrib['type'].replace('ifc:', ''),
+                    'is_select': False,
+                    'select_types': []
                 })
             else:
                 type_element = attribute.find('./xs:complexType/xs:sequence/xs:element[@ref]', self.ns)
@@ -102,7 +97,7 @@ class IFC4Extractor:
                     type_element = attribute.find('./xs:complexType/xs:group', self.ns)
                     if type_element is not None:
                         is_select = True
-                        select_types = [e.attrib['ref'].replace('ifc:', '') for e in
+                        select_types = [e.attrib['ref'].replace('ifc:', '').replace('-wrapper', '') for e in
                             self.root.findall("./xs:group[@name='{}']/xs:choice/xs:element[@ref]".format(
                                 type_element.attrib['ref'].replace('ifc:', '')
                             ), self.ns)]
@@ -149,7 +144,18 @@ class IFC2X3Extractor(IFC4Extractor):
     def get_complex_attributes(self, element, attributes = None):
         return []
 
-extractor = IFC4Extractor("IFC4_ADD2.xsd")
-#extractor = IFC2X3Extractor("IFC2X3.xsd")
-extractor.extract()
-extractor.export()
+filename_filters = {
+    'IfcElement_IFC4.json': ['IfcElement'],
+    'IfcSpatialStructureElement_IFC4.json': ['IfcSpatialStructureElement'],
+    'IfcStructural_IFC4.json': ['IfcStructuralActivity', 'IfcStructuralItem'],
+    'IfcMaterialDefinition_IFC4.json': ['IfcMaterialDefinition'],
+    'IfcParameterizedProfileDef_IFC4.json': ['IfcParameterizedProfileDef'],
+    'IfcBoundaryCondition_IFC4.json': ['IfcBoundaryCondition']
+}
+
+for filename, filters in filename_filters.items():
+    extractor = IFC4Extractor("IFC4_ADD2.xsd")
+    extractor.filters = filters
+    #extractor = IFC2X3Extractor("IFC2X3.xsd")
+    extractor.extract()
+    extractor.export(filename)

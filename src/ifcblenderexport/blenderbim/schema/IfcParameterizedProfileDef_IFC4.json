@@ -92,12 +92,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -153,12 +151,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -196,12 +192,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcCircleProfileDef"
@@ -233,12 +227,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -276,12 +268,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -349,12 +339,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -416,12 +404,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -477,12 +463,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcRectangleProfileDef"
@@ -520,12 +504,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -569,12 +551,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcRectangleProfileDef"
@@ -654,12 +634,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -709,12 +687,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -782,12 +758,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"
@@ -849,12 +823,10 @@
         "is_abstract": false, 
         "complex_attributes": [
             {
-                "type": "IfcProfileProperties", 
-                "name": "HasProperties"
-            }, 
-            {
+                "select_types": [], 
                 "type": "IfcAxis2Placement2D", 
-                "name": "Position"
+                "name": "Position", 
+                "is_select": false
             }
         ], 
         "parent": "IfcParameterizedProfileDef"

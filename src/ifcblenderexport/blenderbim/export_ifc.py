@@ -356,7 +356,10 @@ class IfcParser():
             'relating_host': None,
             'relating_qtos_key': None,
             'representations': self.get_object_representation_names(obj),
-            'attributes': self.get_object_attributes(obj)
+            'attributes': self.get_object_attributes(obj),
+            'has_boundary_condition': obj.BIMObjectProperties.has_boundary_condition,
+            'boundary_condition_class': None,
+            'boundary_condition_attributes': {}
         }
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
@@ -365,6 +368,11 @@ class IfcParser():
                 and self.is_a_type(self.get_ifc_class(obj.parent.name)):
             reference = self.get_type_product_reference(obj.parent.name)
             self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
+
+        if product['has_boundary_condition']:
+            product['boundary_condition_class'] = obj.BIMObjectProperties.boundary_condition.name
+            product['boundary_condition_attributes'] = {a.name: a.string_value
+                for a in obj.BIMObjectProperties.boundary_condition.attributes}
 
         for collection in product['raw'].users_collection:
             self.parse_product_collection(product, collection)
@@ -1497,6 +1505,11 @@ class IfcExporter():
 
     def cast_attributes(self, ifc_class, attributes):
         for key, value in attributes.items():
+            complex_attribute = self.cast_complex_attribute(ifc_class, key, value)
+            if complex_attribute:
+                attributes[key] = complex_attribute
+                continue
+
             var_type = self.get_product_attribute_type(ifc_class, key)
             if var_type is None:
                 continue
@@ -1563,13 +1576,25 @@ class IfcExporter():
                     product['up_axis'],
                     product['forward_axis']))
 
+        self.cast_attributes(product['class'], product['attributes'])
+
         product['attributes'].update({
             'OwnerHistory': self.owner_history,  # TODO: unhardcode
             'ObjectPlacement': placement,
             'Representation': self.get_product_shape(product)
         })
 
-        self.cast_attributes(product['class'], product['attributes'])
+        if product['has_boundary_condition']:
+            ifc_class = product['boundary_condition_class']
+            attributes = product['boundary_condition_attributes']
+            for key, value in attributes.items():
+                if value == 'True' or value == 'False':
+                    attributes[key] = bool(value)
+                else:
+                    attributes[key] = float(value)
+            self.cast_attributes(ifc_class, attributes)
+            boundary_condition = self.file.create_entity(ifc_class, **attributes)
+            product['attributes']['AppliedCondition'] = boundary_condition
 
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
@@ -1588,7 +1613,18 @@ class IfcExporter():
                 return a['type']
         if element_schema['parent'] in schema.ifc.elements:
             return self.get_product_attribute_type(element_schema['parent'], attribute_name)
-        return None
+
+    def cast_complex_attribute(self, product_class, attribute_name, attribute_value):
+        element_schema = schema.ifc.elements[product_class]
+        for a in element_schema['complex_attributes']:
+            if a['name'] == attribute_name:
+                if not a['is_select']:
+                    return a['type']
+                for select_type in a['select_types']:
+                    try:
+                        return self.file.create_entity(select_type, attribute_value)
+                    except:
+                        pass
 
     def get_product_shape(self, product):
         try:
