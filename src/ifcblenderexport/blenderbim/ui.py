@@ -110,6 +110,9 @@ class BIM_PT_object(Panel):
                 row.prop(attribute, 'name', text='')
                 row.prop(attribute, 'string_value', text='')
 
+        row = layout.row()
+        row.prop(props, 'structural_member_connection')
+
 
 class BIM_PT_mesh(Panel):
     bl_label = 'IFC Representations'
