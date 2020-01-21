@@ -37,7 +37,7 @@ void CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
 	}
 }
 
-CGAL::Polyhedron_3<Kernel_> CgalKernel::create_polyhedron(std::list<cgal_face_t> &face_list) {
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list) {
 
 	// Naive creation
 	CGAL::Polyhedron_3<Kernel_> polyhedron;
@@ -65,7 +65,7 @@ CGAL::Polyhedron_3<Kernel_> CgalKernel::create_polyhedron(std::list<cgal_face_t>
 	return polyhedron;
 }
 
-CGAL::Polyhedron_3<Kernel_> CgalKernel::create_polyhedron(CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron) {
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_>& nef_polyhedron) {
 	if (nef_polyhedron.is_simple()) {
 		try {
 			CGAL::Polyhedron_3<Kernel_> polyhedron;
@@ -81,7 +81,7 @@ CGAL::Polyhedron_3<Kernel_> CgalKernel::create_polyhedron(CGAL::Nef_polyhedron_3
 	}
 }
 
-CGAL::Nef_polyhedron_3<Kernel_> CgalKernel::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
+CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
 	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list);
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 	CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
@@ -89,11 +89,11 @@ CGAL::Nef_polyhedron_3<Kernel_> CgalKernel::create_nef_polyhedron(std::list<cgal
 		nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel_>(polyhedron);
 	} catch (...) {
 		Logger::Message(Logger::LOG_ERROR, "Conversion to Nef polyhedron failed!");
-		return nef_polyhedron;
-	} return nef_polyhedron;
+	}
+	return nef_polyhedron;
 }
 
-CGAL::Nef_polyhedron_3<Kernel_> CgalKernel::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron) {
+CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron) {
 	if (polyhedron.is_valid()) {
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 		CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
@@ -101,8 +101,8 @@ CGAL::Nef_polyhedron_3<Kernel_> CgalKernel::create_nef_polyhedron(CGAL::Polyhedr
 			nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel_>(polyhedron);
 		} catch (...) {
 			Logger::Message(Logger::LOG_ERROR, "Conversion to Nef polyhedron failed!");
-			return nef_polyhedron;
-		} return nef_polyhedron;
+		}
+		return nef_polyhedron;
 	} else {
 		Logger::Message(Logger::LOG_ERROR, "Polyhedron not valid: cannot create Nef polyhedron!");
 		return CGAL::Nef_polyhedron_3<Kernel_>();
@@ -134,7 +134,7 @@ bool CgalKernel::convert(const taxonomy::shell* l, cgal_shape_t& shape) {
 		face_list.push_back(face);
 	}
 
-	shape = create_polyhedron(face_list);
+	shape = utils::create_polyhedron(face_list);
 	return true;
 }
 
@@ -337,12 +337,12 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 	} face_list.push_back(top_face);
 
 	if (bottom_face.inner.empty()) {
-		shape = create_polyhedron(face_list);
+		shape = utils::create_polyhedron(face_list);
 		// if (has_position) for (auto &vertex : vertices(shape)) vertex->point() = vertex->point().transform(trsf);
 		return true;
 	}
 
-	CGAL::Nef_polyhedron_3<Kernel_> nef_shape = create_nef_polyhedron(face_list);
+	CGAL::Nef_polyhedron_3<Kernel_> nef_shape = utils::create_nef_polyhedron(face_list);
 
 	// Inner
 	// TODO: Would be faster to triangulate top/bottom face template rather than use Nef polyhedra for subtraction
@@ -378,7 +378,7 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 		} face_list.push_back(hole_top_face);
 
 		try {
-			nef_shape -= create_nef_polyhedron(face_list);
+			nef_shape -= utils::create_nef_polyhedron(face_list);
 		} catch (...) {
 			Logger::Message(Logger::LOG_ERROR, "IfcExtrudedAreaSolid: cannot subtract opening for:", extrusion->instance);
 			return false;
@@ -401,7 +401,7 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 
 }
 
-CGAL::Polyhedron_3<Kernel_> CgalKernel::create_cube(double d) {
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d) {
 	cgal_face_t bottom_face;
 	bottom_face.outer.push_back(Kernel_::Point_3(-d, -d, -d));
 	bottom_face.outer.push_back(Kernel_::Point_3(+d, -d, -d));
@@ -409,6 +409,62 @@ CGAL::Polyhedron_3<Kernel_> CgalKernel::create_cube(double d) {
 	bottom_face.outer.push_back(Kernel_::Point_3(-d, +d, -d));
 
 	cgal_direction_t dir(0, 0, 2 * d);
+
+	std::list<cgal_face_t> face_list = { bottom_face };
+		
+	for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = bottom_face.outer.begin();
+		current_vertex != bottom_face.outer.end();
+		++current_vertex)
+	{
+		std::vector<Kernel_::Point_3>::const_iterator next_vertex = current_vertex;
+		++next_vertex;
+
+		if (next_vertex == bottom_face.outer.end()) {
+			next_vertex = bottom_face.outer.begin();
+		}
+			
+		cgal_face_t side_face;
+			
+		side_face.outer.push_back(*next_vertex);
+		side_face.outer.push_back(*current_vertex);
+		side_face.outer.push_back(*current_vertex + dir);
+		side_face.outer.push_back(*next_vertex + dir);
+
+		face_list.push_back(side_face);
+	}
+
+	cgal_face_t top_face;
+
+	for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = bottom_face.outer.rbegin();
+		vertex != bottom_face.outer.rend();
+		++vertex)
+	{
+		top_face.outer.push_back(*vertex + dir);
+	}
+		
+	face_list.push_back(top_face);
+
+	return create_polyhedron(face_list);
+}
+
+
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper) {
+	cgal_face_t bottom_face;
+
+	auto& a0 = lower.cartesian(0);
+	auto& a1 = lower.cartesian(1);
+	auto& a2 = lower.cartesian(2);
+
+	auto& b0 = upper.cartesian(0);
+	auto& b1 = upper.cartesian(1);
+	auto& b2 = upper.cartesian(2);
+
+	bottom_face.outer.push_back(Kernel_::Point_3(a0, a1, a2));
+	bottom_face.outer.push_back(Kernel_::Point_3(b0, a1, a2));
+	bottom_face.outer.push_back(Kernel_::Point_3(b0, b1, a2));
+	bottom_face.outer.push_back(Kernel_::Point_3(a0, b1, a2));
+
+	cgal_direction_t dir(0, 0, b2 - a2);
 
 	std::list<cgal_face_t> face_list = { bottom_face };
 		
