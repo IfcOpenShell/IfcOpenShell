@@ -89,6 +89,15 @@ public:
 
 namespace ifcopenshell {
 namespace geometry {
+namespace utils {
+	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
+	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
+	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list);
+	IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
+	IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
+	IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
+}
+
 namespace kernels {
 
 	class IFC_GEOM_API CgalKernel : public AbstractKernel {
@@ -97,7 +106,6 @@ namespace kernels {
 		size_t circle_segments_;
 		CGAL::Nef_polyhedron_3<Kernel_> precision_cube_;
 
-		CGAL::Polyhedron_3<Kernel_> create_cube(double d);
 		bool preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_reference, const cgal_shape_t& shape_const, CGAL::Nef_polyhedron_3<Kernel_>& result, bool dilate);
 		bool thin_solid(const CGAL::Nef_polyhedron_3<Kernel_>& a, CGAL::Nef_polyhedron_3<Kernel_>& result);
 	public:
@@ -108,16 +116,11 @@ namespace kernels {
 			, precision_(1.e-5)
 			, circle_segments_(16)
 		{
-			auto cc = create_cube(precision_);
+			auto cc = utils::create_cube(precision_);
 			precision_cube_ = CGAL::Nef_polyhedron_3<Kernel_>(cc);
 		}
 
 		void remove_duplicate_points_from_loop(cgal_wire_t& polygon);
-
-		CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list);
-		CGAL::Polyhedron_3<Kernel_> create_polyhedron(CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
-		CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
-		CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
 
 		bool convert(const taxonomy::extrusion*, cgal_shape_t&);
 		bool convert(const taxonomy::face*, cgal_face_t&);
