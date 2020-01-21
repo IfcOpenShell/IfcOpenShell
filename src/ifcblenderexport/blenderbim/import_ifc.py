@@ -204,10 +204,16 @@ class IfcImporter():
         if not valid_file:
             self.create_products_legacy() # Sometimes, this can still work, not 100% sure why yet
             return False
+        old_progress = -1
         while True:
+            progress = iterator.progress() // 2
+            if progress > old_progress:
+                print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
+                old_progress = progress
             self.create_product(iterator.get())
             if not iterator.next():
                 break
+        print("\rDone creating geometry" + " " * 30)
 
     def create_product(self, shape):
         if shape is None:
@@ -215,7 +221,7 @@ class IfcImporter():
 
         element = self.file.by_id(shape.guid)
 
-        print('Creating object {}'.format(element))
+        self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
         # TODO: make names more meaningful
         mesh_name = f'mesh-{shape.geometry.id}'
@@ -247,7 +253,7 @@ class IfcImporter():
             self.diff = json.load(file)
 
     def load_file(self):
-        print('loading file {}'.format(self.ifc_import_settings.input_file))
+        self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
         self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
 
     def calculate_unit_scale(self):
@@ -337,7 +343,7 @@ class IfcImporter():
                 and element.GlobalId not in self.diff['changed'].keys():
                 return
 
-        print('Creating object {}'.format(element))
+        self.ifc_import_settings.logger.info('Creating object {}'.format(element))
         self.time = time.time()
         if element.is_a('IfcOpeningElement'):
             return
@@ -350,16 +356,16 @@ class IfcImporter():
             if mesh is None \
                 or representation_id is None:
                 shape = ifcopenshell.geom.create_shape(self.settings, element)
-                print('Shape was generated in {:.2f}'.format(time.time() - self.time))
+                self.ifc_import_settings.logger.info('Shape was generated in {:.2f}'.format(time.time() - self.time))
                 self.time = time.time()
 
                 mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
                 self.mesh_shapes[mesh_name] = shape
             else:
-                print('MESH REUSED')
+                self.ifc_import_settings.logger.info('Mesh reused.')
         except:
-            print('Failed to generate shape for {}'.format(element))
+            self.ifc_import_settings.logger.error('Failed to generate shape for {}'.format(element))
             return
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
@@ -395,7 +401,7 @@ class IfcImporter():
                 and element.HasFillings:
             bpy.data.collections.get('IfcOpeningElements').objects.link(obj)
         else:
-            print('Warning: this object is outside the spatial hierarchy')
+            self.ifc_import_settings.logger.warning('Warning: this object is outside the spatial hierarchy')
             bpy.context.scene.collection.objects.link(obj)
 
     def add_element_attributes(self, element, obj):
@@ -483,8 +489,7 @@ class IfcImporter():
             mesh.from_pydata(vertices, edges, faces)
             return mesh
         except:
-            print('Could not create mesh for {}: {}/{}'.format(
-                element.GlobalId, self.get_name(element)))
+            self.ifc_import_settings.logger.error('Could not create mesh for {}: {}/{}'.format(element.GlobalId, self.get_name(element)))
 
     def a2p(self, o, z, x):
         y = z.cross(x)
