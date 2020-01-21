@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'BlenderBIM'
-copyright = '2020, Dion Moult'
-author = 'Dion Moult'
+project = 'IfcOpenShell'
+copyright = '2020, IfcOpenShell Contributors'
+author = 'IfcOpenShell Contributors'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'

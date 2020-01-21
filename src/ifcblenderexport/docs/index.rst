@@ -9,6 +9,10 @@ IfcOpenShell Documentation
    ifcopenshell-python
    ifcconvert
    blenderbim
+   bimtester
+   ifcdiff
+   ifcclash
+   ifccobie
    ifcmax
    bimserver-plugin
 
