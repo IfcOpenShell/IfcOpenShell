@@ -1,17 +1,16 @@
-.. BlenderBIM documentation master file, created by
-   sphinx-quickstart on Wed Jan  8 09:59:58 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to BlenderBIM's documentation!
-======================================
+IfcOpenShell Documentation
+==========================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-   installation
-   scene
+   ifcopenshell
+   ifcopenshell-python
+   ifcconvert
+   blenderbim
+   ifcmax
+   bimserver-plugin
 
 
 Indices and tables
