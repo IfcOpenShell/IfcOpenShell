@@ -330,6 +330,7 @@ class BIMProperties(PropertyGroup):
     export_should_export_all_materials_as_styled_items: BoolProperty(name="Export All Materials as Styled Items", default=False)
     export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
+    import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)

@@ -160,11 +160,13 @@ class IfcImporter():
             return
         if applications[0].ApplicationIdentifier == 'Revit':
             self.ifc_import_settings.should_treat_styled_item_as_material = True
-            if self.is_site_far_away():
+            if self.is_ifc_class_far_away('IfcSite'):
                 self.ifc_import_settings.should_ignore_site_coordinates = True
+            if self.is_ifc_class_far_away('IfcBuilding'):
+                self.ifc_import_settings.should_ignore_building_coordinates = True
 
-    def is_site_far_away(self):
-        for site in self.file.by_type('IfcSite'):
+    def is_ifc_class_far_away(self, ifc_class):
+        for site in self.file.by_type(ifc_class):
             if not site.ObjectPlacement \
                     or not site.ObjectPlacement.RelativePlacement \
                     or not site.ObjectPlacement.RelativePlacement.Location:
@@ -177,18 +179,34 @@ class IfcImporter():
                 return True
 
     def patch_ifc(self):
+        project = self.file.by_type('IfcProject')[0]
         if self.ifc_import_settings.should_ignore_site_coordinates:
-            project = self.file.by_type('IfcProject')[0]
-            rel_aggregates = project.IsDecomposedBy
-            for rel_aggregate in rel_aggregates:
-                for site in rel_aggregate.RelatedObjects:
-                    if not site.is_a('IfcSite'):
-                        continue
-                    site.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
-                    if site.ObjectPlacement.RelativePlacement.Axis:
-                        site.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
-                    if site.ObjectPlacement.RelativePlacement.RefDirection:
-                        site.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+            sites = self.find_decomposed_ifc_class(project, 'IfcSite')
+            for site in sites:
+                self.patch_placement_to_origin(site)
+        if self.ifc_import_settings.should_ignore_building_coordinates:
+            buildings = self.find_decomposed_ifc_class(project, 'IfcBuilding')
+            for building in buildings:
+                self.patch_placement_to_origin(building)
+
+    def find_decomposed_ifc_class(self, element, ifc_class):
+        results = []
+        rel_aggregates = element.IsDecomposedBy
+        if not rel_aggregates:
+            return results
+        for rel_aggregate in rel_aggregates:
+            for part in rel_aggregate.RelatedObjects:
+                if part.is_a(ifc_class):
+                    results.append(part)
+                results.extend(self.find_decomposed_ifc_class(part, ifc_class))
+        return results
+
+    def patch_placement_to_origin(self, element):
+        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
+        if element.ObjectPlacement.RelativePlacement.Axis:
+            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
+        if element.ObjectPlacement.RelativePlacement.RefDirection:
+            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
     def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
@@ -526,6 +544,7 @@ class IfcImportSettings:
         self.input_file = None
         self.should_auto_set_workarounds = True
         self.should_ignore_site_coordinates = False
+        self.should_ignore_building_coordinates = False
         self.should_import_curves = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
