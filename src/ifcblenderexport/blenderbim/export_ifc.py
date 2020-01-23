@@ -379,9 +379,10 @@ class IfcParser():
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
 
-        if obj.parent \
-                and self.is_a_type(self.get_ifc_class(obj.parent.name)):
-            reference = self.get_type_product_reference(obj.parent.name)
+        type_product = obj.BIMObjectProperties.type_product
+        if type_product \
+                and self.is_a_type(self.get_ifc_class(type_product.name)):
+            reference = self.get_type_product_reference(type_product.name)
             self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
 
         if product['has_boundary_condition']:
@@ -924,6 +925,7 @@ class IfcParser():
                     results.append(type_product)
                     library['rel_declares_type_products'].append(index)
 
+                    # TODO: this should use properties
                     for key in obj.keys():
                         if key[0:3] == 'Doc':
                             self.rel_associates_document_type.setdefault(
@@ -948,6 +950,8 @@ class IfcParser():
             return names
         elif self.is_structural(obj) and obj.type == 'EMPTY':
             names.append('Model/Reference/GRAPH_VIEW/{}'.format(obj.name))
+            return names
+        if not obj.data:
             return names
         name = self.get_ifc_representation_name(obj.data.name)
         for context in self.ifc_export_settings.context_tree:

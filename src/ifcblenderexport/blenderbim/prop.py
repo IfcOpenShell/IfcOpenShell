@@ -420,6 +420,7 @@ class BoundaryCondition(PropertyGroup):
 class BIMObjectProperties(PropertyGroup):
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
+    type_product: PointerProperty(name='Type Product', type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=Pset)
     applicable_attributes: EnumProperty(items=getApplicableAttributes, name="Attribute Names")
     documents: CollectionProperty(name="Documents", type=Document)
