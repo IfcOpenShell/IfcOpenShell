@@ -37,6 +37,9 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'attributes')
 
+        row = layout.row()
+        row.prop(props, 'type_product')
+
         layout.label(text="Property Sets:")
         row = layout.row()
         row.prop(context.scene.BIMProperties, "pset_name")
