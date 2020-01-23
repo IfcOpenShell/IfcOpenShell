@@ -164,6 +164,8 @@ class IfcImporter():
                 self.ifc_import_settings.should_ignore_site_coordinates = True
             if self.is_ifc_class_far_away('IfcBuilding'):
                 self.ifc_import_settings.should_ignore_building_coordinates = True
+        elif applications[0].ApplicationFullName == '12D Model':
+            self.ifc_import_settings.should_reset_absolute_coordinates = True
 
     def is_ifc_class_far_away(self, ifc_class):
         for site in self.file.by_type(ifc_class):
@@ -171,12 +173,14 @@ class IfcImporter():
                     or not site.ObjectPlacement.RelativePlacement \
                     or not site.ObjectPlacement.RelativePlacement.Location:
                 continue
-            coordinates = site.ObjectPlacement.RelativePlacement.Location.Coordinates
-            # Arbitrary threshold based on experience
-            if abs(coordinates[0]) > 1000000 \
-                    or abs(coordinates[1]) > 1000000 \
-                    or abs(coordinates[2]) > 1000000:
+            if self.is_point_far_away(site.ObjectPlacement.RelativePlacement.Location):
                 return True
+
+    def is_point_far_away(self, point):
+        # Arbitrary threshold based on experience
+        return abs(point.Coordinates[0]) > 1000000 \
+            or abs(point.Coordinates[1]) > 1000000 \
+            or abs(point.Coordinates[2]) > 1000000
 
     def patch_ifc(self):
         project = self.file.by_type('IfcProject')[0]
@@ -188,6 +192,24 @@ class IfcImporter():
             buildings = self.find_decomposed_ifc_class(project, 'IfcBuilding')
             for building in buildings:
                 self.patch_placement_to_origin(building)
+        if self.ifc_import_settings.should_reset_absolute_coordinates:
+            self.reset_absolute_coordinates()
+
+    def reset_absolute_coordinates(self):
+        # 12D can have some funky coordinates out of any sensible range. This
+        # method will not work all the time, but will catch most issues.
+        offset_point = None
+        for point in self.file.by_type('IfcCartesianPoint'):
+            if len(point.Coordinates) == 2 or not self.is_point_far_away(point):
+                continue
+            if not offset_point:
+                offset_point = (point.Coordinates[0], point.Coordinates[1], point.Coordinates[2])
+                self.ifc_import_settings.logger.info(f'Resetting absolute coordinates by {point}')
+            point.Coordinates = (
+                point.Coordinates[0] - offset_point[0],
+                point.Coordinates[1] - offset_point[1],
+                point.Coordinates[2] - offset_point[2]
+            )
 
     def find_decomposed_ifc_class(self, element, ifc_class):
         results = []
@@ -545,6 +567,7 @@ class IfcImportSettings:
         self.should_auto_set_workarounds = True
         self.should_ignore_site_coordinates = False
         self.should_ignore_building_coordinates = False
+        self.should_reset_absolute_coordinates = False
         self.should_import_curves = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False

@@ -574,31 +574,39 @@ class BIM_PT_mvd(Panel):
         scene = context.scene
         bim_properties = scene.BIMProperties
 
-        layout.label(text="Custom MVD:")
+        layout.label(text='Custom MVD:')
 
         row = layout.row()
-        row.prop(bim_properties, "export_has_representations")
+        row.prop(bim_properties, 'export_has_representations')
         row = layout.row()
-        row.prop(bim_properties, "import_should_import_curves")
+        row.prop(bim_properties, 'import_should_import_curves')
 
-        layout.label(text="Experimental Modes:")
-
-        row = layout.row()
-        row.prop(bim_properties, "import_should_use_legacy")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_use_cpu_multiprocessing")
-
-        layout.label(text="Revit Workarounds:")
+        layout.label(text='Experimental Modes:')
 
         row = layout.row()
-        row.prop(bim_properties, "import_should_auto_set_workarounds")
+        row.prop(bim_properties, 'import_should_use_legacy')
         row = layout.row()
-        row.prop(bim_properties, "export_should_export_all_materials_as_styled_items")
+        row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
+
+        layout.label(text='Vendor Workarounds:')
+
         row = layout.row()
-        row.prop(bim_properties, "export_should_use_presentation_style_assignment")
+        row.prop(bim_properties, 'import_should_auto_set_workarounds')
+
+        layout.label(text='12D Workarounds:')
+
         row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_site_coordinates")
+        row.prop(bim_properties, 'import_should_reset_absolute_coordinates')
+
+        layout.label(text='Revit Workarounds:')
+
         row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_building_coordinates")
+        row.prop(bim_properties, 'export_should_export_all_materials_as_styled_items')
         row = layout.row()
-        row.prop(bim_properties, "import_should_treat_styled_item_as_material")
+        row.prop(bim_properties, 'export_should_use_presentation_style_assignment')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_ignore_site_coordinates')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_ignore_building_coordinates')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_treat_styled_item_as_material')
