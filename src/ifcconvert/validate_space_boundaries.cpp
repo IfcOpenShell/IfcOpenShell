@@ -755,25 +755,23 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 			const auto& m = g.Placement().components;
 			const auto& n = geom_object->transformation().data().components;
 
-			if (true || !m.isIdentity()) {
-				const cgal_placement_t trsf(
-					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-					m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+			const cgal_placement_t trsf(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
-				const cgal_placement_t trsf2(
-					n(0, 0), n(0, 1), n(0, 2), n(0, 3),
-					n(1, 0), n(1, 1), n(1, 2), n(1, 3),
-					n(2, 0), n(2, 1), n(2, 2), n(2, 3));
+			const cgal_placement_t trsf2(
+				n(0, 0), n(0, 1), n(0, 2), n(0, 3),
+				n(1, 0), n(1, 1), n(1, 2), n(1, 3),
+				n(2, 0), n(2, 1), n(2, 2), n(2, 3));
 
-				// Apply transformation
-				for (auto &vertex : vertices(s)) {
-					vertex->point() = vertex->point().transform(trsf).transform(trsf2);
-					std::ostringstream ss;
-					ss << vertex->point().cartesian(0);
-					auto sss = ss.str();
-					std::wcout << sss.c_str() << std::endl;
-				}
+			// Apply transformation
+			for (auto &vertex : vertices(s)) {
+				vertex->point() = vertex->point().transform(trsf).transform(trsf2);
+				std::ostringstream ss;
+				ss << vertex->point().cartesian(0);
+				auto sss = ss.str();
+				std::wcout << sss.c_str() << std::endl;
 			}
 
 			CGAL::Nef_polyhedron_3<Kernel_> nef;

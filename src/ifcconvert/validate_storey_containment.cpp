@@ -7,6 +7,10 @@
 
 #include <algorithm>
 
+class containment_validator {
+
+};
+
 void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	ifcopenshell::geometry::settings settings;
 	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
@@ -46,10 +50,17 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		return get_elevation(a) < get_elevation(b);
 	});
 
+	std::wcout << "Storeys ";
+	for (auto& s : storeys_sorted) {
+		auto n = ((IfcUtil::IfcBaseEntity*)s)->get_value<std::string>("Name");
+		std::wcout << n.c_str() << " ";
+	}
+	std::wcout << std::endl;
+
 	std::vector<double> elevations;
 	std::transform(storeys_sorted.begin(), storeys_sorted.end(), std::back_inserter(elevations), get_elevation);
 
-	double LARGE = 100;
+	double LARGE = 1e4;
 
 	std::vector<std::pair<double, double>> elevation_slices;
 	for (size_t i = 0; i < elevations.size(); ++i) {
@@ -59,34 +70,27 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		});
 	}
 
+
 	std::vector<CGAL::Nef_polyhedron_3<Kernel_>> nefs;
 	std::transform(elevation_slices.begin(), elevation_slices.end(), std::back_inserter(nefs), [&LARGE](const std::pair<double, double>& p) {
+		std::wcout << p.first << " - " << p.second << std::endl;
 		Kernel_::Point_3 p1(-LARGE, -LARGE, p.first);
 		Kernel_::Point_3 p2(+LARGE, +LARGE, p.second);
 		auto poly = ifcopenshell::geometry::utils::create_cube(p1, p2);
-		
-		auto bb = CGAL::Polygon_mesh_processing::bbox(poly);
-		std::wcout << "storey ";
-		for (int i = 0; i < 3; ++i) {
-			std::wcout << bb.min(i) << " ";
-		}
-		std::wcout << "- ";
-		for (int i = 0; i < 3; ++i) {
-			std::wcout << bb.max(i) << " ";
-		}
-		std::wcout << std::endl;
-
-		std::wcout << "volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-
-		auto nef = ifcopenshell::geometry::utils::create_nef_polyhedron(poly);
-
-		{
-			auto poly = ifcopenshell::geometry::utils::create_polyhedron(nef);
-			std::wcout << "volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-		}
-
-		return nef;
+		return ifcopenshell::geometry::utils::create_nef_polyhedron(poly);
 	});
+
+	for (auto& n : nefs) {
+		auto poly = ifcopenshell::geometry::utils::create_polyhedron(n);
+		auto bounds = CGAL::Polygon_mesh_processing::bbox_3(poly);
+		for (int i = 0; i < 3; ++i) {
+			std::wcout << bounds.min(i) << std::endl;
+		}
+		for (int i = 0; i < 3; ++i) {
+			std::wcout << bounds.max(i) << std::endl;
+		}
+		std::wcout << "---" << std::endl;
+	}
 	
 	if (!context_iterator.initialize()) {
 		return;
@@ -118,38 +122,38 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			continue;
 		}
 
+		std::vector<double> intersection_volumes(nefs.size());
+
 		for (auto& g : geom_object->geometry()) {
 			auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
 			const auto& m = g.Placement().components;
 			const auto& n = geom_object->transformation().data().components;
 
-			if (!m.isIdentity()) {
-				const cgal_placement_t trsf(
-					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-					m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+			const cgal_placement_t trsf(
+				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+				m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
-				const cgal_placement_t trsf2(
-					n(0, 0), n(0, 1), n(0, 2), n(0, 3),
-					n(1, 0), n(1, 1), n(1, 2), n(1, 3),
-					n(2, 0), n(2, 1), n(2, 2), n(2, 3));
+			const cgal_placement_t trsf2(
+				n(0, 0), n(0, 1), n(0, 2), n(0, 3),
+				n(1, 0), n(1, 1), n(1, 2), n(1, 3),
+				n(2, 0), n(2, 1), n(2, 2), n(2, 3));
 
-				// Apply transformation
-				for (auto &vertex : vertices(s)) {
-					vertex->point() = vertex->point().transform(trsf).transform(trsf2);
+			// Apply transformation
+			for (auto &vertex : vertices(s)) {
+				vertex->point() = vertex->point().transform(trsf).transform(trsf2);
+			}
+
+			{
+				auto bounds = CGAL::Polygon_mesh_processing::bbox_3(s);
+				for (int i = 0; i < 3; ++i) {
+					std::wcout << bounds.min(i) << std::endl;
 				}
+				for (int i = 0; i < 3; ++i) {
+					std::wcout << bounds.max(i) << std::endl;
+				}
+				std::wcout << "---" << std::endl;
 			}
-
-			auto bb = CGAL::Polygon_mesh_processing::bbox(s);
-			std::wcout << "elem ";
-			for (int i = 0; i < 3; ++i) {
-				std::wcout << bb.min(i) << " ";
-			}
-			std::wcout << "- ";
-			for (int i = 0; i < 3; ++i) {
-				std::wcout << bb.max(i) << " ";
-			}
-			std::wcout << std::endl;
 
 			CGAL::Nef_polyhedron_3<Kernel_> part_nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
 
@@ -158,53 +162,26 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 				continue;
 			}
 
-			std::wcout << "volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(s)) << std::endl;
-
-
-			{
-				auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef);
-				std::wcout << " part faces " << faces(poly).size() << " volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-			}
-
-			std::vector<double> intersection_volumes;
-
-			std::transform(nefs.begin(), nefs.end(), std::back_inserter(intersection_volumes), [&part_nef](const CGAL::Nef_polyhedron_3<Kernel_>& storey_nef) {
-				{
-					auto poly = ifcopenshell::geometry::utils::create_polyhedron(storey_nef);
-					std::wcout << " storey faces " << faces(poly).size() << " volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-				}
-				{
-					auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef);
-					std::wcout << " part faces " << faces(poly).size() << " volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-				}
-				{
-					auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef + storey_nef);
-					std::wcout << " faces " << faces(poly).size() << " volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-				}
-				{
-					auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef - storey_nef);
-					std::wcout << " faces " << faces(poly).size() << " volume " << CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly)) << std::endl;
-				}
-				{
-					auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef * storey_nef);
-					std::wcout << " faces " << faces(poly).size();
-					return CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly));
-				}
+			std::vector<double>::iterator accumulator;
+			std::for_each(nefs.begin(), nefs.end(), [&accumulator, &part_nef](const CGAL::Nef_polyhedron_3<Kernel_>& storey_nef) {
+				auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef * storey_nef);
+				CGAL::Polygon_mesh_processing::triangulate_faces(poly);
+				accumulator++ += CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly));
 			});
+		}
 
-			std::wcout << "volumes: ";
-			for (auto& v : intersection_volumes) {
-				std::wcout << v << " ";
-			}
-			std::wcout << std::endl;
+		std::wcout << "volumes: ";
+		for (auto& v : intersection_volumes) {
+			std::wcout << v << " ";
+		}
+		std::wcout << std::endl;
 
-			auto idx = std::max_element(intersection_volumes.begin(), intersection_volumes.end()) - intersection_volumes.begin();
-			if (storeys_sorted[idx] != elem_to_storey[geom_object->product()]) {
-				auto s = geom_object->product()->data().toString();
-				auto s1 = storeys_sorted[idx]->data().toString();
-				auto s2 = elem_to_storey[geom_object->product()]->data().toString();
-				std::wcout << "Mismatch on " << s.c_str() << ": " << s1.c_str() << " vs " << s2.c_str() << std::endl;
-			}
+		auto idx = std::max_element(intersection_volumes.begin(), intersection_volumes.end()) - intersection_volumes.begin();
+		if (storeys_sorted[idx] != elem_to_storey[geom_object->product()]) {
+			auto s = geom_object->product()->data().toString();
+			auto s1 = storeys_sorted[idx]->data().toString();
+			auto s2 = elem_to_storey[geom_object->product()]->data().toString();
+			std::wcout << "Mismatch on " << s.c_str() << ": " << s1.c_str() << " vs " << s2.c_str() << std::endl;
 		}
 
 		if (!no_progress) {
