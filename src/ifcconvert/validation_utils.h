@@ -481,6 +481,11 @@ struct intersection_validator {
 				}
 
 				CGAL::Nef_polyhedron_3<Kernel_> nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
+				if (nef.is_empty()) {
+					std::wcout << "Failed to create nef" << std::endl;
+					continue;
+				}
+
 				nef = CGAL::minkowski_sum_3(nef, cube);
 				std::wcout << "product: " << geom_object->product() << std::endl;
 				nefs.push_back({ geom_object->product(), nef });
