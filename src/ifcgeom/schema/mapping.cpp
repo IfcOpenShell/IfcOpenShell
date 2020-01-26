@@ -196,6 +196,8 @@ namespace {
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
+	const bool use_body = !this->settings_.get(ifcopenshell::geometry::settings::INCLUDE_CURVES);
+
 	auto items = map_to_collection(this, inst->Items());
 	if (items == nullptr) {
 		return nullptr;
@@ -204,9 +206,9 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	if (flat == nullptr) {
 		return nullptr;
 	}
-	auto filtered = filter(flat, [](taxonomy::item* i) {
+	auto filtered = filter(flat, [&use_body](taxonomy::item* i) {
 		// @todo just filter loops for now.
-		return i->kind() != taxonomy::LOOP;
+		return (i->kind() != taxonomy::LOOP) == use_body;
 	});
 	delete items;
 	delete flat;
@@ -305,12 +307,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcDirection* inst) {
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
+	const bool use_body = !this->settings_.get(ifcopenshell::geometry::settings::INCLUDE_CURVES);
+
 	auto openings = find_openings(inst);
 	// @todo const cast
 	auto reps = inst->data().file->traverse((IfcSchema::IfcProduct*) inst, 2)->as<IfcSchema::IfcRepresentation>();
 	IfcSchema::IfcRepresentation* body = nullptr;
 	for (auto& rep : *reps) {
-		if (rep->RepresentationIdentifier() == "Body") {
+		if ((rep->RepresentationIdentifier() == "Body") == use_body) {
 			body = rep;
 		}
 	}
@@ -321,7 +325,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	auto c = new taxonomy::collection;
 	c->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 
-	if (openings->size() && !settings_.get(settings::DISABLE_OPENING_SUBTRACTIONS)) {
+	if (openings->size() && !settings_.get(settings::DISABLE_OPENING_SUBTRACTIONS) && use_body) {
 		auto ci = c->matrix.components.inverse();
 
 		IfcEntityList::ptr operands(new IfcEntityList);
@@ -1113,13 +1117,15 @@ namespace {
 	taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps, bool external = true) {
 		auto loop = new taxonomy::loop();
 		loop->external = external;
-		auto previous = ps.back();
+		boost::optional<taxonomy::point3> previous;
 		for (auto& p : ps) {
-			auto e = new taxonomy::edge;
-			e->start = previous;
-			e->end = p;
-			previous = p;
-			loop->children.push_back(e);
+			if (previous) {
+				auto e = new taxonomy::edge;
+				e->start = *previous;
+				e->end = p;
+				loop->children.push_back(e);
+			}
+			previous = p;			
 		}
 		return loop;
 	}
@@ -1174,7 +1180,7 @@ namespace {
 		}
 
 		std::vector<taxonomy::point3> ps;
-		ps.reserve(points.size());
+		ps.reserve(points.size() + 1);
 		std::transform(points.begin(), points.end(), std::back_inserter(ps), [&has_position, &m4](const profile_point& p) {
 			if (has_position) {
 				Eigen::Vector4d v(p.xy[0], p.xy[1], 0., 1.);
@@ -1184,6 +1190,7 @@ namespace {
 				return taxonomy::point3(p.xy[0], p.xy[1], 0.);
 			}			
 		});
+		ps.push_back(ps.front());
 
 		return polygon_from_points(ps);
 	}
