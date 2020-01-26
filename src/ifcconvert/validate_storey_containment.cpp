@@ -7,10 +7,6 @@
 
 #include <algorithm>
 
-class containment_validator {
-
-};
-
 void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	ifcopenshell::geometry::settings settings;
 	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);

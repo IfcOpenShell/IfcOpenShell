@@ -145,6 +145,7 @@ void write_log(bool);
 void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
 void fix_spaceboundaries(IfcParse::IfcFile&, bool, bool, bool);
 void fix_storeycontainment(IfcParse::IfcFile&, bool, bool, bool);
+void fix_wallconnectivity(IfcParse::IfcFile&, bool, bool, bool);
 
 std::string format_duration(time_t start, time_t end);
 
@@ -226,7 +227,8 @@ int main(int argc, char** argv) {
 			"based on an interpretation of the geometry when exporting IFC")
 		("fix-space-boundaries", "Calculate or fix space boundary geometries "
 			"when exporting IFC")
-		("fix-storey-containment", "Calculate or containment in building storeys");
+		("fix-storey-containment", "Calculate or fix containment in building storeys")
+		("fix-wall-connectivity", "Calculate or fix wall connectivity relationships");
 
 	int num_threads;
     
@@ -589,6 +591,9 @@ int main(int argc, char** argv) {
 					}
 					if (vmap.count("fix-storey-containment")) {
 						fix_storeycontainment(*ifc_file, no_progress, quiet, stderr_progress);
+					}
+					if (vmap.count("fix-wall-connectivity")) {
+						fix_wallconnectivity(*ifc_file, no_progress, quiet, stderr_progress);
 					}
 					fs << *ifc_file;
 					exit_code = EXIT_SUCCESS;
