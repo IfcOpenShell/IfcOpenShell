@@ -379,6 +379,11 @@ struct remove_thickness {
 
 		// @todo choose connected / connected_opposing based on largest combined area of facets?
 
+		if (longitudonal.size() == 0) {
+			std::wcout << "no longitudonal faces detected :(" << std::endl;
+			return;
+		}
+
 		auto connected = connected_faces(*longitudonal.begin(), thin_sides_degenerate);
 		decltype(connected) connected_opposing;
 
