@@ -29,22 +29,25 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 		rel_by_elem.insert({{ x,y }, rel});
 	});
 
-	v([&c, &rel_by_elem](const intersection_validator::Box& a, const intersection_validator::Box& b) {
+	std::set<const IfcUtil::IfcBaseClass*> rels_encounted;
+
+	v([&c, &rel_by_elem, &rels_encounted](const intersection_validator::Box& a, const intersection_validator::Box& b) {
 		auto A = a.handle()->first;
 		auto B = b.handle()->first;
 
-		auto rit = rel_by_elem.find({ A, B });
-		if (rit == rel_by_elem.end()) {
-			return;
-		}
+		const IfcUtil::IfcBaseClass* rel = nullptr;
+		std::string a_type, b_type;
 
-		auto rel = rit->second;
-		const bool a_is_relating = A == ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
-		auto a_type = ((IfcUtil::IfcBaseEntity*)rel)->get_value<std::string>("RelatingConnectionType");
-		auto b_type = ((IfcUtil::IfcBaseEntity*)rel)->get_value<std::string>("RelatedConnectionType");
-		if (!a_is_relating) {
-			std::swap(a_type, b_type);
-		}
+		auto rit = rel_by_elem.find({ A, B });
+		if (rit != rel_by_elem.end()) {
+			rel = rit->second;
+			const bool a_is_relating = A == ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
+			a_type = ((IfcUtil::IfcBaseEntity*)rel)->get_value<std::string>("RelatingConnectionType");
+			b_type = ((IfcUtil::IfcBaseEntity*)rel)->get_value<std::string>("RelatedConnectionType");
+			if (!a_is_relating) {
+				std::swap(a_type, b_type);
+			}
+		}		
 
 #if 0
 		auto a_poly = ifcopenshell::geometry::utils::create_polyhedron(a.handle()->second);
@@ -104,8 +107,6 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 					auto len = std::sqrt(CGAL::to_double(D.squared_length()));
 					D /= len;
 
-					std::wcout << "xx " << len << std::endl;
-
 					std::vector<Kernel_::FT> parameters;
 
 					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](auto& v) {
@@ -113,17 +114,48 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 					});
 
 					auto pit = std::minmax_element(parameters.begin(), parameters.end());
-					return std::make_pair(CGAL::to_double(*pit.first), CGAL::to_double(*pit.first));
+					return std::make_pair(len, std::make_pair(CGAL::to_double(*pit.first), CGAL::to_double(*pit.first)));
 				}				
 			}
-			return std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
+			const auto& nan = std::numeric_limits<double>::quiet_NaN();
+			return std::make_pair(nan, std::make_pair(nan, nan));
 		};
 
-		auto u0u1 = get_axis_parameter_min_max(A);
-		std::wcout << a_type.c_str() << " " << u0u1.first << " " << u0u1.second << std::endl;
+		auto qualify_connection_type = [](double l, const std::pair<double, double>& p) {
+			if (p.first < 1.e-5) {
+				return "ATSTART";
+			} else if (p.second > l - 1.e-5) {
+				return "ATEND";
+			} else {
+				return "ATPATH";
+			}
+		};
 
-		u0u1 = get_axis_parameter_min_max(B);
-		std::wcout << b_type.c_str() << " " << u0u1.first << " " << u0u1.second << std::endl;
+		auto alu0u1 = get_axis_parameter_min_max(A);
+		auto blu0u1 = get_axis_parameter_min_max(B);
+
+		auto atype_computed = qualify_connection_type(alu0u1.first, alu0u1.second);
+		auto btype_computed = qualify_connection_type(blu0u1.first, blu0u1.second);
+
+		rels_encounted.insert(rel);
+
+		if (a_type != atype_computed || b_type != btype_computed) {
+			if (rel) {
+				auto rel_str = rel->data().toString();
+				std::wcout << "ERROR: " << rel_str.c_str() << " " << atype_computed << " " << btype_computed << std::endl;
+			} else {
+				auto A_str = A->data().toString();
+				auto B_str = B->data().toString();
+				std::wcout << "ERROR: no rel " << A_str.c_str() << " x " << B_str.c_str() << " " << atype_computed << " " << btype_computed << std::endl;
+			}
+		}
+	});
+
+	std::for_each(rels->begin(), rels->end(), [&rels_encounted](const IfcUtil::IfcBaseClass* rel) {
+		if (rels_encounted.find(rel) == rels_encounted.end()) {
+			auto rel_str = rel->data().toString();
+			std::wcout << "ERROR: " << rel_str.c_str() << " not found" << std::endl;
+		}
 	});
 }
 
