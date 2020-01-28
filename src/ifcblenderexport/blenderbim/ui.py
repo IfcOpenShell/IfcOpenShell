@@ -484,6 +484,13 @@ class BIM_PT_qa(Panel):
         row.prop(bim_properties, "features_dir")
         row.operator("bim.select_features_dir", icon="FILE_FOLDER", text="")
 
+        if bim_properties.features_dir:
+            row = layout.row(align=True)
+            row.prop(bim_properties, "features_file")
+
+            row = layout.row(align=True)
+            row.prop(bim_properties, "scenario")
+
         layout.label(text="Quality Auditing:")
 
         row = layout.row()

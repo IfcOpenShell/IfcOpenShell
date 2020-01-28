@@ -12,6 +12,7 @@ from . import schema
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector
+from pathlib import Path
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -204,46 +205,76 @@ class ResetObjectColours(bpy.types.Operator):
             object.color = (1, 1, 1, 1)
         return {'FINISHED'}
 
+
+class QAHelper():
+    @classmethod
+    def append_to_scenario(cls, lines):
+        filename = os.path.join(
+            bpy.context.scene.BIMProperties.features_dir,
+            bpy.context.scene.BIMProperties.features_file + '.feature')
+        if os.path.exists(filename+'~'):
+            os.remove(filename+'~')
+        os.rename(filename, filename+'~')
+        with open(filename, 'w') as destination:
+            with open(filename+'~', 'r') as source:
+                is_in_scenario = False
+                for source_line in source:
+                    if 'Scenario: 'in source_line \
+                            and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len('Scenario: '):]:
+                        is_in_scenario = True
+                    if is_in_scenario and source_line.strip()[0:4] == 'Then':
+                        for line in lines:
+                            destination.write((' '*8) + line + '\n')
+                        is_in_scenario = False
+                    destination.write(source_line)
+        os.remove(filename+'~')
+
+
 class ApproveClass(bpy.types.Operator):
     bl_idname = 'bim.approve_class'
     bl_label = 'Approve Class'
 
     def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
-            for object in bpy.context.selected_objects:
-                index = object.BIMObjectProperties.attributes.find('GlobalId')
-                if index == -1:
-                    continue
-                file.write('Then the element {} is an {}\n'.format(
+        lines = []
+        for object in bpy.context.selected_objects:
+            index = object.BIMObjectProperties.attributes.find('GlobalId')
+            if index != -1:
+                lines.append('Then the element {} is an {}'.format(
                     object.BIMObjectProperties.attributes[index].string_value,
                     object.name.split('/')[0]))
+        QAHelper.append_to_scenario(lines)
         return {'FINISHED'}
+
 
 class RejectClass(bpy.types.Operator):
     bl_idname = 'bim.reject_class'
     bl_label = 'Reject Class'
 
     def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
-            for object in bpy.context.selected_objects:
-                file.write('Then the element {} is an {}\n'.format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
-                    bpy.context.scene.BIMProperties.audit_ifc_class))
+        lines = []
+        for object in bpy.context.selected_objects:
+            lines.append('Then the element {} is an {}'.format(
+                object.BIMObjectProperties.attributes[
+                    object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                bpy.context.scene.BIMProperties.audit_ifc_class))
+        QAHelper.append_to_scenario(lines)
         return {'FINISHED'}
+
 
 class RejectElement(bpy.types.Operator):
     bl_idname = 'bim.reject_element'
     bl_label = 'Reject Element'
 
     def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
-            for object in bpy.context.selected_objects:
-                file.write('Then the element {} should not exist because {}\n'.format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
-                    bpy.context.scene.BIMProperties.qa_reject_element_reason))
+        lines = []
+        for object in bpy.context.selected_objects:
+            lines.append('Then the element {} should not exist because {}'.format(
+                object.BIMObjectProperties.attributes[
+                    object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                bpy.context.scene.BIMProperties.qa_reject_element_reason))
+        QAHelper.append_to_scenario(lines)
         return {'FINISHED'}
+
 
 class SelectAudited(bpy.types.Operator):
     bl_idname = 'bim.select_audited'
@@ -251,15 +282,23 @@ class SelectAudited(bpy.types.Operator):
 
     def execute(self, context):
         audited_global_ids = []
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt') as file:
-            for line in file:
-                audited_global_ids.append(line.split(' ')[3])
+        for filename in Path(bpy.context.scene.BIMProperties.features_dir).glob('*.feature'):
+            with open(filename, 'r') as feature_file:
+                lines = feature_file.readlines()
+                for line in lines:
+                    words = line.strip().split()
+                    for word in words:
+                        if self.is_a_global_id(word):
+                            audited_global_ids.append(word)
         for object in bpy.context.visible_objects:
             index = object.BIMObjectProperties.attributes.find('GlobalId')
             if index != -1 \
                 and object.BIMObjectProperties.attributes[index].string_value in audited_global_ids:
                 object.select_set(True)
         return {'FINISHED'}
+
+    def is_a_global_id(self, word):
+        return word[0] in ['0', '1', '2', '3'] and len(word) == 22
 
 class QuickProjectSetup(bpy.types.Operator):
     bl_idname = 'bim.quick_project_setup'

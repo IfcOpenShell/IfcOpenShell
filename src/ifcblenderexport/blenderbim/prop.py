@@ -25,6 +25,8 @@ profiledef_enum = []
 classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
+featuresfiles_enum = []
+scenarios_enum = []
 psetnames_enum = []
 psetfiles_enum = []
 classification_enum = []
@@ -157,6 +159,44 @@ def getAvailableMaterialPsets(self, context):
         files = os.listdir(os.path.join(context.scene.BIMProperties.data_dir, 'material'))
         availablematerialpsets_enum.extend([(f, f, '') for f in files])
     return availablematerialpsets_enum
+
+
+def getFeaturesFiles(self, context):
+    global featuresfiles_enum
+    if len(featuresfiles_enum) < 1:
+        featuresfiles_enum.clear()
+        for filename in Path(context.scene.BIMProperties.features_dir).glob('*.feature'):
+            f = str(filename.stem)
+            featuresfiles_enum.append((f, f, ''))
+    return featuresfiles_enum
+
+
+def refreshFeaturesFiles(self, context):
+    global featuresfiles_enum
+    featuresfiles_enum.clear()
+    getFeaturesFiles(self, context)
+
+
+def getScenarios(self, context):
+    global scenarios_enum
+    if len(scenarios_enum) < 1:
+        scenarios_enum.clear()
+        filename = os.path.join(
+            context.scene.BIMProperties.features_dir,
+            context.scene.BIMProperties.features_file + '.feature')
+        with open(filename, 'r') as feature_file:
+            lines = feature_file.readlines()
+            for line in lines:
+                if 'Scenario:' in line:
+                    s = line.strip()[len('Scenario: '):]
+                    scenarios_enum.append((s, s, ''))
+    return scenarios_enum
+
+
+def refreshScenarios(self, context):
+    global scenarios_enum
+    scenarios_enum.clear()
+    getScenarios(self, context)
 
 
 def getPsetNames(self, context):
@@ -345,7 +385,9 @@ class BIMProperties(PropertyGroup):
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
     global_id: StringProperty(name="GlobalId")
-    features_dir: StringProperty(default='', name="Features Directory")
+    features_dir: StringProperty(default='', name="Features Directory", update=refreshFeaturesFiles)
+    features_file: EnumProperty(items=getFeaturesFiles, name="Features File", update=refreshScenarios)
+    scenario: EnumProperty(items=getScenarios, name="Scenario")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
     diff_old_file: StringProperty(default='', name="Diff Old IFC File")
     diff_new_file: StringProperty(default='', name="Diff New IFC File")
