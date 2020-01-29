@@ -40,6 +40,7 @@ if bpy is not None:
         operator.SelectDiffOldFile,
         operator.SelectDataDir,
         operator.SelectSchemaDir,
+        operator.SelectIfcFile,
         operator.ExportIFC,
         operator.ImportIFC,
         operator.ColourByClass,

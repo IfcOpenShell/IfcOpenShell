@@ -392,15 +392,17 @@ class BIM_PT_bim(Panel):
         row = layout.row()
         row.operator('bim.quick_project_setup')
 
-        col = layout.column()
-        row = col.row(align=True)
+        row = layout.row(align=True)
         row.prop(bim_properties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
 
-        col = layout.column()
-        row = col.row(align=True)
+        row = layout.row(align=True)
         row.prop(bim_properties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+
+        row = layout.row(align=True)
+        row.prop(bim_properties, "ifc_file")
+        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         layout.label(text="Software Identity:")
 
