@@ -946,14 +946,14 @@ void write_log(bool header) {
 }
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <chrono>
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
-    time_t start, end;
+	std::clock_t c_start = std::clock();
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
     if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
 
-    time(&start);
 #ifdef USE_MMAP
 	ifc_file = new IfcParse::IfcFile(filename, mmap);
 #else
@@ -970,10 +970,15 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
         Logger::Error("Unable to parse input file '" + filename + "'");
         return false;
     }
-    time(&end);
+
+	std::clock_t c_end = std::clock();
 
     if (no_progress) { Logger::SetOutput(&cout_, &log_stream); }
-    else {  Logger::Status("Parsing input file took " + format_duration(start, end)); }
+	else { 
+		std::stringstream ss;
+		ss << std::setprecision(14) << (c_end - c_start) / (double)CLOCKS_PER_SEC;
+		Logger::Status("total_ifc_parse_time " + ss.str()); 
+	}
 
     return true;
 

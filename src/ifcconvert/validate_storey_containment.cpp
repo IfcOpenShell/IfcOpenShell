@@ -46,12 +46,14 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		return get_elevation(a) < get_elevation(b);
 	});
 
+	/*
 	std::wcout << "Storeys ";
 	for (auto& s : storeys_sorted) {
 		auto n = ((IfcUtil::IfcBaseEntity*)s)->get_value<std::string>("Name");
 		std::wcout << n.c_str() << " ";
 	}
 	std::wcout << std::endl;
+	*/
 
 	std::vector<double> elevations;
 	std::transform(storeys_sorted.begin(), storeys_sorted.end(), std::back_inserter(elevations), get_elevation);
@@ -69,13 +71,14 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 
 	std::vector<CGAL::Nef_polyhedron_3<Kernel_>> nefs;
 	std::transform(elevation_slices.begin(), elevation_slices.end(), std::back_inserter(nefs), [&LARGE](const std::pair<double, double>& p) {
-		std::wcout << p.first << " - " << p.second << std::endl;
+		// std::wcout << p.first << " - " << p.second << std::endl;
 		Kernel_::Point_3 p1(-LARGE, -LARGE, p.first);
 		Kernel_::Point_3 p2(+LARGE, +LARGE, p.second);
 		auto poly = ifcopenshell::geometry::utils::create_cube(p1, p2);
 		return ifcopenshell::geometry::utils::create_nef_polyhedron(poly);
 	});
 
+	/*
 	for (auto& n : nefs) {
 		auto poly = ifcopenshell::geometry::utils::create_polyhedron(n);
 		auto bounds = CGAL::Polygon_mesh_processing::bbox_3(poly);
@@ -87,6 +90,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		}
 		std::wcout << "---" << std::endl;
 	}
+	*/
 	
 	if (!context_iterator.initialize()) {
 		return;
@@ -108,13 +112,15 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			break;
 		}
 
+		/*
 		std::stringstream ss;
 		ss << geom_object->product()->data().toString();
 		auto sss = ss.str();
 		std::wcout << sss.c_str() << std::endl;
+		*/
 
 		if (elem_to_storey.find(geom_object->product()) == elem_to_storey.end()) {
-			std::wcout << "not associated to storey" << std::endl;
+			// std::wcout << "not associated to storey" << std::endl;
 			continue;
 		}
 
@@ -140,6 +146,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 				vertex->point() = vertex->point().transform(trsf).transform(trsf2);
 			}
 
+			/*
 			{
 				auto bounds = CGAL::Polygon_mesh_processing::bbox_3(s);
 				for (int i = 0; i < 3; ++i) {
@@ -150,11 +157,12 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 				}
 				std::wcout << "---" << std::endl;
 			}
+			*/
 
 			CGAL::Nef_polyhedron_3<Kernel_> part_nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
 
 			if (!part_nef.is_simple()) {
-				std::wcout << "not simple" << std::endl;
+				// std::wcout << "not simple" << std::endl;
 				continue;
 			}
 
@@ -166,18 +174,20 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			});
 		}
 
+		/*
 		std::wcout << "volumes: ";
 		for (auto& v : intersection_volumes) {
 			std::wcout << v << " ";
 		}
 		std::wcout << std::endl;
+		*/
 
 		auto idx = std::max_element(intersection_volumes.begin(), intersection_volumes.end()) - intersection_volumes.begin();
 		if (storeys_sorted[idx] != elem_to_storey[geom_object->product()]) {
-			auto s = geom_object->product()->data().toString();
-			auto s1 = storeys_sorted[idx]->data().toString();
-			auto s2 = elem_to_storey[geom_object->product()]->data().toString();
-			std::wcout << "Mismatch on " << s.c_str() << ": " << s1.c_str() << " vs " << s2.c_str() << std::endl;
+			auto s = geom_object->product()->get_value<std::string>("GlobalId");
+			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[idx])->get_value<std::string>("GlobalId");
+			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
+			Logger::Error("Element " + s + " contained in " + s2 + " located on " + s1);
 		}
 
 		if (!no_progress) {

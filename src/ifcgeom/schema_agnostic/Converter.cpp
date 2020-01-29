@@ -44,11 +44,16 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	}
 	*/
 
+
+	std::clock_t map_start = std::clock();
+
 	// @todo how to combine product_node and rep_item?
 	auto product_node = (taxonomy::geom_item*) mapping_->map(product);
 	if (product_node == nullptr) {
 		return nullptr;
 	}
+
+	std::clock_t geom_start = std::clock();
 	
 	auto place = taxonomy::matrix4();
 	std::swap(place, product_node->matrix);
@@ -56,6 +61,11 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	kernel_->convert(product_node, shapes);
 
 	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
+
+	std::clock_t geom_end = std::clock();
+
+	total_map_time += (geom_start - map_start) / (double) CLOCKS_PER_SEC;
+	total_geom_time += (geom_end - geom_start) / (double) CLOCKS_PER_SEC;
 
 	return new NativeElement(
 		product->data().id(),

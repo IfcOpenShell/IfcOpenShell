@@ -1,11 +1,14 @@
 #include "validation_utils.h"
 
+#include <CGAL/Polygon_mesh_processing/bbox.h>
+#include <CGAL/Polygon_mesh_processing/measure.h>
+
 #include <algorithm>
 
 using namespace ifcopenshell::geometry;
 
 void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
-	intersection_validator v(f, { "IfcWall" }, no_progress, quiet, stderr_progress);
+	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress);
 
 
 	ifcopenshell::geometry::settings settings;
@@ -31,7 +34,10 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 	std::set<const IfcUtil::IfcBaseClass*> rels_encounted;
 
-	v([&c, &rel_by_elem, &rels_encounted](const intersection_validator::Box& a, const intersection_validator::Box& b) {
+	double total_nef_intersection_time = 0.;
+	double conversion_to_poly = 0.;
+
+	v([&c, &rel_by_elem, &rels_encounted, &total_nef_intersection_time, &conversion_to_poly](const intersection_validator::Box& a, const intersection_validator::Box& b) {
 		auto A = a.handle()->first;
 		auto B = b.handle()->first;
 
@@ -72,13 +78,33 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		std::ostringstream ss;
 		ss << A->data().toString() << "x" << B->data().toString() << std::endl;
+		std::clock_t intersection_begin = std::clock();
 		auto x = a.handle()->second * b.handle()->second;
+		std::clock_t intersection_end = std::clock();
+
+		total_nef_intersection_time += (intersection_end - intersection_begin) / (double) CLOCKS_PER_SEC;
+
 		if (x.is_empty()) {
 			return;
 		}
 
+		std::clock_t poly_begin = std::clock();
 		cgal_shape_t x_poly;
 		x.convert_to_polyhedron(x_poly);
+		std::clock_t poly_end = std::clock();
+		conversion_to_poly += (poly_end - poly_begin) / (double)CLOCKS_PER_SEC;
+
+		auto dza = a.bbox().zmax() - a.bbox().zmin();
+		auto dzb = b.bbox().zmax() - b.bbox().zmin();
+		auto bb = CGAL::Polygon_mesh_processing::bbox_3(x_poly);
+		if (bb.zmax() - bb.zmin() < std::min(dza, dzb) / 3.) {
+			return;
+		}
+
+		CGAL::Polygon_mesh_processing::triangulate_faces(x_poly);
+		if (CGAL::Polygon_mesh_processing::area(x_poly) > 2.0) {
+			return;
+		}
 
 		auto get_axis_parameter_min_max = [&c, &x_poly](IfcUtil::IfcBaseEntity* inst) {
 			auto item = c.mapping()->map(inst);
@@ -86,13 +112,13 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 			auto loop = ((taxonomy::collection*) shaperep)->children[0];
 
 			if (loop->kind() != taxonomy::LOOP) {
-				std::wcout << "no suitable axis" << std::endl;
+				// std::wcout << "no suitable axis" << std::endl;
 			} else {
 				auto first_vertex = ((taxonomy::edge*) ((taxonomy::loop*) loop)->children.front())->start;
 				auto last_vertex = ((taxonomy::edge*) ((taxonomy::loop*) loop)->children.back())->end;
 
 				if (first_vertex.which() != 0 || last_vertex.which() != 0) {
-					std::wcout << "trims not supported" << std::endl;
+					// std::wcout << "trims not supported" << std::endl;
 				} else {
 					auto p0 = boost::get<taxonomy::point3>(first_vertex);
 					auto p1 = boost::get<taxonomy::point3>(last_vertex);
@@ -114,7 +140,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 					});
 
 					auto pit = std::minmax_element(parameters.begin(), parameters.end());
-					return std::make_pair(len, std::make_pair(CGAL::to_double(*pit.first), CGAL::to_double(*pit.first)));
+					return std::make_pair(len, std::make_pair(CGAL::to_double(*pit.first), CGAL::to_double(*pit.second)));
 				}				
 			}
 			const auto& nan = std::numeric_limits<double>::quiet_NaN();
@@ -122,9 +148,9 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 		};
 
 		auto qualify_connection_type = [](double l, const std::pair<double, double>& p) {
-			if (p.first < 1.e-5) {
+			if (p.first < 1.e-3) {
 				return "ATSTART";
-			} else if (p.second > l - 1.e-5) {
+			} else if (p.second > l - 1.e-3) {
 				return "ATEND";
 			} else {
 				return "ATPATH";
@@ -141,21 +167,32 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		if (a_type != atype_computed || b_type != btype_computed) {
 			if (rel) {
-				auto rel_str = rel->data().toString();
-				std::wcout << "ERROR: " << rel_str.c_str() << " " << atype_computed << " " << btype_computed << std::endl;
+				Logger::Error(std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
 			} else {
-				auto A_str = A->data().toString();
-				auto B_str = B->data().toString();
-				std::wcout << "ERROR: no rel " << A_str.c_str() << " x " << B_str.c_str() << " " << atype_computed << " " << btype_computed << std::endl;
+				auto A_str = A->get_value<std::string>("GlobalId");
+				auto B_str = B->get_value<std::string>("GlobalId");
+				Logger::Error("No connection for adjacent " + A_str + " " + B_str);
 			}
 		}
 	});
 
-	std::for_each(rels->begin(), rels->end(), [&rels_encounted](const IfcUtil::IfcBaseClass* rel) {
+	std::for_each(rels->begin(), rels->end(), [&rels_encounted, &v](const IfcUtil::IfcBaseClass* rel) {
 		if (rels_encounted.find(rel) == rels_encounted.end()) {
-			auto rel_str = rel->data().toString();
-			std::wcout << "ERROR: " << rel_str.c_str() << " not found" << std::endl;
+			auto x = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
+			auto y = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedElement");
+			if (v.succesfully_processed.find(x) != v.succesfully_processed.end() && v.succesfully_processed.find(y) != v.succesfully_processed.end()) {
+				Logger::Error("Connection for non-adjacent walls", rel);
+			}
 		}
 	});
+
+	std::wcout << std::setprecision(14);
+	std::wcout << "total_map_time " << v.total_map_time << std::endl;
+	std::wcout << "total_geom_time " << v.total_geom_time << std::endl;
+	std::wcout << "total_nef_time " << v.total_nef_time << std::endl;
+	std::wcout << "total_minkowsky_time " << v.total_minkowsky_time << std::endl;
+	std::wcout << "total_box_time " << v.total_box_time << std::endl;
+	std::wcout << "total_nef_intersection_time " << total_nef_intersection_time << std::endl;
+	std::wcout << "total_conversion_to_poly_time " << conversion_to_poly << std::endl;
 }
 

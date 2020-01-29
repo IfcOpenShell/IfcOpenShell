@@ -76,10 +76,18 @@ namespace ifcopenshell { namespace geometry {
 		}
 		*/
 
+		double total_map_time = 0.;
+		double total_geom_time = 0.;
+
 		ifcopenshell::geometry::ConversionResults convert(IfcUtil::IfcBaseClass* item) {
+			std::clock_t map_start = std::clock();
 			auto geom_item = mapping_->map(item);
+			std::clock_t geom_start = std::clock();
 			ifcopenshell::geometry::ConversionResults results;
 			kernel_->convert(geom_item, results);
+			std::clock_t geom_end = std::clock();
+			total_map_time += (geom_start - map_start) / (double) CLOCKS_PER_SEC;
+			total_geom_time += (geom_end - geom_start) / (double) CLOCKS_PER_SEC;
 			return results;
 		}
 
