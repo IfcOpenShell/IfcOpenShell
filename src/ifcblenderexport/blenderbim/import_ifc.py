@@ -139,6 +139,7 @@ class IfcImporter():
     def execute(self):
         self.load_diff()
         self.load_file()
+        self.set_ifc_file()
         if self.ifc_import_settings.should_auto_set_workarounds:
             self.auto_set_workarounds()
         self.calculate_unit_scale()
@@ -295,6 +296,9 @@ class IfcImporter():
     def load_file(self):
         self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
         self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
+
+    def set_ifc_file(self):
+        bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
 
     def calculate_unit_scale(self):
         units = self.file.by_type('IfcUnitAssignment')[0]

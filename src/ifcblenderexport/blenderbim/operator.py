@@ -699,6 +699,21 @@ class SelectFeaturesDir(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+
+class SelectIfcFile(bpy.types.Operator):
+    bl_idname = "bim.select_ifc_file"
+    bl_label = "Select IFC File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.ifc_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
@@ -711,6 +726,7 @@ class SelectDataDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
 
 class SelectSchemaDir(bpy.types.Operator):
     bl_idname = "bim.select_schema_dir"
