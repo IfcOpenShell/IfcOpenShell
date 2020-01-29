@@ -1504,6 +1504,7 @@ class IfcExporter():
         related_objects = []
         for node in element_tree:
             element = self.ifc_parser.spatial_structure_elements[node['reference']]
+            self.cast_attributes(element['class'], element['attributes'])
             element['attributes'].update({
                 'OwnerHistory': self.owner_history,  # TODO: unhardcode
                 'ObjectPlacement': self.file.createIfcLocalPlacement(placement_rel_to, self.origin),
@@ -1575,6 +1576,11 @@ class IfcExporter():
 
     def cast_attributes(self, ifc_class, attributes):
         for key, value in attributes.items():
+            edge_case_attribute = self.cast_edge_case_attribute(ifc_class, key, value)
+            if edge_case_attribute:
+                attributes[key] = edge_case_attribute
+                continue
+
             complex_attribute = self.cast_complex_attribute(ifc_class, key, value)
             if complex_attribute:
                 attributes[key] = complex_attribute
@@ -1584,6 +1590,20 @@ class IfcExporter():
             if var_type is None:
                 continue
             attributes[key] = self.cast_to_base_type(var_type, value)
+
+    def cast_edge_case_attribute(self, ifc_class, key, value):
+        if key == 'RefLatitude' or key == 'RefLongitude':
+            return self.dd2dms(value)
+
+    def dd2dms(self, dd):
+        dd = float(dd)
+        sign = 1 if dd >= 0 else -1
+        dd = abs(dd)
+        minutes, seconds = divmod(dd*3600, 60)
+        degrees, minutes = divmod(minutes, 60)
+        if dd < 0:
+            degrees = -degrees
+        return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign)
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
