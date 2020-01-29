@@ -421,7 +421,15 @@ struct intersection_validator {
 	std::vector<Box> boxes;
 	nefs_t nefs;
 
-	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, bool no_progress, bool quiet, bool stderr_progress) {
+	double total_map_time = 0.;
+	double total_geom_time = 0.;
+	double total_nef_time = 0.;
+	double total_minkowsky_time = 0.;
+	double total_box_time = 0.;
+
+	std::set<IfcUtil::IfcBaseEntity*> succesfully_processed;
+
+	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
 
 		ifcopenshell::geometry::settings settings;
 		settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
@@ -441,8 +449,7 @@ struct intersection_validator {
 			return;
 		}
 
-		auto kernel = (ifcopenshell::geometry::kernels::CgalKernel*) context_iterator.converter().kernel();
-		auto cube = kernel->precision_cube();
+		auto cube = ifcopenshell::geometry::utils::create_nef_polyhedron(ifcopenshell::geometry::utils::create_cube(eps));
 
 		size_t num_created = 0;
 		int old_progress = quiet ? 0 : -1;
@@ -485,13 +492,21 @@ struct intersection_validator {
 					vertex->point() = vertex->point().transform(trsf).transform(trsf2);
 				}
 
+				std::clock_t nef_begin = std::clock();
 				CGAL::Nef_polyhedron_3<Kernel_> nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
+				std::clock_t nef_end = std::clock();
+				total_nef_time += (nef_end - nef_begin) / (double) CLOCKS_PER_SEC;
 				if (nef.is_empty()) {
 					std::wcout << "Failed to create nef" << std::endl;
 					continue;
 				}
 
+				succesfully_processed.insert(geom_object->product());
+
 				nef = CGAL::minkowski_sum_3(nef, cube);
+				std::clock_t minkowski_end = std::clock();
+				total_minkowsky_time += (minkowski_end - nef_end) / (double) CLOCKS_PER_SEC;
+
 				std::wcout << "product: " << geom_object->product() << std::endl;
 				nefs.push_back({ geom_object->product(), nef });
 
@@ -550,10 +565,16 @@ struct intersection_validator {
 				" objects                                ");
 		}
 
+		total_geom_time = context_iterator.converter().total_geom_time;
+		total_map_time = context_iterator.converter().total_map_time;
 	}
 
 	template <typename Fn>
 	void operator()(Fn fn) {
+		std::clock_t box_overlap_begin = std::clock();
+		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), [](auto& x, auto& y) {});
+		std::clock_t box_overlap_end = std::clock();
+		total_box_time += (box_overlap_end - box_overlap_begin) / (double) CLOCKS_PER_SEC;
 		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), fn);
 	}
 };
