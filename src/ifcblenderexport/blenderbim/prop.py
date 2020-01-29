@@ -73,7 +73,8 @@ def refreshClasses(self, context):
 def refreshPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
-    getIfcPredefinedTypes(self, context)
+    enum = getIfcPredefinedTypes(self, context)
+    context.scene.BIMProperties.ifc_predefined_type = enum[0][0]
 
 
 def getDiagramScales(self, context):
