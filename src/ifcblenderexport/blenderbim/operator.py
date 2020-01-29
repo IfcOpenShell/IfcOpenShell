@@ -306,13 +306,22 @@ class QuickProjectSetup(bpy.types.Operator):
 
     def execute(self, context):
         project = bpy.data.collections.new('IfcProject/My Project')
-        bpy.context.scene.collection.children.link(project)
         site = bpy.data.collections.new('IfcSite/My Site')
-        project.children.link(site)
         building = bpy.data.collections.new('IfcBuilding/My Building')
-        site.children.link(building)
         building_storey = bpy.data.collections.new('IfcBuildingStorey/Ground Floor')
+
+        site_obj = bpy.data.objects.new('IfcSite/My Site', None)
+        building_obj = bpy.data.objects.new('IfcBuilding/My Building', None)
+        building_storey_obj = bpy.data.objects.new('IfcBuildingStorey/Ground Floor', None)
+
+        bpy.context.scene.collection.children.link(project)
+        project.children.link(site)
+        site.children.link(building)
         building.children.link(building_storey)
+
+        site.objects.link(site_obj)
+        building.objects.link(building_obj)
+        building_storey.objects.link(building_storey_obj)
         return {'FINISHED'}
 
 class AssignPset(bpy.types.Operator):
