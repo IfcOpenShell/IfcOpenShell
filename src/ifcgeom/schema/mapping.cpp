@@ -1277,12 +1277,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 
 	const double eps = precision_ * 10;
 	const bool closed_by_proximity = polygon.size() >= 3 && (polygon.front().components - polygon.back().components).norm() < eps;
+	
+	// @todo this removes the end point, since it's identical to the beginning. 
 	if (closed_by_proximity) {
-		polygon.resize(polygon.size() - 1);
+		// polygon.resize(polygon.size() - 1);
 	}
 
 	// Remove points that are too close to one another
-	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+	// remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 
 	if (polygon.size() < 2) {
 		return false;
