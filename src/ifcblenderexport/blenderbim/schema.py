@@ -15,7 +15,8 @@ class IfcSchema():
             'IfcStructural',
             'IfcMaterialDefinition',
             'IfcParameterizedProfileDef',
-            'IfcBoundaryCondition'
+            'IfcBoundaryCondition',
+            'IfcElementType'
         ]
         self.elements = {}
         self.property_files = []

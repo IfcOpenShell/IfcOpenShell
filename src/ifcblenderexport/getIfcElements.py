@@ -150,7 +150,8 @@ filename_filters = {
     'IfcStructural_IFC4.json': ['IfcStructuralActivity', 'IfcStructuralItem'],
     'IfcMaterialDefinition_IFC4.json': ['IfcMaterialDefinition'],
     'IfcParameterizedProfileDef_IFC4.json': ['IfcParameterizedProfileDef'],
-    'IfcBoundaryCondition_IFC4.json': ['IfcBoundaryCondition']
+    'IfcBoundaryCondition_IFC4.json': ['IfcBoundaryCondition'],
+    'IfcElementType_IFC4.json': ['IfcElementType']
 }
 
 for filename, filters in filename_filters.items():
