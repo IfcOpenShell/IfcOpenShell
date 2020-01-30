@@ -129,6 +129,7 @@ class IfcImporter():
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
+        self.type_products = {}
         self.meshes = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -149,6 +150,7 @@ class IfcImporter():
         self.create_openings_collection()
         self.purge_diff()
         self.patch_ifc()
+        self.create_type_products()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy or self.diff:
             self.create_products_legacy()
@@ -231,6 +233,18 @@ class IfcImporter():
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
+    def create_type_products(self):
+        type_products = self.file.by_type('IfcTypeProduct')
+        for type_product in type_products:
+            self.create_type_product(type_product)
+
+    def create_type_product(self, type_product):
+        obj = bpy.data.objects.new(self.get_name(type_product), None)
+        self.add_element_attributes(type_product, obj)
+        self.add_element_document_relations(type_product, obj)
+        self.project['blender'].objects.link(obj)
+        self.type_products[type_product.GlobalId] = obj
+
     def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
         for element in elements:
@@ -285,7 +299,13 @@ class IfcImporter():
         self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
+        self.add_defines_by_type_relation(element, obj)
         self.place_object_in_spatial_tree(element, obj)
+
+    def add_defines_by_type_relation(self, element, obj):
+        if not element.IsTypedBy:
+            return
+        obj.BIMObjectProperties.type_product = self.type_products[element.IsTypedBy[0].RelatingType.GlobalId]
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
