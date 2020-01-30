@@ -67,7 +67,8 @@ def getIfcPredefinedTypes(self, context):
 def refreshClasses(self, context):
     global classes_enum
     classes_enum.clear()
-    getIfcClasses(self, context)
+    enum = getIfcClasses(self, context)
+    context.scene.BIMProperties.ifc_class = enum[0][0]
 
 
 def refreshPredefinedTypes(self, context):

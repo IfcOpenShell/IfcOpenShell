@@ -1947,12 +1947,17 @@ class IfcExporter():
             self.create_curve(representation['raw'].bevel_object.data))
         swept_area_solids = []
         for spline in representation['raw'].splines:
-            direction = spline.bezier_points[1].co - spline.bezier_points[0].co
+            points = self.get_spline_points(spline)
+            if not points:
+                continue
+            # Intuitively, the direction below is reversed, but apparently
+            # Blender likes to extrude down (opposite of IFC) natively.
+            direction = (points[0].co - points[1].co).xyz
             unit_direction = direction.normalized()
 
             # This can be used in the future when dealing with non vector curves
-            # curr_point = spline.bezier_points[0]
-            # next_point = spline.bezier_points[1]
+            # curr_point = points[0]
+            # next_point = points[1]
             # j_percent = 0
             # direction = self.bezier_tangent(
             #    pt0=curr_point.co,
@@ -1960,11 +1965,10 @@ class IfcExporter():
             #    pt2=next_point.handle_left,
             #    pt3=next_point.co,
             #    step=j_percent)
-            tilt_matrix = Matrix.Rotation(-spline.bezier_points[0].tilt, 4, 'Z')
+            tilt_matrix = Matrix.Rotation(points[0].tilt, 4, 'Z')
             x_axis = unit_direction.to_track_quat('-Y', 'Z') @ Vector((1, 0, 0)) @ tilt_matrix
-
             position = self.create_ifc_axis_2_placement_3d(
-                spline.bezier_points[0].co, unit_direction, x_axis)
+                points[1].co, unit_direction, x_axis)
             swept_area_solids.append(self.file.createIfcExtrudedAreaSolid(
                 swept_area, position,
                 self.file.createIfcDirection((0., 0., 1.)),
@@ -1983,11 +1987,11 @@ class IfcExporter():
         return self.file.createIfcVertexPoint(
             self.create_cartesian_point(point.x, point.y, point.z))
 
+    def get_spline_points(self, spline):
+        return spline.bezier_points if spline.bezier_points else spline.points
+
     def create_edge(self, curve):
-        if curve.splines[0].bezier_points:
-            points = curve.splines[0].bezier_points
-        elif curve.splines[0].points:
-            points = curve.splines[0].points
+        points = self.get_spline_points(curve.splines[0])
         if not points:
             return
         return self.file.createIfcEdge(
