@@ -212,11 +212,6 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 		{ (double)posmatrix[2], (double)posmatrix[5], (double)posmatrix[8], (double)posmatrix[11] },
 		{ 0, 0, 0, 1 }
 	};
-	
-	/// @todo: TFK: Rather than applying this offset to all leafs (which might be undesirable) should this offset be applied to a node higher up in the hierarchy?
-    matrix_array[0][3] += serializer->settings().offset[0];
-    matrix_array[1][3] += serializer->settings().offset[1];
-    matrix_array[2][3] += serializer->settings().offset[2];
 
 	delete relative_trsf;
 
