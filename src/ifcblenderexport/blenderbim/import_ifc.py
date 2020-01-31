@@ -303,7 +303,7 @@ class IfcImporter():
         self.place_object_in_spatial_tree(element, obj)
 
     def add_defines_by_type_relation(self, element, obj):
-        if not element.IsTypedBy:
+        if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
             return
         obj.BIMObjectProperties.type_product = self.type_products[element.IsTypedBy[0].RelatingType.GlobalId]
 
@@ -344,22 +344,24 @@ class IfcImporter():
             and attempts <= len(elements):
             for element in elements:
                 name = self.get_name(element)
-                if name in self.spatial_structure_elements:
+                global_id = element.GlobalId
+                if global_id in self.spatial_structure_elements:
                     continue
                 # Occurs when some naughty programs export IFC site objects
                 if not element.Decomposes:
                     continue
                 parent = element.Decomposes[0].RelatingObject
                 parent_name = self.get_name(parent)
+                parent_global_id = parent.GlobalId
                 if parent.is_a('IfcProject'):
-                    self.spatial_structure_elements[name] = {
+                    self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
-                    self.project['blender'].children.link(self.spatial_structure_elements[name]['blender'])
-                elif parent_name in self.spatial_structure_elements:
-                    self.spatial_structure_elements[name] = {
+                    self.project['blender'].children.link(self.spatial_structure_elements[global_id]['blender'])
+                elif parent_global_id in self.spatial_structure_elements:
+                    self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
-                    self.spatial_structure_elements[parent_name]['blender'].children.link(
-                        self.spatial_structure_elements[name]['blender'])
+                    self.spatial_structure_elements[parent_global_id]['blender'].children.link(
+                        self.spatial_structure_elements[global_id]['blender'])
             attempts += 1
 
     def create_aggregates(self):
@@ -450,9 +452,9 @@ class IfcImporter():
         if hasattr(element, 'ContainedInStructure') \
                 and element.ContainedInStructure \
                 and element.ContainedInStructure[0].RelatingStructure:
-            structure_name = self.get_name(element.ContainedInStructure[0].RelatingStructure)
-            if structure_name in self.spatial_structure_elements:
-                self.spatial_structure_elements[structure_name]['blender'].objects.link(obj)
+            relating_structure_global_id = element.ContainedInStructure[0].RelatingStructure.GlobalId
+            if relating_structure_global_id in self.spatial_structure_elements:
+                self.spatial_structure_elements[relating_structure_global_id]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
