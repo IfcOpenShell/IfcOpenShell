@@ -68,6 +68,10 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		});
 	}
 
+	std::for_each(elevation_slices.begin(), elevation_slices.end(), [](std::pair<double, double>& p) {
+		p.first -= 0.3;
+		p.second += 0.3;
+	});
 
 	std::vector<CGAL::Nef_polyhedron_3<Kernel_>> nefs;
 	std::transform(elevation_slices.begin(), elevation_slices.end(), std::back_inserter(nefs), [&LARGE](const std::pair<double, double>& p) {
@@ -166,11 +170,12 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 				continue;
 			}
 
-			std::vector<double>::iterator accumulator;
+			std::vector<double>::iterator accumulator = intersection_volumes.begin();
 			std::for_each(nefs.begin(), nefs.end(), [&accumulator, &part_nef](const CGAL::Nef_polyhedron_3<Kernel_>& storey_nef) {
 				auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef * storey_nef);
 				CGAL::Polygon_mesh_processing::triangulate_faces(poly);
-				accumulator++ += CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly));
+				*accumulator += CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly));
+				accumulator++;
 			});
 		}
 
@@ -182,10 +187,13 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		std::wcout << std::endl;
 		*/
 
-		auto idx = std::max_element(intersection_volumes.begin(), intersection_volumes.end()) - intersection_volumes.begin();
-		if (storeys_sorted[idx] != elem_to_storey[geom_object->product()]) {
+		auto calc_idx = std::max_element(intersection_volumes.begin(), intersection_volumes.end()) - intersection_volumes.begin();
+		auto calc_overlap = intersection_volumes[calc_idx];
+		auto assigned_idx = std::distance(storeys_sorted.begin(), std::find(storeys_sorted.begin(), storeys_sorted.end(), elem_to_storey[geom_object->product()]));
+		auto assigned_overlap = intersection_volumes[assigned_idx];
+		if (calc_overlap > 0 && assigned_overlap < calc_overlap * 0.9) {
 			auto s = geom_object->product()->get_value<std::string>("GlobalId");
-			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[idx])->get_value<std::string>("GlobalId");
+			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
 			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
 			Logger::Error("Element " + s + " contained in " + s2 + " located on " + s1);
 		}
