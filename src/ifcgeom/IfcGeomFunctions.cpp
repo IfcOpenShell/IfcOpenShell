@@ -505,6 +505,28 @@ namespace {
 		usd.Build();
 		return usd.Shape();
 	}
+
+	gp_Trsf combine_offset_and_rotation(const gp_Vec &offset, const gp_Quaternion& rotation) {
+        auto offset_transform = gp_Trsf{};
+        offset_transform.SetTranslation(offset);
+
+        auto rotation_transform = gp_Trsf{};
+        rotation_transform.SetRotation(rotation);
+
+        return rotation_transform * offset_transform;
+	}
+}
+
+void IfcGeom::Kernel::set_offset(const std::array<double, 3> &p_offset) {
+    offset = gp_Vec(p_offset[0], p_offset[1], p_offset[2]);
+
+    offset_and_rotation = combine_offset_and_rotation(offset, rotation);
+}
+
+void IfcGeom::Kernel::set_rotation(const std::array<double, 4> &p_rotation) {
+    rotation = gp_Quaternion(p_rotation[0], p_rotation[1], p_rotation[2], p_rotation[3]);
+
+    offset_and_rotation = combine_offset_and_rotation(offset, rotation);
 }
 
 bool IfcGeom::Kernel::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape) {
