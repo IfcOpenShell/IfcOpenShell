@@ -102,7 +102,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 		}
 
 		CGAL::Polygon_mesh_processing::triangulate_faces(x_poly);
-		if (CGAL::Polygon_mesh_processing::area(x_poly) > 2.0) {
+		if (CGAL::Polygon_mesh_processing::area(x_poly) > 4.0) {
 			return;
 		}
 
