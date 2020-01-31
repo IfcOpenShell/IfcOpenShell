@@ -376,6 +376,7 @@ class BIMProperties(PropertyGroup):
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
+    import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)

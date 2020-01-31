@@ -147,7 +147,8 @@ class IfcImporter():
         self.create_project()
         self.create_spatial_hierarchy()
         self.create_aggregates()
-        self.create_openings_collection()
+        if self.ifc_import_settings.should_import_opening_elements:
+            self.create_openings_collection()
         self.purge_diff()
         self.patch_ifc()
         self.create_type_products()
@@ -275,6 +276,10 @@ class IfcImporter():
             return
 
         element = self.file.by_id(shape.guid)
+
+        if not self.ifc_import_settings.should_import_opening_elements \
+                and element.is_a('IfcOpeningElement'):
+            return
 
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
@@ -595,6 +600,7 @@ class IfcImportSettings:
         self.should_ignore_building_coordinates = False
         self.should_reset_absolute_coordinates = False
         self.should_import_curves = False
+        self.should_import_opening_elements = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
