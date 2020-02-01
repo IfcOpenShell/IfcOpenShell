@@ -8,6 +8,7 @@ from pathlib import Path
 mathutils = sys.modules.get('mathutils')
 if mathutils is not None:
     from mathutils import Vector
+    from mathutils import geometry
 from math import degrees
 import xml.etree.ElementTree as ET
 
@@ -739,76 +740,11 @@ class SvgWriter():
     def draw_annotations(self):
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
-        if self.ifc_cutter.equal_obj:
-            for spline in self.ifc_cutter.equal_obj.data.splines:
-                for i, p in enumerate(spline.points):
-                    if i+1 >= len(spline.points):
-                        continue
-                    classes = ['annotation', 'dimension']
-                    v0 = spline.points[i].co
-                    v1 = spline.points[i+1].co
-                    start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                    end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                    mid = ((end - start) / 2) + start
-                    vector = end - start
-                    perpendicular = Vector((vector.y, -vector.x)).normalized()
-                    text_position = (mid * self.scale) + perpendicular
-                    rotation = degrees(vector.angle_signed(Vector((1, 0))))
-                    line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
-                        end=tuple(end * self.scale), class_=' '.join(classes)))
-                    line['marker-start'] = 'url(#dimension-marker-start)'
-                    line['marker-end'] = 'url(#dimension-marker-end)'
-                    # Standard font sizes 1.8, 2.5, 3.5, 5, 7
-                    # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
-                    self.svg.add(self.svg.text('EQ', insert=tuple(text_position), **{
-                        'transform': 'rotate({} {} {})'.format(
-                            rotation,
-                            text_position.x,
-                            text_position.y
-                        ),
-                        'font-size': '4.13', # 2.5
-                        'font-family': 'OpenGost Type B TT',
-                        'text-anchor': 'middle'
-                    }))
 
+        if self.ifc_cutter.equal_obj:
+            self.draw_dimension_annotations(self.ifc_cutter.equal_obj, text_override='EQ')
         if self.ifc_cutter.dimension_obj:
-            for spline in self.ifc_cutter.dimension_obj.data.splines:
-                for i, p in enumerate(spline.points):
-                    if i+1 >= len(spline.points):
-                        continue
-                    classes = ['annotation', 'dimension']
-                    v0 = spline.points[i].co
-                    v1 = spline.points[i+1].co
-                    start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                    end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                    mid = ((end - start) / 2) + start
-                    # TODO: hardcoded meters to mm conversion, until I properly do units
-                    vector = end - start
-                    perpendicular = Vector((vector.y, -vector.x)).normalized()
-                    dimension = vector.length * 1000
-                    sheet_dimension = ((end*self.scale) - (start*self.scale)).length
-                    if sheet_dimension < 5: # annotation can't fit
-                        # offset text to right of marker
-                        text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
-                    else:
-                        text_position = (mid * self.scale) + perpendicular
-                    rotation = degrees(vector.angle_signed(Vector((1, 0))))
-                    line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
-                        end=tuple(end * self.scale), class_=' '.join(classes)))
-                    line['marker-start'] = 'url(#dimension-marker-start)'
-                    line['marker-end'] = 'url(#dimension-marker-end)'
-                    # Standard font sizes 1.8, 2.5, 3.5, 5, 7
-                    # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
-                    self.svg.add(self.svg.text(str(round(dimension)), insert=tuple(text_position), **{
-                        'transform': 'rotate({} {} {})'.format(
-                            rotation,
-                            text_position.x,
-                            text_position.y
-                        ),
-                        'font-size': '4.13', # 2.5
-                        'font-family': 'OpenGost Type B TT',
-                        'text-anchor': 'middle'
-                    }))
+            self.draw_dimension_annotations(self.ifc_cutter.dimension_obj)
 
         for grid_obj in self.ifc_cutter.grid_objs:
             for edge in grid_obj.data.edges:
@@ -957,6 +893,61 @@ class SvgWriter():
                         'dominant-baseline': alignment_baseline
                     }
                 ))
+
+    def draw_dimension_annotations(self, dimension_obj, text_override=None):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+
+        matrix_world = dimension_obj.matrix_world
+        for spline in dimension_obj.data.splines:
+            for i, p in enumerate(spline.points):
+                if i+1 >= len(spline.points):
+                    continue
+                classes = ['annotation', 'dimension']
+                v0_global = matrix_world @ spline.points[i].co
+                v1_global = matrix_world @ spline.points[i+1].co
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                mid = ((end - start) / 2) + start
+                # TODO: hardcoded meters to mm conversion, until I properly do units
+                vector = end - start
+                perpendicular = Vector((vector.y, -vector.x)).normalized()
+                dimension = (v1_global - v0_global).length * 1000
+                sheet_dimension = ((end*self.scale) - (start*self.scale)).length
+                if sheet_dimension < 5: # annotation can't fit
+                    # offset text to right of marker
+                    text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
+                else:
+                    text_position = (mid * self.scale) + perpendicular
+                rotation = degrees(vector.angle_signed(Vector((1, 0))))
+                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                    end=tuple(end * self.scale), class_=' '.join(classes)))
+                line['marker-start'] = 'url(#dimension-marker-start)'
+                line['marker-end'] = 'url(#dimension-marker-end)'
+                # Standard font sizes 1.8, 2.5, 3.5, 5, 7
+                # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
+                if text_override is None:
+                    text_override = str(round(dimension))
+                self.svg.add(self.svg.text(text_override, insert=tuple(text_position), **{
+                    'transform': 'rotate({} {} {})'.format(
+                        rotation,
+                        text_position.x,
+                        text_position.y
+                    ),
+                    'font-size': '4.13', # 2.5
+                    'font-family': 'OpenGost Type B TT',
+                    'text-anchor': 'middle'
+                }))
+
+    def project_point_onto_camera(self, point):
+        return self.ifc_cutter.camera_obj.matrix_world.inverted() @ geometry.intersect_line_plane(
+            point.xyz,
+            point.xyz-Vector(self.ifc_cutter.section_box['projection']),
+            self.ifc_cutter.camera_obj.location,
+            Vector(self.ifc_cutter.section_box['projection'])
+            )
 
     def draw_cut_polygons(self):
         for polygon in self.ifc_cutter.cut_polygons:
