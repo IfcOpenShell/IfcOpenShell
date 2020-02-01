@@ -17,7 +17,7 @@ typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 
 void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
-	intersection_validator v(f, { "IfcWall", "IfcSpace" }, 1.e-5, no_progress, quiet, stderr_progress);
+	intersection_validator v(f, { "IfcWall", "IfcSpace", "IfcSlab", "IfcCovering" }, 1.e-5, no_progress, quiet, stderr_progress);
 
 	auto rels = f.instances_by_type("IfcRelSpaceBoundary");
 
@@ -39,6 +39,10 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 	std::set<const IfcUtil::IfcBaseClass*> rels_encounted;
 
 	IfcParse::IfcFile f2("boundaries-triangulated.ifc");
+	if (!f2.good()) {
+		return;
+	}
+
 	ifcopenshell::geometry::settings settings;
 
 	settings.set(ifcopenshell::geometry::settings::USE_WORLD_COORDS, false);
@@ -57,6 +61,9 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		auto g1 = n.substr(0, 22);
 		auto g2 = n.substr(23);
 		auto item = c.mapping()->map(i);
+		if (((ifcopenshell::geometry::taxonomy::collection*) item)->children[0] == nullptr) {
+			continue;
+		}
 		auto shell = (taxonomy::shell*) ((taxonomy::collection*)((taxonomy::collection*) item)->children[0])->children[0];
 		for (auto& f : shell->children) {
 			auto face = (taxonomy::face*) f;
@@ -72,8 +79,10 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 			}
 		}
 	}
-	
-	v([&rel_by_space_elem, &elem_to_space_boundary_coords](const intersection_validator::Box& a, const intersection_validator::Box& b) {
+
+	std::set< std::set<std::string> > guid_pairs_visited;
+
+	v([&rel_by_space_elem, &elem_to_space_boundary_coords, &guid_pairs_visited](const intersection_validator::Box& a, const intersection_validator::Box& b) {
 		std::ostringstream ss;
 		// ss << id_map[a.id()]->first->data().toString() << "x" << id_map[b.id()]->first->data().toString() << std::endl;
 		// auto x = id_map[a.id()]->second * id_map[b.id()]->second;
@@ -99,57 +108,78 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		auto x = a.handle()->second * b.handle()->second;
 
 		if (x.is_empty()) {
-			// std::wcout << "empty" << std::endl;
 			return;
 		}
+
+		guid_pairs_visited.insert({ Aguid, Bguid });
 
 		cgal_shape_t x_poly;
 		x.convert_to_polyhedron(x_poly);
 
-		auto s0 = a.handle()->first->declaration().name();
-		auto s1 = b.handle()->first->declaration().name();
-		auto i0 = a.handle()->first->data().id();
-		auto i1 = b.handle()->first->data().id();
-
-		if (s0 < s1) {
-			std::swap(s1, s0);
-			std::swap(i0, i1);
+		{
+			std::string fn = "computed_boundaries_" + Aguid + "_" + Bguid + ".off";
+			std::ofstream computed_boundaries(fn.c_str());
+			computed_boundaries.precision(17);
+			computed_boundaries << x_poly;
 		}
 
 		Tree tree(faces(x_poly).first, faces(x_poly).second, x_poly);
 		tree.accelerate_distance_queries();
 
-		for (auto& p : elem_to_space_boundary_coords[{Aguid, Bguid}]) {
-			auto d = std::sqrt(CGAL::to_double(tree.squared_distance(p)));
-			std::wcout << d << std::endl;
+		auto itelem = elem_to_space_boundary_coords.find({ Aguid, Bguid });
+
+		if (itelem == elem_to_space_boundary_coords.end()) {
+			Logger::Error("Missing space boundary relationship " + Aguid + " " + Bguid);
+			return;
 		}
 
-		return;
+		const auto& coords = itelem->second;
+		std::vector<double> distances;
+		std::transform(coords.begin(), coords.end(), std::back_inserter(distances), [&tree](const auto& p) {
+			return std::sqrt(CGAL::to_double(tree.squared_distance(p)));
+		});
 
-		{
-			auto FN = s0 + "-" + s1 + "-" + std::to_string(i0) + "-" + std::to_string(i1) + "sb.off";
+		bool valid = *std::max_element(distances.begin(), distances.end()) < 0.4;
 
-			std::ofstream os(FN.c_str());
-			os.precision(17);
-			os << x_poly;
+		if (!valid) {
+			Logger::Error("Wrong connection geometry " + Aguid + " " + Bguid);
 		}
 
-		remove_thickness r(x_poly);
+		/*{
+			remove_thickness r(x_poly);
+			std::string fn = "thin_computed_boundaries_" + Aguid + "_" + Bguid + ".off";
+			std::ofstream computed_boundaries(fn.c_str());
+			computed_boundaries.precision(17);
+			computed_boundaries << r.flattened;
+		}*/
 
+		/*
 		{
 			auto FN = s0 + "-" + s1 + "-" + std::to_string(i0) + "-" + std::to_string(i1) + "-sides-sb.off";
-
 			std::ofstream os(FN.c_str());
 			os.precision(17);
 			os << r.polyhedron2;
 		}
-
 		{
 			auto FN = s0 + "-" + s1 + "-" + std::to_string(i0) + "-" + std::to_string(i1) + "-flat-sb.off";
-
 			std::ofstream os(FN.c_str());
 			os.precision(17);
 			os << r.flattened;
 		}
+		*/
 	});
+
+	auto is_wall_space_or_slab = [&f](const std::string& g) {
+		auto decl = f.instance_by_guid(g)->declaration();
+		return decl.is("IfcWall") || decl.is("IfcSpace") || decl.is("IfcSlab");
+	};
+
+	for (auto& i : *f2.instances_by_type("IfcProduct")) {
+		auto n = ((IfcUtil::IfcBaseEntity*)i)->get_value<std::string>("Name");
+		auto g1 = n.substr(0, 22);
+		auto g2 = n.substr(23);
+		if (is_wall_space_or_slab(g1) && is_wall_space_or_slab(g2) && guid_pairs_visited.find({ g1, g2 }) == guid_pairs_visited.end()) {
+			Logger::Error("Space boundary for non-bounding geometry " + g1 + " " + g2);
+		}
+	}
 }
