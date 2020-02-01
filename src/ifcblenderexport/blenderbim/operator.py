@@ -1134,3 +1134,19 @@ class AssignContext(bpy.types.Operator):
                 name[0:6] == 'Model/' \
                 or name[0:5] == 'Plan/' \
             )
+
+
+class SetViewPreset1(bpy.types.Operator):
+    bl_idname = 'bim.set_view_preset_1'
+    bl_label = 'Set View Preset 1'
+
+    def execute(self, context):
+        bpy.data.worlds[0].color = (1, 1, 1)
+        bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
+        bpy.context.scene.display.shading.show_object_outline = True
+        bpy.context.scene.display.shading.show_cavity = True
+        bpy.context.scene.display.shading.cavity_type = 'BOTH'
+        bpy.context.scene.display.shading.curvature_ridge_factor = 1
+        bpy.context.scene.display.shading.curvature_valley_factor = 1
+        bpy.context.scene.view_settings.view_transform = 'Standard'
+        return {'FINISHED'}

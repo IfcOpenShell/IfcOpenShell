@@ -94,6 +94,7 @@ if bpy is not None:
         operator.ActivateView,
         operator.ExecuteIfcDiff,
         operator.AssignContext,
+        operator.SetViewPreset1,
         prop.Subcontext,
         prop.BIMProperties,
         prop.DocProperties,

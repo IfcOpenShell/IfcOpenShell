@@ -287,6 +287,9 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.activate_view', icon='SCENE', text='')
 
         row = layout.row()
+        row.operator('bim.set_view_preset_1')
+
+        row = layout.row()
         row.operator('bim.create_sheets')
 
         row = layout.row()
