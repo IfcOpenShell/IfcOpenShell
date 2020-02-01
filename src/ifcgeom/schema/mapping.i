@@ -34,7 +34,7 @@ BIND(IfcMappedItem);
 // IfcAdvancedBrep included
 // IfcFacetedBrepWithVoids included
 // IfcAdvancedBrepWithVoids included
-// BIND(IfcManifoldSolidBrep);
+BIND(IfcManifoldSolidBrep);
 BIND(IfcGeometricSet);
 
 #ifdef SCHEMA_HAS_IfcCylindricalSurface

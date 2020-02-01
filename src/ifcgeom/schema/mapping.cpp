@@ -219,12 +219,20 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* ins
 	return map_to_collection(this, inst->FbsmFaces());
 }
 
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
+	// @todo voids
+	return map(inst->Outer());
+}
+
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcGeometricSet* inst) {
 	return map_to_collection(this, inst->Elements());
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcConnectedFaceSet* inst) {
 	auto shell = map_to_collection<taxonomy::shell>(this, inst->CfsFaces());
+	if (shell == nullptr) {
+		return nullptr;
+	}
 	shell->closed = inst->declaration().is(IfcSchema::IfcClosedShell::Class());
 	return shell;
 }
