@@ -1,3 +1,10 @@
+About this branch 
+=================
+
+This version splits the geometry interpretation process into two steps (a) map IFC to a smaller set of schema-agnostic definitions (`ifcopenshell::geometry::taxonomy`) (b) convert these into explicit breps or polyhedra with Open CASCADE or CGAL.
+
+Three validation options are added to IfcConvert for (a) storey containment (b) wall connectivity (c) space boundaries.
+
 IfcOpenShell 
 ============
 IfcOpenShell is an open source ([LGPL]) software library for working with the Industry Foundation Classes ([IFC]) 
