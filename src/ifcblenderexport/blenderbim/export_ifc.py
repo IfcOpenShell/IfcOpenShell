@@ -114,6 +114,7 @@ class IfcParser():
         self.rel_aggregates = {}
         self.rel_voids_elements = {}
         self.rel_fills_elements = {}
+        self.rel_projects_elements = {}
         self.rel_connects_structural_member = {}
         self.rel_assigns_to_group = {}
         self.representations = {}
@@ -318,18 +319,20 @@ class IfcParser():
 
     def resolve_voids_and_fills(self, i, obj):
         for m in obj.modifiers:
-            if m.type == 'BOOLEAN' and m.object is not None:
-                void = self.get_product_index_from_raw_name(m.object.name)
-                if void is not None:
-                    if i not in self.rel_voids_elements:
-                        self.rel_voids_elements[i] = []
-                    self.rel_voids_elements[i].append(void)
-                    if m.object.parent:
-                        fill = self.get_product_index_from_raw_name(m.object.parent.name)
-                        if fill is not None:
-                            if void not in self.rel_fills_elements:
-                                self.rel_fills_elements[void] = []
-                            self.rel_fills_elements[void].append(fill)
+            if m.type != 'BOOLEAN' or m.object is None:
+                continue
+            void_or_projection = self.get_product_index_from_raw_name(m.object.name)
+            if void_or_projection is None:
+                continue
+            if m.operation == 'DIFFERENCE':
+                self.rel_voids_elements.setdefault(i, []).append(void_or_projection)
+                if not m.object.parent:
+                    continue
+                fill = self.get_product_index_from_raw_name(m.object.parent.name)
+                if fill:
+                    self.rel_fills_elements.setdefault(void_or_projection, []).append(fill)
+            elif m.operation == 'UNION':
+                self.rel_projects_elements.setdefault(i, []).append(void_or_projection)
 
     def get_axis(self, matrix, axis):
         return matrix.col[axis].to_3d().normalized()
@@ -1081,6 +1084,7 @@ class IfcExporter():
         self.relate_objects_to_psets()
         self.relate_objects_to_opening_elements()
         self.relate_opening_elements_to_fillings()
+        self.relate_objects_to_projection_elements()
         self.relate_objects_to_materials()
         for set_type in ['constituent', 'layer', 'profile']:
             self.relate_objects_to_material_sets(set_type)
@@ -2194,6 +2198,15 @@ class IfcExporter():
                     ifcopenshell.guid.new(), self.owner_history, None, None,
                     self.ifc_parser.products[relating_opening_element]['ifc'],
                     self.ifc_parser.products[related_building_element]['ifc']
+                )
+
+    def relate_objects_to_projection_elements(self):
+        for relating_building_element, related_projection_elements in self.ifc_parser.rel_projects_elements.items():
+            for related_projection_element in related_projection_elements:
+                self.file.createIfcRelProjectsElement(
+                    ifcopenshell.guid.new(), self.owner_history, None, None,
+                    self.ifc_parser.products[relating_building_element]['ifc'],
+                    self.ifc_parser.products[related_projection_element]['ifc']
                 )
 
     def relate_elements_to_spatial_structures(self):
