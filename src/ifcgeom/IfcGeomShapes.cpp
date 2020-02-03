@@ -1537,7 +1537,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 
     for (std::vector<std::vector<double> >::const_iterator it = coordinates.begin(); it != coordinates.end(); ++it) {
         const std::vector<double>& coords = *it;
-        points.push_back(gp_Pnt(coords[0], coords[1], coords[2]));
+        points.push_back(gp_Pnt(
+			coords[0] * getValue(GV_LENGTH_UNIT),
+			coords[1] * getValue(GV_LENGTH_UNIT),
+			coords[2] * getValue(GV_LENGTH_UNIT)));
     }
 
     auto polygonal_faces = pfs->Faces();
