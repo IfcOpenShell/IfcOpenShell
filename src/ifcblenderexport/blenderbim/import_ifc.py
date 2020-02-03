@@ -129,6 +129,7 @@ class IfcImporter():
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
+        self.type_products = {}
         self.meshes = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -139,15 +140,18 @@ class IfcImporter():
     def execute(self):
         self.load_diff()
         self.load_file()
+        self.set_ifc_file()
         if self.ifc_import_settings.should_auto_set_workarounds:
             self.auto_set_workarounds()
         self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
         self.create_aggregates()
-        self.create_openings_collection()
+        if self.ifc_import_settings.should_import_opening_elements:
+            self.create_openings_collection()
         self.purge_diff()
         self.patch_ifc()
+        self.create_type_products()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy or self.diff:
             self.create_products_legacy()
@@ -160,35 +164,87 @@ class IfcImporter():
             return
         if applications[0].ApplicationIdentifier == 'Revit':
             self.ifc_import_settings.should_treat_styled_item_as_material = True
-            if self.is_site_far_away():
+            if self.is_ifc_class_far_away('IfcSite'):
                 self.ifc_import_settings.should_ignore_site_coordinates = True
+            if self.is_ifc_class_far_away('IfcBuilding'):
+                self.ifc_import_settings.should_ignore_building_coordinates = True
+        elif applications[0].ApplicationFullName == '12D Model':
+            self.ifc_import_settings.should_reset_absolute_coordinates = True
 
-    def is_site_far_away(self):
-        for site in self.file.by_type('IfcSite'):
+    def is_ifc_class_far_away(self, ifc_class):
+        for site in self.file.by_type(ifc_class):
             if not site.ObjectPlacement \
                     or not site.ObjectPlacement.RelativePlacement \
                     or not site.ObjectPlacement.RelativePlacement.Location:
                 continue
-            coordinates = site.ObjectPlacement.RelativePlacement.Location.Coordinates
-            # Arbitrary threshold based on experience
-            if abs(coordinates[0]) > 1000000 \
-                    or abs(coordinates[1]) > 1000000 \
-                    or abs(coordinates[2]) > 1000000:
+            if self.is_point_far_away(site.ObjectPlacement.RelativePlacement.Location):
                 return True
 
+    def is_point_far_away(self, point):
+        # Arbitrary threshold based on experience
+        return abs(point.Coordinates[0]) > 1000000 \
+            or abs(point.Coordinates[1]) > 1000000 \
+            or abs(point.Coordinates[2]) > 1000000
+
     def patch_ifc(self):
+        project = self.file.by_type('IfcProject')[0]
         if self.ifc_import_settings.should_ignore_site_coordinates:
-            project = self.file.by_type('IfcProject')[0]
-            rel_aggregates = project.IsDecomposedBy
-            for rel_aggregate in rel_aggregates:
-                for site in rel_aggregate.RelatedObjects:
-                    if not site.is_a('IfcSite'):
-                        continue
-                    site.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
-                    if site.ObjectPlacement.RelativePlacement.Axis:
-                        site.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
-                    if site.ObjectPlacement.RelativePlacement.RefDirection:
-                        site.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+            sites = self.find_decomposed_ifc_class(project, 'IfcSite')
+            for site in sites:
+                self.patch_placement_to_origin(site)
+        if self.ifc_import_settings.should_ignore_building_coordinates:
+            buildings = self.find_decomposed_ifc_class(project, 'IfcBuilding')
+            for building in buildings:
+                self.patch_placement_to_origin(building)
+        if self.ifc_import_settings.should_reset_absolute_coordinates:
+            self.reset_absolute_coordinates()
+
+    def reset_absolute_coordinates(self):
+        # 12D can have some funky coordinates out of any sensible range. This
+        # method will not work all the time, but will catch most issues.
+        offset_point = None
+        for point in self.file.by_type('IfcCartesianPoint'):
+            if len(point.Coordinates) == 2 or not self.is_point_far_away(point):
+                continue
+            if not offset_point:
+                offset_point = (point.Coordinates[0], point.Coordinates[1], point.Coordinates[2])
+                self.ifc_import_settings.logger.info(f'Resetting absolute coordinates by {point}')
+            point.Coordinates = (
+                point.Coordinates[0] - offset_point[0],
+                point.Coordinates[1] - offset_point[1],
+                point.Coordinates[2] - offset_point[2]
+            )
+
+    def find_decomposed_ifc_class(self, element, ifc_class):
+        results = []
+        rel_aggregates = element.IsDecomposedBy
+        if not rel_aggregates:
+            return results
+        for rel_aggregate in rel_aggregates:
+            for part in rel_aggregate.RelatedObjects:
+                if part.is_a(ifc_class):
+                    results.append(part)
+                results.extend(self.find_decomposed_ifc_class(part, ifc_class))
+        return results
+
+    def patch_placement_to_origin(self, element):
+        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
+        if element.ObjectPlacement.RelativePlacement.Axis:
+            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
+        if element.ObjectPlacement.RelativePlacement.RefDirection:
+            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+
+    def create_type_products(self):
+        type_products = self.file.by_type('IfcTypeProduct')
+        for type_product in type_products:
+            self.create_type_product(type_product)
+
+    def create_type_product(self, type_product):
+        obj = bpy.data.objects.new(self.get_name(type_product), None)
+        self.add_element_attributes(type_product, obj)
+        self.add_element_document_relations(type_product, obj)
+        self.project['blender'].objects.link(obj)
+        self.type_products[type_product.GlobalId] = obj
 
     def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
@@ -221,6 +277,10 @@ class IfcImporter():
 
         element = self.file.by_id(shape.guid)
 
+        if not self.ifc_import_settings.should_import_opening_elements \
+                and element.is_a('IfcOpeningElement'):
+            return
+
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
         # TODO: make names more meaningful
@@ -244,7 +304,13 @@ class IfcImporter():
         self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
+        self.add_defines_by_type_relation(element, obj)
         self.place_object_in_spatial_tree(element, obj)
+
+    def add_defines_by_type_relation(self, element, obj):
+        if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
+            return
+        obj.BIMObjectProperties.type_product = self.type_products[element.IsTypedBy[0].RelatingType.GlobalId]
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
@@ -255,6 +321,9 @@ class IfcImporter():
     def load_file(self):
         self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
         self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
+
+    def set_ifc_file(self):
+        bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
 
     def calculate_unit_scale(self):
         units = self.file.by_type('IfcUnitAssignment')[0]
@@ -280,22 +349,24 @@ class IfcImporter():
             and attempts <= len(elements):
             for element in elements:
                 name = self.get_name(element)
-                if name in self.spatial_structure_elements:
+                global_id = element.GlobalId
+                if global_id in self.spatial_structure_elements:
                     continue
                 # Occurs when some naughty programs export IFC site objects
                 if not element.Decomposes:
                     continue
                 parent = element.Decomposes[0].RelatingObject
                 parent_name = self.get_name(parent)
+                parent_global_id = parent.GlobalId
                 if parent.is_a('IfcProject'):
-                    self.spatial_structure_elements[name] = {
+                    self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
-                    self.project['blender'].children.link(self.spatial_structure_elements[name]['blender'])
-                elif parent_name in self.spatial_structure_elements:
-                    self.spatial_structure_elements[name] = {
+                    self.project['blender'].children.link(self.spatial_structure_elements[global_id]['blender'])
+                elif parent_global_id in self.spatial_structure_elements:
+                    self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
-                    self.spatial_structure_elements[parent_name]['blender'].children.link(
-                        self.spatial_structure_elements[name]['blender'])
+                    self.spatial_structure_elements[parent_global_id]['blender'].children.link(
+                        self.spatial_structure_elements[global_id]['blender'])
             attempts += 1
 
     def create_aggregates(self):
@@ -386,9 +457,9 @@ class IfcImporter():
         if hasattr(element, 'ContainedInStructure') \
                 and element.ContainedInStructure \
                 and element.ContainedInStructure[0].RelatingStructure:
-            structure_name = self.get_name(element.ContainedInStructure[0].RelatingStructure)
-            if structure_name in self.spatial_structure_elements:
-                self.spatial_structure_elements[structure_name]['blender'].objects.link(obj)
+            relating_structure_global_id = element.ContainedInStructure[0].RelatingStructure.GlobalId
+            if relating_structure_global_id in self.spatial_structure_elements:
+                self.spatial_structure_elements[relating_structure_global_id]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
@@ -526,7 +597,10 @@ class IfcImportSettings:
         self.input_file = None
         self.should_auto_set_workarounds = True
         self.should_ignore_site_coordinates = False
+        self.should_ignore_building_coordinates = False
+        self.should_reset_absolute_coordinates = False
         self.should_import_curves = False
+        self.should_import_opening_elements = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
