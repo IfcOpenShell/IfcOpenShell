@@ -12,6 +12,7 @@ from . import schema
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector
+from pathlib import Path
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
@@ -78,7 +79,9 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.input_file = self.filepath
         ifc_import_settings.diff_file = bpy.context.scene.BIMProperties.diff_json_file
         ifc_import_settings.should_ignore_site_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_site_coordinates
+        ifc_import_settings.should_ignore_building_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_building_coordinates
         ifc_import_settings.should_import_curves = bpy.context.scene.BIMProperties.import_should_import_curves
+        ifc_import_settings.should_import_opening_elements = bpy.context.scene.BIMProperties.import_should_import_opening_elements
         ifc_import_settings.should_auto_set_workarounds = bpy.context.scene.BIMProperties.import_should_auto_set_workarounds
         ifc_import_settings.should_treat_styled_item_as_material = bpy.context.scene.BIMProperties.import_should_treat_styled_item_as_material
         ifc_import_settings.should_use_cpu_multiprocessing = bpy.context.scene.BIMProperties.import_should_use_cpu_multiprocessing
@@ -203,46 +206,76 @@ class ResetObjectColours(bpy.types.Operator):
             object.color = (1, 1, 1, 1)
         return {'FINISHED'}
 
+
+class QAHelper():
+    @classmethod
+    def append_to_scenario(cls, lines):
+        filename = os.path.join(
+            bpy.context.scene.BIMProperties.features_dir,
+            bpy.context.scene.BIMProperties.features_file + '.feature')
+        if os.path.exists(filename+'~'):
+            os.remove(filename+'~')
+        os.rename(filename, filename+'~')
+        with open(filename, 'w') as destination:
+            with open(filename+'~', 'r') as source:
+                is_in_scenario = False
+                for source_line in source:
+                    if 'Scenario: 'in source_line \
+                            and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len('Scenario: '):]:
+                        is_in_scenario = True
+                    if is_in_scenario and source_line.strip()[0:4] == 'Then':
+                        for line in lines:
+                            destination.write((' '*8) + line + '\n')
+                        is_in_scenario = False
+                    destination.write(source_line)
+        os.remove(filename+'~')
+
+
 class ApproveClass(bpy.types.Operator):
     bl_idname = 'bim.approve_class'
     bl_label = 'Approve Class'
 
     def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
-            for object in bpy.context.selected_objects:
-                index = object.BIMObjectProperties.attributes.find('GlobalId')
-                if index == -1:
-                    continue
-                file.write('Then the element {} is an {}\n'.format(
+        lines = []
+        for object in bpy.context.selected_objects:
+            index = object.BIMObjectProperties.attributes.find('GlobalId')
+            if index != -1:
+                lines.append('Then the element {} is an {}'.format(
                     object.BIMObjectProperties.attributes[index].string_value,
                     object.name.split('/')[0]))
+        QAHelper.append_to_scenario(lines)
         return {'FINISHED'}
+
 
 class RejectClass(bpy.types.Operator):
     bl_idname = 'bim.reject_class'
     bl_label = 'Reject Class'
 
     def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
-            for object in bpy.context.selected_objects:
-                file.write('Then the element {} is an {}\n'.format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
-                    bpy.context.scene.BIMProperties.audit_ifc_class))
+        lines = []
+        for object in bpy.context.selected_objects:
+            lines.append('Then the element {} is an {}'.format(
+                object.BIMObjectProperties.attributes[
+                    object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                bpy.context.scene.BIMProperties.audit_ifc_class))
+        QAHelper.append_to_scenario(lines)
         return {'FINISHED'}
+
 
 class RejectElement(bpy.types.Operator):
     bl_idname = 'bim.reject_element'
     bl_label = 'Reject Element'
 
     def execute(self, context):
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt', 'a') as file:
-            for object in bpy.context.selected_objects:
-                file.write('Then the element {} should not exist because {}\n'.format(
-                    object.BIMObjectProperties.attributes[
-                        object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
-                    bpy.context.scene.BIMProperties.qa_reject_element_reason))
+        lines = []
+        for object in bpy.context.selected_objects:
+            lines.append('Then the element {} should not exist because {}'.format(
+                object.BIMObjectProperties.attributes[
+                    object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
+                bpy.context.scene.BIMProperties.qa_reject_element_reason))
+        QAHelper.append_to_scenario(lines)
         return {'FINISHED'}
+
 
 class SelectAudited(bpy.types.Operator):
     bl_idname = 'bim.select_audited'
@@ -250,9 +283,14 @@ class SelectAudited(bpy.types.Operator):
 
     def execute(self, context):
         audited_global_ids = []
-        with open(bpy.context.scene.BIMProperties.data_dir + 'audit.txt') as file:
-            for line in file:
-                audited_global_ids.append(line.split(' ')[3])
+        for filename in Path(bpy.context.scene.BIMProperties.features_dir).glob('*.feature'):
+            with open(filename, 'r') as feature_file:
+                lines = feature_file.readlines()
+                for line in lines:
+                    words = line.strip().split()
+                    for word in words:
+                        if self.is_a_global_id(word):
+                            audited_global_ids.append(word)
         for object in bpy.context.visible_objects:
             index = object.BIMObjectProperties.attributes.find('GlobalId')
             if index != -1 \
@@ -260,19 +298,31 @@ class SelectAudited(bpy.types.Operator):
                 object.select_set(True)
         return {'FINISHED'}
 
+    def is_a_global_id(self, word):
+        return word[0] in ['0', '1', '2', '3'] and len(word) == 22
+
 class QuickProjectSetup(bpy.types.Operator):
     bl_idname = 'bim.quick_project_setup'
     bl_label = 'Quick Project Setup'
 
     def execute(self, context):
         project = bpy.data.collections.new('IfcProject/My Project')
-        bpy.context.scene.collection.children.link(project)
         site = bpy.data.collections.new('IfcSite/My Site')
-        project.children.link(site)
         building = bpy.data.collections.new('IfcBuilding/My Building')
-        site.children.link(building)
         building_storey = bpy.data.collections.new('IfcBuildingStorey/Ground Floor')
+
+        site_obj = bpy.data.objects.new('IfcSite/My Site', None)
+        building_obj = bpy.data.objects.new('IfcBuilding/My Building', None)
+        building_storey_obj = bpy.data.objects.new('IfcBuildingStorey/Ground Floor', None)
+
+        bpy.context.scene.collection.children.link(project)
+        project.children.link(site)
+        site.children.link(building)
         building.children.link(building_storey)
+
+        site.objects.link(site_obj)
+        building.objects.link(building_obj)
+        building_storey.objects.link(building_storey_obj)
         return {'FINISHED'}
 
 class AssignPset(bpy.types.Operator):
@@ -650,6 +700,21 @@ class SelectFeaturesDir(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+
+class SelectIfcFile(bpy.types.Operator):
+    bl_idname = "bim.select_ifc_file"
+    bl_label = "Select IFC File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.ifc_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
@@ -662,6 +727,7 @@ class SelectDataDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
 
 class SelectSchemaDir(bpy.types.Operator):
     bl_idname = "bim.select_schema_dir"
@@ -1068,3 +1134,19 @@ class AssignContext(bpy.types.Operator):
                 name[0:6] == 'Model/' \
                 or name[0:5] == 'Plan/' \
             )
+
+
+class SetViewPreset1(bpy.types.Operator):
+    bl_idname = 'bim.set_view_preset_1'
+    bl_label = 'Set View Preset 1'
+
+    def execute(self, context):
+        bpy.data.worlds[0].color = (1, 1, 1)
+        bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
+        bpy.context.scene.display.shading.show_object_outline = True
+        bpy.context.scene.display.shading.show_cavity = True
+        bpy.context.scene.display.shading.cavity_type = 'BOTH'
+        bpy.context.scene.display.shading.curvature_ridge_factor = 1
+        bpy.context.scene.display.shading.curvature_valley_factor = 1
+        bpy.context.scene.view_settings.view_transform = 'Standard'
+        return {'FINISHED'}

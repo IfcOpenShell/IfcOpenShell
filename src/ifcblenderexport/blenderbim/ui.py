@@ -37,6 +37,9 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'attributes')
 
+        row = layout.row()
+        row.prop(props, 'type_product')
+
         layout.label(text="Property Sets:")
         row = layout.row()
         row.prop(context.scene.BIMProperties, "pset_name")
@@ -284,6 +287,9 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.activate_view', icon='SCENE', text='')
 
         row = layout.row()
+        row.operator('bim.set_view_preset_1')
+
+        row = layout.row()
         row.operator('bim.create_sheets')
 
         row = layout.row()
@@ -300,7 +306,7 @@ class BIM_PT_camera(Panel):
     @classmethod
     def poll(cls, context):
         engine = context.engine
-        return context.camera and (engine in cls.COMPAT_ENGINES) and \
+        return context.camera and \
                hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
@@ -389,15 +395,17 @@ class BIM_PT_bim(Panel):
         row = layout.row()
         row.operator('bim.quick_project_setup')
 
-        col = layout.column()
-        row = col.row(align=True)
+        row = layout.row(align=True)
         row.prop(bim_properties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
 
-        col = layout.column()
-        row = col.row(align=True)
+        row = layout.row(align=True)
         row.prop(bim_properties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+
+        row = layout.row(align=True)
+        row.prop(bim_properties, "ifc_file")
+        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         layout.label(text="Software Identity:")
 
@@ -480,6 +488,13 @@ class BIM_PT_qa(Panel):
         row = layout.row(align=True)
         row.prop(bim_properties, "features_dir")
         row.operator("bim.select_features_dir", icon="FILE_FOLDER", text="")
+
+        if bim_properties.features_dir:
+            row = layout.row(align=True)
+            row.prop(bim_properties, "features_file")
+
+            row = layout.row(align=True)
+            row.prop(bim_properties, "scenario")
 
         layout.label(text="Quality Auditing:")
 
@@ -571,29 +586,41 @@ class BIM_PT_mvd(Panel):
         scene = context.scene
         bim_properties = scene.BIMProperties
 
-        layout.label(text="Custom MVD:")
+        layout.label(text='Custom MVD:')
 
         row = layout.row()
-        row.prop(bim_properties, "export_has_representations")
+        row.prop(bim_properties, 'export_has_representations')
         row = layout.row()
-        row.prop(bim_properties, "import_should_import_curves")
-
-        layout.label(text="Experimental Modes:")
-
+        row.prop(bim_properties, 'import_should_import_curves')
         row = layout.row()
-        row.prop(bim_properties, "import_should_use_legacy")
-        row = layout.row()
-        row.prop(bim_properties, "import_should_use_cpu_multiprocessing")
+        row.prop(bim_properties, 'import_should_import_opening_elements')
 
-        layout.label(text="Revit Workarounds:")
+        layout.label(text='Experimental Modes:')
 
         row = layout.row()
-        row.prop(bim_properties, "import_should_auto_set_workarounds")
+        row.prop(bim_properties, 'import_should_use_legacy')
         row = layout.row()
-        row.prop(bim_properties, "export_should_export_all_materials_as_styled_items")
+        row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
+
+        layout.label(text='Vendor Workarounds:')
+
         row = layout.row()
-        row.prop(bim_properties, "export_should_use_presentation_style_assignment")
+        row.prop(bim_properties, 'import_should_auto_set_workarounds')
+
+        layout.label(text='12D Workarounds:')
+
         row = layout.row()
-        row.prop(bim_properties, "import_should_ignore_site_coordinates")
+        row.prop(bim_properties, 'import_should_reset_absolute_coordinates')
+
+        layout.label(text='Revit Workarounds:')
+
         row = layout.row()
-        row.prop(bim_properties, "import_should_treat_styled_item_as_material")
+        row.prop(bim_properties, 'export_should_export_all_materials_as_styled_items')
+        row = layout.row()
+        row.prop(bim_properties, 'export_should_use_presentation_style_assignment')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_ignore_site_coordinates')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_ignore_building_coordinates')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_treat_styled_item_as_material')

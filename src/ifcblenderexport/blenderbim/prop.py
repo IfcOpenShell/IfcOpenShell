@@ -25,6 +25,8 @@ profiledef_enum = []
 classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
+featuresfiles_enum = []
+scenarios_enum = []
 psetnames_enum = []
 psetfiles_enum = []
 classification_enum = []
@@ -65,13 +67,15 @@ def getIfcPredefinedTypes(self, context):
 def refreshClasses(self, context):
     global classes_enum
     classes_enum.clear()
-    getIfcClasses(self, context)
+    enum = getIfcClasses(self, context)
+    context.scene.BIMProperties.ifc_class = enum[0][0]
 
 
 def refreshPredefinedTypes(self, context):
     global types_enum
     types_enum.clear()
-    getIfcPredefinedTypes(self, context)
+    enum = getIfcPredefinedTypes(self, context)
+    context.scene.BIMProperties.ifc_predefined_type = enum[0][0]
 
 
 def getDiagramScales(self, context):
@@ -112,7 +116,7 @@ def getIfcProducts(self, context):
     global products_enum
     if len(products_enum) < 1:
         products_enum.extend([(e, e, '') for e in
-            ['IfcElement', 'IfcSpatialStructureElement', 'IfcStructural']])
+            ['IfcElement', 'IfcElementType', 'IfcSpatialStructureElement', 'IfcStructural']])
     return products_enum
 
 
@@ -157,6 +161,44 @@ def getAvailableMaterialPsets(self, context):
         files = os.listdir(os.path.join(context.scene.BIMProperties.data_dir, 'material'))
         availablematerialpsets_enum.extend([(f, f, '') for f in files])
     return availablematerialpsets_enum
+
+
+def getFeaturesFiles(self, context):
+    global featuresfiles_enum
+    if len(featuresfiles_enum) < 1:
+        featuresfiles_enum.clear()
+        for filename in Path(context.scene.BIMProperties.features_dir).glob('*.feature'):
+            f = str(filename.stem)
+            featuresfiles_enum.append((f, f, ''))
+    return featuresfiles_enum
+
+
+def refreshFeaturesFiles(self, context):
+    global featuresfiles_enum
+    featuresfiles_enum.clear()
+    getFeaturesFiles(self, context)
+
+
+def getScenarios(self, context):
+    global scenarios_enum
+    if len(scenarios_enum) < 1:
+        scenarios_enum.clear()
+        filename = os.path.join(
+            context.scene.BIMProperties.features_dir,
+            context.scene.BIMProperties.features_file + '.feature')
+        with open(filename, 'r') as feature_file:
+            lines = feature_file.readlines()
+            for line in lines:
+                if 'Scenario:' in line:
+                    s = line.strip()[len('Scenario: '):]
+                    scenarios_enum.append((s, s, ''))
+    return scenarios_enum
+
+
+def refreshScenarios(self, context):
+    global scenarios_enum
+    scenarios_enum.clear()
+    getScenarios(self, context)
 
 
 def getPsetNames(self, context):
@@ -319,6 +361,7 @@ class BIMCameraProperties(PropertyGroup):
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
+    ifc_file: StringProperty(name="IFC File")
     audit_ifc_class: EnumProperty(items=getIfcClasses, name="Audit Class")
     ifc_product: EnumProperty(items=getIfcProducts, name="Products", update=refreshClasses)
     ifc_class: EnumProperty(items=getIfcClasses, name="Class", update=refreshPredefinedTypes)
@@ -330,7 +373,10 @@ class BIMProperties(PropertyGroup):
     export_should_export_all_materials_as_styled_items: BoolProperty(name="Export All Materials as Styled Items", default=False)
     export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
+    import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
+    import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
     import_should_import_curves: BoolProperty(name="Import Curves", default=False)
+    import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
@@ -343,7 +389,9 @@ class BIMProperties(PropertyGroup):
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
     global_id: StringProperty(name="GlobalId")
-    features_dir: StringProperty(default='', name="Features Directory")
+    features_dir: StringProperty(default='', name="Features Directory", update=refreshFeaturesFiles)
+    features_file: EnumProperty(items=getFeaturesFiles, name="Features File", update=refreshScenarios)
+    scenario: EnumProperty(items=getScenarios, name="Scenario")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
     diff_old_file: StringProperty(default='', name="Diff Old IFC File")
     diff_new_file: StringProperty(default='', name="Diff New IFC File")
@@ -419,6 +467,7 @@ class BoundaryCondition(PropertyGroup):
 class BIMObjectProperties(PropertyGroup):
     global_ids: CollectionProperty(name="GlobalIds", type=GlobalId)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
+    type_product: PointerProperty(name='Type Product', type=bpy.types.Object)
     psets: CollectionProperty(name="Psets", type=Pset)
     applicable_attributes: EnumProperty(items=getApplicableAttributes, name="Attribute Names")
     documents: CollectionProperty(name="Documents", type=Document)

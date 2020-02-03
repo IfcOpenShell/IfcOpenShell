@@ -76,6 +76,7 @@ class IfcParser():
         self.ifc_export_settings = ifc_export_settings
 
         self.selected_products = []
+        self.selected_spatial_structure_elements = []
 
         self.product_index = 0
         self.product_name_index_map = {}
@@ -113,6 +114,7 @@ class IfcParser():
         self.rel_aggregates = {}
         self.rel_voids_elements = {}
         self.rel_fills_elements = {}
+        self.rel_projects_elements = {}
         self.rel_connects_structural_member = {}
         self.rel_assigns_to_group = {}
         self.representations = {}
@@ -128,7 +130,7 @@ class IfcParser():
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
         self.organisations = self.get_organisations()
-        self.convert_selected_objects_into_products(bpy.context.selected_objects)
+        self.categorise_selected_objects(bpy.context.selected_objects)
         self.psets = self.get_psets()
         self.material_psets = self.get_material_psets()
         self.documents = self.get_documents()
@@ -317,18 +319,20 @@ class IfcParser():
 
     def resolve_voids_and_fills(self, i, obj):
         for m in obj.modifiers:
-            if m.type == 'BOOLEAN' and m.object is not None:
-                void = self.get_product_index_from_raw_name(m.object.name)
-                if void is not None:
-                    if i not in self.rel_voids_elements:
-                        self.rel_voids_elements[i] = []
-                    self.rel_voids_elements[i].append(void)
-                    if m.object.parent:
-                        fill = self.get_product_index_from_raw_name(m.object.parent.name)
-                        if fill is not None:
-                            if void not in self.rel_fills_elements:
-                                self.rel_fills_elements[void] = []
-                            self.rel_fills_elements[void].append(fill)
+            if m.type != 'BOOLEAN' or m.object is None:
+                continue
+            void_or_projection = self.get_product_index_from_raw_name(m.object.name)
+            if void_or_projection is None:
+                continue
+            if m.operation == 'DIFFERENCE':
+                self.rel_voids_elements.setdefault(i, []).append(void_or_projection)
+                if not m.object.parent:
+                    continue
+                fill = self.get_product_index_from_raw_name(m.object.parent.name)
+                if fill:
+                    self.rel_fills_elements.setdefault(void_or_projection, []).append(fill)
+            elif m.operation == 'UNION':
+                self.rel_projects_elements.setdefault(i, []).append(void_or_projection)
 
     def get_axis(self, matrix, axis):
         return matrix.col[axis].to_3d().normalized()
@@ -352,11 +356,8 @@ class IfcParser():
             if product['raw'].name == name:
                 return index
 
-    def get_product(self, selected_product, metadata_override={}, attribute_override={}):
-        obj = selected_product['raw']
-        product = {
-            'ifc': None,
-            'raw': obj,
+    def append_product_attributes(self, product, obj):
+        product.update({
             'location': obj.matrix_world.translation,
             'up_axis': self.get_axis(obj.matrix_world, 2),
             'forward_axis': self.get_axis(obj.matrix_world, 0),
@@ -365,23 +366,32 @@ class IfcParser():
             'has_mirror': False,
             'array_offset': Vector((0, 0, 0)),
             'scale': obj.scale,
+            'representations': self.get_object_representation_names(obj)
+        })
+
+    def get_product(self, selected_product, metadata_override={}, attribute_override={}):
+        obj = selected_product['raw']
+        product = {
+            'ifc': None,
+            'raw': obj,
             'class': self.get_ifc_class(obj.name),
             'relating_structure': None,
             'relating_host': None,
             'relating_qtos_key': None,
-            'representations': self.get_object_representation_names(obj),
             'attributes': self.get_object_attributes(obj),
             'has_boundary_condition': obj.BIMObjectProperties.has_boundary_condition,
             'boundary_condition_class': None,
             'boundary_condition_attributes': {},
             'structural_member_connection': None
         }
+        self.append_product_attributes(product, obj)
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
 
-        if obj.parent \
-                and self.is_a_type(self.get_ifc_class(obj.parent.name)):
-            reference = self.get_type_product_reference(obj.parent.name)
+        type_product = obj.BIMObjectProperties.type_product
+        if type_product \
+                and self.is_a_type(self.get_ifc_class(type_product.name)):
+            reference = self.get_type_product_reference(type_product.name)
             self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
 
         if product['has_boundary_condition']:
@@ -498,16 +508,18 @@ class IfcParser():
                 if child.name == child_collection.name:
                     return parent_collection
 
-    def convert_selected_objects_into_products(self, objects_to_sort, metadata=None):
+    def categorise_selected_objects(self, objects_to_sort, metadata=None):
         if not metadata:
             metadata = {}
         for obj in objects_to_sort:
             if obj.name[0:3] != 'Ifc':
                 continue
-            if not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
+            elif obj.users_collection and obj.users_collection[0].name == obj.name:
+                self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
+            elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({'raw': obj, 'metadata': metadata})
-            if obj.instance_type == 'COLLECTION':
-                self.convert_selected_objects_into_products(
+            elif obj.instance_type == 'COLLECTION':
+                self.categorise_selected_objects(
                     obj.instance_collection.objects,
                     {'rel_aggregates_relating_object': obj}
                 )
@@ -705,12 +717,17 @@ class IfcParser():
         elements = []
         for collection in bpy.data.collections:
             if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
-                elements.append({
+                raw = bpy.data.objects.get(collection.name)
+                if not raw:
+                    raw = collection
+                element = {
                     'ifc': None,
-                    'raw': collection,
-                    'class': self.get_ifc_class(collection.name),
-                    'attributes': self.get_object_attributes(collection)
-                })
+                    'raw': raw,
+                    'class': self.get_ifc_class(raw.name),
+                    'attributes': self.get_object_attributes(raw)
+                }
+                self.append_product_attributes(element, raw)
+                elements.append(element)
         return elements
 
     def get_structural_analysis_models(self):
@@ -728,7 +745,9 @@ class IfcParser():
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
             return
-        for product in self.selected_products + self.type_products:
+        for product in self.selected_products \
+                + self.type_products \
+                + self.selected_spatial_structure_elements:
             self.load_product_representations(product)
 
     def load_product_representations(self, product):
@@ -924,6 +943,7 @@ class IfcParser():
                     results.append(type_product)
                     library['rel_declares_type_products'].append(index)
 
+                    # TODO: this should use properties
                     for key in obj.keys():
                         if key[0:3] == 'Doc':
                             self.rel_associates_document_type.setdefault(
@@ -948,6 +968,8 @@ class IfcParser():
             return names
         elif self.is_structural(obj) and obj.type == 'EMPTY':
             names.append('Model/Reference/GRAPH_VIEW/{}'.format(obj.name))
+            return names
+        if not obj.data:
             return names
         name = self.get_ifc_representation_name(obj.data.name)
         for context in self.ifc_export_settings.context_tree:
@@ -1062,6 +1084,7 @@ class IfcExporter():
         self.relate_objects_to_psets()
         self.relate_objects_to_opening_elements()
         self.relate_opening_elements_to_fillings()
+        self.relate_objects_to_projection_elements()
         self.relate_objects_to_materials()
         for set_type in ['constituent', 'layer', 'profile']:
             self.relate_objects_to_material_sets(set_type)
@@ -1485,9 +1508,11 @@ class IfcExporter():
         related_objects = []
         for node in element_tree:
             element = self.ifc_parser.spatial_structure_elements[node['reference']]
+            self.cast_attributes(element['class'], element['attributes'])
             element['attributes'].update({
                 'OwnerHistory': self.owner_history,  # TODO: unhardcode
-                'ObjectPlacement': self.file.createIfcLocalPlacement(placement_rel_to, self.origin)
+                'ObjectPlacement': self.file.createIfcLocalPlacement(placement_rel_to, self.origin),
+                'Representation': self.get_product_shape(element)
             })
             element['ifc'] = self.file.create_entity(element['class'], **element['attributes'])
             related_objects.append(element['ifc'])
@@ -1555,6 +1580,11 @@ class IfcExporter():
 
     def cast_attributes(self, ifc_class, attributes):
         for key, value in attributes.items():
+            edge_case_attribute = self.cast_edge_case_attribute(ifc_class, key, value)
+            if edge_case_attribute:
+                attributes[key] = edge_case_attribute
+                continue
+
             complex_attribute = self.cast_complex_attribute(ifc_class, key, value)
             if complex_attribute:
                 attributes[key] = complex_attribute
@@ -1564,6 +1594,20 @@ class IfcExporter():
             if var_type is None:
                 continue
             attributes[key] = self.cast_to_base_type(var_type, value)
+
+    def cast_edge_case_attribute(self, ifc_class, key, value):
+        if key == 'RefLatitude' or key == 'RefLongitude':
+            return self.dd2dms(value)
+
+    def dd2dms(self, dd):
+        dd = float(dd)
+        sign = 1 if dd >= 0 else -1
+        dd = abs(dd)
+        minutes, seconds = divmod(dd*3600, 60)
+        degrees, minutes = divmod(minutes, 60)
+        if dd < 0:
+            degrees = -degrees
+        return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign)
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
@@ -1678,11 +1722,12 @@ class IfcExporter():
 
     def get_product_shape(self, product):
         try:
-            shape = self.file.createIfcProductDefinitionShape(None, None,
-                self.get_product_shape_representations(product))
+            representations = self.get_product_shape_representations(product)
+            if representations:
+                return self.file.createIfcProductDefinitionShape(None, None, representations)
         except:
-            shape = None
-        return shape
+            pass
+        return None
 
     def get_product_shape_representations(self, product):
         results = []
@@ -1906,12 +1951,17 @@ class IfcExporter():
             self.create_curve(representation['raw'].bevel_object.data))
         swept_area_solids = []
         for spline in representation['raw'].splines:
-            direction = spline.bezier_points[1].co - spline.bezier_points[0].co
+            points = self.get_spline_points(spline)
+            if not points:
+                continue
+            # Intuitively, the direction below is reversed, but apparently
+            # Blender likes to extrude down (opposite of IFC) natively.
+            direction = (points[0].co - points[1].co).xyz
             unit_direction = direction.normalized()
 
             # This can be used in the future when dealing with non vector curves
-            # curr_point = spline.bezier_points[0]
-            # next_point = spline.bezier_points[1]
+            # curr_point = points[0]
+            # next_point = points[1]
             # j_percent = 0
             # direction = self.bezier_tangent(
             #    pt0=curr_point.co,
@@ -1919,11 +1969,10 @@ class IfcExporter():
             #    pt2=next_point.handle_left,
             #    pt3=next_point.co,
             #    step=j_percent)
-            tilt_matrix = Matrix.Rotation(-spline.bezier_points[0].tilt, 4, 'Z')
+            tilt_matrix = Matrix.Rotation(points[0].tilt, 4, 'Z')
             x_axis = unit_direction.to_track_quat('-Y', 'Z') @ Vector((1, 0, 0)) @ tilt_matrix
-
             position = self.create_ifc_axis_2_placement_3d(
-                spline.bezier_points[0].co, unit_direction, x_axis)
+                points[1].co, unit_direction, x_axis)
             swept_area_solids.append(self.file.createIfcExtrudedAreaSolid(
                 swept_area, position,
                 self.file.createIfcDirection((0., 0., 1.)),
@@ -1942,11 +1991,11 @@ class IfcExporter():
         return self.file.createIfcVertexPoint(
             self.create_cartesian_point(point.x, point.y, point.z))
 
+    def get_spline_points(self, spline):
+        return spline.bezier_points if spline.bezier_points else spline.points
+
     def create_edge(self, curve):
-        if curve.splines[0].bezier_points:
-            points = curve.splines[0].bezier_points
-        elif curve.splines[0].points:
-            points = curve.splines[0].points
+        points = self.get_spline_points(curve.splines[0])
         if not points:
             return
         return self.file.createIfcEdge(
@@ -2149,6 +2198,15 @@ class IfcExporter():
                     ifcopenshell.guid.new(), self.owner_history, None, None,
                     self.ifc_parser.products[relating_opening_element]['ifc'],
                     self.ifc_parser.products[related_building_element]['ifc']
+                )
+
+    def relate_objects_to_projection_elements(self):
+        for relating_building_element, related_projection_elements in self.ifc_parser.rel_projects_elements.items():
+            for related_projection_element in related_projection_elements:
+                self.file.createIfcRelProjectsElement(
+                    ifcopenshell.guid.new(), self.owner_history, None, None,
+                    self.ifc_parser.products[relating_building_element]['ifc'],
+                    self.ifc_parser.products[related_projection_element]['ifc']
                 )
 
     def relate_elements_to_spatial_structures(self):
