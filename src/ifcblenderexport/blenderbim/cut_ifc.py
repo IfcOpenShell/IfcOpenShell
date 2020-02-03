@@ -787,9 +787,13 @@ class SvgWriter():
                 line['stroke-dasharray'] = '3, 2'
 
         if self.ifc_cutter.leader_obj:
+            matrix_world = self.ifc_cutter.leader_obj.matrix_world
             for spline in self.ifc_cutter.leader_obj.data.splines:
                 classes = ['annotation', 'leader']
-                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in spline.points]
+                d = ' '.join(['L {} {}'.format(
+                    (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points])
                 d = 'M{}'.format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
                 path['marker-end'] = 'url(#leader-marker)'
@@ -821,20 +825,23 @@ class SvgWriter():
                 }))
 
         if self.ifc_cutter.section_level_obj:
+            matrix_world = self.ifc_cutter.section_level_obj.matrix_world
             for spline in self.ifc_cutter.section_level_obj.data.splines:
                 classes = ['annotation', 'section-level']
-                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in spline.points]
+                d = ' '.join(['L {} {}'.format(
+                    (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points])
                 d = 'M{}'.format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
                 path['marker-start'] = 'url(#section-level-marker)'
                 path['stroke-dasharray'] = '12.5, 3, 3, 3'
                 text_position = Vector((
-                    (x_offset + spline.points[0].co.x) * self.scale,
-                    ((y_offset - spline.points[0].co.y) * self.scale) - 3.5
+                    (x_offset + projected_points[0].x) * self.scale,
+                    ((y_offset - projected_points[0].y) * self.scale) - 3.5
                 ))
                 # TODO: unhardcode m unit
-                rl = ((self.ifc_cutter.section_level_obj.matrix_world @
-                    spline.points[0].co).xyz + self.ifc_cutter.section_level_obj.location).z
+                rl = (matrix_world @ spline.points[0].co.xyz).z
                 self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
                     'font-size': '4.13', # 2.5
                     'font-family': 'OpenGost Type B TT',
@@ -904,8 +911,8 @@ class SvgWriter():
                 if i+1 >= len(spline.points):
                     continue
                 classes = ['annotation', 'dimension']
-                v0_global = matrix_world @ spline.points[i].co
-                v1_global = matrix_world @ spline.points[i+1].co
+                v0_global = matrix_world @ spline.points[i].co.xyz
+                v1_global = matrix_world @ spline.points[i+1].co.xyz
                 v0 = self.project_point_onto_camera(v0_global)
                 v1 = self.project_point_onto_camera(v1_global)
                 start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
@@ -928,9 +935,11 @@ class SvgWriter():
                 line['marker-end'] = 'url(#dimension-marker-end)'
                 # Standard font sizes 1.8, 2.5, 3.5, 5, 7
                 # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
-                if text_override is None:
-                    text_override = str(round(dimension))
-                self.svg.add(self.svg.text(text_override, insert=tuple(text_position), **{
+                if text_override is not None:
+                    text = text_override
+                else:
+                    text = str(round(dimension))
+                self.svg.add(self.svg.text(text, insert=tuple(text_position), **{
                     'transform': 'rotate({} {} {})'.format(
                         rotation,
                         text_position.x,
