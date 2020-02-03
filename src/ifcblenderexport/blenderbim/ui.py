@@ -306,7 +306,7 @@ class BIM_PT_camera(Panel):
     @classmethod
     def poll(cls, context):
         engine = context.engine
-        return context.camera and (engine in cls.COMPAT_ENGINES) and \
+        return context.camera and \
                hasattr(context.active_object.data, "BIMCameraProperties")
 
     def draw(self, context):
