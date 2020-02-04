@@ -77,6 +77,7 @@ class IfcParser():
 
         self.selected_products = []
         self.selected_spatial_structure_elements = []
+        self.global_ids = []
 
         self.product_index = 0
         self.product_name_index_map = {}
@@ -195,11 +196,15 @@ class IfcParser():
 
     def get_object_attributes(self, obj):
         attributes = {'Name': self.get_ifc_name(obj.name)}
-        if obj.BIMObjectProperties.attributes.find('GlobalId') == -1:
+        global_id_index = obj.BIMObjectProperties.attributes.find('GlobalId')
+        if global_id_index == -1:
             global_id = obj.BIMObjectProperties.attributes.add()
             global_id.name = 'GlobalId'
             global_id.string_value = ifcopenshell.guid.new()
+        elif obj.BIMObjectProperties.attributes[global_id_index].string_value in self.global_ids:
+            obj.BIMObjectProperties.attributes[global_id_index].string_value = ifcopenshell.guid.new()
         attributes.update({a.name: a.string_value for a in obj.BIMObjectProperties.attributes})
+        self.global_ids.append(attributes['GlobalId'])
         return attributes
 
     def get_products(self):
