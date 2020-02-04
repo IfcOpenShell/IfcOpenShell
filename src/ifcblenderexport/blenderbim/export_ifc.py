@@ -215,7 +215,9 @@ class IfcParser():
 
     def resolve_modifiers(self, product):
         obj = product['raw']
-        if obj.data and not obj.data.BIMMeshProperties.is_parametric:
+        if obj.data \
+                and hasattr(obj.data, 'BIMMeshProperties') \
+                and not obj.data.BIMMeshProperties.is_parametric:
             return
         instance_objects = [(obj, {
             'location': obj.matrix_world.translation,
