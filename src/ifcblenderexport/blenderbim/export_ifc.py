@@ -215,6 +215,8 @@ class IfcParser():
 
     def resolve_modifiers(self, product):
         obj = product['raw']
+        if obj.data and not obj.data.BIMMeshProperties.is_parametric:
+            return
         instance_objects = [(obj, {
             'location': obj.matrix_world.translation,
             'array_offset': Vector((0, 0, 0)),
@@ -840,6 +842,7 @@ class IfcParser():
             'context': context,
             'subcontext': subcontext,
             'target_view': target_view,
+            'is_parametric': mesh.BIMMeshProperties.is_parametric if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_curve': isinstance(mesh, bpy.types.Curve),
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
@@ -2166,6 +2169,8 @@ class IfcExporter():
 
     def create_solid_representation(self, representation):
         mesh = representation['raw']
+        if not representation['is_parametric']:
+            mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         self.create_vertices(mesh.vertices)
         for polygon in mesh.polygons:
             self.ifc_faces.append(self.file.createIfcFace([
