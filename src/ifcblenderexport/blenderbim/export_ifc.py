@@ -753,7 +753,14 @@ class IfcParser():
         for product in self.selected_products \
                 + self.type_products \
                 + self.selected_spatial_structure_elements:
+            self.prevent_data_name_duplicates(product)
             self.load_product_representations(product)
+
+    def prevent_data_name_duplicates(self, product):
+        if product['raw'].data \
+                and bpy.data.meshes.get(product['raw'].data.name) \
+                and bpy.data.curves.get(product['raw'].data.name):
+            product['raw'].data.name +=  '~'
 
     def load_product_representations(self, product):
         obj = product['raw']
