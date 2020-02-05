@@ -6,7 +6,7 @@ class IFC2CA:
         self.filename = filename
         self.file = None
         self.result = {}
-        self.restraints = []
+        self.supports = []
 
     def convert(self):
         self.file = ifcopenshell.open(self.filename)
@@ -16,7 +16,7 @@ class IFC2CA:
                 'units': self.get_units(),
                 'elements': self.get_elements(model),
                 'mesh': { 'meshSize': 0.2 }, # TODO: unhardcode
-                'restraints': self.get_restraints()
+                'supports': self.get_supports()
             }
 
     def get_units(self):
@@ -47,8 +47,11 @@ class IFC2CA:
             return
         for connection in element.ConnectedBy:
             if connection.RelatedStructuralConnection.AppliedCondition:
-                self.restraints.append(connection.RelatedStructuralConnection)
+                self.supports.append(connection.RelatedStructuralConnection)
         return {
+            'ifcName': element.is_a() + '|' + str(element.id()),
+            'name': element.Name,
+            'id': element.GlobalId,
             'geometryType': self.get_geometry_type(representation),
             'geometry': self.get_geometry(representation),
             'rotation': 0, # TODO: unhardcode
@@ -57,34 +60,37 @@ class IFC2CA:
             'elementType': 'EulerBeam' # TODO: unhardcode
         }
 
-    def get_restraints(self):
-        restraints = []
-        for restraint in self.restraints:
-            restraints.append({
-                'geometryType': self.get_restraint_geometry_type(restraint),
-                'geometry': self.get_restraint_geometry(restraint),
-                'input': self.get_restraint_input(restraint)
+    def get_supports(self):
+        supports = []
+        for support in self.supports:
+            supports.append({
+                'ifcName': support.is_a() + '|' + str(support.id()),
+                'name': support.Name,
+                'id': support.GlobalId,
+                'geometryType': self.get_support_geometry_type(support),
+                'geometry': self.get_support_geometry(support),
+                'appliedCondition': self.get_support_input(support)
             })
-        return restraints
+        return supports
 
-    def get_restraint_geometry_type(self, restraint):
-        if restraint.is_a('IfcStructuralPointConnection'):
+    def get_support_geometry_type(self, support):
+        if support.is_a('IfcStructuralPointConnection'):
             return 'point'
 
-    def get_restraint_geometry(self, restraint):
+    def get_support_geometry(self, support):
         # TODO: make more robust
-        return restraint.ObjectPlacement.RelativePlacement.Location.Coordinates
+        return support.ObjectPlacement.RelativePlacement.Location.Coordinates
 
-    def get_restraint_input(self, restraint):
+    def get_support_input(self, support):
         return {
-            'DX': restraint.AppliedCondition.TranslationalStiffnessX.wrappedValue,
-            'DY': restraint.AppliedCondition.TranslationalStiffnessY.wrappedValue,
-            'DZ': restraint.AppliedCondition.TranslationalStiffnessZ.wrappedValue,
-            'DRX': restraint.AppliedCondition.RotationalStiffnessX.wrappedValue,
-            'DRY': restraint.AppliedCondition.RotationalStiffnessY.wrappedValue,
-            'DRZ': restraint.AppliedCondition.RotationalStiffnessZ.wrappedValue
+            'dx': support.AppliedCondition.TranslationalStiffnessX.wrappedValue,
+            'dy': support.AppliedCondition.TranslationalStiffnessY.wrappedValue,
+            'dz': support.AppliedCondition.TranslationalStiffnessZ.wrappedValue,
+            'drx': support.AppliedCondition.RotationalStiffnessX.wrappedValue,
+            'dry': support.AppliedCondition.RotationalStiffnessY.wrappedValue,
+            'drz': support.AppliedCondition.RotationalStiffnessZ.wrappedValue
         }
-        print(restraint.AppliedCondition)
+        print(support.AppliedCondition)
 
     def get_representation(self, element):
         if not element.Representation:
@@ -137,10 +143,11 @@ class IFC2CA:
     def get_material_properties(self, profile):
         psets = profile.Material.HasProperties
         return {
+            'ifcName': profile.Material.is_a() + '|' + str(profile.Material.id()),
             'materialType': 'isotropic', # TODO: unhardcode
-            'E': self.get_pset_property(psets, 'Pset_MaterialMechanical', 'YoungModulus'),
-            'NU': self.get_pset_property(psets, 'Pset_MaterialMechanical', 'PoissonRatio'),
-            'RHO': self.get_pset_property(psets, 'Pset_MaterialCommon', 'MassDensity')
+            'youngModulus': self.get_pset_property(psets, 'Pset_MaterialMechanical', 'YoungModulus'),
+            'poissonRatio': self.get_pset_property(psets, 'Pset_MaterialMechanical', 'PoissonRatio'),
+            'massDensity': self.get_pset_property(psets, 'Pset_MaterialCommon', 'MassDensity')
         }
 
     def get_pset_property(self, psets, pset_name, prop_name):
@@ -153,10 +160,11 @@ class IFC2CA:
     def get_material_section(self, profile):
         if profile.Profile.is_a('IfcRectangleProfileDef'):
             return {
+                'ifcName': profile.Profile.is_a() + '|' + str(profile.Profile.id()),
                 'sectionType': 'rectangular',
                 'sectionVariation': 'constant',
-                'HY': profile.Profile.YDim,
-                'HX': profile.Profile.XDim
+                'xDim': profile.Profile.XDim,
+                'yDim': profile.Profile.YDim
             }
 
 ifc2ca = IFC2CA('ifc2ca.blend.ifc')
