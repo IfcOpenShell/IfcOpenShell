@@ -488,11 +488,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %extend IfcParse::FileDescription {
 	%pythoncode %{
         # Hide the getters with read-write property implementations
-        __swig_getmethods__["description"] = description
-        __swig_setmethods__["description"] = description
+        ## __swig_getmethods__["description"] = description
+        ## __swig_setmethods__["description"] = description
         description = property(description, description)
-        __swig_getmethods__["implementation_level"] = implementation_level
-        __swig_setmethods__["implementation_level"] = implementation_level
+        ## __swig_getmethods__["implementation_level"] = implementation_level
+        ## __swig_setmethods__["implementation_level"] = implementation_level
         implementation_level = property(implementation_level, implementation_level)
 	%}
 };
@@ -500,26 +500,26 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %extend IfcParse::FileName {
 	%pythoncode %{
         # Hide the getters with read-write property implementations
-        __swig_getmethods__["name"] = name
-        __swig_setmethods__["name"] = name
+        # __swig_getmethods__["name"] = name
+        # __swig_setmethods__["name"] = name
         name = property(name, name)
-        __swig_getmethods__["time_stamp"] = time_stamp
-        __swig_setmethods__["time_stamp"] = time_stamp
+        # __swig_getmethods__["time_stamp"] = time_stamp
+        # __swig_setmethods__["time_stamp"] = time_stamp
         time_stamp = property(time_stamp, time_stamp)
-        __swig_getmethods__["author"] = author
-        __swig_setmethods__["author"] = author
+        # __swig_getmethods__["author"] = author
+        # __swig_setmethods__["author"] = author
         author = property(author, author)
-        __swig_getmethods__["organization"] = organization
-        __swig_setmethods__["organization"] = organization
+        # __swig_getmethods__["organization"] = organization
+        # __swig_setmethods__["organization"] = organization
         organization = property(organization, organization)
-        __swig_getmethods__["preprocessor_version"] = preprocessor_version
-        __swig_setmethods__["preprocessor_version"] = preprocessor_version
+        # __swig_getmethods__["preprocessor_version"] = preprocessor_version
+        # __swig_setmethods__["preprocessor_version"] = preprocessor_version
         preprocessor_version = property(preprocessor_version, preprocessor_version)
-        __swig_getmethods__["originating_system"] = originating_system
-        __swig_setmethods__["originating_system"] = originating_system
+        # __swig_getmethods__["originating_system"] = originating_system
+        # __swig_setmethods__["originating_system"] = originating_system
         originating_system = property(originating_system, originating_system)
-        __swig_getmethods__["authorization"] = authorization
-        __swig_setmethods__["authorization"] = authorization
+        # __swig_getmethods__["authorization"] = authorization
+        # __swig_setmethods__["authorization"] = authorization
         authorization = property(authorization, authorization)
 	%}
 };
@@ -527,8 +527,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %extend IfcParse::FileSchema {
 	%pythoncode %{
         # Hide the getters with read-write property implementations
-        __swig_getmethods__["schema_identifiers"] = schema_identifiers
-        __swig_setmethods__["schema_identifiers"] = schema_identifiers
+        # __swig_getmethods__["schema_identifiers"] = schema_identifiers
+        # __swig_setmethods__["schema_identifiers"] = schema_identifiers
         schema_identifiers = property(schema_identifiers, schema_identifiers)
 	%}
 };
