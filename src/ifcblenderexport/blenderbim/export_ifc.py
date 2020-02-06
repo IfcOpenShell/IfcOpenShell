@@ -77,6 +77,7 @@ class IfcParser():
 
         self.selected_products = []
         self.selected_spatial_structure_elements = []
+        self.global_ids = []
 
         self.product_index = 0
         self.product_name_index_map = {}
@@ -195,11 +196,15 @@ class IfcParser():
 
     def get_object_attributes(self, obj):
         attributes = {'Name': self.get_ifc_name(obj.name)}
-        if obj.BIMObjectProperties.attributes.find('GlobalId') == -1:
+        global_id_index = obj.BIMObjectProperties.attributes.find('GlobalId')
+        if global_id_index == -1:
             global_id = obj.BIMObjectProperties.attributes.add()
             global_id.name = 'GlobalId'
             global_id.string_value = ifcopenshell.guid.new()
+        elif obj.BIMObjectProperties.attributes[global_id_index].string_value in self.global_ids:
+            obj.BIMObjectProperties.attributes[global_id_index].string_value = ifcopenshell.guid.new()
         attributes.update({a.name: a.string_value for a in obj.BIMObjectProperties.attributes})
+        self.global_ids.append(attributes['GlobalId'])
         return attributes
 
     def get_products(self):
@@ -210,6 +215,10 @@ class IfcParser():
 
     def resolve_modifiers(self, product):
         obj = product['raw']
+        if obj.data \
+                and hasattr(obj.data, 'BIMMeshProperties') \
+                and not obj.data.BIMMeshProperties.is_parametric:
+            return
         instance_objects = [(obj, {
             'location': obj.matrix_world.translation,
             'array_offset': Vector((0, 0, 0)),
@@ -748,7 +757,14 @@ class IfcParser():
         for product in self.selected_products \
                 + self.type_products \
                 + self.selected_spatial_structure_elements:
+            self.prevent_data_name_duplicates(product)
             self.load_product_representations(product)
+
+    def prevent_data_name_duplicates(self, product):
+        if product['raw'].data \
+                and bpy.data.meshes.get(product['raw'].data.name) \
+                and bpy.data.curves.get(product['raw'].data.name):
+            product['raw'].data.name +=  '~'
 
     def load_product_representations(self, product):
         obj = product['raw']
@@ -828,6 +844,7 @@ class IfcParser():
             'context': context,
             'subcontext': subcontext,
             'target_view': target_view,
+            'is_parametric': mesh.BIMMeshProperties.is_parametric if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_curve': isinstance(mesh, bpy.types.Curve),
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
@@ -2154,6 +2171,8 @@ class IfcExporter():
 
     def create_solid_representation(self, representation):
         mesh = representation['raw']
+        if not representation['is_parametric']:
+            mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         self.create_vertices(mesh.vertices)
         for polygon in mesh.polygons:
             self.ifc_faces.append(self.file.createIfcFace([
