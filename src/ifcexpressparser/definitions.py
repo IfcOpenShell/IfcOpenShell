@@ -33,11 +33,15 @@ class Definitions(codegen.Base):
         statements = ['']
         
         def write_entity(schema_name, name, type):
+            
             attribute_names = list(map(lambda t: (t.name, t.optional), type.attributes))
             for attr, is_optional in attribute_names:
                 statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
                 if is_optional:
                     statements.append("#define SCHEMA_%(name)s_%(attr)s_IS_OPTIONAL" % locals())
+            inverse_attribute_names = list(map(operator.attrgetter('name'), type.inverse.elements)) if type.inverse else []
+            for attr in inverse_attribute_names:
+                statements.append("#define SCHEMA_%(name)s_HAS_%(attr)s" % locals())
             
         def write(name):
             statements.append("#define SCHEMA_HAS_%(name)s" % locals())
