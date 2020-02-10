@@ -264,7 +264,11 @@ ptree& descend(IfcSchema::IfcObjectDefinition* product, ptree& tree) {
 #else
 	IfcSchema::IfcObjectDefinition::list::ptr structures = get_related
 		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelAggregates, IfcSchema::IfcObjectDefinition>
-		(product, &IfcSchema::IfcProduct::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
+		(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
+
+	structures->push(get_related
+		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelNests, IfcSchema::IfcObjectDefinition>
+		(product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects));
 #endif
 
 	for (IfcSchema::IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
@@ -292,7 +296,7 @@ ptree& descend(IfcSchema::IfcObjectDefinition* product, ptree& tree) {
 			}
 		}
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcObject_HAS_IsTypedBy
 		IfcSchema::IfcTypeObject::list::ptr types = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByType, IfcSchema::IfcTypeObject>
 			(object, &IfcSchema::IfcObject::IsTypedBy, &IfcSchema::IfcRelDefinesByType::RelatingType);
