@@ -256,6 +256,8 @@ int main(int argc, char** argv) {
 		("center-model",
             "Centers the elements by applying the center point of all placements as an offset."
             "Can take several minutes on large models.")
+		("center-model-geometry",
+            "Centers the elements by applying the center point of all mesh vertices as an offset.")
         ("model-offset", po::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements.")
 		("model-rotation", po::value<std::string>(&rotation_str),
@@ -424,6 +426,7 @@ int main(int argc, char** argv) {
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
 	const bool no_normals = vmap.count("no-normals") != 0;
 	const bool center_model = vmap.count("center-model") != 0;
+	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
 	const bool model_offset = vmap.count("model-offset") != 0;
 	const bool model_rotation = vmap.count("model-rotation") != 0;
 	const bool site_local_placement = vmap.count("site-local-placement") != 0;
@@ -722,7 +725,7 @@ int main(int argc, char** argv) {
         if (generate_uvs) {
             Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
         }
-        if (center_model || model_offset) {
+        if (center_model || center_model_geometry || model_offset) {
             Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
@@ -770,19 +773,36 @@ int main(int argc, char** argv) {
 		Logger::Notice(msg.str());
 	}
 	
-    if (is_tesselated && (center_model || model_offset)) {
+    if (is_tesselated && (center_model || center_model_geometry || model_offset)) {
 		std::array<double, 3> &offset = settings.offset;
-        if (center_model) {
+		if (center_model || center_model_geometry) {
 			if (site_local_placement || building_local_placement) {
-				Logger::Error("Cannot use --center-model together with --{site,building}-local-placement");
+				Logger::Error("Cannot use --center-model or --center-model-geometry together with --{site,building}-local-placement");
 				return EXIT_FAILURE;
 			}
 
 			IfcGeom::Iterator<real_t> tmp_context_iterator(settings, ifc_file, filter_funcs, num_threads);
+			
+			time_t start, end;
+			time(&start);
+			if (!quiet) Logger::Status("Computing bounds...");
 
-            if (!quiet) Logger::Status("Computing bounds...");
-            tmp_context_iterator.compute_bounds();
-            if (!quiet) Logger::Status("Done!");
+			if (center_model_geometry) {
+				if (!tmp_context_iterator.initialize()) {
+					/// @todo It would be nice to know and print separate error prints for a case where we found no entities
+					/// and for a case we found no entities that satisfy our filtering criteria.
+					Logger::Notice("No geometrical elements found or none succesfully converted");
+					serializer.reset();
+					IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+					write_log(!quiet);
+					return EXIT_FAILURE;
+				}
+			}
+		
+            tmp_context_iterator.compute_bounds(center_model_geometry);
+
+			time(&end);
+            if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
 
             gp_XYZ center = (tmp_context_iterator.bounds_min() + tmp_context_iterator.bounds_max()) * 0.5;
             offset[0] = -center.X();
@@ -798,7 +818,7 @@ int main(int argc, char** argv) {
         }
 
         std::stringstream msg;
-        msg << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+        msg << std::setprecision (17) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         Logger::Notice(msg.str());
     }
 

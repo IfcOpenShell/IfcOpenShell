@@ -118,7 +118,7 @@ namespace IfcGeom {
 
 		int progress() const { return implementation_->progress(); }
 
-		void compute_bounds() { implementation_->compute_bounds(); }
+		void compute_bounds(bool with_geometry) { implementation_->compute_bounds(with_geometry); }
 
 		const gp_XYZ& bounds_min() const { return implementation_->bounds_min(); }
 		const gp_XYZ& bounds_max() const { return implementation_->bounds_max(); }

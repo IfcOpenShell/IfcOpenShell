@@ -496,42 +496,65 @@ namespace IfcGeom {
 
         /// Computes model's bounding box (bounds_min and bounds_max).
         /// @note Can take several minutes for large files.
-        void compute_bounds()
+        void compute_bounds(bool with_geometry)
         {
             for (int i = 1; i < 4; ++i) {
                 bounds_min_.SetCoord(i, std::numeric_limits<double>::infinity());
                 bounds_max_.SetCoord(i, -std::numeric_limits<double>::infinity());
             }
 
-            IfcSchema::IfcProduct::list::ptr products = ifc_file->instances_by_type<IfcSchema::IfcProduct>();
-            for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
-                IfcSchema::IfcProduct* product = *iter;
-                if (product->hasObjectPlacement()) {
-                    // Use a fresh trsf every time in order to prevent the result to be concatenated
-                    gp_Trsf trsf; 
-                    bool success = false;
+			if (with_geometry) {
+				size_t num_created = 0;
+				do {
+					IfcGeom::Element<P, PP>* geom_object = get();
+					const IfcGeom::TriangulationElement<P, PP>* o = static_cast<const IfcGeom::TriangulationElement<P, PP>*>(geom_object);
+					const IfcGeom::Representation::Triangulation<P>& mesh = o->geometry();
+					const gp_XYZ& pos = o->transformation().data().TranslationPart();
 
-                    try {
-                        success = kernel.convert(product->ObjectPlacement(), trsf);
-                    } catch (const std::exception& e) {
-                        Logger::Error(e);
-                    } catch (...) {
-                        Logger::Error("Failed to construct placement");
-                    }
+					for (typename std::vector<P>::const_iterator it = mesh.verts().begin(); it != mesh.verts().end();) {
+						const P x = *(it++);
+						const P y = *(it++);
+						const P z = *(it++);
+						
+						bounds_min_.SetX(std::min(bounds_min_.X(), pos.X() + x));
+						bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y() + y));
+						bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z() + z));
+						bounds_max_.SetX(std::max(bounds_max_.X(), pos.X() + x));
+						bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y() + y));
+						bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z() + z));
+					}
+				} while (++num_created, next());
+			} else {
+				IfcSchema::IfcProduct::list::ptr products = ifc_file->instances_by_type<IfcSchema::IfcProduct>();
+				for (IfcSchema::IfcProduct::list::it iter = products->begin(); iter != products->end(); ++iter) {
+					IfcSchema::IfcProduct* product = *iter;
+					if (product->hasObjectPlacement()) {
+						// Use a fresh trsf every time in order to prevent the result to be concatenated
+						gp_Trsf trsf; 
+						bool success = false;
 
-                    if (!success) {
-                        continue;
-                    }
+						try {
+							success = kernel.convert(product->ObjectPlacement(), trsf);
+						} catch (const std::exception& e) {
+							Logger::Error(e);
+						} catch (...) {
+							Logger::Error("Failed to construct placement");
+						}
 
-                    const gp_XYZ& pos = trsf.TranslationPart();
-                    bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
-                    bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
-                    bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
-                    bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
-                    bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
-                    bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
-                }
-            }
+						if (!success) {
+							continue;
+						}
+
+						const gp_XYZ& pos = trsf.TranslationPart();
+						bounds_min_.SetX(std::min(bounds_min_.X(), pos.X()));
+						bounds_min_.SetY(std::min(bounds_min_.Y(), pos.Y()));
+						bounds_min_.SetZ(std::min(bounds_min_.Z(), pos.Z()));
+						bounds_max_.SetX(std::max(bounds_max_.X(), pos.X()));
+						bounds_max_.SetY(std::max(bounds_max_.Y(), pos.Y()));
+						bounds_max_.SetZ(std::max(bounds_max_.Z(), pos.Z()));
+					}
+				}
+			}
         }
 
 		int progress() const { 

@@ -62,7 +62,7 @@ namespace IfcGeom {
 	class IteratorImplementation {
 	public:
 		virtual bool initialize() = 0;
-		virtual void compute_bounds() = 0;
+		virtual void compute_bounds(bool with_geometry) = 0;
 		virtual const gp_XYZ& bounds_min() const = 0;
 		virtual const gp_XYZ& bounds_max() const = 0;
 		virtual int progress() const = 0;
