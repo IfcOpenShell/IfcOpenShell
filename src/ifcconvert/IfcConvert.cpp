@@ -345,8 +345,8 @@ int main(int argc, char** argv) {
 			"Order the elements using their IfcBuildingStorey parent. "
 			"Applicable for DAE output.")
         ("center-model",
-            "Centers the elements upon serialization by applying the center point of "
-            "all placements as an offset. Applicable for OBJ and DAE output. Can take several minutes on large models.")
+            "Centers the elements by applying the center point of all placements as an offset."
+            "Can take several minutes on large models.")
         ("model-offset", po::value<std::string>(&offset_str),
             "Applies an arbitrary offset of form 'x;y;z' to all placements.")
 		("model-rotation", po::value<std::string>(&rotation_str),
