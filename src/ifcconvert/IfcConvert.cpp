@@ -221,6 +221,7 @@ int main(int argc, char** argv) {
 			"based on an interpretation of the geometry when exporting IFC");
 
 	int num_threads;
+	std::string offset_str, rotation_str;
     
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
@@ -252,6 +253,13 @@ int main(int argc, char** argv) {
 			"This is a potentially time consuming operation, but guarantees a "
 			"consistent orientation of surface normals, even if the faces are not "
 			"properly oriented in the IFC file.")
+		("center-model",
+            "Centers the elements by applying the center point of all placements as an offset."
+            "Can take several minutes on large models.")
+        ("model-offset", po::value<std::string>(&offset_str),
+            "Applies an arbitrary offset of form 'x;y;z' to all placements.")
+		("model-rotation", po::value<std::string>(&rotation_str),
+			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 #if OCC_VERSION_HEX < 0x60900
 		// In Open CASCADE version prior to 6.9.0 boolean operations with multiple
 		// arguments where not introduced yet and a work-around was implemented to
@@ -311,7 +319,7 @@ int main(int argc, char** argv) {
             "if an object does not have any specified material in the IFC file.")
 		("validate", "Checks whether geometrical output conforms to the included explicit quantities.");
 
-    std::string bounds, offset_str, rotation_str;
+    std::string bounds;
 #ifdef HAVE_ICU
     std::string unicode_mode;
 #endif
@@ -344,13 +352,6 @@ int main(int argc, char** argv) {
 		("use-element-hierarchy",
 			"Order the elements using their IfcBuildingStorey parent. "
 			"Applicable for DAE output.")
-        ("center-model",
-            "Centers the elements by applying the center point of all placements as an offset."
-            "Can take several minutes on large models.")
-        ("model-offset", po::value<std::string>(&offset_str),
-            "Applies an arbitrary offset of form 'x;y;z' to all placements.")
-		("model-rotation", po::value<std::string>(&rotation_str),
-			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 		("site-local-placement",
 			"Place elements locally in the IfcSite coordinate system, instead of placing "
 			"them in the IFC global coords. Applicable for OBJ and DAE output.")
