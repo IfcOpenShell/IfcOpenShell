@@ -3691,6 +3691,8 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 	}
 	
 	bool intersected = false;
+        thread_local Handle(Geom_Curve) c0;
+        thread_local Handle(Geom_Curve) c1; 
 
 	// tfk: Extrema on infinite curves proved to be more robust.
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
@@ -3730,8 +3732,8 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			if (i == n - 1 && j == 0) continue;
 			
 			double u11, u12, u21, u22, U1, U2;
-                        thread_local Handle(Geom_Curve) c0 = BRep_Tool::Curve(wd->Edge(i + 1), u11, u12);
-                        thread_local Handle(Geom_Curve) c1 = BRep_Tool::Curve(wd->Edge(j + 1), u21, u22);
+                        c0 = BRep_Tool::Curve(wd->Edge(i + 1), u11, u12);
+                        c1 = BRep_Tool::Curve(wd->Edge(j + 1), u21, u22);
 			GeomAPI_ExtremaCurveCurve ecc( c0, c1 );
 			// @todo: extend this to work in case of multiple extrema and curved segments.
 			const bool unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
