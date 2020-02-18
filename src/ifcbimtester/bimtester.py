@@ -9,6 +9,8 @@ import os
 import sys
 import json
 import argparse
+import csv
+import re
 from pathlib import Path
 
 def run_tests(args):
@@ -45,13 +47,17 @@ def generate_report(args):
                         'time': line.strip().split(' ... ')[1],
                         'is_success': is_success
                         })
+            total_passes = len([s for s in steps if s['is_success'] == True])
+            total_steps = len(steps)
+            pass_rate = round((total_passes / total_steps) * 100)
             data['testcases'].append({
                 'name': testcase.get('name'),
                 'is_success': testcase.get('status') == 'passed',
                 'time': testcase.get('time'),
                 'steps': steps,
-                'total_passes': len([s for s in steps if s['is_success'] == True]),
-                'total_steps': len(steps)
+                'total_passes': total_passes,
+                'total_steps': total_steps,
+                'pass_rate': pass_rate
                 })
         with open('report/{}.html'.format(file[0:-4]), 'w') as out:
             with open('features/template.html') as template:
