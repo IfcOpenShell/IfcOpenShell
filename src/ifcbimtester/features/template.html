@@ -27,7 +27,7 @@
         <h2>{{name}}</h2>
         <p>
             <span class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">{{#is_success}}Success{{/is_success}}{{^is_success}}Failure{{/is_success}}</span>
-            Tests passed: <strong>{{total_passes}} / {{total_steps}}</strong>
+            Tests passed: <strong>{{total_passes}} / {{total_steps}}</strong> ({{pass_rate}}%)
             <span class="time">
             Time taken: {{time}} seconds
             </span>

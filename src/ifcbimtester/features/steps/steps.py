@@ -41,11 +41,6 @@ def step_impl(context, file):
     pass
 
 
-@given('that an IFC file is loaded')
-def step_impl(context):
-    assert IfcFile.get()
-
-
 @then('the file should be an {schema} file')
 def step_impl(context, schema):
     assert IfcFile.get().schema == schema
@@ -62,8 +57,13 @@ def step_impl(context, id, reason):
 
 
 @then('the file is exempt from auditing because {reason}')
-def step_impl(context, id, reason):
+def step_impl(context, reason):
     pass
+
+
+@given(u'there is at least one {ifc_class} element')
+def step_impl(context, ifc_class):
+    assert len(IfcFile.get().by_type(ifc_class)) >= 1
 
 
 @then('all {ifc_class} elements have a name matching the pattern "{pattern}"')
@@ -147,6 +147,25 @@ def step_impl(context, ifc_class, attribute, pattern):
         assert re.search(pattern, value)
 
 
+@then('all (?P<ifc_class>.*) elements have an? (?P<attributes>.*) taken from the list in "(?P<list_file>.*)"')
+def step_impl(context, ifc_class, attributes, list_file):
+    import csv
+    values = []
+    with open(list_file) as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            values.append(row)
+    elements = IfcFile.get().by_type(ifc_class)
+    for element in elements:
+        attribute_values = []
+        for attribute in attributes.split(','):
+            if not hasattr(element, attribute):
+                assert False, f'Failed at element {element.GlobalId}'
+            attribute_values.append(getattr(element, attribute))
+        if attribute_values not in values:
+            assert False, f'Failed at element {element.GlobalId}'
+
+
 use_step_matcher('parse')
 @then('all {ifc_class} elements have a {qto_name}.{quantity_name} quantity')
 def step_impl(context, ifc_class, qto_name, quantity_name):
@@ -201,29 +220,19 @@ def step_impl(context, attribute, value):
 
 
 use_step_matcher('parse')
-@then(u'the project name is "{name}"')
-def step_impl(context, name):
-    project_name = IfcFile.get().by_type('IfcProject')[0].Name
-    assert project_name == name, f'The name was {project_name}'
-
-
-@then(u'there is a site named "{name}"')
-def step_impl(context, name):
+@then(u'the project has a {attribute_name} attribute with a value of "{attribute_value}"')
+def step_impl(context, attribute_name, attribute_value):
     project = IfcFile.get().by_type('IfcProject')[0]
-    if not project.IsDecomposedBy:
-        assert False
-    for relationship in project.IsDecomposedBy:
-        for part in relationship.RelatedObjects:
-            if part.is_a('IfcSite'):
-                assert part.Name == name, f'The name was {part.Name}'
+    assert getattr(project, attribute_name) == attribute_value
 
 
-@then(u'there is a building named "{name}"')
-def step_impl(context, name):
-    for building in IfcFile.get().by_type('IfcBuilding'):
-        if building.Name == name:
+@then(u'there is an {ifc_class} element with a {attribute_name} attribute with a value of "{attribute_value}"')
+def step_impl(context, ifc_class, attribute_name, attribute_value):
+    elements = IfcFile.get().by_type(ifc_class)
+    for element in elements:
+        if hasattr(element, attribute_name) \
+                and getattr(element, attribute_name) == attribute_value:
             return
-        print(f'A building named {building.Name} was found.')
     assert False
 
 
@@ -232,8 +241,3 @@ def step_impl(context):
     for building in IfcFile.get().by_type('IfcBuilding'):
         if not building.BuildingAddress:
             assert False, f'The building "{building.Name}" has no address.'
-
-
-@then(u'all the IFC files have the same building storeys')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Then all the IFC files have the same building storeys')
