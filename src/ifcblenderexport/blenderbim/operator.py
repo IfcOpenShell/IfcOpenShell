@@ -99,9 +99,35 @@ class SelectGlobalId(bpy.types.Operator):
         for object in bpy.context.visible_objects:
             index = object.BIMObjectProperties.attributes.find('GlobalId')
             if index != -1 \
-                and object.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
+                    and object.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
                 object.select_set(True)
                 break
+        return {'FINISHED'}
+
+class SelectAttribute(bpy.types.Operator):
+    bl_idname = 'bim.select_attribute'
+    bl_label = 'Select Attribute'
+
+    def execute(self, context):
+        import re
+        for object in bpy.context.visible_objects:
+            index = object.BIMObjectProperties.attributes.find(bpy.context.scene.BIMProperties.search_attribute_name)
+            if index == -1:
+                continue
+            value = object.BIMObjectProperties.attributes[index].string_value
+            search_value = bpy.context.scene.BIMProperties.search_attribute_value
+            if bpy.context.scene.BIMProperties.search_regex \
+                    and bpy.context.scene.BIMProperties.search_ignorecase \
+                    and re.search(search_value, value, flags=re.IGNORECASE):
+                object.select_set(True)
+            elif bpy.context.scene.BIMProperties.search_regex \
+                    and re.search(search_value, value):
+                object.select_set(True)
+            elif bpy.context.scene.BIMProperties.search_ignorecase \
+                    and value.lower() == search_value.lower():
+                object.select_set(True)
+            elif value == search_value:
+                object.select_set(True)
         return {'FINISHED'}
 
 class AssignClass(bpy.types.Operator):
