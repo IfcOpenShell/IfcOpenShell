@@ -349,6 +349,7 @@ class BIM_PT_owner(Panel):
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -547,6 +548,7 @@ class BIM_PT_qa(Panel):
 class BIM_PT_library(Panel):
     bl_label = "BIM Server Library"
     bl_idname = "BIM_PT_library"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -571,6 +573,7 @@ class BIM_PT_library(Panel):
 class BIM_PT_diff(Panel):
     bl_label = "IFC Diff"
     bl_idname = "BIM_PT_diff"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
