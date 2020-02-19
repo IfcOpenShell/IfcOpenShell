@@ -410,13 +410,6 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "ifc_file")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
-        layout.label(text="Software Identity:")
-
-        row = layout.row()
-        row.prop(bim_properties, 'global_id')
-        row = layout.row()
-        row.operator('bim.select_global_id')
-
         layout.label(text="IFC Categorisation:")
 
         row = layout.row()
@@ -469,6 +462,37 @@ class BIM_PT_bim(Panel):
         row = layout.row(align=True)
         row.operator("bim.assign_classification")
         row.operator("bim.unassign_classification")
+
+
+class BIM_PT_search(Panel):
+    bl_label = "BIM Search"
+    bl_idname = "BIM_PT_search"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'search_regex')
+        row = layout.row()
+        row.prop(props, 'search_ignorecase')
+
+        layout.label(text="Global ID:")
+        row = layout.row(align=True)
+        row.prop(props, 'global_id', text='')
+        row.operator('bim.select_global_id', text='', icon='VIEWZOOM')
+
+        layout.label(text="Attribute:")
+        row = layout.row(align=True)
+        row.prop(props, 'search_attribute_name', text='')
+        row.prop(props, 'search_attribute_value', text='')
+        row.operator('bim.select_attribute', text='', icon='VIEWZOOM')
 
 
 class BIM_PT_qa(Panel):
