@@ -243,6 +243,7 @@ class IfcImporter():
         obj = bpy.data.objects.new(self.get_name(type_product), None)
         self.add_element_attributes(type_product, obj)
         self.add_element_document_relations(type_product, obj)
+        self.add_type_product_psets(type_product, obj)
         self.project['blender'].objects.link(obj)
         self.type_products[type_product.GlobalId] = obj
 
@@ -306,6 +307,40 @@ class IfcImporter():
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.place_object_in_spatial_tree(element, obj)
+        self.add_product_psets(element, obj)
+
+    def add_product_psets(self, element, obj):
+        if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
+            return
+        for definition in element.IsDefinedBy:
+            if not definition.is_a('IfcRelDefinesByProperties') \
+                    or not definition.RelatingPropertyDefinition.is_a('IfcPropertySet'):
+                continue
+            self.add_pset(definition.RelatingPropertyDefinition, obj)
+
+    def add_type_product_psets(self, element, obj):
+        if not hasattr(element, 'HasPropertySets') or not element.HasPropertySets:
+            return
+        for definition in element.HasPropertySets:
+            if definition.is_a('IfcPropertySet'):
+                self.add_pset(definition, obj)
+
+    def add_pset(self, pset, obj):
+            new_pset = obj.BIMObjectProperties.override_psets.add()
+            new_pset.name = pset.Name
+            if new_pset.name in schema.ifc.psets:
+                for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
+                    prop = new_pset.properties.add()
+                    prop.name = prop_name
+            for prop in pset.HasProperties:
+                if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
+                    index = new_pset.properties.find(prop.Name)
+                    if index >= 0:
+                        new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
+                    else:
+                        new_prop = new_pset.properties.add()
+                        new_prop.name = prop.Name
+                        new_prop.string_value = str(prop.NominalValue.wrappedValue)
 
     def add_defines_by_type_relation(self, element, obj):
         if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
