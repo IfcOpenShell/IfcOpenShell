@@ -126,6 +126,8 @@ class IfcImporter():
         self.settings = ifcopenshell.geom.settings()
         if self.ifc_import_settings.should_import_curves:
             self.settings.set(self.settings.INCLUDE_CURVES, True)
+        self.settings_2d = ifcopenshell.geom.settings()
+        self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
@@ -152,6 +154,7 @@ class IfcImporter():
         self.purge_diff()
         self.patch_ifc()
         self.create_type_products()
+        self.create_grids()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy or self.diff:
             self.create_products_legacy()
@@ -233,6 +236,21 @@ class IfcImporter():
             element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+
+    def create_grids(self):
+        grids = self.file.by_type('IfcGrid')
+        for grid in grids:
+            collection = bpy.data.collections.new(self.get_name(grid))
+            self.project['blender'].children.link(collection)
+            self.create_grid_axes(grid.UAxes, collection)
+            self.create_grid_axes(grid.VAxes, collection)
+
+    def create_grid_axes(self, axes, grid):
+        for axis in axes:
+            shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
+            mesh = self.create_mesh(axis, shape)
+            obj = bpy.data.objects.new(f'IfcGrisAxis/{axis.AxisTag}', mesh)
+            grid.objects.link(obj)
 
     def create_type_products(self):
         type_products = self.file.by_type('IfcTypeProduct')
@@ -579,10 +597,14 @@ class IfcImporter():
 
     def create_mesh(self, element, shape):
         try:
-            mesh = bpy.data.meshes.new(shape.geometry.id)
-            f = shape.geometry.faces
-            e = shape.geometry.edges
-            v = shape.geometry.verts
+            if hasattr(shape, 'geometry'):
+                geometry = shape.geometry
+            else:
+                geometry = shape
+            mesh = bpy.data.meshes.new(geometry.id)
+            f = geometry.faces
+            e = geometry.edges
+            v = geometry.verts
             vertices = [[v[i], v[i + 1], v[i + 2]]
                      for i in range(0, len(v), 3)]
             faces = [[f[i], f[i + 1], f[i + 2]]
