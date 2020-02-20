@@ -494,12 +494,15 @@ class BIM_PT_search(Panel):
         row.prop(props, 'search_attribute_name', text='')
         row.prop(props, 'search_attribute_value', text='')
         row.operator('bim.select_attribute', text='', icon='VIEWZOOM')
+        row.operator('bim.colour_by_attribute', text='', icon='BRUSH_DATA')
 
         layout.label(text="Pset:")
         row = layout.row(align=True)
-        row.prop(props, 'search_pset_path', text='')
+        row.prop(props, 'search_pset_name', text='')
+        row.prop(props, 'search_prop_name', text='')
         row.prop(props, 'search_pset_value', text='')
         row.operator('bim.select_pset', text='', icon='VIEWZOOM')
+        row.operator('bim.colour_by_pset', text='', icon='BRUSH_DATA')
 
 
 class BIM_PT_qa(Panel):

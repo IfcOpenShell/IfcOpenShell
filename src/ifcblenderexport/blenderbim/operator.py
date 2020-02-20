@@ -14,6 +14,20 @@ from itertools import cycle
 from mathutils import Vector
 from pathlib import Path
 
+colour_list = [
+    (.651, .81, .892, 1),
+    (.121, .471, .706, 1),
+    (.699, .876, .54, 1),
+    (.199, .629, .174, 1),
+    (.983, .605, .602, 1),
+    (.89, .101, .112, 1),
+    (.989, .751, .427, 1),
+    (.986, .497, .1, 1),
+    (.792, .699, .839, 1),
+    (.414, .239, .603, 1),
+    (.993, .999, .6, 1),
+    (.693, .349, .157, 1)]
+
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
     bl_label = "Export .ifc file"
@@ -137,8 +151,8 @@ class SelectPset(bpy.types.Operator):
 
     def execute(self, context):
         import re
-        search_pset_name = bpy.context.scene.BIMProperties.search_pset_path.split('.')[0]
-        search_prop_name = bpy.context.scene.BIMProperties.search_pset_path.split('.')[1]
+        search_pset_name = bpy.context.scene.BIMProperties.search_pset_name
+        search_prop_name = bpy.context.scene.BIMProperties.search_prop_name
         search_value = bpy.context.scene.BIMProperties.search_pset_value
         for object in bpy.context.visible_objects:
             pset_index = object.BIMObjectProperties.override_psets.find(search_pset_name)
@@ -232,29 +246,59 @@ class ColourByClass(bpy.types.Operator):
     bl_label = 'Colour by Class'
 
     def execute(self, context):
-        colour_list = [
-            (.651, .81, .892, 1),
-            (.121, .471, .706, 1),
-            (.699, .876, .54, 1),
-            (.199, .629, .174, 1),
-            (.983, .605, .602, 1),
-            (.89, .101, .112, 1),
-            (.989, .751, .427, 1),
-            (.986, .497, .1, 1),
-            (.792, .699, .839, 1),
-            (.414, .239, .603, 1),
-            (.993, .999, .6, 1),
-            (.693, .349, .157, 1)]
         colours = cycle(colour_list)
         ifc_classes = {}
-        for object in bpy.context.selected_objects:
-            if '/' not in object.name:
+        for obj in bpy.context.visible_objects:
+            if '/' not in obj.name:
                 continue
-            ifc_class = object.name.split('/')[0]
+            ifc_class = obj.name.split('/')[0]
             if ifc_class not in ifc_classes:
                 ifc_classes[ifc_class] = next(colours)
-            object.color = ifc_classes[ifc_class]
+            obj.color = ifc_classes[ifc_class]
         return {'FINISHED'}
+
+
+class ColourByAttribute(bpy.types.Operator):
+    bl_idname = 'bim.colour_by_attribute'
+    bl_label = 'Colour by Attribute'
+
+    def execute(self, context):
+        colours = cycle(colour_list)
+        values = {}
+        attribute_name = bpy.context.scene.BIMProperties.search_attribute_name
+        for obj in bpy.context.visible_objects:
+            index = obj.BIMObjectProperties.attributes.find(attribute_name)
+            if index == -1:
+                continue
+            value = obj.BIMObjectProperties.attributes[index].string_value
+            if value not in values:
+                values[value] = next(colours)
+            obj.color = values[value]
+        return {'FINISHED'}
+
+
+class ColourByPset(bpy.types.Operator):
+    bl_idname = 'bim.colour_by_pset'
+    bl_label = 'Colour by Pset'
+
+    def execute(self, context):
+        colours = cycle(colour_list)
+        values = {}
+        search_pset_name = bpy.context.scene.BIMProperties.search_pset_name
+        search_prop_name = bpy.context.scene.BIMProperties.search_prop_name
+        for obj in bpy.context.visible_objects:
+            pset_index = obj.BIMObjectProperties.override_psets.find(search_pset_name)
+            if pset_index == -1:
+                continue
+            prop_index = obj.BIMObjectProperties.override_psets[pset_index].properties.find(search_prop_name)
+            if prop_index == -1:
+                continue
+            value = obj.BIMObjectProperties.override_psets[pset_index].properties[prop_index].string_value
+            if value not in values:
+                values[value] = next(colours)
+            obj.color = values[value]
+        return {'FINISHED'}
+
 
 class ResetObjectColours(bpy.types.Operator):
     bl_idname = 'bim.reset_object_colours'
