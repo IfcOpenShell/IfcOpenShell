@@ -393,6 +393,8 @@ class BIMProperties(PropertyGroup):
     global_id: StringProperty(name="GlobalId")
     search_attribute_name: StringProperty(name="Search Attribute Name")
     search_attribute_value: StringProperty(name="Search Attribute Value")
+    search_pset_path: StringProperty(name="Search Pset Path")
+    search_pset_value: StringProperty(name="Search Pset Value")
     features_dir: StringProperty(default='', name="Features Directory", update=refreshFeaturesFiles)
     features_file: EnumProperty(items=getFeaturesFiles, name="Features File", update=refreshScenarios)
     scenario: EnumProperty(items=getScenarios, name="Scenario")

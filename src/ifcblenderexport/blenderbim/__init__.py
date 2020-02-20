@@ -76,6 +76,7 @@ if bpy is not None:
         operator.QuickProjectSetup,
         operator.SelectGlobalId,
         operator.SelectAttribute,
+        operator.SelectPset,
         operator.CreateAggregate,
         operator.EditAggregate,
         operator.SaveAggregate,
