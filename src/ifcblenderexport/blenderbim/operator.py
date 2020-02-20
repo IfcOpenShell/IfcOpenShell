@@ -110,12 +110,12 @@ class SelectAttribute(bpy.types.Operator):
 
     def execute(self, context):
         import re
+        search_value = bpy.context.scene.BIMProperties.search_attribute_value
         for object in bpy.context.visible_objects:
             index = object.BIMObjectProperties.attributes.find(bpy.context.scene.BIMProperties.search_attribute_name)
             if index == -1:
                 continue
             value = object.BIMObjectProperties.attributes[index].string_value
-            search_value = bpy.context.scene.BIMProperties.search_attribute_value
             if bpy.context.scene.BIMProperties.search_regex \
                     and bpy.context.scene.BIMProperties.search_ignorecase \
                     and re.search(search_value, value, flags=re.IGNORECASE):
@@ -129,6 +129,39 @@ class SelectAttribute(bpy.types.Operator):
             elif value == search_value:
                 object.select_set(True)
         return {'FINISHED'}
+
+
+class SelectPset(bpy.types.Operator):
+    bl_idname = 'bim.select_pset'
+    bl_label = 'Select Pset'
+
+    def execute(self, context):
+        import re
+        search_pset_name = bpy.context.scene.BIMProperties.search_pset_path.split('.')[0]
+        search_prop_name = bpy.context.scene.BIMProperties.search_pset_path.split('.')[1]
+        search_value = bpy.context.scene.BIMProperties.search_pset_value
+        for object in bpy.context.visible_objects:
+            pset_index = object.BIMObjectProperties.override_psets.find(search_pset_name)
+            if pset_index == -1:
+                continue
+            prop_index = object.BIMObjectProperties.override_psets[pset_index].properties.find(search_prop_name)
+            if prop_index == -1:
+                continue
+            value = object.BIMObjectProperties.override_psets[pset_index].properties[prop_index].string_value
+            if bpy.context.scene.BIMProperties.search_regex \
+                    and bpy.context.scene.BIMProperties.search_ignorecase \
+                    and re.search(search_value, value, flags=re.IGNORECASE):
+                object.select_set(True)
+            elif bpy.context.scene.BIMProperties.search_regex \
+                    and re.search(search_value, value):
+                object.select_set(True)
+            elif bpy.context.scene.BIMProperties.search_ignorecase \
+                    and value.lower() == search_value.lower():
+                object.select_set(True)
+            elif value == search_value:
+                object.select_set(True)
+        return {'FINISHED'}
+
 
 class AssignClass(bpy.types.Operator):
     bl_idname = 'bim.assign_class'

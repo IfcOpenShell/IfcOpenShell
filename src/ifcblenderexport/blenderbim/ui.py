@@ -495,6 +495,12 @@ class BIM_PT_search(Panel):
         row.prop(props, 'search_attribute_value', text='')
         row.operator('bim.select_attribute', text='', icon='VIEWZOOM')
 
+        layout.label(text="Pset:")
+        row = layout.row(align=True)
+        row.prop(props, 'search_pset_path', text='')
+        row.prop(props, 'search_pset_value', text='')
+        row.operator('bim.select_pset', text='', icon='VIEWZOOM')
+
 
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
