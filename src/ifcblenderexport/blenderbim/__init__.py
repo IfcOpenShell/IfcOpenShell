@@ -44,6 +44,8 @@ if bpy is not None:
         operator.ExportIFC,
         operator.ImportIFC,
         operator.ColourByClass,
+        operator.ColourByAttribute,
+        operator.ColourByPset,
         operator.ResetObjectColours,
         operator.ApproveClass,
         operator.RejectClass,
