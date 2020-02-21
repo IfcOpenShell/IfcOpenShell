@@ -300,6 +300,10 @@ class IfcImporter():
                 and element.is_a('IfcOpeningElement'):
             return
 
+        if not self.ifc_import_settings.should_import_spaces \
+                and element.is_a('IfcSpace'):
+            return
+
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
         # TODO: make names more meaningful
@@ -462,10 +466,10 @@ class IfcImporter():
         bpy.ops.object.delete({'selected_objects': objects_to_purge})
 
     def create_object(self, element):
-        if self.diff:
-            if element.GlobalId not in self.diff['added'] \
+        if self.diff \
+                and element.GlobalId not in self.diff['added'] \
                 and element.GlobalId not in self.diff['changed'].keys():
-                return
+            return
 
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
         self.time = time.time()
@@ -517,6 +521,10 @@ class IfcImporter():
                 and element.Decomposes:
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
                 collection = bpy.data.collections.get(f'IfcProject/{element.Decomposes[0].RelatingObject.Name}')
+            elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
+                collection = bpy.data.collections.get('{}/{}'.format(
+                    element.Decomposes[0].RelatingObject.is_a(),
+                    element.Decomposes[0].RelatingObject.Name))
             else:
                 collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
             if collection:
@@ -658,6 +666,7 @@ class IfcImportSettings:
         self.should_reset_absolute_coordinates = False
         self.should_import_curves = False
         self.should_import_opening_elements = False
+        self.should_import_spaces = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
