@@ -1422,7 +1422,7 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 		// in accordance with other viewers.
 		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
 			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-			if (layerset->MaterialLayers()->size() == 1) {
+			if (layerset->MaterialLayers()->size() >= 1) {
 				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
 				if (layer->hasMaterial()) {
 					single_material = layer->Material();
