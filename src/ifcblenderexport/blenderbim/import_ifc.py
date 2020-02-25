@@ -173,6 +173,9 @@ class IfcImporter():
                 self.ifc_import_settings.should_ignore_building_coordinates = True
         elif applications[0].ApplicationFullName == '12D Model':
             self.ifc_import_settings.should_reset_absolute_coordinates = True
+        elif applications[0].ApplicationFullName == 'Tekla Structures':
+            if self.is_ifc_class_far_away('IfcSite'):
+                self.ifc_import_settings.should_ignore_site_coordinates = True
 
     def is_ifc_class_far_away(self, ifc_class):
         for site in self.file.by_type(ifc_class):
