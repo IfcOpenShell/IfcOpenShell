@@ -365,9 +365,18 @@ class IfcImporter():
                         new_prop.string_value = str(prop.NominalValue.wrappedValue)
 
     def add_defines_by_type_relation(self, element, obj):
-        if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
-            return
-        obj.BIMObjectProperties.type_product = self.type_products[element.IsTypedBy[0].RelatingType.GlobalId]
+        if self.file.schema == 'IFC2X3':
+            if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
+                return
+            for relationship in element.IsDefinedBy:
+                if relationship.is_a('IfcRelDefinesByType'):
+                    related_type = relationship.RelatingType
+                    break
+        else:
+            if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
+                return
+            related_type = element.IsTypedBy[0].RelatingType
+        obj.BIMObjectProperties.type_product = self.type_products[related_type.GlobalId]
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
