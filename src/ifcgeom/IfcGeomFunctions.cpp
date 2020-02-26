@@ -1418,8 +1418,8 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
 		single_material = associated_material->as<IfcSchema::IfcMaterial>();
 
-		// NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
-		// in accordance with other viewers.
+		// NB: IfcMaterialLayerSets are also considered, regardless of --enable-layerset-slicing. Picking 
+		// the first material (in accordance with other viewers) when layerset-slicing is disabled.
 		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
 			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
 			if (layerset->MaterialLayers()->size() >= 1) {
