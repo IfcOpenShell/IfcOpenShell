@@ -349,6 +349,7 @@ class BIM_PT_owner(Panel):
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -410,13 +411,6 @@ class BIM_PT_bim(Panel):
         row.prop(bim_properties, "ifc_file")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
-        layout.label(text="Software Identity:")
-
-        row = layout.row()
-        row.prop(bim_properties, 'global_id')
-        row = layout.row()
-        row.operator('bim.select_global_id')
-
         layout.label(text="IFC Categorisation:")
 
         row = layout.row()
@@ -471,6 +465,46 @@ class BIM_PT_bim(Panel):
         row.operator("bim.unassign_classification")
 
 
+class BIM_PT_search(Panel):
+    bl_label = "BIM Search"
+    bl_idname = "BIM_PT_search"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'search_regex')
+        row = layout.row()
+        row.prop(props, 'search_ignorecase')
+
+        layout.label(text="Global ID:")
+        row = layout.row(align=True)
+        row.prop(props, 'global_id', text='')
+        row.operator('bim.select_global_id', text='', icon='VIEWZOOM')
+
+        layout.label(text="Attribute:")
+        row = layout.row(align=True)
+        row.prop(props, 'search_attribute_name', text='')
+        row.prop(props, 'search_attribute_value', text='')
+        row.operator('bim.select_attribute', text='', icon='VIEWZOOM')
+        row.operator('bim.colour_by_attribute', text='', icon='BRUSH_DATA')
+
+        layout.label(text="Pset:")
+        row = layout.row(align=True)
+        row.prop(props, 'search_pset_name', text='')
+        row.prop(props, 'search_prop_name', text='')
+        row.prop(props, 'search_pset_value', text='')
+        row.operator('bim.select_pset', text='', icon='VIEWZOOM')
+        row.operator('bim.colour_by_pset', text='', icon='BRUSH_DATA')
+
+
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
     bl_idname = "BIM_PT_qa"
@@ -523,6 +557,7 @@ class BIM_PT_qa(Panel):
 class BIM_PT_library(Panel):
     bl_label = "BIM Server Library"
     bl_idname = "BIM_PT_library"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -547,6 +582,7 @@ class BIM_PT_library(Panel):
 class BIM_PT_diff(Panel):
     bl_label = "IFC Diff"
     bl_idname = "BIM_PT_diff"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -597,6 +633,8 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_import_curves')
         row = layout.row()
         row.prop(bim_properties, 'import_should_import_opening_elements')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_import_spaces')
 
         layout.label(text='Experimental Modes:')
 
@@ -609,6 +647,11 @@ class BIM_PT_mvd(Panel):
 
         row = layout.row()
         row.prop(bim_properties, 'import_should_auto_set_workarounds')
+
+        layout.label(text='Tekla Workarounds:')
+
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_ignore_site_coordinates')
 
         layout.label(text='12D Workarounds:')
 

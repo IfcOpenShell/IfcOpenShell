@@ -126,6 +126,8 @@ class IfcImporter():
         self.settings = ifcopenshell.geom.settings()
         if self.ifc_import_settings.should_import_curves:
             self.settings.set(self.settings.INCLUDE_CURVES, True)
+        self.settings_2d = ifcopenshell.geom.settings()
+        self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.project = None
         self.spatial_structure_elements = {}
         self.elements = {}
@@ -152,6 +154,7 @@ class IfcImporter():
         self.purge_diff()
         self.patch_ifc()
         self.create_type_products()
+        self.create_grids()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy or self.diff:
             self.create_products_legacy()
@@ -170,6 +173,9 @@ class IfcImporter():
                 self.ifc_import_settings.should_ignore_building_coordinates = True
         elif applications[0].ApplicationFullName == '12D Model':
             self.ifc_import_settings.should_reset_absolute_coordinates = True
+        elif applications[0].ApplicationFullName == 'Tekla Structures':
+            if self.is_ifc_class_far_away('IfcSite'):
+                self.ifc_import_settings.should_ignore_site_coordinates = True
 
     def is_ifc_class_far_away(self, ifc_class):
         for site in self.file.by_type(ifc_class):
@@ -234,6 +240,21 @@ class IfcImporter():
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
+    def create_grids(self):
+        grids = self.file.by_type('IfcGrid')
+        for grid in grids:
+            collection = bpy.data.collections.new(self.get_name(grid))
+            self.project['blender'].children.link(collection)
+            self.create_grid_axes(grid.UAxes, collection)
+            self.create_grid_axes(grid.VAxes, collection)
+
+    def create_grid_axes(self, axes, grid):
+        for axis in axes:
+            shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
+            mesh = self.create_mesh(axis, shape)
+            obj = bpy.data.objects.new(f'IfcGrisAxis/{axis.AxisTag}', mesh)
+            grid.objects.link(obj)
+
     def create_type_products(self):
         type_products = self.file.by_type('IfcTypeProduct')
         for type_product in type_products:
@@ -243,6 +264,7 @@ class IfcImporter():
         obj = bpy.data.objects.new(self.get_name(type_product), None)
         self.add_element_attributes(type_product, obj)
         self.add_element_document_relations(type_product, obj)
+        self.add_type_product_psets(type_product, obj)
         self.project['blender'].objects.link(obj)
         self.type_products[type_product.GlobalId] = obj
 
@@ -281,6 +303,10 @@ class IfcImporter():
                 and element.is_a('IfcOpeningElement'):
             return
 
+        if not self.ifc_import_settings.should_import_spaces \
+                and element.is_a('IfcSpace'):
+            return
+
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
         # TODO: make names more meaningful
@@ -306,11 +332,54 @@ class IfcImporter():
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.place_object_in_spatial_tree(element, obj)
+        self.add_product_psets(element, obj)
+
+    def add_product_psets(self, element, obj):
+        if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
+            return
+        for definition in element.IsDefinedBy:
+            if not definition.is_a('IfcRelDefinesByProperties') \
+                    or not definition.RelatingPropertyDefinition.is_a('IfcPropertySet'):
+                continue
+            self.add_pset(definition.RelatingPropertyDefinition, obj)
+
+    def add_type_product_psets(self, element, obj):
+        if not hasattr(element, 'HasPropertySets') or not element.HasPropertySets:
+            return
+        for definition in element.HasPropertySets:
+            if definition.is_a('IfcPropertySet'):
+                self.add_pset(definition, obj)
+
+    def add_pset(self, pset, obj):
+            new_pset = obj.BIMObjectProperties.override_psets.add()
+            new_pset.name = pset.Name
+            if new_pset.name in schema.ifc.psets:
+                for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
+                    prop = new_pset.properties.add()
+                    prop.name = prop_name
+            for prop in pset.HasProperties:
+                if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
+                    index = new_pset.properties.find(prop.Name)
+                    if index >= 0:
+                        new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
+                    else:
+                        new_prop = new_pset.properties.add()
+                        new_prop.name = prop.Name
+                        new_prop.string_value = str(prop.NominalValue.wrappedValue)
 
     def add_defines_by_type_relation(self, element, obj):
-        if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
-            return
-        obj.BIMObjectProperties.type_product = self.type_products[element.IsTypedBy[0].RelatingType.GlobalId]
+        if self.file.schema == 'IFC2X3':
+            if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
+                return
+            for relationship in element.IsDefinedBy:
+                if relationship.is_a('IfcRelDefinesByType'):
+                    related_type = relationship.RelatingType
+                    break
+        else:
+            if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
+                return
+            related_type = element.IsTypedBy[0].RelatingType
+        obj.BIMObjectProperties.type_product = self.type_products[related_type.GlobalId]
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
@@ -409,10 +478,10 @@ class IfcImporter():
         bpy.ops.object.delete({'selected_objects': objects_to_purge})
 
     def create_object(self, element):
-        if self.diff:
-            if element.GlobalId not in self.diff['added'] \
+        if self.diff \
+                and element.GlobalId not in self.diff['added'] \
                 and element.GlobalId not in self.diff['changed'].keys():
-                return
+            return
 
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
         self.time = time.time()
@@ -464,6 +533,10 @@ class IfcImporter():
                 and element.Decomposes:
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
                 collection = bpy.data.collections.get(f'IfcProject/{element.Decomposes[0].RelatingObject.Name}')
+            elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
+                collection = bpy.data.collections.get('{}/{}'.format(
+                    element.Decomposes[0].RelatingObject.is_a(),
+                    element.Decomposes[0].RelatingObject.Name))
             else:
                 collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
             if collection:
@@ -544,10 +617,14 @@ class IfcImporter():
 
     def create_mesh(self, element, shape):
         try:
-            mesh = bpy.data.meshes.new(shape.geometry.id)
-            f = shape.geometry.faces
-            e = shape.geometry.edges
-            v = shape.geometry.verts
+            if hasattr(shape, 'geometry'):
+                geometry = shape.geometry
+            else:
+                geometry = shape
+            mesh = bpy.data.meshes.new(geometry.id)
+            f = geometry.faces
+            e = geometry.edges
+            v = geometry.verts
             vertices = [[v[i], v[i + 1], v[i + 2]]
                      for i in range(0, len(v), 3)]
             faces = [[f[i], f[i + 1], f[i + 2]]
@@ -601,6 +678,7 @@ class IfcImportSettings:
         self.should_reset_absolute_coordinates = False
         self.should_import_curves = False
         self.should_import_opening_elements = False
+        self.should_import_spaces = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
