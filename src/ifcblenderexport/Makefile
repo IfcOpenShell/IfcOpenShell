@@ -28,7 +28,7 @@ ifneq ($(PLATFORM), win)
 endif
 	cp -r blenderbim/* dist/blenderbim/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-9bcd932-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-e44221c-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/
 	rm -rf dist/working
