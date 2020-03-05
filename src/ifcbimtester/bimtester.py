@@ -14,13 +14,11 @@ import re
 from pathlib import Path
 
 def run_tests(args):
-    behave_args = ['features', '--junit', '--junit-directory', args.junit_directory]
+    behave_args = [args.feature, '--junit', '--junit-directory', args.junit_directory]
     if args.advanced_arguments:
         behave_args = args.advanced_arguments.split()
     behave_main(behave_args)
     print('# All tests are finished.')
-    if args.report:
-        generate_report(args)
 
 def generate_report(args):
     print('# Generating HTML reports now.')
@@ -31,6 +29,7 @@ def generate_report(args):
     for file in os.listdir(args.junit_directory):
         if not file.endswith('.xml'):
             continue
+        print(f'Processing {file} ...')
         root = ET.parse('{}{}'.format(args.junit_directory, file)).getroot()
         data = {
             'report_name': root.get('name'),
@@ -118,6 +117,12 @@ parser.add_argument(
     help='Specify your own JUnit directory',
     default='junit/')
 parser.add_argument(
+    '-f',
+    '--feature',
+    type=str,
+    help='Specify a feature to test',
+    default='features')
+parser.add_argument(
     '-a',
     '--advanced-arguments',
     type=str,
@@ -133,6 +138,8 @@ if not os.path.exists('features'):
 
 if args.purge:
     TestPurger().purge()
+elif args.report:
+    generate_report(args)
 else:
     run_tests(args)
 
