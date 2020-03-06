@@ -96,7 +96,9 @@ class MaterialCreator():
             for surface_style in style.Styles:
                 if surface_style.is_a('IfcSurfaceStyleShading'):
                     alpha = 1.
-                    if surface_style.Transparency:
+                    # Transparency was added in IFC4
+                    if hasattr(surface_style, 'Transparency') \
+                            and surface_style.Transparency:
                         alpha = 1 - surface_style.Transparency
                     material.diffuse_color = (
                         surface_style.SurfaceColour.Red,
