@@ -66,6 +66,11 @@ def step_impl(context, ifc_class):
     assert len(IfcFile.get().by_type(ifc_class)) >= 1
 
 
+@then(u'there are no {ifc_class} elements because {reason}')
+def step_impl(context, ifc_class, reason):
+    assert len(IfcFile.get().by_type(ifc_class)) == 0
+
+
 @then('all {ifc_class} elements have a name matching the pattern "{pattern}"')
 def step_impl(context, ifc_class, pattern):
     import re
