@@ -538,9 +538,9 @@ class IfcImporter():
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
                 collection = bpy.data.collections.get(f'IfcProject/{element.Decomposes[0].RelatingObject.Name}')
             elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
-                collection = bpy.data.collections.get('{}/{}'.format(
-                    element.Decomposes[0].RelatingObject.is_a(),
-                    element.Decomposes[0].RelatingObject.Name))
+                global_id = element.Decomposes[0].RelatingObject.GlobalId
+                if global_id in self.spatial_structure_elements:
+                    collection = self.spatial_structure_elements[global_id]['blender']
             else:
                 collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
             if collection:
