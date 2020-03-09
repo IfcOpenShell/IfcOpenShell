@@ -138,6 +138,7 @@ class IfcImporter():
         self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1
+        self.added_objects = []
 
         self.material_creator = MaterialCreator(ifc_import_settings)
 
@@ -162,6 +163,8 @@ class IfcImporter():
             self.create_products_legacy()
         else:
             self.create_products()
+        if self.ifc_import_settings.should_merge_by_class:
+            self.merge_by_class()
 
     def auto_set_workarounds(self):
         applications = self.file.by_type('IfcApplication')
@@ -335,6 +338,18 @@ class IfcImporter():
         self.add_defines_by_type_relation(element, obj)
         self.place_object_in_spatial_tree(element, obj)
         self.add_product_psets(element, obj)
+        self.added_objects.append(obj)
+
+    def merge_by_class(self):
+        merge_set = {}
+        for obj in self.added_objects:
+            if '/' in obj.name:
+                merge_set.setdefault(obj.name.split('/')[0], []).append(obj)
+        for ifc_class, objs in merge_set.items():
+            context_override = {}
+            context_override['object'] = context_override['active_object'] = objs[0]
+            context_override['selected_objects'] = context_override['selected_editable_objects'] = objs
+            bpy.ops.object.join(context_override)
 
     def add_product_psets(self, element, obj):
         if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
@@ -686,4 +701,5 @@ class IfcImportSettings:
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
+        self.should_merge_by_class = False
         self.diff_file = None

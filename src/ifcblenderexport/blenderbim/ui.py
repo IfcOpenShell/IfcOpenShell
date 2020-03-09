@@ -643,6 +643,11 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
 
+        layout.label(text='Simplifications:')
+
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_merge_by_class')
+
         layout.label(text='Vendor Workarounds:')
 
         row = layout.row()
