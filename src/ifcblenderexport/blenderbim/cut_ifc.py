@@ -775,10 +775,13 @@ class SvgWriter():
                 }))
 
         if self.ifc_cutter.hidden_obj:
+            matrix_world = self.ifc_cutter.hidden_obj.matrix_world
             for edge in self.ifc_cutter.hidden_obj.data.edges:
                 classes = ['annotation', 'hidden']
-                v0 = self.ifc_cutter.hidden_obj.data.vertices[edge.vertices[0]].co
-                v1 = self.ifc_cutter.hidden_obj.data.vertices[edge.vertices[1]].co
+                v0_global = matrix_world @ self.ifc_cutter.hidden_obj.data.vertices[edge.vertices[0]].co.xyz
+                v1_global = matrix_world @ self.ifc_cutter.hidden_obj.data.vertices[edge.vertices[1]].co.xyz
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
                 start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
                 end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
                 vector = end - start
