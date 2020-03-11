@@ -52,6 +52,8 @@
 #include <GeomAPI.hxx>
 #include <TopoDS_Wire.hxx>
 
+#include <BRepBuilderAPI_Transform.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -310,7 +312,16 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 
 	path_object& p = start_path(storey, nameElement(o));
 
+	// SVG has a coordinate system with the origin in the *upper*-left corner
+	// therefore we mirror the shape along the XZ-plane.
 	TopoDS_Shape compound = o->geometry().as_compound();
+	gp_Trsf trsf;
+	trsf.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+	BRepBuilderAPI_Transform make_transform(compound, trsf);
+	make_transform.Build();
+	// When determinant < 0, copy is implied and the input is not mutated.
+	compound = make_transform.Shape();
+
 	TopoDS_Iterator it(compound);
 
 	// Iterate over components of compound to have better chance of matching section edges to closed wires
