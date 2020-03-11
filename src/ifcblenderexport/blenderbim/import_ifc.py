@@ -151,7 +151,8 @@ class IfcImporter():
         self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
-        self.create_aggregates()
+        if self.ifc_import_settings.should_import_aggregates:
+            self.create_aggregates()
         if self.ifc_import_settings.should_import_opening_elements:
             self.create_openings_collection()
         self.purge_diff()
@@ -570,8 +571,10 @@ class IfcImporter():
                 global_id = element.Decomposes[0].RelatingObject.GlobalId
                 if global_id in self.spatial_structure_elements:
                     collection = self.spatial_structure_elements[global_id]['blender']
-            else:
+            elif self.ifc_import_settings.should_import_aggregates:
                 collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
+            else:
+                return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             if collection:
                 collection.objects.link(obj)
         elif hasattr(element, 'HasFillings') \
@@ -717,4 +720,5 @@ class IfcImportSettings:
         self.should_use_legacy = False
         self.should_merge_by_class = False
         self.should_merge_by_material = False
+        self.should_import_aggregates = True
         self.diff_file = None
