@@ -165,6 +165,8 @@ class IfcImporter():
             self.create_products()
         if self.ifc_import_settings.should_merge_by_class:
             self.merge_by_class()
+        elif self.ifc_import_settings.should_merge_by_material:
+            self.merge_by_material()
 
     def auto_set_workarounds(self):
         applications = self.file.by_type('IfcApplication')
@@ -345,6 +347,18 @@ class IfcImporter():
         for obj in self.added_objects:
             if '/' in obj.name:
                 merge_set.setdefault(obj.name.split('/')[0], []).append(obj)
+        self.merge_objects(merge_set)
+
+    def merge_by_material(self):
+        merge_set = {}
+        for obj in self.added_objects:
+            if not obj.material_slots:
+                merge_set.setdefault('no-material', []).append(obj)
+            else:
+                merge_set.setdefault(obj.material_slots[0].name, []).append(obj)
+        self.merge_objects(merge_set)
+
+    def merge_objects(self, merge_set):
         for ifc_class, objs in merge_set.items():
             context_override = {}
             context_override['object'] = context_override['active_object'] = objs[0]
@@ -702,4 +716,5 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
         self.should_merge_by_class = False
+        self.should_merge_by_material = False
         self.diff_file = None
