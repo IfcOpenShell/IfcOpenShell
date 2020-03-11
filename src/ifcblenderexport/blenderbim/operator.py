@@ -101,6 +101,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.should_treat_styled_item_as_material = bpy.context.scene.BIMProperties.import_should_treat_styled_item_as_material
         ifc_import_settings.should_use_cpu_multiprocessing = bpy.context.scene.BIMProperties.import_should_use_cpu_multiprocessing
         ifc_import_settings.should_use_legacy = bpy.context.scene.BIMProperties.import_should_use_legacy
+        ifc_import_settings.should_import_aggregates = bpy.context.scene.BIMProperties.import_should_import_aggregates
         ifc_import_settings.should_merge_by_class = bpy.context.scene.BIMProperties.import_should_merge_by_class
         ifc_import_settings.should_merge_by_material = bpy.context.scene.BIMProperties.import_should_merge_by_material
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)

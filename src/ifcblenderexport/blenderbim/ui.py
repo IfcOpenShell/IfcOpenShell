@@ -646,6 +646,8 @@ class BIM_PT_mvd(Panel):
         layout.label(text='Simplifications:')
 
         row = layout.row()
+        row.prop(bim_properties, 'import_should_import_aggregates')
+        row = layout.row()
         row.prop(bim_properties, 'import_should_merge_by_class')
         row = layout.row()
         row.prop(bim_properties, 'import_should_merge_by_material')
