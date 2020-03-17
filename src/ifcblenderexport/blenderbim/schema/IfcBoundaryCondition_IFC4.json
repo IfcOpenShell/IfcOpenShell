@@ -1,256 +1,256 @@
 {
     "IfcBoundaryEdgeCondition": {
+        "is_abstract": false,
+        "parent": "IfcBoundaryCondition",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
+                "name": "TranslationalStiffnessByLengthX",
+                "type": "IfcModulusOfTranslationalSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfLinearSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfTranslationalSubgradeReactionSelect", 
-                "name": "TranslationalStiffnessByLengthX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessByLengthY",
+                "type": "IfcModulusOfTranslationalSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfLinearSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfTranslationalSubgradeReactionSelect", 
-                "name": "TranslationalStiffnessByLengthY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessByLengthZ",
+                "type": "IfcModulusOfTranslationalSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfLinearSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfTranslationalSubgradeReactionSelect", 
-                "name": "TranslationalStiffnessByLengthZ", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessByLengthX",
+                "type": "IfcModulusOfRotationalSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfRotationalSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfRotationalSubgradeReactionSelect", 
-                "name": "RotationalStiffnessByLengthX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessByLengthY",
+                "type": "IfcModulusOfRotationalSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfRotationalSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfRotationalSubgradeReactionSelect", 
-                "name": "RotationalStiffnessByLengthY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessByLengthZ",
+                "type": "IfcModulusOfRotationalSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfRotationalSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfRotationalSubgradeReactionSelect", 
-                "name": "RotationalStiffnessByLengthZ", 
-                "is_select": true
+                ]
             }
-        ], 
-        "parent": "IfcBoundaryCondition"
-    }, 
+        ]
+    },
     "IfcBoundaryFaceCondition": {
+        "is_abstract": false,
+        "parent": "IfcBoundaryCondition",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
+                "name": "TranslationalStiffnessByAreaX",
+                "type": "IfcModulusOfSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfSubgradeReactionSelect", 
-                "name": "TranslationalStiffnessByAreaX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessByAreaY",
+                "type": "IfcModulusOfSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfSubgradeReactionSelect", 
-                "name": "TranslationalStiffnessByAreaY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessByAreaZ",
+                "type": "IfcModulusOfSubgradeReactionSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcModulusOfSubgradeReactionMeasure"
-                ], 
-                "type": "IfcModulusOfSubgradeReactionSelect", 
-                "name": "TranslationalStiffnessByAreaZ", 
-                "is_select": true
+                ]
             }
-        ], 
-        "parent": "IfcBoundaryCondition"
-    }, 
+        ]
+    },
     "IfcBoundaryNodeCondition": {
+        "is_abstract": false,
+        "parent": "IfcBoundaryCondition",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
+                "name": "TranslationalStiffnessX",
+                "type": "IfcTranslationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcLinearStiffnessMeasure"
-                ], 
-                "type": "IfcTranslationalStiffnessSelect", 
-                "name": "TranslationalStiffnessX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessY",
+                "type": "IfcTranslationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcLinearStiffnessMeasure"
-                ], 
-                "type": "IfcTranslationalStiffnessSelect", 
-                "name": "TranslationalStiffnessY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessZ",
+                "type": "IfcTranslationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcLinearStiffnessMeasure"
-                ], 
-                "type": "IfcTranslationalStiffnessSelect", 
-                "name": "TranslationalStiffnessZ", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessX",
+                "type": "IfcRotationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcRotationalStiffnessMeasure"
-                ], 
-                "type": "IfcRotationalStiffnessSelect", 
-                "name": "RotationalStiffnessX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessY",
+                "type": "IfcRotationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcRotationalStiffnessMeasure"
-                ], 
-                "type": "IfcRotationalStiffnessSelect", 
-                "name": "RotationalStiffnessY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessZ",
+                "type": "IfcRotationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcRotationalStiffnessMeasure"
-                ], 
-                "type": "IfcRotationalStiffnessSelect", 
-                "name": "RotationalStiffnessZ", 
-                "is_select": true
+                ]
             }
-        ], 
-        "parent": "IfcBoundaryCondition"
-    }, 
+        ]
+    },
     "IfcBoundaryNodeConditionWarping": {
+        "is_abstract": false,
+        "parent": "IfcBoundaryNodeCondition",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
+                "name": "TranslationalStiffnessX",
+                "type": "IfcTranslationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcLinearStiffnessMeasure"
-                ], 
-                "type": "IfcTranslationalStiffnessSelect", 
-                "name": "TranslationalStiffnessX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessY",
+                "type": "IfcTranslationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcLinearStiffnessMeasure"
-                ], 
-                "type": "IfcTranslationalStiffnessSelect", 
-                "name": "TranslationalStiffnessY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "TranslationalStiffnessZ",
+                "type": "IfcTranslationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcLinearStiffnessMeasure"
-                ], 
-                "type": "IfcTranslationalStiffnessSelect", 
-                "name": "TranslationalStiffnessZ", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessX",
+                "type": "IfcRotationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcRotationalStiffnessMeasure"
-                ], 
-                "type": "IfcRotationalStiffnessSelect", 
-                "name": "RotationalStiffnessX", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessY",
+                "type": "IfcRotationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcRotationalStiffnessMeasure"
-                ], 
-                "type": "IfcRotationalStiffnessSelect", 
-                "name": "RotationalStiffnessY", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "RotationalStiffnessZ",
+                "type": "IfcRotationalStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcRotationalStiffnessMeasure"
-                ], 
-                "type": "IfcRotationalStiffnessSelect", 
-                "name": "RotationalStiffnessZ", 
-                "is_select": true
-            }, 
+                ]
+            },
             {
+                "name": "WarpingStiffness",
+                "type": "IfcWarpingStiffnessSelect",
+                "is_select": true,
                 "select_types": [
-                    "IfcBoolean", 
+                    "IfcBoolean",
                     "IfcWarpingMomentMeasure"
-                ], 
-                "type": "IfcWarpingStiffnessSelect", 
-                "name": "WarpingStiffness", 
-                "is_select": true
+                ]
             }
-        ], 
-        "parent": "IfcBoundaryNodeCondition"
+        ]
     }
 }

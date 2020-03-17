@@ -1,1601 +1,1311 @@
 {
-    "IfcStructuralAction": {
-        "attributes": [
-            {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [
-                    "GLOBAL_COORDS", 
-                    "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcBoolean", 
-                "name": "DestabilizingLoad", 
-                "is_enum": false
-            }
-        ], 
-        "is_abstract": true, 
-        "complex_attributes": [
-            {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
-            }
-        ], 
-        "parent": "IfcStructuralActivity"
-    }, 
-    "IfcStructuralConnection": {
-        "attributes": [
-            {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }
-        ], 
-        "is_abstract": true, 
-        "complex_attributes": [
-            {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcBoundaryCondition", 
-                "name": "AppliedCondition", 
-                "is_select": false
-            }
-        ], 
-        "parent": "IfcStructuralItem"
-    }, 
     "IfcStructuralCurveAction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralAction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcBoolean", 
-                "name": "DestabilizingLoad", 
-                "is_enum": false
-            }, 
+                "name": "DestabilizingLoad",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "ProjectedOrTrue",
+                "type": "IfcProjectedOrTrueLengthEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "PROJECTED_LENGTH", 
+                    "PROJECTED_LENGTH",
                     "TRUE_LENGTH"
-                ], 
-                "type": "IfcProjectedOrTrueLengthEnum", 
-                "name": "ProjectedOrTrue", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralCurveActivityTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CONST", 
-                    "LINEAR", 
-                    "POLYGONAL", 
-                    "EQUIDISTANT", 
-                    "SINUS", 
-                    "PARABOLA", 
-                    "DISCRETE", 
-                    "USERDEFINED", 
+                    "CONST",
+                    "LINEAR",
+                    "POLYGONAL",
+                    "EQUIDISTANT",
+                    "SINUS",
+                    "PARABOLA",
+                    "DISCRETE",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralCurveActivityTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralAction"
-    }, 
+        ]
+    },
     "IfcStructuralCurveConnection": {
+        "is_abstract": false,
+        "parent": "IfcStructuralConnection",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcBoundaryCondition", 
-                "name": "AppliedCondition", 
-                "is_select": false
-            }, 
+                "name": "AppliedCondition",
+                "type": "IfcBoundaryCondition",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcDirection", 
-                "name": "Axis", 
-                "is_select": false
+                "name": "Axis",
+                "type": "IfcDirection",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralConnection"
-    }, 
+        ]
+    },
     "IfcStructuralCurveMember": {
+        "is_abstract": false,
+        "parent": "IfcStructuralMember",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralCurveMemberTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "RIGID_JOINED_MEMBER", 
-                    "PIN_JOINED_MEMBER", 
-                    "CABLE", 
-                    "TENSION_MEMBER", 
-                    "COMPRESSION_MEMBER", 
-                    "USERDEFINED", 
+                    "RIGID_JOINED_MEMBER",
+                    "PIN_JOINED_MEMBER",
+                    "CABLE",
+                    "TENSION_MEMBER",
+                    "COMPRESSION_MEMBER",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralCurveMemberTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcDirection", 
-                "name": "Axis", 
-                "is_select": false
+                "name": "Axis",
+                "type": "IfcDirection",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralMember"
-    }, 
+        ]
+    },
     "IfcStructuralCurveMemberVarying": {
+        "is_abstract": false,
+        "parent": "IfcStructuralCurveMember",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralCurveMemberTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "RIGID_JOINED_MEMBER", 
-                    "PIN_JOINED_MEMBER", 
-                    "CABLE", 
-                    "TENSION_MEMBER", 
-                    "COMPRESSION_MEMBER", 
-                    "USERDEFINED", 
+                    "RIGID_JOINED_MEMBER",
+                    "PIN_JOINED_MEMBER",
+                    "CABLE",
+                    "TENSION_MEMBER",
+                    "COMPRESSION_MEMBER",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralCurveMemberTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcDirection", 
-                "name": "Axis", 
-                "is_select": false
+                "name": "Axis",
+                "type": "IfcDirection",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralCurveMember"
-    }, 
+        ]
+    },
     "IfcStructuralCurveReaction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralReaction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralCurveActivityTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CONST", 
-                    "LINEAR", 
-                    "POLYGONAL", 
-                    "EQUIDISTANT", 
-                    "SINUS", 
-                    "PARABOLA", 
-                    "DISCRETE", 
-                    "USERDEFINED", 
+                    "CONST",
+                    "LINEAR",
+                    "POLYGONAL",
+                    "EQUIDISTANT",
+                    "SINUS",
+                    "PARABOLA",
+                    "DISCRETE",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralCurveActivityTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralReaction"
-    }, 
+        ]
+    },
     "IfcStructuralLinearAction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralCurveAction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcBoolean", 
-                "name": "DestabilizingLoad", 
-                "is_enum": false
-            }, 
+                "name": "DestabilizingLoad",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "ProjectedOrTrue",
+                "type": "IfcProjectedOrTrueLengthEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "PROJECTED_LENGTH", 
+                    "PROJECTED_LENGTH",
                     "TRUE_LENGTH"
-                ], 
-                "type": "IfcProjectedOrTrueLengthEnum", 
-                "name": "ProjectedOrTrue", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralCurveActivityTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CONST", 
-                    "LINEAR", 
-                    "POLYGONAL", 
-                    "EQUIDISTANT", 
-                    "SINUS", 
-                    "PARABOLA", 
-                    "DISCRETE", 
-                    "USERDEFINED", 
+                    "CONST",
+                    "LINEAR",
+                    "POLYGONAL",
+                    "EQUIDISTANT",
+                    "SINUS",
+                    "PARABOLA",
+                    "DISCRETE",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralCurveActivityTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralCurveAction"
-    }, 
-    "IfcStructuralMember": {
-        "attributes": [
-            {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }
-        ], 
-        "is_abstract": true, 
-        "complex_attributes": [
-            {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }
-        ], 
-        "parent": "IfcStructuralItem"
-    }, 
+        ]
+    },
     "IfcStructuralPlanarAction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralSurfaceAction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcBoolean", 
-                "name": "DestabilizingLoad", 
-                "is_enum": false
-            }, 
+                "name": "DestabilizingLoad",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "ProjectedOrTrue",
+                "type": "IfcProjectedOrTrueLengthEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "PROJECTED_LENGTH", 
+                    "PROJECTED_LENGTH",
                     "TRUE_LENGTH"
-                ], 
-                "type": "IfcProjectedOrTrueLengthEnum", 
-                "name": "ProjectedOrTrue", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralSurfaceActivityTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CONST", 
-                    "BILINEAR", 
-                    "DISCRETE", 
-                    "ISOCONTOUR", 
-                    "USERDEFINED", 
+                    "CONST",
+                    "BILINEAR",
+                    "DISCRETE",
+                    "ISOCONTOUR",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralSurfaceActivityTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralSurfaceAction"
-    }, 
+        ]
+    },
     "IfcStructuralPointAction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralAction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcBoolean", 
-                "name": "DestabilizingLoad", 
-                "is_enum": false
+                "name": "DestabilizingLoad",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralAction"
-    }, 
+        ]
+    },
     "IfcStructuralPointConnection": {
+        "is_abstract": false,
+        "parent": "IfcStructuralConnection",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcBoundaryCondition", 
-                "name": "AppliedCondition", 
-                "is_select": false
-            }, 
+                "name": "AppliedCondition",
+                "type": "IfcBoundaryCondition",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement3D", 
-                "name": "ConditionCoordinateSystem", 
-                "is_select": false
+                "name": "ConditionCoordinateSystem",
+                "type": "IfcAxis2Placement3D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralConnection"
-    }, 
+        ]
+    },
     "IfcStructuralPointReaction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralReaction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralReaction"
-    }, 
-    "IfcStructuralReaction": {
-        "attributes": [
-            {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
-            {
-                "enum_values": [
-                    "GLOBAL_COORDS", 
-                    "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }
-        ], 
-        "is_abstract": true, 
-        "complex_attributes": [
-            {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
-            {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
-            }
-        ], 
-        "parent": "IfcStructuralActivity"
-    }, 
+        ]
+    },
     "IfcStructuralSurfaceAction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralAction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcBoolean", 
-                "name": "DestabilizingLoad", 
-                "is_enum": false
-            }, 
+                "name": "DestabilizingLoad",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "ProjectedOrTrue",
+                "type": "IfcProjectedOrTrueLengthEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "PROJECTED_LENGTH", 
+                    "PROJECTED_LENGTH",
                     "TRUE_LENGTH"
-                ], 
-                "type": "IfcProjectedOrTrueLengthEnum", 
-                "name": "ProjectedOrTrue", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralSurfaceActivityTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CONST", 
-                    "BILINEAR", 
-                    "DISCRETE", 
-                    "ISOCONTOUR", 
-                    "USERDEFINED", 
+                    "CONST",
+                    "BILINEAR",
+                    "DISCRETE",
+                    "ISOCONTOUR",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralSurfaceActivityTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralAction"
-    }, 
+        ]
+    },
     "IfcStructuralSurfaceConnection": {
+        "is_abstract": false,
+        "parent": "IfcStructuralConnection",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcBoundaryCondition", 
-                "name": "AppliedCondition", 
-                "is_select": false
+                "name": "AppliedCondition",
+                "type": "IfcBoundaryCondition",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralConnection"
-    }, 
+        ]
+    },
     "IfcStructuralSurfaceMember": {
+        "is_abstract": false,
+        "parent": "IfcStructuralMember",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralSurfaceMemberTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "BENDING_ELEMENT", 
-                    "MEMBRANE_ELEMENT", 
-                    "SHELL", 
-                    "USERDEFINED", 
+                    "BENDING_ELEMENT",
+                    "MEMBRANE_ELEMENT",
+                    "SHELL",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralSurfaceMemberTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Thickness", 
-                "is_enum": false
+                "name": "Thickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralMember"
-    }, 
+        ]
+    },
     "IfcStructuralSurfaceMemberVarying": {
+        "is_abstract": false,
+        "parent": "IfcStructuralSurfaceMember",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralSurfaceMemberTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "BENDING_ELEMENT", 
-                    "MEMBRANE_ELEMENT", 
-                    "SHELL", 
-                    "USERDEFINED", 
+                    "BENDING_ELEMENT",
+                    "MEMBRANE_ELEMENT",
+                    "SHELL",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralSurfaceMemberTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Thickness", 
-                "is_enum": false
+                "name": "Thickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralSurfaceMember"
-    }, 
+        ]
+    },
     "IfcStructuralSurfaceReaction": {
+        "is_abstract": false,
+        "parent": "IfcStructuralReaction",
         "attributes": [
             {
-                "enum_values": [], 
-                "type": "IfcGloballyUniqueId", 
-                "name": "GlobalId", 
-                "is_enum": false
-            }, 
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "Name", 
-                "is_enum": false
-            }, 
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcText", 
-                "name": "Description", 
-                "is_enum": false
-            }, 
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ObjectType", 
-                "is_enum": false
-            }, 
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
+                "name": "GlobalOrLocal",
+                "type": "IfcGlobalOrLocalEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "GLOBAL_COORDS", 
+                    "GLOBAL_COORDS",
                     "LOCAL_COORDS"
-                ], 
-                "type": "IfcGlobalOrLocalEnum", 
-                "name": "GlobalOrLocal", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
+                "name": "PredefinedType",
+                "type": "IfcStructuralSurfaceActivityTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CONST", 
-                    "BILINEAR", 
-                    "DISCRETE", 
-                    "ISOCONTOUR", 
-                    "USERDEFINED", 
+                    "CONST",
+                    "BILINEAR",
+                    "DISCRETE",
+                    "ISOCONTOUR",
+                    "USERDEFINED",
                     "NOTDEFINED"
-                ], 
-                "type": "IfcStructuralSurfaceActivityTypeEnum", 
-                "name": "PredefinedType", 
-                "is_enum": true
+                ]
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcOwnerHistory", 
-                "name": "OwnerHistory", 
-                "is_select": false
-            }, 
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByObject", 
-                "name": "IsDeclaredBy", 
-                "is_select": false
-            }, 
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcRelDefinesByType", 
-                "name": "IsTypedBy", 
-                "is_select": false
-            }, 
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcObjectPlacement", 
-                "name": "ObjectPlacement", 
-                "is_select": false
-            }, 
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcProductRepresentation", 
-                "name": "Representation", 
-                "is_select": false
-            }, 
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            },
             {
-                "select_types": [], 
-                "type": "IfcStructuralLoad", 
-                "name": "AppliedLoad", 
-                "is_select": false
+                "name": "AppliedLoad",
+                "type": "IfcStructuralLoad",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcStructuralReaction"
+        ]
     }
 }
