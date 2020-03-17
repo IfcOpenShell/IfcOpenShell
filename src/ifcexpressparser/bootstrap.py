@@ -198,15 +198,10 @@ else:
     with open(cache_file, "wb") as f:
         pickle.dump(mapping, f, protocol=0)    
 
-import header
-import implementation
-import schema_class
-import definitions
-
-header.Header(mapping).emit()
-implementation.Implementation(mapping).emit()
-schema_class.SchemaClass(mapping).emit()
-definitions.Definitions(mapping).emit()
+import importlib
+for output in sys.argv[2:]:
+    mdl = importlib.import_module(output)
+    mdl.Generator(mapping).emit()
 
 sys.stdout.write(schema.name)
 """%('\n    '.join(statements)))
