@@ -1,834 +1,834 @@
 {
     "IfcAsymmetricIShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "BottomFlangeWidth", 
-                "is_enum": false
-            }, 
+                "name": "BottomFlangeWidth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "OverallDepth", 
-                "is_enum": false
-            }, 
+                "name": "OverallDepth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WebThickness", 
-                "is_enum": false
-            }, 
+                "name": "WebThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "BottomFlangeThickness", 
-                "is_enum": false
-            }, 
+                "name": "BottomFlangeThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "BottomFlangeFilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "BottomFlangeFilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "TopFlangeWidth", 
-                "is_enum": false
-            }, 
+                "name": "TopFlangeWidth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "TopFlangeThickness", 
-                "is_enum": false
-            }, 
+                "name": "TopFlangeThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "TopFlangeFilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "TopFlangeFilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "BottomFlangeEdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "BottomFlangeEdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "BottomFlangeSlope", 
-                "is_enum": false
-            }, 
+                "name": "BottomFlangeSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "TopFlangeEdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "TopFlangeEdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "TopFlangeSlope", 
-                "is_enum": false
+                "name": "TopFlangeSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcCShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Depth", 
-                "is_enum": false
-            }, 
+                "name": "Depth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Width", 
-                "is_enum": false
-            }, 
+                "name": "Width",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WallThickness", 
-                "is_enum": false
-            }, 
+                "name": "WallThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Girth", 
-                "is_enum": false
-            }, 
+                "name": "Girth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "InternalFilletRadius", 
-                "is_enum": false
+                "name": "InternalFilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcCircleHollowProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcCircleProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Radius", 
-                "is_enum": false
-            }, 
+                "name": "Radius",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WallThickness", 
-                "is_enum": false
+                "name": "WallThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcCircleProfileDef"
-    }, 
+        ]
+    },
     "IfcCircleProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Radius", 
-                "is_enum": false
+                "name": "Radius",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcEllipseProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "SemiAxis1", 
-                "is_enum": false
-            }, 
+                "name": "SemiAxis1",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "SemiAxis2", 
-                "is_enum": false
+                "name": "SemiAxis2",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcIShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "OverallWidth", 
-                "is_enum": false
-            }, 
+                "name": "OverallWidth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "OverallDepth", 
-                "is_enum": false
-            }, 
+                "name": "OverallDepth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WebThickness", 
-                "is_enum": false
-            }, 
+                "name": "WebThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeThickness", 
-                "is_enum": false
-            }, 
+                "name": "FlangeThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "FilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FlangeEdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "FlangeEdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "FlangeSlope", 
-                "is_enum": false
+                "name": "FlangeSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcLShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Depth", 
-                "is_enum": false
-            }, 
+                "name": "Depth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Width", 
-                "is_enum": false
-            }, 
+                "name": "Width",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Thickness", 
-                "is_enum": false
-            }, 
+                "name": "Thickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "FilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "EdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "EdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "LegSlope", 
-                "is_enum": false
+                "name": "LegSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcRectangleHollowProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcRectangleProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "XDim", 
-                "is_enum": false
-            }, 
+                "name": "XDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "YDim", 
-                "is_enum": false
-            }, 
+                "name": "YDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WallThickness", 
-                "is_enum": false
-            }, 
+                "name": "WallThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "InnerFilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "InnerFilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "OuterFilletRadius", 
-                "is_enum": false
+                "name": "OuterFilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcRectangleProfileDef"
-    }, 
+        ]
+    },
     "IfcRectangleProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "XDim", 
-                "is_enum": false
-            }, 
+                "name": "XDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "YDim", 
-                "is_enum": false
+                "name": "YDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcRoundedRectangleProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcRectangleProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "XDim", 
-                "is_enum": false
-            }, 
+                "name": "XDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "YDim", 
-                "is_enum": false
-            }, 
+                "name": "YDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "RoundingRadius", 
-                "is_enum": false
+                "name": "RoundingRadius",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcRectangleProfileDef"
-    }, 
+        ]
+    },
     "IfcTShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Depth", 
-                "is_enum": false
-            }, 
+                "name": "Depth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeWidth", 
-                "is_enum": false
-            }, 
+                "name": "FlangeWidth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WebThickness", 
-                "is_enum": false
-            }, 
+                "name": "WebThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeThickness", 
-                "is_enum": false
-            }, 
+                "name": "FlangeThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "FilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FlangeEdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "FlangeEdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "WebEdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "WebEdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "WebSlope", 
-                "is_enum": false
-            }, 
+                "name": "WebSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "FlangeSlope", 
-                "is_enum": false
+                "name": "FlangeSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcTrapeziumProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "BottomXDim", 
-                "is_enum": false
-            }, 
+                "name": "BottomXDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "TopXDim", 
-                "is_enum": false
-            }, 
+                "name": "TopXDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "YDim", 
-                "is_enum": false
-            }, 
+                "name": "YDim",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLengthMeasure", 
-                "name": "TopXOffset", 
-                "is_enum": false
+                "name": "TopXOffset",
+                "type": "IfcLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcUShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Depth", 
-                "is_enum": false
-            }, 
+                "name": "Depth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeWidth", 
-                "is_enum": false
-            }, 
+                "name": "FlangeWidth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WebThickness", 
-                "is_enum": false
-            }, 
+                "name": "WebThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeThickness", 
-                "is_enum": false
-            }, 
+                "name": "FlangeThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "FilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "EdgeRadius", 
-                "is_enum": false
-            }, 
+                "name": "EdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPlaneAngleMeasure", 
-                "name": "FlangeSlope", 
-                "is_enum": false
+                "name": "FlangeSlope",
+                "type": "IfcPlaneAngleMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
-    }, 
+        ]
+    },
     "IfcZShapeProfileDef": {
+        "is_abstract": false,
+        "parent": "IfcParameterizedProfileDef",
         "attributes": [
             {
+                "name": "ProfileType",
+                "type": "IfcProfileTypeEnum",
+                "is_enum": true,
                 "enum_values": [
-                    "CURVE", 
+                    "CURVE",
                     "AREA"
-                ], 
-                "type": "IfcProfileTypeEnum", 
-                "name": "ProfileType", 
-                "is_enum": true
-            }, 
+                ]
+            },
             {
-                "enum_values": [], 
-                "type": "IfcLabel", 
-                "name": "ProfileName", 
-                "is_enum": false
-            }, 
+                "name": "ProfileName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "Depth", 
-                "is_enum": false
-            }, 
+                "name": "Depth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeWidth", 
-                "is_enum": false
-            }, 
+                "name": "FlangeWidth",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "WebThickness", 
-                "is_enum": false
-            }, 
+                "name": "WebThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcPositiveLengthMeasure", 
-                "name": "FlangeThickness", 
-                "is_enum": false
-            }, 
+                "name": "FlangeThickness",
+                "type": "IfcPositiveLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "FilletRadius", 
-                "is_enum": false
-            }, 
+                "name": "FilletRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
             {
-                "enum_values": [], 
-                "type": "IfcNonNegativeLengthMeasure", 
-                "name": "EdgeRadius", 
-                "is_enum": false
+                "name": "EdgeRadius",
+                "type": "IfcNonNegativeLengthMeasure",
+                "is_enum": false,
+                "enum_values": []
             }
-        ], 
-        "is_abstract": false, 
+        ],
         "complex_attributes": [
             {
-                "select_types": [], 
-                "type": "IfcAxis2Placement2D", 
-                "name": "Position", 
-                "is_select": false
+                "name": "Position",
+                "type": "IfcAxis2Placement2D",
+                "is_select": false,
+                "select_types": []
             }
-        ], 
-        "parent": "IfcParameterizedProfileDef"
+        ]
     }
 }

@@ -11,7 +11,7 @@ class IfcSchema():
         # TODO: Make it less troublesome
         self.products = [
             'IfcElement',
-            'IfcSpatialStructureElement',
+            'IfcSpatialElement',
             'IfcStructural',
             'IfcMaterialDefinition',
             'IfcParameterizedProfileDef',

@@ -28,7 +28,8 @@ class IFC4Extractor:
             }
             self.elements[element.attrib['name']] = data
             for filter in self.filters:
-                if self.is_descendant_from_class(element, filter):
+                if self.is_descendant_from_class(element, filter) \
+                        and not data['is_abstract']:
                     self.filtered_elements.setdefault(filter, {})[element.attrib['name']] = data
 
     def export(self, filename):
@@ -146,7 +147,7 @@ class IFC2X3Extractor(IFC4Extractor):
 
 filename_filters = {
     'IfcElement_IFC4.json': ['IfcElement'],
-    'IfcSpatialStructureElement_IFC4.json': ['IfcSpatialStructureElement'],
+    'IfcSpatialElement_IFC4.json': ['IfcSpatialElement'],
     'IfcStructural_IFC4.json': ['IfcStructuralActivity', 'IfcStructuralItem'],
     'IfcMaterialDefinition_IFC4.json': ['IfcMaterialDefinition'],
     'IfcParameterizedProfileDef_IFC4.json': ['IfcParameterizedProfileDef'],

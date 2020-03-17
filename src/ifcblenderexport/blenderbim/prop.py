@@ -116,7 +116,7 @@ def getIfcProducts(self, context):
     global products_enum
     if len(products_enum) < 1:
         products_enum.extend([(e, e, '') for e in
-            ['IfcElement', 'IfcElementType', 'IfcSpatialStructureElement', 'IfcStructural']])
+            ['IfcElement', 'IfcElementType', 'IfcSpatialElement', 'IfcStructural']])
     return products_enum
 
 
