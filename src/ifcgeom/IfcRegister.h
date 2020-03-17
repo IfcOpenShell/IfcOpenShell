@@ -146,6 +146,9 @@ CURVE(IfcLine);
 // IfcRationalBSplineCurveWithKnots included
 CURVE(IfcBSplineCurveWithKnots);
 #endif
+#ifdef SCHEMA_HAS_IfcSurfaceCurve
+CURVE(IfcSurfaceCurve);
+#endif
 
 CLASS(IfcCartesianPoint,gp_Pnt);
 CLASS(IfcDirection,gp_Dir);
