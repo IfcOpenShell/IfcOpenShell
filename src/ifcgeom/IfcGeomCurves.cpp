@@ -134,6 +134,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEllipse* l, Handle(Geom_Curve)
 	curve = new Geom_Ellipse(ax, x, y);
 	return true;
 }
+
+#ifdef SCHEMA_HAS_IfcSurfaceCurve
+bool IfcGeom::Kernel::convert(const IfcSchema::IfcSurfaceCurve* sc, Handle(Geom_Curve)& curve) {
+	// @todo take into account PCurves.
+	return convert_curve(sc->Curve3D(), curve);
+}
+#endif
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcLine* l, Handle(Geom_Curve)& curve) {
 	gp_Pnt pnt;gp_Vec vec;
 	convert(l->Pnt(),pnt);
