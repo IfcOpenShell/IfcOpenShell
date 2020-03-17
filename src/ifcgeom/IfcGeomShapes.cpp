@@ -114,15 +114,27 @@
 
 #define Kernel MAKE_TYPE_NAME(Kernel)
 
+// uncomment if you'd like negative or close to zero extrusion depths to succeed
+// #define PERMISSIVE_EXTRUSION
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcExtrudedAreaSolid* l, TopoDS_Shape& shape) {
 	const double height = l->Depth() * getValue(GV_LENGTH_UNIT);
 	if (height < getValue(GV_PRECISION)) {
 		Logger::Message(Logger::LOG_ERROR, "Non-positive extrusion height encountered for:", l);
+#ifndef PERMISSIVE_EXTRUSION
 		return false;
+#endif
 	}
 
 	TopoDS_Shape face;
 	if ( !convert_face(l->SweptArea(),face) ) return false;
+
+#ifdef PERMISSIVE_EXTRUSION
+	if (abs(height) < getValue(GV_PRECISION)) {
+		shape = face;
+		return true;
+	}
+#endif
 
 	gp_Trsf trsf;
 	bool has_position = true;
