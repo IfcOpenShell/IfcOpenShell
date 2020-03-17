@@ -121,6 +121,10 @@ FACE(IfcDerivedProfileDef);
 // IfcAdvancedFace included in case of IFC4
 FACE(IfcFace);
 
+#ifdef SCHEMA_HAS_IfcCraneRailAShapeProfileDef
+FACE(IfcCraneRailAShapeProfileDef);
+#endif
+
 WIRE(IfcEdgeCurve);
 WIRE(IfcSubedge);
 WIRE(IfcOrientedEdge);
