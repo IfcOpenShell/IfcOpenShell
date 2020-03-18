@@ -560,7 +560,10 @@ class IfcImporter():
         if hasattr(element, 'ContainedInStructure') \
                 and element.ContainedInStructure \
                 and element.ContainedInStructure[0].RelatingStructure:
-            relating_structure_global_id = element.ContainedInStructure[0].RelatingStructure.GlobalId
+            container = element.ContainedInStructure[0].RelatingStructure
+            if container.is_a('IfcSpace'):
+                return self.place_object_in_spatial_tree(container, obj)
+            relating_structure_global_id = container.GlobalId
             if relating_structure_global_id in self.spatial_structure_elements:
                 self.spatial_structure_elements[relating_structure_global_id]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
