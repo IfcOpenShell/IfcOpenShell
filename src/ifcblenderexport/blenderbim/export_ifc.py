@@ -525,13 +525,14 @@ class IfcParser():
                 continue
             elif obj.users_collection and obj.users_collection[0].name == obj.name:
                 self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
-            elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
-                self.selected_products.append({'raw': obj, 'metadata': metadata})
             elif obj.instance_type == 'COLLECTION':
                 self.categorise_selected_objects(
                     obj.instance_collection.objects,
                     {'rel_aggregates_relating_object': obj}
                 )
+                self.selected_products.append({'raw': obj, 'metadata': metadata})
+            elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
+                self.selected_products.append({'raw': obj, 'metadata': metadata})
 
     def get_psets(self):
         psets = {}
