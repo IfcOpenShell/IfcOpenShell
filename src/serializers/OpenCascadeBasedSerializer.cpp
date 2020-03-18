@@ -43,7 +43,7 @@ void OpenCascadeBasedSerializer::write(const IfcGeom::BRepElement<real_t>* o) {
 	if (settings.get(IfcGeom::IteratorSettings::CONVERT_BACK_UNITS) && settings.unit_magnitude() != 1.0) {
 		trsf.SetTranslationPart(trsf.TranslationPart() / settings.unit_magnitude());
 	}
-	writeShape(compound.Moved(trsf));
+	writeShape(object_id(o), compound.Moved(trsf));
 }
 
 #define RATHER_SMALL (1e-3)

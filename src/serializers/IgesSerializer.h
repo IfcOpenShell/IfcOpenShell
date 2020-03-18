@@ -42,7 +42,7 @@ public:
         : OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~IgesSerializer() {}
-	void writeShape(const TopoDS_Shape& shape) {
+	void writeShape(const std::string&, const TopoDS_Shape& shape) {
 		writer.AddShape(shape);
 	}
 	void finalize() {

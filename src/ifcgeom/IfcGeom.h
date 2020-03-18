@@ -216,12 +216,12 @@ private:
 	};
 
 	double deflection_tolerance;
+	double max_faces_to_orient;
 	double ifc_length_unit;
 	double ifc_planeangle_unit;
 	double modelling_precision;
 	double dimensionality;
-	double max_faces_to_orient;
-
+	
 #ifndef NO_CACHE
 	MAKE_TYPE_NAME(Cache) cache;
 #endif
