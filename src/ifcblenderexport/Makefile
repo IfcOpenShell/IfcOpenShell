@@ -33,7 +33,7 @@ endif
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/
 	# See bug #812
 	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcblenderexport/occ_utils.py
-	cd dist/working && mv occ_utils.py ifcopenshell/geom/occ_utils.py
+	cd dist/working && mv occ_utils.py ../ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 
 	mkdir dist/working
