@@ -36,9 +36,10 @@ public:
 		: OpenCascadeBasedSerializer(out_filename, settings)
 	{}
 	virtual ~StepSerializer() {}
-	void writeShape(const TopoDS_Shape& shape) {
+	void writeShape(const std::string& name, const TopoDS_Shape& shape) {
 		std::stringstream ss;
 		std::streambuf *sb = std::cout.rdbuf(ss.rdbuf());
+		Interface_Static::SetCVal("write.step.product.name", name.c_str());
 		writer.Transfer(shape, STEPControl_AsIs);
 		std::cout.rdbuf(sb);
 	}
