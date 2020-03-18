@@ -178,7 +178,6 @@ namespace IfcGeom {
 	class MAKE_TYPE_NAME(IteratorImplementation_) : public IteratorImplementation<P, PP> {
 	private:
 
-		int num_threads_;
 		std::atomic<int> progress_;
 		std::vector<geometry_conversion_task<P, PP>> tasks_;
 		std::vector<IfcGeom::Element<P, PP>*> all_processed_elements_;
@@ -190,9 +189,12 @@ namespace IfcGeom {
 		MAKE_TYPE_NAME(IteratorImplementation_)& operator=(const MAKE_TYPE_NAME(IteratorImplementation_)&); // N/I
 
 		MAKE_TYPE_NAME(Kernel) kernel;
-		IteratorSettings settings;
 
+		IteratorSettings settings;
 		IfcParse::IfcFile* ifc_file;
+		std::vector<filter_t> filters_;
+		bool owns_ifc_file;
+		int num_threads_;
 
 		// A container and iterator for IfcRepresentations
 		IfcSchema::IfcRepresentation::list::ptr representations;
@@ -218,8 +220,6 @@ namespace IfcGeom {
 
         gp_XYZ bounds_min_;
         gp_XYZ bounds_max_;
-
-        std::vector<filter_t> filters_;
 
         struct filter_match
         {
@@ -952,8 +952,7 @@ namespace IfcGeom {
 				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
 			}
 		}
-
-		bool owns_ifc_file;
+		
 	public:
 		MAKE_TYPE_NAME(IteratorImplementation_)(const IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
 			: settings(settings)

@@ -1165,7 +1165,7 @@ namespace {
 		// @todo we could be extruding the wire only when we know this is an intermediate edge.
 		const double depth = std::abs(u - v);
 		TopoDS_Face face = BRepBuilderAPI_MakeFace(section).Face();
-		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), v - u).Shape();
+		result = BRepPrimAPI_MakeRevol(section, circ->Axis(), depth).Shape();
 	}
 
 	void process_sweep_as_pipe(const TopoDS_Wire& wire, const TopoDS_Wire& section, TopoDS_Shape& result) {
@@ -1563,7 +1563,7 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
     BRep_Builder compound_builder;
     compound_builder.MakeCompound(all_faces);
 
-    for (int i = 0; i < polygonal_faces->size(); i++) {
+    for (unsigned i = 0; i < polygonal_faces->size(); i++) {
         IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
         TopoDS_Face face;
         // Gives the indexed points defining the face
@@ -1573,8 +1573,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
         // points, sorted in order (cf BuildingSmart https://urlz.fr/aXN6)
         std::vector<gp_Pnt> face_points;
         BRepBuilderAPI_MakePolygon wire_builder = BRepBuilderAPI_MakePolygon();
-        for (std::vector<int>::size_type i = 0; i != test.size(); i++) {
-            const gp_Pnt& point = points[test[i] - 1];
+        for (std::vector<int>::size_type j = 0; j != test.size(); j++) {
+            const gp_Pnt& point = points[test[j] - 1];
             TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(point);
             wire_builder.Add(vertex);
         }
@@ -1591,8 +1591,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
             for (std::vector<std::vector<int> >::const_iterator it = innercoordinates.begin(); it != innercoordinates.end(); ++it) {
                 std::vector<int> mycoords = *it;
                 BRepBuilderAPI_MakePolygon inner_wire_builder = BRepBuilderAPI_MakePolygon();
-                for (std::vector<int>::size_type i = 0; i != mycoords.size(); i++) {
-                    gp_Pnt apoint = points[mycoords[i] - 1];
+                for (std::vector<int>::size_type j = 0; j != mycoords.size(); j++) {
+                    gp_Pnt apoint = points[mycoords[j] - 1];
                     TopoDS_Vertex vertex = BRepBuilderAPI_MakeVertex(apoint);
                     inner_wire_builder.Add(vertex);
                 }
@@ -1620,8 +1620,6 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
     }
 
     if (faces.empty()) return false;
-
-    bool valid_shell = false;
 
     TopTools_ListOfShape faces_list;
     for (std::vector<TopoDS_Face>::const_iterator it = faces.begin(); it != faces.end(); ++it) {
