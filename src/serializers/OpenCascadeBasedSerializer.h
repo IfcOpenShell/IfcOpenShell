@@ -38,7 +38,7 @@ public:
 	virtual ~OpenCascadeBasedSerializer() {}
 	void writeHeader() {}
 	bool ready();
-	virtual void writeShape(const TopoDS_Shape& shape) = 0;
+	virtual void writeShape(const std::string& name, const TopoDS_Shape& shape) = 0;
 	void write(const IfcGeom::TriangulationElement<real_t>* /*o*/) {}
 	void write(const IfcGeom::BRepElement<real_t>* o);
 	bool isTesselated() const { return false; }
