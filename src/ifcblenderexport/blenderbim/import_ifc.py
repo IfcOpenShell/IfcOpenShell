@@ -168,6 +168,8 @@ class IfcImporter():
             self.merge_by_class()
         elif self.ifc_import_settings.should_merge_by_material:
             self.merge_by_material()
+        if self.ifc_import_settings.should_clean_mesh:
+            self.clean_mesh()
 
     def auto_set_workarounds(self):
         applications = self.file.by_type('IfcApplication')
@@ -365,6 +367,17 @@ class IfcImporter():
             context_override['object'] = context_override['active_object'] = objs[0]
             context_override['selected_objects'] = context_override['selected_editable_objects'] = objs
             bpy.ops.object.join(context_override)
+
+    def clean_mesh(self):
+        for obj in self.added_objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        context_override = {}
+        bpy.ops.object.editmode_toggle(context_override)
+        bpy.ops.mesh.remove_doubles(context_override)
+        bpy.ops.mesh.tris_convert_to_quads(context_override)
+        bpy.ops.mesh.normals_make_consistent(context_override)
+        bpy.ops.object.editmode_toggle(context_override)
 
     def add_product_psets(self, element, obj):
         if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
@@ -724,4 +737,5 @@ class IfcImportSettings:
         self.should_merge_by_class = False
         self.should_merge_by_material = False
         self.should_import_aggregates = True
+        self.should_clean_mesh = True
         self.diff_file = None

@@ -651,6 +651,8 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_merge_by_class')
         row = layout.row()
         row.prop(bim_properties, 'import_should_merge_by_material')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_clean_mesh')
 
         layout.label(text='Vendor Workarounds:')
 
