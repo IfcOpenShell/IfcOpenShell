@@ -104,6 +104,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.should_import_aggregates = bpy.context.scene.BIMProperties.import_should_import_aggregates
         ifc_import_settings.should_merge_by_class = bpy.context.scene.BIMProperties.import_should_merge_by_class
         ifc_import_settings.should_merge_by_material = bpy.context.scene.BIMProperties.import_should_merge_by_material
+        ifc_import_settings.should_clean_mesh = bpy.context.scene.BIMProperties.import_should_clean_mesh
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.execute()
         ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))
