@@ -138,7 +138,7 @@ class IfcImporter():
         self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1
-        self.added_objects = []
+        self.added_data = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings)
 
@@ -164,6 +164,7 @@ class IfcImporter():
             self.create_products_legacy()
         else:
             self.create_products()
+        self.place_objects_in_spatial_tree()
         if self.ifc_import_settings.should_merge_by_class:
             self.merge_by_class()
         elif self.ifc_import_settings.should_merge_by_material:
@@ -281,7 +282,7 @@ class IfcImporter():
     def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
         for element in elements:
-            self.create_object(element)
+            self.create_product_legacy(element)
 
     def create_products(self):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
@@ -341,20 +342,19 @@ class IfcImporter():
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
-        self.place_object_in_spatial_tree(element, obj)
         self.add_product_psets(element, obj)
-        self.added_objects.append(obj)
+        self.added_data[element.GlobalId] = obj
 
     def merge_by_class(self):
         merge_set = {}
-        for obj in self.added_objects:
+        for obj in self.added_data.values():
             if '/' in obj.name:
                 merge_set.setdefault(obj.name.split('/')[0], []).append(obj)
         self.merge_objects(merge_set)
 
     def merge_by_material(self):
         merge_set = {}
-        for obj in self.added_objects:
+        for obj in self.added_data.values():
             if not obj.material_slots:
                 merge_set.setdefault('no-material', []).append(obj)
             else:
@@ -369,7 +369,7 @@ class IfcImporter():
             bpy.ops.object.join(context_override)
 
     def clean_mesh(self):
-        for obj in self.added_objects:
+        for obj in self.added_data.values():
             obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         context_override = {}
@@ -459,10 +459,10 @@ class IfcImporter():
         bpy.context.scene.collection.children.link(self.project['blender'])
 
     def create_spatial_hierarchy(self):
-        elements = self.file.by_type('IfcSite') + self.file.by_type('IfcBuilding') + self.file.by_type('IfcBuildingStorey')
+        elements = self.file.by_type('IfcSpatialStructureElement')
         attempts = 0
         while len(self.spatial_structure_elements) < len(elements) \
-            and attempts <= len(elements):
+                and attempts <= len(elements):
             for element in elements:
                 name = self.get_name(element)
                 global_id = element.GlobalId
@@ -478,6 +478,9 @@ class IfcImporter():
                     self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
                     self.project['blender'].children.link(self.spatial_structure_elements[global_id]['blender'])
+                elif element.is_a('IfcSpace'):
+                    # Spaces are treated specially as objects
+                    continue
                 elif parent_global_id in self.spatial_structure_elements:
                     self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
@@ -524,7 +527,7 @@ class IfcImporter():
                 objects_to_purge.append(obj)
         bpy.ops.object.delete({'selected_objects': objects_to_purge})
 
-    def create_object(self, element):
+    def create_product_legacy(self, element):
         if self.diff \
                 and element.GlobalId not in self.diff['added'] \
                 and element.GlobalId not in self.diff['changed'].keys():
@@ -560,7 +563,6 @@ class IfcImporter():
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
-        self.place_object_in_spatial_tree(element, obj)
 
     def add_element_document_relations(self, element, obj):
         for association in element.HasAssociations:
@@ -569,12 +571,18 @@ class IfcImporter():
                 document = obj.BIMObjectProperties.documents.add()
                 document.file = document_reference.Location
 
+    def place_objects_in_spatial_tree(self):
+        for global_id, obj in self.added_data.items():
+            self.place_object_in_spatial_tree(self.file.by_guid(global_id), obj)
+
     def place_object_in_spatial_tree(self, element, obj):
         if hasattr(element, 'ContainedInStructure') \
                 and element.ContainedInStructure \
                 and element.ContainedInStructure[0].RelatingStructure:
             container = element.ContainedInStructure[0].RelatingStructure
             if container.is_a('IfcSpace'):
+                if container.GlobalId in self.added_data:
+                    obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
             relating_structure_global_id = container.GlobalId
             if relating_structure_global_id in self.spatial_structure_elements:
