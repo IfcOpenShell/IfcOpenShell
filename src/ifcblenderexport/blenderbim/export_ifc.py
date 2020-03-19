@@ -141,7 +141,6 @@ class IfcParser():
         self.load_representations()
         self.materials = self.get_materials()
         self.styled_items = self.get_styled_items()
-        self.qtos = self.get_qtos()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.structural_analysis_models = self.get_structural_analysis_models()
 
@@ -448,17 +447,8 @@ class IfcParser():
             self.rel_defines_by_pset.setdefault(
                 '{}/{}'.format(pset.name, pset.file), []).append(product)
 
-        for pset in obj.BIMObjectProperties.override_psets:
-            pset_key = '{}/{}'.format(pset.name, obj.name)
-            raw = {p.name: p.string_value for p in pset.properties if p.string_value}
-            if not raw:
-                continue
-            self.psets[pset_key] = {
-                'ifc': None,
-                'raw': raw,
-                'attributes': { 'Name': pset.name }
-            }
-            self.rel_defines_by_pset.setdefault(pset_key, []).append(product)
+        self.get_product_psets_qtos(product, obj, is_pset=True)
+        self.get_product_psets_qtos(product, obj, is_qto=True)
 
         for document in obj.BIMObjectProperties.documents:
             self.rel_associates_document_object.setdefault(
@@ -489,6 +479,27 @@ class IfcParser():
                 self.rel_associates_material.setdefault(slot.material.name, []).append(product)
 
         return product
+
+    def get_product_psets_qtos(self, product, obj, is_pset=False, is_qto=False):
+        if is_pset:
+            psets_qtos = obj.BIMObjectProperties.override_psets
+            results = self.psets
+            relationships = self.rel_defines_by_pset
+        if is_qto:
+            psets_qtos = obj.BIMObjectProperties.qtos
+            results = self.qtos
+            relationships = self.rel_defines_by_qto
+        for item in psets_qtos:
+            item_key = '{}/{}'.format(item.name, obj.name)
+            raw = {p.name: p.string_value for p in item.properties if p.string_value}
+            if not raw:
+                continue
+            results[item_key] = {
+                'ifc': None,
+                'raw': raw,
+                'attributes': { 'Name': item.name }
+            }
+            relationships.setdefault(item_key, []).append(product)
 
     def get_product_relating_structure(self, product, obj):
         relating_structure = obj.BIMObjectProperties.relating_structure
@@ -918,28 +929,6 @@ class IfcParser():
                 })
         return results
 
-    def get_qtos(self):
-        if not self.ifc_export_settings.has_quantities:
-            return {}
-        results = {}
-        for product in self.selected_products + self.type_products:
-            obj = product['raw']
-            if not obj.data:
-                continue
-            for property in obj.keys():
-                if property[0:4] != 'Qto_':
-                    continue
-                results[obj.name] = {
-                    'ifc': None,
-                    'raw': obj,
-                    'class': property,
-                    'attributes': {
-                        'Name': property,
-                        'MethodOfMeasurement': obj[property]
-                    }
-                }
-        return results
-
     def get_type_products(self):
         results = []
         index = 0
@@ -1316,10 +1305,6 @@ class IfcExporter():
         for pset in self.ifc_parser.psets.values():
             properties = self.create_pset_properties(pset)
             if not properties:
-                self.ifc_export_settings.logger.error(
-                    'No properties could be detected for the pset {}/{}'.format(
-                        pset['attributes']['Name'],
-                        pset['attributes']['Description']))
                 continue
             pset['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(),
@@ -1337,6 +1322,10 @@ class IfcExporter():
                     'Properties': self.create_pset_properties(properties),
                     'Material': material['ifc']
                 })
+
+    def create_qto_properties(self, qto):
+        if qto['attributes']['Name'] in schema.ifc.qtos:
+            return self.create_templated_qto_properties(qto)
 
     def create_pset_properties(self, pset):
         if pset['attributes']['Name'] in schema.ifc.psets:
@@ -1380,6 +1369,30 @@ class IfcExporter():
                     pset['attributes']['Name'],
                     pset['attributes']['Description'],
                     invalid_pset_keys))
+        return properties
+
+    def create_templated_qto_properties(self, qto):
+        properties = []
+        templates = schema.ifc.qtos[qto['attributes']['Name']]['HasPropertyTemplates']
+        for name, data in templates.items():
+            if name not in qto['raw']:
+                continue
+            if data.TemplateType[0:2] == 'Q_':
+                value_basename = data.TemplateType[2:].title()
+                value_name = f'{value_basename}Value'
+                class_name = f'IfcQuantity{value_basename}'
+                properties.append(
+                    self.file.create_entity(class_name, **{
+                        'Name': name,
+                        value_name: float(qto['raw'][name])
+                    }))
+        invalid_qto_keys = [k for k in qto['raw'].keys() if k not in templates.keys()]
+        if invalid_qto_keys:
+            self.ifc_export_settings.logger.error(
+                'One or more properties were invalid in the qto {}/{}: {}'.format(
+                    qto['attributes']['Name'],
+                    qto['attributes']['Description'],
+                    invalid_qto_keys))
         return properties
 
     def cast_to_base_type(self, var_type, value):
@@ -1676,12 +1689,15 @@ class IfcExporter():
             self.create_product(product)
 
     def create_qtos(self):
-        for object_name, qto in self.ifc_parser.qtos.items():
-            quantities = self.calculate_quantities(qto['class'], qto['raw'])
+        # TODO: re-introduce calculated quantities
+        for qto in self.ifc_parser.qtos.values():
+            properties = self.create_qto_properties(qto)
+            if not properties:
+                continue
             qto['attributes'].update({
                 'GlobalId': ifcopenshell.guid.new(),
                 'OwnerHistory': self.owner_history,
-                'Quantities': quantities
+                'Quantities': properties
             })
             qto['ifc'] = self.file.create_entity('IfcElementQuantity', **qto['attributes'])
 

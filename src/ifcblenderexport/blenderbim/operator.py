@@ -480,6 +480,22 @@ class RemovePset(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AddQto(bpy.types.Operator):
+    bl_idname = 'bim.add_qto'
+    bl_label = 'Add Qto'
+
+    def execute(self, context):
+        name = bpy.context.active_object.BIMObjectProperties.qto_name
+        if name not in schema.ifc.qtos:
+            return {'FINISHED'}
+        qto = bpy.context.active_object.BIMObjectProperties.qtos.add()
+        qto.name = name
+        for prop_name in schema.ifc.qtos[name]['HasPropertyTemplates'].keys():
+            prop = qto.properties.add()
+            prop.name = prop_name
+        return {'FINISHED'}
+
+
 class AddOverridePset(bpy.types.Operator):
     bl_idname = 'bim.add_override_pset'
     bl_label = 'Add Override Pset'
