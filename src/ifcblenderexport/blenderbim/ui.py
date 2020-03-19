@@ -74,6 +74,10 @@ class BIM_PT_object(Panel):
 
         layout.label(text="Quantities:")
 
+        row = layout.row(align=True)
+        row.prop(props, 'qto_name', text='')
+        row.operator('bim.add_qto')
+
         for index, qto in enumerate(props.qtos):
             row = layout.row(align=True)
             row.prop(qto, 'name', text='')

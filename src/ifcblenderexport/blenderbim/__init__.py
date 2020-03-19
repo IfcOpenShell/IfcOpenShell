@@ -66,6 +66,7 @@ if bpy is not None:
         operator.RemovePset,
         operator.AddOverridePset,
         operator.RemoveOverridePset,
+        operator.AddQto,
         operator.RemoveQto,
         operator.AddMaterialPset,
         operator.RemoveMaterialPset,

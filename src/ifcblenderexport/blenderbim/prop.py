@@ -490,6 +490,7 @@ class BIMObjectProperties(PropertyGroup):
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     override_psets: CollectionProperty(name="Override Psets", type=PsetQto)
     override_pset_name: StringProperty(name="Override Pset Name")
+    qto_name: StringProperty(name="Qto Name")
     has_boundary_condition: BoolProperty(name='Has Boundary Condition')
     boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)
     structural_member_connection: PointerProperty(name='Structural Member Connection', type=bpy.types.Object)
