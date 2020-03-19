@@ -38,7 +38,9 @@ class BIM_PT_object(Panel):
         row.prop(props, 'attributes')
 
         row = layout.row()
-        row.prop(props, 'type_product')
+        row.prop(props, 'relating_type')
+        row = layout.row()
+        row.prop(props, 'relating_structure')
 
         layout.label(text="Property Sets:")
         row = layout.row()

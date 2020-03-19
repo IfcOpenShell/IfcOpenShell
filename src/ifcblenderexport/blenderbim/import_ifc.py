@@ -426,7 +426,7 @@ class IfcImporter():
                 return
             related_type = element.IsTypedBy[0].RelatingType
         if related_type:
-            obj.BIMObjectProperties.type_product = self.type_products[related_type.GlobalId]
+            obj.BIMObjectProperties.relating_type = self.type_products[related_type.GlobalId]
 
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
