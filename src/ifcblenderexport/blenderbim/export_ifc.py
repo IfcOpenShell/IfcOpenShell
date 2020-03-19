@@ -145,8 +145,6 @@ class IfcParser():
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.structural_analysis_models = self.get_structural_analysis_models()
 
-        self.collection_name_filter = []
-
         self.project = self.get_project()
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
@@ -157,8 +155,7 @@ class IfcParser():
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
         self.library_information = self.get_library_information()
-        self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(
-            self.project['raw'].children, self.collection_name_filter)
+        self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(self.project)
 
     def get_units(self):
         return {
@@ -397,7 +394,7 @@ class IfcParser():
         product['attributes'].update(attribute_override)
         product.update(metadata_override)
 
-        type_product = obj.BIMObjectProperties.type_product
+        type_product = obj.BIMObjectProperties.relating_type
         if type_product \
                 and self.is_a_type(self.get_ifc_class(type_product.name)):
             reference = self.get_type_product_reference(type_product.name)
@@ -408,8 +405,7 @@ class IfcParser():
             product['boundary_condition_attributes'] = {a.name: a.string_value
                 for a in obj.BIMObjectProperties.boundary_condition.attributes}
 
-        for collection in product['raw'].users_collection:
-            self.parse_product_collection(product, collection)
+        self.get_product_relating_structure(product, obj)
 
         if 'IfcRelNests' in obj.constraints:
             # TODO: I think get_product_index_from_raw_name should not be used
@@ -494,6 +490,16 @@ class IfcParser():
 
         return product
 
+    def get_product_relating_structure(self, product, obj):
+        relating_structure = obj.BIMObjectProperties.relating_structure
+        if relating_structure:
+            reference = self.get_spatial_structure_element_reference(relating_structure.name)
+            self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
+            product['relating_structure'] = reference
+            return
+        for collection in product['raw'].users_collection:
+            self.parse_product_collection(product, collection)
+
     def parse_product_collection(self, product, collection):
         if collection is None:
             return
@@ -502,7 +508,6 @@ class IfcParser():
             reference = self.get_spatial_structure_element_reference(collection.name)
             self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
             product['relating_structure'] = reference
-            self.collection_name_filter.append(collection.name)
         elif self.is_a_structural_analysis_model(class_name):
             reference = self.get_structural_analysis_model_reference(collection.name)
             self.rel_assigns_to_group.setdefault(reference, []).append(self.product_index)
@@ -523,7 +528,7 @@ class IfcParser():
         for obj in objects_to_sort:
             if obj.name[0:3] != 'Ifc':
                 continue
-            elif obj.users_collection and obj.users_collection[0].name == obj.name:
+            elif self.is_a_spatial_structure_element(self.get_ifc_class(obj.name)):
                 self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
             elif obj.instance_type == 'COLLECTION':
                 self.categorise_selected_objects(
@@ -725,19 +730,16 @@ class IfcParser():
 
     def get_spatial_structure_elements(self):
         elements = []
-        for collection in bpy.data.collections:
-            if self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
-                raw = bpy.data.objects.get(collection.name)
-                if not raw:
-                    raw = collection
-                element = {
-                    'ifc': None,
-                    'raw': raw,
-                    'class': self.get_ifc_class(raw.name),
-                    'attributes': self.get_object_attributes(raw)
-                }
-                self.append_product_attributes(element, raw)
-                elements.append(element)
+        for selected_element in self.selected_spatial_structure_elements:
+            obj = selected_element['raw']
+            element = {
+                'ifc': None,
+                'raw': obj,
+                'class': self.get_ifc_class(obj.name),
+                'attributes': self.get_object_attributes(obj)
+            }
+            self.append_product_attributes(element, obj)
+            elements.append(element)
         return elements
 
     def get_structural_analysis_models(self):
@@ -998,22 +1000,29 @@ class IfcParser():
                         names.append(mesh_name)
         return names
 
-    def get_spatial_structure_elements_tree(self, collections, name_filter):
-        collection_tree = []
-
-        for collection in collections:
-            if not self.is_a_spatial_structure_element(self.get_ifc_class(collection.name)):
-                continue
-            children = self.get_spatial_structure_elements_tree(
-                collection.children, name_filter)
-            if collection.name in name_filter \
-                    or children:
-                collection_tree.append({
-                    'reference': self.get_spatial_structure_element_reference(collection.name),
-                    'children': children
+    def get_spatial_structure_elements_tree(self, parent):
+        children = []
+        if parent['raw'].name not in bpy.data.collections:
+            return children
+        for reference, element in enumerate(self.spatial_structure_elements):
+            if ( \
+                    # A convention is established that spatial elements may be
+                    # an object placed in a collection of the same name
+                        element['raw'].name == element['raw'].users_collection[0].name \
+                        and element['raw'].users_collection[0].name in [c.name \
+                            for c in bpy.data.collections[parent['raw'].name].children] \
+                    ) or ( \
+                    # We allow finer grain spatial elements such as IfcSpace to
+                    # break the convention to prevent collection overload in Blender
+                        element['raw'].name != element['raw'].users_collection[0].name \
+                        and element['raw'].users_collection[0].name in [o.name \
+                            for o in bpy.data.collections[parent['raw'].name].objects] \
+                    ):
+                children.append({
+                    'reference': reference,
+                    'children': self.get_spatial_structure_elements_tree(element)
                 })
-
-        return collection_tree
+        return children
 
     def get_spatial_structure_element_reference(self, name):
         return ['{}/{}'.format(e['class'], e['attributes']['Name'])
@@ -1038,12 +1047,14 @@ class IfcParser():
                 'Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
 
     def is_a_spatial_structure_element(self, class_name):
-        # We assume that any collection we can't identify is a spatial structure
-        return class_name[0:3] == 'Ifc' \
-               and not self.is_a_project(class_name) \
-               and not self.is_a_library(class_name) \
-               and not self.is_a_rel_aggregates(class_name) \
-               and not self.is_a_structural_analysis_model(class_name)
+        return class_name in [
+            'IfcBuilding',
+            'IfcBuildingStorey',
+            'IfcExternalSpatialElement',
+            'IfcSite',
+            'IfcSpace',
+            'IfcSpatialZone'
+            ]
 
     def is_a_rel_aggregates(self, class_name):
         return class_name == 'IfcRelAggregates'
