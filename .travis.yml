@@ -50,8 +50,7 @@ script:
   - /usr/local/bin/IfcConvert -yv acad2010_walls.ifc acad2010_walls.glb
   - gltf_validator acad2010_walls.glb
   
-  - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); print(f[1]); print(f[1][0]);"
-  - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); print(f[1][0], file=open('encoding.txt', 'w', encoding='utf-8'))" && grep "'a' 1m³ ≤ 5m³ ≥ 10m³" encoding.txt
+  - /usr/bin/python2.7 -c "from __future__ import print_function; from io import open; import ifcopenshell; f = ifcopenshell.open('encoding.ifc'); assert list(map(ord, f[1][0])) == [39, 97, 39, 32, 49, 109, 179, 32, 8804, 32, 53, 109, 179, 32, 8805, 32, 49, 48, 109, 179]"
   
   - |
     (for i in *.ifc; do \
