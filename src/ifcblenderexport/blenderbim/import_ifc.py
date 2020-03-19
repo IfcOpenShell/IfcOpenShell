@@ -16,46 +16,63 @@ class MaterialCreator():
         self.parsed_meshes = []
         self.ifc_import_settings = ifc_import_settings
 
-    def create(self, element, object, mesh):
-        self.object = object
+    def create(self, element, obj, mesh):
+        self.obj = obj
         self.mesh = mesh
         if not element.Representation:
             return
         if self.ifc_import_settings.should_treat_styled_item_as_material \
-            and self.mesh.name in self.parsed_meshes:
+                and self.mesh.name in self.parsed_meshes:
             return
-        for item in element.Representation.Representations[0].Items:
-            if item.is_a('IfcMappedItem'):
-                item = item.MappingSource.MappedRepresentation.Items[0]
-            if item.StyledByItem:
-                styled_item = item.StyledByItem[0]
-                if styled_item.Name:
-                    material_name = styled_item.Name
-                # This is for a bug in Revit where Revit exports this in IFC4
-                elif styled_item.Styles[0] \
-                        and styled_item.Styles[0].is_a('IfcPresentationStyleAssignment') \
-                        and styled_item.Styles[0].Styles[0].Name:
-                    material_name = styled_item.Styles[0].Styles[0].Name
-                elif styled_item.Styles[0] \
-                        and styled_item.Styles[0].is_a('IfcPresentationStyle') \
-                        and styled_item.Styles[0].Name:
-                    material_name = styled_item.Styles[0].Name
-                else:
-                    material_name = str(styled_item.id())
-                if material_name not in self.materials:
-                    self.materials[material_name] = bpy.data.materials.new(material_name)
-                    self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
-                if self.ifc_import_settings.should_treat_styled_item_as_material:
-                    # Revit workaround: since Revit exports all material
-                    # assignments as individual object styled items. Treating
-                    # them as reusable materials makes things much more
-                    # efficient in Blender.
-                    if self.mesh.name not in self.parsed_meshes:
-                        self.assign_material_to_mesh(self.materials[material_name])
-                else:
-                    # Proper behaviour
-                    self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
-                return # styled items override material styles
+        if self.parse_representations(element):
+            return # styled items override material styles
+        self.parse_material(element)
+
+    def parse_representations(self, element):
+        for representation in element.Representation.Representations:
+            if self.parse_representation(representation):
+                return True
+
+    def parse_representation(self, representation):
+        for item in representation.Items:
+            if self.parse_representation_item(item):
+                return True
+
+    def parse_representation_item(self, item):
+        if item.is_a('IfcMappedItem'):
+            item = item.MappingSource.MappedRepresentation.Items[0]
+        if not item.StyledByItem:
+            return
+        styled_item = item.StyledByItem[0]
+        if styled_item.Name:
+            material_name = styled_item.Name
+        # This is for a bug in Revit where Revit exports this in IFC4
+        elif styled_item.Styles[0] \
+                and styled_item.Styles[0].is_a('IfcPresentationStyleAssignment') \
+                and styled_item.Styles[0].Styles[0].Name:
+            material_name = styled_item.Styles[0].Styles[0].Name
+        elif styled_item.Styles[0] \
+                and styled_item.Styles[0].is_a('IfcPresentationStyle') \
+                and styled_item.Styles[0].Name:
+            material_name = styled_item.Styles[0].Name
+        else:
+            material_name = str(styled_item.id())
+        if material_name not in self.materials:
+            self.materials[material_name] = bpy.data.materials.new(material_name)
+            self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
+        if self.ifc_import_settings.should_treat_styled_item_as_material:
+            # Revit workaround: since Revit exports all material
+            # assignments as individual object styled items. Treating
+            # them as reusable materials makes things much more
+            # efficient in Blender.
+            if self.mesh.name not in self.parsed_meshes:
+                self.assign_material_to_mesh(self.materials[material_name])
+        else:
+            # Proper behaviour
+            self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
+        return True
+
+    def parse_material(self, element):
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesMaterial'):
                 material_select = association.RelatingMaterial
@@ -117,8 +134,8 @@ class MaterialCreator():
         self.parsed_meshes.append(self.mesh.name)
         self.mesh.materials.append(material)
         if is_styled_item:
-            self.object.material_slots[0].link = 'OBJECT'
-            self.object.material_slots[0].material = material
+            self.obj.material_slots[0].link = 'OBJECT'
+            self.obj.material_slots[0].material = material
 
 class IfcImporter():
     def __init__(self, ifc_import_settings):
