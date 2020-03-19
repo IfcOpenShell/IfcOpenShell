@@ -37,12 +37,12 @@ class IfcSchema():
             self.type_map = json.load(f)
 
         for property_file in self.property_files:
-            for property in property_file.by_type('IfcPropertySetTemplate'):
-                if property.Name[0:4] == 'Qto_':
-                    # self.qtos.append({ })
-                    pass
+            for prop in property_file.by_type('IfcPropertySetTemplate'):
+                if prop.Name[0:4] == 'Qto_':
+                    self.qtos[prop.Name] = {
+                        'HasPropertyTemplates': {p.Name: p for p in prop.HasPropertyTemplates}}
                 else:
-                    self.psets[property.Name] = {
-                        'HasPropertyTemplates': {p.Name: p for p in property.HasPropertyTemplates}}
+                    self.psets[prop.Name] = {
+                        'HasPropertyTemplates': {p.Name: p for p in prop.HasPropertyTemplates}}
 
 ifc = IfcSchema()

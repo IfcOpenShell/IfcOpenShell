@@ -72,6 +72,17 @@ class BIM_PT_object(Panel):
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
 
+        layout.label(text="Quantities:")
+
+        for index, qto in enumerate(props.qtos):
+            row = layout.row(align=True)
+            row.prop(qto, 'name', text='')
+            row.operator('bim.remove_qto', icon='X', text='').index = index
+            for prop in qto.properties:
+                row = layout.row(align=True)
+                row.prop(prop, 'name', text='')
+                row.prop(prop, 'string_value', text='')
+
         layout.label(text="Documents:")
         row = layout.row(align=True)
         row.prop(props, 'applicable_documents', text='')

@@ -506,6 +506,16 @@ class RemoveOverridePset(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class RemoveQto(bpy.types.Operator):
+    bl_idname = 'bim.remove_qto'
+    bl_label = 'Remove Qto'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.qtos.remove(self.index)
+        return {'FINISHED'}
+
+
 class AddMaterialPset(bpy.types.Operator):
     bl_idname = 'bim.add_material_pset'
     bl_label = 'Add Material Pset'

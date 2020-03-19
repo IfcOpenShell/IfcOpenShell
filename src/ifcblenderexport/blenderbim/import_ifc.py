@@ -342,7 +342,7 @@ class IfcImporter():
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
-        self.add_product_psets(element, obj)
+        self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
 
     def merge_by_class(self):
@@ -379,14 +379,16 @@ class IfcImporter():
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
 
-    def add_product_psets(self, element, obj):
+    def add_product_definitions(self, element, obj):
         if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
             return
         for definition in element.IsDefinedBy:
-            if not definition.is_a('IfcRelDefinesByProperties') \
-                    or not definition.RelatingPropertyDefinition.is_a('IfcPropertySet'):
+            if not definition.is_a('IfcRelDefinesByProperties'):
                 continue
-            self.add_pset(definition.RelatingPropertyDefinition, obj)
+            if definition.RelatingPropertyDefinition.is_a('IfcPropertySet'):
+                self.add_pset(definition.RelatingPropertyDefinition, obj)
+            elif definition.RelatingPropertyDefinition.is_a('IfcElementQuantity'):
+                self.add_qto(definition.RelatingPropertyDefinition, obj)
 
     def add_type_product_psets(self, element, obj):
         if not hasattr(element, 'HasPropertySets') or not element.HasPropertySets:
@@ -396,21 +398,41 @@ class IfcImporter():
                 self.add_pset(definition, obj)
 
     def add_pset(self, pset, obj):
-            new_pset = obj.BIMObjectProperties.override_psets.add()
-            new_pset.name = pset.Name
-            if new_pset.name in schema.ifc.psets:
-                for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
-                    prop = new_pset.properties.add()
-                    prop.name = prop_name
-            for prop in pset.HasProperties:
-                if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
-                    index = new_pset.properties.find(prop.Name)
-                    if index >= 0:
-                        new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
-                    else:
-                        new_prop = new_pset.properties.add()
-                        new_prop.name = prop.Name
-                        new_prop.string_value = str(prop.NominalValue.wrappedValue)
+        new_pset = obj.BIMObjectProperties.override_psets.add()
+        new_pset.name = pset.Name
+        if new_pset.name in schema.ifc.psets:
+            for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
+                prop = new_pset.properties.add()
+                prop.name = prop_name
+        for prop in pset.HasProperties:
+            if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
+                index = new_pset.properties.find(prop.Name)
+                if index >= 0:
+                    new_pset.properties[index].string_value = str(prop.NominalValue.wrappedValue)
+                else:
+                    new_prop = new_pset.properties.add()
+                    new_prop.name = prop.Name
+                    new_prop.string_value = str(prop.NominalValue.wrappedValue)
+
+    def add_qto(self, qto, obj):
+        new_qto = obj.BIMObjectProperties.qtos.add()
+        new_qto.name = qto.Name
+        if new_qto.name in schema.ifc.qtos:
+            for prop_name in schema.ifc.qtos[new_qto.name]['HasPropertyTemplates'].keys():
+                prop = new_qto.properties.add()
+                prop.name = prop_name
+        for prop in qto.Quantities:
+            if prop.is_a('IfcPhysicalSimpleQuantity'):
+                value = getattr(prop, '{}Value'.format(prop.is_a()[len('IfcQuantity'):]))
+                if not value:
+                    continue
+                index = new_qto.properties.find(prop.Name)
+                if index >= 0:
+                    new_qto.properties[index].string_value = str(value)
+                else:
+                    new_prop = new_qto.properties.add()
+                    new_prop.name = prop.Name
+                    new_prop.string_value = str(value)
 
     def add_defines_by_type_relation(self, element, obj):
         related_type = None
