@@ -113,7 +113,7 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/82/c3/534ddba230bd4fbbd3b7a3d35f3341d014cca213f369a9940925e7e5f691/pytz-2019.3.tar.gz
 	cd dist/working && tar -xzvf pytz*
-	cp -r dist/working/pyparsing-2019.3/pytz dist/
+	cp -r dist/working/pytz-2019.3/pytz dist/
 	rm -rf dist/working
 
 	mkdir dist/working
@@ -159,6 +159,12 @@ endif
 	rm -rf dist/jsonpickle
 	rm -rf dist/ordered_set.py
 	rm -rf dist/pyparsing.py
+	rm -rf dist/bcfplugin
+	rm -rf dist/dateutil
+	rm -rf dist/elementpath
+	rm -rf dist/pytz
+	rm -rf dist/six.py
+	rm -rf dist/xmlschema
 	rm -rf dist/ifcdiff.py
 ifneq ($(PLATFORM), win)
 	rm -rf dist/lib
