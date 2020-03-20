@@ -418,6 +418,7 @@ class BIMProperties(PropertyGroup):
     available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
+    bcf_file: StringProperty(default='', name="BCF File")
 
 
 class MapConversion(PropertyGroup):

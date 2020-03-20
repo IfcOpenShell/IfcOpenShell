@@ -385,6 +385,18 @@ class RejectElement(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GetBcfTopics(bpy.types.Operator):
+    bl_idname = 'bim.get_bcf_topics'
+    bl_label = 'Get BCF Topics'
+
+    def execute(self, context):
+        import bcfplugin
+        bcfplugin.openProject(bpy.context.scene.BIMProperties.bcf_file)
+        topics = bcfplugin.getTopics()
+        print(topics)
+        return {'FINISHED'}
+
+
 class SelectAudited(bpy.types.Operator):
     bl_idname = 'bim.select_audited'
     bl_label = 'Select Audited'
@@ -819,6 +831,20 @@ class ExecuteIfcDiff(bpy.types.Operator):
         ifc_diff.diff()
         ifc_diff.export()
         return {'FINISHED'}
+
+
+class SelectBcfFile(bpy.types.Operator):
+    bl_idname = "bim.select_bcf_file"
+    bl_label = "Select BCF File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.bcf_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
 class SelectFeaturesDir(bpy.types.Operator):

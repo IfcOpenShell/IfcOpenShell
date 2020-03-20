@@ -522,6 +522,29 @@ class BIM_PT_search(Panel):
         row.operator('bim.colour_by_pset', text='', icon='BRUSH_DATA')
 
 
+class BIM_PT_bcf(Panel):
+    bl_label = "BIM Collaboration Format"
+    bl_idname = "BIM_PT_bcf"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = bpy.context.scene.BIMProperties
+
+        row = layout.row(align=True)
+        row.prop(props, "bcf_file")
+        row.operator("bim.select_bcf_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.operator("bim.get_bcf_topics")
+
+
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
     bl_idname = "BIM_PT_qa"
