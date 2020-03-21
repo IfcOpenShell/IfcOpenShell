@@ -103,6 +103,7 @@ if bpy is not None:
         operator.ExecuteIfcDiff,
         operator.AssignContext,
         operator.SetViewPreset1,
+        prop.BcfTopic,
         prop.Subcontext,
         prop.BIMProperties,
         prop.DocProperties,
@@ -135,6 +136,7 @@ if bpy is not None:
         ui.BIM_PT_mesh,
         ui.BIM_PT_object,
         ui.BIM_PT_camera,
+        ui.BIM_UL_topics,
         )
 
     def menu_func_export(self, context):

@@ -544,6 +544,9 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.operator("bim.get_bcf_topics")
 
+        props = bpy.context.scene.BIMProperties
+        layout.template_list('BIM_UL_topics', '', props, 'bcf_topics', props, 'active_bcf_topic_index')
+
 
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
@@ -721,3 +724,12 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_ignore_building_coordinates')
         row = layout.row()
         row.prop(bim_properties, 'import_should_treat_styled_item_as_material')
+
+
+class BIM_UL_topics(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
