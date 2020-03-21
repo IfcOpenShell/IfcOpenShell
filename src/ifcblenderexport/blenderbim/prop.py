@@ -358,6 +358,12 @@ class BIMCameraProperties(PropertyGroup):
     diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
 
 
+class BcfTopic(PropertyGroup):
+    name: StringProperty(name='Name')
+    # TODO: Make this not wrong
+    target_view: StringProperty(name='Target View')
+
+
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
@@ -418,7 +424,9 @@ class BIMProperties(PropertyGroup):
     available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
-    bcf_file: StringProperty(default='', name="BCF File")
+    bcf_file: StringProperty(default='', name='BCF File')
+    bcf_topics: CollectionProperty(name='BCF Topics', type=BcfTopic)
+    active_bcf_topic_index: IntProperty(name='Active BCF Topic Index')
 
 
 class MapConversion(PropertyGroup):

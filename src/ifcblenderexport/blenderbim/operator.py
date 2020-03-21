@@ -393,7 +393,11 @@ class GetBcfTopics(bpy.types.Operator):
         import bcfplugin
         bcfplugin.openProject(bpy.context.scene.BIMProperties.bcf_file)
         topics = bcfplugin.getTopics()
-        print(topics)
+        while len(bpy.context.scene.BIMProperties.bcf_topics) > 0:
+            bpy.context.scene.BIMProperties.bcf_topics.remove(0)
+        for topic in topics:
+            new = bpy.context.scene.BIMProperties.bcf_topics.add()
+            new.name = topic[0]
         return {'FINISHED'}
 
 
