@@ -146,6 +146,16 @@ endif
 	cp -r dist/working/BCF-Plugin-FreeCAD-fix-headless/bcfplugin dist/
 	rm -rf dist/working
 
+	mkdir dist/working
+	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/project.xsd
+	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Extension%20Schemas/extensions.xsd
+	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/markup.xsd
+	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/version.xsd
+	cd dist/working && wget https://raw.githubusercontent.com/buildingSMART/BCF-XML/release_2_1/Schemas/visinfo.xsd
+	mkdir dist/bcfplugin/schemas/
+	cp -r dist/working/*.xsd dist/bcfplugin/schemas/
+	rm -rf dist/working
+
 	cd dist/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
