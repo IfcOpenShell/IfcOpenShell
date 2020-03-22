@@ -41,6 +41,7 @@ target_views_enum = []
 persons_enum = []
 organisations_enum = []
 views_enum = []
+bcfviewpoints_enum = []
 
 @persistent
 def setDefaultProperties(scene):
@@ -360,8 +361,27 @@ class BIMCameraProperties(PropertyGroup):
 
 class BcfTopic(PropertyGroup):
     name: StringProperty(name='Name')
-    # TODO: Make this not wrong
-    target_view: StringProperty(name='Target View')
+
+
+def refreshBcfViewpoints(self, context):
+    global bcfviewpoints_enum
+    import bcfplugin
+
+    bcfviewpoints_enum.clear()
+    topics = bcfplugin.getTopics()
+    if not topics:
+        return bcfviewpoints_enum
+    topic = topics[bpy.context.scene.BIMProperties.active_bcf_topic_index][1]
+    viewpoints = bcfplugin.getViewpoints(topic)
+    if not viewpoints:
+        return bcfviewpoints_enum
+    for i, viewpoint in enumerate(viewpoints):
+        bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
+
+
+def getBcfViewpoints(self, context):
+    global bcfviewpoints_enum
+    return bcfviewpoints_enum
 
 
 class BIMProperties(PropertyGroup):
@@ -426,7 +446,8 @@ class BIMProperties(PropertyGroup):
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
     bcf_file: StringProperty(default='', name='BCF File')
     bcf_topics: CollectionProperty(name='BCF Topics', type=BcfTopic)
-    active_bcf_topic_index: IntProperty(name='Active BCF Topic Index')
+    active_bcf_topic_index: IntProperty(name='Active BCF Topic Index', update=refreshBcfViewpoints)
+    bcf_viewpoints: EnumProperty(items=getBcfViewpoints, name='BCF Viewpoints')
 
 
 class MapConversion(PropertyGroup):

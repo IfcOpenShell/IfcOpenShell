@@ -547,6 +547,9 @@ class BIM_PT_bcf(Panel):
         props = bpy.context.scene.BIMProperties
         layout.template_list('BIM_UL_topics', '', props, 'bcf_topics', props, 'active_bcf_topic_index')
 
+        row = layout.row()
+        row.prop(props, 'bcf_viewpoints')
+
 
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
