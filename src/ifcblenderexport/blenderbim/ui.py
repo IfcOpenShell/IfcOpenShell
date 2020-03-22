@@ -733,3 +733,12 @@ class BIM_UL_topics(bpy.types.UIList):
             layout.prop(item, 'name', text='', emboss=False)
         else:
             layout.label(text="", translate=False)
+
+
+class BIM_ADDON_preferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    def draw(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.operator('bim.uninstall')

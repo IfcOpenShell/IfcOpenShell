@@ -6,8 +6,7 @@ bl_info = {
     "blender": (2, 80, 0),
     "version": (0, 0, 999999),
     "location": "File > Export, File > Import, Scene / Object / Material / Mesh Properties",
-    "tracker_url": "https://sourceforge.net/p/ifcopenshell/"
-        "_list/tickets?source=navbar",
+    "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
     "category": "Import-Export"
     }
 
@@ -103,6 +102,7 @@ if bpy is not None:
         operator.ExecuteIfcDiff,
         operator.AssignContext,
         operator.SetViewPreset1,
+        operator.Uninstall,
         prop.BcfTopic,
         prop.Subcontext,
         prop.BIMProperties,
@@ -137,6 +137,7 @@ if bpy is not None:
         ui.BIM_PT_object,
         ui.BIM_PT_camera,
         ui.BIM_UL_topics,
+        ui.BIM_ADDON_preferences,
         )
 
     def menu_func_export(self, context):
@@ -183,7 +184,7 @@ if bpy is not None:
         del(bpy.types.Collection.BIMObjectProperties)
         del(bpy.types.Material.BIMMaterialProperties)
         del(bpy.types.Mesh.BIMMeshProperties)
-        del(bpy.types.Mesh.BIMCameraProperties)
+        del(bpy.types.Camera.BIMCameraProperties)
 
     if __name__ == "__main__":
         register()
