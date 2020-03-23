@@ -35,6 +35,7 @@ if bpy is not None:
         operator.SelectType,
         operator.SelectBcfFile,
         operator.GetBcfTopics,
+        operator.ActivateBcfViewpoint,
         operator.SelectFeaturesDir,
         operator.SelectDiffJsonFile,
         operator.SelectDiffNewFile,

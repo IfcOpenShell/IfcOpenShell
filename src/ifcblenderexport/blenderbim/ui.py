@@ -549,6 +549,7 @@ class BIM_PT_bcf(Panel):
 
         row = layout.row()
         row.prop(props, 'bcf_viewpoints')
+        row.operator('bim.activate_bcf_viewpoint', icon='SCENE', text='')
 
 
 class BIM_PT_qa(Panel):
