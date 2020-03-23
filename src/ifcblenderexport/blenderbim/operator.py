@@ -11,7 +11,8 @@ from . import sheeter
 from . import schema
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
-from mathutils import Vector
+from mathutils import Vector, Matrix
+from math import radians
 from pathlib import Path
 
 colour_list = [
@@ -398,6 +399,49 @@ class GetBcfTopics(bpy.types.Operator):
         for topic in topics:
             new = bpy.context.scene.BIMProperties.bcf_topics.add()
             new.name = topic[0]
+        return {'FINISHED'}
+
+
+class ActivateBcfViewpoint(bpy.types.Operator):
+    bl_idname = 'bim.activate_bcf_viewpoint'
+    bl_label = 'Activate BCF Viewpoint'
+
+    def execute(self, context):
+        import bcfplugin
+
+        topics = bcfplugin.getTopics()
+        if not topics:
+            return {'FINISHED'}
+        topic = topics[bpy.context.scene.BIMProperties.active_bcf_topic_index][1]
+        viewpoints = bcfplugin.getViewpoints(topic)
+        if not viewpoints:
+            return {'FINISHED'}
+        viewpoint = viewpoints[int(bpy.context.scene.BIMProperties.bcf_viewpoints)][1]
+
+        obj = bpy.data.objects.get('Viewpoint')
+        if not obj:
+            obj = bpy.data.objects.new('Viewpoint', bpy.data.cameras.new('Viewpoint'))
+            bpy.context.scene.collection.objects.link(obj)
+            bpy.context.scene.camera = obj
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+
+        if viewpoint.oCamera:
+            camera = viewpoint.oCamera
+            obj.data.type = 'ORTHO'
+        elif viewpoint.pCamera:
+            camera = viewpoint.pCamera
+            obj.data.type = 'PERSP'
+            obj.data.angle = radians(camera.fieldOfView)
+
+        z_axis = Vector((-camera.direction.x, -camera.direction.y, -camera.direction.z)).normalized()
+        y_axis = Vector((camera.upVector.x, camera.upVector.y, camera.upVector.z)).normalized()
+        x_axis = y_axis.cross(z_axis).normalized()
+        rotation = Matrix((x_axis, y_axis, z_axis))
+        rotation.invert()
+        location = Vector((camera.viewPoint.x, camera.viewPoint.y, camera.viewPoint.z))
+        obj.matrix_world = rotation.to_4x4()
+        obj.location = location
         return {'FINISHED'}
 
 
