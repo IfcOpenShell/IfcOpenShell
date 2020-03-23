@@ -793,7 +793,8 @@ class SvgWriter():
             matrix_world = self.ifc_cutter.leader_obj.matrix_world
             for spline in self.ifc_cutter.leader_obj.data.splines:
                 classes = ['annotation', 'leader']
-                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in spline.points]
+                points = self.get_spline_points(spline)
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
                 d = ' '.join(['L {} {}'.format(
                     (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
                     for p in projected_points])
@@ -804,18 +805,19 @@ class SvgWriter():
         if self.ifc_cutter.plan_level_obj:
             for spline in self.ifc_cutter.plan_level_obj.data.splines:
                 classes = ['annotation', 'plan-level']
-                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
+                points = self.get_spline_points(spline)
+                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in points])
                 d = 'M{}'.format(d[1:])
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
                 path['marker-end'] = 'url(#plan-level-marker)'
                 text_position = Vector((
-                    (x_offset + spline.points[0].co.x) * self.scale,
-                    ((y_offset - spline.points[0].co.y) * self.scale) - 2.5
+                    (x_offset + points[0].co.x) * self.scale,
+                    ((y_offset - points[0].co.y) * self.scale) - 2.5
                 ))
                 # TODO: unhardcode m unit
                 rl = ((self.ifc_cutter.plan_level_obj.matrix_world @
-                    spline.points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z
-                if spline.points[0].co.x > spline.points[-1].co.x:
+                    points[0].co).xyz + self.ifc_cutter.plan_level_obj.location).z
+                if points[0].co.x > points[-1].co.x:
                     text_anchor = 'end'
                 else:
                     text_anchor = 'start'
@@ -831,7 +833,8 @@ class SvgWriter():
             matrix_world = self.ifc_cutter.section_level_obj.matrix_world
             for spline in self.ifc_cutter.section_level_obj.data.splines:
                 classes = ['annotation', 'section-level']
-                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in spline.points]
+                points = self.get_spline_points(spline)
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
                 d = ' '.join(['L {} {}'.format(
                     (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
                     for p in projected_points])
@@ -844,7 +847,7 @@ class SvgWriter():
                     ((y_offset - projected_points[0].y) * self.scale) - 3.5
                 ))
                 # TODO: unhardcode m unit
-                rl = (matrix_world @ spline.points[0].co.xyz).z
+                rl = (matrix_world @ points[0].co.xyz).z
                 self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
                     'font-size': '4.13', # 2.5
                     'font-family': 'OpenGost Type B TT',
@@ -856,10 +859,11 @@ class SvgWriter():
         if self.ifc_cutter.stair_obj:
             for spline in self.ifc_cutter.stair_obj.data.splines:
                 classes = ['annotation', 'stair']
-                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in spline.points])
+                points = self.get_spline_points(spline)
+                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in points])
                 d = 'M{}'.format(d[1:])
-                start = Vector(((x_offset + spline.points[0].co.x), (y_offset - spline.points[0].co.y)))
-                next_point = Vector(((x_offset + spline.points[1].co.x), (y_offset - spline.points[1].co.y)))
+                start = Vector(((x_offset + points[0].co.x), (y_offset - points[0].co.y)))
+                next_point = Vector(((x_offset + points[1].co.x), (y_offset - points[1].co.y)))
                 text_position = (start * self.scale) - ((next_point - start).normalized() * 5)
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
                 path['marker-start'] = 'url(#stair-marker-start)'
@@ -910,12 +914,13 @@ class SvgWriter():
 
         matrix_world = dimension_obj.matrix_world
         for spline in dimension_obj.data.splines:
-            for i, p in enumerate(spline.points):
-                if i+1 >= len(spline.points):
+            points = self.get_spline_points(spline)
+            for i, p in enumerate(points):
+                if i+1 >= len(points):
                     continue
-                classes = ['annotation', 'dimension']
-                v0_global = matrix_world @ spline.points[i].co.xyz
-                v1_global = matrix_world @ spline.points[i+1].co.xyz
+                classes = ['annotation', 'dimension', 'blahblah']
+                v0_global = matrix_world @ points[i].co.xyz
+                v1_global = matrix_world @ points[i+1].co.xyz
                 v0 = self.project_point_onto_camera(v0_global)
                 v1 = self.project_point_onto_camera(v1_global)
                 start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
@@ -960,6 +965,9 @@ class SvgWriter():
             self.ifc_cutter.camera_obj.location,
             Vector(self.ifc_cutter.section_box['projection'])
             )
+
+    def get_spline_points(self, spline):
+        return spline.bezier_points if spline.bezier_points else spline.points
 
     def draw_cut_polygons(self):
         for polygon in self.ifc_cutter.cut_polygons:
