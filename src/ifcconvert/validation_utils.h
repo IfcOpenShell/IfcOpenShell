@@ -68,7 +68,7 @@ struct Build_Offset : public CGAL::Modifier_base<HDS> {
 };
 
 template <typename Ts>
-std::list<cgal_shape_t::Facet_handle> connected_faces(cgal_shape_t::Facet_handle& f, const Ts& excluded) {
+std::list<cgal_shape_t::Facet_handle> connected_faces(cgal_shape_t::Facet_handle f, const Ts& excluded) {
 	std::set<cgal_shape_t::Facet_handle> fs = { f };
 
 	std::function<void(cgal_shape_t::Facet_handle& f)> process;
@@ -449,7 +449,8 @@ struct intersection_validator {
 			return;
 		}
 
-		auto cube = ifcopenshell::geometry::utils::create_nef_polyhedron(ifcopenshell::geometry::utils::create_cube(eps));
+		auto polycube = ifcopenshell::geometry::utils::create_cube(eps);
+		auto cube = ifcopenshell::geometry::utils::create_nef_polyhedron(polycube);
 
 		size_t num_created = 0;
 		int old_progress = quiet ? 0 : -1;
