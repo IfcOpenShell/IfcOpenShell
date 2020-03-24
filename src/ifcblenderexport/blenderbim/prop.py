@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 from . import export_ifc
 from . import schema
+from . import bcf
 import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
@@ -363,20 +364,29 @@ class BcfTopic(PropertyGroup):
     name: StringProperty(name='Name')
 
 
-def refreshBcfViewpoints(self, context):
+def refreshBcfTopic(self, context):
     global bcfviewpoints_enum
     import bcfplugin
 
     bcfviewpoints_enum.clear()
-    topics = bcfplugin.getTopics()
-    if not topics:
-        return bcfviewpoints_enum
-    topic = topics[bpy.context.scene.BIMProperties.active_bcf_topic_index][1]
+    topic = bcf.BcfStore.topics[bpy.context.scene.BIMProperties.active_bcf_topic_index][1]
     viewpoints = bcfplugin.getViewpoints(topic)
-    if not viewpoints:
-        return bcfviewpoints_enum
     for i, viewpoint in enumerate(viewpoints):
         bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
+
+    bcf.BcfStore.comments = bcfplugin.getComments(topic)
+    comments = bpy.data.texts.get('BCF Comments')
+    if comments:
+        comments.clear()
+    else:
+        comments = bpy.data.texts.new('BCF Comments')
+    for i, comment in enumerate(bcf.BcfStore.comments):
+        comments.write('# Comment {} - {}\n'.format(i + 1, comment[1].xmlId))
+        comments.write('# From: {} on {}\n'.format(comment[1].author, comment[1].date))
+        if comment[1].modDate:
+            comments.write('# Modified by {} on {}\n'.format(comment[1].modAuthor, comment[1].modDate))
+        comments.write(comment[1].comment)
+        comments.write('\n\n-----\n\n')
 
 
 def getBcfViewpoints(self, context):
@@ -446,7 +456,7 @@ class BIMProperties(PropertyGroup):
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
     bcf_file: StringProperty(default='', name='BCF File')
     bcf_topics: CollectionProperty(name='BCF Topics', type=BcfTopic)
-    active_bcf_topic_index: IntProperty(name='Active BCF Topic Index', update=refreshBcfViewpoints)
+    active_bcf_topic_index: IntProperty(name='Active BCF Topic Index', update=refreshBcfTopic)
     bcf_viewpoints: EnumProperty(items=getBcfViewpoints, name='BCF Viewpoints')
 
 

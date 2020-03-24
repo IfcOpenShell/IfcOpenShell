@@ -9,6 +9,7 @@ from . import import_ifc
 from . import cut_ifc
 from . import sheeter
 from . import schema
+from . import bcf
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix
@@ -393,10 +394,10 @@ class GetBcfTopics(bpy.types.Operator):
     def execute(self, context):
         import bcfplugin
         bcfplugin.openProject(bpy.context.scene.BIMProperties.bcf_file)
-        topics = bcfplugin.getTopics()
+        bcf.BcfStore.topics = bcfplugin.getTopics()
         while len(bpy.context.scene.BIMProperties.bcf_topics) > 0:
             bpy.context.scene.BIMProperties.bcf_topics.remove(0)
-        for topic in topics:
+        for topic in bcf.BcfStore.topics:
             new = bpy.context.scene.BIMProperties.bcf_topics.add()
             new.name = topic[0]
         return {'FINISHED'}
