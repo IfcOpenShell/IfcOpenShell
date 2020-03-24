@@ -105,8 +105,10 @@ if bpy is not None:
         operator.SetViewPreset1,
         operator.Uninstall,
         prop.BcfTopic,
+        prop.BcfTopicLabel,
         prop.Subcontext,
         prop.BIMProperties,
+        prop.BCFProperties,
         prop.DocProperties,
         prop.BIMLibrary,
         prop.MapConversion,
@@ -161,6 +163,7 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
         bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+        bpy.types.Scene.BCFProperties = bpy.props.PointerProperty(type=prop.BCFProperties)
         bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
         bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
         bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
@@ -178,6 +181,7 @@ if bpy is not None:
         bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
         bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
         del(bpy.types.Scene.BIMProperties)
+        del(bpy.types.Scene.BCFProperties)
         del(bpy.types.Scene.DocProperties)
         del(bpy.types.Scene.MapConversion)
         del(bpy.types.Scene.TargetCRS)

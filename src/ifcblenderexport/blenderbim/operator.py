@@ -393,12 +393,12 @@ class GetBcfTopics(bpy.types.Operator):
 
     def execute(self, context):
         import bcfplugin
-        bcfplugin.openProject(bpy.context.scene.BIMProperties.bcf_file)
+        bcfplugin.openProject(bpy.context.scene.BCFProperties.bcf_file)
         bcf.BcfStore.topics = bcfplugin.getTopics()
-        while len(bpy.context.scene.BIMProperties.bcf_topics) > 0:
-            bpy.context.scene.BIMProperties.bcf_topics.remove(0)
+        while len(bpy.context.scene.BCFProperties.topics) > 0:
+            bpy.context.scene.BCFProperties.topics.remove(0)
         for topic in bcf.BcfStore.topics:
-            new = bpy.context.scene.BIMProperties.bcf_topics.add()
+            new = bpy.context.scene.BCFProperties.topics.add()
             new.name = topic[0]
         return {'FINISHED'}
 
@@ -413,11 +413,11 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         topics = bcfplugin.getTopics()
         if not topics:
             return {'FINISHED'}
-        topic = topics[bpy.context.scene.BIMProperties.active_bcf_topic_index][1]
+        topic = topics[bpy.context.scene.BCFProperties.active_topic_index][1]
         viewpoints = bcfplugin.getViewpoints(topic)
         if not viewpoints:
             return {'FINISHED'}
-        viewpoint = viewpoints[int(bpy.context.scene.BIMProperties.bcf_viewpoints)][1]
+        viewpoint = viewpoints[int(bpy.context.scene.BCFProperties.viewpoints)][1]
 
         obj = bpy.data.objects.get('Viewpoint')
         if not obj:
@@ -888,7 +888,7 @@ class SelectBcfFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.bcf_file = self.filepath
+        bpy.context.scene.BCFProperties.bcf_file = self.filepath
         return {'FINISHED'}
 
     def invoke(self, context, event):
