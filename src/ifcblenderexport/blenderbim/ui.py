@@ -535,7 +535,7 @@ class BIM_PT_bcf(Panel):
         layout.use_property_split = True
 
         scene = context.scene
-        props = bpy.context.scene.BIMProperties
+        props = bpy.context.scene.BCFProperties
 
         row = layout.row(align=True)
         row.prop(props, "bcf_file")
@@ -544,12 +544,41 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.operator("bim.get_bcf_topics")
 
-        props = bpy.context.scene.BIMProperties
-        layout.template_list('BIM_UL_topics', '', props, 'bcf_topics', props, 'active_bcf_topic_index')
+        props = bpy.context.scene.BCFProperties
+        layout.template_list('BIM_UL_topics', '', props, 'topics', props, 'active_topic_index')
 
         row = layout.row()
-        row.prop(props, 'bcf_viewpoints')
+        row.prop(props, 'topic_description', text='')
+
+        row = layout.row()
+        row.prop(props, 'viewpoints')
         row.operator('bim.activate_bcf_viewpoint', icon='SCENE', text='')
+
+        row = layout.row()
+        row.prop(props, 'topic_type', text='Type')
+        row = layout.row()
+        row.prop(props, 'topic_status', text='Status')
+        row = layout.row()
+        row.prop(props, 'topic_priority', text='Priority')
+        row = layout.row()
+        row.prop(props, 'topic_stage', text='Stage')
+        row = layout.row()
+        row.prop(props, 'topic_creation_date', text='Date')
+        row = layout.row()
+        row.prop(props, 'topic_creation_author', text='Author')
+        row = layout.row()
+        row.prop(props, 'topic_modified_date', text='Modified On')
+        row = layout.row()
+        row.prop(props, 'topic_modified_author', text='Modified By')
+        row = layout.row()
+        row.prop(props, 'topic_assigned_to', text='Assigned To')
+        row = layout.row()
+        row.prop(props, 'topic_due_date', text='Due Date')
+
+        layout.label(text="Labels:")
+        for i, label in enumerate(props.topic_labels):
+            row = layout.row(align=True)
+            row.prop(label, 'name', text='')
 
 
 class BIM_PT_qa(Panel):

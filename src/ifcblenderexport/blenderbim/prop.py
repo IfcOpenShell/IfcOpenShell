@@ -364,16 +364,51 @@ class BcfTopic(PropertyGroup):
     name: StringProperty(name='Name')
 
 
+class BcfTopicLabel(PropertyGroup):
+    name: StringProperty(name='Name')
+
+
 def refreshBcfTopic(self, context):
     global bcfviewpoints_enum
     import bcfplugin
 
+    props = bpy.context.scene.BCFProperties
+    topic = bcf.BcfStore.topics[props.active_topic_index][1]
+
+    # Load metadata
+    props.topic_type = topic.type
+    props.topic_status = topic.status
+    props.topic_priority = topic.priority
+    props.topic_stage = topic.stage
+    if topic.date:
+        props.topic_creation_date = topic.date.strftime('%a %Y-%m-%d %H:%S')
+    else:
+        props.topic_creation_date = ''
+    props.topic_creation_author = topic.author
+    if topic.modDate:
+        props.topic_modified_date = topic.modDate.strftime('%a %Y-%m-%d %H:%S')
+    else:
+        props.topic_modified_date = ''
+    props.topic_modified_author = topic.modAuthor
+    props.topic_assigned_to = topic.assignee
+    if topic.dueDate:
+        props.topic_due_date = topic.dueDate.strftime('%a %Y-%m-%d %H:%S')
+    else:
+        props.topic_due_date = ''
+    props.topic_description = topic.description
+    while len(props.topic_labels) > 0:
+        props.topic_labels.remove(0)
+    for label in topic.labels:
+        new = props.topic_labels.add()
+        new.name = label.value
+
+    # Load viewpoints
     bcfviewpoints_enum.clear()
-    topic = bcf.BcfStore.topics[bpy.context.scene.BIMProperties.active_bcf_topic_index][1]
     viewpoints = bcfplugin.getViewpoints(topic)
     for i, viewpoint in enumerate(viewpoints):
         bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
 
+    # Load comments
     bcf.BcfStore.comments = bcfplugin.getComments(topic)
     comments = bpy.data.texts.get('BCF Comments')
     if comments:
@@ -454,10 +489,25 @@ class BIMProperties(PropertyGroup):
     available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
+
+
+class BCFProperties(PropertyGroup):
     bcf_file: StringProperty(default='', name='BCF File')
-    bcf_topics: CollectionProperty(name='BCF Topics', type=BcfTopic)
-    active_bcf_topic_index: IntProperty(name='Active BCF Topic Index', update=refreshBcfTopic)
-    bcf_viewpoints: EnumProperty(items=getBcfViewpoints, name='BCF Viewpoints')
+    topics: CollectionProperty(name='BCF Topics', type=BcfTopic)
+    active_topic_index: IntProperty(name='Active BCF Topic Index', update=refreshBcfTopic)
+    viewpoints: EnumProperty(items=getBcfViewpoints, name='BCF Viewpoints')
+    topic_type: StringProperty(default='', name='Topic Type')
+    topic_status: StringProperty(default='', name='Topic Status')
+    topic_priority: StringProperty(default='', name='Topic Priority')
+    topic_stage: StringProperty(default='', name='Topic Stage')
+    topic_creation_date: StringProperty(default='', name='Topic Date')
+    topic_creation_author: StringProperty(default='', name='Topic Author')
+    topic_modified_date: StringProperty(default='', name='Topic Modified Date')
+    topic_modified_author: StringProperty(default='', name='Topic Modified By')
+    topic_assigned_to: StringProperty(default='', name='Topic Assigned To')
+    topic_due_date: StringProperty(default='', name='Topic Due Date')
+    topic_description: StringProperty(default='', name='Topic Description')
+    topic_labels: CollectionProperty(name='BCF Topic Labels', type=BcfTopicLabel)
 
 
 class MapConversion(PropertyGroup):
