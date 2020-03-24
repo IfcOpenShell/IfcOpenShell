@@ -131,7 +131,8 @@ class IfcParser():
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
         self.organisations = self.get_organisations()
-        self.categorise_selected_objects(bpy.context.selected_objects)
+        selected_objects = self.add_spatial_elements_if_unselected(bpy.context.selected_objects)
+        self.categorise_selected_objects(selected_objects)
         self.psets = self.get_psets()
         self.material_psets = self.get_material_psets()
         self.documents = self.get_documents()
@@ -532,6 +533,30 @@ class IfcParser():
             for child in parent_collection.children:
                 if child.name == child_collection.name:
                     return parent_collection
+
+    def add_spatial_elements_if_unselected(self, selected_objects):
+        results = []
+        base_collections = []
+        added_objs = []
+        for obj in selected_objects:
+            results.append(obj)
+            for collection in obj.users_collection:
+                base_collections.append(collection)
+        base_collections = list(set(base_collections))
+        for collection in base_collections:
+            spatial_obj = bpy.data.objects.get(collection.name)
+            if not spatial_obj or spatial_obj in added_objs:
+                break
+            added_objs.append(spatial_obj)
+            parent_collection = self.get_parent_collection(collection)
+            while parent_collection:
+                spatial_obj = bpy.data.objects.get(parent_collection.name)
+                if not spatial_obj or spatial_obj in added_objs:
+                    break
+                added_objs.append(spatial_obj)
+                parent_collection = self.get_parent_collection(parent_collection)
+        results.extend(added_objs)
+        return results
 
     def categorise_selected_objects(self, objects_to_sort, metadata=None):
         if not metadata:
