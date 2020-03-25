@@ -1399,6 +1399,23 @@ class SetViewPreset1(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OpenUpstream(bpy.types.Operator):
+    bl_idname = 'bim.open_upstream'
+    bl_label = 'Open Upstream Reference'
+    page: bpy.props.StringProperty()
+
+    def execute(self, context):
+        if self.page == 'home':
+            webbrowser.open('https://blenderbim.org/')
+        elif self.page == 'docs':
+            webbrowser.open('https://blenderbim.org/docs/')
+        elif self.page == 'wiki':
+            webbrowser.open('https://wiki.osarch.org/')
+        elif self.page == 'community':
+            webbrowser.open('https://community.osarch.org/')
+        return {'FINISHED'}
+
+
 class Uninstall(bpy.types.Operator):
     bl_idname = 'bim.uninstall'
     bl_label = 'Uninstall BlenderBIM'
