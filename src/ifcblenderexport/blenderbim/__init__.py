@@ -106,6 +106,7 @@ if bpy is not None:
         operator.ExecuteIfcDiff,
         operator.AssignContext,
         operator.SetViewPreset1,
+        operator.OpenUpstream,
         operator.Uninstall,
         prop.BcfTopic,
         prop.BcfTopicLabel,

@@ -794,4 +794,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         row = layout.row()
+        row.operator('bim.open_upstream', text='Visit Homepage').page = 'home'
+        row.operator('bim.open_upstream', text='Visit Documentation').page = 'docs'
+        row = layout.row()
+        row.operator('bim.open_upstream', text='Visit Wiki').page = 'wiki'
+        row.operator('bim.open_upstream', text='Visit Community').page = 'community'
+        row = layout.row()
         row.operator('bim.uninstall')
