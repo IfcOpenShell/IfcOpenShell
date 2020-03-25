@@ -368,6 +368,10 @@ class BcfTopicLabel(PropertyGroup):
     name: StringProperty(name='Name')
 
 
+class BcfTopicLink(PropertyGroup):
+    name: StringProperty(name='Name')
+
+
 def refreshBcfTopic(self, context):
     global bcfviewpoints_enum
     import bcfplugin
@@ -396,11 +400,18 @@ def refreshBcfTopic(self, context):
     else:
         props.topic_due_date = ''
     props.topic_description = topic.description
+
     while len(props.topic_labels) > 0:
         props.topic_labels.remove(0)
     for label in topic.labels:
         new = props.topic_labels.add()
         new.name = label.value
+
+    while len(props.topic_links) > 0:
+        props.topic_links.remove(0)
+    for link in topic.referenceLinks:
+        new = props.topic_links.add()
+        new.name = link.value
 
     # Load viewpoints
     bcfviewpoints_enum.clear()
@@ -508,6 +519,7 @@ class BCFProperties(PropertyGroup):
     topic_due_date: StringProperty(default='', name='Topic Due Date')
     topic_description: StringProperty(default='', name='Topic Description')
     topic_labels: CollectionProperty(name='BCF Topic Labels', type=BcfTopicLabel)
+    topic_links: CollectionProperty(name='BCF Topic Links', type=BcfTopicLink)
 
 
 class MapConversion(PropertyGroup):

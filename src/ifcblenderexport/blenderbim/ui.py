@@ -575,8 +575,14 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.prop(props, 'topic_due_date', text='Due Date')
 
+        layout.label(text="Reference Links:")
+        for index, label in enumerate(props.topic_links):
+            row = layout.row(align=True)
+            row.prop(label, 'name', text='')
+            row.operator('bim.open_bcf_reference_link', icon='URL', text='').index = index
+
         layout.label(text="Labels:")
-        for i, label in enumerate(props.topic_labels):
+        for index, label in enumerate(props.topic_labels):
             row = layout.row(align=True)
             row.prop(label, 'name', text='')
 
