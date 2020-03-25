@@ -457,6 +457,33 @@ class OpenBcfReferenceLink(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OpenBcfBimSnippetSchema(bpy.types.Operator):
+    bl_idname = 'bim.open_bcf_bim_snippet_schema'
+    bl_label = 'Open BCF BIM Snippet Schema'
+
+    def execute(self, context):
+        webbrowser.open(bpy.context.scene.BCFProperties.topic_snippet_schema)
+        return {'FINISHED'}
+
+
+class OpenBcfBimSnippetReference(bpy.types.Operator):
+    bl_idname = 'bim.open_bcf_bim_snippet_reference'
+    bl_label = 'Open BCF BIM Snippet Reference'
+    topic_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import bcfplugin
+        if bpy.context.scene.BCFProperties.topic_snippet_is_external:
+            webbrowser.open(bpy.context.scene.BCFProperties.topic_snippet_reference)
+            return {'FINISHED'}
+        webbrowser.open('file:///' + os.path.join(
+            bcfplugin.util.getBcfDir(),
+            self.topic_guid,
+            bpy.context.scene.BCFProperties.topic_snippet_reference
+            ))
+        return {'FINISHED'}
+
+
 class SelectAudited(bpy.types.Operator):
     bl_idname = 'bim.select_audited'
     bl_label = 'Select Audited'

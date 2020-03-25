@@ -379,6 +379,8 @@ def refreshBcfTopic(self, context):
     props = bpy.context.scene.BCFProperties
     topic = bcf.BcfStore.topics[props.active_topic_index][1]
 
+    props.topic_guid = str(topic.xmlId)
+
     # Load metadata
     props.topic_type = topic.type
     props.topic_status = topic.status
@@ -412,6 +414,18 @@ def refreshBcfTopic(self, context):
     for link in topic.referenceLinks:
         new = props.topic_links.add()
         new.name = link.value
+
+    # Load snippet
+    props.topic_has_snippet = bool(topic.bimSnippet)
+    if topic.bimSnippet:
+        props.topic_snippet_reference = topic.bimSnippet.reference.uri
+        if topic.bimSnippet.schema.uri:
+            props.topic_snippet_schema = topic.bimSnippet.schema.uri
+        props.topic_snippet_type = topic.bimSnippet.type
+        if topic.bimSnippet.external:
+            props.topic_snippet_is_external = topic.bimSnippet.external
+        else:
+            props.topic_snippet_is_external = False
 
     # Load viewpoints
     bcfviewpoints_enum.clear()
@@ -507,6 +521,7 @@ class BCFProperties(PropertyGroup):
     topics: CollectionProperty(name='BCF Topics', type=BcfTopic)
     active_topic_index: IntProperty(name='Active BCF Topic Index', update=refreshBcfTopic)
     viewpoints: EnumProperty(items=getBcfViewpoints, name='BCF Viewpoints')
+    topic_guid: StringProperty(default='', name='Topic GUID')
     topic_type: StringProperty(default='', name='Topic Type')
     topic_status: StringProperty(default='', name='Topic Status')
     topic_priority: StringProperty(default='', name='Topic Priority')
@@ -520,6 +535,11 @@ class BCFProperties(PropertyGroup):
     topic_description: StringProperty(default='', name='Topic Description')
     topic_labels: CollectionProperty(name='BCF Topic Labels', type=BcfTopicLabel)
     topic_links: CollectionProperty(name='BCF Topic Links', type=BcfTopicLink)
+    topic_has_snippet: BoolProperty(name='BCF Topic Has Snippet', default=False)
+    topic_snippet_reference: StringProperty(name='BIM Snippet Reference')
+    topic_snippet_schema: StringProperty(name='BIM Snippet Schema')
+    topic_snippet_type: StringProperty(name='BIM Snippet Type')
+    topic_snippet_is_external: BoolProperty(name='Is BIM Snippet External')
 
 
 class MapConversion(PropertyGroup):

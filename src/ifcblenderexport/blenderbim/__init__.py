@@ -37,6 +37,8 @@ if bpy is not None:
         operator.GetBcfTopics,
         operator.ActivateBcfViewpoint,
         operator.OpenBcfReferenceLink,
+        operator.OpenBcfBimSnippetSchema,
+        operator.OpenBcfBimSnippetReference,
         operator.SelectFeaturesDir,
         operator.SelectDiffJsonFile,
         operator.SelectDiffNewFile,
