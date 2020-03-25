@@ -577,14 +577,28 @@ class BIM_PT_bcf(Panel):
 
         layout.label(text="Reference Links:")
         for index, label in enumerate(props.topic_links):
-            row = layout.row(align=True)
-            row.prop(label, 'name', text='')
+            row = layout.row()
+            row.prop(label, 'name', text='Link {}'.format(index + 1))
             row.operator('bim.open_bcf_reference_link', icon='URL', text='').index = index
 
         layout.label(text="Labels:")
         for index, label in enumerate(props.topic_labels):
             row = layout.row(align=True)
             row.prop(label, 'name', text='')
+
+        layout.label(text="BIM Snippet:")
+        if props.topic_has_snippet:
+            row = layout.row(align=True)
+            row.prop(props, 'topic_snippet_type')
+            if props.topic_snippet_schema:
+                row.operator('bim.open_bcf_bim_snippet_schema', icon='URL', text='')
+
+            row = layout.row(align=True)
+            row.prop(props, 'topic_snippet_reference')
+            if props.topic_snippet_is_external:
+                row.operator('bim.open_bcf_bim_snippet_reference', icon='URL', text='')
+            else:
+                row.operator('bim.open_bcf_bim_snippet_reference', icon='FILE_FOLDER', text='').topic_guid = props.topic_guid
 
 
 class BIM_PT_qa(Panel):
