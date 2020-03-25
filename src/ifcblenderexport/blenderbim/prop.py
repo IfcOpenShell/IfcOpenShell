@@ -372,6 +372,13 @@ class BcfTopicLink(PropertyGroup):
     name: StringProperty(name='Name')
 
 
+class BcfTopicDocumentReference(PropertyGroup):
+    name: StringProperty(name='Reference')
+    description: StringProperty(name='Description')
+    guid: StringProperty(name='GUID')
+    is_external: BoolProperty(name='Is External')
+
+
 def refreshBcfTopic(self, context):
     global bcfviewpoints_enum
     import bcfplugin
@@ -426,6 +433,16 @@ def refreshBcfTopic(self, context):
             props.topic_snippet_is_external = topic.bimSnippet.external
         else:
             props.topic_snippet_is_external = False
+
+    # Load document references
+    while len(props.topic_document_references) > 0:
+        props.topic_document_references.remove(0)
+    for doc in topic.docRefs:
+        new = props.topic_document_references.add()
+        new.name = doc.reference.uri
+        new.description = doc.description
+        new.guid = str(doc.guid)
+        new.is_external = doc.external
 
     # Load viewpoints
     bcfviewpoints_enum.clear()
@@ -540,6 +557,7 @@ class BCFProperties(PropertyGroup):
     topic_snippet_schema: StringProperty(name='BIM Snippet Schema')
     topic_snippet_type: StringProperty(name='BIM Snippet Type')
     topic_snippet_is_external: BoolProperty(name='Is BIM Snippet External')
+    topic_document_references: CollectionProperty(name='BCF Topic Document References', type=BcfTopicDocumentReference)
 
 
 class MapConversion(PropertyGroup):
