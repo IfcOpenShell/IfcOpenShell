@@ -3,6 +3,7 @@ import bpy
 import time
 import json
 import logging
+import webbrowser
 import ifcopenshell
 from . import export_ifc
 from . import import_ifc
@@ -443,6 +444,16 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         location = Vector((camera.viewPoint.x, camera.viewPoint.y, camera.viewPoint.z))
         obj.matrix_world = rotation.to_4x4()
         obj.location = location
+        return {'FINISHED'}
+
+
+class OpenBcfReferenceLink(bpy.types.Operator):
+    bl_idname = 'bim.open_bcf_reference_link'
+    bl_label = 'Open BCF Reference Link'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        webbrowser.open(bpy.context.scene.BCFProperties.topic_links[self.index].name)
         return {'FINISHED'}
 
 
