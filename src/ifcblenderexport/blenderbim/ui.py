@@ -613,6 +613,11 @@ class BIM_PT_bcf(Panel):
                 row.operator('bim.open_bcf_document_reference', icon='FILE_FOLDER', text='').data = '{}/{}'.format(
                         props.topic_guid, index)
 
+        layout.label(text="Related Topics:")
+        for topic in props.topic_related_topics:
+            row = layout.row(align=True)
+            row.operator('bim.view_bcf_topic', text=topic.name).topic_guid = topic.guid
+
 
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"

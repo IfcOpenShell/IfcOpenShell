@@ -404,6 +404,18 @@ class GetBcfTopics(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ViewBcfTopic(bpy.types.Operator):
+    bl_idname = 'bim.view_bcf_topic'
+    bl_label = 'Get BCF Topic'
+    topic_guid: bpy.props.StringProperty()
+
+    def execute(self, context):
+        for index, topic in enumerate(bcf.BcfStore.topics):
+            if str(topic[1].xmlId) == self.topic_guid:
+                bpy.context.scene.BCFProperties.active_topic_index = index
+        return {'FINISHED'}
+
+
 class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = 'bim.activate_bcf_viewpoint'
     bl_label = 'Activate BCF Viewpoint'
@@ -411,7 +423,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def execute(self, context):
         import bcfplugin
 
-        topics = bcfplugin.getTopics()
+        topics = bcf.BcfStore.topics
         if not topics:
             return {'FINISHED'}
         topic = topics[bpy.context.scene.BCFProperties.active_topic_index][1]
