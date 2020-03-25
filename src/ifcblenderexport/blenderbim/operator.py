@@ -484,6 +484,25 @@ class OpenBcfBimSnippetReference(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OpenBcfDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.open_bcf_document_reference'
+    bl_label = 'Open BCF Document Reference'
+    data: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import bcfplugin
+        topic_guid, index = self.data.split('/')
+        doc = bpy.context.scene.BCFProperties.topic_document_references[int(index)]
+        uri = doc.name
+        if doc.is_external:
+            webbrowser.open(uri)
+            return {'FINISHED'}
+        webbrowser.open('file:///' + os.path.join(
+            bcfplugin.util.getBcfDir(),
+            topic_guid, uri))
+        return {'FINISHED'}
+
+
 class SelectAudited(bpy.types.Operator):
     bl_idname = 'bim.select_audited'
     bl_label = 'Select Audited'

@@ -600,6 +600,19 @@ class BIM_PT_bcf(Panel):
             else:
                 row.operator('bim.open_bcf_bim_snippet_reference', icon='FILE_FOLDER', text='').topic_guid = props.topic_guid
 
+        layout.label(text="Document References:")
+        for index, doc in enumerate(props.topic_document_references):
+            row = layout.row(align=True)
+            row.prop(doc, 'description', text=f'File {index+1} Description:')
+            row = layout.row(align=True)
+            row.prop(doc, 'name', text=f'File {index+1} URI')
+            if doc.is_external:
+                row.operator('bim.open_bcf_document_reference', icon='URL', text='').data = '{}/{}'.format(
+                        props.topic_guid, index)
+            else:
+                row.operator('bim.open_bcf_document_reference', icon='FILE_FOLDER', text='').data = '{}/{}'.format(
+                        props.topic_guid, index)
+
 
 class BIM_PT_qa(Panel):
     bl_label = "BIMTester Quality Auditing"
