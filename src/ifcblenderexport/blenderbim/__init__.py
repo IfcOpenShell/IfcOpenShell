@@ -101,6 +101,8 @@ if bpy is not None:
         operator.AddSubcontext,
         operator.RemoveSubcontext,
         operator.CutSection,
+        operator.CreateSheet,
+        operator.AddViewToSheet,
         operator.CreateSheets,
         operator.GenerateDigitalTwin,
         operator.CreateView,

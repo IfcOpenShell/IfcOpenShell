@@ -3,10 +3,65 @@ import pystache
 import ntpath
 import os
 from shutil import copy
+from xml.dom import minidom
 
 class SheetBuilder:
     def __init__(self):
         self.data_dir = None
+
+    def create(self, name):
+        sheet_path = '{}sheets/{}.svg'.format(self.data_dir, name)
+        root = ET.Element('svg')
+        root.attrib['xmlns'] = 'http://www.w3.org/2000/svg'
+        root.attrib['xmlns:xlink'] = 'http://www.w3.org/1999/xlink'
+        root.attrib['id'] = 'root'
+        root.attrib['version'] = '1.1'
+        root.attrib['width'] = '841mm'
+        root.attrib['height'] = '594mm'
+
+        titleblock = ET.SubElement(root, 'image')
+        titleblock.attrib['xlink:href'] = '../templates/titleblock.svg'
+        titleblock.attrib['x'] = '0'
+        titleblock.attrib['y'] = '0'
+        titleblock.attrib['width'] = '841mm'
+        titleblock.attrib['height'] = '594mm'
+
+        with open(sheet_path, 'w') as f:
+            f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent='    '))
+
+    def add_view(self, view_name, sheet_name):
+        sheet_path = '{}sheets/{}.svg'.format(self.data_dir, sheet_name)
+        view_path = '{}diagrams/{}.svg'.format(self.data_dir, view_name)
+
+        ET.register_namespace('', 'http://www.w3.org/2000/svg')
+        ET.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
+
+        sheet_tree = ET.parse(sheet_path)
+        sheet_root = sheet_tree.getroot()
+
+        view_tree = ET.parse(view_path)
+        view_root = view_tree.getroot()
+
+        # The view is placed into a group with a background image element.
+        # Although the foreground SVG already has a background, it is duplicated
+        # here to accommodate browsers which do not nest images.
+        view = ET.SubElement(sheet_root, 'g')
+
+        background = ET.SubElement(view, 'image')
+        background.attrib['xlink:href'] = '../diagrams/{}.png'.format(view_name)
+        background.attrib['x'] = '0'
+        background.attrib['y'] = '0'
+        background.attrib['width'] = view_root.attrib.get('width')
+        background.attrib['height'] = view_root.attrib.get('height')
+
+        foreground = ET.SubElement(view, 'image')
+        foreground.attrib['xlink:href'] = '../diagrams/{}.svg'.format(view_name)
+        foreground.attrib['x'] = '0'
+        foreground.attrib['y'] = '0'
+        foreground.attrib['width'] = view_root.attrib.get('width')
+        foreground.attrib['height'] = view_root.attrib.get('height')
+
+        sheet_tree.write(sheet_path)
 
     def build(self):
         sheet_path = '{}sheets/sheet1.svg'.format(self.data_dir)

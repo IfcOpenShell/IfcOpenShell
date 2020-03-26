@@ -42,6 +42,7 @@ target_views_enum = []
 persons_enum = []
 organisations_enum = []
 views_enum = []
+sheets_enum = []
 bcfviewpoints_enum = []
 
 @persistent
@@ -344,6 +345,21 @@ def getViews(self, context):
     return views_enum
 
 
+def refreshSheets(self, context):
+    global sheets_enum
+    sheets_enum.clear()
+    getSheets(self, context)
+
+def getSheets(self, context):
+    global sheets_enum
+    if len(sheets_enum) < 1:
+        sheets_enum.clear()
+        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, 'sheets')).glob('*.svg'):
+            f = str(filename.stem)
+            sheets_enum.append((f, f, ''))
+    return sheets_enum
+
+
 class Subcontext(PropertyGroup):
     name: StringProperty(name='Name')
     target_view: StringProperty(name='Target View')
@@ -353,6 +369,8 @@ class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     view_name: StringProperty(name="View Name")
     available_views: EnumProperty(items=getViews, name="Available Views")
+    sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
+    available_sheets: EnumProperty(items=getSheets, name="Available Sheets")
 
 
 class BIMCameraProperties(PropertyGroup):

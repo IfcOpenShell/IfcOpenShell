@@ -310,6 +310,14 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.set_view_preset_1')
 
         row = layout.row()
+        row.prop(props, 'sheet_name')
+        row.operator('bim.create_sheet', icon='ADD', text='')
+
+        row = layout.row()
+        row.prop(props, 'available_sheets')
+        row.operator('bim.add_view_to_sheet', icon='ADD', text='')
+
+        row = layout.row()
         row.operator('bim.create_sheets')
 
         row = layout.row()
