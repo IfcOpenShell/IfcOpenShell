@@ -1563,6 +1563,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
     BRep_Builder compound_builder;
     compound_builder.MakeCompound(all_faces);
 
+	ShapeFix_ShapeTolerance FTol;
+
     for (unsigned i = 0; i < polygonal_faces->size(); i++) {
         IfcSchema::IfcIndexedPolygonalFace* la = (IfcSchema::IfcIndexedPolygonalFace*)*(polygonal_faces->begin() + i);
         TopoDS_Face face;
@@ -1581,13 +1583,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
 
         wire_builder.Close();
         TopoDS_Wire wire = wire_builder.Wire();
+		FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
 
         if (la->declaration().is(IfcSchema::IfcIndexedPolygonalFaceWithVoids::Class())) {
             IfcSchema::IfcIndexedPolygonalFaceWithVoids* converted = (IfcSchema::IfcIndexedPolygonalFaceWithVoids*)la;
             std::vector<std::vector<int> > innercoordinates = converted->InnerCoordIndices();
 
             BRepBuilderAPI_MakeFace facemaker = BRepBuilderAPI_MakeFace(wire);
-            std::vector<TopoDS_Wire> vectorofwires;
+			std::vector<TopoDS_Wire> vectorofwires{ wire };
             for (std::vector<std::vector<int> >::const_iterator it = innercoordinates.begin(); it != innercoordinates.end(); ++it) {
                 std::vector<int> mycoords = *it;
                 BRepBuilderAPI_MakePolygon inner_wire_builder = BRepBuilderAPI_MakePolygon();
@@ -1597,15 +1600,58 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcPolygonalFaceSet* pfs, TopoDS_
                     inner_wire_builder.Add(vertex);
                 }
 
-                TopoDS_Wire mywire = inner_wire_builder.Wire();
-                inner_wire_builder.Close();
+				inner_wire_builder.Close();
+				
+				TopoDS_Wire mywire = inner_wire_builder.Wire();
+                FTol.SetTolerance(wire, getValue(GV_PRECISION), TopAbs_WIRE);
+
+				vectorofwires.push_back(mywire);
+
                 facemaker.Add(mywire);
             }
 
-            face = facemaker.Face();
+			facemaker.Build();
+			if (facemaker.Error() == BRepBuilderAPI_FaceDone) {
+				face = facemaker.Face();
+			} else if (facemaker.Error() == BRepBuilderAPI_NotPlanar) {
+				TopTools_ListOfShape fs;
+				if (triangulate_wire(vectorofwires, fs)) {
+					Logger::Warning("Triangulated face boundary:", la);
+					TopTools_ListIteratorOfListOfShape it(fs);
+					for (; it.More(); it.Next()) {
+						const TopoDS_Face& tri = TopoDS::Face(it.Value());
+						if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
+							faces.push_back(tri);
+						}
+					}
+					continue;
+				}
+			}
         } else {
-            face = BRepBuilderAPI_MakeFace(wire).Face();
+			BRepBuilderAPI_MakeFace facemaker(wire);
+			facemaker.Build();
+			if (facemaker.Error() == BRepBuilderAPI_FaceDone) {
+				face = facemaker.Face();
+			} else if (facemaker.Error() == BRepBuilderAPI_NotPlanar) {
+				TopTools_ListOfShape fs;
+				if (triangulate_wire({ wire }, fs)) {
+					Logger::Warning("Triangulated face boundary:", la);
+					TopTools_ListIteratorOfListOfShape it(fs);
+					for (; it.More(); it.Next()) {
+						const TopoDS_Face& tri = TopoDS::Face(it.Value());
+						if (face_area(tri) > getValue(GV_MINIMAL_FACE_AREA)) {
+							faces.push_back(tri);
+						}
+					}
+					continue;
+				}
+			}
         }
+
+		if (face.IsNull()) {
+			Logger::Warning("Face creation failed:", la);
+			continue;
+		}
 
         TopoDS_Iterator face_it(face, false);
         const TopoDS_Wire& w = TopoDS::Wire(face_it.Value());
