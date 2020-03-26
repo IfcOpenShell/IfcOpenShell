@@ -350,6 +350,7 @@ def refreshSheets(self, context):
     sheets_enum.clear()
     getSheets(self, context)
 
+
 def getSheets(self, context):
     global sheets_enum
     if len(sheets_enum) < 1:
@@ -376,6 +377,7 @@ class DocProperties(PropertyGroup):
 class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
+    is_nts: BoolProperty(name='Is NTS')
 
 
 class BcfTopic(PropertyGroup):

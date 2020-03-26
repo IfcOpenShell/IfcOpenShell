@@ -669,6 +669,7 @@ class External(svgwrite.container.Group):
 class SvgWriter():
     def __init__(self, ifc_cutter):
         self.ifc_cutter = ifc_cutter
+        self.human_scale = 'NTS'
         self.scale = 1 / 100 # 1:100
 
     def write(self):
@@ -683,7 +684,8 @@ class SvgWriter():
             debug=False,
             size=('{}mm'.format(self.width), '{}mm'.format(self.height)),
             viewBox=('0 0 {} {}'.format(self.width, self.height)),
-            id='root'
+            id='root',
+            data_scale=self.human_scale
         )
 
         self.add_stylesheet()

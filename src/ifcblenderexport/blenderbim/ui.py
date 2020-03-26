@@ -350,6 +350,9 @@ class BIM_PT_camera(Panel):
         row = layout.row()
         row.prop(dprops, 'should_recut')
 
+        row = layout.row()
+        row.prop(props, 'is_nts')
+
         row = layout.row(align=True)
         row.prop(props, 'diagram_scale', text='')
         row.operator('bim.cut_section')
