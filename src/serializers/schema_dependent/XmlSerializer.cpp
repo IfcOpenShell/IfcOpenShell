@@ -305,11 +305,7 @@ ptree* descend(IfcSchema::IfcObjectDefinition* product, ptree& tree, IfcUtil::If
 			IfcSchema::IfcPropertySetDefinition* pset = *it;
 			if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
 				format_entity_instance(pset, child, true);
-			}
-			if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
-				format_entity_instance(pset, child, true);
-			}
-			if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
+			} else if (pset->declaration().is(IfcSchema::IfcElementQuantity::Class())) {
 				format_entity_instance(pset, child, true);
 			}
 		}
