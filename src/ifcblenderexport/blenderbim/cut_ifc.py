@@ -715,6 +715,7 @@ class SvgWriter():
             self.svg.defs.add(External(child))
 
     def add_patterns(self):
+        return
         tree = ET.parse('{}templates/patterns.svg'.format(self.ifc_cutter.data_dir))
         root = tree.getroot()
         for child in root.getchildren():
