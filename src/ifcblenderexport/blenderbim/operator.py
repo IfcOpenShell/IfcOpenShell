@@ -1349,6 +1349,10 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
         svg_writer = cut_ifc.SvgWriter(ifc_cutter)
         numerator, denominator = camera.data.BIMCameraProperties.diagram_scale.split(':')
+        if camera.data.BIMCameraProperties.is_nts:
+            svg_writer.human_scale = 'NTS'
+        else:
+            svg_writer.human_scale = camera.data.BIMCameraProperties.diagram_scale
         svg_writer.scale = float(numerator) / float(denominator)
         ifc_cutter.cut()
         svg_writer.write()

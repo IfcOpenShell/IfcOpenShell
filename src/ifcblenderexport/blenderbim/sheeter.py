@@ -61,6 +61,11 @@ class SheetBuilder:
         foreground.attrib['width'] = view_root.attrib.get('width')
         foreground.attrib['height'] = view_root.attrib.get('height')
 
+        title = ET.SubElement(view, 'image')
+        title.attrib['xlink:href'] = '../templates/view-title.svg'
+        title.attrib['x'] = '0'
+        title.attrib['y'] = view_root.attrib.get('height')
+
         sheet_tree.write(sheet_path)
 
     def build(self):
