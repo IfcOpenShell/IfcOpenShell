@@ -299,23 +299,27 @@ class BIM_PT_documentation(Panel):
         props = bpy.context.scene.DocProperties
 
         row = layout.row()
+        row.operator('bim.set_view_preset_1')
+
+        row = layout.row()
         row.prop(props, 'view_name')
         row.operator('bim.create_view', icon='ADD', text='')
-
-        row = layout.row()
-        row.prop(props, 'available_views')
-        row.operator('bim.activate_view', icon='SCENE', text='')
-
-        row = layout.row()
-        row.operator('bim.set_view_preset_1')
 
         row = layout.row()
         row.prop(props, 'sheet_name')
         row.operator('bim.create_sheet', icon='ADD', text='')
 
         row = layout.row()
+        row.prop(props, 'available_views')
+        row.operator('bim.activate_view', icon='SCENE', text='')
+        row.operator('bim.open_view', icon='URL', text='')
+
+        row = layout.row()
         row.prop(props, 'available_sheets')
-        row.operator('bim.add_view_to_sheet', icon='ADD', text='')
+        row.operator('bim.open_sheet', icon='URL', text='')
+
+        row = layout.row()
+        row.operator('bim.add_view_to_sheet')
 
         row = layout.row()
         row.operator('bim.create_sheets')

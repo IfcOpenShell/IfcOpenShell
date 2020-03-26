@@ -1260,6 +1260,17 @@ class CreateView(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OpenView(bpy.types.Operator):
+    bl_idname = 'bim.open_view'
+    bl_label = 'Open View'
+
+    def execute(self, context):
+        webbrowser.open('file:///' + os.path.join(
+            bpy.context.scene.BIMProperties.data_dir, 'diagrams',
+            bpy.context.scene.DocProperties.available_views + '.svg'))
+        return {'FINISHED'}
+
+
 class CutSection(bpy.types.Operator):
     bl_idname = 'bim.cut_section'
     bl_label = 'Cut Section'
@@ -1356,6 +1367,17 @@ class CreateSheet(bpy.types.Operator):
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         sheet_builder.create(bpy.context.scene.DocProperties.sheet_name)
         bpy.context.scene.DocProperties.sheet_name = ''
+        return {'FINISHED'}
+
+
+class OpenSheet(bpy.types.Operator):
+    bl_idname = 'bim.open_sheet'
+    bl_label = 'Open Sheet'
+
+    def execute(self, context):
+        webbrowser.open('file:///' + os.path.join(
+            bpy.context.scene.BIMProperties.data_dir, 'sheets',
+            bpy.context.scene.DocProperties.available_sheets + '.svg'))
         return {'FINISHED'}
 
 
