@@ -1346,6 +1346,31 @@ class CutSection(bpy.types.Operator):
     def is_landscape(self):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
 
+
+class CreateSheet(bpy.types.Operator):
+    bl_idname = 'bim.create_sheet'
+    bl_label = 'Create Sheet'
+
+    def execute(self, context):
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.create(bpy.context.scene.DocProperties.sheet_name)
+        bpy.context.scene.DocProperties.sheet_name = ''
+        return {'FINISHED'}
+
+
+class AddViewToSheet(bpy.types.Operator):
+    bl_idname = 'bim.add_view_to_sheet'
+    bl_label = 'Add View To Sheet'
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.add_view(props.available_views, props.available_sheets)
+        return {'FINISHED'}
+
+
 class CreateSheets(bpy.types.Operator):
     bl_idname = 'bim.create_sheets'
     bl_label = 'Create Sheets'
@@ -1355,6 +1380,7 @@ class CreateSheets(bpy.types.Operator):
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         sheet_builder.build()
         return {'FINISHED'}
+
 
 class GenerateDigitalTwin(bpy.types.Operator):
     bl_idname = 'bim.generate_digital_twin'

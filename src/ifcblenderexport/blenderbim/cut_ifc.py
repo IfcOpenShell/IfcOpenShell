@@ -723,7 +723,7 @@ class SvgWriter():
 
     def draw_background_image(self):
         self.svg.add(self.svg.image(
-            os.path.basename(self.ifc_cutter.background_image), **{
+            os.path.join('..', 'diagrams', os.path.basename(self.ifc_cutter.background_image)), **{
                 'width': self.width,
                 'height': self.height
             }
