@@ -1,5 +1,5 @@
 class Patcher:
-    def __init__(self, file, logger):
+    def __init__(self, file, logger, args=None):
         self.file = file
         self.logger = logger
 
