@@ -3736,7 +3736,7 @@ bool IfcGeom::Kernel::wire_intersections(const TopoDS_Wire& wire, TopTools_ListO
 			);
 
 			// @todo: extend this to work in case of multiple extrema and curved segments.
-			const bool unbounded_intersects = (ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
+			const bool unbounded_intersects = (!ecc.Extrema().IsParallel() && ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
 			if (unbounded_intersects) {
 				ecc.Parameters(1, U1, U2);
 
