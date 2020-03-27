@@ -348,7 +348,13 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 		n->instance = inst;
 		c->children = { n };
 	} else {
-		c->children = { map(body) };
+		auto child = map(body);
+		if (child) {
+			c->children = { child };
+		} else {
+			delete c;
+			return nullptr;			
+		}
 	}
 	return c;
 }
