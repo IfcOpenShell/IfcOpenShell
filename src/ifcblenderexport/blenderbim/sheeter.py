@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+import urllib.parse
 import pystache
 import ntpath
 import os
@@ -8,6 +9,7 @@ from xml.dom import minidom
 class SheetBuilder:
     def __init__(self):
         self.data_dir = None
+        self.scale = 'NTS'
 
     def create(self, name):
         sheet_path = '{}sheets/{}.svg'.format(self.data_dir, name)
@@ -68,44 +70,70 @@ class SheetBuilder:
 
         sheet_tree.write(sheet_path)
 
-    def build(self):
-        sheet_path = '{}sheets/sheet1.svg'.format(self.data_dir)
-        sheet_filename = ntpath.basename(sheet_path)
-        sheet_name = sheet_filename[0:-4]
+    def build(self, sheet_name):
+        os.makedirs('{}build/{}/'.format(self.data_dir, sheet_name), exist_ok=True)
 
-        data = [
-            {'number': 'ASDF', 'revision': 'A'},
-            {},
-            {'no': '01', 'name': 'HOUSE', 'scale': '1:100'},
-            {},
-            {'no': '02', 'name': 'ELEVATION', 'scale': '1:100'},
-            {},
-            {'no': '03', 'name': 'PLAN', 'scale': '1:100'},
-            {},
-            {'no': '04', 'name': 'SECTION', 'scale': '1:100'},
-            ]
+        sheet_path = '{}sheets/{}.svg'.format(self.data_dir, sheet_name)
+
+        ET.register_namespace('', 'http://www.w3.org/2000/svg')
+        ET.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
+
         tree = ET.parse(sheet_path)
         root = tree.getroot()
-        embedded_svgs = root.findall('{http://www.w3.org/2000/svg}svg')
-        n = 0
-        for svg in embedded_svgs:
-            use = svg.findall('{http://www.w3.org/2000/svg}use')[0]
-            source = use.attrib.get('{http://www.w3.org/1999/xlink}href')
-            source_path = source.split('#')[0]
-            source_filename = ntpath.basename(source_path)
-            source_background = '{}diagrams/{}.png'.format(self.data_dir, source_filename[0:-4])
-            source_anchor = source.split('#')[1]
-            dest_filename = '{}-{}.svg'.format(source_filename[0:-4], n)
-            os.makedirs('{}build/{}/'.format(self.data_dir, sheet_name), exist_ok=True)
-            with open('{}build/{}/{}'.format(self.data_dir, sheet_name, dest_filename), 'w') as out:
-                with open('{}sheets/{}'.format(self.data_dir, source_path), 'r') as template:
-                    out.write(pystache.render(template.read(), data[n]))
-                    use.set('{http://www.w3.org/1999/xlink}href',
-                        '{}#{}'.format(dest_filename, source_anchor))
-            # TODO: hardcoded that all diagrams have a raster background
-            if 'diagrams/' in source_path:
-                copy(source_background, '{}build/{}/'.format(self.data_dir, sheet_name))
-            n += 1
 
-        with open('{}build/{}/{}'.format(self.data_dir, sheet_name, sheet_filename), 'wb') as output:
+        titleblock = root.findall('{http://www.w3.org/2000/svg}image')[0]
+        root.append(self.parse_embedded_svg(titleblock, {
+            'number': sheet_name,
+            'revision': 'A'
+        }))
+        root.remove(titleblock)
+
+        views = root.findall('{http://www.w3.org/2000/svg}g')
+
+        view_number = 1
+        for view in views:
+            images = view.findall('{http://www.w3.org/2000/svg}image')
+            background = images[0]
+            foreground = images[1]
+            view_title = images[2]
+            self.scale = 'NTS'
+
+            # Add foreground
+            view.append(self.parse_embedded_svg(foreground, {}))
+
+            # Add background
+            background_path = '{}sheets/{}'.format(self.data_dir, self.get_href(background))
+            copy(background_path, '{}build/{}/'.format(self.data_dir, sheet_name))
+
+            # Add view title
+            foreground_path = self.get_href(foreground)
+            view.append(self.parse_embedded_svg(view_title, {
+                'no' : view_number,
+                'name': ntpath.basename(foreground_path)[0:-4],
+                'scale': self.scale
+            }))
+
+            for image in images:
+                view.remove(image)
+
+            view_number += 1
+
+        with open('{}build/{}/{}.svg'.format(self.data_dir, sheet_name, sheet_name), 'wb') as output:
             tree.write(output)
+
+    def get_href(self, element):
+        return urllib.parse.unquote(element.attrib.get('{http://www.w3.org/1999/xlink}href'))
+
+    def parse_embedded_svg(self, image, data):
+        group = ET.Element('g')
+        group.attrib['transform'] = 'translate({},{})'.format(image.attrib.get('x'), image.attrib.get('y'))
+        svg_path = self.get_href(image)
+        with open('{}sheets/{}'.format(self.data_dir, svg_path), 'r') as template:
+            embedded = ET.fromstring(pystache.render(template.read(), data))
+            self.scale = embedded.attrib.get('data-scale')
+            images = embedded.findall('{http://www.w3.org/2000/svg}image')
+            for image in images:
+                new_href = ntpath.basename(image.attrib.get('{http://www.w3.org/1999/xlink}href'))
+                image.attrib['{http://www.w3.org/1999/xlink}href'] = new_href
+        group.append(embedded)
+        return group
