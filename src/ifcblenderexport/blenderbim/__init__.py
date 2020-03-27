@@ -103,6 +103,7 @@ if bpy is not None:
         operator.CutSection,
         operator.CreateSheet,
         operator.OpenSheet,
+        operator.OpenCompiledSheet,
         operator.AddViewToSheet,
         operator.CreateSheets,
         operator.GenerateDigitalTwin,

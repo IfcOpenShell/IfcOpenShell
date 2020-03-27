@@ -311,12 +311,13 @@ class BIM_PT_documentation(Panel):
 
         row = layout.row()
         row.prop(props, 'available_views')
-        row.operator('bim.activate_view', icon='SCENE', text='')
         row.operator('bim.open_view', icon='URL', text='')
+        row.operator('bim.activate_view', icon='SCENE', text='')
 
         row = layout.row()
         row.prop(props, 'available_sheets')
         row.operator('bim.open_sheet', icon='URL', text='')
+        row.operator('bim.open_compiled_sheet', icon='OUTPUT', text='')
 
         row = layout.row()
         row.operator('bim.add_view_to_sheet')

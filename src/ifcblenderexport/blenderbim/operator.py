@@ -1385,6 +1385,18 @@ class OpenSheet(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OpenCompiledSheet(bpy.types.Operator):
+    bl_idname = 'bim.open_compiled_sheet'
+    bl_label = 'Open Compiled Sheet'
+
+    def execute(self, context):
+        webbrowser.open('file:///' + os.path.join(
+            bpy.context.scene.BIMProperties.data_dir, 'build',
+            bpy.context.scene.DocProperties.available_sheets,
+            bpy.context.scene.DocProperties.available_sheets + '.svg'))
+        return {'FINISHED'}
+
+
 class AddViewToSheet(bpy.types.Operator):
     bl_idname = 'bim.add_view_to_sheet'
     bl_label = 'Add View To Sheet'
@@ -1404,7 +1416,7 @@ class CreateSheets(bpy.types.Operator):
     def execute(self, context):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.build()
+        sheet_builder.build(bpy.context.scene.DocProperties.available_sheets)
         return {'FINISHED'}
 
 
