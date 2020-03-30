@@ -428,16 +428,27 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if not topics:
             return {'FINISHED'}
         topic = topics[bpy.context.scene.BCFProperties.active_topic_index][1]
-        viewpoints = bcfplugin.getViewpoints(topic)
+        viewpoints = bcf.BcfStore.viewpoints
         if not viewpoints:
             return {'FINISHED'}
-        viewpoint = viewpoints[int(bpy.context.scene.BCFProperties.viewpoints)][1]
+        viewpoint_reference = viewpoints[int(bpy.context.scene.BCFProperties.viewpoints)][1]
+        viewpoint = viewpoint_reference.viewpoint
 
         obj = bpy.data.objects.get('Viewpoint')
         if not obj:
             obj = bpy.data.objects.new('Viewpoint', bpy.data.cameras.new('Viewpoint'))
             bpy.context.scene.collection.objects.link(obj)
             bpy.context.scene.camera = obj
+        if viewpoint_reference.snapshot:
+            obj.data.show_background_images = True
+            while len(obj.data.background_images) > 0:
+                obj.data.background_images.remove(obj.data.background_images[0])
+            background = obj.data.background_images.new()
+            background.image = bpy.data.images.load(os.path.join(
+                bcfplugin.util.getBcfDir(),
+                str(topic.xmlId),
+                viewpoint_reference.snapshot.uri
+            ))
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
         area.spaces[0].region_3d.view_perspective = 'CAMERA'
 
