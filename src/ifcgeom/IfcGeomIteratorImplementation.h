@@ -388,18 +388,24 @@ namespace IfcGeom {
 		void collect() {
 			int i = 0;
 			IfcSchema::IfcProduct::list* previous = nullptr;
-			while (auto rp = get_next_task()) {
+			while (auto rp = try_get_next_task()) {
 				// Note that get_next_task() mutates the state of the iterator
 				// we use that capture all products that can be processed as
 				// part of this representation and then keep iterating until
 				// the underlying list of products changes.
 				if (ifcproducts.get() != previous) {
 					previous = ifcproducts.get();
-					geometry_conversion_task<P, PP> t;
-					t.index = i++;
-					t.representation = *representation_iterator;
-					t.products = ifcproducts;
-					tasks_.emplace_back(t);
+					if (ifcproducts->size()) {
+						geometry_conversion_task<P, PP> t;
+						t.index = i++;
+						t.representation = *representation_iterator;
+						t.products = ifcproducts;
+						tasks_.emplace_back(t);
+					}
+				}
+
+				if (rp->which() == 1) {
+					Logger::Error(boost::get<IfcParse::IfcException>(*rp));
 				}
 
 				_nextShape();
@@ -597,6 +603,26 @@ namespace IfcGeom {
 			}
 
 			return associated_single_materials.size() == 1;
+		}
+
+		boost::optional<boost::variant<std::pair<IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*>,IfcParse::IfcException>> try_get_next_task() {
+			boost::variant<
+				std::pair<IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*>,
+				IfcParse::IfcException
+			> r;
+			try {
+				auto p = get_next_task();
+				if (p) {
+					r = *p;
+				} else {
+					return boost::none;
+				}
+			} catch (IfcParse::IfcException& e) {
+				r = e;
+			} catch (...) {
+				r = IfcParse::IfcException("Unknown error");
+			}
+			return r;
 		}
 
 		boost::optional<std::pair<IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*>> get_next_task() {
