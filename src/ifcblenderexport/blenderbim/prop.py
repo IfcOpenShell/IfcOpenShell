@@ -479,8 +479,8 @@ def refreshBcfTopic(self, context):
 
     # Load viewpoints
     bcfviewpoints_enum.clear()
-    viewpoints = bcfplugin.getViewpoints(topic)
-    for i, viewpoint in enumerate(viewpoints):
+    bcf.BcfStore.viewpoints = bcfplugin.getViewpoints(topic, realViewpoint=False)
+    for i, viewpoint in enumerate(bcf.BcfStore.viewpoints):
         bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
 
     # Load comments
