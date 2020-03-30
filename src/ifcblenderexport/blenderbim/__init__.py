@@ -48,6 +48,7 @@ if bpy is not None:
         operator.SelectDataDir,
         operator.SelectSchemaDir,
         operator.SelectIfcFile,
+        operator.ValidateIfcFile,
         operator.ExportIFC,
         operator.ImportIFC,
         operator.ColourByClass,
