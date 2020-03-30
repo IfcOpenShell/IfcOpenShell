@@ -73,7 +73,7 @@ def try_valid(attr, val):
     except ValidationError as e:
         return False
         
-def validate(f):
+def validate(f, logger):
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
     for inst in f:
         entity = schema.declaration_by_name(inst.is_a())
@@ -88,17 +88,22 @@ def validate(f):
                 try: 
                     assert_valid(attr, val)
                 except ValidationError as e:
-                    print("In", inst)
-                    print(e)
-                    print()
+                    logger.error('In {}\n{}'.format(inst, e))
                 
         for attr in entity.all_inverse_attributes():
             val = getattr(inst, attr.name())
-            assert_valid_inverse(attr, val)
+            try:
+                assert_valid_inverse(attr, val)
+            except ValidationError as e:
+                logger.error('In {}\n{}'.format(inst, e))
+
             
 if __name__ == "__main__":
     import sys
+    import logging
     
     for fn in sys.argv[1:]:
+        logger = logging.getLogger('validate')
+        logger.setLevel(logging.DEBUG)
         print("Validating", fn)
-        validate(ifcopenshell.open(fn))
+        validate(ifcopenshell.open(fn), logger)
