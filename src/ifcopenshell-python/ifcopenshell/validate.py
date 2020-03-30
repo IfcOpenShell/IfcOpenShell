@@ -81,7 +81,7 @@ def validate(f, logger):
         for attr, val, is_derived in zip(entity.all_attributes(), inst, entity.derived()):
         
             if val is None and not (is_derived or attr.optional()):
-               raise Exception("Attribute %s.%s not optional" % (entity, attr))
+               logger.error("Attribute %s.%s not optional" % (entity, attr))
 
             if val is not None:
                 attr_type = attr.type_of_attribute()
