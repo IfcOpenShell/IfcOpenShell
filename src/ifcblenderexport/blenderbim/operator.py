@@ -11,6 +11,7 @@ from . import cut_ifc
 from . import sheeter
 from . import schema
 from . import bcf
+from . import ifc
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix
@@ -991,6 +992,22 @@ class SelectIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class ValidateIfcFile(bpy.types.Operator):
+    bl_idname = 'bim.validate_ifc_file'
+    bl_label = 'Validate IFC File'
+
+    def execute(self, context):
+        import ifcopenshell.validate
+        logger = logging.getLogger('validate')
+        logger.setLevel(logging.DEBUG)
+        if bpy.context.scene.BIMProperties.ifc_file \
+                and bpy.context.scene.BIMProperties.ifc_file != ifc.IfcStore.path:
+            ifc.IfcStore.file = ifcopenshell.open(bpy.context.scene.BIMProperties.ifc_file)
+            ifc.IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
+        ifcopenshell.validate.validate(ifc.IfcStore.file, logger)
+        return {'FINISHED'}
 
 
 class SelectDataDir(bpy.types.Operator):

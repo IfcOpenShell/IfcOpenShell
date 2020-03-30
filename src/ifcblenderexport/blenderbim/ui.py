@@ -441,8 +441,9 @@ class BIM_PT_bim(Panel):
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
         row = layout.row(align=True)
-        row.prop(bim_properties, "ifc_file")
-        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+        row.prop(bim_properties, 'ifc_file')
+        row.operator('bim.validate_ifc_file', icon='CHECKMARK', text='')
+        row.operator('bim.select_ifc_file', icon='FILE_FOLDER', text='')
 
         layout.label(text="IFC Categorisation:")
 
