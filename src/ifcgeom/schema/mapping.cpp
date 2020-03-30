@@ -17,6 +17,9 @@
 *                                                                              *
 ********************************************************************************/
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include "mapping.h"
 
 #include "../../ifcparse/IfcLogger.h"
@@ -70,6 +73,8 @@ namespace {
 		loop_to_face_upgrade(taxonomy::item* item) {
 			taxonomy::loop* loop = dynamic_cast<taxonomy::loop*>(item);
 			if (loop) {
+				loop->external = true;
+
 				face_ = taxonomy::face();
 				face_->instance = loop->instance;
 				face_->matrix = loop->matrix;
@@ -1122,10 +1127,10 @@ namespace {
 		boost::optional<double> radius;
 	};
 
-	struct profile_point_with_neighbours {
-		std::array<double, 2> xy;
+	struct profile_point_with_edges {
+		Eigen::Vector2d xy;
 		boost::optional<double> radius;
-		profile_point* previous, *next;
+		taxonomy::edge *previous, *next;
 	};
 
 	taxonomy::loop* polygon_from_points(const std::vector<taxonomy::point3>& ps, bool external = true) {
@@ -1206,13 +1211,67 @@ namespace {
 		});
 		ps.push_back(ps.front());
 
-		return polygon_from_points(ps);
+		auto loop = polygon_from_points(ps);
+
+		std::vector<profile_point_with_edges> pps(points.size());
+		for (int b = 0; b < points.size(); ++b) {
+			int c = (b - 1) % points.size();
+			pps[b] = { Eigen::Vector2d(points[b].xy[0], points[b].xy[1]), points[b].radius, (taxonomy::edge*) loop->children[c], (taxonomy::edge*) loop->children[b]};
+		}
+
+		size_t i = pps.size();
+		while (i--) {
+			const auto& p = pps[i];
+			if (p.radius && *p.radius > 0.) {
+				// Position is a IfcAxis2Placement2D, so should remain 2d points
+				auto p0 = boost::get<taxonomy::point3>(p.previous->start).components.head<2>();
+				auto p1a = boost::get<taxonomy::point3>(p.previous->end).components.head<2>();
+				auto p2 = boost::get<taxonomy::point3>(p.next->end).components.head<2>();
+				auto p1b = boost::get<taxonomy::point3>(p.next->start).components.head<2>();
+
+				auto ba_ = p0 - p1a;
+				auto bc_ = p2 - p1b;
+
+				auto ba = ba_.normalized();
+				auto bc = bc_.normalized();
+
+				const double angle = std::acos(ba.dot(bc));
+				const double inset = *p.radius / std::tan(angle / 2.);
+
+				boost::get<taxonomy::point3>(p.previous->end).components.head<2>() += ba * inset;
+				boost::get<taxonomy::point3>(p.next->start).components.head<2>() += bc * inset;
+
+				auto e = new taxonomy::edge;
+				e->start = p.previous->end;
+				e->end = p.next->start;
+
+				auto ab = Eigen::Vector3d(-ba(1), +ba(0), 0.);
+				
+				double sign = ab.head<2>().dot(bc) > 0 ? 1. : -1.;
+
+				auto O = boost::get<taxonomy::point3>(p.previous->end).components.head<3>() + ab * *p.radius * sign;
+
+				auto c = new taxonomy::circle;
+				c->matrix.components = Eigen::Affine3d(Eigen::Translation3d(O)).matrix();
+				c->radius = *p.radius;
+				e->basis = c;
+				c->orientation = sign == -1.;
+
+				loop->children.insert(std::find(loop->children.begin(), loop->children.end(), p.next), e);
+			}
+		};
+
+		return loop;
 	}
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangleProfileDef* inst) {
 	const double x = inst->XDim() / 2.0f * length_unit_;
 	const double y = inst->YDim() / 2.0f * length_unit_;
+	boost::optional<double> radius;
+	if (inst->as<IfcSchema::IfcRoundedRectangleProfileDef>()) {
+		radius = inst->as<IfcSchema::IfcRoundedRectangleProfileDef>()->RoundingRadius() * length_unit_;
+	}
 	
 	// @todo
 	const double precision_ = 1.e-5;
@@ -1223,10 +1282,150 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangleProfileDef* inst)
 	}
 
 	return profile_helper(this, inst, {
-		{{-x, -y}},
-		{{+x, -y}},
-		{{+x, +y}},
-		{{-x, +y}},
+		{{-x, -y}, radius},
+		{{+x, -y}, radius},
+		{{+x, +y}, radius},
+		{{-x, +y}, radius},
+	});
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef* inst) {
+	const double x = inst->XDim() / 2.0f * length_unit_;
+	const double y = inst->YDim() / 2.0f * length_unit_;
+	const double d = inst->WallThickness() * length_unit_;
+
+	boost::optional<double> radius1, radius2;
+	if (inst->hasOuterFilletRadius()) {
+		radius1 = inst->OuterFilletRadius() * length_unit_;
+	}
+	if (inst->hasInnerFilletRadius()) {
+		radius2 = inst->InnerFilletRadius() * length_unit_;
+	}
+	
+	// @todo
+	const double precision_ = 1.e-5;
+
+	if (x < precision_ || y < precision_) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return nullptr;
+	}
+
+	auto outer_loop = profile_helper(this, inst, {
+		{{-x, -y}, radius1},
+		{{+x, -y}, radius1},
+		{{+x, +y}, radius1},
+		{{-x, +y}, radius1},
+	});
+	outer_loop->external = true;
+
+	auto inner_loop = profile_helper(this, inst, {
+		{{-x + d, -y + d}, radius2},
+		{{+x - d, -y + d}, radius2},
+		{{+x - d, +y - d}, radius2},
+		{{-x + d, +y - d}, radius2},
+	});
+	inner_loop->reverse();
+	inner_loop->external = false;
+
+	auto face = new taxonomy::face;
+	face->children = { outer_loop, inner_loop };
+
+	// @todo is this necessary;
+	std::swap(outer_loop->matrix, face->matrix);
+	inner_loop->matrix = outer_loop->matrix;
+	
+	return face;
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
+	std::vector<double> radii = { inst->Radius() * length_unit_ };
+	
+	if (inst->as<IfcSchema::IfcCircleHollowProfileDef>()) {
+		double t = inst->as<IfcSchema::IfcCircleHollowProfileDef>()->WallThickness() * length_unit_;
+		radii.push_back(radii.front() - t);
+	}
+
+	auto f = new taxonomy::face;
+
+	for (auto it = radii.begin(); it != radii.end(); ++it) {
+		const double r = *it;
+		const bool exterior = it == radii.begin();
+
+		auto c = new taxonomy::circle;
+		c->radius = r;
+
+		bool has_position = true;
+#ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
+		has_position = inst->hasPosition();
+#endif
+		if (has_position) {
+			taxonomy::matrix4 m = as<taxonomy::matrix4>(map(inst->Position()));
+			c->matrix = m.components;
+		}
+
+		auto e = new taxonomy::edge;
+		e->basis = c;
+		e->start = 0.;
+		e->end = 2 * M_PI;
+
+		auto l = new taxonomy::loop;
+		l->children = { e };
+		l->external = exterior;
+
+		f->children.push_back(l);
+	}
+
+	return f;
+}
+
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
+	const double x1 = inst->OverallWidth() / 2.0f * length_unit_;
+	const double y = inst->OverallDepth() / 2.0f * length_unit_;
+	const double d1 = inst->WebThickness() / 2.0f  * length_unit_;
+	const double dy1 = inst->FlangeThickness() * length_unit_;
+
+	bool doFillet1 = inst->hasFilletRadius();
+	double f1 = 0.;
+	if (doFillet1) {
+		f1 = inst->FilletRadius() * length_unit_;
+	}
+
+	bool doFillet2 = doFillet1;
+	double x2 = x1, dy2 = dy1, f2 = f1;
+
+	if (inst->declaration().is(IfcSchema::IfcAsymmetricIShapeProfileDef::Class())) {
+		IfcSchema::IfcAsymmetricIShapeProfileDef* assym = (IfcSchema::IfcAsymmetricIShapeProfileDef*) inst;
+		x2 = assym->TopFlangeWidth() / 2. * length_unit_;
+		doFillet2 = assym->hasTopFlangeFilletRadius();
+		if (doFillet2) {
+			f2 = assym->TopFlangeFilletRadius() * length_unit_;
+		}
+		if (assym->hasTopFlangeThickness()) {
+			dy2 = assym->TopFlangeThickness() * length_unit_;
+		}
+	}
+
+	// @todo
+	const double precision_ = 1.e-5;
+
+	if (x1 < precision_ || x2 < precision_ || y < precision_ || d1 < precision_ || dy1 < precision_ || dy2 < precision_) {
+		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		return false;
+	}
+
+	return profile_helper(this, inst, {
+		{{-x1,-y}},
+		{{x1,-y}},
+		{{x1,-y + dy1}},
+		{{d1,-y + dy1}, f1},
+		{{d1,y - dy2}, f2},
+		{{x2,y - dy2}},
+		{{x2,y}},
+		{{-x2,y}},
+		{{-x2,y - dy2}},
+		{{-d1,y - dy2}, f2},
+		{{-d1,-y + dy1}, f1},
+		{{-x1,-y + dy1}}
 	});
 }
 
@@ -1389,7 +1588,6 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 
 	// @todo
 	const double precision_ = 1.e-5;
-	const double M_PI = 3.141592653;
 
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
 	if (trim_cartesian) {

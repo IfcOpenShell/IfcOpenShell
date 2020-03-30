@@ -565,12 +565,6 @@ namespace {
 
 		curve_creation_visitor_result_type operator()(const taxonomy::circle& c) {
 			const auto& m = c.matrix.components;
-			/*Eigen::IOFormat fmt;
-			std::stringstream ss;
-			ss << m.format(fmt) << std::endl;
-			ss << m.col(3).format(fmt);
-			auto s = ss.str();
-			std::wcout << s.c_str() << std::endl;*/
 			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), c.radius));
 		}
 
@@ -609,17 +603,36 @@ namespace {
 					curve = approx.Curve();
 				}
 
+				const bool reversed = !((taxonomy::geom_item*)e.basis)->orientation.get_value_or(true);
+				const bool is_conic = e.basis->kind() == taxonomy::ELLIPSE || e.basis->kind() == taxonomy::CIRCLE;
+
 				// @todo, copy over logic from previous IfcTrimmedCurve handling
-				if (e.start.which() == 0) {
+				if (e.start.which() == 0) {					
 					auto p1 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.start));
 					auto p2 = convert_xyz<gp_Pnt>(boost::get<taxonomy::point3>(e.end));
+
+					if (reversed) {
+						std::swap(p1, p2);
+					}
 
 					E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
 				} else {
 					auto v1 = boost::get<double>(e.start);
 					auto v2 = boost::get<double>(e.end);
 
-					E = BRepBuilderAPI_MakeEdge(curve, v1, v2).Edge();
+					if (reversed) {
+						std::swap(v1, v2);
+					}
+
+					if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI*2.), 0.)) {
+						E = BRepBuilderAPI_MakeEdge(curve).Edge();
+					} else {
+						E = BRepBuilderAPI_MakeEdge(curve, v1, v2).Edge();
+					}
+				}
+
+				if (reversed) {
+					E.Reverse();
 				}
 			} else {
 				if (e.start.which() != 0) {
