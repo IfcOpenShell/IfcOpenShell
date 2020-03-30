@@ -161,7 +161,7 @@ struct trimmed_curve : public curve {
 	trimmed_curve() : basis(nullptr), orientation(true) {}
 	
 	virtual void reverse() {
-		std::swap(start, end);
+		// std::swap(start, end);
 		orientation = !orientation;
 	}
 };

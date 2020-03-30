@@ -74,19 +74,19 @@ BIND(IfcHalfSpaceSolid);
 
 // IfcArbitraryProfileDefWithVoids included
 BIND(IfcArbitraryClosedProfileDef);
-// BIND(IfcRoundedRectangleProfileDef);
-// BIND(IfcRectangleHollowProfileDef);
+BIND(IfcRectangleHollowProfileDef);
+// IfcRoundedRectangleProfileDef included
 BIND(IfcRectangleProfileDef);
 // BIND(IfcTrapeziumProfileDef)
 // BIND(IfcCShapeProfileDef);
 // IfcAsymmetricIShapeProfileDef included
-// BIND(IfcIShapeProfileDef);
+BIND(IfcIShapeProfileDef);
 // BIND(IfcLShapeProfileDef);
 // BIND(IfcTShapeProfileDef);
 // BIND(IfcUShapeProfileDef);
 // BIND(IfcZShapeProfileDef);
-// BIND(IfcCircleHollowProfileDef);
-// BIND(IfcCircleProfileDef);
+// IfcCircleHollowProfileDef included
+BIND(IfcCircleProfileDef);
 // BIND(IfcEllipseProfileDef);
 // BIND(IfcCenterLineProfileDef);
 // BIND(IfcCompositeProfileDef);
