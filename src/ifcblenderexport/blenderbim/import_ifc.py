@@ -26,6 +26,7 @@ class MaterialCreator():
                 and self.mesh.name in self.parsed_meshes:
             return
         if self.parse_representations(element):
+            self.assign_material_slots_to_faces(obj, mesh)
             return # styled items override material styles
         self.parse_material(element)
 
@@ -35,9 +36,11 @@ class MaterialCreator():
                 return True
 
     def parse_representation(self, representation):
+        has_parsed = False
         for item in representation.Items:
             if self.parse_representation_item(item):
-                return True
+                has_parsed = True
+        return has_parsed
 
     def parse_representation_item(self, item):
         if item.is_a('IfcMappedItem'):
@@ -56,6 +59,12 @@ class MaterialCreator():
                 and styled_item.Styles[0].is_a('IfcPresentationStyle') \
                 and styled_item.Styles[0].Name:
             material_name = styled_item.Styles[0].Name
+        elif styled_item.Styles[0] \
+                and styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
+            material_name = str(styled_item.Styles[0].Styles[0].id())
+        elif styled_item.Styles[0] \
+                and styled_item.Styles[0].is_a('IfcPresentationStyle'):
+            material_name = str(styled_item.Styles[0].id())
         else:
             material_name = str(styled_item.id())
         if material_name not in self.materials:
@@ -72,6 +81,20 @@ class MaterialCreator():
             # Proper behaviour
             self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
         return True
+
+    def assign_material_slots_to_faces(self, obj, mesh):
+        if not mesh['ios_materials']:
+            return
+        slots = [s.name for s in obj.material_slots]
+        for index, polygon in enumerate(mesh.polygons):
+            material = mesh['ios_materials'][mesh['ios_material_ids'][index]]
+            if 'surface-style-' in material:
+                material = material[len('surface-style-'):]
+            try:
+                polygon.material_index = slots.index(material)
+            except:
+                self.ifc_import_settings.logger.error(
+                        'Failed to assign material {} to object {}'.format(material, obj.name))
 
     def parse_material(self, element):
         for association in element.HasAssociations:
@@ -135,8 +158,9 @@ class MaterialCreator():
         self.parsed_meshes.append(self.mesh.name)
         self.mesh.materials.append(material)
         if is_styled_item:
-            self.obj.material_slots[0].link = 'OBJECT'
-            self.obj.material_slots[0].material = material
+            index = len(self.obj.material_slots) - 1
+            self.obj.material_slots[index].link = 'OBJECT'
+            self.obj.material_slots[index].material = material
 
 class IfcImporter():
     def __init__(self, ifc_import_settings):
@@ -738,6 +762,8 @@ class IfcImporter():
                 edges = [[e[i], e[i + 1]]
                          for i in range(0, len(e), 2)]
             mesh.from_pydata(vertices, edges, faces)
+            mesh['ios_materials'] = [m.name for m in geometry.materials]
+            mesh['ios_material_ids'] = geometry.material_ids
             return mesh
         except:
             self.ifc_import_settings.logger.error('Could not create mesh for {}: {}/{}'.format(element.GlobalId, self.get_name(element)))
