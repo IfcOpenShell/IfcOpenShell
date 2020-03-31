@@ -471,6 +471,25 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OpenBcfFileReference(bpy.types.Operator):
+    bl_idname = 'bim.open_bcf_file_reference'
+    bl_label = 'Open BCF File Reference'
+    data: bpy.props.StringProperty()
+
+    def execute(self, context):
+        if '/' not in self.data:
+            webbrowser.open(bpy.context.scene.BCFProperties.topic_files[int(self.data)].reference)
+            return {'FINISHED'}
+        import bcfplugin
+        topic_guid, index = self.data.split('/')
+        path = os.path.join(
+            bcfplugin.util.getBcfDir(), topic_guid)
+        #   bpy.context.scene.BCFProperties.topic_files[int(index)].reference)
+        # TODO - maybe allow immediate importing?
+        webbrowser.open(path)
+        return {'FINISHED'}
+
+
 class OpenBcfReferenceLink(bpy.types.Operator):
     bl_idname = 'bim.open_bcf_reference_link'
     bl_label = 'Open BCF Reference Link'

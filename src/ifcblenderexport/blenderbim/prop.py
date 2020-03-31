@@ -392,6 +392,15 @@ class BcfTopicLink(PropertyGroup):
     name: StringProperty(name='Name')
 
 
+class BcfTopicFile(PropertyGroup):
+    name: StringProperty(name='Name')
+    reference: StringProperty(name='Reference')
+    date: StringProperty(name='Date')
+    is_external: BoolProperty(name='Is External')
+    ifc_project: StringProperty(name='IFC Project')
+    ifc_spatial: StringProperty(name='IFC Spatial')
+
+
 class BcfTopicDocumentReference(PropertyGroup):
     name: StringProperty(name='Reference')
     description: StringProperty(name='Description')
@@ -405,98 +414,143 @@ class BcfTopicRelatedTopic(PropertyGroup):
 
 
 def refreshBcfTopic(self, context):
-    global bcfviewpoints_enum
-    import bcfplugin
+    RefreshBcfTopic.refresh(context)
 
-    props = bpy.context.scene.BCFProperties
-    topic = bcf.BcfStore.topics[props.active_topic_index][1]
+class RefreshBcfTopic():
+    props: None
+    topic: None
 
-    props.topic_guid = str(topic.xmlId)
+    @classmethod
+    def refresh(cls, context):
+        import bcfplugin
+        global bcfviewpoints_enum
 
-    # Load metadata
-    props.topic_type = topic.type
-    props.topic_status = topic.status
-    props.topic_priority = topic.priority
-    props.topic_stage = topic.stage
-    if topic.date:
-        props.topic_creation_date = topic.date.strftime('%a %Y-%m-%d %H:%S')
-    else:
-        props.topic_creation_date = ''
-    props.topic_creation_author = topic.author
-    if topic.modDate:
-        props.topic_modified_date = topic.modDate.strftime('%a %Y-%m-%d %H:%S')
-    else:
-        props.topic_modified_date = ''
-    props.topic_modified_author = topic.modAuthor
-    props.topic_assigned_to = topic.assignee
-    if topic.dueDate:
-        props.topic_due_date = topic.dueDate.strftime('%a %Y-%m-%d %H:%S')
-    else:
-        props.topic_due_date = ''
-    props.topic_description = topic.description
+        cls.props = bpy.context.scene.BCFProperties
+        cls.topic = bcf.BcfStore.topics[cls.props.active_topic_index][1]
 
-    while len(props.topic_labels) > 0:
-        props.topic_labels.remove(0)
-    for label in topic.labels:
-        new = props.topic_labels.add()
-        new.name = label.value
+        cls.load_topic_metadata()
+        cls.load_topic_labels()
+        cls.load_topic_files()
+        cls.load_topic_links()
+        cls.load_snippet()
+        cls.load_document_references()
+        cls.load_related_topics()
+        cls.load_viewpoints()
+        cls.load_comments()
 
-    while len(props.topic_links) > 0:
-        props.topic_links.remove(0)
-    for link in topic.referenceLinks:
-        new = props.topic_links.add()
-        new.name = link.value
-
-    # Load snippet
-    props.topic_has_snippet = bool(topic.bimSnippet)
-    if topic.bimSnippet:
-        props.topic_snippet_reference = topic.bimSnippet.reference.uri
-        if topic.bimSnippet.schema.uri:
-            props.topic_snippet_schema = topic.bimSnippet.schema.uri
-        props.topic_snippet_type = topic.bimSnippet.type
-        if topic.bimSnippet.external:
-            props.topic_snippet_is_external = topic.bimSnippet.external
+    @classmethod
+    def load_topic_metadata(cls):
+        cls.props.topic_guid = str(cls.topic.xmlId)
+        cls.props.topic_type = cls.topic.type
+        cls.props.topic_status = cls.topic.status
+        cls.props.topic_priority = cls.topic.priority
+        cls.props.topic_stage = cls.topic.stage
+        if cls.topic.date:
+            cls.props.topic_creation_date = cls.topic.date.strftime('%a %Y-%m-%d %H:%S')
         else:
-            props.topic_snippet_is_external = False
+            cls.props.topic_creation_date = ''
+        cls.props.topic_creation_author = cls.topic.author
+        if cls.topic.modDate:
+            cls.props.topic_modified_date = cls.topic.modDate.strftime('%a %Y-%m-%d %H:%S')
+        else:
+            cls.props.topic_modified_date = ''
+        cls.props.topic_modified_author = cls.topic.modAuthor
+        cls.props.topic_assigned_to = cls.topic.assignee
+        if cls.topic.dueDate:
+            cls.props.topic_due_date = cls.topic.dueDate.strftime('%a %Y-%m-%d %H:%S')
+        else:
+            cls.props.topic_due_date = ''
+        cls.props.topic_description = cls.topic.description
 
-    # Load document references
-    while len(props.topic_document_references) > 0:
-        props.topic_document_references.remove(0)
-    for doc in topic.docRefs:
-        new = props.topic_document_references.add()
-        new.name = doc.reference.uri
-        new.description = doc.description
-        new.guid = str(doc.guid)
-        new.is_external = doc.external
+    @classmethod
+    def load_topic_labels(cls):
+        while len(cls.props.topic_labels) > 0:
+            cls.props.topic_labels.remove(0)
+        for label in cls.topic.labels:
+            new = cls.props.topic_labels.add()
+            new.name = label.value
 
-    # Load related topics
-    while len(props.topic_related_topics) > 0:
-        props.topic_related_topics.remove(0)
-    for t in topic.relatedTopics:
-        new = props.topic_related_topics.add()
-        new.name = bcfplugin.getTopicFromUUID(t.value).title
-        new.guid = str(t.value)
+    @classmethod
+    def load_topic_files(cls):
+        import bcfplugin
+        while len(cls.props.topic_files) > 0:
+            cls.props.topic_files.remove(0)
+        files = bcfplugin.getRelevantIfcFiles(cls.topic)
+        for f in files:
+            new = cls.props.topic_files.add()
+            new.name = f.filename
+            new.date = f.time.strftime('%a %Y-%m-%d %H:%S')
+            new.reference = f.reference.uri
+            new.ifc_project = f.ifcProjectId
+            new.ifc_spatial = f.ifcSpatialStructureElement
+            new.is_external = f.external
 
-    # Load viewpoints
-    bcfviewpoints_enum.clear()
-    bcf.BcfStore.viewpoints = bcfplugin.getViewpoints(topic, realViewpoint=False)
-    for i, viewpoint in enumerate(bcf.BcfStore.viewpoints):
-        bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
+    @classmethod
+    def load_topic_links(cls):
+        while len(cls.props.topic_links) > 0:
+            cls.props.topic_links.remove(0)
+        for link in cls.topic.referenceLinks:
+            new = cls.props.topic_links.add()
+            new.name = link.value
 
-    # Load comments
-    bcf.BcfStore.comments = bcfplugin.getComments(topic)
-    comments = bpy.data.texts.get('BCF Comments')
-    if comments:
-        comments.clear()
-    else:
-        comments = bpy.data.texts.new('BCF Comments')
-    for i, comment in enumerate(bcf.BcfStore.comments):
-        comments.write('# Comment {} - {}\n'.format(i + 1, comment[1].xmlId))
-        comments.write('# From: {} on {}\n'.format(comment[1].author, comment[1].date))
-        if comment[1].modDate:
-            comments.write('# Modified by {} on {}\n'.format(comment[1].modAuthor, comment[1].modDate))
-        comments.write(comment[1].comment)
-        comments.write('\n\n-----\n\n')
+    @classmethod
+    def load_snippet(cls):
+        cls.props.topic_has_snippet = bool(cls.topic.bimSnippet)
+        if cls.topic.bimSnippet:
+            cls.props.topic_snippet_reference = cls.topic.bimSnippet.reference.uri
+            if cls.topic.bimSnippet.schema.uri:
+                cls.props.topic_snippet_schema = cls.topic.bimSnippet.schema.uri
+            cls.props.topic_snippet_type = cls.topic.bimSnippet.type
+            if cls.topic.bimSnippet.external:
+                cls.props.topic_snippet_is_external = cls.topic.bimSnippet.external
+            else:
+                cls.props.topic_snippet_is_external = False
+
+    @classmethod
+    def load_document_references(cls):
+        while len(cls.props.topic_document_references) > 0:
+            cls.props.topic_document_references.remove(0)
+        for doc in cls.topic.docRefs:
+            new = cls.props.topic_document_references.add()
+            new.name = doc.reference.uri
+            new.description = doc.description
+            new.guid = str(doc.guid)
+            new.is_external = doc.external
+
+    @classmethod
+    def load_related_topics(cls):
+        import bcfplugin
+        while len(cls.props.topic_related_topics) > 0:
+            cls.props.topic_related_topics.remove(0)
+        for t in cls.topic.relatedTopics:
+            new = cls.props.topic_related_topics.add()
+            new.name = bcfplugin.getTopicFromUUID(t.value).title
+            new.guid = str(t.value)
+
+    @classmethod
+    def load_viewpoints(cls):
+        import bcfplugin
+        bcfviewpoints_enum.clear()
+        bcf.BcfStore.viewpoints = bcfplugin.getViewpoints(cls.topic, realViewpoint=False)
+        for i, viewpoint in enumerate(bcf.BcfStore.viewpoints):
+            bcfviewpoints_enum.append((str(i), 'View {}'.format(i+1), ''))
+
+    @classmethod
+    def load_comments(cls):
+        import bcfplugin
+        bcf.BcfStore.comments = bcfplugin.getComments(cls.topic)
+        comments = bpy.data.texts.get('BCF Comments')
+        if comments:
+            comments.clear()
+        else:
+            comments = bpy.data.texts.new('BCF Comments')
+        for i, comment in enumerate(bcf.BcfStore.comments):
+            comments.write('# Comment {} - {}\n'.format(i + 1, comment[1].xmlId))
+            comments.write('# From: {} on {}\n'.format(comment[1].author, comment[1].date))
+            if comment[1].modDate:
+                comments.write('# Modified by {} on {}\n'.format(comment[1].modAuthor, comment[1].modDate))
+            comments.write(comment[1].comment)
+            comments.write('\n\n-----\n\n')
 
 
 def getBcfViewpoints(self, context):
@@ -584,6 +638,7 @@ class BCFProperties(PropertyGroup):
     topic_due_date: StringProperty(default='', name='Topic Due Date')
     topic_description: StringProperty(default='', name='Topic Description')
     topic_labels: CollectionProperty(name='BCF Topic Labels', type=BcfTopicLabel)
+    topic_files: CollectionProperty(name='BCF Topic Files', type=BcfTopicFile)
     topic_links: CollectionProperty(name='BCF Topic Links', type=BcfTopicLink)
     topic_has_snippet: BoolProperty(name='BCF Topic Has Snippet', default=False)
     topic_snippet_reference: StringProperty(name='BIM Snippet Reference')
