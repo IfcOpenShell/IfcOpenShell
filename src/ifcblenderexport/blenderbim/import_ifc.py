@@ -48,25 +48,9 @@ class MaterialCreator():
         if not item.StyledByItem:
             return
         styled_item = item.StyledByItem[0]
-        if styled_item.Name:
-            material_name = styled_item.Name
-        # This is for a bug in Revit where Revit exports this in IFC4
-        elif styled_item.Styles[0] \
-                and styled_item.Styles[0].is_a('IfcPresentationStyleAssignment') \
-                and styled_item.Styles[0].Styles[0].Name:
-            material_name = styled_item.Styles[0].Styles[0].Name
-        elif styled_item.Styles[0] \
-                and styled_item.Styles[0].is_a('IfcPresentationStyle') \
-                and styled_item.Styles[0].Name:
-            material_name = styled_item.Styles[0].Name
-        elif styled_item.Styles[0] \
-                and styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
-            material_name = str(styled_item.Styles[0].Styles[0].id())
-        elif styled_item.Styles[0] \
-                and styled_item.Styles[0].is_a('IfcPresentationStyle'):
-            material_name = str(styled_item.Styles[0].id())
-        else:
-            material_name = str(styled_item.id())
+
+        material_name = self.get_material_name(styled_item)
+
         if material_name not in self.materials:
             self.materials[material_name] = bpy.data.materials.new(material_name)
             self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
@@ -125,12 +109,27 @@ class MaterialCreator():
                     continue
                 self.parse_styled_item(item, self.materials[material.Name])
 
-    def parse_styled_item(self, styled_item, material):
+    def get_material_name(self, styled_item):
+        if styled_item.Name:
+            return styled_item.Name
+        # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
+        # but we still support it as it is widely used, gee thanks Revit :(
+        if styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
+            styled_item = styled_item.Styles[0]
         for style in styled_item.Styles:
-            # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
-            # but we still support it as it is widely used, gee thanks Revit :(
-            if style.is_a('IfcPresentationStyleAssignment'):
-                style = style.Styles[0]
+            if not style.is_a('IfcSurfaceStyle'):
+                continue
+            if style.Name:
+                return style.Name
+            return style.id()
+        return styled_item.id()
+
+    def parse_styled_item(self, styled_item, material):
+        # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
+        # but we still support it as it is widely used, gee thanks Revit :(
+        if styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
+            styled_item = styled_item.Styles[0]
+        for style in styled_item.Styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
             external_style = None
