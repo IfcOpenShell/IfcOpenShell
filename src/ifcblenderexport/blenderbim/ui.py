@@ -592,6 +592,24 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.prop(props, 'topic_due_date', text='Due Date')
 
+        layout.label(text="Header Files:")
+        for index, f in enumerate(props.topic_files):
+            row = layout.row()
+            row.prop(f, 'name', text='File {} Name'.format(index + 1))
+            row = layout.row()
+            row.prop(f, 'reference', text='File {} URI'.format(index + 1))
+            if f.is_external:
+                row.operator('bim.open_bcf_file_reference', icon='URL', text='').data = index
+            else:
+                row.operator('bim.open_bcf_file_reference', icon='FILE_FOLDER', text='').data = '{}/{}'.format(
+                    props.topic_guid, index)
+            row = layout.row()
+            row.prop(f, 'date', text='File {} Date'.format(index + 1))
+            row = layout.row()
+            row.prop(f, 'ifc_project', text='File {} Project'.format(index + 1))
+            row = layout.row()
+            row.prop(f, 'ifc_spatial', text='File {} Spatial'.format(index + 1))
+
         layout.label(text="Reference Links:")
         for index, label in enumerate(props.topic_links):
             row = layout.row()
@@ -620,8 +638,6 @@ class BIM_PT_bcf(Panel):
         layout.label(text="Document References:")
         for index, doc in enumerate(props.topic_document_references):
             row = layout.row(align=True)
-            row.prop(doc, 'description', text=f'File {index+1} Description:')
-            row = layout.row(align=True)
             row.prop(doc, 'name', text=f'File {index+1} URI')
             if doc.is_external:
                 row.operator('bim.open_bcf_document_reference', icon='URL', text='').data = '{}/{}'.format(
@@ -629,6 +645,8 @@ class BIM_PT_bcf(Panel):
             else:
                 row.operator('bim.open_bcf_document_reference', icon='FILE_FOLDER', text='').data = '{}/{}'.format(
                         props.topic_guid, index)
+            row = layout.row(align=True)
+            row.prop(doc, 'description', text=f'File {index+1} Description:')
 
         layout.label(text="Related Topics:")
         for topic in props.topic_related_topics:
