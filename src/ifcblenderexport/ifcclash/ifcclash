@@ -2,14 +2,17 @@
 
 import ifcopenshell
 import ifcopenshell.geom
+import multiprocessing
 import numpy as np
 import fcl
 import json
 import argparse
+import logging
 
 class IfcClasher:
-    def __init__(self, a_file, b_file):
-        self.settings = ifcopenshell.geom.settings()
+    def __init__(self, a_file, b_file, settings):
+        self.settings = settings
+        self.geom_settings = ifcopenshell.geom.settings()
         self.tolerance = 0.01
         self.a = None
         self.b = None
@@ -26,14 +29,19 @@ class IfcClasher:
         self.a_manager = None
         self.b_manager = None
         self.clashes = []
+        self.meshes = {}
 
     def clash(self):
         self.load_files()
         for ab in ('a', 'b'):
-            self.create_collision_objects(ab)
+            if self.settings.should_use_legacy:
+                self.create_collision_objects_legacy(ab)
+            else:
+                self.create_collision_objects(ab)
             self.create_manager(ab)
             self.create_data_maps(ab)
 
+        self.settings.logger.info('Colliding models')
         req = fcl.CollisionRequest(num_max_contacts=1, enable_contact=True)
         rdata = fcl.CollisionData(request = req)
         self.a_manager.collide(self.b_manager, rdata, fcl.defaultCollisionCallback)
@@ -57,18 +65,68 @@ class IfcClasher:
             })
 
     def load_files(self):
+        self.settings.logger.info('Loading files')
         self.a = ifcopenshell.open(self.a_file)
         self.b = ifcopenshell.open(self.b_file)
 
-    def create_collision_objects(self, ab):
+    def create_collision_objects_legacy(self, ab):
+        self.settings.logger.info('Creating legacy collision data for {}'.format(ab))
         elements = getattr(self, ab).by_type('IfcElement')
         for element in elements:
-            shape = ifcopenshell.geom.create_shape(self.settings, element)
+            try:
+                shape = ifcopenshell.geom.create_shape(self.geom_settings, element)
+            except:
+                self.settings.logger.error('Failed to generate shape for {}'.format(element))
+                continue
             mesh = self.create_mesh(element, shape)
-            transform = self.get_transform(element)
+            transform = self.get_transform(self.get_local_placement(element.ObjectPlacement))
             getattr(self, '{}_geoms'.format(ab)).append(mesh)
             getattr(self, '{}_objs'.format(ab)).append(fcl.CollisionObject(mesh, transform))
             getattr(self, '{}_global_ids'.format(ab)).append(element.GlobalId)
+
+    def create_collision_objects(self, ab):
+        self.settings.logger.info('Creating collision data for {}'.format(ab))
+        iterator = ifcopenshell.geom.iterator(self.geom_settings, getattr(self, ab), multiprocessing.cpu_count())
+        valid_file = iterator.initialize()
+        if not valid_file:
+            self.create_collision_objects_legacy()
+            return False
+        old_progress = -1
+        while True:
+            progress = iterator.progress() // 2
+            if progress > old_progress:
+                print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
+                old_progress = progress
+            self.create_collision_object(ab, iterator.get())
+            if not iterator.next():
+                break
+
+    def create_collision_object(self, ab, shape):
+        if shape is None:
+            return
+        element = getattr(self, ab).by_id(shape.guid)
+        self.settings.logger.info('Creating object {}'.format(element))
+        mesh_name = f'mesh-{shape.geometry.id}'
+        if mesh_name in self.meshes:
+            mesh = self.meshes[mesh_name]
+        else:
+            mesh = self.create_mesh(element, shape)
+            self.meshes[mesh_name] = mesh
+
+        m = shape.transformation.matrix.data
+        mat = np.array(
+            [
+                [m[0], m[3], m[6], m[9]],
+                [m[1], m[4], m[7], m[10]],
+                [m[2], m[5], m[8], m[11]],
+                [0, 0, 0, 1]
+            ]
+        )
+        mat.transpose()
+        transform = self.get_transform(mat)
+        getattr(self, '{}_geoms'.format(ab)).append(mesh)
+        getattr(self, '{}_objs'.format(ab)).append(fcl.CollisionObject(mesh, transform))
+        getattr(self, '{}_global_ids'.format(ab)).append(element.GlobalId)
 
     def create_manager(self, ab):
         name = '{}_manager'.format(ab)
@@ -88,8 +146,7 @@ class IfcClasher:
             }
         )
 
-    def get_transform(self, element):
-        m = self.get_local_placement(element.ObjectPlacement)
+    def get_transform(self, m):
         R = np.array(
             [
                 [m[0][0], m[1][0], m[2][0]],
@@ -149,9 +206,28 @@ parser.add_argument(
     type=str,
     help='The JSON diff file to output. Defaults to clashes.json',
     default='clashes.json')
+parser.add_argument(
+    '-l',
+    '--legacy',
+    default=False,
+    action='store_true',
+    help='Use legacy element parser')
 args = parser.parse_args()
 
-ifc_clasher = IfcClasher(args.a, args.b)
+class IfcClashSettings:
+    def __init__(self):
+        self.logger = None
+        self.should_use_legacy = False
+
+settings = IfcClashSettings()
+settings.should_use_legacy = args.legacy
+settings.logger = logging.getLogger('Clash')
+settings.logger.setLevel(logging.DEBUG)
+import sys
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+settings.logger.addHandler(handler)
+ifc_clasher = IfcClasher(args.a, args.b, settings)
 ifc_clasher.clash()
 
 with open(args.output, 'w', encoding='utf-8') as clashes_file:

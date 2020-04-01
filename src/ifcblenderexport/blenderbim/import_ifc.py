@@ -367,7 +367,6 @@ class IfcImporter():
         if mesh is None:
             mesh = self.create_mesh(element, shape)
             self.meshes[mesh_name] = mesh
-            self.mesh_shapes[mesh_name] = shape
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
 
