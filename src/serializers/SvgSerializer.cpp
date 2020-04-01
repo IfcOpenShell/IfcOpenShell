@@ -54,6 +54,11 @@
 
 #include <BRepBuilderAPI_Transform.hxx>
 
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <GProp_GProps.hxx>
+#include <BRepGProp.hxx>
+#include <BRepTopAdaptor_FClass2d.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -324,6 +329,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 
 	TopoDS_Iterator it(compound);
 
+	TopoDS_Face largest_closed_wire_face;
+	double largest_closed_wire_area = 0.;
+
 	// Iterate over components of compound to have better chance of matching section edges to closed wires
 	for (; it.More(); it.Next()) {
 		
@@ -360,7 +368,8 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		if (zmin > cut_z || zmax < cut_z) continue;
         
 		// Create a horizontal cross section 1 meter above the bottom point of the shape		
-		TopoDS_Shape result = BRepAlgoAPI_Section(subshape, gp_Pln(gp_Pnt(0, 0, cut_z), gp::DZ()));
+		const gp_Pln pln(gp_Pnt(0, 0, cut_z), gp::DZ());
+		TopoDS_Shape result = BRepAlgoAPI_Section(subshape, pln);
 
 		Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
 		Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
@@ -374,7 +383,107 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 
 		for (int i = 1; i <= wires->Length(); ++i) {
 			const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
+			if (wire.Closed() && print_space_names_ && o->type() == "IfcSpace") {
+				// we explicitly specify the surface here, to later on
+				// simplify the projection from {x,y,z} to {u, v} because
+				// we know we can simply discard z.
+				BRepBuilderAPI_MakeFace mf(pln, wire);
+				if (mf.IsDone()) {
+					TopoDS_Face f = mf.Face();
+					GProp_GProps prop;
+					BRepGProp::SurfaceProperties(f, prop);
+					const double area = prop.Mass();
+					if (area > largest_closed_wire_area) {
+						largest_closed_wire_face = f;
+						largest_closed_wire_area = area;
+					}
+				}
+				
+			}
 			write(p, wire);
+		}
+	}
+
+	if (!largest_closed_wire_face.IsNull()) {
+		std::vector<gp_Pnt> points;
+		TopExp_Explorer exp(largest_closed_wire_face, TopAbs_VERTEX);
+		for (; exp.More(); exp.Next()) {
+			if (exp.Current().Orientation() == TopAbs_FORWARD) {
+				const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
+				points.push_back(BRep_Tool::Pnt(v));
+			}
+		}
+
+		// we brute force the largest distance between pairs of points where
+		// the center is contained in the face.
+
+		std::pair<const gp_Pnt*, const gp_Pnt*> furthest_points = { nullptr, nullptr };
+		double furthest_points_distance = 0.;
+		boost::optional<gp_Pnt> center_point;
+
+		BRepTopAdaptor_FClass2d fcls(largest_closed_wire_face, BRep_Tool::Tolerance(largest_closed_wire_face));
+
+		for (size_t i = 0; i < points.size(); ++i) {
+			for (size_t j = 0; j < i; ++j) {
+				const gp_Pnt& pa = points[i];
+				const gp_Pnt& pb = points[j];
+				// Since the text is always displayed horizontally,
+				// the distance is not simply euclidian, but we
+				// favour the x-component;
+				const double d = std::sqrt(
+					10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +
+					1 * ((pa.Y() - pb.Y()) * (pa.Y() - pb.Y()))
+				);
+				if (d > furthest_points_distance) {
+					gp_Pnt p3d((pa.XYZ() + pb.XYZ()) / 2.);
+					gp_Pnt2d p2d(p3d.X(), p3d.Y());
+
+					if (fcls.Perform(p2d) == TopAbs_IN) {
+						furthest_points = { &pa, &pb };
+						furthest_points_distance = d;
+						center_point = p3d;
+					}
+				}
+			}
+		}
+
+		if (center_point) {
+			std::vector<std::string> labels = { o->name() };
+			if (o->type() == "IfcSpace") {
+				auto attr = o->product()->get("LongName");
+				if (!attr->isNull()) {
+					std::string long_name = *attr;
+					if (!long_name.empty()) {
+						labels.insert(labels.begin(), long_name);
+					}
+				}
+			}
+
+			path_object& po = p;
+			util::string_buffer path;
+			// dominant-baseline="central" is not well supported in IE.
+			// so we add a 0.35 offset to the dy of the tspans
+			path.add("            <text text-anchor=\"middle\" x=\"");
+			xcoords.push_back(path.add(center_point->X()));
+			path.add("\" y=\"");
+			ycoords.push_back(path.add(center_point->Y()));
+			path.add("\">");
+			for (auto it = labels.begin(); it != labels.end(); ++it) {
+				const auto& l = *it;
+				double dy = labels.begin() == it
+					? 0.35 - (labels.size() - 1.) / 2.
+					: 1.0; // <- dy is relative to the previous text element, so
+					       //    always 1 for successive spans.
+				path.add("<tspan x=\"");
+				xcoords.push_back(path.add(center_point->X()));
+				path.add("\" dy=\"");
+				path.add(boost::lexical_cast<std::string>(dy));
+				path.add("em\">");
+				path.add(l);
+				path.add("</tspan>");
+			}
+			path.add("</text>");
+			po.second.push_back(path);
 		}
 	}
 }
@@ -449,29 +558,35 @@ void SvgSerializer::writeHeader() {
 	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
 }
 
-std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem)
-{
-	std::ostringstream oss;
-	const std::string type = "product";
-    const std::string name = object_id(elem);
-	oss << "id=\"" << type << "-" << name<< "\"";
-	return oss.str();
+namespace {
+	std::string nameElement_(const std::vector<std::pair<std::string, std::string> >& attrs) {
+		std::ostringstream oss;
+		for (auto& a : attrs) {
+			// @todo while we're at it might as well implement escaping
+			oss << a.first << "=\"" << a.second << "\" ";
+		}
+		return oss.str();
+	}
+}
+
+std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem) {
+	return nameElement_({ {"id", object_id(elem)}, {"class", elem->type()} });
 }
 
 std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	if (elem == 0) { return ""; }
-	std::ostringstream oss;
+
+	const std::string& entity = elem->declaration().name();
 	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
 
-    const std::string name = 
+    const std::string name =  
 		(settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
 			? static_cast<std::string>(*elem->get("GlobalId"))
 			: ((settings().get(SerializerSettings::USE_ELEMENT_NAMES) && !elem->get("Name")->isNull()))
 				? static_cast<std::string>(*elem->get("Name"))
 				: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
 
-	oss << "id=\"" << type << "-" << name << "\"";
-	return oss.str();
+	return nameElement_({ {"id", type + "-" + name}, {"class", entity} });
 }
 
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
