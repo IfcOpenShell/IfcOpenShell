@@ -26,25 +26,28 @@ class MaterialCreator():
                 and self.mesh.name in self.parsed_meshes:
             return
         if self.parse_representations(element):
-            self.assign_material_slots_to_faces(obj, mesh)
+            self.assign_material_slots_to_faces(obj, self.mesh)
+            self.parsed_meshes.append(self.mesh.name)
             return # styled items override material styles
         self.parse_material(element)
+        self.parsed_meshes.append(self.mesh.name)
 
     def parse_representations(self, element):
+        has_parsed = False
         for representation in element.Representation.Representations:
             if self.parse_representation(representation):
-                return True
+                has_parsed = True
+        return has_parsed
 
     def parse_representation(self, representation):
         has_parsed = False
+        representation = self.resolve_mapped_representation(representation)
         for item in representation.Items:
             if self.parse_representation_item(item):
                 has_parsed = True
         return has_parsed
 
     def parse_representation_item(self, item):
-        if item.is_a('IfcMappedItem'):
-            item = item.MappingSource.MappedRepresentation.Items[0]
         if not item.StyledByItem:
             return
         styled_item = item.StyledByItem[0]
@@ -53,14 +56,14 @@ class MaterialCreator():
 
         if material_name not in self.materials:
             self.materials[material_name] = bpy.data.materials.new(material_name)
-            self.parse_styled_item(item.StyledByItem[0], self.materials[material_name])
+            self.parse_styled_item(styled_item, self.materials[material_name])
+
         if self.ifc_import_settings.should_treat_styled_item_as_material:
             # Revit workaround: since Revit exports all material
             # assignments as individual object styled items. Treating
             # them as reusable materials makes things much more
             # efficient in Blender.
-            if self.mesh.name not in self.parsed_meshes:
-                self.assign_material_to_mesh(self.materials[material_name])
+            self.assign_material_to_mesh(self.materials[material_name])
         else:
             # Proper behaviour
             self.assign_material_to_mesh(self.materials[material_name], is_styled_item=True)
@@ -112,23 +115,17 @@ class MaterialCreator():
     def get_material_name(self, styled_item):
         if styled_item.Name:
             return styled_item.Name
-        # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
-        # but we still support it as it is widely used, gee thanks Revit :(
-        if styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
-            styled_item = styled_item.Styles[0]
+        styled_item = self.resolve_presentation_style_assignment(styled_item)
         for style in styled_item.Styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
             if style.Name:
                 return style.Name
-            return style.id()
-        return styled_item.id()
+            return str(style.id())
+        return str(styled_item.id())
 
     def parse_styled_item(self, styled_item, material):
-        # Note IfcPresentationStyleAssignment is deprecated as of IFC4,
-        # but we still support it as it is widely used, gee thanks Revit :(
-        if styled_item.Styles[0].is_a('IfcPresentationStyleAssignment'):
-            styled_item = styled_item.Styles[0]
+        styled_item = self.resolve_presentation_style_assignment(styled_item)
         for style in styled_item.Styles:
             if not style.is_a('IfcSurfaceStyle'):
                 continue
@@ -153,8 +150,21 @@ class MaterialCreator():
                 material.BIMMaterialProperties.identification = external_style.Identification
                 material.BIMMaterialProperties.name = external_style.Name
 
+    # IfcPresentationStyleAssignment is deprecated as of IFC4
+    # However it is still widely used thanks to Revit :(
+    def resolve_presentation_style_assignment(self, styled_item):
+        for style in styled_item.Styles:
+            if style.is_a('IfcPresentationStyleAssignment'):
+                return style
+        return styled_item
+
+    def resolve_mapped_representation(self, representation):
+        for item in representation.Items:
+            if item.is_a('IfcMappedItem'):
+                return item.MappingSource.MappedRepresentation
+        return representation
+
     def assign_material_to_mesh(self, material, is_styled_item=False):
-        self.parsed_meshes.append(self.mesh.name)
         self.mesh.materials.append(material)
         if is_styled_item:
             index = len(self.obj.material_slots) - 1
@@ -760,7 +770,13 @@ class IfcImporter():
                 edges = [[e[i], e[i + 1]]
                          for i in range(0, len(e), 2)]
             mesh.from_pydata(vertices, edges, faces)
-            mesh['ios_materials'] = [m.name for m in geometry.materials]
+            ios_materials = []
+            for mat in geometry.materials:
+                if mat.original_name():
+                    ios_materials.append(mat.original_name())
+                else:
+                    ios_materials.append(mat.name)
+            mesh['ios_materials'] = ios_materials
             mesh['ios_material_ids'] = geometry.material_ids
             return mesh
         except:
