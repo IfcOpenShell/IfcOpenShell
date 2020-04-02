@@ -128,6 +128,8 @@ class file(object):
     def by_type(self, type):
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
 
+        If an IFC type class has subclasses, all entities of those subclasses are also returned.
+
         :param type: The case insensitive type of IFC class to return.
         :type type: string
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects

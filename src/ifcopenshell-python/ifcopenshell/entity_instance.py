@@ -153,6 +153,24 @@ class entity_instance(object):
         return repr(self.wrapped_data)
 
     def is_a(self, *args):
+        """Return the IFC class name of an instance, or checks if an instance belongs to a class.
+
+        The check will also return true if a parent class name is provided.
+
+        :param args: If specified, is a case insensitive IFC class name to check
+        :type args: string
+        :returns: Either the name of the class, or a boolean if it passes the check
+        :rtype: string|bool
+
+        Example::
+
+            f = ifcopenshell.file()
+            f.create_entity('IfcPerson')
+            f.is_a()
+            >>> 'IfcPerson'
+            f.is_a('IfcPerson')
+            >>> True
+        """
         return self.wrapped_data.is_a(*args)
 
     def id(self):
