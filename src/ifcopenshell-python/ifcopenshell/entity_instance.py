@@ -34,21 +34,18 @@ except ImportError as e:
 
 
 class entity_instance(object):
-    """
-    This is the base python class for all IFC objects.
+    """This is the base Python class for all IFC objects.
 
     An instantiated entity_instance will have methods of Python and the IFC class itself.
 
-    example:
+    Example::
 
-    ifc_file = ifcopenshell.open(file_path)
-    products = ifc_file.by_type("IfcProduct")
-
-    print(products[0].__class__)
-    >>> <class 'ifcopenshell.entity_instance.entity_instance'>
-
-    print(products[0].Representation)
-    >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
+        ifc_file = ifcopenshell.open(file_path)
+        products = ifc_file.by_type("IfcProduct")
+        print(products[0].__class__)
+        >>> <class 'ifcopenshell.entity_instance.entity_instance'>
+        print(products[0].Representation)
+        >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
     def __init__(self, e):
         if isinstance(e, tuple):
@@ -93,10 +90,22 @@ class entity_instance(object):
         return entity_instance.walk(is_instance, unwrap, v)
 
     def attribute_type(self, attr):
+        """Return the data type of a positional attribute of the element
+
+        :param attr: The index of the attribute
+        :type attr: int
+        :rtype: string
+        """
         attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
         return self.wrapped_data.get_argument_type(attr_idx)
 
     def attribute_name(self, attr_idx):
+        """Return the name of a positional attribute of the element
+
+        :param attr_idx: The index of the attribute
+        :type attr_idx: int
+        :rtype: string
+        """
         return self.wrapped_data.get_argument_name(attr_idx)
 
     def __setattr__(self, key, value):
@@ -147,6 +156,10 @@ class entity_instance(object):
         return self.wrapped_data.is_a(*args)
 
     def id(self):
+        """Return the STEP numerical identifier
+
+        :rtype: int
+        """
         return self.wrapped_data.id()
 
     def __eq__(self, other):
@@ -165,18 +178,27 @@ class entity_instance(object):
         )))
 
     def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
-        """
-        Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
+        """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
 
-        example:
+        :param include_identifier: Whether or not to include the STEP numerical identifier
+        :type include_identifier: bool
+        :param recursive: Whether or not to convert referenced IFC elements into dictionaries too. All attributes also apply recursively
+        :type recursive: bool
+        :param return_type: The return data type to be casted into
+        :type return_type: dict|list|other
+        :param ignore: A list of attribute names to ignore
+        :type ignore: set|list
+        :returns: A dictionary of properties and their corresponding values
+        :rtype: dict
 
-        ifc_file = ifcopenshell.open(file_path)
-        products = ifc_file.by_type("IfcProduct")
-        obj_info = products[0].get_info()
-        print(obj_info.keys())
+        Example::
 
-        >>> dict_keys(['Description', 'Name', 'BuildingAddress', 'LongName', 'GlobalId', 'ObjectPlacement', 'OwnerHistory', 'ObjectType',
-        >>> ...'ElevationOfTerrain', 'CompositionType', 'id', 'Representation', 'type', 'ElevationOfRefHeight'])
+            ifc_file = ifcopenshell.open(file_path)
+            products = ifc_file.by_type("IfcProduct")
+            obj_info = products[0].get_info()
+            print(obj_info.keys())
+            >>> dict_keys(['Description', 'Name', 'BuildingAddress', 'LongName', 'GlobalId', 'ObjectPlacement', 'OwnerHistory', 'ObjectType',
+            >>> ...'ElevationOfTerrain', 'CompositionType', 'id', 'Representation', 'type', 'ElevationOfRefHeight'])
         """
         def _():
             try:
