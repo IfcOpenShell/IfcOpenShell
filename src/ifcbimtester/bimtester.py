@@ -1,4 +1,7 @@
-# This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico bimtester.py`
+# Unix:
+# $ pyinstaller --onefile --clean --icon=icon.ico --add-data "features:features" bimtester.py`
+# Windows:
+# $ pyinstaller --onefile --clean --icon=icon.ico --add-data "features;features" bimtester.py`
 
 from behave.__main__ import main as behave_main
 import behave.formatter.pretty # Needed for pyinstaller to package it
@@ -11,14 +14,47 @@ import json
 import argparse
 import csv
 import re
+import shutil
 from pathlib import Path
 
+
+def get_resource_path(relative_path):
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
 def run_tests(args):
-    behave_args = [args.feature, '--junit', '--junit-directory', args.junit_directory]
+    if not get_features(args):
+        sys.exit('No requirements could be found to check.')
+    behave_args = [get_resource_path('features')]
     if args.advanced_arguments:
-        behave_args = args.advanced_arguments.split()
+        behave_args.extend(args.advanced_arguments.split())
+    else:
+        behave_args.extend(['--junit', '--junit-directory', args.junit_directory])
     behave_main(behave_args)
     print('# All tests are finished.')
+
+
+def get_features(args):
+    has_features = False
+    if os.path.exists('features'):
+        shutil.copytree('features', get_resource_path('features'))
+        has_features = True
+    for f in os.listdir('.'):
+        if not f.endswith('.requirement'):
+            continue
+        if args.feature and args.feature != f:
+            continue
+        has_features = True
+        shutil.copyfile(f, os.path.join(
+            get_resource_path('features'),
+            os.path.basename(f)[0:-len('.requirement')] + '.feature'))
+    return has_features
+
 
 def generate_report(args):
     print('# Generating HTML reports now.')
@@ -26,11 +62,11 @@ def generate_report(args):
         os.mkdir('report')
     if not os.path.exists(args.junit_directory):
         os.mkdir(args.junit_directory)
-    for file in os.listdir(args.junit_directory):
-        if not file.endswith('.xml'):
+    for f in os.listdir(args.junit_directory):
+        if not f.endswith('.xml'):
             continue
-        print(f'Processing {file} ...')
-        root = ET.parse('{}{}'.format(args.junit_directory, file)).getroot()
+        print(f'Processing {f} ...')
+        root = ET.parse('{}{}'.format(args.junit_directory, f)).getroot()
         data = {
             'report_name': root.get('name'),
             'testcases': []
@@ -39,13 +75,17 @@ def generate_report(args):
             steps = []
             system_out = testcase.findall('system-out')[0].text.splitlines()
             for line in system_out:
-                if line.strip()[0:4] in ['Give', 'Then', 'When', 'And ']:
+                if line.strip()[0:4] in ['Give', 'Then', 'When', 'And '] \
+                        or line.strip()[0:2] == '* ':
                     is_success = True if ' ... passed in ' in line else False
+                    name, time = line.strip().split(' ... ')
+                    if name[0:2] == '* ':
+                        name = name[2:]
                     steps.append({
-                        'name': line.strip().split(' ... ')[0],
-                        'time': line.strip().split(' ... ')[1],
+                        'name': name,
+                        'time': time,
                         'is_success': is_success
-                        })
+                    })
             total_passes = len([s for s in steps if s['is_success'] == True])
             total_steps = len(steps)
             pass_rate = round((total_passes / total_steps) * 100)
@@ -58,8 +98,8 @@ def generate_report(args):
                 'total_steps': total_steps,
                 'pass_rate': pass_rate
                 })
-        with open('report/{}.html'.format(file[0:-4]), 'w') as out:
-            with open('features/template.html') as template:
+        with open('report/{}.html'.format(f[0:-4]), 'w') as out:
+            with open(get_resource_path('features/template.html')) as template:
                 out.write(pystache.render(template.read(), data))
 
 
@@ -98,6 +138,7 @@ class TestPurger:
         except:
             return False
 
+
 parser = argparse.ArgumentParser(
     description='Runs unit tests for BIM data')
 parser.add_argument(
@@ -120,8 +161,8 @@ parser.add_argument(
     '-f',
     '--feature',
     type=str,
-    help='Specify a feature to test',
-    default='features')
+    help='Specify a requirements feature file to test',
+    default='')
 parser.add_argument(
     '-a',
     '--advanced-arguments',
@@ -129,12 +170,6 @@ parser.add_argument(
     help='Specify your own arguments to Python\'s Behave',
     default='')
 args = parser.parse_args()
-
-if not os.path.exists('features'):
-    sys.exit('''
-    BIMTester requires a features folder to exist within the current folder.
-    Visit https://blenderbim.org/ to learn more about how to use BIMTester.
-    ''')
 
 if args.purge:
     TestPurger().purge()

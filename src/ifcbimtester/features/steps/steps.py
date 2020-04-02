@@ -1,5 +1,5 @@
 import ifcopenshell
-from behave import given, when, then, step
+from behave import step
 
 class IfcFile(object):
     file = None
@@ -31,47 +31,47 @@ class IfcFile(object):
                 return prop
 
 
-@given('the IFC file "{file}"')
+@step('The IFC file "{file}" must be provided')
 def step_impl(context, file):
     IfcFile.load(file)
 
 
-@given('the IFC file "{file}" exists')
+@step('The IFC file "{file}" is exempt from being provided')
 def step_impl(context, file):
     pass
 
 
-@then('the file should be an {schema} file')
+@step('IFC data must use the {schema} schema')
 def step_impl(context, schema):
     assert IfcFile.get().schema == schema
 
 
-@then('the element {id} is an {ifc_class}')
+@step('the element {id} is an {ifc_class}')
 def step_impl(context, id, ifc_class):
     assert IfcFile.get().by_id(id).is_a(ifc_class)
 
 
-@then('the element {id} should not exist because {reason}')
+@step('the element {id} should not exist because {reason}')
 def step_impl(context, id, reason):
     assert not IfcFile.get().by_id(id)
 
 
-@then('the file is exempt from auditing because {reason}')
+@step('No further requirements are specified because {reason}')
 def step_impl(context, reason):
     pass
 
 
-@given(u'there is at least one {ifc_class} element')
+@step(u'there is at least one {ifc_class} element')
 def step_impl(context, ifc_class):
     assert len(IfcFile.get().by_type(ifc_class)) >= 1
 
 
-@then(u'there are no {ifc_class} elements because {reason}')
+@step(u'there are no {ifc_class} elements because {reason}')
 def step_impl(context, ifc_class, reason):
     assert len(IfcFile.get().by_type(ifc_class)) == 0
 
 
-@then('all {ifc_class} elements have a name matching the pattern "{pattern}"')
+@step('all {ifc_class} elements have a name matching the pattern "{pattern}"')
 def step_impl(context, ifc_class, pattern):
     import re
     elements = IfcFile.get().by_type(ifc_class)
@@ -80,7 +80,7 @@ def step_impl(context, ifc_class, pattern):
             assert False
 
 
-@then('all {ifc_class} elements have an {representation_class} representation')
+@step('all {ifc_class} elements have an {representation_class} representation')
 def step_impl(context, ifc_class, representation_class):
     def is_item_a_representation(item, representation):
         if '/' in representation:
@@ -109,7 +109,7 @@ def step_impl(context, ifc_class, representation_class):
             assert False
 
 use_step_matcher('re')
-@then('all (?P<ifc_class>.*) elements have an? (?P<attribute>.*) attribute')
+@step('all (?P<ifc_class>.*) elements have an? (?P<attribute>.*) attribute')
 def step_impl(context, ifc_class, attribute):
     elements = IfcFile.get().by_type(ifc_class)
     for element in elements:
@@ -117,7 +117,7 @@ def step_impl(context, ifc_class, attribute):
             assert False
 
 
-@then('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property')
+@step('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property')
 def step_impl(context, ifc_class, property_path):
     pset_name, property_name = property_path.split('.')
     elements = IfcFile.get().by_type(ifc_class)
@@ -126,7 +126,7 @@ def step_impl(context, ifc_class, property_path):
             assert False
 
 
-@then('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property value matching the pattern "(?P<pattern>.*)"')
+@step('all (?P<ifc_class>.*) elements have an? (?P<property_path>.*\..*) property value matching the pattern "(?P<pattern>.*)"')
 def step_impl(context, ifc_class, property_path, pattern):
     import re
     pset_name, property_name = property_path.split('.')
@@ -142,7 +142,7 @@ def step_impl(context, ifc_class, property_path, pattern):
                 assert False
 
 
-@then('all (?P<ifc_class>.*) elements have an? (?P<attribute>.*) matching the pattern "(?P<pattern>.*)"')
+@step('all (?P<ifc_class>.*) elements have an? (?P<attribute>.*) matching the pattern "(?P<pattern>.*)"')
 def step_impl(context, ifc_class, attribute, pattern):
     import re
     elements = IfcFile.get().by_type(ifc_class)
@@ -152,7 +152,7 @@ def step_impl(context, ifc_class, attribute, pattern):
         assert re.search(pattern, value)
 
 
-@then('all (?P<ifc_class>.*) elements have an? (?P<attributes>.*) taken from the list in "(?P<list_file>.*)"')
+@step('all (?P<ifc_class>.*) elements have an? (?P<attributes>.*) taken from the list in "(?P<list_file>.*)"')
 def step_impl(context, ifc_class, attributes, list_file):
     import csv
     values = []
@@ -172,7 +172,7 @@ def step_impl(context, ifc_class, attributes, list_file):
 
 
 use_step_matcher('parse')
-@then('all {ifc_class} elements have a {qto_name}.{quantity_name} quantity')
+@step('all {ifc_class} elements have a {qto_name}.{quantity_name} quantity')
 def step_impl(context, ifc_class, qto_name, quantity_name):
     elements = IfcFile.get().by_type(ifc_class)
     for element in elements:
@@ -187,7 +187,7 @@ def step_impl(context, ifc_class, qto_name, quantity_name):
         if not is_successful:
             assert False
 
-@then(u'the project should have geolocation data')
+@step(u'the project should have geolocation data')
 def step_impl(context):
     if IfcFile.get().schema == 'IFC2X3':
         for site in IfcFile.get().by_type('IfcSite'):
@@ -203,7 +203,7 @@ def step_impl(context):
                 return
         assert False
 
-@then(u'the project geolocation uses the "{crs_name}" CRS')
+@step(u'the project geolocation uses the "{crs_name}" CRS')
 def step_impl(context, crs_name):
     if IfcFile.get().schema == 'IFC2X3':
         for site in IfcFile.get().by_type('IfcSite'):
@@ -214,24 +214,24 @@ def step_impl(context, crs_name):
 
 
 use_step_matcher('re')
-@then(u'the geolocated datum has an? (?P<attribute>.*) of "(?P<value>.*)"')
+@step(u'the geolocated datum has an? (?P<attribute>.*) of "(?P<value>.*)"')
 def step_impl(context, attribute, value):
     if IfcFile.get().schema == 'IFC2X3':
         site = IfcFile.get().by_type('IfcSite')[0]
         actual_value = IfcFile.get_property(site, 'EPset_MapConversion', attribute).NominalValue.wrappedValue
     else:
         actual_value = getattr(IfcFile.get().by_id(IfcFile.bookmarks['geolocation']), attribute)
-    assert str(actual_value) == value, f'The value was {actual_value}' 
+    assert str(actual_value) == value, f'The value was {actual_value}'
 
 
 use_step_matcher('parse')
-@then(u'the project has a {attribute_name} attribute with a value of "{attribute_value}"')
+@step(u'the project has a {attribute_name} attribute with a value of "{attribute_value}"')
 def step_impl(context, attribute_name, attribute_value):
     project = IfcFile.get().by_type('IfcProject')[0]
     assert getattr(project, attribute_name) == attribute_value
 
 
-@then(u'there is an {ifc_class} element with a {attribute_name} attribute with a value of "{attribute_value}"')
+@step(u'there is an {ifc_class} element with a {attribute_name} attribute with a value of "{attribute_value}"')
 def step_impl(context, ifc_class, attribute_name, attribute_value):
     elements = IfcFile.get().by_type(ifc_class)
     for element in elements:
@@ -241,7 +241,7 @@ def step_impl(context, ifc_class, attribute_name, attribute_value):
     assert False
 
 
-@then(u'all buildings have an address')
+@step(u'all buildings have an address')
 def step_impl(context):
     for building in IfcFile.get().by_type('IfcBuilding'):
         if not building.BuildingAddress:
