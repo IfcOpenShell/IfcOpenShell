@@ -42,9 +42,7 @@ class IfcDiff():
             old_element = self.old.by_id(global_id)
             new_element = self.new.by_id(global_id)
             self.diff_element(old_element, new_element)
-
-            if self.inverse_classes:
-                self.diff_element_inverse_relationships(old_element, new_element)
+            self.diff_element_inverse_relationships(old_element, new_element)
 
             representation_id = self.get_representation_id(new_element)
             if representation_id in self.representation_ids:
@@ -86,10 +84,16 @@ class IfcDiff():
             self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
 
     def diff_element_inverse_relationships(self, old_element, new_element):
+        if not self.inverse_classes:
+            return
         old_relationships_all = self.old.get_inverse(old_element)
         new_relationships_all = self.new.get_inverse(new_element)
-        old_relationships = [x for x in old_relationships_all if x.is_a() in self.inverse_classes]
-        new_relationships = [x for x in new_relationships_all if x.is_a() in self.inverse_classes]
+        if self.inverse_classes[0] == 'all':
+            old_relationships = old_relationships_all
+            new_relationships = new_relationships_all
+        else:
+            old_relationships = [x for x in old_relationships_all if x.is_a() in self.inverse_classes]
+            new_relationships = [x for x in new_relationships_all if x.is_a() in self.inverse_classes]
 
         diff = DeepDiff(old_relationships, new_relationships,
             significant_digits=2, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
@@ -154,7 +158,7 @@ if __name__ == '__main__':
         '-r',
         '--relationships',
         type=str,
-        help='A list of IFC classes to check in inverse relationships, like "IfcRelDefinesByProperties".',
+        help='A list of IFC classes to check in inverse relationships, like "IfcRelDefinesByProperties", or "all".',
         default='')
     args = parser.parse_args()
 
