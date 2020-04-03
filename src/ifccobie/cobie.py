@@ -905,7 +905,10 @@ class IfcCobieParser():
         both = history.OwningUser
         person = both.ThePerson
         organisation = both.TheOrganization
-        for role in ((both.Roles or []) + (person.Roles or []) + (organisation.Roles or [])):
+        both_roles = list(both.Roles) if both.Roles else []
+        person_roles = list(person.Roles) if person.Roles else []
+        organisation_roles = list(organisation.Roles) if organisation.Roles else []
+        for role in (both_roles + person_roles + organisation_roles):
             roles.append(self.get_role(role))
         result = ','.join(set(roles))
         if not result:
