@@ -1410,7 +1410,8 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcIShapeProfileDef* inst) {
 
 	if (x1 < precision_ || x2 < precision_ || y < precision_ || d1 < precision_ || dy1 < precision_ || dy2 < precision_) {
 		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
-		return false;
+
+		return nullptr;
 	}
 
 	return profile_helper(this, inst, {
@@ -1500,7 +1501,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 	// remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 
 	if (polygon.size() < 2) {
-		return false;
+		return nullptr;
 	}
 
 	return polygon_from_points(polygon);
@@ -1593,7 +1594,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	if (trim_cartesian) {
 		if ((pnts[0].components - pnts[1].components).norm() < (2 * precision_)) {
 			Logger::Message(Logger::LOG_WARNING, "Skipping segment with length below tolerance level:", inst);
-			return false;
+			return nullptr;
 		}
 		tc->start = pnts[0];
 		tc->end = pnts[1];
