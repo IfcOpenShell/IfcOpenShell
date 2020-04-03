@@ -36,14 +36,14 @@ private:
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
 
-	int writeMaterial(const IfcGeom::Material& style);
+	int writeMaterial(const ifcopenshell::geometry::taxonomy::style& style);
 public:
 	GltfSerializer(const std::string& filename, const SerializerSettings& settings);
 	virtual ~GltfSerializer();
 	bool ready();
 	void writeHeader();
-	void write(const IfcGeom::TriangulationElement<real_t>* o);
-	void write(const IfcGeom::NativeElement<real_t>* /*o*/) {}
+	void write(const ifcopenshell::geometry::TriangulationElement* o);
+	void write(const ifcopenshell::geometry::NativeElement* /*o*/) {}
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
