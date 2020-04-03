@@ -217,26 +217,19 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('boost',  'libxml2'),
-    'IfcGeom': ('IfcParse',  'occ',  'cgal', 'voxel'),
+    'IfcGeom': ('IfcParse',  'occ',  'cgal', 'voxel', 'eigen'),
     'IfcConvert': ('IfcGeom',  'OpenCOLLADA', 'json'),
     'OpenCOLLADA': ('libxml2',  'pcre'),
     'IfcGeomServer': ('IfcGeom', ),
     'IfcOpenShell-Python': ('python',  'swig',  'IfcGeom'),
     'voxel': ('occ',),
     'swig': ('pcre',),
-    'boost': (),
-    'libxml2': (),
-    'python': (),
-    'swig': (),
     'occ': (),
-    'cgal': (),
-    'pcre': (),
-    'json': ()
 }
 
 def v(dep):
    yield dep
-   for d in dependency_tree[dep]:
+   for d in dependency_tree.get(dep, []):
      for x in v(d):
        yield x
 
@@ -254,8 +247,8 @@ PIC = "-fPIC" if BUILD_STATIC else ""
 if len(tgts):
     targets = set(sum((list(v(target)) for target in tgts), []))
 else:
-    targets = set(dependency_tree.keys())
-
+    targets = set(tuple(dependency_tree.keys()) + sum(dependency_tree.values(), ()))
+    
 print("Building:", *sorted(targets, key=lambda t: len(list(v(t)))))
 
 # Check that required tools are in PATH
@@ -516,6 +509,17 @@ if "json" in targets:
         os.makedirs(os.path.dirname(json_install_path))
     if not os.path.exists(json_install_path):
         urlretrieve(json_url, json_install_path)
+        
+if "eigen" in targets:
+    eigen_url = "http://bitbucket.org/eigen/eigen/get/3.3.7.tar.gz"
+    eigen_build_path = "{DEPS_DIR}/build/Eigen-3.3.7.tar.gz".format(**locals())
+    eigen_install_path = "{DEPS_DIR}/install/Eigen-3.3.7/Eigen".format(**locals())
+    if not os.path.exists(eigen_build_path):
+        urlretrieve(eigen_url, eigen_build_path)
+    if not os.path.exists(eigen_install_path):
+        if not os.path.exists(os.path.dirname(eigen_install_path)):
+            os.makedirs(os.path.dirname(eigen_install_path))
+        run([tar, "-xf", eigen_build_path, "--strip-components", "1", "-C", os.path.dirname(eigen_install_path), "eigen-eigen-323c052e1731/Eigen"])
 
 if "pcre" in targets:
     build_dependency(
@@ -722,7 +726,8 @@ cmake_args=[
     "-DCMAKE_INSTALL_PREFIX="          "{DEPS_DIR}/install/ifcopenshell".format(**locals()),
     "-DBOOST_ROOT="                    "{DEPS_DIR}/install/boost-{BOOST_VERSION}".format(**locals()),
     "-DGLTF_SUPPORT="                  "ON",
-    "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals())
+    "-DJSON_INCLUDE_DIR="              "{DEPS_DIR}/install/json".format(**locals()),
+    "-DEIGEN_DIR="                     "{DEPS_DIR}/install/Eigen-3.3.7".format(**locals())
 ]
 
 if "occ" in targets:
@@ -802,6 +807,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_LIBRARY="          +PYTHON_LIBRARY,
                 "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
+                "-DEIGEN_DIR="               "{DEPS_DIR}/install/Eigen-3.3.7".format(**locals()),
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
                 "-DLIBXML2_INCLUDE_DIR="     "{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2".format(**locals()),
