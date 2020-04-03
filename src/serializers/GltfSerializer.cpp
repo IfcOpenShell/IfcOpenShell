@@ -78,29 +78,32 @@ void GltfSerializer::writeHeader() {
 	json_["materials"] = json::array();
 }
 
-int GltfSerializer::writeMaterial(const IfcGeom::Material& style) {
-	auto it = materials_.find(style.name());
+int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style) {
+	// @todo is it safe to always dereference this optional?	
+	const std::string& name = *style.name;
+
+	auto it = materials_.find(name);
 	if (it != materials_.end()) {
 		return it->second;
 	}
 	
 	int idx = json_["materials"].size();
-	materials_[style.name()] = idx;
+	materials_[name] = idx;
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style.hasDiffuse()) {
+	if (style.diffuse) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style.diffuse()[i];
+			base[i] = style.diffuse->components[i];
 		}
 	}
-	if (style.hasTransparency()) {
-		base[3] = 1. - style.transparency();
+	if (style.transparency) {
+		base[3] = 1. - *style.transparency;
 	}
 
 	json_["materials"].push_back({ {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
 	
-	if (style.hasTransparency() && style.transparency() > 1.e-9) {
+	if (style.transparency && *style.transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
 
@@ -157,14 +160,17 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end) {
 	return j["accessors"].size() - 1;
 }
 
-void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
+void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o) {
 	if (o->geometry().material_ids().empty()) {
 		return;
 	}
 
 	node_array_.push_back(json_["nodes"].size());
 
-	const std::vector<double>& m = o->transformation().matrix().data();
+	const double* m = o->transformation().data().components.data();
+
+	// @todo verify
+
 	// nb: note that this contains the Y-UP transform as well.
 	const std::array<double, 16> matrix_flat = {
 		m[0], m[ 2], -m[ 1], 0,
@@ -172,6 +178,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 		m[6], m[ 8], -m[ 7], 0,
 		m[9], m[11], -m[10], 1
 	};
+
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 	
 	json node;
