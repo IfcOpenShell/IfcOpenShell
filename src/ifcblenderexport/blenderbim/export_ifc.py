@@ -556,7 +556,7 @@ class IfcParser():
                 added_objs.append(spatial_obj)
                 parent_collection = self.get_parent_collection(parent_collection)
         results.extend(added_objs)
-        return results
+        return set(results)
 
     def categorise_selected_objects(self, objects_to_sort, metadata=None):
         if not metadata:
