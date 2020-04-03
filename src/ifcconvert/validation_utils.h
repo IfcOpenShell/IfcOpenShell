@@ -15,8 +15,8 @@
 
 template <typename T>
 T enlarge(const T& t, double d = 1.e-5) {
-	T::NT min[3];
-	T::NT max[3];
+	typename T::NT min[3];
+	typename T::NT max[3];
 	for (int i = 0; i < t.dimension(); ++i) {
 		min[i] = t.min_coord(i) - d;
 		max[i] = t.max_coord(i) + d;

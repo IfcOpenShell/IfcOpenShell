@@ -135,7 +135,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 					std::vector<Kernel_::FT> parameters;
 
-					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](auto& v) {
+					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](cgal_vertex_descriptor_t& v) {
 						return (v->point() - P0) * D;
 					});
 

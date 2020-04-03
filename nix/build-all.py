@@ -748,7 +748,8 @@ if "cgal" in targets:
         "-DGMP_INCLUDE_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/include".format(**locals()),
         "-DGMP_LIBRARY_DIR="           "{DEPS_DIR}/install/gmp-{GMP_VERSION}/lib".format(**locals()),
         "-DMPFR_INCLUDE_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include".format(**locals()),
-        "-DMPFR_LIBRARY_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib".format(**locals())
+        "-DMPFR_LIBRARY_DIR="          "{DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib".format(**locals()),
+        "-DUSE_CGAL=ON"
     ])
 
 if "OpenCOLLADA" in targets:
@@ -807,6 +808,7 @@ if "IfcOpenShell-Python" in targets:
                 "-DPYTHON_LIBRARY="          +PYTHON_LIBRARY,
                 "-DPYTHON_EXECUTABLE="       +PYTHON_EXECUTABLE,
                 "-DPYTHON_INCLUDE_DIR="      +PYTHON_INCLUDE,
+                "-DUSE_CGAL=ON",
                 "-DEIGEN_DIR="               "{DEPS_DIR}/install/Eigen-3.3.7".format(**locals()),
                 "-DSWIG_EXECUTABLE="         "{DEPS_DIR}/install/swig/bin/swig".format(**locals()),
                 "-DCMAKE_INSTALL_PREFIX="    "{DEPS_DIR}/install/ifcopenshell/tmp".format(**locals()),
