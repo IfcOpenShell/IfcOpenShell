@@ -227,9 +227,9 @@ namespace kernels {
 			*this = other;
 		}
 
-		double shape_volume(const TopoDS_Shape&);
-		double face_area(const TopoDS_Face&);
-		int count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique = false);
+		static double shape_volume(const TopoDS_Shape&);
+		static double face_area(const TopoDS_Face&);
+		static int count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique = false);
 
 		bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape);
 		bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape);

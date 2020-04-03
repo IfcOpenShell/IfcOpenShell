@@ -24,7 +24,7 @@
 #include "../../../ifcgeom/schema_agnostic/IfcGeomElement.h"
 #include "../../../ifcgeom/schema_agnostic/IfcGeomIterator.h"
 #include "../../../ifcgeom/schema_agnostic/Converter.h"
-#include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../../../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
 
 #include <NCollection_UBTree.hxx>
 #include <BRepBndLib.hxx>
@@ -114,8 +114,7 @@ namespace ifcopenshell { namespace geometry {
 				std::vector<T> ts_filtered;
 
 				const TopoDS_Shape& A = shapes_.find(t)->second;
-				OpenCascadeShape SA(A);
-				if (IfcGeom::Kernel::count(&SA, (int) TopAbs_SHELL) == 0) {
+				if (kernels::OpenCascadeKernel::count(A, TopAbs_SHELL) == 0) {
 					return ts_filtered;
 				}
 
@@ -124,24 +123,21 @@ namespace ifcopenshell { namespace geometry {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-					OpenCascadeShape SB(B);
-					if (IfcGeom::Kernel::count(&SB, (int) TopAbs_SHELL) == 0) {
+					if (kernels::OpenCascadeKernel::count(B, TopAbs_SHELL) == 0) {
 						continue;
 					}
 
 					if (completely_within) {
 						BRepAlgoAPI_Cut cut(B, A);
 						if (cut.IsDone()) {
-							OpenCascadeShape Sc(cut.Shape());
-							if (IfcGeom::Kernel::count(&Sc, (int) TopAbs_SHELL) == 0) {
+							if (kernels::OpenCascadeKernel::count(cut.Shape(), TopAbs_SHELL) == 0) {
 								ts_filtered.push_back(*it);
 							}
 						}
 					} else {
 						BRepAlgoAPI_Common common(A, B);
 						if (common.IsDone()) {
-							OpenCascadeShape Sc(common.Shape());
-							if (IfcGeom::Kernel::count(&Sc, (int) TopAbs_SHELL) > 0) {
+							if (kernels::OpenCascadeKernel::count(common.Shape(), TopAbs_SHELL) > 0) {
 								ts_filtered.push_back(*it);
 							}
 						}
@@ -157,8 +153,7 @@ namespace ifcopenshell { namespace geometry {
 
 				std::vector<T> ts;
 
-				OpenCascadeShape Ss(s);
-				if (IfcGeom::Kernel::count(&Ss, (int) TopAbs_SHELL) == 0) {
+				if (kernels::OpenCascadeKernel::count(s, TopAbs_SHELL) == 0) {
 					return ts;
 				}
 
@@ -175,15 +170,13 @@ namespace ifcopenshell { namespace geometry {
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
 					
-					OpenCascadeShape SB(B);
-					if (IfcGeom::Kernel::count(&SB, (int) TopAbs_SHELL) == 0) {
+					if (kernels::OpenCascadeKernel::count(B, TopAbs_SHELL) == 0) {
 						continue;
 					}
 
 					BRepAlgoAPI_Common common(s, B);
 					if (common.IsDone()) {
-						OpenCascadeShape Sc(common.Shape());;
-						if (IfcGeom::Kernel::count(&Sc, (int) TopAbs_SHELL) > 0) {
+						if (kernels::OpenCascadeKernel::count(common.Shape(), TopAbs_SHELL) > 0) {
 							ts_filtered.push_back(*it);
 						}
 					}
