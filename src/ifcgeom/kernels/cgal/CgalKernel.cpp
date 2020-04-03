@@ -452,13 +452,13 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(double d)
 CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper) {
 	cgal_face_t bottom_face;
 
-	auto& a0 = lower.cartesian(0);
-	auto& a1 = lower.cartesian(1);
-	auto& a2 = lower.cartesian(2);
+	auto a0 = lower.cartesian(0);
+	auto a1 = lower.cartesian(1);
+	auto a2 = lower.cartesian(2);
 
-	auto& b0 = upper.cartesian(0);
-	auto& b1 = upper.cartesian(1);
-	auto& b2 = upper.cartesian(2);
+	auto b0 = upper.cartesian(0);
+	auto b1 = upper.cartesian(1);
+	auto b2 = upper.cartesian(2);
 
 	bottom_face.outer.push_back(Kernel_::Point_3(a0, a1, a2));
 	bottom_face.outer.push_back(Kernel_::Point_3(b0, a1, a2));
