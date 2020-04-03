@@ -9,19 +9,20 @@ import argparse
 
 
 class IfcDiff():
-    def __init__(self, old_file, new_file, output_file):
+    def __init__(self, old_file, new_file, output_file, inverse_classes=None):
         self.old_file = old_file
         self.new_file = new_file
         self.output_file = output_file
         self.change_register = {}
         self.representation_ids = []
+        self.inverse_classes = inverse_classes
 
     def diff(self):
         print('# IFC Diff')
         self.load()
 
-        old_elements = set(e.GlobalId for e in self.old.by_type('IfcElement'))
-        new_elements = set(e.GlobalId for e in self.new.by_type('IfcElement'))
+        old_elements = set(e.GlobalId for e in self.old.by_type('IfcProduct'))
+        new_elements = set(e.GlobalId for e in self.new.by_type('IfcProduct'))
 
         self.deleted_elements = old_elements - new_elements
         self.added_elements = new_elements - old_elements
@@ -41,6 +42,9 @@ class IfcDiff():
             old_element = self.old.by_id(global_id)
             new_element = self.new.by_id(global_id)
             self.diff_element(old_element, new_element)
+
+            if self.inverse_classes:
+                self.diff_element_inverse_relationships(old_element, new_element)
 
             representation_id = self.get_representation_id(new_element)
             if representation_id in self.representation_ids:
@@ -77,6 +81,26 @@ class IfcDiff():
                 r'.*Representation.*',
                 r'.*OwnerHistory.*',
                 r'.*ObjectPlacement.*',
+                ])
+        if diff and new_element.GlobalId:
+            self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
+
+    def diff_element_inverse_relationships(self, old_element, new_element):
+        old_relationships_all = self.old.get_inverse(old_element)
+        new_relationships_all = self.new.get_inverse(new_element)
+        old_relationships = [x for x in old_relationships_all if x.is_a() in self.inverse_classes]
+        new_relationships = [x for x in new_relationships_all if x.is_a() in self.inverse_classes]
+
+        diff = DeepDiff(old_relationships, new_relationships,
+            significant_digits=2, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+            exclude_regex_paths=[
+                r'root.*id$',
+                r'.*GlobalId.*',
+                r'.*OwnerHistory.*',
+                r'.*RelatedObjects.*',
+                r'.*RelatingObject.*',
+                r'.*RelatingDefinitions.*',
+                r'.*RelatedObjectsType.*', # Deprecated in IFC4 anyway
                 ])
         if diff and new_element.GlobalId:
             self.change_register.setdefault(new_element.GlobalId, {}).update(diff)
@@ -126,8 +150,14 @@ if __name__ == '__main__':
         type=str,
         help='The JSON diff file to output. Defaults to diff.json',
         default='diff.json')
+    parser.add_argument(
+        '-r',
+        '--relationships',
+        type=str,
+        help='A list of IFC classes to check in inverse relationships, like "IfcRelDefinesByProperties".',
+        default='')
     args = parser.parse_args()
-    
-    ifc_diff = IfcDiff(args.old, args.new, args.output)
+
+    ifc_diff = IfcDiff(args.old, args.new, args.output, args.relationships.split())
     ifc_diff.diff()
     ifc_diff.export()
