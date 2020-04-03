@@ -23,7 +23,7 @@
 		} catch (const std::exception& e) { \
 			Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", l); \
 		} \
-		return false; \
+		return nullptr; \
 	}
 
 #include "mapping.i"
