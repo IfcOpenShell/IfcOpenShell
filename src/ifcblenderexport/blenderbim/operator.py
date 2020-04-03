@@ -15,7 +15,7 @@ from . import ifc
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix
-from math import radians
+from math import radians, atan, tan
 from pathlib import Path
 
 colour_list = [
@@ -439,6 +439,11 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             obj = bpy.data.objects.new('Viewpoint', bpy.data.cameras.new('Viewpoint'))
             bpy.context.scene.collection.objects.link(obj)
             bpy.context.scene.camera = obj
+
+        cam_width = bpy.context.scene.render.resolution_x
+        cam_height = bpy.context.scene.render.resolution_y
+        cam_aspect = cam_width / cam_height
+
         if viewpoint_reference.snapshot:
             obj.data.show_background_images = True
             while len(obj.data.background_images) > 0:
@@ -449,6 +454,15 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 str(topic.xmlId),
                 viewpoint_reference.snapshot.uri
             ))
+            src_width = background.image.size[0]
+            src_height = background.image.size[1]
+            src_aspect = src_width / src_height
+
+            if src_aspect > cam_aspect:
+                background.frame_method = 'FIT'
+            else:
+                background.frame_method = 'CROP'
+            background.display_depth = 'FRONT'
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
         area.spaces[0].region_3d.view_perspective = 'CAMERA'
 
@@ -458,7 +472,11 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         elif viewpoint.pCamera:
             camera = viewpoint.pCamera
             obj.data.type = 'PERSP'
-            obj.data.angle = radians(camera.fieldOfView)
+            if cam_aspect >= 1:
+                obj.data.angle = radians(camera.fieldOfView)
+            else:
+                # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
+                obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.fieldOfView)/2)))
 
         z_axis = Vector((-camera.direction.x, -camera.direction.y, -camera.direction.z)).normalized()
         y_axis = Vector((camera.upVector.x, camera.upVector.y, camera.upVector.z)).normalized()
