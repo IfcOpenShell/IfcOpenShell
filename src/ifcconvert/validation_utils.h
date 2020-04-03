@@ -573,7 +573,7 @@ struct intersection_validator {
 	template <typename Fn>
 	void operator()(Fn fn) {
 		std::clock_t box_overlap_begin = std::clock();
-		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), [](auto& x, auto& y) {});
+		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), [](Box& x, Box& y) {});
 		std::clock_t box_overlap_end = std::clock();
 		total_box_time += (box_overlap_end - box_overlap_begin) / (double) CLOCKS_PER_SEC;
 		CGAL::box_self_intersection_d(boxes.begin(), boxes.end(), fn);
