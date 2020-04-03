@@ -135,7 +135,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 
 		const auto& coords = itelem->second;
 		std::vector<double> distances;
-		std::transform(coords.begin(), coords.end(), std::back_inserter(distances), [&tree](const auto& p) {
+		std::transform(coords.begin(), coords.end(), std::back_inserter(distances), [&tree](const Kernel_::Point_3& p) {
 			return std::sqrt(CGAL::to_double(tree.squared_distance(p)));
 		});
 
