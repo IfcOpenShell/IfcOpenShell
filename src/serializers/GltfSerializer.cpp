@@ -169,14 +169,12 @@ void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o
 
 	const double* m = o->transformation().data().components.data();
 
-	// @todo verify
-
-	// nb: note that this contains the Y-UP transform as well.
+	// nb: note that this applies the Y-UP transform.
 	const std::array<double, 16> matrix_flat = {
-		m[0], m[ 2], -m[ 1], 0,
-		m[3], m[ 5], -m[ 4], 0,
-		m[6], m[ 8], -m[ 7], 0,
-		m[9], m[11], -m[10], 1
+		m[ 0], m[ 2], -m[ 1], m[ 3],
+		m[ 4], m[ 6], -m[ 5], m[ 7],
+		m[ 8], m[10], -m[ 9], m[11],
+		m[12], m[14], -m[13], m[15]
 	};
 
 	static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
