@@ -10,6 +10,7 @@ class IfcSchema():
         self.schema_dir = os.path.join(cwd, 'schema') # TODO: make configurable
         # TODO: Make it less troublesome
         self.products = [
+            'IfcContext',
             'IfcElement',
             'IfcSpatialElement',
             'IfcStructural',

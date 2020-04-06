@@ -598,6 +598,7 @@ class QuickProjectSetup(bpy.types.Operator):
         building = bpy.data.collections.new('IfcBuilding/My Building')
         building_storey = bpy.data.collections.new('IfcBuildingStorey/Ground Floor')
 
+        project_obj = bpy.data.objects.new('IfcProject/My Project', None)
         site_obj = bpy.data.objects.new('IfcSite/My Site', None)
         building_obj = bpy.data.objects.new('IfcBuilding/My Building', None)
         building_storey_obj = bpy.data.objects.new('IfcBuildingStorey/Ground Floor', None)
@@ -607,6 +608,7 @@ class QuickProjectSetup(bpy.types.Operator):
         site.children.link(building)
         building.children.link(building_storey)
 
+        project.objects.link(project_obj)
         site.objects.link(site_obj)
         building.objects.link(building_obj)
         building_storey.objects.link(building_storey_obj)

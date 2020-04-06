@@ -572,6 +572,9 @@ class IfcParser():
                     {'rel_aggregates_relating_object': obj}
                 )
                 self.selected_products.append({'raw': obj, 'metadata': metadata})
+            elif self.is_a_project(self.get_ifc_class(obj.name)) \
+                    or self.is_a_library(self.get_ifc_class(obj.name)):
+                pass
             elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({'raw': obj, 'metadata': metadata})
 
@@ -695,11 +698,12 @@ class IfcParser():
     def get_project(self):
         for collection in bpy.data.collections:
             if self.is_a_project(self.get_ifc_class(collection.name)):
+                obj = bpy.data.objects.get(collection.name)
                 return {
                     'ifc': None,
                     'raw': collection,
                     'class': self.get_ifc_class(collection.name),
-                    'attributes': self.get_object_attributes(collection)
+                    'attributes': self.get_object_attributes(obj)
                 }
 
     def get_libraries(self):
