@@ -18,12 +18,16 @@ import shutil
 from pathlib import Path
 
 
+try:
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    base_path = sys._MEIPASS
+    is_dist = True
+except Exception:
+    base_path = os.path.abspath(".")
+    is_dist = False
+
+
 def get_resource_path(relative_path):
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
 
@@ -41,7 +45,7 @@ def run_tests(args):
 
 def get_features(args):
     has_features = False
-    if os.path.exists('features'):
+    if os.path.exists('features') and is_dist:
         shutil.copytree('features', get_resource_path('features'))
         has_features = True
     for f in os.listdir('.'):
