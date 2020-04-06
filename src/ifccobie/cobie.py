@@ -160,7 +160,7 @@ class IfcCobieParser():
                 'OrganizationCode': (history.OwningUser.TheOrganization.Id or 'n/a') if self.file.schema == 'IFC2X3' else (history.OwningUser.TheOrganization.Identification or 'n/a'),
                 'GivenName': self.get_name_from_person(history.OwningUser.ThePerson, 'GivenName'),
                 'FamilyName': self.get_name_from_person(history.OwningUser.ThePerson, 'FamilyName'),
-                'Street': self.get_attribute_from_address(postal_address, 'AddressLines'),
+                'Street': self.get_lines_from_address(postal_address),
                 'PostalBox': self.get_attribute_from_address(postal_address, 'PostalBox'),
                 'Town': self.get_attribute_from_address(postal_address, 'Town'),
                 'StateRegion': self.get_attribute_from_address(postal_address, 'Region'),
@@ -462,11 +462,11 @@ class IfcCobieParser():
                     'ImpactStage': None,
                     'SheetName': 'Impacts',
                     'RowName': 'n/a',
-                    'Value': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') else 'n/a',
+                    'Value': self.get_property_value(property),
                     'Unit': '{}{}'.format(property.Unit.Prefix, property.Unit.Name) if hasattr(property, 'Unit') and property.Unit else 'n/a',
-                    'LeadInTime': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'LeadInTime' else 'n/a',
-                    'Duration': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'Duration' else 'n/a',
-                    'LeadOutTime': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') and property.Name == 'LeadOutTime' else 'n/a',
+                    'LeadInTime': self.get_property_value(property, name='LeadInTime'),
+                    'Duration': self.get_property_value(property, name='Duration'),
+                    'LeadOutTime': self.get_property_value(property, name='LeadOutTime'),
                     'ExtSystem': self.get_ext_system_from_history(impact.OwnerHistory),
                     'ExtObject': self.get_ext_object(impact),
                     'ExtIdentifier': impact.GlobalId,
@@ -510,7 +510,7 @@ class IfcCobieParser():
                     'Category': 'n/a', # I am not sure what this mapping is meant to be
                     'SheetName': 'Attributes',
                     'RowName': 'n/a', # I am not sure what this mapping is meant to be
-                    'Value': self.get_object_attribute(property, 'NominalValue', default='n/a') if property.is_a('IfcPropertySingleValue') else 'n/a',
+                    'Value': self.get_property_value(property),
                     'Unit': '{}{}'.format(property.Unit.Prefix if hasattr(property.Unit, 'Prefix') else '', property.Unit.Name if hasattr(property.Unit, 'Name') else 'n/a') if hasattr(property, 'Unit') and property.Unit else 'n/a',
                     'ExtSystem': self.get_ext_system_from_history(attribute.OwnerHistory),
                     'ExtObject': self.get_ext_object(attribute),
@@ -663,10 +663,10 @@ class IfcCobieParser():
             if picklist:
                 self.picklists[picklist].append(default)
             return default
-        property = self.get_property_from_pset(pset, property_name, default)
+        prop = self.get_property_from_pset(pset, property_name, default)
         if picklist:
-            self.picklists[picklist].append(property)
-        return property
+            self.picklists[picklist].append(prop)
+        return prop
 
     def get_grouped_product_names_from_object(self, object, type):
         names = []
@@ -712,11 +712,21 @@ class IfcCobieParser():
         return 'n/a'
 
     def get_property_from_pset(self, pset, name, default=None):
-        for property in pset.HasProperties:
-            if property.Name == name:
-                return property.NominalValue
+        for prop in pset.HasProperties:
+            if prop.Name == name:
+                return prop.NominalValue.wrappedValue
         self.logger.warning('The property {} was not found for {}'.format(name, pset))
         return default
+
+    def get_property_value(self, prop, name=None):
+        if not prop.is_a('IfcPropertySingleValue'):
+            return 'n/a'
+        if name is not None and prop.Name != name:
+            return 'n/a'
+        value = self.get_object_attribute(prop, 'NominalValue', default=None)
+        if value:
+            return value.wrappedValue
+        return 'n/a'
 
     def get_pset_from_object(self, object, name):
         if object.is_a('IfcTypeObject'):
@@ -861,6 +871,12 @@ class IfcCobieParser():
         if not name or not name.isalpha():
             self.logger.warning('The person\'s {} seems to be badly formatted ("{}") for {}'.format(attribute, name, person))
         return name if name else 'n/a'
+
+    def get_lines_from_address(self, address):
+        result = self.get_attribute_from_address(address, 'AddressLines')
+        if isinstance(result, tuple):
+            return ', '.join(result)
+        return result
 
     def get_attribute_from_address(self, address, attribute):
         result = getattr(address, attribute)
@@ -1016,7 +1032,7 @@ class CobieCsvWriter():
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
             'TagNumber', 'BarCode', 'AssetIdentifier',])
-        self.write_file('System', self.parser.systems, 'Name', 
+        self.write_file('System', self.parser.systems, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
             'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
         self.write_file('Assembly', self.parser.assemblies, 'Name',
