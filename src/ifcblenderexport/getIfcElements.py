@@ -146,6 +146,7 @@ class IFC2X3Extractor(IFC4Extractor):
         return []
 
 filename_filters = {
+    'IfcContext_IFC4.json': ['IfcContext'],
     'IfcElement_IFC4.json': ['IfcElement'],
     'IfcSpatialElement_IFC4.json': ['IfcSpatialElement'],
     'IfcStructural_IFC4.json': ['IfcStructuralActivity', 'IfcStructuralItem'],
