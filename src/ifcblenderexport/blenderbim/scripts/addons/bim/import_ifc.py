@@ -41,8 +41,8 @@ class MaterialCreator():
 
     def parse_representation(self, representation):
         has_parsed = False
-        representation = self.resolve_mapped_representation(representation)
-        for item in representation.Items:
+        representation_items = self.resolve_mapped_representation_items(representation)
+        for item in representation_items:
             if self.parse_representation_item(item):
                 has_parsed = True
         return has_parsed
@@ -158,11 +158,14 @@ class MaterialCreator():
                 return style
         return styled_item
 
-    def resolve_mapped_representation(self, representation):
+    def resolve_mapped_representation_items(self, representation):
+        items = []
         for item in representation.Items:
             if item.is_a('IfcMappedItem'):
-                return item.MappingSource.MappedRepresentation
-        return representation
+                items.extend(item.MappingSource.MappedRepresentation.Items)
+            else:
+                items.append(item)
+        return items
 
     def assign_material_to_mesh(self, material, is_styled_item=False):
         self.mesh.materials.append(material)
@@ -433,11 +436,14 @@ class IfcImporter():
 
     def clean_mesh(self):
         obj = None
+        last_obj = None
         for obj in self.added_data.values():
-            obj.select_set(True)
+            if obj.type == 'MESH':
+                obj.select_set(True)
+                last_obj = obj
         if not obj:
             return
-        bpy.context.view_layer.objects.active = obj
+        bpy.context.view_layer.objects.active = last_obj
         context_override = {}
         bpy.ops.object.editmode_toggle(context_override)
         bpy.ops.mesh.remove_doubles(context_override)
