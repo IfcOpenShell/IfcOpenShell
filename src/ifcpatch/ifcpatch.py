@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcpatch.py`
+
 import ifcopenshell
 import logging
 import argparse
