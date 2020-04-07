@@ -94,7 +94,6 @@ if bpy is not None:
         operator.AssignContext,
         operator.SetViewPreset1,
         operator.OpenUpstream,
-        operator.Uninstall,
         prop.BcfTopic,
         prop.BcfTopicLabel,
         prop.BcfTopicFile,
