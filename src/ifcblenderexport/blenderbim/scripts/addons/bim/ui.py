@@ -842,7 +842,7 @@ class BIM_UL_topics(bpy.types.UIList):
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
-    bl_idname = __package__
+    bl_idname = 'blenderbim'
 
     def draw(self, context):
         layout = self.layout
@@ -852,5 +852,3 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator('bim.open_upstream', text='Visit Wiki').page = 'wiki'
         row.operator('bim.open_upstream', text='Visit Community').page = 'community'
-        row = layout.row()
-        row.operator('bim.uninstall')
