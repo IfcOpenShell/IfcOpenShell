@@ -10,203 +10,23 @@ bl_info = {
     "category": "Import-Export"
     }
 
-# Check if we are running in Blender before loading, to allow for multiprocessing
-import sys
 import os
-bpy = sys.modules.get('bpy')
+import site
 
-if bpy is not None:
-    cwd = os.path.dirname(os.path.realpath(__file__))
-    # This workaround is for Mac and Linux Conda builds, which have an rpath set
-    # to $ORIGIN/../../../
-    lib_dir = os.path.join(cwd, '..', 'lib')
-    if os.path.isdir(lib_dir):
-        import shutil
-        files = os.listdir(lib_dir)
-        for f in files:
-            shutil.move(os.path.join(lib_dir, f), os.path.join(lib_dir, '..', '..', '..'))
+# process ifcopenshell.pth in /scripts/addons
+site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "scripts", "addons"))
 
-    import bpy
-    from . import ui, prop, operator
+import bim as blenderbim
+import ifcopenshell
 
-    classes = (
-        operator.AssignClass,
-        operator.SelectClass,
-        operator.SelectType,
-        operator.SelectBcfFile,
-        operator.GetBcfTopics,
-        operator.ViewBcfTopic,
-        operator.ActivateBcfViewpoint,
-        operator.OpenBcfFileReference,
-        operator.OpenBcfReferenceLink,
-        operator.OpenBcfBimSnippetSchema,
-        operator.OpenBcfBimSnippetReference,
-        operator.OpenBcfDocumentReference,
-        operator.SelectFeaturesDir,
-        operator.SelectDiffJsonFile,
-        operator.SelectDiffNewFile,
-        operator.SelectDiffOldFile,
-        operator.SelectDataDir,
-        operator.SelectSchemaDir,
-        operator.SelectIfcFile,
-        operator.ValidateIfcFile,
-        operator.ExportIFC,
-        operator.ImportIFC,
-        operator.ColourByClass,
-        operator.ColourByAttribute,
-        operator.ColourByPset,
-        operator.ResetObjectColours,
-        operator.ApproveClass,
-        operator.RejectClass,
-        operator.SelectAudited,
-        operator.RejectElement,
-        operator.SelectExternalMaterialDir,
-        operator.AddSweptSolid,
-        operator.RemoveSweptSolid,
-        operator.AssignSweptSolidOuterCurve,
-        operator.SelectSweptSolidOuterCurve,
-        operator.AddSweptSolidInnerCurve,
-        operator.SelectSweptSolidInnerCurves,
-        operator.AssignSweptSolidExtrusion,
-        operator.SelectSweptSolidExtrusion,
-        operator.AssignPset,
-        operator.UnassignPset,
-        operator.AddPset,
-        operator.RemovePset,
-        operator.AddOverridePset,
-        operator.RemoveOverridePset,
-        operator.AddQto,
-        operator.RemoveQto,
-        operator.AddMaterialPset,
-        operator.RemoveMaterialPset,
-        operator.AddDocument,
-        operator.RemoveDocument,
-        operator.GenerateGlobalId,
-        operator.AddAttribute,
-        operator.RemoveAttribute,
-        operator.AddMaterialAttribute,
-        operator.RemoveMaterialAttribute,
-        operator.QuickProjectSetup,
-        operator.SelectGlobalId,
-        operator.SelectAttribute,
-        operator.SelectPset,
-        operator.CreateAggregate,
-        operator.EditAggregate,
-        operator.SaveAggregate,
-        operator.ExplodeAggregate,
-        operator.AssignClassification,
-        operator.UnassignClassification,
-        operator.RemoveClassification,
-        operator.FetchLibraryInformation,
-        operator.FetchExternalMaterial,
-        operator.FetchObjectPassport,
-        operator.AddSubcontext,
-        operator.RemoveSubcontext,
-        operator.CutSection,
-        operator.CreateSheet,
-        operator.OpenSheet,
-        operator.OpenCompiledSheet,
-        operator.AddViewToSheet,
-        operator.CreateSheets,
-        operator.GenerateDigitalTwin,
-        operator.CreateView,
-        operator.OpenView,
-        operator.ActivateView,
-        operator.ExecuteIfcDiff,
-        operator.AssignContext,
-        operator.SetViewPreset1,
-        operator.OpenUpstream,
-        operator.Uninstall,
-        prop.BcfTopic,
-        prop.BcfTopicLabel,
-        prop.BcfTopicFile,
-        prop.BcfTopicLink,
-        prop.BcfTopicDocumentReference,
-        prop.BcfTopicRelatedTopic,
-        prop.Subcontext,
-        prop.BIMProperties,
-        prop.BCFProperties,
-        prop.DocProperties,
-        prop.BIMLibrary,
-        prop.MapConversion,
-        prop.TargetCRS,
-        prop.Attribute,
-        prop.BoundaryCondition,
-        prop.PsetQto,
-        prop.Document,
-        prop.Classification,
-        prop.GlobalId,
-        prop.BIMObjectProperties,
-        prop.BIMMaterialProperties,
-        prop.SweptSolid,
-        prop.BIMMeshProperties,
-        prop.BIMCameraProperties,
-        ui.BIM_PT_documentation,
-        ui.BIM_PT_bim,
-        ui.BIM_PT_search,
-        ui.BIM_PT_bcf,
-        ui.BIM_PT_owner,
-        ui.BIM_PT_context,
-        ui.BIM_PT_qa,
-        ui.BIM_PT_library,
-        ui.BIM_PT_gis,
-        ui.BIM_PT_diff,
-        ui.BIM_PT_mvd,
-        ui.BIM_PT_material,
-        ui.BIM_PT_mesh,
-        ui.BIM_PT_object,
-        ui.BIM_PT_camera,
-        ui.BIM_UL_topics,
-        ui.BIM_ADDON_preferences,
-        )
 
-    def menu_func_export(self, context):
-        self.layout.operator(operator.ExportIFC.bl_idname,
-             text="Industry Foundation Classes (.ifc)")
+def register():
+    blenderbim.register()
 
-    def menu_func_import(self, context):
-        self.layout.operator(operator.ImportIFC.bl_idname,
-             text="Industry Foundation Classes (.ifc)")
 
-    def on_register(scene):
-        prop.setDefaultProperties(scene)
-        bpy.app.handlers.scene_update_post.remove(on_register)
+def unregister():
+    blenderbim.unregister()
 
-    def register():
-        for cls in classes:
-            bpy.utils.register_class(cls)
-        bpy.app.handlers.depsgraph_update_post.append(on_register)
-        bpy.app.handlers.load_post.append(prop.setDefaultProperties)
-        bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-        bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-        bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
-        bpy.types.Scene.BCFProperties = bpy.props.PointerProperty(type=prop.BCFProperties)
-        bpy.types.Scene.DocProperties = bpy.props.PointerProperty(type=prop.DocProperties)
-        bpy.types.Scene.BIMLibrary = bpy.props.PointerProperty(type=prop.BIMLibrary)
-        bpy.types.Scene.MapConversion = bpy.props.PointerProperty(type=prop.MapConversion)
-        bpy.types.Scene.TargetCRS = bpy.props.PointerProperty(type=prop.TargetCRS)
-        bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
-        bpy.types.Collection.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
-        bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
-        bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
-        bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
 
-    def unregister():
-        for cls in reversed(classes):
-            bpy.utils.unregister_class(cls)
-        bpy.app.handlers.load_post.remove(prop.setDefaultProperties)
-        bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
-        bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-        del(bpy.types.Scene.BIMProperties)
-        del(bpy.types.Scene.BCFProperties)
-        del(bpy.types.Scene.DocProperties)
-        del(bpy.types.Scene.MapConversion)
-        del(bpy.types.Scene.TargetCRS)
-        del(bpy.types.Object.BIMObjectProperties)
-        del(bpy.types.Collection.BIMObjectProperties)
-        del(bpy.types.Material.BIMMaterialProperties)
-        del(bpy.types.Mesh.BIMMeshProperties)
-        del(bpy.types.Camera.BIMCameraProperties)
-
-    if __name__ == "__main__":
-        register()
+if __name__ == "__main__":
+    register()
