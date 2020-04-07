@@ -350,16 +350,16 @@ class IfcImporter():
             if progress > old_progress:
                 print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
                 old_progress = progress
-            self.create_product(iterator.get())
+            shape = iterator.get()
+            if shape:
+                self.create_product(self.file.by_id(shape.guid), shape)
             if not iterator.next():
                 break
         print("\rDone creating geometry" + " " * 30)
 
-    def create_product(self, shape):
-        if shape is None:
+    def create_product(self, element, shape=None):
+        if element is None:
             return
-
-        element = self.file.by_id(shape.guid)
 
         if not self.ifc_import_settings.should_import_opening_elements \
                 and element.is_a('IfcOpeningElement'):
@@ -371,29 +371,34 @@ class IfcImporter():
 
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
-        # TODO: make names more meaningful
-        mesh_name = f'mesh-{shape.geometry.id}'
-        mesh = self.meshes.get(mesh_name)
-        if mesh is None:
-            mesh = self.create_mesh(element, shape)
-            self.meshes[mesh_name] = mesh
+        if shape:
+            # TODO: make names more meaningful
+            mesh_name = f'mesh-{shape.geometry.id}'
+            mesh = self.meshes.get(mesh_name)
+            if mesh is None:
+                mesh = self.create_mesh(element, shape)
+                self.meshes[mesh_name] = mesh
+        else:
+            mesh = None
 
         obj = bpy.data.objects.new(self.get_name(element), mesh)
 
-        m = shape.transformation.matrix.data
-        mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
-                                [m[3], m[4], m[5], 0],
-                                [m[6], m[7], m[8], 0],
-                                [m[9], m[10], m[11], 1]))
-        mat.transpose()
-        obj.matrix_world = mat
+        if shape:
+            m = shape.transformation.matrix.data
+            mat = mathutils.Matrix(([m[0], m[1], m[2], 0],
+                                    [m[3], m[4], m[5], 0],
+                                    [m[6], m[7], m[8], 0],
+                                    [m[9], m[10], m[11], 1]))
+            mat.transpose()
+            obj.matrix_world = mat
+            self.material_creator.create(element, obj, mesh)
 
-        self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.added_data[element.GlobalId] = obj
+        return obj
 
     def merge_by_class(self):
         merge_set = {}
@@ -532,6 +537,10 @@ class IfcImporter():
         self.project = { 'ifc': self.file.by_type('IfcProject')[0] }
         self.project['blender'] = bpy.data.collections.new('IfcProject/{}'.format(self.project['ifc'].Name))
         bpy.context.scene.collection.children.link(self.project['blender'])
+        obj = self.create_product(self.project['ifc'])
+        if obj:
+                self.project['blender'].objects.link(obj)
+                del self.added_data[self.project['ifc'].GlobalId]
 
     def create_spatial_hierarchy(self):
         elements = self.file.by_type('IfcSpatialStructureElement')
@@ -553,6 +562,7 @@ class IfcImporter():
                     self.spatial_structure_elements[global_id] = {
                         'blender': bpy.data.collections.new(name)}
                     self.project['blender'].children.link(self.spatial_structure_elements[global_id]['blender'])
+                    self.create_spatial_structure_obj(element)
                 elif element.is_a('IfcSpace'):
                     # Spaces are treated specially as objects
                     continue
@@ -561,7 +571,14 @@ class IfcImporter():
                         'blender': bpy.data.collections.new(name)}
                     self.spatial_structure_elements[parent_global_id]['blender'].children.link(
                         self.spatial_structure_elements[global_id]['blender'])
+                    self.create_spatial_structure_obj(element)
             attempts += 1
+
+    def create_spatial_structure_obj(self, element):
+        obj = self.create_product(element)
+        if obj:
+            self.spatial_structure_elements[element.GlobalId]['blender'].objects.link(obj)
+            del self.added_data[element.GlobalId]
 
     def create_aggregates(self):
         rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
