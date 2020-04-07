@@ -302,7 +302,7 @@ class IfcImporter():
         for item in representation.Items:
             if item.is_a('IfcSweptDiskSolid'):
                 new_items.append(item.Directrix)
-                self.native_data[element.GlobalId] = { 'radius': item.Radius }
+                self.native_data[element.GlobalId] = { 'radius': self.unit_scale * item.Radius }
             else:
                 new_items.append(item)
         representation.Items = new_items
