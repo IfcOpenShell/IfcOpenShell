@@ -460,6 +460,9 @@ class IfcImporter():
             for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():
                 prop = new_pset.properties.add()
                 prop.name = prop_name
+        # Invalid IFC, but some vendors like Solidworks do this so we accomodate it
+        if not pset.HasProperties:
+            return
         for prop in pset.HasProperties:
             if prop.is_a('IfcPropertySingleValue') and prop.NominalValue:
                 index = new_pset.properties.find(prop.Name)
