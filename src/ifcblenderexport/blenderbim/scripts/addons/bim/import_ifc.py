@@ -207,11 +207,12 @@ class IfcImporter():
         if self.ifc_import_settings.should_import_opening_elements:
             self.create_openings_collection()
         self.purge_diff()
+        self.filter_ifc()
         self.patch_ifc()
         self.create_type_products()
         self.create_grids()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
-        if self.ifc_import_settings.should_use_legacy or self.diff:
+        if self.ifc_import_settings.should_use_legacy:
             self.create_products_legacy()
         else:
             self.create_products()
@@ -253,6 +254,13 @@ class IfcImporter():
         return abs(point.Coordinates[0]) > 1000000 \
             or abs(point.Coordinates[1]) > 1000000 \
             or abs(point.Coordinates[2]) > 1000000
+
+    def filter_ifc(self):
+        for element in self.file.by_type('IfcElement'):
+            if self.diff \
+                    and element.GlobalId not in self.diff['added'] \
+                    and element.GlobalId not in self.diff['changed'].keys():
+                self.file.remove(element)
 
     def patch_ifc(self):
         project = self.file.by_type('IfcProject')[0]
@@ -424,8 +432,11 @@ class IfcImporter():
             bpy.ops.object.join(context_override)
 
     def clean_mesh(self):
+        obj = None
         for obj in self.added_data.values():
             obj.select_set(True)
+        if not obj:
+            return
         bpy.context.view_layer.objects.active = obj
         context_override = {}
         bpy.ops.object.editmode_toggle(context_override)
@@ -658,6 +669,9 @@ class IfcImporter():
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
         self.add_element_attributes(element, obj)
         self.add_element_document_relations(element, obj)
+        self.add_defines_by_type_relation(element, obj)
+        self.add_product_definitions(element, obj)
+        self.added_data[element.GlobalId] = obj
 
     def add_element_document_relations(self, element, obj):
         for association in element.HasAssociations:
