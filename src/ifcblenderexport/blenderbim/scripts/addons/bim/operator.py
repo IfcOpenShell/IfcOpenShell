@@ -47,34 +47,16 @@ class ExportIFC(bpy.types.Operator):
 
     def execute(self, context):
         start = time.time()
-        ifc_export_settings = export_ifc.IfcExportSettings()
+        logger = logging.getLogger('ExportIFC')
         logging.basicConfig(
-            filename=bpy.context.scene.BIMProperties.data_dir + 'process.log',
-            filemode='a', level=logging.DEBUG)
-        ifc_export_settings.logger = logging.getLogger('ExportIFC')
-        ifc_export_settings.logger.info('Starting export')
-        ifc_export_settings.data_dir = bpy.context.scene.BIMProperties.data_dir
-        ifc_export_settings.schema_dir = bpy.context.scene.BIMProperties.schema_dir
-        ifc_export_settings.output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
-        ifc_export_settings.has_representations = bpy.context.scene.BIMProperties.export_has_representations
-        ifc_export_settings.should_export_all_materials_as_styled_items = bpy.context.scene.BIMProperties.export_should_export_all_materials_as_styled_items
-        ifc_export_settings.should_use_presentation_style_assignment = bpy.context.scene.BIMProperties.export_should_use_presentation_style_assignment
-        ifc_export_settings.context_tree = []
-        for context in ['model', 'plan']:
-            if getattr(bpy.context.scene.BIMProperties, 'has_{}_context'.format(context)):
-                subcontexts = {}
-                for subcontext in getattr(bpy.context.scene.BIMProperties, '{}_subcontexts'.format(context)):
-                    subcontexts.setdefault(subcontext.name, []).append(subcontext.target_view)
-                ifc_export_settings.context_tree.append({
-                    'name': context.title(),
-                    'subcontexts': [
-                        { 'name': key, 'target_views': value }
-                        for key, value in subcontexts.items()
-                    ]
-                })
+                filename=context.scene.BIMProperties.data_dir + 'process.log',
+                filemode='a', level=logging.DEBUG)
+        output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
+        ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         qto_calculator = export_ifc.QtoCalculator()
         ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
+        ifc_export_settings.logger.info('Starting export')
         ifc_exporter.export()
         ifc_export_settings.logger.info('Export finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
