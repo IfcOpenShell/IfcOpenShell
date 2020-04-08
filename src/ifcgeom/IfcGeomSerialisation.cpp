@@ -33,9 +33,12 @@ int convert_to_ifc(const TopoDS_Vertex& v, IfcSchema::IfcCartesianPoint*& p, boo
 template <>
 int convert_to_ifc(const TopoDS_Vertex& v, IfcSchema::IfcVertex*& vertex, bool advanced) {
 	IfcSchema::IfcCartesianPoint* p;
-	convert_to_ifc(v, p, advanced);
-	vertex = new IfcSchema::IfcVertexPoint(p);
-	return 1;
+	if (convert_to_ifc(v, p, advanced)) {
+		vertex = new IfcSchema::IfcVertexPoint(p);
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 template <>
@@ -71,7 +74,7 @@ void opencascade_array_to_vector2(T& t, std::vector< std::vector<U> >& u) {
 	}
 }
 
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
 IfcSchema::IfcKnotType::Value opencascade_knotspec_to_ifc(GeomAbs_BSplKnotDistribution bspline_knot_spec) {
 	IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;
 	if (bspline_knot_spec == GeomAbs_Uniform) {
@@ -123,7 +126,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 
 		return 1;
 	}
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
 		Handle_Geom_BSplineCurve bspline = Handle_Geom_BSplineCurve::DownCast(c);
 
@@ -206,7 +209,7 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 		surface = new IfcSchema::IfcPlane(place);
 		return 1;
 	}
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
 	else if (s->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface)) {
 		Handle_Geom_CylindricalSurface cyl = Handle_Geom_CylindricalSurface::DownCast(s);
 		IfcSchema::IfcAxis2Placement3D* place;
