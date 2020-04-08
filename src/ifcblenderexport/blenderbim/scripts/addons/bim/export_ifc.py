@@ -546,13 +546,13 @@ class IfcParser():
         for collection in base_collections:
             spatial_obj = bpy.data.objects.get(collection.name)
             if not spatial_obj or spatial_obj in added_objs:
-                break
+                continue
             added_objs.append(spatial_obj)
             parent_collection = self.get_parent_collection(collection)
             while parent_collection:
                 spatial_obj = bpy.data.objects.get(parent_collection.name)
                 if not spatial_obj or spatial_obj in added_objs:
-                    break
+                    continue
                 added_objs.append(spatial_obj)
                 parent_collection = self.get_parent_collection(parent_collection)
         results.extend(added_objs)
