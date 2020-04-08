@@ -1,6 +1,7 @@
 import json
 import os
 import csv
+import ifcopenshell
 from pathlib import Path
 from . import export_ifc
 from . import schema
@@ -33,6 +34,8 @@ psetfiles_enum = []
 classification_enum = []
 reference_enum = []
 attributes_enum = []
+overridepsetnames_enum = []
+qtonames_enum = []
 materialattributes_enum = []
 documents_enum = []
 materialtypes_enum = []
@@ -258,6 +261,32 @@ def getReferences(self, context):
             reference_enum.extend([(d[0], '{} - {}'.format(d[0], d[1]), '') for d in data if
                     d[2] == self.classification.strip()])
     return reference_enum
+
+
+def getOverridePsetNames(self, context):
+    global overridepsetnames_enum
+    overridepsetnames_enum.clear()
+    if '/' in context.active_object.name \
+            and context.active_object.name.split('/')[0] in schema.ifc.elements:
+        empty = ifcopenshell.file()
+        element = empty.create_entity(context.active_object.name.split('/')[0])
+        for ifc_class, pset_names in schema.ifc.applicable_psets.items():
+            if element.is_a(ifc_class):
+                overridepsetnames_enum.extend([(p, p, '') for p in pset_names])
+    return overridepsetnames_enum
+
+
+def getQtoNames(self, context):
+    global qtonames_enum
+    qtonames_enum.clear()
+    if '/' in context.active_object.name \
+            and context.active_object.name.split('/')[0] in schema.ifc.elements:
+        empty = ifcopenshell.file()
+        element = empty.create_entity(context.active_object.name.split('/')[0])
+        for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
+            if element.is_a(ifc_class):
+                qtonames_enum.extend([(q, q, '') for q in qto_names])
+    return qtonames_enum
 
 
 def getApplicableAttributes(self, context):
@@ -718,8 +747,8 @@ class BIMObjectProperties(PropertyGroup):
     classifications: CollectionProperty(name="Classifications", type=Classification)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     override_psets: CollectionProperty(name="Override Psets", type=PsetQto)
-    override_pset_name: StringProperty(name="Override Pset Name")
-    qto_name: StringProperty(name="Qto Name")
+    override_pset_name: EnumProperty(items=getOverridePsetNames, name='Override Pset Name')
+    qto_name: EnumProperty(items=getQtoNames, name='Qto Name')
     has_boundary_condition: BoolProperty(name='Has Boundary Condition')
     boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)
     structural_member_connection: PointerProperty(name='Structural Member Connection', type=bpy.types.Object)

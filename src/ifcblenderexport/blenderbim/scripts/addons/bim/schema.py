@@ -26,6 +26,8 @@ class IfcSchema():
             self.property_files.append(ifcopenshell.open(path))
         self.psets = {}
         self.qtos = {}
+        self.applicable_psets = {}
+        self.applicable_qtos = {}
         self.load()
 
     def load(self):
@@ -42,8 +44,12 @@ class IfcSchema():
                 if prop.Name[0:4] == 'Qto_':
                     self.qtos[prop.Name] = {
                         'HasPropertyTemplates': {p.Name: p for p in prop.HasPropertyTemplates}}
+                    entity = prop.ApplicableEntity if prop.ApplicableEntity else 'IfcRoot'
+                    self.applicable_qtos.setdefault(entity, []).append(prop.Name)
                 else:
                     self.psets[prop.Name] = {
                         'HasPropertyTemplates': {p.Name: p for p in prop.HasPropertyTemplates}}
+                    entity = prop.ApplicableEntity if prop.ApplicableEntity else 'IfcRoot'
+                    self.applicable_psets.setdefault(entity, []).append(prop.Name)
 
 ifc = IfcSchema()
