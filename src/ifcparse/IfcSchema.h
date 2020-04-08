@@ -51,7 +51,7 @@ namespace IfcParse {
 
 	class schema_definition;
 
-	class parameter_type {
+	class IFC_PARSE_API parameter_type {
 	public:
 		virtual const named_type* as_named_type() const { return static_cast<named_type*>(0); }
 		virtual const simple_type* as_simple_type() const { return static_cast<simple_type*>(0); }
@@ -61,7 +61,7 @@ namespace IfcParse {
 		virtual bool is(const IfcParse::declaration& /*decl*/) const { return false; }
 	};
 
-	class named_type : public parameter_type {
+	class IFC_PARSE_API named_type : public parameter_type {
 	protected:
 		declaration* declared_type_;
 	public:
@@ -76,7 +76,7 @@ namespace IfcParse {
 		virtual bool is(const IfcParse::declaration& decl) const;
 	};
 
-	class simple_type : public parameter_type {
+	class IFC_PARSE_API simple_type : public parameter_type {
 	public:
 		typedef enum { binary_type, boolean_type, integer_type, logical_type, number_type, real_type, string_type, datatype_COUNT } data_type;
 	protected:
@@ -90,7 +90,7 @@ namespace IfcParse {
 		virtual const simple_type* as_simple_type() const { return this; }
 	};
 
-	class aggregation_type : public parameter_type {
+	class IFC_PARSE_API aggregation_type : public parameter_type {
 	public:
 		typedef enum { array_type, bag_type, list_type, set_type } aggregate_type;
 	protected:
@@ -113,7 +113,7 @@ namespace IfcParse {
 		virtual const aggregation_type* as_aggregation_type() const { return this; }
 	};
 
-	class declaration {
+	class IFC_PARSE_API declaration {
 		friend class schema_definition;
 
 	protected:
@@ -149,7 +149,7 @@ namespace IfcParse {
 		const schema_definition* schema() const { return schema_; }
 	};
 
-	class type_declaration : public declaration {
+	class IFC_PARSE_API type_declaration : public declaration {
 	protected:
 		const parameter_type* declared_type_;
 
@@ -163,7 +163,7 @@ namespace IfcParse {
 		virtual const type_declaration* as_type_declaration() const { return this; }
 	};
 
-	class select_type : public declaration {
+	class IFC_PARSE_API select_type : public declaration {
 	protected:
 		std::vector<const declaration*> select_list_;
 	public:
@@ -176,7 +176,7 @@ namespace IfcParse {
 		virtual const select_type* as_select_type() const { return this; }
 	};
 
-	class enumeration_type : public declaration {
+	class IFC_PARSE_API enumeration_type : public declaration {
 	protected:
 		std::vector<std::string> enumeration_items_;
 	public:
@@ -189,7 +189,7 @@ namespace IfcParse {
 		virtual const enumeration_type* as_enumeration_type() const { return this; }
 	};
 
-	class attribute {
+	class IFC_PARSE_API attribute {
 	protected:
 		std::string name_;
 		const parameter_type* type_of_attribute_;
@@ -206,7 +206,7 @@ namespace IfcParse {
 		bool optional() const { return optional_; }
 	};
 
-	class inverse_attribute {
+	class IFC_PARSE_API inverse_attribute {
 	public:
 		typedef enum { bag_type, set_type, unspecified_type } aggregate_type;
 	protected:
@@ -232,7 +232,7 @@ namespace IfcParse {
 		const attribute* attribute_reference() const { return attribute_reference_; }
 	};
 
-	class entity : public declaration {
+	class IFC_PARSE_API entity : public declaration {
 	protected:
 		bool is_abstract_;
 		const entity* supertype_; /* NB: IFC explicitly allows only single inheritance */
