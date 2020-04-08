@@ -618,42 +618,25 @@ class IfcImporter():
                 del self.added_data[self.project['ifc'].GlobalId]
 
     def create_spatial_hierarchy(self):
-        elements = self.file.by_type('IfcSpatialStructureElement')
-        attempts = 0
-        while len(self.spatial_structure_elements) < len(elements) \
-                and attempts <= len(elements):
-            for element in elements:
-                name = self.get_name(element)
-                global_id = element.GlobalId
-                if global_id in self.spatial_structure_elements:
-                    continue
-                # Occurs when some naughty programs export IFC site objects
-                if not element.Decomposes:
-                    continue
-                parent = element.Decomposes[0].RelatingObject
-                parent_name = self.get_name(parent)
-                parent_global_id = parent.GlobalId
-                if parent.is_a('IfcProject'):
-                    self.spatial_structure_elements[global_id] = {
-                        'blender': bpy.data.collections.new(name)}
-                    self.project['blender'].children.link(self.spatial_structure_elements[global_id]['blender'])
-                    self.create_spatial_structure_obj(element)
-                elif element.is_a('IfcSpace'):
-                    # Spaces are treated specially as objects
-                    continue
-                elif parent_global_id in self.spatial_structure_elements:
-                    self.spatial_structure_elements[global_id] = {
-                        'blender': bpy.data.collections.new(name)}
-                    self.spatial_structure_elements[parent_global_id]['blender'].children.link(
-                        self.spatial_structure_elements[global_id]['blender'])
-                    self.create_spatial_structure_obj(element)
-            attempts += 1
+        if self.project['ifc'].IsDecomposedBy:
+            for rel_aggregate in self.project['ifc'].IsDecomposedBy:
+                self.add_related_objects(self.project['blender'], rel_aggregate.RelatedObjects)
 
-    def create_spatial_structure_obj(self, element):
-        obj = self.create_product(element)
-        if obj:
-            self.spatial_structure_elements[element.GlobalId]['blender'].objects.link(obj)
-            del self.added_data[element.GlobalId]
+    def add_related_objects(self, parent, related_objects):
+        for element in related_objects:
+            if element.is_a('IfcSpace'):
+                continue
+            global_id = element.GlobalId
+            collection = bpy.data.collections.new(self.get_name(element))
+            self.spatial_structure_elements[global_id] = { 'blender': collection }
+            parent.children.link(collection)
+            obj = self.create_product(element)
+            if obj:
+                collection.objects.link(obj)
+                del self.added_data[element.GlobalId]
+            if element.IsDecomposedBy:
+                for rel_aggregate in element.IsDecomposedBy:
+                    self.add_related_objects(collection, rel_aggregate.RelatedObjects)
 
     def create_aggregates(self):
         rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
@@ -759,6 +742,7 @@ class IfcImporter():
                 self.spatial_structure_elements[relating_structure_global_id]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
+            collection = None
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
                 collection = bpy.data.collections.get(f'IfcProject/{element.Decomposes[0].RelatingObject.Name}')
             elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
@@ -771,6 +755,8 @@ class IfcImporter():
                 return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             if collection:
                 collection.objects.link(obj)
+            else:
+                self.ifc_import_settings.logger.error('An element could not be placed in the spatial tree {}'.format(element))
         elif hasattr(element, 'HasFillings') \
                 and element.HasFillings:
             bpy.data.collections.get('IfcOpeningElements').objects.link(obj)
