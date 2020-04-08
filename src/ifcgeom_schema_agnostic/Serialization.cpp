@@ -11,7 +11,13 @@ namespace IfcGeom {
 
 template <typename Fn, typename T>
 IfcUtil::IfcBaseClass* execute_based_on_schema(Fn fn1, Fn fn2, const std::string& schema_name, const TopoDS_Shape& shape, T t) {
+	// @todo an ugly hack to guarantee schemas are initialised.
+	try {
+		IfcParse::schema_by_name("IFC2X3");
+	} catch (IfcParse::IfcException&) {}
+
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
+
 	if (schema_name_lower == "ifc2x3") {
 		return fn1(shape, t);
 	} else if (schema_name_lower == "ifc4") {
