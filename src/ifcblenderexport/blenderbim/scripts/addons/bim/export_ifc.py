@@ -2437,3 +2437,29 @@ class IfcExportSettings:
         self.should_export_all_materials_as_styled_items = False
         self.should_use_presentation_style_assignment = False
         self.context_tree = []
+
+    @staticmethod    
+    def factory(context, output_file, logger):
+        scene_bim = context.scene.BIMProperties
+        settings = IfcExportSettings()
+        settings.output_file = output_file
+        settings.logger = logger
+        settings.data_dir = scene_bim.data_dir
+        settings.schema_dir = scene_bim.schema_dir
+        settings.has_representations = scene_bim.export_has_representations
+        settings.should_export_all_materials_as_styled_items = scene_bim.export_should_export_all_materials_as_styled_items
+        settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
+        settings.context_tree = []
+        for ifc_context in ['model', 'plan']:
+            if getattr(scene_bim, 'has_{}_context'.format(ifc_context)):
+                subcontexts = {}
+                for subcontext in getattr(scene_bim, '{}_subcontexts'.format(ifc_context)):
+                    subcontexts.setdefault(subcontext.name, []).append(subcontext.target_view)
+                settings.context_tree.append({
+                    'name': ifc_context.title(),
+                    'subcontexts': [
+                        {'name': key, 'target_views': value}
+                        for key, value in subcontexts.items()
+                    ]
+                })
+        return settings
