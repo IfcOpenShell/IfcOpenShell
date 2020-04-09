@@ -57,7 +57,7 @@ class ExportIFC(bpy.types.Operator):
         qto_calculator = export_ifc.QtoCalculator()
         ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
         ifc_export_settings.logger.info('Starting export')
-        ifc_exporter.export()
+        ifc_exporter.export(context.selected_objects)
         ifc_export_settings.logger.info('Export finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
 
