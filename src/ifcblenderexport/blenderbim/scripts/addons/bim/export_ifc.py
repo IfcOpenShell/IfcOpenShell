@@ -1683,7 +1683,7 @@ class IfcExporter():
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
-        rendering_attributes = {'SurfaceColour': surface_colour}
+        rendering_attributes = {'SurfaceColour': surface_colour, 'ReflectanceMethod': 'NOTDEFINED'}
         rendering_attributes.update(self.get_rendering_attributes(styled_item['raw']))
         return self.file.create_entity('IfcSurfaceStyleRendering', **rendering_attributes)
 
