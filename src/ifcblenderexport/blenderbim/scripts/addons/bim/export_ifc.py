@@ -126,13 +126,13 @@ class IfcParser():
         self.libraries = []
         self.products = []
 
-    def parse(self):
+    def parse(self, selected_objects):
         self.units = self.get_units()
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
         self.organisations = self.get_organisations()
-        selected_objects = self.add_spatial_elements_if_unselected(bpy.context.selected_objects)
-        self.categorise_selected_objects(selected_objects)
+        unique_objects = self.add_spatial_elements_if_unselected(selected_objects)
+        self.categorise_selected_objects(unique_objects)
         self.psets = self.get_psets()
         self.material_psets = self.get_material_psets()
         self.documents = self.get_documents()
@@ -535,14 +535,12 @@ class IfcParser():
                     return parent_collection
 
     def add_spatial_elements_if_unselected(self, selected_objects):
-        results = []
-        base_collections = []
+        results = set(selected_objects)
+        base_collections = set()
         added_objs = []
         for obj in selected_objects:
-            results.append(obj)
             for collection in obj.users_collection:
-                base_collections.append(collection)
-        base_collections = list(set(base_collections))
+                base_collections.add(collection)
         for collection in base_collections:
             spatial_obj = bpy.data.objects.get(collection.name)
             if not spatial_obj or spatial_obj in added_objs:
@@ -555,8 +553,8 @@ class IfcParser():
                     continue
                 added_objs.append(spatial_obj)
                 parent_collection = self.get_parent_collection(parent_collection)
-        results.extend(added_objs)
-        return set(results)
+        results.update(added_objs)
+        return results
 
     def categorise_selected_objects(self, objects_to_sort, metadata=None):
         if not metadata:
@@ -1097,9 +1095,9 @@ class IfcExporter():
         self.ifc_parser = ifc_parser
         self.qto_calculator = qto_calculator
 
-    def export(self):
+    def export(self, selected_objects):
         self.file = ifcopenshell.open(self.template_file)
-        self.ifc_parser.parse()
+        self.ifc_parser.parse(selected_objects)
         self.create_units()
         self.create_people()
         self.create_organisations()
