@@ -330,14 +330,16 @@ class IfcParser():
             void_or_projection = self.get_product_index_from_raw_name(m.object.name)
             if void_or_projection is None:
                 continue
-            if m.operation == 'DIFFERENCE':
+            if m.operation == 'DIFFERENCE' \
+                    and self.get_ifc_class(m.object.name) == 'IfcOpeningElement':
                 self.rel_voids_elements.setdefault(i, []).append(void_or_projection)
                 if not m.object.parent:
                     continue
                 fill = self.get_product_index_from_raw_name(m.object.parent.name)
                 if fill:
                     self.rel_fills_elements.setdefault(void_or_projection, []).append(fill)
-            elif m.operation == 'UNION':
+            elif m.operation == 'UNION' \
+                    and self.get_ifc_class(m.object.name) == 'IfcProjectionElement':
                 self.rel_projects_elements.setdefault(i, []).append(void_or_projection)
 
     def get_axis(self, matrix, axis):
@@ -938,10 +940,12 @@ class IfcParser():
         results = []
         if not self.ifc_export_settings.has_representations:
             return results
+        parsed_data_names = []
         for product in self.selected_products + self.type_products:
             obj = product['raw']
-            if obj.data is None:
+            if obj.data is None or obj.data.name in parsed_data_names:
                 continue
+            parsed_data_names.append(obj.data.name)
             for slot in obj.material_slots:
                 if slot.material is None:
                     continue
@@ -2241,7 +2245,7 @@ class IfcExporter():
                 self.file.createIfcFaceOuterBound(
                     self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
-        items = [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(f)) for f in ifc_faces]
+        items = [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(f)) for f in ifc_faces if f]
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
