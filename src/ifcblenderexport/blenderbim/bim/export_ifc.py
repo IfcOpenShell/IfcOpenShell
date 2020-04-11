@@ -4,6 +4,8 @@ import json
 import time
 import datetime
 import os
+import zipfile
+import tempfile
 from pathlib import Path
 from mathutils import Vector, Matrix
 from .helper import SIUnitHelper
@@ -1146,7 +1148,7 @@ class IfcExporter():
         self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
         self.relate_structural_members_to_connections()
         self.relate_objects_to_groups()
-        self.file.write(self.ifc_export_settings.output_file)
+        self.write_ifc_file()
 
     def set_common_definitions(self):
         # Owner history doesn't actually work like this, but for now, it does :)
@@ -2421,6 +2423,20 @@ class IfcExporter():
 
     def convert_si_to_unit(self, co):
         return co / self.ifc_parser.unit_scale
+
+    def write_ifc_file(self):
+        extension = self.ifc_export_settings.output_file.split('.')[-1]
+        if extension == 'ifczip':
+            with tempfile.TemporaryDirectory() as unzipped_path:
+                filename, ext = os.path.splitext(os.path.basename(self.ifc_export_settings.output_file))
+                tmp_name = '{}.ifc'.format(filename)
+                tmp_file = os.path.join(unzipped_path, tmp_name)
+                self.file.write(tmp_file)
+                with zipfile.ZipFile(self.ifc_export_settings.output_file,
+                        mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+                    zf.write(tmp_file)
+        elif extension == 'ifc':
+            self.file.write(self.ifc_export_settings.output_file)
 
 
 class IfcExportSettings:

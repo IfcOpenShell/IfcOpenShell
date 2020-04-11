@@ -34,7 +34,7 @@ colour_list = [
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export.ifc"
-    bl_label = "Export .ifc file"
+    bl_label = "Export IFC"
     filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype='FILE_PATH')
 
@@ -51,7 +51,11 @@ class ExportIFC(bpy.types.Operator):
         logging.basicConfig(
                 filename=context.scene.BIMProperties.data_dir + 'process.log',
                 filemode='a', level=logging.DEBUG)
-        output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
+        extension = self.filepath.split('.')[-1]
+        if extension == 'ifczip':
+            output_file = bpy.path.ensure_ext(self.filepath, '.ifczip')
+        else:
+            output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         qto_calculator = export_ifc.QtoCalculator()
@@ -63,7 +67,7 @@ class ExportIFC(bpy.types.Operator):
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
     bl_idname = "import.ifc"
-    bl_label = "Import .ifc file"
+    bl_label = "Import IFC"
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip", options={'HIDDEN'})
 
