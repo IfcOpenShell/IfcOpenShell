@@ -139,11 +139,11 @@ if bpy is not None:
 
     def menu_func_export(self, context):
         self.layout.operator(operator.ExportIFC.bl_idname,
-             text="Industry Foundation Classes (.ifc)")
+             text="Industry Foundation Classes (.ifc/.ifczip)")
 
     def menu_func_import(self, context):
         self.layout.operator(operator.ImportIFC.bl_idname,
-             text="Industry Foundation Classes (.ifc)")
+             text="Industry Foundation Classes (.ifc/.ifczip)")
 
     def on_register(scene):
         prop.setDefaultProperties(scene)
