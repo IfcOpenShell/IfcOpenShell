@@ -549,10 +549,10 @@ class IfcParser():
             parent_collection = self.get_parent_collection(collection)
             while parent_collection:
                 spatial_obj = bpy.data.objects.get(parent_collection.name)
+                parent_collection = self.get_parent_collection(parent_collection)
                 if not spatial_obj or spatial_obj in added_objs:
                     continue
                 added_objs.append(spatial_obj)
-                parent_collection = self.get_parent_collection(parent_collection)
         results.update(added_objs)
         return results
 
@@ -2436,7 +2436,7 @@ class IfcExportSettings:
         self.should_use_presentation_style_assignment = False
         self.context_tree = []
 
-    @staticmethod    
+    @staticmethod
     def factory(context, output_file, logger):
         scene_bim = context.scene.BIMProperties
         settings = IfcExportSettings()
