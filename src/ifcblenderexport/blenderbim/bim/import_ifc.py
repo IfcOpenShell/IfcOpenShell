@@ -7,6 +7,9 @@ import time
 import mathutils
 import math
 import multiprocessing
+import zipfile
+import tempfile
+from pathlib import Path
 from .helper import SIUnitHelper
 from . import schema
 from . import ifc
@@ -589,7 +592,16 @@ class IfcImporter():
 
     def load_file(self):
         self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
-        self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
+        extension = self.ifc_import_settings.input_file.split('.')[-1]
+        if extension == 'ifczip':
+            with tempfile.TemporaryDirectory() as unzipped_path:
+                with zipfile.ZipFile(self.ifc_import_settings.input_file, 'r') as zip_ref:
+                    zip_ref.extractall(unzipped_path)
+                for filename in Path(unzipped_path).glob('**/*.ifc'):
+                    self.file = ifcopenshell.open(filename)
+                    break
+        elif extension == 'ifc':
+            self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
         ifc.IfcStore.file = self.file
 
     def set_ifc_file(self):

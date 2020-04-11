@@ -64,9 +64,8 @@ class ExportIFC(bpy.types.Operator):
 class ImportIFC(bpy.types.Operator, ImportHelper):
     bl_idname = "import.ifc"
     bl_label = "Import .ifc file"
-
     filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc", options={'HIDDEN'})
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip", options={'HIDDEN'})
 
     def execute(self, context):
         start = time.time()
