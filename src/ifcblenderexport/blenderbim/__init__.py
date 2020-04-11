@@ -13,19 +13,20 @@ bl_info = {
 import os
 import site
 
-# process ifcopenshell.pth in /scripts/addons
-site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "scripts", "addons"))
 
-import bim as blenderbim
-import ifcopenshell
-
-
-def register():
-    blenderbim.register()
+# process *.pth in /libs/site/packages to setup globally importable modules
+# 3 levels deep required by occ static ../../ path
+cwd = os.path.dirname(os.path.realpath(__file__))
+site.addsitedir(os.path.join(cwd, "libs", "site", "packages"))
 
 
-def unregister():
-    blenderbim.unregister()
+# main import
+from .bim import *
+
+
+# Explicitely expose bim.xx when imported with from blenderbim import *
+# Other bim still are importable using explicit from blenderbim.bim import xxx
+__all__ = ["export_ifc", "import_ifc"]
 
 
 if __name__ == "__main__":
