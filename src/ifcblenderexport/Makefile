@@ -52,6 +52,9 @@ else
 	# Unix Conda builds of PythonOCC expect OCE libs to have a RPATH of ../../../
 	cd dist/working && cp -r lib/* ../blenderbim/libs/
 endif
+ifeq ($(PLATFORM), linux)
+	rm -rf dist/blenderbim/libs/oce-0.17
+endif
 	rm -rf dist/working
 
 	mkdir dist/working
