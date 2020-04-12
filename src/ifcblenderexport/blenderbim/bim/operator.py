@@ -104,11 +104,11 @@ class SelectGlobalId(bpy.types.Operator):
     bl_label = 'Select GlobalId'
 
     def execute(self, context):
-        for object in bpy.context.visible_objects:
-            index = object.BIMObjectProperties.attributes.find('GlobalId')
+        for obj in bpy.context.visible_objects:
+            index = obj.BIMObjectProperties.attributes.find('GlobalId')
             if index != -1 \
-                    and object.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
-                object.select_set(True)
+                    and obj.BIMObjectProperties.attributes[index].string_value == bpy.context.scene.BIMProperties.global_id:
+                obj.select_set(True)
                 break
         return {'FINISHED'}
 
@@ -463,6 +463,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 # https://blender.stackexchange.com/questions/23431/how-to-set-camera-horizontal-and-vertical-fov
                 obj.data.angle = 2 * atan((0.5 * cam_height) / (0.5 * cam_width / tan(radians(camera.fieldOfView)/2)))
 
+        self.set_viewpoint_components(viewpoint)
+
         z_axis = Vector((-camera.direction.x, -camera.direction.y, -camera.direction.z)).normalized()
         y_axis = Vector((camera.upVector.x, camera.upVector.y, camera.upVector.z)).normalized()
         x_axis = y_axis.cross(z_axis).normalized()
@@ -473,6 +475,41 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         obj.location = location
         return {'FINISHED'}
 
+    def set_viewpoint_components(self, viewpoint):
+        selected_global_ids = [s.ifcId for s in viewpoint.components.selection]
+        exception_global_ids = [v.ifcId for v in viewpoint.components.visibilityExceptions]
+        global_id_colours = {}
+        for colouring in viewpoint.components.colouring:
+            for component in colouring.components:
+                global_id_colours.setdefault(component.ifcId, colouring.colour)
+
+        for obj in bpy.data.objects:
+            global_id = obj.BIMObjectProperties.attributes.get('GlobalId')
+            if not global_id:
+                continue
+            global_id = global_id.string_value
+            is_visible = viewpoint.components.visibilityDefault
+            if global_id in exception_global_ids:
+                is_visible = not is_visible
+            if not is_visible:
+                obj.hide_set(True)
+                continue
+            if 'IfcSpace' in obj.name:
+                is_visible = viewpoint.components.viewSetuphints.spacesVisible
+            elif 'IfcOpeningElement' in obj.name:
+                is_visible = viewpoint.components.viewSetuphints.openingsVisible
+            obj.hide_set(not is_visible)
+            if not is_visible:
+                continue
+            obj.select_set(global_id in selected_global_ids)
+            if global_id in global_id_colours:
+                obj.color = self.hex_to_rgb(global_id_colours[global_id])
+
+    def hex_to_rgb(self, value):
+        value = value.lstrip('#')
+        lv = len(value)
+        t = tuple(int(value[i:i+lv//3], 16) for i in range(0, lv, lv//3))
+        return [t[0]/255., t[1]/255., t[2]/255., 1]
 
 class OpenBcfFileReference(bpy.types.Operator):
     bl_idname = 'bim.open_bcf_file_reference'
