@@ -454,6 +454,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if viewpoint.oCamera:
             camera = viewpoint.oCamera
             obj.data.type = 'ORTHO'
+            obj.data.ortho_scale = viewpoint.oCamera.viewWorldScale
         elif viewpoint.pCamera:
             camera = viewpoint.pCamera
             obj.data.type = 'PERSP'
