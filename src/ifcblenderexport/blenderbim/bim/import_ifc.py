@@ -377,7 +377,7 @@ class IfcImporter():
         for axis in axes:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
-            obj = bpy.data.objects.new(f'IfcGrisAxis/{axis.AxisTag}', mesh)
+            obj = bpy.data.objects.new(f'IfcGridAxis/{axis.AxisTag}', mesh)
             grid.objects.link(obj)
 
     def create_type_products(self):
