@@ -779,3 +779,4 @@ class BIMMeshProperties(PropertyGroup):
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name='Is Parametric', default=False)
+    presentation_layer: StringProperty(name="Presentation Layer")
