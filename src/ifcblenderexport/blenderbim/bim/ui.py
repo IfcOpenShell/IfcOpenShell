@@ -160,6 +160,9 @@ class BIM_PT_mesh(Panel):
         row.operator('bim.assign_context')
 
         row = layout.row()
+        row.prop(props, 'presentation_layer')
+
+        row = layout.row()
         row.prop(props, 'is_parametric')
 
         row = layout.row()

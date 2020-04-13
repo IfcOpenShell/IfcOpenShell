@@ -120,6 +120,7 @@ class IfcParser():
         self.rel_projects_elements = {}
         self.rel_connects_structural_member = {}
         self.rel_assigns_to_group = {}
+        self.presentation_layer_assignments = {}
         self.representations = {}
         self.type_products = []
         self.door_attributes = {}
@@ -142,6 +143,7 @@ class IfcParser():
         self.classification_references = self.get_classification_references()
         self.objectives = self.get_objectives()
         self.load_representations()
+        self.load_presentation_layer_assignments()
         self.materials = self.get_materials()
         self.styled_items = self.get_styled_items()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
@@ -796,6 +798,12 @@ class IfcParser():
                 })
         return elements
 
+    def load_presentation_layer_assignments(self):
+        for representation in self.representations.values():
+            if representation['presentation_layer']:
+                self.presentation_layer_assignments.setdefault(
+                        representation['presentation_layer'], []).append(representation)
+
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
             return
@@ -896,6 +904,7 @@ class IfcParser():
             'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
+            'presentation_layer': mesh.BIMMeshProperties.presentation_layer,
             'attributes': {'Name': mesh.name}
         }
 
@@ -1126,6 +1135,7 @@ class IfcExporter():
         self.create_qtos()
         self.create_products()
         self.create_styled_items()
+        self.create_presentation_layer_assignments()
         self.relate_definitions_to_contexts()
         self.relate_objects_to_objects()
         self.relate_elements_to_spatial_structures()
@@ -1630,6 +1640,11 @@ class IfcExporter():
         if self.ifc_export_settings.should_use_presentation_style_assignment:
             surface_style = self.file.createIfcPresentationStyleAssignment([surface_style])
         return self.file.createIfcStyledItem(representation_item, [surface_style], item['attributes']['Name'])
+
+    def create_presentation_layer_assignments(self):
+        for name, assigned_items in self.ifc_parser.presentation_layer_assignments.items():
+            self.file.createIfcPresentationLayerAssignment(
+                name, None, [i['ifc'].MappedRepresentation for i in assigned_items], None)
 
     def create_materials(self):
         for material in self.ifc_parser.materials.values():
