@@ -367,17 +367,24 @@ class IfcImporter():
 
     def create_grids(self):
         grids = self.file.by_type('IfcGrid')
+        if not grids:
+            return
         for grid in grids:
             collection = bpy.data.collections.new(self.get_name(grid))
             self.project['blender'].children.link(collection)
-            self.create_grid_axes(grid.UAxes, collection)
-            self.create_grid_axes(grid.VAxes, collection)
+            element_matrix = self.get_local_placement(grid.ObjectPlacement)
+            element_matrix[0][3] *= self.unit_scale
+            element_matrix[1][3] *= self.unit_scale
+            element_matrix[2][3] *= self.unit_scale
+            self.create_grid_axes(grid.UAxes, collection, element_matrix)
+            self.create_grid_axes(grid.VAxes, collection, element_matrix)
 
-    def create_grid_axes(self, axes, grid):
+    def create_grid_axes(self, axes, grid, matrix_world):
         for axis in axes:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f'IfcGridAxis/{axis.AxisTag}', mesh)
+            obj.matrix_world = matrix_world
             grid.objects.link(obj)
 
     def create_type_products(self):
@@ -925,9 +932,6 @@ class IfcImporter():
             parent = mathutils.Matrix()
         else:
             parent = self.get_local_placement(plc.PlacementRelTo)
-        if self.ifc_import_settings.should_ignore_site_coordinates \
-            and 'IfcSite' in [o.is_a() for o in plc.PlacesObject]:
-            return parent
         return parent @ self.get_axis2placement(plc.RelativePlacement)
 
 class IfcImportSettings:
