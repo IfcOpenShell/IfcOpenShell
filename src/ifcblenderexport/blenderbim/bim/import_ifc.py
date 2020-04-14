@@ -367,8 +367,6 @@ class IfcImporter():
 
     def create_grids(self):
         grids = self.file.by_type('IfcGrid')
-        if not grids:
-            return
         for grid in grids:
             collection = bpy.data.collections.new(self.get_name(grid))
             self.project['blender'].children.link(collection)
