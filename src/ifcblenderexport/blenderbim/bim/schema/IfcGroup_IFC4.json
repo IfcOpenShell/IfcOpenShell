@@ -1,0 +1,1034 @@
+{
+    "IfcAsset": {
+        "is_abstract": false,
+        "parent": "IfcGroup",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Identification",
+                "type": "IfcIdentifier",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "IncorporationDate",
+                "type": "IfcDate",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "OriginalValue",
+                "type": "IfcCostValue",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "CurrentValue",
+                "type": "IfcCostValue",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "TotalReplacementCost",
+                "type": "IfcCostValue",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "Owner",
+                "type": "IfcActorSelect",
+                "is_select": true,
+                "select_types": [
+                    "IfcOrganization",
+                    "IfcPerson",
+                    "IfcPersonAndOrganization"
+                ]
+            },
+            {
+                "name": "User",
+                "type": "IfcActorSelect",
+                "is_select": true,
+                "select_types": [
+                    "IfcOrganization",
+                    "IfcPerson",
+                    "IfcPersonAndOrganization"
+                ]
+            },
+            {
+                "name": "ResponsiblePerson",
+                "type": "IfcPerson",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "DepreciatedValue",
+                "type": "IfcCostValue",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcBuildingSystem": {
+        "is_abstract": false,
+        "parent": "IfcSystem",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcBuildingSystemTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "FENESTRATION",
+                    "FOUNDATION",
+                    "LOADBEARING",
+                    "OUTERSHELL",
+                    "SHADING",
+                    "TRANSPORT",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "LongName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcDistributionCircuit": {
+        "is_abstract": false,
+        "parent": "IfcDistributionSystem",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "LongName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcDistributionSystemEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "AIRCONDITIONING",
+                    "AUDIOVISUAL",
+                    "CHEMICAL",
+                    "CHILLEDWATER",
+                    "COMMUNICATION",
+                    "COMPRESSEDAIR",
+                    "CONDENSERWATER",
+                    "CONTROL",
+                    "CONVEYING",
+                    "DATA",
+                    "DISPOSAL",
+                    "DOMESTICCOLDWATER",
+                    "DOMESTICHOTWATER",
+                    "DRAINAGE",
+                    "EARTHING",
+                    "ELECTRICAL",
+                    "ELECTROACOUSTIC",
+                    "EXHAUST",
+                    "FIREPROTECTION",
+                    "FUEL",
+                    "GAS",
+                    "HAZARDOUS",
+                    "HEATING",
+                    "LIGHTING",
+                    "LIGHTNINGPROTECTION",
+                    "MUNICIPALSOLIDWASTE",
+                    "OIL",
+                    "OPERATIONAL",
+                    "POWERGENERATION",
+                    "RAINWATER",
+                    "REFRIGERATION",
+                    "SECURITY",
+                    "SEWAGE",
+                    "SIGNAL",
+                    "STORMWATER",
+                    "TELEPHONE",
+                    "TV",
+                    "VACUUM",
+                    "VENT",
+                    "VENTILATION",
+                    "WASTEWATER",
+                    "WATERSUPPLY",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcDistributionSystem": {
+        "is_abstract": false,
+        "parent": "IfcSystem",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "LongName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcDistributionSystemEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "AIRCONDITIONING",
+                    "AUDIOVISUAL",
+                    "CHEMICAL",
+                    "CHILLEDWATER",
+                    "COMMUNICATION",
+                    "COMPRESSEDAIR",
+                    "CONDENSERWATER",
+                    "CONTROL",
+                    "CONVEYING",
+                    "DATA",
+                    "DISPOSAL",
+                    "DOMESTICCOLDWATER",
+                    "DOMESTICHOTWATER",
+                    "DRAINAGE",
+                    "EARTHING",
+                    "ELECTRICAL",
+                    "ELECTROACOUSTIC",
+                    "EXHAUST",
+                    "FIREPROTECTION",
+                    "FUEL",
+                    "GAS",
+                    "HAZARDOUS",
+                    "HEATING",
+                    "LIGHTING",
+                    "LIGHTNINGPROTECTION",
+                    "MUNICIPALSOLIDWASTE",
+                    "OIL",
+                    "OPERATIONAL",
+                    "POWERGENERATION",
+                    "RAINWATER",
+                    "REFRIGERATION",
+                    "SECURITY",
+                    "SEWAGE",
+                    "SIGNAL",
+                    "STORMWATER",
+                    "TELEPHONE",
+                    "TV",
+                    "VACUUM",
+                    "VENT",
+                    "VENTILATION",
+                    "WASTEWATER",
+                    "WATERSUPPLY",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcGroup": {
+        "is_abstract": false,
+        "parent": "IfcObject",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcInventory": {
+        "is_abstract": false,
+        "parent": "IfcGroup",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcInventoryTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "ASSETINVENTORY",
+                    "SPACEINVENTORY",
+                    "FURNITUREINVENTORY",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "LastUpdateDate",
+                "type": "IfcDate",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "Jurisdiction",
+                "type": "IfcActorSelect",
+                "is_select": true,
+                "select_types": [
+                    "IfcOrganization",
+                    "IfcPerson",
+                    "IfcPersonAndOrganization"
+                ]
+            },
+            {
+                "name": "CurrentValue",
+                "type": "IfcCostValue",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "OriginalValue",
+                "type": "IfcCostValue",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcStructuralAnalysisModel": {
+        "is_abstract": false,
+        "parent": "IfcSystem",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcAnalysisModelTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "IN_PLANE_LOADING_2D",
+                    "OUT_PLANE_LOADING_2D",
+                    "LOADING_3D",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "OrientationOf2DPlane",
+                "type": "IfcAxis2Placement3D",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "SharedPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcStructuralLoadCase": {
+        "is_abstract": false,
+        "parent": "IfcStructuralLoadGroup",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcLoadGroupTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "LOAD_GROUP",
+                    "LOAD_CASE",
+                    "LOAD_COMBINATION",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ActionType",
+                "type": "IfcActionTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "PERMANENT_G",
+                    "VARIABLE_Q",
+                    "EXTRAORDINARY_A",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ActionSource",
+                "type": "IfcActionSourceTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "DEAD_LOAD_G",
+                    "COMPLETION_G1",
+                    "LIVE_LOAD_Q",
+                    "SNOW_S",
+                    "WIND_W",
+                    "PRESTRESSING_P",
+                    "SETTLEMENT_U",
+                    "TEMPERATURE_T",
+                    "EARTHQUAKE_E",
+                    "FIRE",
+                    "IMPULSE",
+                    "IMPACT",
+                    "TRANSPORT",
+                    "ERECTION",
+                    "PROPPING",
+                    "SYSTEM_IMPERFECTION",
+                    "SHRINKAGE",
+                    "CREEP",
+                    "LACK_OF_FIT",
+                    "BUOYANCY",
+                    "ICE",
+                    "CURRENT",
+                    "WAVE",
+                    "RAIN",
+                    "BRAKES",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "Coefficient",
+                "type": "IfcRatioMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Purpose",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcStructuralLoadGroup": {
+        "is_abstract": false,
+        "parent": "IfcGroup",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcLoadGroupTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "LOAD_GROUP",
+                    "LOAD_CASE",
+                    "LOAD_COMBINATION",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ActionType",
+                "type": "IfcActionTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "PERMANENT_G",
+                    "VARIABLE_Q",
+                    "EXTRAORDINARY_A",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ActionSource",
+                "type": "IfcActionSourceTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "DEAD_LOAD_G",
+                    "COMPLETION_G1",
+                    "LIVE_LOAD_Q",
+                    "SNOW_S",
+                    "WIND_W",
+                    "PRESTRESSING_P",
+                    "SETTLEMENT_U",
+                    "TEMPERATURE_T",
+                    "EARTHQUAKE_E",
+                    "FIRE",
+                    "IMPULSE",
+                    "IMPACT",
+                    "TRANSPORT",
+                    "ERECTION",
+                    "PROPPING",
+                    "SYSTEM_IMPERFECTION",
+                    "SHRINKAGE",
+                    "CREEP",
+                    "LACK_OF_FIT",
+                    "BUOYANCY",
+                    "ICE",
+                    "CURRENT",
+                    "WAVE",
+                    "RAIN",
+                    "BRAKES",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "Coefficient",
+                "type": "IfcRatioMeasure",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Purpose",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcStructuralResultGroup": {
+        "is_abstract": false,
+        "parent": "IfcGroup",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "TheoryType",
+                "type": "IfcAnalysisTheoryTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "FIRST_ORDER_THEORY",
+                    "SECOND_ORDER_THEORY",
+                    "THIRD_ORDER_THEORY",
+                    "FULL_NONLINEAR_THEORY",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "IsLinear",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "ResultForLoadGroup",
+                "type": "IfcStructuralLoadGroup",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcSystem": {
+        "is_abstract": false,
+        "parent": "IfcGroup",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcZone": {
+        "is_abstract": false,
+        "parent": "IfcSystem",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "LongName",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    }
+}

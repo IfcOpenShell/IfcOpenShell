@@ -41,9 +41,11 @@ class IFC4Extractor:
 
     def is_descendant_from_class(self, element, class_name):
         if element is None \
-            or "substitutionGroup" not in element.attrib:
+                or 'substitutionGroup' not in element.attrib \
+                or 'type' not in element.attrib:
             return False
-        if element.attrib["substitutionGroup"] == 'ifc:{}'.format(class_name):
+        if element.attrib['substitutionGroup'] == 'ifc:{}'.format(class_name) \
+                or element.attrib['type'] == 'ifc:{}'.format(class_name):
             return True
         return self.is_descendant_from_class(self.get_parent_element(element), class_name)
 
@@ -149,6 +151,7 @@ filename_filters = {
     'IfcContext_IFC4.json': ['IfcContext'],
     'IfcElement_IFC4.json': ['IfcElement'],
     'IfcSpatialElement_IFC4.json': ['IfcSpatialElement'],
+    'IfcGroup_IFC4.json': ['IfcGroup'],
     'IfcStructural_IFC4.json': ['IfcStructuralActivity', 'IfcStructuralItem'],
     'IfcMaterialDefinition_IFC4.json': ['IfcMaterialDefinition'],
     'IfcParameterizedProfileDef_IFC4.json': ['IfcParameterizedProfileDef'],
