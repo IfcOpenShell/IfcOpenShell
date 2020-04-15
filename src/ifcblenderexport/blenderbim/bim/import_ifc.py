@@ -198,6 +198,7 @@ class IfcImporter():
         self.unit_scale = 1
         self.added_data = {}
         self.native_data = {}
+        self.groups = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings)
 
@@ -218,6 +219,7 @@ class IfcImporter():
         self.parse_native_products()
         self.filter_ifc()
         self.patch_ifc()
+        self.create_groups()
         self.create_type_products()
         self.create_grids()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
@@ -364,6 +366,18 @@ class IfcImporter():
             element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+
+    def create_groups(self):
+        collection = bpy.data.collections.new('Groups')
+        self.project['blender'].children.link(collection)
+        for element in self.file.by_type('IfcGroup'):
+            obj = bpy.data.objects.new(f'IfcGroup/{element.Name}', None)
+            self.add_element_attributes(element, obj)
+            collection.objects.link(obj)
+            self.groups[element.GlobalId] = {
+                'ifc': element,
+                'blender': obj
+            }
 
     def create_grids(self):
         grids = self.file.by_type('IfcGrid')

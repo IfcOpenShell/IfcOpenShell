@@ -13,6 +13,7 @@ class IfcSchema():
             'IfcContext',
             'IfcElement',
             'IfcSpatialElement',
+            'IfcGroup',
             'IfcStructural',
             'IfcMaterialDefinition',
             'IfcParameterizedProfileDef',
