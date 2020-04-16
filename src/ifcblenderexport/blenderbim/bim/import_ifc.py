@@ -197,6 +197,7 @@ class IfcImporter():
         self.time = 0
         self.unit_scale = 1
         self.added_data = {}
+        self.native_elements = {}
         self.native_data = {}
         self.groups = {}
 
@@ -268,16 +269,17 @@ class IfcImporter():
 
     def parse_native_products(self):
         # TODO: simple code for now as we only treat rebar specially
+        self.native_data['rebar_profiles'] = {}
         for element in self.file.by_type('IfcReinforcingBar'):
             for representation in element.Representation.Representations:
                 self.replace_with_directrix(representation, element)
                 for item in representation.Items:
                     if item.is_a('IfcMappedItem'):
                         self.replace_with_directrix(item.MappingSource.MappedRepresentation, element)
-        for global_id, data in self.native_data.items():
-            bevel_object = bpy.data.objects.new('rebar-profile', self.create_bezier_circle(data['radius']))
-            bpy.context.scene.collection.objects.link(bevel_object)
-            data['bevel_object'] = bevel_object
+        for radius in self.native_data['rebar_profiles'].keys():
+            obj = bpy.data.objects.new('rebar-profile-{}'.format(radius), self.create_bezier_circle(radius))
+            self.native_data['rebar_profiles'][radius] = obj
+            bpy.context.scene.collection.objects.link(obj)
 
     def create_bezier_circle(self, radius):
         curve = bpy.data.curves.new('circle-profile', type='CURVE')
@@ -307,7 +309,9 @@ class IfcImporter():
         for item in representation.Items:
             if item.is_a('IfcSweptDiskSolid'):
                 new_items.append(item.Directrix)
-                self.native_data[element.GlobalId] = { 'radius': self.unit_scale * item.Radius }
+                radius = round(self.unit_scale * item.Radius, 3)
+                self.native_elements[element.GlobalId] = { 'radius': radius }
+                self.native_data['rebar_profiles'][radius] = None
             else:
                 new_items.append(item)
         representation.Items = new_items
@@ -461,7 +465,7 @@ class IfcImporter():
                 # TODO: figure out a design pattern for native objects
                 if element.is_a('IfcReinforcingBar'):
                     mesh = self.create_mesh(element, shape, is_curve=True)
-                    mesh.bevel_object = self.native_data[element.GlobalId]['bevel_object']
+                    mesh.bevel_object = self.native_data['rebar_profiles'][self.native_elements[element.GlobalId]['radius']]
                     mesh.use_fill_caps = True
                 else:
                     mesh = self.create_mesh(element, shape)
