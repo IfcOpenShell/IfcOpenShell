@@ -1599,3 +1599,66 @@ class OpenUpstream(bpy.types.Operator):
         elif self.page == 'community':
             webbrowser.open('https://community.osarch.org/')
         return {'FINISHED'}
+
+
+class BIM_OT_CopyAttributesToSelection(bpy.types.Operator):
+    """Copies attributes from the active object towards selected objects"""
+    bl_idname = "bim.copy_attributes_to_selection"
+    bl_label = "Copy Attributes To Selection"
+
+    prop_base = bpy.props.StringProperty() # data for properties to assign to
+    prop_name = bpy.props.StringProperty(description="Property name which to change")
+    sub_props = bpy.props.StringProperty() # properties which to copy (commasep). (empty = all)
+    collection_element = bpy.props.BoolProperty(
+        description="If this is a collection element, copy the complete thing")
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        active_object = bpy.context.active_object
+        selected_objects = [obj for obj in bpy.context.visible_objects
+            if obj.type == active_object.type and obj in bpy.context.selected_objects and obj!=active_object]
+        if self.prop_base:
+            prop_base = eval('active_object.'+ self.prop_base)
+        else:
+            prop_base = active_object
+        if not self.collection_element:
+            self.copy_simple(prop_base, selected_objects)
+            return {'FINISHED'}
+        self.copy_collection(prop_base, selected_objects)
+        return {'FINISHED'}
+
+    def copy_simple(self, prop_base, selected_objects):
+        prop = getattr(prop_base, self.prop_name)
+        for obj in selected_objects:
+            if self.prop_base:
+                new_prop_base = eval('obj.' + self.prop_base)
+            else:
+                new_prop_base = obj
+            setattr(new_prop_base, self.prop_name, prop)
+
+    def copy_collection(self, prop_base, selected_objects):
+        prop = prop_base[self.prop_name]
+        for obj in selected_objects:
+            if self.prop_base:
+                new_prop_base = eval('obj.' + self.prop_base)
+            else:
+                new_prop_base = obj
+
+            if self.prop_name in new_prop_base:
+                new_prop_base = new_prop_base[self.prop_name]
+            else:
+                new_prop_base = new_prop_base.add()
+
+            if self.sub_props:
+                for p in self.sub_props.replace(' ','').split(','):
+                    try:
+                        setattr(new_prop_base, p, getattr(prop, p))
+                    except: pass
+            else:
+                for p in dir(prop):
+                    try:
+                        setattr(new_prop_base, p, getattr(prop, p))
+                    except: pass

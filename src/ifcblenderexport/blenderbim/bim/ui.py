@@ -32,6 +32,10 @@ class BIM_PT_object(Panel):
             row = layout.row(align=True)
             row.prop(attribute, 'name', text='')
             row.prop(attribute, 'string_value', text='')
+            op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
+            op.prop_base = 'BIMObjectProperties.attributes'
+            op.prop_name = attribute.name
+            op.collection_element = True
             row.operator('bim.remove_attribute', icon='X', text='').attribute_index = index
 
         row = layout.row()
@@ -71,6 +75,10 @@ class BIM_PT_object(Panel):
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
+                op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
+                op.prop_base = 'BIMObjectProperties.override_psets[\'{}\'].properties'.format(pset.name)
+                op.prop_name = prop.name
+                op.collection_element = True
 
         layout.label(text="Quantities:")
 
