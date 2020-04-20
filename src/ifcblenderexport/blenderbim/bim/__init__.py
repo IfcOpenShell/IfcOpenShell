@@ -94,6 +94,7 @@ if bpy is not None:
         operator.AssignContext,
         operator.SetViewPreset1,
         operator.OpenUpstream,
+        operator.BIM_OT_CopyAttributesToSelection,
         prop.BcfTopic,
         prop.BcfTopicLabel,
         prop.BcfTopicFile,
