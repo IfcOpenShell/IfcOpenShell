@@ -6,6 +6,7 @@ from deepdiff import DeepDiff
 import time
 import json
 import argparse
+import decimal
 
 
 class IfcDiff():
@@ -16,10 +17,13 @@ class IfcDiff():
         self.change_register = {}
         self.representation_ids = []
         self.inverse_classes = inverse_classes
+        self.precision = 2
 
     def diff(self):
         print('# IFC Diff')
         self.load()
+
+        self.precision = self.get_precision()
 
         old_elements = set(e.GlobalId for e in self.old.by_type('IfcProduct'))
         new_elements = set(e.GlobalId for e in self.new.by_type('IfcProduct'))
@@ -71,9 +75,19 @@ class IfcDiff():
         print('Loading new file ...')
         self.new = ifcopenshell.open(self.new_file)
 
+    def get_precision(self):
+        try:
+            precision = [c for c in self.new.by_type('IfcGeometricRepresentationContext') if c.ContextType == 'Model'][0].Precision
+            exponent = decimal.Decimal(str(precision)).as_tuple().exponent
+            if exponent < 0:
+                return abs(exponent)
+            return 0
+        except:
+            return 2
+
     def diff_element(self, old_element, new_element):
         diff = DeepDiff(old_element, new_element,
-            significant_digits=2, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+            significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
             exclude_regex_paths=[
                 r'root.*id$',
                 r'.*Representation.*',
@@ -96,7 +110,7 @@ class IfcDiff():
             new_relationships = [x for x in new_relationships_all if x.is_a() in self.inverse_classes]
 
         diff = DeepDiff(old_relationships, new_relationships,
-            significant_digits=2, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+            significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
             exclude_regex_paths=[
                 r'root.*id$',
                 r'.*GlobalId.*',
@@ -113,12 +127,12 @@ class IfcDiff():
         try:
             DeepDiff(old_element.ObjectPlacement, new_element.ObjectPlacement,
                 terminate_on_first=True,
-                significant_digits=2, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+                significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
                 exclude_regex_paths=r'root.*id$')
             DeepDiff(old_element.Representation, new_element.Representation,
                 terminate_on_first=True,
                 skip_after_n=1000, # Arbitrary value to "skim" check
-                significant_digits=2, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
+                significant_digits=self.precision, ignore_string_type_changes=True, ignore_numeric_type_changes=True,
                 exclude_regex_paths=r'root.*id$')
         except:
             if new_element.GlobalId:
