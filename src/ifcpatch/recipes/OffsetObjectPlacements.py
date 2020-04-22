@@ -24,23 +24,35 @@ class Patcher:
                 placement.RelativePlacement.Location.Coordinates[2] + float(self.args[2])
             )
 
+            relative_placement = self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint(offset_location))
+
+            if placement.RelativePlacement.Axis:
+                relative_placement.Axis = placement.RelativePlacement.Axis
+            if placement.RelativePlacement.RefDirection:
+                relative_placement.RefDirection = placement.RelativePlacement.RefDirection
+
             angle = float(self.args[3])
             if not angle:
-                placement.RelativePlacement.Location.Coordinates = offset_location
+                placement.RelativePlacement = relative_placement
                 continue
 
             rotation_matrix = self.z_rotation_matrix(math.radians(angle))
-            placement.RelativePlacement.Location.Coordinates = self.multiply_by_matrix(offset_location, rotation_matrix)
+            relative_placement.Location.Coordinates = self.multiply_by_matrix(offset_location, rotation_matrix)
 
             if placement.RelativePlacement.Axis:
                 z_axis = placement.RelativePlacement.Axis.DirectionRatios
-                placement.RelativePlacement.Axis.DirectionRatios = self.multiply_by_matrix(z_axis, rotation_matrix)
+                relative_placement.Axis = self.file.createIfcDirection(
+                    self.multiply_by_matrix(z_axis, rotation_matrix))
 
             if placement.RelativePlacement.RefDirection:
                 x_axis = placement.RelativePlacement.RefDirection.DirectionRatios
-                placement.RelativePlacement.RefDirection.DirectionRatios = self.multiply_by_matrix(x_axis, rotation_matrix)
             else:
-                x_axis = self.file.createIfcDirection(self.multiply_by_matrix((1., 0., 0.), rotation_matrix))
+                x_axis = (1., 0., 0.)
+            relative_placement.RefDirection = self.file.createIfcDirection(
+                self.multiply_by_matrix(x_axis, rotation_matrix))
+
+            placement.RelativePlacement = relative_placement
 
     def get_absolute_placement(self, object_placement):
         if object_placement.PlacementRelTo:
