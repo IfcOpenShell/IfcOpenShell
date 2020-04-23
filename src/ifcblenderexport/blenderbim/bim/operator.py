@@ -1198,14 +1198,64 @@ class ExplodeAggregate(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class LoadClassification(bpy.types.Operator):
+    bl_idname = 'bim.load_classification'
+    bl_label = 'Load Classification'
+
+    def execute(self, context):
+        from . import prop
+        prop.ClassificationView.raw_data = schema.ifc.load_classification(
+            context.scene.BIMProperties.classification)
+        context.scene.BIMProperties.classification_references.root = ''
+        return {'FINISHED'}
+
+
+class AddClassification(bpy.types.Operator):
+    bl_idname = 'bim.add_classification'
+    bl_label = 'Add Classification'
+
+    def execute(self, context):
+        if context.scene.BIMProperties.classification in schema.ifc.classifications:
+            data = schema.ifc.classifications[context.scene.BIMProperties.classification]
+            classification = context.scene.BIMProperties.classifications.add()
+            classification.source = data.Source
+            classification.edition = data.Edition
+            classification.edition_date = data.EditionDate
+            classification.name = data.Name
+            classification.description = data.Description
+            classification.location = data.Location
+            classification.reference_tokens = str(data.ReferenceTokens)
+        return {'FINISHED'}
+
+
+class RemoveClassification(bpy.types.Operator):
+    bl_idname = 'bim.remove_classification'
+    bl_label = 'Remove Classification'
+    classification_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.classifications.remove(self.classification_index)
+        return {'FINISHED'}
+
+
 class AssignClassification(bpy.types.Operator):
     bl_idname = 'bim.assign_classification'
     bl_label = 'Assign Classification'
 
     def execute(self, context):
+        referenced_source = schema.ifc.classifications[bpy.context.scene.BIMProperties.classification].Name
         for obj in bpy.context.selected_objects:
             classification = obj.BIMObjectProperties.classifications.add()
-            classification.identification = bpy.context.scene.BIMProperties.reference
+            refs = bpy.context.scene.BIMProperties.classification_references
+            data = refs.root['children'][refs.children[refs.active_index].name]
+            if data['identification']:
+                classification.name = data['identification']
+            if data['name']:
+                classification.human_name = data['name']
+            for key in ['location', 'description']:
+                if data[key]:
+                    setattr(classification, key, data[key])
+            classification.referenced_source = referenced_source
         return {'FINISHED'}
 
 
@@ -1214,18 +1264,20 @@ class UnassignClassification(bpy.types.Operator):
     bl_label = 'Unassign Classification'
 
     def execute(self, context):
+        refs = bpy.context.scene.BIMProperties.classification_references
+        key = refs.children[refs.active_index].name
         for obj in bpy.context.selected_objects:
-            index = object.BIMObjectProperties.classifications.find(bpy.context.scene.BIMProperties.classification)
+            index = obj.BIMObjectProperties.classifications.find(key)
             if index != -1:
-                object.BIMObjectProperties.classifications.remove(index)
+                obj.BIMObjectProperties.classifications.remove(index)
 
             obj.BIMObjectProperties.classification = ''
         return {'FINISHED'}
 
 
-class RemoveClassification(bpy.types.Operator):
-    bl_idname = 'bim.remove_classification'
-    bl_label = 'Remove Classification'
+class RemoveClassificationReference(bpy.types.Operator):
+    bl_idname = 'bim.remove_classification_reference'
+    bl_label = 'Remove Classification Reference'
     classification_index: bpy.props.IntProperty()
 
     def execute(self, context):
@@ -1662,3 +1714,24 @@ class BIM_OT_CopyAttributesToSelection(bpy.types.Operator):
                     try:
                         setattr(new_prop_base, p, getattr(prop, p))
                     except: pass
+
+
+class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
+    bl_idname = "bim.change_classification_level"
+    bl_label = "Change Classification Level"
+
+    # string representing the id-data (e.g. the scene).
+    path_sid: bpy.props.StringProperty()
+    # path from the id-data to the classification view object
+    path_lst: bpy.props.StringProperty()
+    # name of child entity to enter (empty = go up one level)
+    path_itm: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        id_data = eval(self.path_sid)
+        lst = id_data.path_resolve(self.path_lst)
+        if self.path_itm:
+            lst.root = self.path_itm
+        else:
+            lst.root = ''
+        return {'FINISHED'}

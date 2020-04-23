@@ -111,17 +111,6 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'documents')
 
-        layout.label(text="Classification:")
-
-        for index, classification in enumerate(props.classifications):
-            row = layout.row(align=True)
-            row.prop(classification, 'identification', text='')
-            row.prop(classification, 'name', text='')
-            row.operator('bim.remove_classification', icon='X', text='').classification_index = index
-
-        row = layout.row()
-        row.prop(props, 'classifications')
-
         row = layout.row()
         row.prop(props, 'material_type')
 
@@ -141,6 +130,87 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'structural_member_connection')
 
+
+class BIM_PT_classification_references(Panel):
+    bl_label = 'Classification References'
+    bl_idname = 'BIM_PT_classification_references'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
+
+        layout.label(text="Classification:")
+
+        for index, classification in enumerate(props.classifications):
+            row = layout.row(align=True)
+            row.prop(classification, 'name')
+            row.operator('bim.remove_classification_reference', icon='X', text='').classification_index = index
+            row = layout.row(align=True)
+            row.prop(classification, 'human_name')
+            row = layout.row(align=True)
+            row.prop(classification, 'location')
+            row = layout.row(align=True)
+            row.prop(classification, 'description')
+            row = layout.row(align=True)
+            row.prop(classification, 'referenced_source')
+
+        row = layout.row()
+        row.prop(props, 'classifications')
+
+
+class BIM_PT_classifications(Panel):
+    bl_label = 'Classifications'
+    bl_idname = 'BIM_PT_classifications'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMProperties
+
+        row = layout.row(align=True)
+        row.prop(props, "classification", text='')
+        row.operator("bim.add_classification", text='', icon='ADD')
+
+        if context.scene.BIMProperties.classification_references.raw_data:
+            context.scene.BIMProperties.classification_references.draw_stub(context, layout)
+            row = layout.row(align=True)
+            row.operator("bim.assign_classification")
+            row.operator("bim.unassign_classification")
+        else:
+            row = layout.row(align=True)
+            row.operator('bim.load_classification')
+
+        if not props.classifications:
+            return
+
+        layout.label(text="Classifications:")
+
+        for index, classification in enumerate(props.classifications):
+            row = layout.row(align=True)
+            row.prop(classification, 'name')
+            row.operator('bim.remove_classification', icon='X', text='').classification_index = index
+            row = layout.row(align=True)
+            row.prop(classification, 'source')
+            row = layout.row(align=True)
+            row.prop(classification, 'edition')
+            row = layout.row(align=True)
+            row.prop(classification, 'edition_date')
+            row = layout.row(align=True)
+            row.prop(classification, 'description')
+            row = layout.row(align=True)
+            row.prop(classification, 'location')
+            row = layout.row(align=True)
+            row.prop(classification, 'reference_tokens')
+
+        row = layout.row()
+        row.prop(props, 'classifications')
 
 class BIM_PT_mesh(Panel):
     bl_label = 'IFC Representations'
@@ -499,16 +569,6 @@ class BIM_PT_bim(Panel):
         row.operator("bim.edit_aggregate")
         row.operator("bim.save_aggregate")
 
-        layout.label(text="Classifications:")
-        row = layout.row()
-        row.prop(bim_properties, "classification")
-        row = layout.row()
-        row.prop(bim_properties, "reference")
-
-        row = layout.row(align=True)
-        row.operator("bim.assign_classification")
-        row.operator("bim.unassign_classification")
-
 
 class BIM_PT_search(Panel):
     bl_label = "BIM Search"
@@ -850,6 +910,24 @@ class BIM_UL_topics(bpy.types.UIList):
             layout.prop(item, 'name', text='', emboss=False)
         else:
             layout.label(text="", translate=False)
+
+
+class BIM_UL_classifications(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            rt = data.root
+            ch = rt['children']
+            itemdata = ch[item.name]
+            if itemdata.get('children', {}):
+                op = layout.operator("bim.change_classification_level", text="",
+                    emboss=False, icon="DISCLOSURE_TRI_RIGHT")
+                op.path_sid = "%r"%active_data.id_data # get id-data
+                op.path_lst = active_data.path_from_id() # path to view
+                op.path_itm = item.name # name of child. empty = go up
+            else:
+                layout.label(text='', icon='BLANK1')
+            layout.prop(item, "name", text="", emboss=False)
+            layout.label(text=itemdata['name'])
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
