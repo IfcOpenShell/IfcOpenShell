@@ -21,14 +21,22 @@ class IfcSchema():
             'IfcElementType'
         ]
         self.elements = {}
+
         self.property_files = []
         property_paths = Path(self.schema_dir).glob('Pset_*.ifc')
         for path in property_paths:
             self.property_files.append(ifcopenshell.open(path))
+
+        self.classification_files = {}
+        classification_paths = Path(self.schema_dir).glob('classifications/*.ifc')
+        for path in classification_paths:
+            self.classification_files[os.path.basename(path).split('.')[0]] = ifcopenshell.open(path)
+
         self.psets = {}
         self.qtos = {}
         self.applicable_psets = {}
         self.applicable_qtos = {}
+        self.classifications = {}
         self.load()
 
     def load(self):
@@ -52,5 +60,32 @@ class IfcSchema():
                         'HasPropertyTemplates': {p.Name: p for p in prop.HasPropertyTemplates}}
                     entity = prop.ApplicableEntity if prop.ApplicableEntity else 'IfcRoot'
                     self.applicable_psets.setdefault(entity, []).append(prop.Name)
+
+        for filename, classification_file in self.classification_files.items():
+            classification = classification_file.by_type('IfcClassification')[0]
+            self.classifications[filename] = classification
+
+    def load_classification(self, filename):
+        classification = self.classifications[filename]
+        return {
+            'name': '',
+            'description': '',
+            'children': self.get_classification_references(classification)
+        }
+
+    def get_classification_references(self, classification):
+        references = {}
+        if not classification.HasReferences:
+            return references
+        for reference in classification.HasReferences:
+            references[reference.Identification] = {
+                'location': reference.Location,
+                'identification': reference.Identification,
+                'name': reference.Name,
+                'description': reference.Description,
+                'children': self.get_classification_references(reference)
+            }
+        return references
+
 
 ifc = IfcSchema()

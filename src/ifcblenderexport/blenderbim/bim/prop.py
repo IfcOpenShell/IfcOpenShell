@@ -32,7 +32,6 @@ scenarios_enum = []
 psetnames_enum = []
 psetfiles_enum = []
 classification_enum = []
-reference_enum = []
 attributes_enum = []
 overridepsetnames_enum = []
 qtonames_enum = []
@@ -236,31 +235,15 @@ def getClassifications(self, context):
     global classification_enum
     if len(classification_enum) < 1:
         classification_enum.clear()
-        with open(os.path.join(self.data_dir, 'class', 'classifications.csv'), 'r') as f:
-            data = list(csv.reader(f))
-            keys = data.pop(0)
-            index = keys.index('Name')
-            classification_enum.extend([(str(i), d[index], '') for i, d in enumerate(data)])
+        files = os.listdir(os.path.join(self.schema_dir, 'classifications'))
+        classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
     return classification_enum
 
 
 def refreshReferences(self, context):
-    global reference_enum
-    reference_enum.clear()
-    getReferences(self, context)
-
-
-def getReferences(self, context):
-    global reference_enum
-    if len(reference_enum) < 1:
-        if not self.classification.strip():
-            return reference_enum
-        with open(os.path.join(self.data_dir, 'class', 'references.csv'), 'r') as f:
-            data = list(csv.reader(f))
-            keys = data.pop(0)
-            reference_enum.extend([(d[0], '{} - {}'.format(d[0], d[1]), '') for d in data if
-                    d[2] == self.classification.strip()])
-    return reference_enum
+    context.scene.BIMProperties.classification_references.root = None
+    ClassificationView.raw_data = schema.ifc.load_classification(context.scene.BIMProperties.classification)
+    context.scene.BIMProperties.classification_references.root = ''
 
 
 def getOverridePsetNames(self, context):
@@ -388,6 +371,10 @@ def getSheets(self, context):
             f = str(filename.stem)
             sheets_enum.append((f, f, ''))
     return sheets_enum
+
+
+class StrProperty(PropertyGroup):
+    pass
 
 
 class Subcontext(PropertyGroup):
@@ -587,6 +574,78 @@ def getBcfViewpoints(self, context):
     return bcfviewpoints_enum
 
 
+class Classification(PropertyGroup):
+    name: StringProperty(name="Name")
+    source: StringProperty(name="Source")
+    edition: StringProperty(name="Edition")
+    edition_date: StringProperty(name="Edition Date")
+    description: StringProperty(name="Description")
+    location: StringProperty(name="Location")
+    reference_tokens: StringProperty(name="Reference Tokens")
+
+
+class ClassificationReference(PropertyGroup):
+    name: StringProperty(name="Identification")
+    location: StringProperty(name="Location")
+    human_name: StringProperty(name="Name")
+    referenced_source: StringProperty(name="Source")
+    description: StringProperty(name="Description")
+    sort: StringProperty(name="Sort")
+
+
+class ClassificationView(PropertyGroup):
+    crumbs: None
+    children: None
+    active_index: bpy.props.IntProperty()
+    raw_data = {}
+
+    @property
+    def root(self):
+        data = self.raw_data
+        for crumb in self.crumbs:
+            data = data['children'].get(crumb.name)
+            if not data:
+                raise TypeError('Cannot resolve crumb path')
+        return data
+
+    @root.setter
+    def root(self, rt):
+        if rt == None:
+            self.crumbs.clear()
+            self.children.clear()
+        elif rt == '':
+            if self.crumbs:
+                self.crumbs.remove(len(self.crumbs)-1)
+            self.children.clear()
+            for child in self.root['children'].keys():
+                self.children.add().name = child
+        else:
+            data = self.root
+            if rt in data['children'].keys():
+                self.crumbs.add().name = rt
+                self.children.clear()
+                for child in data['children'][rt]['children'].keys():
+                    self.children.add().name = child
+
+    def draw_stub(self, context, layout):
+        if not self.children:
+            op = layout.operator('bim.change_classification_level', text="@Toplevel")
+        else:
+            op = layout.operator('bim.change_classification_level', text=self.root['name'])
+        op.path_sid = "%r"%self.id_data
+        op.path_lst = self.path_from_id()
+        op.path_itm = ''
+        layout.template_list('BIM_UL_classifications',
+            self.path_from_id(), self, 'children', self, 'active_index')
+
+
+# Monkey-patched, just to keep registration in one block
+ClassificationView.__annotations__['crumbs'] = \
+    bpy.props.CollectionProperty(type=StrProperty)
+ClassificationView.__annotations__['children'] = \
+    bpy.props.CollectionProperty(type=StrProperty)
+
+
 class BIMProperties(PropertyGroup):
     schema_dir: StringProperty(default=os.path.join(cwd ,'schema') + os.path.sep, name="Schema Directory")
     data_dir: StringProperty(default=os.path.join(cwd, 'data') + os.path.sep, name="Data Directory")
@@ -639,7 +698,7 @@ class BIMProperties(PropertyGroup):
     aggregate_class: EnumProperty(items=getIfcClasses, name="Aggregate Class")
     aggregate_name: StringProperty(name="Aggregate Name")
     classification: EnumProperty(items=getClassifications, name="Classification", update=refreshReferences)
-    reference: EnumProperty(items=getReferences, name="Reference")
+    classifications: CollectionProperty(name="Classifications", type=Classification)
     has_model_context: BoolProperty(name="Has Model Context", default=True)
     has_plan_context: BoolProperty(name="Has Plan Context", default=False)
     model_subcontexts: CollectionProperty(name='Model Subcontexts', type=Subcontext)
@@ -647,6 +706,7 @@ class BIMProperties(PropertyGroup):
     available_contexts: EnumProperty(items=[('Model', 'Model', ''), ('Plan', 'Plan', '')], name="Available Contexts")
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
+    classification_references: PointerProperty(type=ClassificationView)
 
 
 class BCFProperties(PropertyGroup):
@@ -720,10 +780,6 @@ class PsetQto(PropertyGroup):
 class Document(PropertyGroup):
     file: StringProperty(name="File")
 
-class Classification(PropertyGroup):
-    name: StringProperty(name="Name")
-    identification: StringProperty(name="Identification")
-
 
 class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
@@ -744,7 +800,7 @@ class BIMObjectProperties(PropertyGroup):
     applicable_attributes: EnumProperty(items=getApplicableAttributes, name="Attribute Names")
     documents: CollectionProperty(name="Documents", type=Document)
     applicable_documents: EnumProperty(items=getApplicableDocuments, name="Available Documents")
-    classifications: CollectionProperty(name="Classifications", type=Classification)
+    classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     override_psets: CollectionProperty(name="Override Psets", type=PsetQto)
     override_pset_name: EnumProperty(items=getOverridePsetNames, name='Override Pset Name')

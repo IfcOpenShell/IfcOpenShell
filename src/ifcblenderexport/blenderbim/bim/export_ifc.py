@@ -463,7 +463,7 @@ class IfcParser():
 
         for classification in obj.BIMObjectProperties.classifications:
             self.rel_associates_classification_object.setdefault(
-                classification.identification, []).append(product)
+                classification.name, []).append(product)
 
         for key in obj.keys():
             if key[0:9] == 'Objective':
@@ -634,32 +634,39 @@ class IfcParser():
         return results
 
     def get_classifications(self):
-        results = []
-        class_path = self.data_dir + 'class/'
-        with open(class_path + 'classifications.csv', 'r') as f:
-            data = list(csv.reader(f))
-            keys = data.pop(0)
-            for row in data:
-                row[-1] = json.loads(row[-1])
-                results.append({
-                    'ifc': None,
-                    'raw': row,
-                    'attributes': dict(zip(keys, row))
-                })
+        classifications = bpy.context.scene.BIMProperties.classifications
+        results = {}
+        for classification in classifications:
+            results[classification.name] = {
+                'ifc': None,
+                'raw': classification,
+                'attributes': {
+                    'Name': classification.name,
+                    'Source': classification.source,
+                    'Edition': classification.edition,
+                    'EditionDate': classification.edition_date,
+                    'Description': classification.description,
+                    'Location': classification.location,
+                    'ReferenceTokens': json.loads(
+                        '[{}]'.format(classification.reference_tokens[1:-1].replace('\'', '"').strip(',')))
+                }
+            }
         return results
 
     def get_classification_references(self):
         results = {}
-        class_path = self.data_dir + 'class/'
-        with open(class_path + 'references.csv', 'r') as f:
-            data = list(csv.reader(f))
-            keys = data.pop(0)
-            for row in data:
-                results[row[0]] = {
+        for product in self.selected_products:
+            for reference in product['raw'].BIMObjectProperties.classifications:
+                results[reference.name] = {
                     'ifc': None,
-                    'raw': row,
-                    'referenced_source': int(row.pop()),
-                    'attributes': dict(zip(keys, row))
+                    'raw': reference,
+                    'referenced_source': reference.referenced_source,
+                    'attributes': {
+                        'Location': reference.location,
+                        'Identification': reference.name,
+                        'Name': reference.human_name,
+                        'Description': reference.description
+                    }
                 }
         return results
 
@@ -1323,7 +1330,7 @@ class IfcExporter():
                 [self.ifc_parser.project['ifc']], document['ifc'])
 
     def create_classifications(self):
-        for classification in self.ifc_parser.classifications:
+        for classification in self.ifc_parser.classifications.values():
             classification['ifc'] = self.file.create_entity(
                 'IfcClassification',
                 **classification['attributes']
