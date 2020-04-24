@@ -17,6 +17,9 @@
 #                                                                             #
 ###############################################################################
 
+from __future__ import print_function
+
+import io
 import string
 import collections
 
@@ -53,20 +56,47 @@ class EntityDeclaration(Node):
         self.derive = self.single_token_of_type(AttributeList, 'type', 'derive')
         self.supertypes = s.types if s else []
     def __repr__(self):
-        builder = ""
-        builder += "%sEntity(%s)" % ("Abstract " if self.abstract else "", self.name)
-        if len(self.supertypes):
-            builder += "\n  Supertypes: %s"%(",".join(self.supertypes))
-        if len(self.attributes):
-            builder += "\n  Attributes: %s"%("".join(["\n    %s"%a for a in self.attributes]))
+        strm = io.StringIO()
+        
+        print("ENTITY %s" % self.name, file=strm)
+        for x in (SuperTypeExpression, SubTypeExpression):
+            tk = self.single_token_of_type(x)
+            if tk is not None:
+                print("", tk, file=strm)
+        strm.seek(strm.tell() - 1)
+        print(";", file=strm)
+        
+        for a in self.attributes:
+            print("    ", a, ";", file=strm, sep='')
+        
         if self.derive:
-            builder += "\n  Derive:"
-            builder += str(self.derive)
+            print(" DERIVE", file=strm)
+            print(self.derive, file=strm)
+            
         if self.inverse:
-            builder += "\n  Inverse:"
-            builder += str(self.inverse)
-        builder += "\n"
-        return builder
+            print(" INVERSE", file=strm)
+            print(self.inverse, file=strm)
+        
+        tks = self.tokens.asList()
+        try:
+            whr = tks.index('where')
+            print(" WHERE", file=strm)
+            tks = tks[whr:-2]
+            tk_pairs = zip(tks[1:], tks)
+            def fmt(ss):
+                # import pdb; pdb.set_trace()
+                is_narrow = lambda s: s != ':' and len(s) == 1
+                narrow = any(map(is_narrow, ss))
+                lbreak = ss[0] == ';'
+                indent = ss[1] == 'where' or ss[1] == ';'
+                return "".join(((' ', '')[narrow or indent], ('', '    ')[indent], ss[0], ('', '\n')[lbreak]))
+            print(*map(fmt, tk_pairs), sep='', file=strm)
+            strm.seek(strm.tell() - 1)
+        except ValueError as e:
+            pass
+                
+        print("END_ENTITY;", file=strm)
+        return strm.getvalue()
 
 
 class UnderlyingType(Node):
@@ -83,7 +113,7 @@ class EnumerationType(Node):
     def init(self):
         assert self.type == 'enumeration'
     def __repr__(self):
-        return ",".join(self.values)
+        return "ENUMERATION OF (" + ",".join(self.values) + ")"
 
 
 class AggregationType(Node):
@@ -102,7 +132,7 @@ class SelectType(Node):
     def init(self):
         assert self.type == 'select'
     def __repr__(self):
-        return ",".join(self.values)
+        return "SELECT (" + ",".join(self.values) + ")"
 
 
 class SubSuperTypeExpression(Node):
@@ -114,6 +144,13 @@ class SubSuperTypeExpression(Node):
             self.tokens = self.tokens[1:]
             self.abstract = True
         assert self.type == self.type_relationship
+        
+    def __repr__(self):
+        terminals = {"abstract","subtype", "supertype", "of", "oneof"}
+        tks = [s.upper() if s in terminals else s for s in self.tokens]
+        if self.abstract:
+            tks.insert(0, "ABSTRACT")
+        return " ".join(tks)
 
 
 class SubTypeExpression(SubSuperTypeExpression):
@@ -132,7 +169,7 @@ class AttributeList(Node):
     def init(self):
         assert self.type == self.tokens[0]
     def __repr__(self):
-        return "".join(["\n    %s"%s for s in self.elements])
+        return "\n".join(["    %s;"%s for s in self.elements])
 
 
 class InverseAttribute(Node):
@@ -144,7 +181,7 @@ class InverseAttribute(Node):
     def init(self):
         assert self.bounds is None or isinstance(self.bounds, BoundSpecification)
     def __repr__(self):
-        return "%s = %s.%s (%s%s)"%(self.name, self.entity, self.attribute, self.type, self.bounds or "")
+        return "%s : %s %s OF %s FOR %s" % (self.name, (self.type or "").upper(), self.bounds or "", self.entity, self.attribute)
 
 
 class DerivedAttribute(Node):
@@ -185,7 +222,7 @@ class ExplicitAttribute(Node):
             self.tokens = self.tokens[i-1:]
         assert self.tokens[1] == ':'
     def __repr__(self):
-        return "%s : %s%s" % (self.name, self.type, " ?" if self.optional else "")
+        return "%s : %s%s" % (self.name, "OPTIONAL " if self.optional else "", self.type)
 
         
 class WidthSpec(Node):
