@@ -1735,3 +1735,60 @@ class BIM_OT_ChangeClassificationLevel(bpy.types.Operator):
         else:
             lst.root = ''
         return {'FINISHED'}
+
+
+class AddPropertySetTemplate(bpy.types.Operator):
+    bl_idname = 'bim.add_property_set_template'
+    bl_label = 'Add Property Set Template'
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class DeletePropertySetTemplate(bpy.types.Operator):
+    bl_idname = 'bim.delete_property_set_template'
+    bl_label = 'Delete Property Set Template'
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+class EditPropertySetTemplate(bpy.types.Operator):
+    bl_idname = 'bim.edit_property_set_template'
+    bl_label = 'Edit Property Set Template'
+
+    def execute(self, context):
+        f = ifcopenshell.open(os.path.join(context.scene.BIMProperties.data_dir,
+            'pset', context.scene.BIMProperties.pset_template_files + '.ifc'))
+        template = f.by_guid(context.scene.BIMProperties.property_set_templates)
+        context.scene.BIMProperties.active_property_set_template.global_id = template.GlobalId
+        context.scene.BIMProperties.active_property_set_template.name = template.Name
+        context.scene.BIMProperties.active_property_set_template.description = template.Description
+        context.scene.BIMProperties.active_property_set_template.template_type = template.TemplateType
+        context.scene.BIMProperties.active_property_set_template.applicable_entity = template.ApplicableEntity
+
+        while len(bpy.context.scene.BIMProperties.property_templates) > 0:
+            bpy.context.scene.BIMProperties.property_templates.remove(0)
+
+        for property_template in template.HasPropertyTemplates:
+            if not property_template.is_a('IfcSimplePropertyTemplate'):
+                continue
+            new = context.scene.BIMProperties.property_templates.add()
+            new.name = property_template.Name
+            new.description = property_template.Description
+            new.primary_measure_type = property_template.PrimaryMeasureType
+        return {'FINISHED'}
+
+class SavePropertySetTemplate(bpy.types.Operator):
+    bl_idname = 'bim.save_property_set_template'
+    bl_label = 'Save Property Set Template'
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class AddPropertyTemplate(bpy.types.Operator):
+    bl_idname = 'bim.add_property_template'
+    bl_label = 'Add Property Template'
+
+    def execute(self, context):
+        return {'FINISHED'}
