@@ -933,6 +933,11 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'import_should_reset_absolute_coordinates')
 
+        layout.label(text='Civil 3D Workarounds:')
+
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_reset_absolute_coordinates')
+
         layout.label(text='Revit Workarounds:')
 
         row = layout.row()
