@@ -31,6 +31,8 @@ featuresfiles_enum = []
 scenarios_enum = []
 psetnames_enum = []
 psetfiles_enum = []
+psettemplatefiles_enum = []
+propertysettemplates_enum = []
 classification_enum = []
 attributes_enum = []
 overridepsetnames_enum = []
@@ -223,12 +225,30 @@ def refreshPsetFiles(self, context):
 
 def getPsetFiles(self, context):
     global psetfiles_enum
-    if len(psetfiles_enum) < 1:
-        if not self.pset_name.strip():
-            return psetfiles_enum
-        files = os.listdir(os.path.join(self.data_dir, 'pset', self.pset_name.strip()))
-        psetfiles_enum.extend([(f.replace('.csv', ''), f.replace('.csv', ''), '') for f in files])
     return psetfiles_enum
+
+
+def getPsetTemplateFiles(self, context):
+    global psettemplatefiles_enum
+    if len(psettemplatefiles_enum) < 1:
+        files = os.listdir(os.path.join(self.data_dir, 'pset'))
+        psettemplatefiles_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
+    return psettemplatefiles_enum
+
+
+def refreshPropertySetTemplates(self, context):
+    global propertysettemplates_enum
+    propertysettemplates_enum.clear()
+    getPropertySetTemplates(self, context)
+
+
+def getPropertySetTemplates(self, context):
+    global propertysettemplates_enum
+    if len(propertysettemplates_enum) < 1:
+        f = ifcopenshell.open(os.path.join(self.data_dir, 'pset', self.pset_template_files + '.ifc'))
+        templates = f.by_type('IfcPropertySetTemplate')
+        propertysettemplates_enum.extend([(t.GlobalId, t.Name, '') for t in templates])
+    return propertysettemplates_enum
 
 
 def getClassifications(self, context):
@@ -574,6 +594,136 @@ def getBcfViewpoints(self, context):
     return bcfviewpoints_enum
 
 
+class PropertySetTemplate(PropertyGroup):
+    global_id: StringProperty(name="Global ID")
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    template_type: EnumProperty(items=[
+        ('PSET_TYPEDRIVENONLY', 'Pset - IfcTypeObject', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ('PSET_TYPEDRIVENOVERRIDE', 'Pset - IfcTypeObject - Override', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ], name="Template Type")
+    applicable_entity: StringProperty(name="Applicable Entity")
+
+
+class PropertyTemplate(PropertyGroup):
+    name: StringProperty(name='Name')
+    description: StringProperty(name='Description')
+    primary_measure_type: EnumProperty(items=[
+        (x, x, '') for x in [
+            'IfcInteger',
+            'IfcReal',
+            'IfcBoolean',
+            'IfcIdentifier',
+            'IfcText',
+            'IfcLabel',
+            'IfcLogical',
+            'IfcDateTime',
+            'IfcDate',
+            'IfcTime',
+            'IfcDuration',
+            'IfcTimeStamp',
+
+            'IfcPositiveInteger',
+            'IfcBinary',
+            'IfcVolumeMeasure',
+            'IfcTimeMeasure',
+            'IfcThermodynamicTemperatureMeasure',
+            'IfcSolidAngleMeasure',
+            'IfcPositiveRatioMeasure',
+            'IfcRatioMeasure',
+            'IfcPositivePlaneAngleMeasure',
+            'IfcPlaneAngleMeasure',
+            'IfcParameterValue',
+            'IfcNumericMeasure',
+            'IfcMassMeasure',
+            'IfcPositiveLengthMeasure',
+            'IfcLengthMeasure',
+            'IfcElectricCurrentMeasure',
+            'IfcDescriptiveMeasure',
+            'IfcCountMeasure',
+            'IfcContextDependentMeasure',
+            'IfcAreaMeasure',
+            'IfcAmountOfSubstanceMeasure',
+            'IfcLuminousIntensityMeasure',
+            'IfcNormalisedRatioMeasure',
+            'IfcComplexNumber',
+            'IfcNonNegativeLengthMeasure',
+
+            'IfcAbsorbedDoseMeasure',
+            'IfcAccelerationMeasure',
+            'IfcAngularVelocityMeasure',
+            'IfcAreaDensityMeasure',
+            'IfcCompoundPlaneAngleMeasure',
+            'IfcCurvatureMeasure',
+            'IfcDoseEquivalentMeasure',
+            'IfcDynamicViscosityMeasure',
+            'IfcElectricCapacitanceMeasure',
+            'IfcElectricChargeMeasure',
+            'IfcElectricConductanceMeasure',
+            'IfcElectricResistanceMeasure',
+            'IfcElectricVoltageMeasure',
+            'IfcEnergyMeasure',
+            'IfcForceMeasure',
+            'IfcFrequencyMeasure',
+            'IfcHeatFluxDensityMeasure',
+            'IfcHeatingValueMeasure',
+            'IfcIlluminanceMeasure',
+            'IfcInductanceMeasure',
+            'IfcIntegerCountRateMeasure',
+            'IfcIonConcentrationMeasure',
+            'IfcIsothermalMoistureCapacityMeasure',
+            'IfcKinematicViscosityMeasure',
+            'IfcLinearForceMeasure',
+            'IfcLinearMomentMeasure',
+            'IfcLinearStiffnessMeasure',
+            'IfcLinearVelocityMeasure',
+            'IfcLuminousFluxMeasure',
+            'IfcLuminousIntensityDistributionMeasure',
+            'IfcMagneticFluxDensityMeasure',
+            'IfcMagneticFluxMeasure',
+            'IfcMassDensityMeasure',
+            'IfcMassFlowRateMeasure',
+            'IfcMassPerLengthMeasure',
+            'IfcModulusOfElasticityMeasure',
+            'IfcModulusOfLinearSubgradeReactionMeasure',
+            'IfcModulusOfRotationalSubgradeReactionMeasure',
+            'IfcModulusOfSubgradeReactionMeasure',
+            'IfcMoistureDiffusivityMeasure',
+            'IfcMolecularWeightMeasure',
+            'IfcMomentOfInertiaMeasure',
+            'IfcMonetaryMeasure',
+            'IfcPHMeasure',
+            'IfcPlanarForceMeasure',
+            'IfcPowerMeasure',
+            'IfcPressureMeasure',
+            'IfcRadioActivityMeasure',
+            'IfcRotationalFrequencyMeasure',
+            'IfcRotationalMassMeasure',
+            'IfcRotationalStiffnessMeasure',
+            'IfcSectionModulusMeasure',
+            'IfcSectionalAreaIntegralMeasure',
+            'IfcShearModulusMeasure',
+            'IfcSoundPowerLevelMeasure',
+            'IfcSoundPowerMeasure',
+            'IfcSoundPressureLevelMeasure',
+            'IfcSoundPressureMeasure',
+            'IfcSpecificHeatCapacityMeasure',
+            'IfcTemperatureGradientMeasure',
+            'IfcTemperatureRateOfChangeMeasure',
+            'IfcThermalAdmittanceMeasure',
+            'IfcThermalConductivityMeasure',
+            'IfcThermalExpansionCoefficientMeasure',
+            'IfcThermalResistanceMeasure',
+            'IfcThermalTransmittanceMeasure',
+            'IfcTorqueMeasure',
+            'IfcVaporPermeabilityMeasure',
+            'IfcVolumetricFlowRateMeasure',
+            'IfcWarpingConstantMeasure',
+            'IfcWarpingMomentMeasure',
+            ]
+        ], name='Primary Measure Type')
+
+
 class Classification(PropertyGroup):
     name: StringProperty(name="Name")
     source: StringProperty(name="Source")
@@ -707,6 +857,10 @@ class BIMProperties(PropertyGroup):
     available_subcontexts: EnumProperty(items=getSubcontexts, name="Available Subcontexts")
     available_target_views: EnumProperty(items=getTargetViews, name="Available Target Views")
     classification_references: PointerProperty(type=ClassificationView)
+    pset_template_files: EnumProperty(items=getPsetTemplateFiles, name="Pset Template Files", update=refreshPropertySetTemplates)
+    property_set_templates: EnumProperty(items=getPropertySetTemplates, name="Pset Template Files")
+    active_property_set_template: PointerProperty(type=PropertySetTemplate)
+    property_templates: CollectionProperty(name='Property Templates', type=PropertyTemplate)
 
 
 class BCFProperties(PropertyGroup):
