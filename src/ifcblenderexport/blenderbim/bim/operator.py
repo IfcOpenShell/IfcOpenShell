@@ -150,13 +150,13 @@ class SelectPset(bpy.types.Operator):
         search_prop_name = bpy.context.scene.BIMProperties.search_prop_name
         search_value = bpy.context.scene.BIMProperties.search_pset_value
         for object in bpy.context.visible_objects:
-            pset_index = object.BIMObjectProperties.override_psets.find(search_pset_name)
+            pset_index = object.BIMObjectProperties.psets.find(search_pset_name)
             if pset_index == -1:
                 continue
-            prop_index = object.BIMObjectProperties.override_psets[pset_index].properties.find(search_prop_name)
+            prop_index = object.BIMObjectProperties.psets[pset_index].properties.find(search_prop_name)
             if prop_index == -1:
                 continue
-            value = object.BIMObjectProperties.override_psets[pset_index].properties[prop_index].string_value
+            value = object.BIMObjectProperties.psets[pset_index].properties[prop_index].string_value
             if bpy.context.scene.BIMProperties.search_regex \
                     and bpy.context.scene.BIMProperties.search_ignorecase \
                     and re.search(search_value, value, flags=re.IGNORECASE):
@@ -282,13 +282,13 @@ class ColourByPset(bpy.types.Operator):
         search_pset_name = bpy.context.scene.BIMProperties.search_pset_name
         search_prop_name = bpy.context.scene.BIMProperties.search_prop_name
         for obj in bpy.context.visible_objects:
-            pset_index = obj.BIMObjectProperties.override_psets.find(search_pset_name)
+            pset_index = obj.BIMObjectProperties.psets.find(search_pset_name)
             if pset_index == -1:
                 continue
-            prop_index = obj.BIMObjectProperties.override_psets[pset_index].properties.find(search_prop_name)
+            prop_index = obj.BIMObjectProperties.psets[pset_index].properties.find(search_prop_name)
             if prop_index == -1:
                 continue
-            value = obj.BIMObjectProperties.override_psets[pset_index].properties[prop_index].string_value
+            value = obj.BIMObjectProperties.psets[pset_index].properties[prop_index].string_value
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
@@ -638,52 +638,6 @@ class QuickProjectSetup(bpy.types.Operator):
         building_storey.objects.link(building_storey_obj)
         return {'FINISHED'}
 
-class AssignPset(bpy.types.Operator):
-    bl_idname = 'bim.assign_pset'
-    bl_label = 'Assign Pset'
-
-    def execute(self, context):
-        for object in bpy.context.selected_objects:
-            index = object.BIMObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
-            if index >= 0:
-                pset = object.BIMObjectProperties.psets[index]
-            else:
-                pset = object.BIMObjectProperties.psets.add()
-            pset.name = bpy.context.scene.BIMProperties.pset_name
-            pset.file = bpy.context.scene.BIMProperties.pset_file
-        return {'FINISHED'}
-
-class UnassignPset(bpy.types.Operator):
-    bl_idname = 'bim.unassign_pset'
-    bl_label = 'Unassign Pset'
-
-    def execute(self, context):
-        for object in bpy.context.selected_objects:
-            index = object.BIMObjectProperties.psets.find(bpy.context.scene.BIMProperties.pset_name)
-            if index != -1:
-                object.BIMObjectProperties.psets.remove(index)
-        return {'FINISHED'}
-
-class AddPset(bpy.types.Operator):
-    bl_idname = 'bim.add_pset'
-    bl_label = 'Add Pset'
-
-    def execute(self, context):
-        pset = bpy.context.active_object.BIMObjectProperties.psets.add()
-        pset.name = bpy.context.scene.BIMProperties.pset_name
-        pset.file = bpy.context.scene.BIMProperties.pset_file
-        return {'FINISHED'}
-
-
-class RemovePset(bpy.types.Operator):
-    bl_idname = 'bim.remove_pset'
-    bl_label = 'Remove Pset'
-    pset_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
-        return {'FINISHED'}
-
 
 class AddQto(bpy.types.Operator):
     bl_idname = 'bim.add_qto'
@@ -701,15 +655,15 @@ class AddQto(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class AddOverridePset(bpy.types.Operator):
-    bl_idname = 'bim.add_override_pset'
-    bl_label = 'Add Override Pset'
+class AddPset(bpy.types.Operator):
+    bl_idname = 'bim.add_pset'
+    bl_label = 'Add Pset'
 
     def execute(self, context):
-        pset_name = bpy.context.active_object.BIMObjectProperties.override_pset_name
+        pset_name = bpy.context.active_object.BIMObjectProperties.pset_name
         if pset_name not in schema.ifc.psets:
             return {'FINISHED'}
-        pset = bpy.context.active_object.BIMObjectProperties.override_psets.add()
+        pset = bpy.context.active_object.BIMObjectProperties.psets.add()
         pset.name = pset_name
         for prop_name in schema.ifc.psets[pset_name]['HasPropertyTemplates'].keys():
             prop = pset.properties.add()
@@ -717,13 +671,13 @@ class AddOverridePset(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class RemoveOverridePset(bpy.types.Operator):
-    bl_idname = 'bim.remove_override_pset'
-    bl_label = 'Remove Override Pset'
+class RemovePset(bpy.types.Operator):
+    bl_idname = 'bim.remove_pset'
+    bl_label = 'Remove Pset'
     pset_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.override_psets.remove(self.pset_index)
+        bpy.context.active_object.BIMObjectProperties.psets.remove(self.pset_index)
         return {'FINISHED'}
 
 

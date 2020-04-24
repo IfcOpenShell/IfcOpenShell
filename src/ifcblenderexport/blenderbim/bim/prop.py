@@ -36,7 +36,7 @@ psettemplatefiles_enum = []
 propertysettemplates_enum = []
 classification_enum = []
 attributes_enum = []
-overridepsetnames_enum = []
+psetnames_enum = []
 qtonames_enum = []
 materialattributes_enum = []
 documents_enum = []
@@ -209,26 +209,6 @@ def refreshScenarios(self, context):
     getScenarios(self, context)
 
 
-def getPsetNames(self, context):
-    global psetnames_enum
-    if len(psetnames_enum) < 1:
-        psetnames_enum.clear()
-        files = os.listdir(os.path.join(self.data_dir, 'pset'))
-        psetnames_enum.extend([(f, f, '') for f in files])
-    return psetnames_enum
-
-
-def refreshPsetFiles(self, context):
-    global psetfiles_enum
-    psetfiles_enum.clear()
-    getPsetFiles(self, context)
-
-
-def getPsetFiles(self, context):
-    global psetfiles_enum
-    return psetfiles_enum
-
-
 def getPsetTemplateFiles(self, context):
     global psettemplatefiles_enum
     if len(psettemplatefiles_enum) < 1:
@@ -269,17 +249,17 @@ def refreshReferences(self, context):
     context.scene.BIMProperties.classification_references.root = ''
 
 
-def getOverridePsetNames(self, context):
-    global overridepsetnames_enum
-    overridepsetnames_enum.clear()
+def getPsetNames(self, context):
+    global psetnames_enum
+    psetnames_enum.clear()
     if '/' in context.active_object.name \
             and context.active_object.name.split('/')[0] in schema.ifc.elements:
         empty = ifcopenshell.file()
         element = empty.create_entity(context.active_object.name.split('/')[0])
         for ifc_class, pset_names in schema.ifc.applicable_psets.items():
             if element.is_a(ifc_class):
-                overridepsetnames_enum.extend([(p, p, '') for p in pset_names])
-    return overridepsetnames_enum
+                psetnames_enum.extend([(p, p, '') for p in pset_names])
+    return psetnames_enum
 
 
 def getQtoNames(self, context):
@@ -837,8 +817,6 @@ class BIMProperties(PropertyGroup):
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     person: EnumProperty(items=getPersons, name="Person")
     organisation: EnumProperty(items=getOrganisations, name="Organisation")
-    pset_name: EnumProperty(items=getPsetNames, name="Pset Name", update=refreshPsetFiles)
-    pset_file: EnumProperty(items=getPsetFiles, name="Pset File")
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
     search_regex: BoolProperty(name="Search With Regex", default=False)
@@ -966,8 +944,7 @@ class BIMObjectProperties(PropertyGroup):
     applicable_documents: EnumProperty(items=getApplicableDocuments, name="Available Documents")
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
-    override_psets: CollectionProperty(name="Override Psets", type=PsetQto)
-    override_pset_name: EnumProperty(items=getOverridePsetNames, name='Override Pset Name')
+    pset_name: EnumProperty(items=getPsetNames, name='Pset Name')
     qto_name: EnumProperty(items=getQtoNames, name='Qto Name')
     has_boundary_condition: BoolProperty(name='Has Boundary Condition')
     boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)

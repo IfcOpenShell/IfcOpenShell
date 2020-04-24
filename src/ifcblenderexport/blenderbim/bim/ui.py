@@ -47,36 +47,21 @@ class BIM_PT_object(Panel):
         row.prop(props, 'relating_structure')
 
         layout.label(text="Property Sets:")
-        row = layout.row()
-        row.prop(context.scene.BIMProperties, "pset_name")
-        row = layout.row()
-        row.prop(context.scene.BIMProperties, "pset_file")
-        row = layout.row()
+
+        row = layout.row(align=True)
+        row.prop(props, 'pset_name', text='')
         row.operator('bim.add_pset')
 
         for index, pset in enumerate(props.psets):
             row = layout.row(align=True)
             row.prop(pset, 'name', text='')
-            row.prop(pset, 'file', text='')
             row.operator('bim.remove_pset', icon='X', text='').pset_index = index
-
-        row = layout.row()
-        row.prop(props, 'psets')
-
-        row = layout.row(align=True)
-        row.prop(props, 'override_pset_name', text='')
-        row.operator('bim.add_override_pset')
-
-        for index, pset in enumerate(props.override_psets):
-            row = layout.row(align=True)
-            row.prop(pset, 'name', text='')
-            row.operator('bim.remove_override_pset', icon='X', text='').pset_index = index
             for prop in pset.properties:
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
                 op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
-                op.prop_base = 'BIMObjectProperties.override_psets[\'{}\'].properties'.format(pset.name)
+                op.prop_base = 'BIMObjectProperties.psets[\'{}\'].properties'.format(pset.name)
                 op.prop_name = prop.name
                 op.collection_element = True
 
@@ -588,16 +573,6 @@ class BIM_PT_bim(Panel):
         row = layout.row(align=True)
         row.operator("bim.select_class")
         row.operator("bim.select_type")
-
-        layout.label(text="Property Sets:")
-        row = layout.row()
-        row.prop(bim_properties, "pset_name")
-        row = layout.row()
-        row.prop(bim_properties, "pset_file")
-
-        row = layout.row(align=True)
-        row.operator("bim.assign_pset")
-        row.operator("bim.unassign_pset")
 
         layout.label(text="Aggregates:")
         row = layout.row()

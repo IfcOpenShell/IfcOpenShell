@@ -1,6 +1,7 @@
 import os
 import json
 import ifcopenshell
+import bpy
 from pathlib import Path
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -8,6 +9,7 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 class IfcSchema():
     def __init__(self):
         self.schema_dir = os.path.join(cwd, 'schema') # TODO: make configurable
+        self.data_dir = os.path.join(cwd, 'data') # TODO: make configurable
         # TODO: Make it less troublesome
         self.products = [
             'IfcContext',
@@ -23,9 +25,10 @@ class IfcSchema():
         self.elements = {}
 
         self.property_files = []
-        property_paths = Path(self.schema_dir).glob('Pset_*.ifc')
+        property_paths = Path(os.path.join(self.data_dir, 'pset')).glob('*.ifc')
         for path in property_paths:
             self.property_files.append(ifcopenshell.open(path))
+        self.property_files.append(ifcopenshell.open(os.path.join(self.schema_dir, 'Pset_IFC4_ADD2.ifc')))
 
         self.classification_files = {}
         classification_paths = Path(self.schema_dir).glob('classifications/*.ifc')
