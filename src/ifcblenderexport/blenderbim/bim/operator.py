@@ -83,6 +83,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_import_settings.diff_file = bpy.context.scene.BIMProperties.diff_json_file
         ifc_import_settings.should_ignore_site_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_site_coordinates
         ifc_import_settings.should_ignore_building_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_building_coordinates
+        ifc_import_settings.should_reset_absolute_coordinates = bpy.context.scene.BIMProperties.import_should_reset_absolute_coordinates
         ifc_import_settings.should_import_curves = bpy.context.scene.BIMProperties.import_should_import_curves
         ifc_import_settings.should_import_opening_elements = bpy.context.scene.BIMProperties.import_should_import_opening_elements
         ifc_import_settings.should_import_spaces = bpy.context.scene.BIMProperties.import_should_import_spaces
