@@ -47,6 +47,9 @@ class OrderedCaseInsensitiveDict(collections.OrderedDict):
         return collections.OrderedDict.get(self, OrderedCaseInsensitiveDict_KeyObject(key), *args, **kwargs)
     def __contains__(self, key):
         return collections.OrderedDict.__contains__(self, OrderedCaseInsensitiveDict_KeyObject(key))
+    def __delitem__(self, key):
+        return collections.OrderedDict.__delitem__(self, OrderedCaseInsensitiveDict_KeyObject(key))
+        
 
 
 class Schema:
