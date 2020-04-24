@@ -554,7 +554,7 @@ class IfcImporter():
                 self.add_pset(definition, obj)
 
     def add_pset(self, pset, obj):
-        new_pset = obj.BIMObjectProperties.override_psets.add()
+        new_pset = obj.BIMObjectProperties.psets.add()
         new_pset.name = pset.Name
         if new_pset.name in schema.ifc.psets:
             for prop_name in schema.ifc.psets[new_pset.name]['HasPropertyTemplates'].keys():

@@ -136,7 +136,6 @@ class IfcParser():
         self.organisations = self.get_organisations()
         unique_objects = self.add_spatial_elements_if_unselected(selected_objects)
         self.categorise_selected_objects(unique_objects)
-        self.psets = self.get_psets()
         self.material_psets = self.get_material_psets()
         self.documents = self.get_documents()
         self.classifications = self.get_classifications()
@@ -450,10 +449,6 @@ class IfcParser():
         if obj.name in self.qtos:
             self.rel_defines_by_qto.setdefault(obj.name, []).append(product)
 
-        for pset in obj.BIMObjectProperties.psets:
-            self.rel_defines_by_pset.setdefault(
-                '{}/{}'.format(pset.name, pset.file), []).append(product)
-
         self.get_product_psets_qtos(product, obj, is_pset=True)
         self.get_product_psets_qtos(product, obj, is_qto=True)
 
@@ -489,7 +484,7 @@ class IfcParser():
 
     def get_product_psets_qtos(self, product, obj, is_pset=False, is_qto=False):
         if is_pset:
-            psets_qtos = obj.BIMObjectProperties.override_psets
+            psets_qtos = obj.BIMObjectProperties.psets
             results = self.psets
             relationships = self.rel_defines_by_pset
         if is_qto:
@@ -581,21 +576,6 @@ class IfcParser():
                 pass
             elif not self.is_a_library(self.get_ifc_class(obj.users_collection[0].name)):
                 self.selected_products.append({'raw': obj, 'metadata': metadata})
-
-    def get_psets(self):
-        psets = {}
-        for filename in Path(self.data_dir + 'pset/').glob('**/*.csv'):
-            with open(filename, 'r') as f:
-                name = filename.parts[-2]
-                description = filename.stem
-                psets['{}/{}'.format(name, description)] = {
-                    'ifc': None,
-                    'raw': {x[0]: x[1] for x in list(csv.reader(f))},
-                    'attributes': {
-                        'Name': name,
-                        'Description': description}
-                }
-        return psets
 
     def get_material_psets(self):
         psets = {}
