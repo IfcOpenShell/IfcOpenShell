@@ -180,7 +180,7 @@ class BIM_PT_psets(Panel):
         row = layout.row(align=True)
         row.prop(props, 'property_set_templates', text='')
         row.operator('bim.add_property_set_template', text='', icon='ADD')
-        row.operator('bim.delete_property_set_template', text='', icon='PANEL_CLOSE')
+        row.operator('bim.remove_property_set_template', text='', icon='PANEL_CLOSE')
         row.operator('bim.edit_property_set_template', text='', icon='IMPORT')
         row.operator('bim.save_property_set_template', text='', icon='EXPORT')
 
@@ -203,7 +203,7 @@ class BIM_PT_psets(Panel):
             row.prop(template, 'name', text='')
             row.prop(template, 'description', text='')
             row.prop(template, 'primary_measure_type', text='')
-            row.operator('bim.remove_classification', icon='X', text='').classification_index = index
+            row.operator('bim.remove_property_template', icon='X', text='').index = index
 
 
 class BIM_PT_classifications(Panel):

@@ -6,6 +6,7 @@ from pathlib import Path
 from . import export_ifc
 from . import schema
 from . import bcf
+from . import ifc
 import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
@@ -245,8 +246,10 @@ def refreshPropertySetTemplates(self, context):
 def getPropertySetTemplates(self, context):
     global propertysettemplates_enum
     if len(propertysettemplates_enum) < 1:
-        f = ifcopenshell.open(os.path.join(self.data_dir, 'pset', self.pset_template_files + '.ifc'))
-        templates = f.by_type('IfcPropertySetTemplate')
+        ifc.IfcStore.pset_template_path = os.path.join(
+            context.scene.BIMProperties.data_dir, 'pset', context.scene.BIMProperties.pset_template_files + '.ifc')
+        ifc.IfcStore.pset_template_file = ifcopenshell.open(ifc.IfcStore.pset_template_path)
+        templates = ifc.IfcStore.pset_template_file.by_type('IfcPropertySetTemplate')
         propertysettemplates_enum.extend([(t.GlobalId, t.Name, '') for t in templates])
     return propertysettemplates_enum
 
@@ -601,11 +604,18 @@ class PropertySetTemplate(PropertyGroup):
     template_type: EnumProperty(items=[
         ('PSET_TYPEDRIVENONLY', 'Pset - IfcTypeObject', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
         ('PSET_TYPEDRIVENOVERRIDE', 'Pset - IfcTypeObject - Override', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ('PSET_OCCURRENCEDRIVEN', 'Pset - IfcObject', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.'),
+        ('PSET_PERFORMANCEDRIVEN', 'Pset - IfcPerformanceHistory', 'The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.'),
+        ('QTO_TYPEDRIVENONLY', 'Qto - IfcTypeObject', 'The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.'),
+        ('QTO_TYPEDRIVENOVERRIDE', 'Qto - IfcTypeObject - Override', 'The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.'),
+        ('QTO_OCCURRENCEDRIVEN', 'Qto - IfcObject', 'The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.'),
+        ('NOTDEFINED', 'Not defined', 'No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.')
         ], name="Template Type")
     applicable_entity: StringProperty(name="Applicable Entity")
 
 
 class PropertyTemplate(PropertyGroup):
+    global_id: StringProperty(name='Global ID')
     name: StringProperty(name='Name')
     description: StringProperty(name='Description')
     primary_measure_type: EnumProperty(items=[
