@@ -450,8 +450,9 @@ class BIM_PT_section_plane(Panel):
         layout = self.layout
         layout.use_property_split = True
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.operator('bim.add_section_plane')
+        row.operator('bim.remove_section_plane')
 
 class BIM_PT_camera(Panel):
     bl_label = "Diagrams and Documentation"

@@ -1928,9 +1928,15 @@ class AddSectionPlane(bpy.types.Operator):
             material.use_nodes = True
 
         for obj in bpy.context.visible_objects:
-            if obj.material_slots or not obj.data or not hasattr(obj.data, 'materials'):
-                continue
-            obj.data.materials.append(material)
+            if not (obj.data \
+                    and hasattr(obj.data, 'materials') \
+                    and obj.data.materials \
+                    and obj.data.materials[0]):
+                if obj.data and hasattr(obj.data, 'materials'):
+                    if len(obj.material_slots):
+                        obj.material_slots[0].material = material
+                    else:
+                        obj.data.materials.append(material)
 
     def override_materials(self):
         override = bpy.data.node_groups.get('Section Override')
@@ -1947,3 +1953,55 @@ class AddSectionPlane(bpy.types.Operator):
             section_override.node_tree = override
             material.node_tree.links.new(from_socket, section_override.inputs[0])
             material.node_tree.links.new(section_override.outputs[0], material_output.inputs['Surface'])
+
+
+class RemoveSectionPlane(bpy.types.Operator):
+    bl_idname = 'bim.remove_section_plane'
+    bl_label = 'Remove Section Plane'
+
+    def execute(self, context):
+        name = bpy.context.active_object.name
+        section_override = bpy.data.node_groups.get('Section Override')
+        if not section_override:
+            return {'FINISHED'}
+        for node in section_override.nodes:
+            if node.type != 'TEX_COORD' or node.object.name != name:
+                continue
+            section_compare = node.outputs['Object'].links[0].to_node
+            # If the tex coord links to section_compare.inputs[1], it is called 'Input_3'
+            if node.outputs['Object'].links[0].to_socket.identifier == 'Input_3':
+                section_override.links.new(
+                    section_compare.inputs[0].links[0].from_socket,
+                    section_compare.outputs[0].links[0].to_socket)
+            else: # If it links to section_compare.inputs[0]
+                if section_compare.inputs[1].links[0].from_node.name == 'Mock Section':
+                    # Then it is the very last section. Purge everything.
+                    self.purge_all_section_data()
+                    return {'FINISHED'}
+                section_override.links.new(
+                    section_compare.inputs[1].links[0].from_socket,
+                    section_compare.outputs[0].links[0].to_socket)
+            section_override.nodes.remove(section_compare)
+            section_override.nodes.remove(node)
+
+            old_last_compare = section_override.nodes.get('Last Section Compare')
+            old_last_compare.name = 'Section Compare'
+            section_mix = section_override.nodes.get('Section Mix')
+            new_last_compare = section_mix.inputs['Fac'].links[0].from_node
+            new_last_compare.name = 'Last Section Compare'
+        bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})
+        return {'FINISHED'}
+
+    def purge_all_section_data(self):
+        bpy.data.materials.remove(bpy.data.materials.get('Section Override'))
+        for material in bpy.data.materials:
+            if not material.node_tree:
+                continue
+            override = material.node_tree.nodes.get('Section Override')
+            material.node_tree.links.new(
+                override.inputs[0].links[0].from_socket,
+                override.outputs[0].links[0].to_socket)
+            material.node_tree.nodes.remove(override)
+        bpy.data.node_groups.remove(bpy.data.node_groups.get('Section Override'))
+        bpy.data.node_groups.remove(bpy.data.node_groups.get('Section Compare'))
+        bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})

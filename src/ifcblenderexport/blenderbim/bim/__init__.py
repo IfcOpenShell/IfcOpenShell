@@ -102,6 +102,7 @@ if bpy is not None:
         operator.AddPropertyTemplate,
         operator.RemovePropertyTemplate,
         operator.AddSectionPlane,
+        operator.RemoveSectionPlane,
         prop.StrProperty,
         prop.Classification,
         prop.ClassificationReference,
