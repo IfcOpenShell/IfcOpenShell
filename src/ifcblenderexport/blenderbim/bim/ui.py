@@ -397,7 +397,7 @@ class BIM_PT_gis(Panel):
 
 
 class BIM_PT_documentation(Panel):
-    bl_label = "Diagrammatic Documentation"
+    bl_label = "Documentation"
     bl_idname = "BIM_PT_documentation"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -438,6 +438,20 @@ class BIM_PT_documentation(Panel):
         row = layout.row()
         row.operator('bim.generate_digital_twin')
 
+
+class BIM_PT_section_plane(Panel):
+    bl_label = "Section Planes"
+    bl_idname = "BIM_PT_section_plane"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        row = layout.row()
+        row.operator('bim.add_section_plane')
 
 class BIM_PT_camera(Panel):
     bl_label = "Diagrams and Documentation"

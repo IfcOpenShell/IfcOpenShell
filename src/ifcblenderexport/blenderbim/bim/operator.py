@@ -1809,3 +1809,112 @@ class RemovePropertyTemplate(bpy.types.Operator):
     def execute(self, context):
         bpy.context.scene.BIMProperties.property_templates.remove(self.index)
         return {'FINISHED'}
+
+
+class AddSectionPlane(bpy.types.Operator):
+    bl_idname = 'bim.add_section_plane'
+    bl_label = 'Add Section Plane'
+
+    def execute(self, context):
+        obj = self.create_section_obj()
+        if not self.has_section_override_node():
+            self.create_section_compare_node()
+            self.create_section_override_node(obj)
+        self.add_default_material_if_none_exists()
+        self.override_materials()
+        return {'FINISHED'}
+
+    def create_section_obj(self):
+        section = bpy.data.objects.new('Section', None)
+        section.empty_display_type = 'SINGLE_ARROW'
+        section.empty_display_size = 5
+        collection = bpy.data.collections.get('Sections')
+        if not collection:
+            collection = bpy.data.collections.new('Sections')
+            bpy.context.scene.collection.children.link(collection)
+        collection.objects.link(section)
+        return section
+
+    def has_section_override_node(self):
+        return bpy.data.node_groups.get('Section Override')
+
+    def create_section_compare_node(self):
+        group = bpy.data.node_groups.new('Section Compare', type='ShaderNodeTree')
+        group_input = group.nodes.new(type='NodeGroupInput')
+        group_output = group.nodes.new(type='NodeGroupOutput')
+        separate_xyz_a = group.nodes.new(type='ShaderNodeSeparateXYZ')
+        separate_xyz_b = group.nodes.new(type='ShaderNodeSeparateXYZ')
+        gt_a = group.nodes.new(type='ShaderNodeMath')
+        gt_a.operation = 'GREATER_THAN'
+        gt_a.inputs[1].default_value = 0
+        gt_b = group.nodes.new(type='ShaderNodeMath')
+        gt_b.operation = 'GREATER_THAN'
+        gt_b.inputs[1].default_value = 0
+        add = group.nodes.new(type='ShaderNodeMath')
+        compare = group.nodes.new(type='ShaderNodeMath')
+        compare.operation = 'COMPARE'
+        compare.inputs[1].default_value = 2
+        group.links.new(group_input.outputs[''], separate_xyz_a.inputs['Vector'])
+        group.links.new(group_input.outputs[''], separate_xyz_b.inputs['Vector'])
+        group.links.new(separate_xyz_a.outputs['Z'], gt_a.inputs[0])
+        group.links.new(separate_xyz_b.outputs['Z'], gt_b.inputs[0])
+        group.links.new(gt_a.outputs['Value'], add.inputs[0])
+        group.links.new(gt_b.outputs['Value'], add.inputs[1])
+        group.links.new(add.outputs['Value'], compare.inputs[0])
+        group.links.new(compare.outputs['Value'], group_output.inputs[''])
+
+    def create_section_override_node(self, obj):
+        group = bpy.data.node_groups.new('Section Override', type='ShaderNodeTree')
+
+        group_input = group.nodes.new(type='NodeGroupInput')
+        group_output = group.nodes.new(type='NodeGroupOutput')
+
+        backfacing = group.nodes.new(type='ShaderNodeNewGeometry')
+        backfacing_mix = group.nodes.new(type='ShaderNodeMixShader')
+        emission = group.nodes.new(type='ShaderNodeEmission')
+        emission.inputs['Color'].default_value = (1, 0, 0, 1)
+
+        group.links.new(backfacing.outputs['Backfacing'], backfacing_mix.inputs['Fac'])
+        group.links.new(group_input.outputs[''], backfacing_mix.inputs[1])
+        group.links.new(emission.outputs['Emission'], backfacing_mix.inputs[2])
+
+        transparent = group.nodes.new(type='ShaderNodeBsdfTransparent')
+        section_mix = group.nodes.new(type='ShaderNodeMixShader')
+
+        group.links.new(transparent.outputs['BSDF'], section_mix.inputs[1])
+        group.links.new(backfacing_mix.outputs['Shader'], section_mix.inputs[2])
+
+        group.links.new(section_mix.outputs['Shader'], group_output.inputs[''])
+
+        cut_obj = group.nodes.new(type='ShaderNodeTexCoord')
+        cut_obj.object = obj
+        section_and = group.nodes.new(type='ShaderNodeGroup')
+        section_and.node_tree = bpy.data.node_groups.get('Section Compare')
+        value = group.nodes.new(type='ShaderNodeValue')
+        group.links.new(cut_obj.outputs['Object'], section_and.inputs[0])
+        group.links.new(value.outputs['Value'], section_and.inputs[1])
+        group.links.new(section_and.outputs['Value'], section_mix.inputs['Fac'])
+
+    def add_default_material_if_none_exists(self):
+        material = bpy.data.materials.get('Section Override')
+        if not material:
+            material = bpy.data.materials.new('Section Override')
+            material.use_nodes = True
+
+        for obj in bpy.context.visible_objects:
+            if obj.material_slots or not obj.data or not hasattr(obj.data, 'materials'):
+                continue
+            obj.data.materials.append(material)
+
+    def override_materials(self):
+        override = bpy.data.node_groups.get('Section Override')
+        for material in bpy.data.materials:
+            material.use_nodes = True
+            material.blend_method = 'HASHED'
+            material.shadow_method = 'HASHED'
+            material_output = material.node_tree.nodes['Material Output']
+            from_socket = material_output.inputs['Surface'].links[0].from_socket
+            section_override = material.node_tree.nodes.new(type='ShaderNodeGroup')
+            section_override.node_tree = override
+            material.node_tree.links.new(from_socket, section_override.inputs[0])
+            material.node_tree.links.new(section_override.outputs[0], material_output.inputs['Surface'])
