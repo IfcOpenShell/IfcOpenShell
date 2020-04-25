@@ -14,7 +14,7 @@ from . import bcf
 from . import ifc
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Euler
 from math import radians, atan, tan
 from pathlib import Path
 
@@ -1820,6 +1820,8 @@ class AddSectionPlane(bpy.types.Operator):
         if not self.has_section_override_node():
             self.create_section_compare_node()
             self.create_section_override_node(obj)
+        else:
+            self.append_obj_to_section_override_node(obj)
         self.add_default_material_if_none_exists()
         self.override_materials()
         return {'FINISHED'}
@@ -1828,6 +1830,8 @@ class AddSectionPlane(bpy.types.Operator):
         section = bpy.data.objects.new('Section', None)
         section.empty_display_type = 'SINGLE_ARROW'
         section.empty_display_size = 5
+        section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), 'XYZ')
+        section.show_in_front = True
         collection = bpy.data.collections.get('Sections')
         if not collection:
             collection = bpy.data.collections.new('Sections')
@@ -1880,6 +1884,7 @@ class AddSectionPlane(bpy.types.Operator):
 
         transparent = group.nodes.new(type='ShaderNodeBsdfTransparent')
         section_mix = group.nodes.new(type='ShaderNodeMixShader')
+        section_mix.name = 'Section Mix'
 
         group.links.new(transparent.outputs['BSDF'], section_mix.inputs[1])
         group.links.new(backfacing_mix.outputs['Shader'], section_mix.inputs[2])
@@ -1888,12 +1893,33 @@ class AddSectionPlane(bpy.types.Operator):
 
         cut_obj = group.nodes.new(type='ShaderNodeTexCoord')
         cut_obj.object = obj
-        section_and = group.nodes.new(type='ShaderNodeGroup')
-        section_and.node_tree = bpy.data.node_groups.get('Section Compare')
+        section_compare = group.nodes.new(type='ShaderNodeGroup')
+        section_compare.node_tree = bpy.data.node_groups.get('Section Compare')
+        section_compare.name = 'Last Section Compare'
         value = group.nodes.new(type='ShaderNodeValue')
-        group.links.new(cut_obj.outputs['Object'], section_and.inputs[0])
-        group.links.new(value.outputs['Value'], section_and.inputs[1])
-        group.links.new(section_and.outputs['Value'], section_mix.inputs['Fac'])
+        value.name = 'Mock Section'
+        group.links.new(cut_obj.outputs['Object'], section_compare.inputs[0])
+        group.links.new(value.outputs['Value'], section_compare.inputs[1])
+        group.links.new(section_compare.outputs['Value'], section_mix.inputs['Fac'])
+
+    def append_obj_to_section_override_node(self, obj):
+        group = bpy.data.node_groups.get('Section Override')
+        cut_obj = group.nodes.new(type='ShaderNodeTexCoord')
+        cut_obj.object = obj
+        section_compare = group.nodes.new(type='ShaderNodeGroup')
+        section_compare.node_tree = bpy.data.node_groups.get('Section Compare')
+
+        last_compare = group.nodes.get('Last Section Compare')
+        last_compare.name = 'Section Compare'
+        mock_section = group.nodes.get('Mock Section')
+        section_mix = group.nodes.get('Section Mix')
+
+        group.links.new(last_compare.outputs['Value'], section_compare.inputs[0])
+        group.links.new(mock_section.outputs['Value'], section_compare.inputs[1])
+        group.links.new(cut_obj.outputs['Object'], last_compare.inputs[1])
+        group.links.new(section_compare.outputs['Value'], section_mix.inputs['Fac'])
+
+        section_compare.name = 'Last Section Compare'
 
     def add_default_material_if_none_exists(self):
         material = bpy.data.materials.get('Section Override')
@@ -1910,11 +1936,14 @@ class AddSectionPlane(bpy.types.Operator):
         override = bpy.data.node_groups.get('Section Override')
         for material in bpy.data.materials:
             material.use_nodes = True
+            if material.node_tree.nodes.get('Section Override'):
+                continue
             material.blend_method = 'HASHED'
             material.shadow_method = 'HASHED'
             material_output = material.node_tree.nodes['Material Output']
             from_socket = material_output.inputs['Surface'].links[0].from_socket
             section_override = material.node_tree.nodes.new(type='ShaderNodeGroup')
+            section_override.name = 'Section Override'
             section_override.node_tree = override
             material.node_tree.links.new(from_socket, section_override.inputs[0])
             material.node_tree.links.new(section_override.outputs[0], material_output.inputs['Surface'])
