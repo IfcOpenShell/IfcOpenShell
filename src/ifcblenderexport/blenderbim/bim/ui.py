@@ -449,6 +449,10 @@ class BIM_PT_section_plane(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+        props = bpy.context.scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'should_section_selected_objects')
 
         row = layout.row(align=True)
         row.operator('bim.add_section_plane')

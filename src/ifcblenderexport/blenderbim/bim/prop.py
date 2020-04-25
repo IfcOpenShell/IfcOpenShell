@@ -849,6 +849,7 @@ class BIMProperties(PropertyGroup):
     property_set_templates: EnumProperty(items=getPropertySetTemplates, name="Pset Template Files")
     active_property_set_template: PointerProperty(type=PropertySetTemplate)
     property_templates: CollectionProperty(name='Property Templates', type=PropertyTemplate)
+    should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
 
 
 class BCFProperties(PropertyGroup):

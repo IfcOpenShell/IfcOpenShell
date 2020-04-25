@@ -1927,7 +1927,12 @@ class AddSectionPlane(bpy.types.Operator):
             material = bpy.data.materials.new('Section Override')
             material.use_nodes = True
 
-        for obj in bpy.context.visible_objects:
+        if bpy.context.scene.BIMProperties.should_section_selected_objects:
+            objects = bpy.context.selected_objects
+        else:
+            objects = bpy.context.visible_objects
+
+        for obj in objects:
             if not (obj.data \
                     and hasattr(obj.data, 'materials') \
                     and obj.data.materials \
