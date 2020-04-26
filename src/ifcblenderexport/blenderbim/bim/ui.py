@@ -454,6 +454,9 @@ class BIM_PT_section_plane(Panel):
         row = layout.row()
         row.prop(props, 'should_section_selected_objects')
 
+        row = layout.row()
+        row.prop(props, 'section_plane_colour')
+
         row = layout.row(align=True)
         row.operator('bim.add_section_plane')
         row.operator('bim.remove_section_plane')

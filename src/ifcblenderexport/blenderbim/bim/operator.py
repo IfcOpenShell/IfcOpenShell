@@ -1877,7 +1877,7 @@ class AddSectionPlane(bpy.types.Operator):
         backfacing = group.nodes.new(type='ShaderNodeNewGeometry')
         backfacing_mix = group.nodes.new(type='ShaderNodeMixShader')
         emission = group.nodes.new(type='ShaderNodeEmission')
-        emission.inputs['Color'].default_value = (1, 0, 0, 1)
+        emission.inputs['Color'].default_value = list(bpy.context.scene.BIMProperties.section_plane_colour) + [1]
 
         group.links.new(backfacing.outputs['Backfacing'], backfacing_mix.inputs['Fac'])
         group.links.new(group_input.outputs[''], backfacing_mix.inputs[1])
