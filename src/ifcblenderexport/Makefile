@@ -157,7 +157,14 @@ endif
 	cp -r dist/working/*.xsd dist/blenderbim/libs/site/packages/bcfplugin/schemas/
 	rm -rf dist/working
 
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/18/4d/8d522136c37d9e1ea74062b41b8d5e1318ebf45063ae46ce72ed60af223b/lark-parser-0.8.5.tar.gz
+	cd dist/working && tar -xzvf lark-parser*
+	cp -r dist/working/lark-parser-0.8.5/lark dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
+	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccsv/ifccsv.py
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
 	cd dist && zip -r blender28-bim-$(VERSION)-$(PLATFORM).zip ./*
