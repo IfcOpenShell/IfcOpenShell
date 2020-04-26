@@ -268,51 +268,52 @@ class IfcCsv():
                     IfcAttributeExtractor.set_element_key(element, headers[i], value)
         ifc_file.write(ifc)
 
-parser = argparse.ArgumentParser(
-    description='Exports IFC data to and from CSV')
-parser.add_argument(
-    '-i',
-    '--ifc',
-    type=str,
-    required=True,
-    help='The IFC file')
-parser.add_argument(
-    '-c',
-    '--csv',
-    type=str,
-    default='data.csv',
-    help='The CSV file to import from or export to')
-parser.add_argument(
-    '-q',
-    '--query',
-    type=str,
-    default='',
-    help='Specify a IFC query selector, such as ".IfcWall"')
-parser.add_argument(
-    '-a',
-    '--arguments',
-    nargs='+',
-    help='Specify attributes that are part of the extract')
-parser.add_argument(
-    '--export',
-    action='store_true',
-    help='Export from IFC to CSV')
-parser.add_argument(
-    '--import',
-    action='store_true',
-    help='Import from CSV to IFC')
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Exports IFC data to and from CSV')
+    parser.add_argument(
+        '-i',
+        '--ifc',
+        type=str,
+        required=True,
+        help='The IFC file')
+    parser.add_argument(
+        '-c',
+        '--csv',
+        type=str,
+        default='data.csv',
+        help='The CSV file to import from or export to')
+    parser.add_argument(
+        '-q',
+        '--query',
+        type=str,
+        default='',
+        help='Specify a IFC query selector, such as ".IfcWall"')
+    parser.add_argument(
+        '-a',
+        '--arguments',
+        nargs='+',
+        help='Specify attributes that are part of the extract')
+    parser.add_argument(
+        '--export',
+        action='store_true',
+        help='Export from IFC to CSV')
+    parser.add_argument(
+        '--import',
+        action='store_true',
+        help='Import from CSV to IFC')
+    args = parser.parse_args()
 
-if args.export:
-    ifc_selector_parser = IfcSelectorParser()
-    ifc_selector_parser.ifc = args.ifc
-    ifc_selector_parser.query = args.query
-    ifc_selector_parser.parse()
-    ifc_csv = IfcCsv()
-    ifc_csv.output = args.csv
-    ifc_csv.attributes = args.arguments if args.arguments else []
-    ifc_csv.export(ifc_selector_parser.results)
-elif getattr(args, 'import'):
-    ifc_csv = IfcCsv()
-    ifc_csv.output = args.csv
-    ifc_csv.Import(args.ifc)
+    if args.export:
+        ifc_selector_parser = IfcSelectorParser()
+        ifc_selector_parser.ifc = args.ifc
+        ifc_selector_parser.query = args.query
+        ifc_selector_parser.parse()
+        ifc_csv = IfcCsv()
+        ifc_csv.output = args.csv
+        ifc_csv.attributes = args.arguments if args.arguments else []
+        ifc_csv.export(ifc_selector_parser.results)
+    elif getattr(args, 'import'):
+        ifc_csv = IfcCsv()
+        ifc_csv.output = args.csv
+        ifc_csv.Import(args.ifc)
