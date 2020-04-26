@@ -143,9 +143,10 @@ class IfcSelectorParser():
 class IfcAttributeExtractor():
     @staticmethod
     def get_element_key(element, key):
-        if '.' not in key \
-                and hasattr(element, key):
+        if hasattr(element, key):
             return getattr(element, key)
+        elif '.' not in key:
+            return None
         elif key[0:3] == 'Qto':
             qto_name, prop = key.split('.')
             qto = IfcAttributeExtractor.get_element_qto(element, qto_name)
