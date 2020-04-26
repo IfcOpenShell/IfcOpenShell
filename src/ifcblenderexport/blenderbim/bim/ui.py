@@ -662,8 +662,9 @@ class BIM_PT_ifccsv(Panel):
         scene = context.scene
         props = scene.BIMProperties
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(props, 'ifc_selector')
+        row.operator('bim.eyedrop_ifccsv', icon='EYEDROPPER', text='')
 
         row = layout.row()
         row.operator('bim.add_csv_attribute')

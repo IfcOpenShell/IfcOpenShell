@@ -2076,3 +2076,17 @@ class ImportIfcCsv(bpy.types.Operator):
         ifc_csv.output = self.filepath
         ifc_csv.Import(bpy.context.scene.BIMProperties.ifc_file)
         return {'FINISHED'}
+
+
+class EyedropIfcCsv(bpy.types.Operator):
+    bl_idname = 'bim.eyedrop_ifccsv'
+    bl_label = 'Query Selected Items'
+
+    def execute(self, context):
+        global_ids = []
+        for obj in bpy.context.selected_objects:
+            if hasattr(obj, 'BIMObjectProperties') \
+                    and obj.BIMObjectProperties.attributes.get('GlobalId'):
+                global_ids.append('#' + obj.BIMObjectProperties.attributes.get('GlobalId').string_value)
+        bpy.context.scene.BIMProperties.ifc_selector = '|'.join(global_ids)
+        return {'FINISHED'}
