@@ -813,6 +813,7 @@ class BIMProperties(PropertyGroup):
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
     import_should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
     import_should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
+    import_should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
     import_should_clean_mesh: BoolProperty(name="Import and Clean Mesh", default=True)
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     person: EnumProperty(items=getPersons, name="Person")

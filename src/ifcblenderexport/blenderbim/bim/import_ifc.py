@@ -63,10 +63,9 @@ class MaterialCreator():
             self.parse_styled_item(styled_item, self.materials[material_name])
 
         if self.ifc_import_settings.should_treat_styled_item_as_material:
-            # Revit workaround: since Revit exports all material
-            # assignments as individual object styled items. Treating
-            # them as reusable materials makes things much more
-            # efficient in Blender.
+            # Revit workaround: since Revit/DDS-CAD exports all material
+            # assignments as individual object styled items. Treating them as
+            # reusable materials makes things much more efficient in Blender.
             self.assign_material_to_mesh(self.materials[material_name])
         else:
             # Proper behaviour
@@ -233,10 +232,16 @@ class IfcImporter():
             self.merge_by_class()
         elif self.ifc_import_settings.should_merge_by_material:
             self.merge_by_material()
+        if self.ifc_import_settings.should_merge_materials_by_colour \
+                or (self.ifc_import_settings.should_auto_set_workarounds \
+                    and len(self.material_creator.materials) > 300):
+            self.merge_materials_by_colour()
         if self.ifc_import_settings.should_clean_mesh:
             self.clean_mesh()
 
     def auto_set_workarounds(self):
+        if 'DDS-CAD' in self.file.wrapped_data.header.file_name.originating_system:
+            self.ifc_import_settings.should_treat_styled_item_as_material = True
         applications = self.file.by_type('IfcApplication')
         if not applications:
             return
@@ -516,6 +521,28 @@ class IfcImporter():
             context_override['object'] = context_override['active_object'] = objs[0]
             context_override['selected_objects'] = context_override['selected_editable_objects'] = objs
             bpy.ops.object.join(context_override)
+
+    def merge_materials_by_colour(self):
+        cleaned_materials = {}
+        for m in bpy.data.materials:
+            key = '-'.join([str(x) for x in m.diffuse_color])
+            cleaned_materials[key] = { 'diffuse_color': m.diffuse_color }
+
+        for cleaned_material in cleaned_materials.values():
+            cleaned_material['material'] = bpy.data.materials.new('Merged Material')
+            cleaned_material['material'].diffuse_color = cleaned_material['diffuse_color']
+
+        for obj in self.added_data.values():
+            if not hasattr(obj, 'material_slots') \
+                    or not obj.material_slots:
+                continue
+            for slot in obj.material_slots:
+                m = slot.material
+                key = '-'.join([str(x) for x in m.diffuse_color])
+                slot.material = cleaned_materials[key]['material']
+
+        for material in self.material_creator.materials.values():
+            bpy.data.materials.remove(material)
 
     def clean_mesh(self):
         obj = None
@@ -960,6 +987,7 @@ class IfcImportSettings:
         self.should_ignore_site_coordinates = False
         self.should_ignore_building_coordinates = False
         self.should_reset_absolute_coordinates = False
+        self.should_merge_materials_by_colour = False
         self.should_import_curves = False
         self.should_import_opening_elements = False
         self.should_import_spaces = False
