@@ -850,6 +850,8 @@ class BIMProperties(PropertyGroup):
     active_property_set_template: PointerProperty(type=PropertySetTemplate)
     property_templates: CollectionProperty(name='Property Templates', type=PropertyTemplate)
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
+    ifc_selector: StringProperty(default='', name='IFC Selector')
+    csv_attributes: CollectionProperty(name='CSV Attributes', type=StrProperty)
 
 
 class BCFProperties(PropertyGroup):

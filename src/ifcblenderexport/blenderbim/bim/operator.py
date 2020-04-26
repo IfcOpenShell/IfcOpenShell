@@ -2010,3 +2010,68 @@ class RemoveSectionPlane(bpy.types.Operator):
         bpy.data.node_groups.remove(bpy.data.node_groups.get('Section Override'))
         bpy.data.node_groups.remove(bpy.data.node_groups.get('Section Compare'))
         bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})
+
+
+class AddCsvAttribute(bpy.types.Operator):
+    bl_idname = 'bim.add_csv_attribute'
+    bl_label = 'Add CSV Attribute'
+
+    def execute(self, context):
+        attribute = bpy.context.scene.BIMProperties.csv_attributes.add()
+        return {'FINISHED'}
+
+
+class RemoveCsvAttribute(bpy.types.Operator):
+    bl_idname = 'bim.remove_csv_attribute'
+    bl_label = 'Remove CSV Attribute'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.csv_attributes.remove(self.index)
+        return {'FINISHED'}
+
+
+class ExportIfcCsv(bpy.types.Operator):
+    bl_idname = 'bim.export_ifccsv'
+    bl_label = 'Export IFC to CSV'
+    filename_ext = '.csv'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.csv')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        import ifccsv
+        self.filepath = bpy.path.ensure_ext(self.filepath, '.csv')
+        ifc_selector_parser = ifccsv.IfcSelectorParser()
+        ifc_selector_parser.ifc = bpy.context.scene.BIMProperties.ifc_file
+        ifc_selector_parser.query = bpy.context.scene.BIMProperties.ifc_selector
+        ifc_selector_parser.parse()
+        ifc_csv = ifccsv.IfcCsv()
+        ifc_csv.output = self.filepath
+        ifc_csv.attributes = [a.name for a in bpy.context.scene.BIMProperties.csv_attributes]
+        ifc_csv.export(ifc_selector_parser.results)
+        return {'FINISHED'}
+
+
+class ImportIfcCsv(bpy.types.Operator):
+    bl_idname = 'bim.import_ifccsv'
+    bl_label = 'Import CSV to IFC'
+    filename_ext = '.csv'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.csv')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        import ifccsv
+        ifc_csv = ifccsv.IfcCsv()
+        ifc_csv.output = self.filepath
+        ifc_csv.Import(bpy.context.scene.BIMProperties.ifc_file)
+        return {'FINISHED'}
