@@ -143,7 +143,9 @@ class IfcSelectorParser():
 class IfcAttributeExtractor():
     @staticmethod
     def get_element_key(element, key):
-        if hasattr(element, key):
+        if key == 'IfcClass':
+            return element.is_a()
+        elif hasattr(element, key):
             return getattr(element, key)
         elif '.' not in key:
             return None
@@ -161,19 +163,19 @@ class IfcAttributeExtractor():
 
     @staticmethod
     def set_element_key(element, key, value):
-        if '.' not in key \
-                and hasattr(element, key):
-            setattr(element, key, value)
-        elif key[0:3] == 'Qto':
+        if hasattr(element, key):
+            return setattr(element, key, value)
+        if '.' not in key:
+            return
+        if key[0:3] == 'Qto':
             qto, prop = key.split('.')
             qto = IfcAttributeExtractor.get_element_qto(element, qto_name)
             if qto:
-                IfcAttributeExtractor.set_qto_property(qto, prop, value)
-        else:
-            pset_name, prop = key.split('.')
-            pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
-            if pset:
-                return IfcAttributeExtractor.set_pset_property(pset, prop, value)
+                return IfcAttributeExtractor.set_qto_property(qto, prop, value)
+        pset_name, prop = key.split('.')
+        pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
+        if pset:
+            return IfcAttributeExtractor.set_pset_property(pset, prop, value)
 
     @staticmethod
     def get_element_qto(element, name):
