@@ -107,6 +107,7 @@ if bpy is not None:
         operator.RemoveCsvAttribute,
         operator.ExportIfcCsv,
         operator.ImportIfcCsv,
+        operator.EyedropIfcCsv,
         prop.StrProperty,
         prop.Classification,
         prop.ClassificationReference,
