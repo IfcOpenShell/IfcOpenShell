@@ -17,7 +17,7 @@ class IfcSelectorParser():
         l = lark.Lark('''start: query (lfunction query)*
                     query: selector | group
                     group: "(" query (lfunction query)* ")"
-                    selector: guid_selector | class_selector
+                    selector: (inverse_relationship)? guid_selector | (inverse_relationship)? class_selector
                     guid_selector: "#" /[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$]{22}/
                     class_selector: "." WORD filter ?
                     filter: "[" filter_key (comparison filter_value)? "]"
@@ -25,6 +25,9 @@ class IfcSelectorParser():
                     filter_value: ESCAPED_STRING
                     pset_or_qto: /[A-Za-z0-9_]+/ "." /[A-Za-z0-9_]+/
                     lfunction: and | or
+                    inverse_relationship: types | contains_elements
+                    types: "*"
+                    contains_elements: "@"
                     and: "&"
                     or: "|"
                     comparison: contains | morethanequalto | lessthanequalto | equal | morethan | lessthan
@@ -90,11 +93,35 @@ class IfcSelectorParser():
                 return self.get_group(child)
 
     def get_selector(self, selector):
-        for child in selector.children:
-            if child.data == 'class_selector':
-                return self.get_class_selector(child)
-            elif child.data == 'guid_selector':
-                return self.get_guid_selector(child)
+        if len(selector.children) == 1:
+            inverse_relationship = None
+            class_or_guid_selector = selector.children[0]
+        else:
+            inverse_relationship = selector.children[0]
+            class_or_guid_selector = selector.children[1]
+
+        if class_or_guid_selector.data == 'class_selector':
+            results = self.get_class_selector(class_or_guid_selector)
+        elif class_or_guid_selector.data == 'guid_selector':
+            results = self.get_guid_selector(class_or_guid_selector)
+
+        if not inverse_relationship:
+            return results
+        return self.parse_inverse_relationship(results, inverse_relationship.children[0].data)
+
+    def parse_inverse_relationship(self, elements, inverse_relationship):
+        results = []
+        for element in elements:
+            if inverse_relationship == 'types':
+                if hasattr(element, 'Types') and element.Types:
+                    results.extend(element.Types[0].RelatedObjects)
+                elif hasattr(element, 'ObjectTypeOf') and element.ObjectTypeOf:
+                    results.extend(element.ObjectTypeOf[0].RelatedObjects)
+            elif inverse_relationship == 'contains_elements' \
+                    and hasattr(element, 'ContainsElements'):
+                for relationship in element.ContainsElements:
+                    results.extend(relationship.RelatedElements)
+        return results
 
     def get_class_selector(self, class_selector):
         elements = self.file.by_type(class_selector.children[0])
