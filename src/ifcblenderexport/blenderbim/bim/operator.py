@@ -474,6 +474,10 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if viewpoint.lines:
             self.draw_lines(viewpoint)
 
+        self.delete_clipping_planes()
+        if viewpoint.clippingPlanes:
+            self.create_clipping_planes(viewpoint)
+
         z_axis = Vector((-camera.direction.x, -camera.direction.y, -camera.direction.z)).normalized()
         y_axis = Vector((camera.upVector.x, camera.upVector.y, camera.upVector.z)).normalized()
         x_axis = y_axis.cross(z_axis).normalized()
@@ -530,6 +534,29 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         for l in viewpoint.lines:
             coords.extend([l.start.x, l.start.y, l.start.z, l.end.x, l.end.y, l.end.z])
         stroke.points.foreach_set('co', coords)
+
+    def create_clipping_planes(self, viewpoint):
+        n = 0
+        for plane in viewpoint.clippingPlanes:
+            bpy.ops.bim.add_section_plane()
+            if n == 0:
+                obj = bpy.data.objects['Section']
+            else:
+                obj = bpy.data.objects['Section.{:03d}'.format(n)]
+            obj.location = (plane.location.x, plane.location.y, plane.location.z)
+            obj.rotation_mode = 'QUATERNION'
+            obj.rotation_quaternion = Vector(
+                    (plane.direction.x, plane.direction.y, plane.direction.z)
+                ).to_track_quat('Z', 'Y')
+            n += 1
+
+    def delete_clipping_planes(self):
+        collection = bpy.data.collections.get('Sections')
+        if not collection:
+            return
+        for section in collection.objects:
+            bpy.context.view_layer.objects.active = section
+            bpy.ops.bim.remove_section_plane()
 
     def hex_to_rgb(self, value):
         value = value.lstrip('#')
