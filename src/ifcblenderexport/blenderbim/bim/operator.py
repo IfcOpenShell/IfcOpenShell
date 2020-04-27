@@ -468,6 +468,12 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
         self.set_viewpoint_components(viewpoint)
 
+        gp = bpy.data.grease_pencils.get('BCF')
+        if gp:
+            bpy.data.grease_pencils.remove(gp)
+        if viewpoint.lines:
+            self.draw_lines(viewpoint)
+
         z_axis = Vector((-camera.direction.x, -camera.direction.y, -camera.direction.z)).normalized()
         y_axis = Vector((camera.upVector.x, camera.upVector.y, camera.upVector.z)).normalized()
         x_axis = y_axis.cross(z_axis).normalized()
@@ -507,6 +513,23 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             obj.select_set(global_id in selected_global_ids)
             if global_id in global_id_colours:
                 obj.color = self.hex_to_rgb(global_id_colours[global_id])
+
+    def draw_lines(self, viewpoint):
+        gp = bpy.data.grease_pencils.new('BCF')
+        scene = bpy.context.scene
+        scene.grease_pencil = gp
+        scene.frame_set(1)
+        layer = gp.layers.new('BCF Annotation', set_active=True)
+        layer.thickness = 3
+        layer.color = (1, 0, 0)
+        frame = layer.frames.new(1)
+        stroke = frame.strokes.new()
+        stroke.display_mode = '3DSPACE'
+        stroke.points.add(len(viewpoint.lines)*2)
+        coords = []
+        for l in viewpoint.lines:
+            coords.extend([l.start.x, l.start.y, l.start.z, l.end.x, l.end.y, l.end.z])
+        stroke.points.foreach_set('co', coords)
 
     def hex_to_rgb(self, value):
         value = value.lstrip('#')
