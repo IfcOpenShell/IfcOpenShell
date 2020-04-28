@@ -2,6 +2,8 @@ import ifcopenshell
 import ifcopenshell.geom
 import bpy
 import os
+import shutil
+import threading
 import json
 import time
 import mathutils
@@ -13,6 +15,15 @@ from pathlib import Path
 from .helper import SIUnitHelper
 from . import schema
 from . import ifc
+
+class FileCopy(threading.Thread):
+    def __init__(self, file_path, destination):
+        threading.Thread.__init__(self)
+        self.file_path = file_path
+        self.destination = destination
+
+    def run(self):
+        shutil.copy(self.file_path, self.destination)
 
 class MaterialCreator():
     def __init__(self, ifc_import_settings):
@@ -204,6 +215,7 @@ class IfcImporter():
 
     def execute(self):
         self.load_diff()
+        self.cache_file()
         self.load_file()
         self.set_ifc_file()
         if self.ifc_import_settings.should_auto_set_workarounds:
@@ -642,6 +654,14 @@ class IfcImporter():
         with open(self.ifc_import_settings.diff_file, 'r') as file:
             self.diff = json.load(file)
 
+    def cache_file(self):
+        destination = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'cache', 'ifc')
+        copythread = FileCopy(self.ifc_import_settings.input_file, destination)
+        bpy.context.scene.BIMProperties.ifc_cache = os.path.join(destination,
+            os.path.basename(self.ifc_import_settings.input_file))
+        copythread.start()
+        copythread.join()
+
     def load_file(self):
         self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
         extension = self.ifc_import_settings.input_file.split('.')[-1]
@@ -999,3 +1019,27 @@ class IfcImportSettings:
         self.should_import_aggregates = True
         self.should_clean_mesh = True
         self.diff_file = None
+
+    @staticmethod
+    def factory(context, input_file, logger):
+        scene_bim = context.scene.BIMProperties
+        settings = IfcImportSettings()
+        settings.input_file = input_file
+        settings.logger = logger
+        settings.diff_file = scene_bim.diff_json_file
+        settings.should_ignore_site_coordinates = scene_bim.import_should_ignore_site_coordinates
+        settings.should_ignore_building_coordinates = scene_bim.import_should_ignore_building_coordinates
+        settings.should_reset_absolute_coordinates = scene_bim.import_should_reset_absolute_coordinates
+        settings.should_import_curves = scene_bim.import_should_import_curves
+        settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements
+        settings.should_import_spaces = scene_bim.import_should_import_spaces
+        settings.should_auto_set_workarounds = scene_bim.import_should_auto_set_workarounds
+        settings.should_treat_styled_item_as_material = scene_bim.import_should_treat_styled_item_as_material
+        settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
+        settings.should_use_legacy = scene_bim.import_should_use_legacy
+        settings.should_import_aggregates = scene_bim.import_should_import_aggregates
+        settings.should_merge_by_class = scene_bim.import_should_merge_by_class
+        settings.should_merge_by_material = scene_bim.import_should_merge_by_material
+        settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour
+        settings.should_clean_mesh = scene_bim.import_should_clean_mesh
+        return settings

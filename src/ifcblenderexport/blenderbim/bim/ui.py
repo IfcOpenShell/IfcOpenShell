@@ -574,8 +574,12 @@ class BIM_PT_bim(Panel):
 
         row = layout.row(align=True)
         row.prop(bim_properties, 'ifc_file')
+        row.operator('bim.reload_ifc_file', icon='FILE_REFRESH', text='')
         row.operator('bim.validate_ifc_file', icon='CHECKMARK', text='')
         row.operator('bim.select_ifc_file', icon='FILE_FOLDER', text='')
+
+        row = layout.row(align=True)
+        row.prop(bim_properties, 'ifc_cache')
 
         layout.label(text="IFC Categorisation:")
 
