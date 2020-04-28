@@ -142,9 +142,9 @@ endif
 	rm -rf dist/working
 
 	mkdir dist/working
-	cd dist/working && wget https://github.com/Moult/BCF-Plugin-FreeCAD/archive/fix-headless.zip
-	cd dist/working && unzip fix-headless*
-	cp -r dist/working/BCF-Plugin-FreeCAD-fix-headless/bcfplugin dist/blenderbim/libs/site/packages/
+	cd dist/working && wget https://github.com/podestplatz/bcf/archive/master.zip
+	cd dist/working && unzip master*
+	cp -r dist/working/bcf-master/bcfplugin dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	mkdir dist/working
