@@ -224,16 +224,16 @@ class IfcImporter():
         self.calculate_unit_scale()
         self.create_project()
         self.create_spatial_hierarchy()
+        self.purge_diff()
+        self.create_type_products()
         if self.ifc_import_settings.should_import_aggregates:
             self.create_aggregates()
         if self.ifc_import_settings.should_import_opening_elements:
             self.create_openings_collection()
-        self.purge_diff()
         self.parse_native_products()
         self.filter_ifc()
         self.patch_ifc()
         self.create_groups()
-        self.create_type_products()
         self.create_grids()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy:
@@ -773,15 +773,17 @@ class IfcImporter():
         collection = bpy.data.collections.new(f'IfcRelAggregates/{rel_aggregate.id()}')
         bpy.context.scene.collection.children.link(collection)
         bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
+        element = rel_aggregate.RelatingObject
 
-        instance = bpy.data.objects.new('{}/{}'.format(
-            rel_aggregate.RelatingObject.is_a(),
-            rel_aggregate.RelatingObject.Name),
-            None)
-        instance.instance_type = 'COLLECTION'
-        instance.instance_collection = collection
-        self.place_object_in_spatial_tree(rel_aggregate.RelatingObject, instance)
-        self.aggregates[rel_aggregate.RelatingObject.GlobalId] = instance
+        obj = bpy.data.objects.new('{}/{}'.format(element.is_a(), element.Name), None)
+        obj.instance_type = 'COLLECTION'
+        obj.instance_collection = collection
+        self.place_object_in_spatial_tree(element, obj)
+        self.add_element_attributes(element, obj)
+        self.add_element_document_relations(element, obj)
+        self.add_defines_by_type_relation(element, obj)
+        self.add_product_definitions(element, obj)
+        self.aggregates[element.GlobalId] = obj
 
     def create_openings_collection(self):
         collection = bpy.data.collections.new('IfcOpeningElements')
