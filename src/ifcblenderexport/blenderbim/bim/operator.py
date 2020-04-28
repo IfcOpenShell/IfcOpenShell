@@ -5,6 +5,7 @@ import json
 import logging
 import webbrowser
 import ifcopenshell
+import tempfile
 from . import export_ifc
 from . import import_ifc
 from . import cut_ifc
@@ -73,29 +74,12 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         start = time.time()
-        ifc_import_settings = import_ifc.IfcImportSettings()
+        logger = logging.getLogger('ImportIFC')
         logging.basicConfig(
             filename=bpy.context.scene.BIMProperties.data_dir + 'process.log',
             filemode='a', level=logging.DEBUG)
-        ifc_import_settings.logger = logging.getLogger('ImportIFC')
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, self.filepath, logger)
         ifc_import_settings.logger.info('Starting import')
-        ifc_import_settings.input_file = self.filepath
-        ifc_import_settings.diff_file = bpy.context.scene.BIMProperties.diff_json_file
-        ifc_import_settings.should_ignore_site_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_site_coordinates
-        ifc_import_settings.should_ignore_building_coordinates = bpy.context.scene.BIMProperties.import_should_ignore_building_coordinates
-        ifc_import_settings.should_reset_absolute_coordinates = bpy.context.scene.BIMProperties.import_should_reset_absolute_coordinates
-        ifc_import_settings.should_import_curves = bpy.context.scene.BIMProperties.import_should_import_curves
-        ifc_import_settings.should_import_opening_elements = bpy.context.scene.BIMProperties.import_should_import_opening_elements
-        ifc_import_settings.should_import_spaces = bpy.context.scene.BIMProperties.import_should_import_spaces
-        ifc_import_settings.should_auto_set_workarounds = bpy.context.scene.BIMProperties.import_should_auto_set_workarounds
-        ifc_import_settings.should_treat_styled_item_as_material = bpy.context.scene.BIMProperties.import_should_treat_styled_item_as_material
-        ifc_import_settings.should_use_cpu_multiprocessing = bpy.context.scene.BIMProperties.import_should_use_cpu_multiprocessing
-        ifc_import_settings.should_use_legacy = bpy.context.scene.BIMProperties.import_should_use_legacy
-        ifc_import_settings.should_import_aggregates = bpy.context.scene.BIMProperties.import_should_import_aggregates
-        ifc_import_settings.should_merge_by_class = bpy.context.scene.BIMProperties.import_should_merge_by_class
-        ifc_import_settings.should_merge_by_material = bpy.context.scene.BIMProperties.import_should_merge_by_material
-        ifc_import_settings.should_merge_materials_by_colour = bpy.context.scene.BIMProperties.import_should_merge_materials_by_colour
-        ifc_import_settings.should_clean_mesh = bpy.context.scene.BIMProperties.import_should_clean_mesh
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.execute()
         ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))
@@ -2195,3 +2179,36 @@ class EyedropIfcCsv(bpy.types.Operator):
                 global_ids.append('#' + obj.BIMObjectProperties.attributes.get('GlobalId').string_value)
         bpy.context.scene.BIMProperties.ifc_selector = '|'.join(global_ids)
         return {'FINISHED'}
+
+
+class ReloadIfcFile(bpy.types.Operator):
+    bl_idname = 'bim.reload_ifc_file'
+    bl_label = 'Reload IFC File'
+
+    def execute(self, context):
+        self.diff_ifc()
+        self.reimport_ifc(context)
+        return {'FINISHED'}
+
+    def diff_ifc(self):
+        import ifcdiff
+        temp_file = tempfile.NamedTemporaryFile(delete = False)
+        temp_file.close()
+        ifc_diff = ifcdiff.IfcDiff(
+            bpy.context.scene.BIMProperties.ifc_cache,
+            bpy.context.scene.BIMProperties.ifc_file,
+            temp_file.name
+        )
+        ifc_diff.diff()
+        ifc_diff.export()
+        bpy.context.scene.BIMProperties.diff_json_file = temp_file.name
+
+    def reimport_ifc(self, context):
+        logger = logging.getLogger('ImportIFC')
+        logging.basicConfig(
+            filename=bpy.context.scene.BIMProperties.data_dir + 'process.log',
+            filemode='a', level=logging.DEBUG)
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            context, bpy.context.scene.BIMProperties.ifc_file, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.execute()
