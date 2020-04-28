@@ -788,6 +788,8 @@ INSTALL(FILES  ${SCHEMA_AGNOSTIC_H_FILES}
 )
 
 INSTALL(TARGETS IfcGeom ${IfcGeom_libraries}
+		geometry_mappings ${mapping_libraries}
+		geometry_kernels ${kernel_libraries}
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}
@@ -796,8 +798,6 @@ endif()
 
 if(BUILD_CONVERT)
 INSTALL(TARGETS serializers ${SERIALIZER_SCHEMA_LIBRARIES}
-		geometry_mappings ${mapping_libraries}
-		geometry_kernels ${kernel_libraries}
 	ARCHIVE DESTINATION ${LIBDIR}
 	LIBRARY DESTINATION ${LIBDIR}
 	RUNTIME DESTINATION ${BINDIR}
