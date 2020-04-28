@@ -210,6 +210,7 @@ class IfcImporter():
         self.native_elements = {}
         self.native_data = {}
         self.groups = {}
+        self.aggregates = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings)
 
@@ -240,6 +241,8 @@ class IfcImporter():
         else:
             self.create_products()
         self.place_objects_in_spatial_tree()
+        if self.ifc_import_settings.should_merge_aggregates:
+            self.merge_aggregates()
         if self.ifc_import_settings.should_merge_by_class:
             self.merge_by_class()
         elif self.ifc_import_settings.should_merge_by_material:
@@ -511,16 +514,54 @@ class IfcImporter():
         self.added_data[element.GlobalId] = obj
         return obj
 
+    def merge_aggregates(self):
+        self.merge_objects_inside_aggregates()
+        self.convert_aggregate_instances_to_object()
+
+    def merge_objects_inside_aggregates(self):
+        global_ids_to_delete = []
+        for collection in bpy.data.collections:
+            if 'IfcRelAggregates/' not in collection.name:
+                continue
+            obs = []
+            for i, ob in enumerate(collection.objects):
+                if ob.type == 'MESH':
+                    if i > 0:
+                        global_ids_to_delete.append(ob.BIMObjectProperties.attributes.get('GlobalId').string_value)
+                    obs.append(ob)
+            ctx = {}
+            ctx['active_object'] = obs[0]
+            ctx['selected_editable_objects'] = obs
+            if obs[0].data.users > 1:
+                obs[0].data = obs[0].data.copy()
+            bpy.ops.object.join(ctx)
+
+        for global_id in global_ids_to_delete:
+            del self.added_data[global_id]
+
+    def convert_aggregate_instances_to_object(self):
+        for obj in self.aggregates.values():
+            aggregate = obj.instance_collection.objects[0]
+            obj.users_collection[0].objects.link(aggregate)
+            aggregate.name = obj.name
+            bpy.data.collections.remove(obj.instance_collection)
+            bpy.data.objects.remove(obj)
+
     def merge_by_class(self):
         merge_set = {}
         for obj in self.added_data.values():
-            if '/' in obj.name:
-                merge_set.setdefault(obj.name.split('/')[0], []).append(obj)
+            if '/' not in obj.name \
+                    or 'IfcRelAggregates' in obj.users_collection[0].name:
+                continue
+            merge_set.setdefault(obj.name.split('/')[0], []).append(obj)
         self.merge_objects(merge_set)
 
     def merge_by_material(self):
         merge_set = {}
         for obj in self.added_data.values():
+            if '/' not in obj.name \
+                    or 'IfcRelAggregates' in obj.users_collection[0].name:
+                continue
             if not obj.material_slots:
                 merge_set.setdefault('no-material', []).append(obj)
             else:
@@ -740,6 +781,7 @@ class IfcImporter():
         instance.instance_type = 'COLLECTION'
         instance.instance_collection = collection
         self.place_object_in_spatial_tree(rel_aggregate.RelatingObject, instance)
+        self.aggregates[rel_aggregate.RelatingObject.GlobalId] = instance
 
     def create_openings_collection(self):
         collection = bpy.data.collections.new('IfcOpeningElements')
@@ -1014,6 +1056,7 @@ class IfcImportSettings:
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
         self.should_use_legacy = False
+        self.should_merge_aggregates = False
         self.should_merge_by_class = False
         self.should_merge_by_material = False
         self.should_import_aggregates = True
@@ -1038,6 +1081,7 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
         settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates
+        settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
         settings.should_merge_by_class = scene_bim.import_should_merge_by_class
         settings.should_merge_by_material = scene_bim.import_should_merge_by_material
         settings.should_merge_materials_by_colour = scene_bim.import_should_merge_materials_by_colour

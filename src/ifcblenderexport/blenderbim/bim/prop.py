@@ -813,6 +813,7 @@ class BIMProperties(PropertyGroup):
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=False)
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
+    import_should_merge_aggregates: BoolProperty(name="Import and Merge Aggregates", default=False)
     import_should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
     import_should_merge_by_material: BoolProperty(name="Import and Merge by Material", default=False)
     import_should_merge_materials_by_colour: BoolProperty(name="Import and Merge Materials by Colour", default=False)
