@@ -1064,16 +1064,25 @@ class SelectDiffNewFile(bpy.types.Operator):
 class ExecuteIfcDiff(bpy.types.Operator):
     bl_idname = 'bim.execute_ifc_diff'
     bl_label = 'Execute IFC Diff'
+    filename_ext = '.json'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.json')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
     def execute(self, context):
         import ifcdiff
         ifc_diff = ifcdiff.IfcDiff(
             bpy.context.scene.BIMProperties.diff_old_file,
             bpy.context.scene.BIMProperties.diff_new_file,
-            bpy.context.scene.BIMProperties.diff_json_file
+            self.filepath
         )
         ifc_diff.diff()
         ifc_diff.export()
+        bpy.context.scene.BIMProperties.diff_json_file = self.filepath
         return {'FINISHED'}
 
 
