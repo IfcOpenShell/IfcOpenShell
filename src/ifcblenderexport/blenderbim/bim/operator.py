@@ -478,6 +478,10 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if viewpoint.clippingPlanes:
             self.create_clipping_planes(viewpoint)
 
+        self.delete_bitmaps()
+        if viewpoint.bitmaps:
+            self.create_bitmaps(viewpoint)
+
         z_axis = Vector((-camera.direction.x, -camera.direction.y, -camera.direction.z)).normalized()
         y_axis = Vector((camera.upVector.x, camera.upVector.y, camera.upVector.z)).normalized()
         x_axis = y_axis.cross(z_axis).normalized()
@@ -557,6 +561,48 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         for section in collection.objects:
             bpy.context.view_layer.objects.active = section
             bpy.ops.bim.remove_section_plane()
+
+    def delete_bitmaps(self):
+        collection = bpy.data.collections.get('Bitmaps')
+        if not collection:
+            collection = bpy.data.collections.new('Bitmaps')
+            bpy.context.scene.collection.children.link(collection)
+        for bitmap in collection.objects:
+            bpy.data.objects.remove(bitmap)
+
+    def create_bitmaps(self, viewpoint):
+        import bcfplugin
+        topics = bcf.BcfStore.topics
+        topic = topics[bpy.context.scene.BCFProperties.active_topic_index][1]
+        collection = bpy.data.collections.get('Bitmaps')
+        if not collection:
+            collection = bpy.data.collections.new('Bitmaps')
+        for bitmap in viewpoint.bitmaps:
+            obj = bpy.data.objects.new('Bitmap', None)
+            obj.empty_display_type = 'IMAGE'
+            image = bpy.data.images.load(os.path.join(
+                bcfplugin.util.getBcfDir(),
+                str(topic.xmlId),
+                bitmap.reference
+            ))
+            src_width = image.size[0]
+            src_height = image.size[1]
+            if src_height > src_width:
+                obj.empty_display_size = bitmap.height
+            else:
+                obj.empty_display_size = bitmap.height * (src_width / src_height)
+            obj.data = image
+            y = Vector((bitmap.upVector.x, bitmap.upVector.y, bitmap.upVector.z))
+            z = Vector((bitmap.normal.x, bitmap.normal.y, bitmap.normal.z))
+            x = y.cross(z)
+            obj.matrix_world = Matrix([
+                [x[0], y[0], z[0], 0],
+                [x[1], y[1], z[1], 0],
+                [x[2], y[2], z[2], 0],
+                [0, 0, 0, 1]
+            ])
+            obj.location = (bitmap.location.x, bitmap.location.y, bitmap.location.z)
+            collection.objects.link(obj)
 
     def hex_to_rgb(self, value):
         value = value.lstrip('#')
