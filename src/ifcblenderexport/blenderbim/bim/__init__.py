@@ -109,6 +109,7 @@ if bpy is not None:
         operator.ImportIfcCsv,
         operator.EyedropIfcCsv,
         operator.ReloadIfcFile,
+        operator.SelectSimilarType,
         prop.StrProperty,
         prop.Classification,
         prop.ClassificationReference,
