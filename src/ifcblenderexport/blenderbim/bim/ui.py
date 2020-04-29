@@ -41,8 +41,9 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'attributes')
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(props, 'relating_type')
+        row.operator('bim.select_similar_type', icon='RESTRICT_SELECT_OFF', text='')
         row = layout.row()
         row.prop(props, 'relating_structure')
 
