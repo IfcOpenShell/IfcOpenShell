@@ -153,7 +153,10 @@ struct bspline_curve : public curve {
 };
 
 struct trimmed_curve : public curve {
+	// @todo The copy constructor of point3 within the variant fails on the avx instruction
+	// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
 	boost::variant<point3, double> start, end;
+
 	// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
 	item* basis;
 	bool orientation;
