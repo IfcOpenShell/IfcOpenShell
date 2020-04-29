@@ -1921,6 +1921,7 @@ class AddSectionPlane(bpy.types.Operator):
         section.empty_display_type = 'SINGLE_ARROW'
         section.empty_display_size = 5
         section.rotation_euler = Euler((radians(180.0), 0.0, 0.0), 'XYZ')
+        section.location = bpy.context.scene.cursor.location
         section.show_in_front = True
         collection = bpy.data.collections.get('Sections')
         if not collection:
@@ -2018,11 +2019,15 @@ class AddSectionPlane(bpy.types.Operator):
             material.use_nodes = True
 
         if bpy.context.scene.BIMProperties.should_section_selected_objects:
-            objects = bpy.context.selected_objects
+            objects = list(bpy.context.selected_objects)
         else:
-            objects = bpy.context.visible_objects
+            objects = list(bpy.context.visible_objects)
 
         for obj in objects:
+            aggregate = obj.instance_collection
+            if aggregate and 'IfcRelAggregates/' in aggregate.name:
+                for part in aggregate.objects:
+                    objects.append(part)
             if not (obj.data \
                     and hasattr(obj.data, 'materials') \
                     and obj.data.materials \
