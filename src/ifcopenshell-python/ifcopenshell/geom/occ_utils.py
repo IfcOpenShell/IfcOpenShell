@@ -60,11 +60,11 @@ def initialize_display():
 
     def setup():
         viewer_handle = handle.GetViewer()
-        viewer = viewer_handle.GetObject()
+        viewer = viewer_handle.GetObject() if hasattr(viewer_handle, "GetObject") else viewer_handle
 
         def lights():
             viewer.InitActiveLights()
-            while True:
+            for _ in range(2):
                 try:
                     active_light = viewer.ActiveLight()
                 except BaseException:
@@ -76,10 +76,10 @@ def initialize_display():
         for l in lights:
             viewer.DelLight(l)
 
-        for dir in [(3, 2, 1), (-1, -2, -3)]:
+        for dir in [V3d.V3d_TypeOfOrientation_Yup_AxoRight, V3d.V3d_TypeOfOrientation_Zup_AxoRight]:
             light = V3d.V3d_DirectionalLight(viewer_handle)
-            light.SetDirection(*dir)
-            viewer.SetLightOn(light.GetHandle())
+            light.SetDirection(dir)
+            viewer.SetLightOn(light)
 
     setup()
     return handle
@@ -102,7 +102,6 @@ def display_shape(shape, clr=None, viewer_handle=None):
         representation = None
 
     material = Graphic3d.Graphic3d_MaterialAspect(Graphic3d.Graphic3d_NOM_PLASTER)
-    material.SetDiffuse(1)
 
     if representation and not clr:
         if len(set(representation.styles)) == 1:
@@ -178,7 +177,7 @@ def display_shape(shape, clr=None, viewer_handle=None):
         clr = Quantity.Quantity_Color(r(), r(), r(), Quantity.Quantity_TOC_RGB)
         ais.SetColor(clr)
 
-    ais_handle = ais.GetHandle()
+    ais_handle = ais
     viewer_handle.Context.Display(ais_handle, False)
 
     return ais_handle
