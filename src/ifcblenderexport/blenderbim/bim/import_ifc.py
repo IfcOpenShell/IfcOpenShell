@@ -223,6 +223,7 @@ class IfcImporter():
             self.auto_set_workarounds()
         self.calculate_unit_scale()
         self.create_project()
+        self.create_classifications()
         self.create_spatial_hierarchy()
         self.purge_diff()
         self.create_type_products()
@@ -741,6 +742,40 @@ class IfcImporter():
         if obj:
                 self.project['blender'].objects.link(obj)
                 del self.added_data[self.project['ifc'].GlobalId]
+
+    def create_classifications(self):
+        for classification in self.file.by_type('IfcClassification'):
+            data = bpy.context.scene.BIMProperties.classifications.add()
+            data_map = {
+                'name': 'Name', 'source': 'Source',
+                'edition': 'Edition', 'edition_date': 'EditionDate',
+                'description': 'Description', 'location': 'Location',
+                'reference_tokens': 'ReferenceTokens'
+            }
+            for key, value in data_map.items():
+                if getattr(classification, value):
+                    setattr(data, key, str(getattr(classification, value)))
+            classification_file = ifcopenshell.file(schema=self.file.wrapped_data.schema)
+            references = [classification]
+            while references:
+                entities_to_add = references
+                references = self.get_classification_references(references)
+            classification_file.add(classification)
+            for entity in entities_to_add:
+                classification_file.add(entity)
+            classification_filename = '{}-{}.ifc'.format(
+                Path(os.path.basename(self.ifc_import_settings.input_file)).stem, classification.Name)
+            classification_file.write(os.path.join(
+                bpy.context.scene.BIMProperties.schema_dir, 'classifications', classification_filename))
+
+        destination = os.path.join(bpy.context.scene.BIMProperties.schema_dir,
+                'classifications', '{}-{}.ifc')
+
+    def get_classification_references(self, references):
+        results = []
+        for reference in references:
+            results.extend(self.file.get_inverse(reference))
+        return results
 
     def create_spatial_hierarchy(self):
         if self.project['ifc'].IsDecomposedBy:
