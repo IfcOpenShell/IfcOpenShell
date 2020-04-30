@@ -434,6 +434,7 @@ class IfcImporter():
     def create_type_product(self, type_product):
         obj = bpy.data.objects.new(self.get_name(type_product), None)
         self.add_element_attributes(type_product, obj)
+        self.add_element_classifications(type_product, obj)
         self.add_element_document_relations(type_product, obj)
         self.add_type_product_psets(type_product, obj)
         self.project['blender'].objects.link(obj)
@@ -509,6 +510,7 @@ class IfcImporter():
             self.material_creator.create(element, obj, mesh)
 
         self.add_element_attributes(element, obj)
+        self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
@@ -815,6 +817,7 @@ class IfcImporter():
         obj.instance_collection = collection
         self.place_object_in_spatial_tree(element, obj)
         self.add_element_attributes(element, obj)
+        self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
@@ -875,6 +878,7 @@ class IfcImporter():
         self.material_creator.create(element, obj, mesh)
         obj.matrix_world = self.get_element_matrix(element, mesh_name)
         self.add_element_attributes(element, obj)
+        self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
@@ -939,6 +943,32 @@ class IfcImporter():
                 attribute.name = key
                 attribute.data_type = 'string'
                 attribute.string_value = str(value)
+
+    def add_element_classifications(self, element, obj):
+        if not element.HasAssociations:
+            return
+        for association in element.HasAssociations:
+            if not association.is_a('IfcRelAssociatesClassification'):
+                continue
+            data = association.RelatingClassification
+            reference = obj.BIMObjectProperties.classifications.add()
+            data_map = {
+                'name': 'Identification', 'location': 'Location', 'human_name': 'Name',
+                'description': 'Description', 'sort': 'Sort'
+            }
+            for key, value in data_map.items():
+                if hasattr(data, value) and getattr(data, value):
+                    setattr(reference, key, getattr(data, value))
+            if data.ReferencedSource:
+                reference.referenced_source = self.get_referenced_source_name(data.ReferencedSource)
+
+    def get_referenced_source_name(self, element):
+        if not hasattr(element, 'ReferencedSource') or not element.ReferencedSource:
+            if element.is_a('IfcClassification'):
+                return element.Name
+            else:
+                return element.Identification
+        return self.get_referenced_source_name(element.ReferencedSource)
 
     def get_element_matrix(self, element, mesh_name):
         element_matrix = self.get_local_placement(element.ObjectPlacement)
