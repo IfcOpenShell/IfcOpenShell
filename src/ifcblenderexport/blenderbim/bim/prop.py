@@ -927,8 +927,13 @@ class PsetQto(PropertyGroup):
     file: StringProperty(name="File")
     properties: CollectionProperty(name="Properties", type=Attribute)
 
+
 class Document(PropertyGroup):
     file: StringProperty(name="File")
+    location: StringProperty(name="Location")
+    identification: StringProperty(name="Identification")
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
 
 
 class GlobalId(PropertyGroup):

@@ -887,9 +887,18 @@ class IfcImporter():
     def add_element_document_relations(self, element, obj):
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesDocument'):
-                document_reference = association.RelatingDocument
+                data = association.RelatingDocument
                 document = obj.BIMObjectProperties.documents.add()
-                document.file = document_reference.Location
+                data_map = {
+                    'file': 'Location',
+                    'location': 'Location',
+                    'identification': 'Identification',
+                    'name': 'Name',
+                    'description': 'Description'
+                }
+                for key, value in data_map.items():
+                    if hasattr(data, value) and getattr(data, value):
+                        setattr(document, key, getattr(data, value))
 
     def place_objects_in_spatial_tree(self):
         for global_id, obj in self.added_data.items():

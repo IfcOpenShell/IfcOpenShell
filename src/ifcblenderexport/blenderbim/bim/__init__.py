@@ -158,6 +158,7 @@ if bpy is not None:
         ui.BIM_PT_mesh,
         ui.BIM_PT_object,
         ui.BIM_PT_classification_references,
+        ui.BIM_PT_documents,
         ui.BIM_PT_camera,
         ui.BIM_UL_topics,
         ui.BIM_UL_classifications,

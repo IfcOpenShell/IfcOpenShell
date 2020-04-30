@@ -81,22 +81,6 @@ class BIM_PT_object(Panel):
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
 
-        layout.label(text="Documents:")
-        row = layout.row(align=True)
-        row.prop(props, 'applicable_documents', text='')
-        row.operator('bim.add_document')
-
-        row = layout.row()
-        row.operator('bim.fetch_object_passport')
-
-        for index, document in enumerate(props.documents):
-            row = layout.row(align=True)
-            row.prop(document, 'file', text='')
-            row.operator('bim.remove_document', icon='X', text='').document_index = index
-
-        row = layout.row()
-        row.prop(props, 'documents')
-
         row = layout.row()
         row.prop(props, 'material_type')
 
@@ -117,6 +101,42 @@ class BIM_PT_object(Panel):
         row.prop(props, 'structural_member_connection')
 
 
+class BIM_PT_documents(Panel):
+    bl_label = 'Documents'
+    bl_idname = 'BIM_PT_documents'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
+
+        if not props.documents:
+            layout.label(text="No documents found")
+
+        row = layout.row(align=True)
+        row.prop(props, 'applicable_documents', text='')
+        row.operator('bim.add_document')
+
+        row = layout.row()
+        row.operator('bim.fetch_object_passport')
+
+        for index, document in enumerate(props.documents):
+            row = layout.row(align=True)
+            row.prop(document, 'identification')
+            row.operator('bim.remove_document', icon='X', text='').document_index = index
+            row = layout.row(align=True)
+            row.prop(document, 'file')
+            row = layout.row(align=True)
+            row.prop(document, 'location')
+            row = layout.row(align=True)
+            row.prop(document, 'name')
+            row = layout.row(align=True)
+            row.prop(document, 'description')
+
+
 class BIM_PT_classification_references(Panel):
     bl_label = 'Classification References'
     bl_idname = 'BIM_PT_classification_references'
@@ -129,7 +149,8 @@ class BIM_PT_classification_references(Panel):
         layout = self.layout
         props = context.active_object.BIMObjectProperties
 
-        layout.label(text="Classification:")
+        if not props.classifications:
+            layout.label(text="No classifications found")
 
         for index, classification in enumerate(props.classifications):
             row = layout.row(align=True)
@@ -143,9 +164,6 @@ class BIM_PT_classification_references(Panel):
             row.prop(classification, 'description')
             row = layout.row(align=True)
             row.prop(classification, 'referenced_source')
-
-        row = layout.row()
-        row.prop(props, 'classifications')
 
 
 class BIM_PT_psets(Panel):
