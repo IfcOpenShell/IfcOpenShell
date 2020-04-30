@@ -31,10 +31,6 @@ class IfcSchema():
         self.property_files.append(ifcopenshell.open(os.path.join(self.schema_dir, 'Pset_IFC4_ADD2.ifc')))
 
         self.classification_files = {}
-        classification_paths = Path(self.schema_dir).glob('classifications/*.ifc')
-        for path in classification_paths:
-            self.classification_files[os.path.basename(path).split('.')[0]] = ifcopenshell.open(path)
-
         self.psets = {}
         self.qtos = {}
         self.applicable_psets = {}
@@ -64,11 +60,11 @@ class IfcSchema():
                     entity = prop.ApplicableEntity if prop.ApplicableEntity else 'IfcRoot'
                     self.applicable_psets.setdefault(entity, []).append(prop.Name)
 
-        for filename, classification_file in self.classification_files.items():
-            classification = classification_file.by_type('IfcClassification')[0]
-            self.classifications[filename] = classification
-
     def load_classification(self, filename):
+        if filename not in self.classifications:
+            classification_path = os.path.join(self.schema_dir, 'classifications', '{}.ifc'.format(filename))
+            self.classification_files[filename] = ifcopenshell.open(classification_path)
+            self.classifications[filename] = self.classification_files[filename].by_type('IfcClassification')[0]
         classification = self.classifications[filename]
         return {
             'name': '',

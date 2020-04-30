@@ -1263,13 +1263,15 @@ class AddClassification(bpy.types.Operator):
         if context.scene.BIMProperties.classification in schema.ifc.classifications:
             data = schema.ifc.classifications[context.scene.BIMProperties.classification]
             classification = context.scene.BIMProperties.classifications.add()
-            classification.source = data.Source
-            classification.edition = data.Edition
-            classification.edition_date = data.EditionDate
-            classification.name = data.Name
-            classification.description = data.Description
-            classification.location = data.Location
-            classification.reference_tokens = str(data.ReferenceTokens)
+            data_map = {
+                'name': 'Name', 'source': 'Source',
+                'edition': 'Edition', 'edition_date': 'EditionDate',
+                'description': 'Description', 'location': 'Location',
+                'reference_tokens': 'ReferenceTokens'
+            }
+            for key, value in data_map.items():
+                if getattr(data, value):
+                    setattr(classification, key, str(getattr(data, value)))
         return {'FINISHED'}
 
 
