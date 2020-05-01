@@ -292,40 +292,12 @@ class IfcImporter():
 
     def parse_native_products(self):
         # TODO: simple code for now as we only treat rebar specially
-        self.native_data['rebar_profiles'] = {}
         for element in self.file.by_type('IfcReinforcingBar'):
             for representation in element.Representation.Representations:
                 self.replace_with_directrix(representation, element)
                 for item in representation.Items:
                     if item.is_a('IfcMappedItem'):
                         self.replace_with_directrix(item.MappingSource.MappedRepresentation, element)
-        for radius in self.native_data['rebar_profiles'].keys():
-            obj = bpy.data.objects.new('rebar-profile-{}'.format(radius), self.create_bezier_circle(radius))
-            self.native_data['rebar_profiles'][radius] = obj
-            bpy.context.scene.collection.objects.link(obj)
-
-    def create_bezier_circle(self, radius):
-        curve = bpy.data.curves.new('circle-profile', type='CURVE')
-        spline = curve.splines.new('BEZIER')
-        spline.use_cyclic_u = True
-        spline.bezier_points.add(3)
-        approx_distance = (4/3)*math.tan(math.pi/(2*4))
-        for i in range(0, 4):
-            spline.bezier_points[i].handle_left_type = 'AUTO'
-            spline.bezier_points[i].handle_right_type = 'AUTO'
-        spline.bezier_points[0].co = mathutils.Vector((-radius, 0, 0))
-        spline.bezier_points[0].handle_left = mathutils.Vector((-radius, -approx_distance, 0))
-        spline.bezier_points[0].handle_right = mathutils.Vector((-radius, approx_distance, 0))
-        spline.bezier_points[1].co = mathutils.Vector((0, radius, 0))
-        spline.bezier_points[1].handle_left = mathutils.Vector((-approx_distance, radius, 0))
-        spline.bezier_points[1].handle_right = mathutils.Vector((approx_distance, radius, 0))
-        spline.bezier_points[2].co = mathutils.Vector((radius, 0, 0))
-        spline.bezier_points[2].handle_left = mathutils.Vector((radius, approx_distance, 0))
-        spline.bezier_points[2].handle_right = mathutils.Vector((radius, -approx_distance, 0))
-        spline.bezier_points[3].co = mathutils.Vector((0, -radius, 0))
-        spline.bezier_points[3].handle_left = mathutils.Vector((approx_distance, -radius, 0))
-        spline.bezier_points[3].handle_right = mathutils.Vector((-approx_distance, -radius, 0))
-        return curve
 
     def replace_with_directrix(self, representation, element):
         new_items = []
@@ -334,7 +306,6 @@ class IfcImporter():
                 new_items.append(item.Directrix)
                 radius = round(self.unit_scale * item.Radius, 3)
                 self.native_elements[element.GlobalId] = { 'radius': radius }
-                self.native_data['rebar_profiles'][radius] = None
             else:
                 new_items.append(item)
         representation.Items = new_items
@@ -489,7 +460,7 @@ class IfcImporter():
                 # TODO: figure out a design pattern for native objects
                 if element.is_a('IfcReinforcingBar'):
                     mesh = self.create_mesh(element, shape, is_curve=True)
-                    mesh.bevel_object = self.native_data['rebar_profiles'][self.native_elements[element.GlobalId]['radius']]
+                    mesh.bevel_depth = self.native_elements[element.GlobalId]['radius']
                     mesh.use_fill_caps = True
                 else:
                     mesh = self.create_mesh(element, shape)
