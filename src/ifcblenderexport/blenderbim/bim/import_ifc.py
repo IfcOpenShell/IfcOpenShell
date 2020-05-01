@@ -224,6 +224,7 @@ class IfcImporter():
         self.calculate_unit_scale()
         self.create_project()
         self.create_classifications()
+        self.create_document_references()
         self.create_spatial_hierarchy()
         self.purge_diff()
         self.create_type_products()
@@ -749,6 +750,19 @@ class IfcImporter():
             results.extend(self.file.get_inverse(reference))
         return results
 
+    def create_document_references(self):
+        for data in self.file.by_type('IfcDocumentReference'):
+            reference = bpy.context.scene.BIMProperties.document_references.add()
+            data_map = {
+                'location': 'Location',
+                'name': 'Identification',
+                'human_name': 'Name',
+                'description': 'Description'
+            }
+            for key, value in data_map.items():
+                if hasattr(data, value) and getattr(data, value):
+                    setattr(reference, key, getattr(data, value))
+
     def create_spatial_hierarchy(self):
         if self.project['ifc'].IsDecomposedBy:
             for rel_aggregate in self.project['ifc'].IsDecomposedBy:
@@ -857,18 +871,8 @@ class IfcImporter():
     def add_element_document_relations(self, element, obj):
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesDocument'):
-                data = association.RelatingDocument
-                document = obj.BIMObjectProperties.documents.add()
-                data_map = {
-                    'file': 'Location',
-                    'location': 'Location',
-                    'identification': 'Identification',
-                    'name': 'Name',
-                    'description': 'Description'
-                }
-                for key, value in data_map.items():
-                    if hasattr(data, value) and getattr(data, value):
-                        setattr(document, key, getattr(data, value))
+                reference = obj.BIMObjectProperties.document_references.add()
+                reference.name = association.RelatingDocument.Identification
 
     def place_objects_in_spatial_tree(self):
         for global_id, obj in self.added_data.items():

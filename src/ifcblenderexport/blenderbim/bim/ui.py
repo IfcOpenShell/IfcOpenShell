@@ -102,7 +102,7 @@ class BIM_PT_object(Panel):
 
 
 class BIM_PT_document_information(Panel):
-    bl_label = 'Document Information'
+    bl_label = 'Documents'
     bl_idname = 'BIM_PT_document_information'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -117,9 +117,7 @@ class BIM_PT_document_information(Panel):
         row = layout.row()
         row.operator('bim.add_document_information')
 
-        if not props.document_information:
-            layout.label(text="No document information found")
-        else:
+        if props.document_information:
             layout.template_list('BIM_UL_document_information', '', props, 'document_information', props, 'active_document_information_index')
 
             if props.active_document_information_index < len(props.document_information):
@@ -156,6 +154,28 @@ class BIM_PT_document_information(Panel):
                 row = layout.row()
                 row.prop(information, 'status')
 
+        row = layout.row()
+        row.operator('bim.add_document_reference')
+
+        if props.document_references:
+            layout.template_list('BIM_UL_document_references', '', props, 'document_references', props, 'active_document_reference_index')
+
+            if props.active_document_reference_index < len(props.document_references):
+                reference = props.document_references[props.active_document_reference_index]
+                row = layout.row(align=True)
+                row.prop(reference, 'name')
+                row.operator('bim.remove_document_reference', icon='X', text='').index = props.active_document_reference_index
+                row = layout.row()
+                row.prop(reference, 'human_name')
+                row = layout.row()
+                row.prop(reference, 'location')
+                row = layout.row()
+                row.prop(reference, 'description')
+
+            row = layout.row(align=True)
+            row.operator('bim.assign_document_reference', text='Assign Reference')
+            row.operator('bim.unassign_document_reference', text='Unassign Reference')
+
 
 class BIM_PT_documents(Panel):
     bl_label = 'Documents'
@@ -167,30 +187,33 @@ class BIM_PT_documents(Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
         props = context.active_object.BIMObjectProperties
 
-        if not props.documents:
+        if not props.document_references:
             layout.label(text="No documents found")
-
-        row = layout.row(align=True)
-        row.prop(props, 'applicable_documents', text='')
-        row.operator('bim.add_document')
 
         row = layout.row()
         row.operator('bim.fetch_object_passport')
 
-        for index, document in enumerate(props.documents):
-            row = layout.row(align=True)
-            row.prop(document, 'identification')
-            row.operator('bim.remove_document', icon='X', text='').document_index = index
-            row = layout.row(align=True)
-            row.prop(document, 'file')
-            row = layout.row(align=True)
-            row.prop(document, 'location')
-            row = layout.row(align=True)
-            row.prop(document, 'name')
-            row = layout.row(align=True)
-            row.prop(document, 'description')
+        if props.document_references:
+            layout.template_list('BIM_UL_document_references', '', props, 'document_references', props, 'active_document_reference_index')
+
+            if props.active_document_reference_index < len(props.document_references):
+                reference = props.document_references[props.active_document_reference_index]
+                row = layout.row(align=True)
+                row.prop(reference, 'name')
+                if reference.name in bpy.context.scene.BIMProperties.document_references:
+                    reference = bpy.context.scene.BIMProperties.document_references[reference.name]
+                    row.operator('bim.remove_object_document_reference', icon='X', text='').index = props.active_document_reference_index
+                    row = layout.row()
+                    row.prop(reference, 'human_name')
+                    row = layout.row()
+                    row.prop(reference, 'location')
+                    row = layout.row()
+                    row.prop(reference, 'description')
+                else:
+                    layout.label(text="Reference is invalid")
 
 
 class BIM_PT_classification_references(Panel):
@@ -1073,6 +1096,15 @@ class BIM_UL_topics(bpy.types.UIList):
 
 
 class BIM_UL_document_information(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_document_references(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:
