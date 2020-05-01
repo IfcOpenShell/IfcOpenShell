@@ -88,7 +88,7 @@ class IfcParser():
         self.people = []
         self.organisations = []
         self.psets = {}
-        self.documents = {}
+        self.document_references = {}
         self.classifications = []
         self.classification_references = {}
         self.objectives = {}
@@ -138,7 +138,7 @@ class IfcParser():
         self.categorise_selected_objects(unique_objects)
         self.material_psets = self.get_material_psets()
         self.document_information = self.get_document_information()
-        self.documents = self.get_documents()
+        self.document_references = self.get_document_references()
         self.classifications = self.get_classifications()
         self.classification_references = self.get_classification_references()
         self.objectives = self.get_objectives()
@@ -453,9 +453,9 @@ class IfcParser():
         self.get_product_psets_qtos(product, obj, is_pset=True)
         self.get_product_psets_qtos(product, obj, is_qto=True)
 
-        for document in obj.BIMObjectProperties.documents:
+        for reference in obj.BIMObjectProperties.document_references:
             self.rel_associates_document_object.setdefault(
-                document.file, []).append(product)
+                reference.name, []).append(product)
 
         for classification in obj.BIMObjectProperties.classifications:
             self.rel_associates_classification_object.setdefault(
@@ -673,19 +673,25 @@ class IfcParser():
         with open(self.data_dir + 'owner/organisation.json') as file:
             return [{'raw': o} for o in json.load(file)]
 
-    def get_documents(self):
-        documents = {}
-        doc_path = self.data_dir + 'doc/'
-        for filename in Path(doc_path).glob('**/*'):
-            uri = str(filename.relative_to(doc_path).as_posix())
-            documents[uri] = {
+    def get_document_references(self):
+        results = {}
+        for reference in bpy.context.scene.BIMProperties.document_references:
+            data_map = {
+                'name': 'Identification',
+                'human_name': 'Name',
+                'description': 'Description',
+                'location': 'Location'
+            }
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(reference, key):
+                    attributes[value] = getattr(reference, key)
+            results[reference.name] = {
                 'ifc': None,
-                'raw': filename,
-                'attributes': {
-                    'Location': uri,
-                    'Name': filename.stem
-                }}
-        return documents
+                'raw': reference,
+                'attributes': attributes
+            }
+        return results
 
     def get_document_information(self):
         results = {}
@@ -1140,7 +1146,7 @@ class IfcExporter():
         self.create_project()
         self.create_library_information()
         self.create_document_information()
-        self.create_documents()
+        self.create_document_references()
         self.create_classifications()
         self.create_classification_references()
         self.create_objectives()
@@ -1339,13 +1345,13 @@ class IfcExporter():
             information['ifc'] = self.file.create_entity(
                 'IfcDocumentInformation', **information['attributes'])
 
-    def create_documents(self):
-        for document in self.ifc_parser.documents.values():
-            document['ifc'] = self.file.create_entity(
-                'IfcDocumentReference', **document['attributes'])
+    def create_document_references(self):
+        for reference in self.ifc_parser.document_references.values():
+            reference['ifc'] = self.file.create_entity(
+                'IfcDocumentReference', **reference['attributes'])
             self.file.createIfcRelAssociatesDocument(
                 ifcopenshell.guid.new(), None, None, None,
-                [self.ifc_parser.project['ifc']], document['ifc'])
+                [self.ifc_parser.project['ifc']], reference['ifc'])
 
     def create_classifications(self):
         for classification in self.ifc_parser.classifications.values():
@@ -2431,7 +2437,7 @@ class IfcExporter():
             self.file.createIfcRelAssociatesDocument(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects],
-                self.ifc_parser.documents[relating_document_key]['ifc'])
+                self.ifc_parser.document_references[relating_document_key]['ifc'])
 
     def relate_to_classifications(self, relationships):
         for relating_key, related_objects in relationships.items():

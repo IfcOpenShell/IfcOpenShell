@@ -792,22 +792,90 @@ class RemoveMaterialPset(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class AddDocument(bpy.types.Operator):
-    bl_idname = 'bim.add_document'
-    bl_label = 'Add Document'
+class AddDocumentInformation(bpy.types.Operator):
+    bl_idname = 'bim.add_document_information'
+    bl_label = 'Add Document Information'
 
     def execute(self, context):
-        document = bpy.context.active_object.BIMObjectProperties.documents.add()
-        document.file = bpy.context.active_object.BIMObjectProperties.applicable_documents
+        info = bpy.context.scene.BIMProperties.document_information.add()
+        info.name = 'New Document ID'
         return {'FINISHED'}
 
-class RemoveDocument(bpy.types.Operator):
-    bl_idname = 'bim.remove_document'
-    bl_label = 'Remove Document'
-    document_index: bpy.props.IntProperty()
+
+class RemoveDocumentInformation(bpy.types.Operator):
+    bl_idname = 'bim.remove_document_information'
+    bl_label = 'Remove Document Information'
+    index: bpy.props.IntProperty()
 
     def execute(self, context):
-        bpy.context.active_object.BIMObjectProperties.documents.remove(self.document_index)
+        bpy.context.scene.BIMProperties.document_information.remove(self.index)
+        return {'FINISHED'}
+
+
+class AddDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.add_document_reference'
+    bl_label = 'Add Document Reference'
+
+    def execute(self, context):
+        document = bpy.context.scene.BIMProperties.document_references.add()
+        document.name = 'New Document Reference ID'
+        return {'FINISHED'}
+
+
+class RemoveDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.remove_document_reference'
+    bl_label = 'Remove Document Reference'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.document_references.remove(self.index)
+        return {'FINISHED'}
+
+
+class RemoveObjectDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.remove_object_document_reference'
+    bl_label = 'Remove Object Document Reference'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.document_references.remove(self.index)
+        return {'FINISHED'}
+
+
+class AssignDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.assign_document_reference'
+    bl_label = 'Assign Document Reference'
+
+    def execute(self, context):
+        identification = bpy.context.scene.BIMProperties.document_references[bpy.context.scene.BIMProperties.active_document_reference_index].name
+        for obj in bpy.context.selected_objects:
+            if obj.BIMObjectProperties.document_references.get(identification):
+                continue
+            reference = obj.BIMObjectProperties.document_references.add()
+            reference.name = identification
+        return {'FINISHED'}
+
+
+class UnassignDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.unassign_document_reference'
+    bl_label = 'Unassign Document Reference'
+
+    def execute(self, context):
+        identification = bpy.context.scene.BIMProperties.document_references[bpy.context.scene.BIMProperties.active_document_reference_index].name
+        for obj in bpy.context.selected_objects:
+            index = obj.BIMObjectProperties.document_references.find(identification)
+            if index >= 0:
+                obj.BIMObjectProperties.document_references.remove(index)
+        return {'FINISHED'}
+
+
+class RemoveObjectDocumentReference(bpy.types.Operator):
+    bl_idname = 'bim.remove_object_document_reference'
+    bl_label = 'Remove Object Document Reference'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.document_references.remove(self.index)
         return {'FINISHED'}
 
 class GenerateGlobalId(bpy.types.Operator):
@@ -2235,23 +2303,4 @@ class SelectSimilarType(bpy.types.Operator):
         for obj in bpy.context.visible_objects:
             if obj.BIMObjectProperties.relating_type == relating_type:
                 obj.select_set(True)
-        return {'FINISHED'}
-
-
-class AddDocumentInformation(bpy.types.Operator):
-    bl_idname = 'bim.add_document_information'
-    bl_label = 'Add Document Information'
-
-    def execute(self, context):
-        info = bpy.context.scene.BIMProperties.document_information.add()
-        info.name = 'New Document ID'
-        return {'FINISHED'}
-
-class RemoveDocumentInformation(bpy.types.Operator):
-    bl_idname = 'bim.remove_document_information'
-    bl_label = 'Remove Document Information'
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.context.scene.BIMProperties.document_information.remove(self.index)
         return {'FINISHED'}

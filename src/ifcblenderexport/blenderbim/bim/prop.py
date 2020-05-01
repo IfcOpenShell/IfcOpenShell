@@ -40,7 +40,6 @@ attributes_enum = []
 psetnames_enum = []
 qtonames_enum = []
 materialattributes_enum = []
-documents_enum = []
 materialtypes_enum = []
 contexts_enum = []
 subcontexts_enum = []
@@ -309,16 +308,6 @@ def refreshProfileAttributes(self, context):
         profile_attribute.name = attribute['name']
 
 
-def getApplicableDocuments(self, context):
-    global documents_enum
-    documents_enum.clear()
-    doc_path = os.path.join(context.scene.BIMProperties.data_dir, 'doc')
-    for filename in Path(doc_path).glob('**/*'):
-        uri = str(filename.relative_to(doc_path).as_posix())
-        documents_enum.append((uri, uri, ''))
-    return documents_enum
-
-
 def getMaterialTypes(self, context):
     global materialtypes_enum
     materialtypes_enum.clear()
@@ -431,6 +420,13 @@ class DocumentInformation(PropertyGroup):
         ('FINAL', 'FINAL', 'Document is final.'),
         ('REVISION', 'REVISION', 'Document has undergone revision.'),
         ], name='Status')
+
+
+class DocumentReference(PropertyGroup):
+    location: StringProperty(name="Location")
+    name: StringProperty(name="Identification")
+    human_name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
 
 
 class BcfTopic(PropertyGroup):
@@ -892,6 +888,8 @@ class BIMProperties(PropertyGroup):
     csv_attributes: CollectionProperty(name='CSV Attributes', type=StrProperty)
     document_information: CollectionProperty(name='Document Information', type=DocumentInformation)
     active_document_information_index: IntProperty(name='Active Document Information Index')
+    document_references: CollectionProperty(name='Document References', type=DocumentReference)
+    active_document_reference_index: IntProperty(name='Active Document Reference Index')
 
 
 class BCFProperties(PropertyGroup):
@@ -959,16 +957,7 @@ class Attribute(PropertyGroup):
 
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
-    file: StringProperty(name="File")
     properties: CollectionProperty(name="Properties", type=Attribute)
-
-
-class Document(PropertyGroup):
-    file: StringProperty(name="File")
-    location: StringProperty(name="Location")
-    identification: StringProperty(name="Identification")
-    name: StringProperty(name="Name")
-    description: StringProperty(name="Description")
 
 
 class GlobalId(PropertyGroup):
@@ -988,8 +977,8 @@ class BIMObjectProperties(PropertyGroup):
     psets: CollectionProperty(name="Psets", type=PsetQto)
     qtos: CollectionProperty(name="Qtos", type=PsetQto)
     applicable_attributes: EnumProperty(items=getApplicableAttributes, name="Attribute Names")
-    documents: CollectionProperty(name="Documents", type=Document)
-    applicable_documents: EnumProperty(items=getApplicableDocuments, name="Available Documents")
+    document_references: CollectionProperty(name="Document References", type=DocumentReference)
+    active_document_reference_index: IntProperty(name='Active Document Reference Index')
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     pset_name: EnumProperty(items=getPsetNames, name='Pset Name')
