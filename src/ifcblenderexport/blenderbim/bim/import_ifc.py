@@ -224,6 +224,7 @@ class IfcImporter():
         self.calculate_unit_scale()
         self.create_project()
         self.create_classifications()
+        self.create_document_information()
         self.create_document_references()
         self.create_spatial_hierarchy()
         self.purge_diff()
@@ -750,18 +751,45 @@ class IfcImporter():
             results.extend(self.file.get_inverse(reference))
         return results
 
-    def create_document_references(self):
-        for data in self.file.by_type('IfcDocumentReference'):
-            reference = bpy.context.scene.BIMProperties.document_references.add()
+    def create_document_information(self):
+        for element in self.file.by_type('IfcDocumentInformation'):
+            info = bpy.context.scene.BIMProperties.document_information.add()
             data_map = {
-                'location': 'Location',
                 'name': 'Identification',
                 'human_name': 'Name',
+                'description': 'Description',
+                'location': 'Location',
+                'purpose': 'Purpose',
+                'intended_use': 'IntendedUse',
+                'scope': 'Scope',
+                'revision': 'Revision',
+                'creation_time': 'CreationTime',
+                'last_revision_time': 'LastRevisionTime',
+                'electronic_format': 'ElectronicFormat',
+                'valid_from': 'ValidFrom',
+                'valid_until': 'ValidUntil',
+                'confidentiality': 'Confidentiality',
+                'status': 'Status'
+            }
+            for key, value in data_map.items():
+                if hasattr(element, value) and getattr(element, value):
+                    setattr(info, key, getattr(element, value))
+
+
+    def create_document_references(self):
+        for element in self.file.by_type('IfcDocumentReference'):
+            reference = bpy.context.scene.BIMProperties.document_references.add()
+            data_map = {
+                'name': 'Identification',
+                'human_name': 'Name',
+                'location': 'Location',
                 'description': 'Description'
             }
             for key, value in data_map.items():
-                if hasattr(data, value) and getattr(data, value):
-                    setattr(reference, key, getattr(data, value))
+                if hasattr(element, value) and getattr(element, value):
+                    setattr(reference, key, getattr(element, value))
+            if element.ReferencedDocument:
+                reference.referenced_document = element.ReferencedDocument.Identification
 
     def create_spatial_hierarchy(self):
         if self.project['ifc'].IsDecomposedBy:
