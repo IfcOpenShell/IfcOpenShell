@@ -400,6 +400,39 @@ class BIMCameraProperties(PropertyGroup):
     is_nts: BoolProperty(name='Is NTS')
 
 
+class DocumentInformation(PropertyGroup):
+    name: StringProperty(name='Identification')
+    human_name: StringProperty(name='Name')
+    description: StringProperty(name='Description')
+    location: StringProperty(name='Location')
+    purpose: StringProperty(name='Purpose')
+    intended_use: StringProperty(name='Intended Use')
+    scope: StringProperty(name='Scope')
+    revision: StringProperty(name='Revision')
+    document_owner: StringProperty(name='Owner')
+    editors: StringProperty(name='Editors')
+    creation_time: StringProperty(name='Created On')
+    last_revision_time: StringProperty(name='Last Revised')
+    electronic_format: StringProperty(name='Format')
+    valid_from: StringProperty(name='Valid From')
+    valid_until: StringProperty(name='Valid Until')
+    confidentiality: EnumProperty(items=[
+        ('NOTDEFINED', 'NOTDEFINED', 'Not defined.'),
+        ('PUBLIC', 'PUBLIC', 'Document is publicly available.'),
+        ('RESTRICTED', 'RESTRICTED', 'Document availability is restricted.'),
+        ('CONFIDENTIAL', 'CONFIDENTIAL', 'Document is confidential and its contents should not be revealed without permission.'),
+        ('PERSONAL', 'PERSONAL', 'Document is personal to the author.'),
+        ('USERDEFINED', 'USERDEFINED', 'Describe confidentiality elsewhere.')
+        ], name='Confidentiality')
+    status: EnumProperty(items=[
+        ('NOTDEFINED', 'NOTDEFINED', 'Not defined'),
+        ('DRAFT', 'DRAFT', 'Document is a draft.'),
+        ('FINALDRAFT', 'FINALDRAFT', 'Document is a final draft.'),
+        ('FINAL', 'FINAL', 'Document is final.'),
+        ('REVISION', 'REVISION', 'Document has undergone revision.'),
+        ], name='Status')
+
+
 class BcfTopic(PropertyGroup):
     name: StringProperty(name='Name')
 
@@ -857,6 +890,8 @@ class BIMProperties(PropertyGroup):
     section_plane_colour: FloatVectorProperty(name='Section Plane Colour', subtype='COLOR', default=(1, 0, 0), min=0.0, max=1.0)
     ifc_selector: StringProperty(default='', name='IFC Selector')
     csv_attributes: CollectionProperty(name='CSV Attributes', type=StrProperty)
+    document_information: CollectionProperty(name='Document Information', type=DocumentInformation)
+    active_document_information_index: IntProperty(name='Active Document Information Index')
 
 
 class BCFProperties(PropertyGroup):

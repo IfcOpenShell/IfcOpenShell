@@ -461,7 +461,6 @@ class IfcImporter():
                 if element.is_a('IfcReinforcingBar'):
                     mesh = self.create_mesh(element, shape, is_curve=True)
                     mesh.bevel_depth = self.native_elements[element.GlobalId]['radius']
-                    mesh.use_fill_caps = True
                 else:
                     mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh

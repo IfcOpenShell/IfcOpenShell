@@ -137,6 +137,7 @@ class IfcParser():
         unique_objects = self.add_spatial_elements_if_unselected(selected_objects)
         self.categorise_selected_objects(unique_objects)
         self.material_psets = self.get_material_psets()
+        self.document_information = self.get_document_information()
         self.documents = self.get_documents()
         self.classifications = self.get_classifications()
         self.classification_references = self.get_classification_references()
@@ -686,6 +687,37 @@ class IfcParser():
                 }}
         return documents
 
+    def get_document_information(self):
+        results = {}
+        for information in bpy.context.scene.BIMProperties.document_information:
+            data_map = {
+                'name': 'Identification',
+                'human_name': 'Name',
+                'description': 'Description',
+                'location': 'Location',
+                'purpose': 'Purpose',
+                'intended_use': 'IntendedUse',
+                'scope': 'Scope',
+                'revision': 'Revision',
+                'creation_time': 'CreationTime',
+                'last_revision_time': 'LastRevisionTime',
+                'electronic_format': 'ElectronicFormat',
+                'valid_from': 'ValidFrom',
+                'valid_until': 'ValidUntil',
+                'confidentiality': 'Confidentiality',
+                'status': 'Status'
+            }
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(information, key):
+                    attributes[value] = getattr(information, key)
+            results[information.name] = {
+                'ifc': None,
+                'raw': information,
+                'attributes': attributes
+            }
+        return results
+
     def get_project(self):
         for collection in bpy.data.collections:
             if self.is_a_project(self.get_ifc_class(collection.name)):
@@ -1107,6 +1139,7 @@ class IfcExporter():
         self.create_rep_context()
         self.create_project()
         self.create_library_information()
+        self.create_document_information()
         self.create_documents()
         self.create_classifications()
         self.create_classification_references()
@@ -1300,6 +1333,11 @@ class IfcExporter():
                 information['attributes']['Description'],
                 [self.ifc_parser.project['ifc']],
                 information['ifc'])
+
+    def create_document_information(self):
+        for information in self.ifc_parser.document_information.values():
+            information['ifc'] = self.file.create_entity(
+                'IfcDocumentInformation', **information['attributes'])
 
     def create_documents(self):
         for document in self.ifc_parser.documents.values():

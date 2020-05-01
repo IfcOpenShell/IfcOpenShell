@@ -101,6 +101,62 @@ class BIM_PT_object(Panel):
         row.prop(props, 'structural_member_connection')
 
 
+class BIM_PT_document_information(Panel):
+    bl_label = 'Document Information'
+    bl_idname = 'BIM_PT_document_information'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.operator('bim.add_document_information')
+
+        if not props.document_information:
+            layout.label(text="No document information found")
+        else:
+            layout.template_list('BIM_UL_document_information', '', props, 'document_information', props, 'active_document_information_index')
+
+            if props.active_document_information_index < len(props.document_information):
+                information = props.document_information[props.active_document_information_index]
+                row = layout.row(align=True)
+                row.prop(information, 'name')
+                row.operator('bim.remove_document_information', icon='X', text='').index = props.active_document_information_index
+                row = layout.row()
+                row.prop(information, 'human_name')
+                row = layout.row()
+                row.prop(information, 'description')
+                row = layout.row()
+                row.prop(information, 'location')
+                row = layout.row()
+                row.prop(information, 'purpose')
+                row = layout.row()
+                row.prop(information, 'intended_use')
+                row = layout.row()
+                row.prop(information, 'scope')
+                row = layout.row()
+                row.prop(information, 'revision')
+                row = layout.row()
+                row.prop(information, 'creation_time')
+                row = layout.row()
+                row.prop(information, 'last_revision_time')
+                row = layout.row()
+                row.prop(information, 'electronic_format')
+                row = layout.row()
+                row.prop(information, 'valid_from')
+                row = layout.row()
+                row.prop(information, 'valid_until')
+                row = layout.row()
+                row.prop(information, 'confidentiality')
+                row = layout.row()
+                row.prop(information, 'status')
+
+
 class BIM_PT_documents(Panel):
     bl_label = 'Documents'
     bl_idname = 'BIM_PT_documents'
@@ -1008,6 +1064,15 @@ class BIM_PT_mvd(Panel):
 
 
 class BIM_UL_topics(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_document_information(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:

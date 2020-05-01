@@ -2236,3 +2236,22 @@ class SelectSimilarType(bpy.types.Operator):
             if obj.BIMObjectProperties.relating_type == relating_type:
                 obj.select_set(True)
         return {'FINISHED'}
+
+
+class AddDocumentInformation(bpy.types.Operator):
+    bl_idname = 'bim.add_document_information'
+    bl_label = 'Add Document Information'
+
+    def execute(self, context):
+        info = bpy.context.scene.BIMProperties.document_information.add()
+        info.name = 'New Document ID'
+        return {'FINISHED'}
+
+class RemoveDocumentInformation(bpy.types.Operator):
+    bl_idname = 'bim.remove_document_information'
+    bl_label = 'Remove Document Information'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.document_information.remove(self.index)
+        return {'FINISHED'}
