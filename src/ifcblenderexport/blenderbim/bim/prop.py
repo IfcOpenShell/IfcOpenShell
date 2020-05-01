@@ -427,6 +427,7 @@ class DocumentReference(PropertyGroup):
     name: StringProperty(name="Identification")
     human_name: StringProperty(name="Name")
     description: StringProperty(name="Description")
+    referenced_document: StringProperty(name="Referenced Document")
 
 
 class BcfTopic(PropertyGroup):

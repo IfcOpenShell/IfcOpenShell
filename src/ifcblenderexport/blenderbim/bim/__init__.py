@@ -55,6 +55,7 @@ if bpy is not None:
         operator.RemoveMaterialPset,
         operator.AddDocumentInformation,
         operator.RemoveDocumentInformation,
+        operator.AssignDocumentInformation,
         operator.AddDocumentReference,
         operator.RemoveDocumentReference,
         operator.AssignDocumentReference,

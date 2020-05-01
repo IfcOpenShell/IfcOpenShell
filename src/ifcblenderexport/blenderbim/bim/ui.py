@@ -171,6 +171,9 @@ class BIM_PT_document_information(Panel):
                 row.prop(reference, 'location')
                 row = layout.row()
                 row.prop(reference, 'description')
+                row = layout.row(align=True)
+                row.prop(reference, 'referenced_document')
+                row.operator('bim.assign_document_information', icon='LINKED', text='').index = props.active_document_reference_index
 
             row = layout.row(align=True)
             row.operator('bim.assign_document_reference', text='Assign Reference')
@@ -212,6 +215,8 @@ class BIM_PT_documents(Panel):
                     row.prop(reference, 'location')
                     row = layout.row()
                     row.prop(reference, 'description')
+                    row = layout.row()
+                    row.prop(reference, 'referenced_document')
                 else:
                     layout.label(text="Reference is invalid")
 
