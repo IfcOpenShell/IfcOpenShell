@@ -689,6 +689,7 @@ class IfcParser():
             results[reference.name] = {
                 'ifc': None,
                 'raw': reference,
+                'referenced_document': reference.referenced_document,
                 'attributes': attributes
             }
         return results
@@ -1347,6 +1348,9 @@ class IfcExporter():
 
     def create_document_references(self):
         for reference in self.ifc_parser.document_references.values():
+            if reference['referenced_document'] \
+                    and reference['referenced_document'] in self.ifc_parser.document_information:
+                reference['attributes']['ReferencedDocument'] = self.ifc_parser.document_information[reference['referenced_document']]['ifc']
             reference['ifc'] = self.file.create_entity(
                 'IfcDocumentReference', **reference['attributes'])
             self.file.createIfcRelAssociatesDocument(

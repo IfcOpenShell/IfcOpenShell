@@ -812,6 +812,20 @@ class RemoveDocumentInformation(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AssignDocumentInformation(bpy.types.Operator):
+    bl_idname = 'bim.assign_document_information'
+    bl_label = 'Assign Document Information'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        reference = bpy.context.scene.BIMProperties.document_references[self.index]
+        index = bpy.context.scene.BIMProperties.active_document_information_index
+        info = bpy.context.scene.BIMProperties.document_information
+        if index < len(info):
+            reference.referenced_document = info[index].name
+        return {'FINISHED'}
+
+
 class AddDocumentReference(bpy.types.Operator):
     bl_idname = 'bim.add_document_reference'
     bl_label = 'Add Document Reference'
