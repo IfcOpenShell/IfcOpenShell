@@ -152,8 +152,6 @@ class IfcCutter:
         self.load_ifc_files()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
         start_time = time.time()
-        print('# Get units')
-        self.get_units()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
         start_time = time.time()
         print('# Get product shapes')
@@ -189,16 +187,12 @@ class IfcCutter:
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
 
     def load_ifc_files(self):
-        for filename in Path(self.data_dir).glob('*.ifc'):
-            print('Loading file {} ...'.format(filename))
-            self.ifc_files.append(ifcopenshell.open(filename))
-
-    def get_units(self):
-        unit_assignment = self.ifc_files[0].by_type('IfcUnitAssignment')[0]
-        for unit in unit_assignment.Units:
-            if unit.UnitType == 'LENGTHUNIT':
-                self.unit = unit
-                break
+        loaded_files = []
+        for ifc_file in self.ifc_files:
+            print('Loading file {} ...'.format(ifc_file))
+            if ifc_file:
+                loaded_files.append(ifcopenshell.open(ifc_file))
+        self.ifc_files = loaded_files
 
     def get_product_shapes(self):
         if not self.should_recut:
@@ -699,7 +693,7 @@ class SvgWriter():
 
     def calculate_scale(self):
         # TODO: properly handle units
-        if self.ifc_cutter.unit.Name == 'METRE':
+        if self.ifc_cutter.unit == 'METRE':
             self.scale *= 1000
         self.raw_width = self.ifc_cutter.section_box['x']
         self.raw_height = self.ifc_cutter.section_box['y']

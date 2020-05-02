@@ -1572,9 +1572,12 @@ class CutSection(bpy.types.Operator):
         y_axis = camera.matrix_world.to_quaternion() @ Vector((0, -1, 0))
         top_left_corner = location - (width / 2 * x_axis) - (height / 2 * y_axis)
         ifc_cutter = cut_ifc.IfcCutter()
+        ifc_cutter.ifc_files = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
+        if bpy.context.scene.unit_settings.length_unit == 'METERS':
+            ifc_cutter.unit = 'METRE'
         ifc_cutter.leader_obj = None
         ifc_cutter.stair_obj = None
         ifc_cutter.dimension_obj = None
@@ -2319,3 +2322,37 @@ class SelectSimilarType(bpy.types.Operator):
             if obj.BIMObjectProperties.relating_type == relating_type:
                 obj.select_set(True)
         return {'FINISHED'}
+
+
+class AddIfcFile(bpy.types.Operator):
+    bl_idname = 'bim.add_ifc_file'
+    bl_label = 'Add IFC File'
+
+    def execute(self, context):
+        pset = bpy.context.scene.DocProperties.ifc_files.add()
+        return {'FINISHED'}
+
+
+class RemoveIfcFile(bpy.types.Operator):
+    bl_idname = 'bim.remove_ifc_file'
+    bl_label = 'Remove IFC File'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.DocProperties.ifc_files.remove(self.index)
+        return {'FINISHED'}
+
+
+class SelectDocIfcFile(bpy.types.Operator):
+    bl_idname = "bim.select_doc_ifc_file"
+    bl_label = "Select Documentation IFC File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.DocProperties.ifc_files[self.index].name = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
