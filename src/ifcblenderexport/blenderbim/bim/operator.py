@@ -1769,6 +1769,37 @@ class SetViewPreset1(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class SetViewPreset2(bpy.types.Operator):
+    bl_idname = 'bim.set_view_preset_2'
+    bl_label = 'Set View Preset 2'
+
+    def execute(self, context):
+        bpy.data.worlds[0].color = (1, 1, 1)
+        bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
+        bpy.context.scene.display.shading.show_object_outline = True
+        bpy.context.scene.display.shading.show_cavity = True
+        bpy.context.scene.display.shading.cavity_type = 'BOTH'
+        bpy.context.scene.display.shading.curvature_ridge_factor = 1
+        bpy.context.scene.display.shading.curvature_valley_factor = 1
+        bpy.context.scene.view_settings.view_transform = 'Standard'
+
+        bpy.context.scene.display.shading.light = 'FLAT'
+        bpy.context.scene.display.shading.color_type = 'SINGLE'
+        bpy.context.scene.display.shading.single_color = (1, 1, 1)
+        bpy.context.scene.use_nodes = True
+        rgb_curves = bpy.context.scene.node_tree.nodes.new(type='CompositorNodeCurveRGB')
+        rgb_curves.mapping.curves[3].points.new(.4, 0) # Increase black contrast
+        rgb_curves.mapping.update()
+        for node in bpy.context.scene.node_tree.nodes:
+            if node.type == 'R_LAYERS':
+                render_layers = node
+            elif node.type == 'COMPOSITE':
+                composite = node
+        bpy.context.scene.node_tree.links.new(render_layers.outputs[0], rgb_curves.inputs[1])
+        bpy.context.scene.node_tree.links.new(rgb_curves.outputs[0], composite.inputs[0])
+        return {'FINISHED'}
+
+
 class OpenUpstream(bpy.types.Operator):
     bl_idname = 'bim.open_upstream'
     bl_label = 'Open Upstream Reference'
