@@ -152,8 +152,6 @@ class IfcCutter:
         self.load_ifc_files()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
         start_time = time.time()
-        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
-        start_time = time.time()
         print('# Get product shapes')
         self.get_product_shapes()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
@@ -208,7 +206,8 @@ class IfcCutter:
         settings.set(settings.USE_PYTHON_OPENCASCADE, True)
         products = []
         for ifc_file in self.ifc_files:
-            products.extend(ifc_file.by_type('IfcProduct'))
+            # TODO: This should perhaps be configurable, e.g. spaces cut to show zones in the drawing
+            products.extend(ifc_file.by_type('IfcElement'))
         total_products = len(products)
         for i, product in enumerate(products):
             print('{}/{} geometry processed ...'.format(i, total_products), end='\r', flush=True)
@@ -571,7 +570,6 @@ class IfcCutter:
             pickle.dump(self.cut_polygons, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
 
     def get_fresh_cut_polygons(self):
-        total_product_shapes = len(self.product_shapes)
         process_data = [(p.GlobalId, s, self.section_box['face'], self.transformation_data) for p, s in self.product_shapes]
 
         import multiprocessing
@@ -1009,6 +1007,11 @@ class SvgWriter():
         classes = [position, element.is_a()]
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesMaterial'):
-                classes.append('material-{}'.format(association.RelatingMaterial.Name))
+                classes.append('material-{}'.format(self.get_material_name(association.RelatingMaterial)))
         classes.append('globalid-{}'.format(element.GlobalId))
         return classes
+
+    def get_material_name(self, element):
+        if hasattr(element, 'Name') and element.Name:
+            return element.Name
+        return element.id()

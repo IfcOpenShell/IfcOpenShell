@@ -512,8 +512,9 @@ class BIM_PT_documentation(Panel):
         layout.use_property_split = True
         props = bpy.context.scene.DocProperties
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.operator('bim.set_view_preset_1')
+        row.operator('bim.set_view_preset_2')
 
         row = layout.row()
         row.prop(props, 'view_name')
