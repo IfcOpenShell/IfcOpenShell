@@ -741,9 +741,7 @@ class IfcImporter():
                 Path(os.path.basename(self.ifc_import_settings.input_file)).stem, classification.Name)
             classification_file.write(os.path.join(
                 bpy.context.scene.BIMProperties.schema_dir, 'classifications', classification_filename))
-
-        destination = os.path.join(bpy.context.scene.BIMProperties.schema_dir,
-                'classifications', '{}-{}.ifc')
+            data.filename = classification_filename
 
     def get_classification_references(self, references):
         results = []
@@ -970,7 +968,7 @@ class IfcImporter():
             for key, value in data_map.items():
                 if hasattr(data, value) and getattr(data, value):
                     setattr(reference, key, getattr(data, value))
-            if data.ReferencedSource:
+            if hasattr(data, 'ReferencedSource') and data.ReferencedSource:
                 reference.referenced_source = self.get_referenced_source_name(data.ReferencedSource)
 
     def get_referenced_source_name(self, element):

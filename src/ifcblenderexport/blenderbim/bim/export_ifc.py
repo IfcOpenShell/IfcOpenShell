@@ -140,6 +140,7 @@ class IfcParser():
         self.document_information = self.get_document_information()
         self.document_references = self.get_document_references()
         self.classifications = self.get_classifications()
+        self.classification_reference_maps = self.get_classification_reference_maps()
         self.classification_references = self.get_classification_references()
         self.objectives = self.get_objectives()
         self.load_representations()
@@ -615,23 +616,20 @@ class IfcParser():
         return results
 
     def get_classifications(self):
-        classifications = bpy.context.scene.BIMProperties.classifications
         results = {}
-        for classification in classifications:
-            results[classification.name] = {
+        for classification in bpy.context.scene.BIMProperties.classifications:
+            schema.ifc.load_classification(classification.filename)
+            results[classification.filename] = {
                 'ifc': None,
                 'raw': classification,
-                'attributes': {
-                    'Name': classification.name,
-                    'Source': classification.source,
-                    'Edition': classification.edition,
-                    'EditionDate': classification.edition_date,
-                    'Description': classification.description,
-                    'Location': classification.location,
-                    'ReferenceTokens': json.loads(
-                        '[{}]'.format(classification.reference_tokens[1:-1].replace('\'', '"').strip(',')))
-                }
+                'raw_element': schema.ifc.classification_files[classification.filename].by_type('IfcClassification')[0]
             }
+        return results
+
+    def get_classification_reference_maps(self):
+        results = {}
+        for filename, classification in self.classifications.items():
+            results[filename] = { e.Identification: e for e in schema.ifc.classification_files[filename].by_type('IfcClassificationReference')}
         return results
 
     def get_classification_references(self):
@@ -641,13 +639,8 @@ class IfcParser():
                 results[reference.name] = {
                     'ifc': None,
                     'raw': reference,
-                    'referenced_source': reference.referenced_source,
-                    'attributes': {
-                        'Location': reference.location,
-                        'Identification': reference.name,
-                        'Name': reference.human_name,
-                        'Description': reference.description
-                    }
+                    'raw_element': self.classification_reference_maps[reference.referenced_source][reference.name]
+
                 }
         return results
 
@@ -1359,20 +1352,14 @@ class IfcExporter():
 
     def create_classifications(self):
         for classification in self.ifc_parser.classifications.values():
-            classification['ifc'] = self.file.create_entity(
-                'IfcClassification',
-                **classification['attributes']
-            )
+            classification['ifc'] = self.file.add(classification['raw_element'])
             self.file.createIfcRelAssociatesClassification(
                 ifcopenshell.guid.new(), None, None, None,
                 [self.ifc_parser.project['ifc']], classification['ifc'])
 
     def create_classification_references(self):
         for reference in self.ifc_parser.classification_references.values():
-            reference['attributes']['ReferencedSource'] = \
-                self.ifc_parser.classifications[reference['referenced_source']]['ifc']
-            reference['ifc'] = self.file.create_entity(
-                'IfcClassificationReference', **reference['attributes'])
+            reference['ifc'] = self.file.add(reference['raw_element'])
 
     def create_objectives(self):
         for objective in self.ifc_parser.objectives.values():

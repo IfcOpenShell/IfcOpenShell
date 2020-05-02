@@ -753,6 +753,7 @@ class Classification(PropertyGroup):
     description: StringProperty(name="Description")
     location: StringProperty(name="Location")
     reference_tokens: StringProperty(name="Reference Tokens")
+    filename: StringProperty(name="Filename")
 
 
 class ClassificationReference(PropertyGroup):
