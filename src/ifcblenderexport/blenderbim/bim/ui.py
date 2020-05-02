@@ -231,6 +231,7 @@ class BIM_PT_classification_references(Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
         props = context.active_object.BIMObjectProperties
 
         if not props.classifications:

@@ -1342,18 +1342,20 @@ class AddClassification(bpy.types.Operator):
     bl_label = 'Add Classification'
 
     def execute(self, context):
-        if context.scene.BIMProperties.classification in schema.ifc.classifications:
-            data = schema.ifc.classifications[context.scene.BIMProperties.classification]
-            classification = context.scene.BIMProperties.classifications.add()
-            data_map = {
-                'name': 'Name', 'source': 'Source',
-                'edition': 'Edition', 'edition_date': 'EditionDate',
-                'description': 'Description', 'location': 'Location',
-                'reference_tokens': 'ReferenceTokens'
-            }
-            for key, value in data_map.items():
-                if getattr(data, value):
-                    setattr(classification, key, str(getattr(data, value)))
+        if context.scene.BIMProperties.classification not in schema.ifc.classifications:
+            return {'FINISHED'}
+        data = schema.ifc.classifications[context.scene.BIMProperties.classification]
+        classification = context.scene.BIMProperties.classifications.add()
+        data_map = {
+            'name': 'Name', 'source': 'Source',
+            'edition': 'Edition', 'edition_date': 'EditionDate',
+            'description': 'Description', 'location': 'Location',
+            'reference_tokens': 'ReferenceTokens'
+        }
+        for key, value in data_map.items():
+            if getattr(data, value):
+                setattr(classification, key, str(getattr(data, value)))
+        classification.filename = context.scene.BIMProperties.classification
         return {'FINISHED'}
 
 
@@ -1372,7 +1374,6 @@ class AssignClassification(bpy.types.Operator):
     bl_label = 'Assign Classification'
 
     def execute(self, context):
-        referenced_source = schema.ifc.classifications[bpy.context.scene.BIMProperties.classification].Name
         for obj in bpy.context.selected_objects:
             classification = obj.BIMObjectProperties.classifications.add()
             refs = bpy.context.scene.BIMProperties.classification_references
@@ -1384,7 +1385,7 @@ class AssignClassification(bpy.types.Operator):
             for key in ['location', 'description']:
                 if data[key]:
                     setattr(classification, key, data[key])
-            classification.referenced_source = referenced_source
+            classification.referenced_source = bpy.context.scene.BIMProperties.classification
         return {'FINISHED'}
 
 
