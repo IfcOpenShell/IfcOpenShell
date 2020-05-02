@@ -533,11 +533,18 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.open_sheet', icon='URL', text='')
         row.operator('bim.open_compiled_sheet', icon='OUTPUT', text='')
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.operator('bim.add_view_to_sheet')
+        row.operator('bim.create_sheets')
 
         row = layout.row()
-        row.operator('bim.create_sheets')
+        row.operator('bim.add_ifc_file')
+
+        for index, ifc_file in enumerate(props.ifc_files):
+            row = layout.row(align=True)
+            row.prop(ifc_file, 'name', text='IFC #{}'.format(index + 1))
+            row.operator('bim.select_doc_ifc_file', icon='FILE_FOLDER', text='')
+            row.operator('bim.remove_ifc_file', icon='X', text='').index = index
 
         row = layout.row()
         row.operator('bim.generate_digital_twin')

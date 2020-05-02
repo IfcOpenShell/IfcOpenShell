@@ -381,6 +381,7 @@ class DocProperties(PropertyGroup):
     available_views: EnumProperty(items=getViews, name="Available Views")
     sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
     available_sheets: EnumProperty(items=getSheets, name="Available Sheets")
+    ifc_files: CollectionProperty(name='IFCs', type=StrProperty)
 
 
 class BIMCameraProperties(PropertyGroup):
