@@ -1526,6 +1526,7 @@ class CreateView(bpy.types.Operator):
         views_collection.children.link(view_collection)
         camera = bpy.data.objects.new(bpy.context.scene.DocProperties.view_name, bpy.data.cameras.new(bpy.context.scene.DocProperties.view_name))
         camera.data.type = 'ORTHO'
+        camera.data.BIMCameraProperties.diagram_scale = '1:100'
         bpy.context.scene.camera = camera
         view_collection.objects.link(camera)
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
@@ -2407,4 +2408,15 @@ class AddAnnotation(bpy.types.Operator):
         bpy.ops.object.select_all(action='DESELECT')
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode='EDIT')
+        return {'FINISHED'}
+
+
+class ResizeText(bpy.types.Operator):
+    bl_idname = 'bim.resize_text'
+    bl_label = 'Resize Text'
+
+    def execute(self, context):
+        for obj in bpy.context.scene.camera.users_collection[0].objects:
+            if isinstance(obj.data, bpy.types.TextCurve):
+                annotation.Annotator.resize_text(obj)
         return {'FINISHED'}

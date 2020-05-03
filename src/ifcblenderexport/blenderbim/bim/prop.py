@@ -7,6 +7,7 @@ from . import export_ifc
 from . import schema
 from . import bcf
 from . import ifc
+from . import annotation
 import bpy
 from bpy.types import PropertyGroup
 from bpy.app.handlers import persistent
@@ -366,6 +367,10 @@ def getSheets(self, context):
     return sheets_enum
 
 
+def refreshFontSize(self, context):
+    annotation.Annotator.resize_text(context.active_object)
+
+
 class StrProperty(PropertyGroup):
     pass
 
@@ -388,6 +393,16 @@ class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
     is_nts: BoolProperty(name='Is NTS')
+
+
+class BIMTextProperties(PropertyGroup):
+    font_size: EnumProperty(items=[
+        ('1.8', '1.8', ''),
+        ('2.5', '2.5', ''),
+        ('3.5', '3.5', ''),
+        ('5.0', '5.0', ''),
+        ('7.0', '7.0', ''),
+        ], update=refreshFontSize, name='Font Size')
 
 
 class DocumentInformation(PropertyGroup):
