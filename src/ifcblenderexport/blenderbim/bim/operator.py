@@ -1559,7 +1559,8 @@ class CutSection(bpy.types.Operator):
             'diagrams',
             '{}.png'.format(self.diagram_name)
         )
-        bpy.ops.render.render(write_still=True)
+        if bpy.context.scene.DocProperties.should_render:
+            bpy.ops.render.render(write_still=True)
         location = camera.location
         render = bpy.context.scene.render
         if self.is_landscape():

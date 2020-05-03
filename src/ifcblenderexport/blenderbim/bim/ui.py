@@ -628,6 +628,9 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, 'should_recut')
 
         row = layout.row()
+        row.prop(dprops, 'should_render')
+
+        row = layout.row()
         row.prop(props, 'is_nts')
 
         row = layout.row()
