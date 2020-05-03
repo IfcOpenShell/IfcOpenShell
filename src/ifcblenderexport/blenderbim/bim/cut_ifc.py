@@ -742,10 +742,13 @@ class SvgWriter():
             self.draw_dimension_annotations(self.ifc_cutter.dimension_obj)
 
         for grid_obj in self.ifc_cutter.grid_objs:
+            matrix_world = grid_obj.matrix_world
             for edge in grid_obj.data.edges:
                 classes = ['annotation', 'grid']
-                v0 = grid_obj.data.vertices[edge.vertices[0]].co
-                v1 = grid_obj.data.vertices[edge.vertices[1]].co
+                v0_global = matrix_world @ grid_obj.data.vertices[edge.vertices[0]].co.xyz
+                v1_global = matrix_world @ grid_obj.data.vertices[edge.vertices[1]].co.xyz
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
                 start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
                 end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
                 vector = end - start
