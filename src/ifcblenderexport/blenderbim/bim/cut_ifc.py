@@ -185,6 +185,9 @@ class IfcCutter:
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
 
     def load_ifc_files(self):
+        if not self.should_recut:
+            return
+
         loaded_files = []
         for ifc_file in self.ifc_files:
             print('Loading file {} ...'.format(ifc_file))
@@ -579,8 +582,37 @@ class IfcCutter:
         with multiprocessing.Pool(9) as p:
             results = p.map(do_cut, process_data)
             for result in results:
-                polygons = [p for p in result if p['points']]
+                polygons = [self.get_polygon_metadata(p, 'cut') for p in result if p['points']]
                 self.cut_polygons.extend(polygons)
+
+    def get_polygon_metadata(self, polygon, position):
+        polygon['metadata'] = {
+            'classes': self.get_classes(self.get_ifc_element(polygon['global_id']), position)
+        }
+        return polygon
+
+    def get_ifc_element(self, global_id):
+        # TODO: make this less bad
+        element = None
+        for ifc_file in self.ifc_files:
+            try:
+                element = ifc_file.by_id(global_id)
+                return element
+            except:
+                pass
+
+    def get_classes(self, element, position):
+        classes = [position, element.is_a()]
+        for association in element.HasAssociations:
+            if association.is_a('IfcRelAssociatesMaterial'):
+                classes.append('material-{}'.format(self.get_material_name(association.RelatingMaterial)))
+        classes.append('globalid-{}'.format(element.GlobalId))
+        return classes
+
+    def get_material_name(self, element):
+        if hasattr(element, 'Name') and element.Name:
+            return element.Name
+        return element.id()
 
     def get_pickled_cut_polygons(self):
         if os.path.isfile(self.cut_pickle_file):
@@ -992,29 +1024,5 @@ class SvgWriter():
         self.svg.add(self.svg.line(start=points[0], end=points[1], class_=' '.join(classes)))
 
     def draw_polygon(self, polygon, position):
-        classes = self.get_classes(self.get_ifc_element(polygon['global_id']), position)
         points = [(p[0] * self.scale, p[1] * self.scale) for p in polygon['points']]
-        self.svg.add(self.svg.polygon(points=points, class_=' '.join(classes)))
-
-    def get_ifc_element(self, global_id):
-        # TODO: make this less bad
-        element = None
-        for ifc_file in self.ifc_cutter.ifc_files:
-            try:
-                element = ifc_file.by_id(global_id)
-                return element
-            except:
-                pass
-
-    def get_classes(self, element, position):
-        classes = [position, element.is_a()]
-        for association in element.HasAssociations:
-            if association.is_a('IfcRelAssociatesMaterial'):
-                classes.append('material-{}'.format(self.get_material_name(association.RelatingMaterial)))
-        classes.append('globalid-{}'.format(element.GlobalId))
-        return classes
-
-    def get_material_name(self, element):
-        if hasattr(element, 'Name') and element.Name:
-            return element.Name
-        return element.id()
+        self.svg.add(self.svg.polygon(points=points, class_=' '.join(polygon['metadata']['classes'])))
