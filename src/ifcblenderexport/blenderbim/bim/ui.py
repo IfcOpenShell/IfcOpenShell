@@ -630,9 +630,32 @@ class BIM_PT_camera(Panel):
         row = layout.row()
         row.prop(props, 'is_nts')
 
+        row = layout.row()
+        row.operator('bim.resize_text')
+
         row = layout.row(align=True)
         row.prop(props, 'diagram_scale', text='')
         row.operator('bim.cut_section')
+
+
+class BIM_PT_text(Panel):
+    bl_label = "Text Paper Space"
+    bl_idname = "BIM_PT_text"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'data'
+
+    @classmethod
+    def poll(cls, context):
+        return (type(context.curve) is bpy.types.TextCurve)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.active_object.data.BIMTextProperties
+
+        row = layout.row()
+        row.prop(props, 'font_size')
 
 
 class BIM_PT_owner(Panel):
@@ -654,6 +677,7 @@ class BIM_PT_owner(Panel):
 
         row = layout.row()
         row.prop(props, 'organisation')
+
 
 class BIM_PT_context(Panel):
     bl_label = "Geometric Representation Contexts"

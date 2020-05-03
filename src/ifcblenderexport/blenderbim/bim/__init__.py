@@ -121,6 +121,7 @@ if bpy is not None:
         operator.RemoveIfcFile,
         operator.SelectDocIfcFile,
         operator.AddAnnotation,
+        operator.ResizeText,
         prop.StrProperty,
         prop.Classification,
         prop.ClassificationReference,
@@ -151,6 +152,7 @@ if bpy is not None:
         prop.SweptSolid,
         prop.BIMMeshProperties,
         prop.BIMCameraProperties,
+        prop.BIMTextProperties,
         ui.BIM_PT_section_plane,
         ui.BIM_PT_documentation,
         ui.BIM_PT_bim,
@@ -173,6 +175,7 @@ if bpy is not None:
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
         ui.BIM_PT_camera,
+        ui.BIM_PT_text,
         ui.BIM_UL_document_information,
         ui.BIM_UL_document_references,
         ui.BIM_UL_topics,
@@ -210,6 +213,7 @@ if bpy is not None:
         bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
+        bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
 
     def unregister():
         for cls in reversed(classes):
@@ -227,3 +231,4 @@ if bpy is not None:
         del(bpy.types.Material.BIMMaterialProperties)
         del(bpy.types.Mesh.BIMMeshProperties)
         del(bpy.types.Camera.BIMCameraProperties)
+        del(bpy.types.Camera.BIMTextProperties)

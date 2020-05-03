@@ -1,4 +1,5 @@
 import bpy
+import os
 from mathutils import Vector
 
 class Annotator:
@@ -12,8 +13,32 @@ class Annotator:
         co1, co2 = Annotator.get_placeholder_coords()
         obj.location = co1
         obj.hide_render = True
-        bpy.context.scene.collection.objects.link(obj)
+        font = bpy.data.fonts.get('OpenGost TypeB TT')
+        if not font:
+            font = bpy.data.fonts.load(os.path.join(
+                bpy.context.scene.BIMProperties.data_dir, 'fonts', 'OpenGost Type B TT.ttf'))
+            font.name = 'OpenGost Type B TT'
+        obj.data.font = font
+        obj.data.BIMTextProperties.font_size = '2.5'
+        collection = bpy.context.scene.camera.users_collection[0]
+        collection.objects.link(obj)
+        Annotator.resize_text(obj)
         return obj
+
+    @staticmethod
+    def resize_text(text_obj):
+        camera = None
+        for obj in text_obj.users_collection[0].objects:
+            if isinstance(obj.data, bpy.types.Camera):
+                camera = obj
+                break
+        if not camera:
+            return
+        # This is a magic number for OpenGost
+        font_size = 1.6 / 1000
+        font_size *= float(text_obj.data.BIMTextProperties.font_size)
+        font_size *= float(camera.data.BIMCameraProperties.diagram_scale.split(':')[1])
+        text_obj.data.size = font_size
 
     @staticmethod
     def add_line_to_annotation(obj):
