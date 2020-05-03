@@ -923,7 +923,7 @@ class IfcParser():
             'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
-            'presentation_layer': mesh.BIMMeshProperties.presentation_layer,
+            'presentation_layer': mesh.BIMMeshProperties.presentation_layer if hasattr(mesh, 'BIMMeshProperties') else None,
             'attributes': {'Name': mesh.name}
         }
 
