@@ -26,8 +26,8 @@
             <path d="M 5 20 L 15 10" class="annotation" style="stroke-width:3;" />
         </g>
     </marker>
-    <marker id="grid-marker" markerHeight="35" markerWidth="35" orient="auto" refX="17.5" refY="17.5">
-        <circle cx="17.5" cy="17.5" fill="white" stroke="black" r="15" style="stroke-width: 2"/>
+    <marker id="grid-marker" markerHeight="40" markerWidth="40" orient="auto" refX="20" refY="20">
+        <circle cx="20" cy="20" fill="white" stroke="black" r="17" style="stroke-width: 2"/>
     </marker>
     <marker id="leader-marker" markerHeight="7" markerWidth="10" orient="auto" refX="10" refY="3.5">
         <path d="M 0 0 L 0 7 L 10 3.5" class="annotation" style="fill:black;" />
