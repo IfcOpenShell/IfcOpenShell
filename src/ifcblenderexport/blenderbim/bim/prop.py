@@ -404,6 +404,10 @@ class BIMTextProperties(PropertyGroup):
         ('5.0', '5.0', ''),
         ('7.0', '7.0', ''),
         ], update=refreshFontSize, name='Font Size')
+    symbol: EnumProperty(items=[
+        ('None', 'None', ''),
+        ('rectangle-tag', 'Rectangle Tag', ''),
+        ], update=refreshFontSize, name='Symbol')
 
 
 class DocumentInformation(PropertyGroup):

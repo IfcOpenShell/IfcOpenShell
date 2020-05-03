@@ -660,6 +660,9 @@ class BIM_PT_text(Panel):
         row = layout.row()
         row.prop(props, 'font_size')
 
+        row = layout.row()
+        row.prop(props, 'symbol')
+
 
 class BIM_PT_owner(Panel):
     bl_label = "Owner History"

@@ -714,6 +714,7 @@ class SvgWriter():
 
         self.add_stylesheet()
         self.add_markers()
+        self.add_symbols()
         self.add_patterns()
         self.draw_background_image()
         self.draw_background_elements()
@@ -736,6 +737,12 @@ class SvgWriter():
 
     def add_markers(self):
         tree = ET.parse('{}templates/markers.svg'.format(self.ifc_cutter.data_dir))
+        root = tree.getroot()
+        for child in root.getchildren():
+            self.svg.defs.add(External(child))
+
+    def add_symbols(self):
+        tree = ET.parse('{}templates/symbols.svg'.format(self.ifc_cutter.data_dir))
         root = tree.getroot()
         for child in root.getchildren():
             self.svg.defs.add(External(child))
@@ -906,10 +913,22 @@ class SvgWriter():
                     'dominant-baseline': 'middle'
                 }))
 
+        self.draw_text_annotations()
+
+    def draw_text_annotations(self):
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+
         for text_obj in self.ifc_cutter.text_objs:
             loc, rot, scale = self.ifc_cutter.camera_obj.matrix_world.decompose()
             pos = (text_obj.location - self.ifc_cutter.camera_obj.location) @ rot.to_matrix()
             text_position = Vector(((x_offset + pos.x), (y_offset - pos.y)))
+
+            if text_obj.data.BIMTextProperties.symbol != 'None':
+                self.svg.add(self.svg.use(
+                    '#{}'.format(text_obj.data.BIMTextProperties.symbol),
+                    insert=tuple(text_position * self.scale)
+                ))
 
             if text_obj.data.align_x == 'CENTER':
                 text_anchor = 'middle'
