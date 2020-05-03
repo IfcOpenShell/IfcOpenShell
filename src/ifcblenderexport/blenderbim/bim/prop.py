@@ -382,6 +382,7 @@ class Subcontext(PropertyGroup):
 
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
+    should_render: BoolProperty(name="Should Render", default=True)
     view_name: StringProperty(name="View Name")
     available_views: EnumProperty(items=getViews, name="Available Views")
     sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
