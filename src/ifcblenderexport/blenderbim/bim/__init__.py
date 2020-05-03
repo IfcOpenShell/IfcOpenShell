@@ -120,6 +120,7 @@ if bpy is not None:
         operator.AddIfcFile,
         operator.RemoveIfcFile,
         operator.SelectDocIfcFile,
+        operator.AddAnnotation,
         prop.StrProperty,
         prop.Classification,
         prop.ClassificationReference,

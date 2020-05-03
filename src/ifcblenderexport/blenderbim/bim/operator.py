@@ -13,6 +13,7 @@ from . import sheeter
 from . import schema
 from . import bcf
 from . import ifc
+from . import annotation
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler
@@ -2387,3 +2388,23 @@ class SelectDocIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class AddAnnotation(bpy.types.Operator):
+    bl_idname = 'bim.add_annotation'
+    bl_label = 'Add Annotation'
+    obj_name = bpy.props.StringProperty()
+    data_type = bpy.props.StringProperty()
+
+    def execute(self, context):
+        if not bpy.context.scene.camera:
+            return {'FINISHED'}
+        if self.data_type == 'text':
+            obj = annotation.Annotator.add_text()
+        else:
+            obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
+            obj = annotation.Annotator.add_line_to_annotation(obj)
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        return {'FINISHED'}

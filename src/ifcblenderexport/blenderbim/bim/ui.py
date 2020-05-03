@@ -547,6 +547,38 @@ class BIM_PT_documentation(Panel):
             row.operator('bim.select_doc_ifc_file', icon='FILE_FOLDER', text='')
             row.operator('bim.remove_ifc_file', icon='X', text='').index = index
 
+        layout.label(text="Annotation:")
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Dim', icon='ARROW_LEFTRIGHT')
+        op.obj_name = 'Dimension'
+        op.data_type = 'curve'
+        op = row.operator('bim.add_annotation', text='Dim (Eq)', icon='ARROW_LEFTRIGHT')
+        op.obj_name = 'Equal'
+        op.data_type = 'curve'
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Text', icon='SMALL_CAPS')
+        op.data_type = 'text'
+        op = row.operator('bim.add_annotation', text='Leader', icon='TRACKING_BACKWARDS')
+        op.obj_name = 'Leader'
+        op.data_type = 'curve'
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Stair Arrow', icon='SCREEN_BACK')
+        op.obj_name = 'Stair'
+        op.data_type = 'curve'
+        op = row.operator('bim.add_annotation', text='Hidden', icon='CON_TRACKTO')
+        op.obj_name = 'Hidden'
+        op.data_type = 'mesh'
+
+        row = layout.row(align=True)
+        op = row.operator('bim.add_annotation', text='Level (Plan)', icon='SORTBYEXT')
+        op.obj_name = 'Plan Level'
+        op.data_type = 'curve'
+        op = row.operator('bim.add_annotation', text='Level (Section)', icon='TRIA_DOWN')
+        op.obj_name = 'Section Level'
+        op.data_type = 'curve'
+
         row = layout.row()
         row.operator('bim.generate_digital_twin')
 
