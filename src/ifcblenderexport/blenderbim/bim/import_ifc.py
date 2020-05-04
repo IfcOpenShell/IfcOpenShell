@@ -70,8 +70,12 @@ class MaterialCreator():
         material_name = self.get_material_name(styled_item)
 
         if material_name not in self.materials:
-            self.materials[material_name] = bpy.data.materials.new(material_name)
-            self.parse_styled_item(styled_item, self.materials[material_name])
+            material = bpy.data.materials.get(material_name)
+            if material:
+                self.materials[material_name] = material
+            else:
+                self.materials[material_name] = bpy.data.materials.new(material_name)
+                self.parse_styled_item(styled_item, self.materials[material_name])
 
         if self.ifc_import_settings.should_treat_styled_item_as_material:
             # Revit workaround: since Revit/DDS-CAD exports all material
