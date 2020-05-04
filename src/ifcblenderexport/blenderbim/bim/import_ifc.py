@@ -222,6 +222,7 @@ class IfcImporter():
         if self.ifc_import_settings.should_auto_set_workarounds:
             self.auto_set_workarounds()
         self.calculate_unit_scale()
+        self.create_geometric_representation_contexts()
         self.create_project()
         self.create_classifications()
         self.create_document_information()
@@ -708,6 +709,27 @@ class IfcImporter():
             if unit.is_a('IfcSIUnit'):
                 self.unit_scale *= SIUnitHelper.get_prefix_multiplier(unit.Prefix)
 
+    def create_geometric_representation_contexts(self):
+        bpy.context.scene.BIMProperties.has_model_context = False
+        for context in self.file.by_type('IfcGeometricRepresentationContext'):
+            if context.is_a('IfcGeometricRepresentationSubContext'):
+                if not context.ContextIdentifier:
+                    # Revit creates invalid contexts, so we just ignore them
+                    continue
+                if context.ContextType == 'Model':
+                    subcontexts = bpy.context.scene.BIMProperties.model_subcontexts
+                elif context.ContextType == 'Plan':
+                    subcontexts = bpy.context.scene.BIMProperties.plan_subcontexts
+                if subcontexts.get(context.ContextIdentifier):
+                    continue
+                subcontext = subcontexts.add()
+                subcontext.name = context.ContextIdentifier
+                subcontext.target_view = context.TargetView
+            elif context.ContextType == 'Model':
+                bpy.context.scene.BIMProperties.has_model_context = True
+            elif context.ContextType == 'Plan':
+                bpy.context.scene.BIMProperties.has_plan_context = True
+
     def create_project(self):
         self.project = { 'ifc': self.file.by_type('IfcProject')[0] }
         self.project['blender'] = bpy.data.collections.new('IfcProject/{}'.format(self.project['ifc'].Name))
@@ -819,7 +841,7 @@ class IfcImporter():
     def create_aggregate(self, rel_aggregate):
         collection = bpy.data.collections.new(f'IfcRelAggregates/{rel_aggregate.id()}')
         self.project['blender'].children.link(collection)
-        collection.hide_viewport = True
+        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[collection.name].hide_viewport = True
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new('{}/{}'.format(element.is_a(), element.Name), None)
