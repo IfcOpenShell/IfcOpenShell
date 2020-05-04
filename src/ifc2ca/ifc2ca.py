@@ -1,5 +1,6 @@
 import json
 import ifcopenshell
+import numpy as np
 
 class IFC2CA:
     def __init__(self, filename):
@@ -42,13 +43,16 @@ class IFC2CA:
                 print(representation, material_profile)
                 return
 
+            geometry = self.get_geometry(representation)
+
             return {
                 'ifcName': item.is_a() + '|' + str(item.id()),
                 'name': item.Name,
                 'id': item.GlobalId,
                 'geometryType': 'line',
                 'predefinedType': item.PredefinedType,
-                'geometry': self.get_geometry(representation),
+                'geometry': geometry,
+                'orientation': self.get_1D_orientation(geometry, item.Axis),
                 'material': self.get_material_properties(material_profile.Material),
                 'profile': self.get_profile_properties(material_profile.Profile),
                 'connections': self.get_connection_data(item.ConnectedBy)
@@ -85,6 +89,7 @@ class IFC2CA:
                 'id': item.GlobalId,
                 'geometryType': 'point',
                 'geometry': self.get_geometry(representation),
+                'orientation': self.get_0D_orientation(item.ConditionCoordinateSystem),
                 'appliedCondition': self.get_connection_input(item),
                 'relatedElements': self.get_connection_data(item.ConnectsStructuralMembers)
             }
@@ -136,6 +141,40 @@ class IFC2CA:
     def get_coordinate(self, point):
         if point.is_a('IfcCartesianPoint'):
             return point.Coordinates
+
+    def get_0D_orientation(self, axes):
+        if axes and axes.Axis and axes.RefDirection:
+            xAxis = np.array(axes.RefDirection.DirectionRatios) # this can be not accurate (in the xz plane)
+            zAxis = np.array(axes.Axis.DirectionRatios)
+            yAxis = np.cross(zAxis, xAxis)
+            yAxis /= np.linalg.norm(yAxis)
+            xAxis = np.cross(yAxis, zAxis)
+            xAxis /= np.linalg.norm(xAxis)
+            # print('0D:', xAxis, yAxis, zAxis)
+            value = xAxis.tolist()
+            value.extend(yAxis.tolist())
+            return {
+                'type': 'xyPlane',
+                'value': value
+            }
+
+    def get_1D_orientation(self, geometry, zAxis):
+        if zAxis:
+            xAxis = np.array(geometry[1]) - np.array(geometry[0])
+            zAxis = np.array(zAxis.DirectionRatios)
+            yAxis = np.cross(zAxis, xAxis)
+            yAxis /= np.linalg.norm(yAxis)
+            # print('1D:', xAxis, yAxis, zAxis)
+            return {
+                'type': 'yAxis',
+                'value': yAxis.tolist()
+            }
+        else:
+            print('Warning! Orientation for curve member missing. Default considered')
+            return {
+                'type': 'rotationAngle',
+                'value': 0
+            }
 
     def get_material_profile(self, element):
         if not element.HasAssociations:
@@ -228,6 +267,8 @@ class IFC2CA:
             'id': rel.GlobalId,
             'relatingElement': rel.RelatingStructuralMember.is_a() + '|' + str(rel.RelatingStructuralMember.id()),
             'relatedConnection': rel.RelatedStructuralConnection.is_a() + '|' + str(rel.RelatedStructuralConnection.id()),
+            'orientation': self.get_0D_orientation(rel.ConditionCoordinateSystem),
+            'appliedCondition': self.get_connection_input(rel),
             'eccentricity': None if not rel.is_a('IfcRelConnectsWithEccentricity') else {
                     'inX': 0.0 if not rel.ConnectionConstraint.EccentricityInX else rel.ConnectionConstraint.EccentricityInX,
                     'inY': 0.0 if not rel.ConnectionConstraint.EccentricityInY else rel.ConnectionConstraint.EccentricityInY,
