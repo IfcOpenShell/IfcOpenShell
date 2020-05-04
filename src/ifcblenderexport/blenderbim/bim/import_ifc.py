@@ -199,6 +199,7 @@ class IfcImporter():
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.project = None
+        self.classifications = {}
         self.spatial_structure_elements = {}
         self.elements = {}
         self.type_products = {}
@@ -740,8 +741,8 @@ class IfcImporter():
                 del self.added_data[self.project['ifc'].GlobalId]
 
     def create_classifications(self):
-        for classification in self.file.by_type('IfcClassification'):
-            data = bpy.context.scene.BIMProperties.classifications.add()
+        for element in self.file.by_type('IfcClassification'):
+            classification = bpy.context.scene.BIMProperties.classifications.add()
             data_map = {
                 'name': 'Name', 'source': 'Source',
                 'edition': 'Edition', 'edition_date': 'EditionDate',
@@ -749,21 +750,23 @@ class IfcImporter():
                 'reference_tokens': 'ReferenceTokens'
             }
             for key, value in data_map.items():
-                if hasattr(classification, value) and getattr(classification, value):
-                    setattr(data, key, str(getattr(classification, value)))
+                if hasattr(element, value) and getattr(element, value):
+                    setattr(classification, key, str(getattr(element, value)))
             classification_file = ifcopenshell.file(schema=self.file.wrapped_data.schema)
-            references = [classification]
+            references = [element]
             while references:
                 entities_to_add = references
                 references = self.get_classification_references(references)
-            classification_file.add(classification)
+            classification_file.add(element)
             for entity in entities_to_add:
                 classification_file.add(entity)
-            classification_filename = '{}-{}.ifc'.format(
-                Path(os.path.basename(self.ifc_import_settings.input_file)).stem, classification.Name)
+            classification_filename = '{}-{}'.format(
+                Path(os.path.basename(self.ifc_import_settings.input_file)).stem, element.Name)
             classification_file.write(os.path.join(
-                bpy.context.scene.BIMProperties.schema_dir, 'classifications', classification_filename))
-            data.filename = classification_filename
+                bpy.context.scene.BIMProperties.schema_dir, 'classifications',
+                '{}.ifc'.format(classification_filename)))
+            classification.filename = classification_filename
+            self.classifications[classification.filename] = classification
 
     def get_classification_references(self, references):
         results = []
@@ -996,6 +999,9 @@ class IfcImporter():
     def get_referenced_source_name(self, element):
         if not hasattr(element, 'ReferencedSource') or not element.ReferencedSource:
             if element.is_a('IfcClassification'):
+                for filename, classification in self.classifications.items():
+                    if classification.name == element.Name:
+                        return filename
                 return element.Name
             else:
                 return element.Identification
