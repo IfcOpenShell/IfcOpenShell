@@ -3,8 +3,10 @@ import math
 import time
 import numpy
 import pickle
+import pystache
 import sys
 from pathlib import Path
+from . import annotation
 mathutils = sys.modules.get('mathutils')
 if mathutils is not None:
     from mathutils import Vector
@@ -121,17 +123,21 @@ def do_cut(process_data):
 
 class IfcCutter:
     def __init__(self):
+        self.ifc_attribute_extractor = None
         self.product_shapes = []
         self.background_elements = []
         self.cut_polygons = []
+        self.template_variables = {}
         self.data_dir = ''
         self.ifc_files = []
         self.unit = None
         self.resolved_pixels = set()
         self.should_get_background = False
         self.shapes_pickle_file = 'shapes.pickle'
+        self.text_pickle_file = 'text.pickle'
         self.cut_pickle_file = 'cut.pickle'
         self.should_recut = True
+        self.should_extract = True
         self.diagram_name = None
         self.background_image = None
         self.section_box = {
@@ -150,6 +156,10 @@ class IfcCutter:
         start_time = time.time()
         print('# Load files')
         self.load_ifc_files()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Extract template variables')
+        self.get_template_variables()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
         start_time = time.time()
         print('# Get product shapes')
@@ -185,7 +195,7 @@ class IfcCutter:
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
 
     def load_ifc_files(self):
-        if not self.should_recut:
+        if not self.should_recut and not self.should_extract:
             return
 
         loaded_files = []
@@ -194,6 +204,29 @@ class IfcCutter:
             if ifc_file:
                 loaded_files.append(ifcopenshell.open(ifc_file))
         self.ifc_files = loaded_files
+
+    def get_template_variables(self):
+        if not self.should_extract:
+            if os.path.isfile(self.text_pickle_file):
+                with open(self.text_pickle_file, 'rb') as text_file:
+                    self.template_variables = pickle.load(text_file)
+            return
+
+        data = {}
+        for text_obj in self.text_objs:
+            text_obj_data = {}
+            text_body = text_obj.data.body
+            for variable in text_obj.data.BIMTextProperties.variables:
+                element = self.get_ifc_element(variable.global_id)
+                if element:
+                    text_obj_data[variable.name] = self.ifc_attribute_extractor.get_element_key(element, variable.prop_key)
+            if text_obj_data:
+                data[text_obj.name] = text_obj_data
+
+        with open(self.text_pickle_file, 'wb') as text_file:
+            pickle.dump(data, text_file, protocol=pickle.HIGHEST_PROTOCOL)
+
+        self.template_variables = data
 
     def get_product_shapes(self):
         if not self.should_recut:
@@ -797,14 +830,14 @@ class SvgWriter():
                 line['marker-end'] = 'url(#grid-marker)'
                 line['stroke-dasharray'] = '12.5, 3, 3, 3'
                 self.svg.add(self.svg.text(grid_obj.name.split('/')[1], insert=tuple(start * self.scale), **{
-                    'font-size': '8.25', # 5
+                    'font-size': annotation.Annotator.get_svg_text_size(5.0),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'middle',
                     'alignment-baseline': 'middle',
                     'dominant-baseline': 'middle'
                 }))
                 self.svg.add(self.svg.text(grid_obj.name.split('/')[1], insert=tuple(end * self.scale), **{
-                    'font-size': '8.25', # 5
+                    'font-size': annotation.Annotator.get_svg_text_size(5.0),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'middle',
                     'alignment-baseline': 'middle',
@@ -859,7 +892,7 @@ class SvgWriter():
                 else:
                     text_anchor = 'start'
                 self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
-                    'font-size': '4.13', # 2.5
+                    'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': text_anchor,
                     'alignment-baseline': 'baseline',
@@ -886,7 +919,7 @@ class SvgWriter():
                 # TODO: unhardcode m unit
                 rl = (matrix_world @ points[0].co.xyz).z
                 self.svg.add(self.svg.text('RL +{:.3f}m'.format(rl), insert=tuple(text_position), **{
-                    'font-size': '4.13', # 2.5
+                    'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'start',
                     'alignment-baseline': 'baseline',
@@ -906,7 +939,7 @@ class SvgWriter():
                 path['marker-start'] = 'url(#stair-marker-start)'
                 path['marker-end'] = 'url(#stair-marker-end)'
                 self.svg.add(self.svg.text('UP', insert=tuple(text_position), **{
-                    'font-size': '4.13', # 2.5
+                    'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'middle',
                     'alignment-baseline': 'middle',
@@ -944,12 +977,16 @@ class SvgWriter():
             else:
                 alignment_baseline = 'baseline'
 
-            for line_number, text_line in enumerate(text_obj.data.body.split('\n')):
+            text_body = text_obj.data.body
+            if text_obj.name in self.ifc_cutter.template_variables:
+                text_body = pystache.render(text_body, self.ifc_cutter.template_variables[text_obj.name])
+
+            for line_number, text_line in enumerate(text_body.split('\n')):
                 self.svg.add(self.svg.text(
                     text_line,
                     insert=tuple((text_position * self.scale) + Vector((0, 3.5*line_number))),
                     **{
-                        'font-size': '4.13', # 2.5
+                        'font-size': annotation.Annotator.get_svg_text_size(text_obj.data.BIMTextProperties.font_size),
                         'font-family': 'OpenGost Type B TT',
                         'text-anchor': text_anchor,
                         'alignment-baseline': alignment_baseline,
@@ -990,8 +1027,6 @@ class SvgWriter():
                     end=tuple(end * self.scale), class_=' '.join(classes)))
                 line['marker-start'] = 'url(#dimension-marker-start)'
                 line['marker-end'] = 'url(#dimension-marker-end)'
-                # Standard font sizes 1.8, 2.5, 3.5, 5, 7
-                # Equivalent for OpenGost Type B: 2.97, 4.13, 5.78, 8.25, 11.55
                 if text_override is not None:
                     text = text_override
                 else:
@@ -1002,7 +1037,7 @@ class SvgWriter():
                         text_position.x,
                         text_position.y
                     ),
-                    'font-size': '4.13', # 2.5
+                    'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'middle'
                 }))

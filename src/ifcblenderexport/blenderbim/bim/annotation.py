@@ -5,6 +5,17 @@ from mathutils import Vector
 class Annotator:
 
     @staticmethod
+    def get_svg_text_size(size):
+        sizes = {
+            '1.8': '2.97',
+            '2.5': '4.13',
+            '3.5': '5.78',
+            '5.0': '8.25',
+            '7.0': '11.55',
+        }
+        return float(sizes[str(size)])
+
+    @staticmethod
     def add_text():
         curve = bpy.data.curves.new(type='FONT', name='Text')
         curve.body = 'TEXT'

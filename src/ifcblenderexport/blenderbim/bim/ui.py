@@ -626,9 +626,10 @@ class BIM_PT_camera(Panel):
 
         row = layout.row()
         row.prop(dprops, 'should_recut')
-
         row = layout.row()
         row.prop(dprops, 'should_render')
+        row = layout.row()
+        row.prop(dprops, 'should_extract')
 
         row = layout.row()
         row.prop(props, 'is_nts')
@@ -662,6 +663,18 @@ class BIM_PT_text(Panel):
 
         row = layout.row()
         row.prop(props, 'symbol')
+
+        row = layout.row()
+        row.operator('bim.add_variable')
+
+        for index, variable in enumerate(props.variables):
+            row = layout.row(align=True)
+            row.prop(variable, 'name')
+            row.operator('bim.remove_variable', icon='X', text='').index = index
+            row = layout.row()
+            row.prop(variable, 'global_id')
+            row = layout.row()
+            row.prop(variable, 'prop_key')
 
 
 class BIM_PT_owner(Panel):

@@ -1575,6 +1575,8 @@ class CutSection(bpy.types.Operator):
         y_axis = camera.matrix_world.to_quaternion() @ Vector((0, -1, 0))
         top_left_corner = location - (width / 2 * x_axis) - (height / 2 * y_axis)
         ifc_cutter = cut_ifc.IfcCutter()
+        import ifccsv
+        ifc_cutter.ifc_attribute_extractor = ifccsv.IfcAttributeExtractor
         ifc_cutter.ifc_files = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
         ifc_cutter.diagram_name = self.diagram_name
@@ -1625,6 +1627,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.shapes_pickle_file = os.path.join(ifc_cutter.data_dir, 'shapes.pickle')
         ifc_cutter.cut_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-cut.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
+        ifc_cutter.should_extract = bpy.context.scene.DocProperties.should_extract
         svg_writer = cut_ifc.SvgWriter(ifc_cutter)
         numerator, denominator = camera.data.BIMCameraProperties.diagram_scale.split(':')
         if camera.data.BIMCameraProperties.is_nts:
@@ -2420,4 +2423,23 @@ class ResizeText(bpy.types.Operator):
         for obj in bpy.context.scene.camera.users_collection[0].objects:
             if isinstance(obj.data, bpy.types.TextCurve):
                 annotation.Annotator.resize_text(obj)
+        return {'FINISHED'}
+
+
+class AddVariable(bpy.types.Operator):
+    bl_idname = 'bim.add_variable'
+    bl_label = 'Add Variable'
+
+    def execute(self, context):
+        bpy.context.active_object.data.BIMTextProperties.variables.add()
+        return {'FINISHED'}
+
+
+class RemoveVariable(bpy.types.Operator):
+    bl_idname = 'bim.remove_variable'
+    bl_label = 'Remove Variable'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.data.BIMTextProperties.variables.remove(self.index)
         return {'FINISHED'}
