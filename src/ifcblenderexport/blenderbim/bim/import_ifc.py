@@ -976,7 +976,17 @@ class IfcImporter():
                 attribute = obj.BIMObjectProperties.attributes.add()
                 attribute.name = key
                 attribute.data_type = 'string'
-                attribute.string_value = str(value)
+                attribute.string_value = str(self.cast_edge_case_attribute(element.is_a(), key, value))
+
+    def cast_edge_case_attribute(self, ifc_class, key, value):
+        if key == 'RefLatitude' or key == 'RefLongitude':
+            return self.dms2dd(*value)
+        return value
+
+    # TODO: migrate to ifcopenshell.util
+    def dms2dd(self, degrees, minutes, seconds, milliseconds=0):
+        dd = float(degrees) + float(minutes)/60 + float(seconds)/(3600)
+        return dd
 
     def add_element_classifications(self, element, obj):
         if not element.HasAssociations:
