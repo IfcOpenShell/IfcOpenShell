@@ -78,6 +78,7 @@ class IfcParser():
         self.ifc_export_settings = ifc_export_settings
 
         self.selected_products = []
+        self.selected_types = []
         self.selected_spatial_structure_elements = []
         self.global_ids = []
 
@@ -134,8 +135,9 @@ class IfcParser():
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
         self.organisations = self.get_organisations()
-        unique_objects = self.add_spatial_elements_if_unselected(selected_objects)
-        self.categorise_selected_objects(unique_objects)
+        selected_objects = self.add_spatial_elements_if_unselected(selected_objects)
+        self.add_type_elements_if_unselected(selected_objects)
+        self.categorise_selected_objects(selected_objects)
         self.material_psets = self.get_material_psets()
         self.document_information = self.get_document_information()
         self.document_references = self.get_document_references()
@@ -211,7 +213,6 @@ class IfcParser():
 
     def get_products(self):
         for product in self.selected_products:
-            obj = product['raw']
             self.add_product(self.get_product(product))
             self.resolve_modifiers(product)
 
@@ -559,6 +560,14 @@ class IfcParser():
         results.update(added_objs)
         return results
 
+    def add_type_elements_if_unselected(self, selected_objects):
+        added_objs = []
+        for obj in selected_objects:
+            if obj.BIMObjectProperties.relating_type:
+                added_objs.append(obj.BIMObjectProperties.relating_type)
+        selected_objects.update(added_objs)
+        selected_objects = set(selected_objects)
+
     def categorise_selected_objects(self, objects_to_sort, metadata=None):
         if not metadata:
             metadata = {}
@@ -567,6 +576,8 @@ class IfcParser():
                 continue
             elif self.is_a_spatial_structure_element(self.get_ifc_class(obj.name)):
                 self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
+            elif self.is_a_type(self.get_ifc_class(obj.name)):
+                self.selected_types.append({'raw': obj, 'metadata': metadata})
             elif obj.instance_type == 'COLLECTION':
                 self.categorise_selected_objects(
                     obj.instance_collection.objects,
@@ -992,43 +1003,8 @@ class IfcParser():
 
     def get_type_products(self):
         results = []
-        index = 0
-        for library in self.libraries:
-            for obj in library['raw'].objects:
-                if not self.is_a_type(self.get_ifc_class(obj.name)):
-                    continue
-                try:
-                    type_product = {
-                        'ifc': None,
-                        'raw': obj,
-                        'location': obj.matrix_world.translation,
-                        'up_axis': self.get_axis(obj.matrix_world, 2),
-                        'forward_axis': self.get_axis(obj.matrix_world, 0),
-                        'psets': ['{}/{}'.format(pset.name, pset.file) for pset in
-                                  obj.BIMObjectProperties.psets],
-                        'class': self.get_ifc_class(obj.name),
-                        'representations': self.get_object_representation_names(obj),
-                        'attributes': self.get_object_attributes(obj)
-                    }
-                    results.append(type_product)
-                    library['rel_declares_type_products'].append(index)
-
-                    # TODO: this should use properties
-                    for key in obj.keys():
-                        if key[0:3] == 'Doc':
-                            self.rel_associates_document_type.setdefault(
-                                obj[key], []).append(type_product)
-                        elif key[0:5] == 'Class':
-                            self.rel_associates_classification_type.setdefault(
-                                obj[key], []).append(type_product)
-                        elif key[0:9] == 'Objective':
-                            self.rel_associates_constraint_objective_type.setdefault(
-                                obj[key], []).append(type_product)
-
-                    index += 1
-                except Exception as e:
-                    self.ifc_export_settings.logger.error(
-                        'The type product "{}" could not be parsed: {}'.format(obj.name, e.args))
+        for product in self.selected_types:
+            results.append(self.get_product(product))
         return results
 
     def get_object_representation_names(self, obj):
@@ -1533,47 +1509,23 @@ class IfcExporter():
 
     def create_type_products(self):
         for product in self.ifc_parser.type_products:
-            placement = self.create_ifc_axis_2_placement_3d(
-                product['location'],
-                product['up_axis'],
-                product['forward_axis']
-            )
+            self.cast_attributes(product['class'], product['attributes'])
 
-            if product['representations']:
-                maps = []
-                for representation in product['representations']:
-                    maps.append(self.file.createIfcRepresentationMap(
-                        placement, self.ifc_parser.representations[representation]['ifc']))
-                product['attributes']['RepresentationMaps'] = maps
+            product['attributes'].update({
+                'OwnerHistory': self.owner_history,  # TODO: unhardcode
+                'RepresentationMaps': self.get_product_shape(product)
+            })
 
-            if product['psets']:
-                product['attributes'].update({'HasPropertySets':[
-                    self.ifc_parser.psets[pset]['ifc']
-                    for pset in product['psets']]
-                })
-
-            if product['class'] == 'IfcDoorType' \
-                    and product['attributes']['Name'] in self.ifc_parser.door_attributes:
-                self.add_predefined_attributes_to_type_product(
-                    product,
-                    self.ifc_parser.door_attributes[product['attributes']['Name']]
-                )
-            elif product['class'] == 'IfcWindowType' \
-                    and product['attributes']['Name'] in self.ifc_parser.window_attributes:
-                self.add_predefined_attributes_to_type_product(
-                    product,
-                    self.ifc_parser.window_attributes[product['attributes']['Name']]
-                )
+            # TODO: re-implement psets, relationships, door/window properties
 
             try:
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 self.ifc_export_settings.logger.error(
-                    'The type product "{}/{}" could not be created: {}'.format(
+                    'The product "{}/{}" could not be created: {}'.format(
                         product['class'],
                         product['attributes']['Name'],
-                        e.args
-                    )
+                        e.args)
                 )
 
     def add_predefined_attributes_to_type_product(self, product, attributes):
@@ -1714,6 +1666,7 @@ class IfcExporter():
         if key == 'RefLatitude' or key == 'RefLongitude':
             return self.dd2dms(value)
 
+    # TODO: migrate to ifcopenshell.util
     def dd2dms(self, dd):
         dd = float(dd)
         sign = 1 if dd >= 0 else -1
