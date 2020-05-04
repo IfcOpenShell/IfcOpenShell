@@ -727,7 +727,7 @@ class IfcImporter():
                 'reference_tokens': 'ReferenceTokens'
             }
             for key, value in data_map.items():
-                if getattr(classification, value):
+                if hasattr(classification, value) and getattr(classification, value):
                     setattr(data, key, str(getattr(classification, value)))
             classification_file = ifcopenshell.file(schema=self.file.wrapped_data.schema)
             references = [classification]
@@ -818,8 +818,8 @@ class IfcImporter():
 
     def create_aggregate(self, rel_aggregate):
         collection = bpy.data.collections.new(f'IfcRelAggregates/{rel_aggregate.id()}')
-        bpy.context.scene.collection.children.link(collection)
-        bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
+        self.project['blender'].children.link(collection)
+        collection.hide_viewport = True
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new('{}/{}'.format(element.is_a(), element.Name), None)
