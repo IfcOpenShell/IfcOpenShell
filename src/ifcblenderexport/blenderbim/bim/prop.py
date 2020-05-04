@@ -375,6 +375,12 @@ class StrProperty(PropertyGroup):
     pass
 
 
+class Variable(PropertyGroup):
+    name: StringProperty(name="Name")
+    global_id: StringProperty(name="Global ID")
+    prop_key: StringProperty(name="Property Key")
+
+
 class Subcontext(PropertyGroup):
     name: StringProperty(name='Name')
     target_view: StringProperty(name='Target View')
@@ -383,6 +389,7 @@ class Subcontext(PropertyGroup):
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     should_render: BoolProperty(name="Should Render", default=True)
+    should_extract: BoolProperty(name="Should Extract", default=True)
     view_name: StringProperty(name="View Name")
     available_views: EnumProperty(items=getViews, name="Available Views")
     sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
@@ -398,16 +405,17 @@ class BIMCameraProperties(PropertyGroup):
 
 class BIMTextProperties(PropertyGroup):
     font_size: EnumProperty(items=[
-        ('1.8', '1.8', ''),
-        ('2.5', '2.5', ''),
-        ('3.5', '3.5', ''),
-        ('5.0', '5.0', ''),
-        ('7.0', '7.0', ''),
+        ('1.8', '1.8 - Small', ''),
+        ('2.5', '2.5 - Regular', ''),
+        ('3.5', '3.5 - Large', ''),
+        ('5.0', '5.0 - Header', ''),
+        ('7.0', '7.0 - Title', ''),
         ], update=refreshFontSize, name='Font Size')
     symbol: EnumProperty(items=[
         ('None', 'None', ''),
         ('rectangle-tag', 'Rectangle Tag', ''),
         ], update=refreshFontSize, name='Symbol')
+    variables: CollectionProperty(name='Variables', type=Variable)
 
 
 class DocumentInformation(PropertyGroup):
