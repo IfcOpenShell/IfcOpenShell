@@ -1887,7 +1887,8 @@ class IfcExporter():
 
     def create_model_representation(self, representation):
         if representation['subcontext'] == 'Annotation':
-            pass
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_geometric_set_representation(representation))
         elif representation['subcontext'] == 'Axis':
             return self.file.createIfcRepresentationMap(
                 self.origin, self.create_curve3d_axis_representation(representation))
@@ -1913,7 +1914,9 @@ class IfcExporter():
 
     def create_plan_representation(self, representation):
         if representation['subcontext'] == 'Annotation':
-            pass
+            shape_representation = self.create_geometric_curve_set_representation(representation, is_2d=True)
+            shape_representation.RepresentationType = 'Annotation2D'
+            return self.file.createIfcRepresentationMap(self.origin, shape_representation)
         elif representation['subcontext'] == 'Axis':
             return self.file.createIfcRepresentationMap(
                 self.origin, self.create_curve2d_axis_representation(representation))
@@ -1985,6 +1988,13 @@ class IfcExporter():
             representation['subcontext'],
             'Curve',
             self.create_curves(representation['raw']))
+
+    def create_geometric_set_representation(self, representation, is_2d=False):
+        geometric_curve_set = self.file.createIfcGeometricSet(self.create_curves(representation['raw'], is_2d=is_2d))
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'GeometricSet', [geometric_curve_set])
 
     def create_geometric_curve_set_representation(self, representation, is_2d=False):
         geometric_curve_set = self.file.createIfcGeometricCurveSet(self.create_curves(representation['raw'], is_2d=is_2d))
