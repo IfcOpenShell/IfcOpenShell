@@ -1878,33 +1878,64 @@ class IfcExporter():
     def create_representation(self, representation):
         self.ifc_vertices = []
         self.ifc_edges = []
-        if representation['is_generated'] \
-                and representation['subcontext'] == 'Box':
+        if representation['context'] == 'Model':
+            return self.create_model_representation(representation)
+        elif representation['context'] == 'Plan':
+            return self.create_plan_representation(representation)
+        elif representation['context'] == 'NotDefined':
+            return self.create_variable_representation(representation)
+
+    def create_model_representation(self, representation):
+        if representation['subcontext'] == 'Annotation':
+            pass
+        elif representation['subcontext'] == 'Axis':
+            return self.file.createIfcRepresentationMap(
+                self.origin, self.create_curve3d_axis_representation(representation))
+        elif representation['subcontext'] == 'Body':
+            return self.create_variable_representation(representation)
+        elif representation['subcontext'] == 'Box':
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_box_representation(representation))
+        elif representation['subcontext'] == 'Clearance':
+            return self.create_variable_representation(representation)
         elif representation['subcontext'] == 'CoG':
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_cog_representation(representation))
-        elif representation['is_curve'] \
-                and representation['context'] == 'Model' \
-                and representation['subcontext'] == 'Axis' \
-                and representation['target_view'] == 'GRAPH_VIEW':
-            return self.file.createIfcRepresentationMap(
-                self.origin, self.create_curve_axis_representation(representation))
-        elif representation['is_structural'] \
-                and representation['context'] == 'Model' \
-                and representation['subcontext'] == 'Reference' \
-                and representation['target_view'] == 'GRAPH_VIEW':
-            return self.file.createIfcRepresentationMap(
-                self.origin, self.create_structural_reference_representation(representation))
-        elif representation['context'] == 'Plan' \
-                or representation['subcontext'] == 'Axis' \
-                or representation['is_wireframe']:
-            return self.file.createIfcRepresentationMap(self.origin,
-                    self.create_wireframe_representation(representation))
+        elif representation['subcontext'] == 'FootPrint':
+            return self.create_variable_representation(representation)
+        elif representation['subcontext'] == 'Reference':
+            if representation['target_view'] == 'GRAPH_VIEW':
+                return self.file.createIfcRepresentationMap(
+                    self.origin, self.create_structural_reference_representation(representation))
         elif representation['subcontext'] == 'SurveyPoints':
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_geometric_curve_set_representation(representation))
+
+    def create_plan_representation(self, representation):
+        if representation['subcontext'] == 'Annotation':
+            pass
+        elif representation['subcontext'] == 'Axis':
+            return self.file.createIfcRepresentationMap(
+                self.origin, self.create_curve2d_axis_representation(representation))
+        elif representation['subcontext'] == 'Body':
+            pass
+        elif representation['subcontext'] == 'Box':
+            pass
+        elif representation['subcontext'] == 'Clearance':
+            pass
+        elif representation['subcontext'] == 'CoG':
+            pass
+        elif representation['subcontext'] == 'FootPrint':
+            pass
+        elif representation['subcontext'] == 'Reference':
+            pass
+        elif representation['subcontext'] == 'SurveyPoints':
+            pass
+
+    def create_variable_representation(self, representation):
+        if representation['is_wireframe']:
+            return self.file.createIfcRepresentationMap(self.origin,
+                    self.create_wireframe_representation(representation))
         elif representation['is_curve']:
             return self.file.createIfcRepresentationMap(self.origin,
                 self.create_curve_representation(representation))
@@ -1946,35 +1977,15 @@ class IfcExporter():
             [cog])
 
     def create_wireframe_representation(self, representation):
-        mesh = representation['raw']
-        self.create_vertices(mesh.vertices)
-        for edge in mesh.edges:
-            self.ifc_edges.append(self.file.createIfcPolyline([
-                self.ifc_vertices[v] for v in edge.vertices]))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
             representation['subcontext'],
             'Curve',
-            self.ifc_edges)
+            self.create_curves(representation['raw']))
 
     def create_geometric_curve_set_representation(self, representation):
-        mesh = representation['raw']
-        self.create_vertices(mesh.vertices)
-        edges = list(mesh.edges)
-        loop_vertices = []
-        loops = []
-        # Not a fast algorithm, but easy
-        while edges:
-            for i, edge in enumerate(edges):
-                if edge.vertices[0] in loop_vertices \
-                        and edge.vertices[1] in loop_vertices:
-                    del edges[i]
-            loop_vertex_indices = self.get_loop_from_edges(edges)
-            loop_vertices.extend(loop_vertex_indices)
-            loops.append(self.file.createIfcPolyline([
-                self.ifc_vertices[i] for i in loop_vertex_indices]))
-        geometric_curve_set = self.file.createIfcGeometricCurveSet(loops)
+        geometric_curve_set = self.file.createIfcGeometricCurveSet(self.create_curves(representation['raw']))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
@@ -1998,12 +2009,19 @@ class IfcExporter():
         # Find tangent and return.
         return (pt1 - pt0) * usq3 + (pt2 - pt1) * ut6 + (pt3 - pt2) * tsq3
 
-    def create_curve_axis_representation(self, representation):
+    def create_curve3d_axis_representation(self, representation):
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'Curve3D',
-            [self.create_curve(representation['raw'])])
+            self.create_curves(representation['raw']))
+
+    def create_curve2d_axis_representation(self, representation):
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'Curve2D',
+            self.create_curves(representation['raw'], is_2d=True))
 
     def create_structural_reference_representation(self, representation):
         if representation['raw_object'].type == 'EMPTY':
@@ -2021,7 +2039,7 @@ class IfcExporter():
     def create_curve_representation(self, representation):
         # TODO: support unclosed surfaces
         swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
-            self.create_curve(representation['raw'].bevel_object.data))
+            self.create_curves(representation['raw'].bevel_object.data)[0])
         swept_area_solids = []
         for spline in representation['raw'].splines:
             points = self.get_spline_points(spline)
@@ -2052,7 +2070,7 @@ class IfcExporter():
                 self.convert_si_to_unit(direction.length)))
         # TODO: support other types of swept areas
         # swept_area_solid = self.file.createIfcFixedReferenceSweptAreaSolid(
-        #    swept_area, self.origin, self.create_curve(representation['raw']),
+        #    swept_area, self.origin, #    self.create_curves(representation['raw'])[0],
         #    0., 1., self.file.createIfcDirection((0.0, -1.0, 0.0)))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
@@ -2075,18 +2093,52 @@ class IfcExporter():
             self.create_vertex_point(points[0].co),
             self.create_vertex_point(points[1].co))
 
-    def create_curve(self, curve):
-        # TODO: support interpolated curves, not just polylines
-        points = []
-        for point in curve.splines[0].bezier_points:
-            points.append(self.create_cartesian_point(
-                point.co.x, point.co.y, point.co.z))
-        for point in curve.splines[0].points:
-            points.append(self.create_cartesian_point(
-                point.co.x, point.co.y, point.co.z))
-        if curve.splines[0].use_cyclic_u:
-            points.append(points[0])
-        return self.file.createIfcPolyline(points)
+    def create_curves(self, curve, is_2d=False):
+        if isinstance(curve, bpy.types.Mesh):
+            return self.create_curves_from_mesh(curve, is_2d=is_2d)
+        elif isinstance(curve, bpy.types.Curve):
+            return self.create_curves_from_curve(curve, is_2d=is_2d)
+
+    def create_curves_from_mesh(self, mesh, is_2d=False):
+        self.create_vertices(mesh.vertices, is_2d=is_2d)
+        edges = list(mesh.edges)
+        loop_vertices = []
+        loops = []
+        # Not a fast algorithm, but easy
+        while edges:
+            for i, edge in enumerate(edges):
+                if edge.vertices[0] in loop_vertices \
+                        and edge.vertices[1] in loop_vertices:
+                    del edges[i]
+            loop_vertex_indices = self.get_loop_from_edges(edges)
+            loop_vertices.extend(loop_vertex_indices)
+            loops.append(self.file.createIfcPolyline([
+                self.ifc_vertices[i] for i in loop_vertex_indices]))
+        return loops
+
+    def create_curves_from_curve(self, curve, is_2d=False):
+        results = []
+        for spline in curve.splines:
+            # TODO: support interpolated curves, not just polylines
+            points = []
+            for point in spline.bezier_points:
+                if is_2d:
+                    points.append(self.create_cartesian_point(
+                        point.co.x, point.co.y))
+                else:
+                    points.append(self.create_cartesian_point(
+                        point.co.x, point.co.y, point.co.z))
+            for point in spline.points:
+                if is_2d:
+                    points.append(self.create_cartesian_point(
+                        point.co.x, point.co.y))
+                else:
+                    points.append(self.create_cartesian_point(
+                        point.co.x, point.co.y, point.co.z))
+            if spline.use_cyclic_u:
+                points.append(points[0])
+            results.append(self.file.createIfcPolyline(points))
+        return results
 
     def create_swept_solid_representation(self, representation):
         obj = representation['raw_object']
@@ -2246,10 +2298,15 @@ class IfcExporter():
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'Brep', items)
 
-    def create_vertices(self, vertices):
-        self.ifc_vertices.extend(
-            [self.file.createIfcCartesianPoint(self.convert_si_to_unit(v.co)) for v in vertices]
-        )
+    def create_vertices(self, vertices, is_2d=False):
+        if is_2d:
+            for v in vertices:
+                co = self.convert_si_to_unit(v.co)
+                self.ifc_vertices.append(self.file.createIfcCartesianPoint((co[0], co[1])))
+        else:
+            self.ifc_vertices.extend(
+                [self.file.createIfcCartesianPoint(self.convert_si_to_unit(v.co)) for v in vertices]
+            )
 
     def create_cartesian_point(self, x, y, z=None):
         x = self.convert_si_to_unit(x)
@@ -2441,7 +2498,7 @@ class IfcExportSettings:
         self.has_representations = True
         self.has_quantities = True
         self.contexts = ['Model', 'Plan']
-        self.subcontexts = ['Axis', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'SurveyPoints']
+        self.subcontexts = ['Annotation', 'Axis', 'Box', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'SurveyPoints']
         self.generated_subcontexts = ['Box']
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
