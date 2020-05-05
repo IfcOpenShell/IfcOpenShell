@@ -35,7 +35,7 @@ colour_list = [
     (.693, .349, .157, 1)]
 
 class ExportIFC(bpy.types.Operator):
-    bl_idname = "export.ifc"
+    bl_idname = "bim.export_ifc"
     bl_label = "Export IFC"
     filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype='FILE_PATH')
@@ -68,7 +68,7 @@ class ExportIFC(bpy.types.Operator):
         return {'FINISHED'}
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
-    bl_idname = "import.ifc"
+    bl_idname = "bim.import_ifc"
     bl_label = "Import IFC"
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip", options={'HIDDEN'})
