@@ -234,7 +234,11 @@ static void end_element(void* user, const xmlChar* tag) {
 
 	// ignore uos ex:iso_10303_28 (ifc2x3) and ifc:ifcXML (ifc4)
 	if (tagname != "uos" && tagname != "ex:iso_10303_28" && tagname != "ifc:ifcXML" && tagname != "ifcXML") {
-		state->stack.pop_back();
+		if (state->stack.empty()) {
+			Logger::Error("Mismatch in parse stack due to previous errors");
+		} else {
+			state->stack.pop_back();
+		}
 	}	
 }
 
@@ -254,7 +258,12 @@ static void process_characters(void* user, const xmlChar* ch, int len) {
 
 	if (!state->stack.empty() && state->stack.back().inst() != nullptr && state->stack.back().inst()->declaration().as_type_declaration()) {
 		auto pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
-		auto val = parse_attribute_value(pt, txt);
+		Argument* val = nullptr;
+		try {
+			parse_attribute_value(pt, txt);
+		} catch (const std::exception& e) {
+			Logger::Error(e, state->stack.back().inst());
+		}
 		if (val) {
 			// type declaration always at idx 0
 			state->stack.back().inst()->data().setArgument(0, val);
@@ -327,7 +336,13 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 #endif
 				attributes.push_back(std::make_pair(attrname, value));
 
-				if ((tagname == "ifc:ifcXML" || tagname == "ifcXML") && attrname == "xsi:schemaLocation" && boost::starts_with(value, "http://www.buildingsmart-tech.org/ifcXML/IFC4")) {
+				if ((tagname == "ifc:ifcXML" || tagname == "ifcXML") && attrname == "xsi:schemaLocation" && 
+					(
+						boost::starts_with(value, "http://www.buildingsmart-tech.org/ifcXML/IFC4") ||
+						boost::starts_with(value, "http://www.buildingsmart-tech.org/ifc/IFC4")
+					)
+					)
+				{
 					// We're expecting a schemaLocation like "http://www.buildingsmart-tech.org/ifcXML/IFC4/Add2 IFC4_ADD2_TC1.xsd"
 					// With token compression this is split into:
 					// [0] http:
@@ -341,7 +356,8 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 					decltype(it) end;
 					for (int tok = 0; it != end && tok < 3; ++it, ++tok) {}
 					if (it != end) {
-						const std::string schema_name(&it->front(), it->size());
+						std::string schema_name(&it->front(), it->size());
+						boost::to_upper(schema_name);
 						state->file = new IfcParse::IfcFile(IfcParse::schema_by_name(schema_name));
 						state->file->parsing_complete() = false;
 						state->dialect = ifcxml_dialect_ifc4;
@@ -480,13 +496,20 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 			if (element_type->as_simple_type()) {		
 				state->stack.push_back(stack_node::aggregate_element(element_type, aggrpos));
 			} else {
-				const IfcParse::declaration* decl = state->file->schema()->declaration_by_name(tagname_copy);
-				auto inst_or_ref = create_instance(decl);
-				IfcUtil::IfcBaseClass* inst;
-				Argument* attr;
-				instance_to_attribute(inst_or_ref, attr, inst);
-				state->stack.back().aggregate_elements.push_back(attr);
-				state->stack.push_back(stack_node::instance(id_in_file, inst));
+				const IfcParse::declaration* decl = nullptr;
+				try {
+					decl = state->file->schema()->declaration_by_name(tagname_copy);
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
+				if (decl) {
+					auto inst_or_ref = create_instance(decl);
+					IfcUtil::IfcBaseClass* inst;
+					Argument* attr;
+					instance_to_attribute(inst_or_ref, attr, inst);
+					state->stack.back().aggregate_elements.push_back(attr);
+					state->stack.push_back(stack_node::instance(id_in_file, inst));
+				}
 			}
 		} else if (state_type == stack_node::node_instance) {
 			const IfcParse::entity* current = state->stack.back().inst()->declaration().as_entity();
@@ -562,9 +585,14 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 			} else if (tagname == "uos") {
 				// intentially empty, ignored in end_element() as well
 			} else {
-				const IfcParse::declaration* decl = state->file->schema()->declaration_by_name(tagname);
+				const IfcParse::declaration* decl = nullptr;
+				try {
+					decl = state->file->schema()->declaration_by_name(tagname);
+				} catch (const std::exception& e) {
+					Logger::Error(e);
+				}
+
 				if (!decl) {
-					Logger::Error("Not found in schema " + tagname);
 					goto end;
 				}
 
