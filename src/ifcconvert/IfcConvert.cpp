@@ -948,7 +948,7 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 	} else
 #endif
 	ifc_file = new IfcParse::IfcFile(filename);
-	if (!ifc_file->good()) {
+	if (!ifc_file || !ifc_file->good()) {
 #endif
         Logger::Error("Unable to parse input file '" + filename + "'");
         return false;

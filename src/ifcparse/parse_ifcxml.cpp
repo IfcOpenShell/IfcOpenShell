@@ -634,8 +634,10 @@ IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filen
 		}
 	}
 
-	state.file->parsing_complete() = true;
-	state.file->build_inverses();
+	if (state.file) {
+		state.file->parsing_complete() = true;
+		state.file->build_inverses();
+	}
 
 	return state.file;
 }
