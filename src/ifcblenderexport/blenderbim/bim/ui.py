@@ -375,7 +375,6 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         row.prop(props, 'is_parametric')
-
         row = layout.row()
         row.prop(props, 'is_wireframe')
         row = layout.row()
