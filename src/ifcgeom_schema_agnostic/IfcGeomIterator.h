@@ -87,7 +87,12 @@ namespace IfcGeom {
 			: file_(file)
 			, settings_(settings)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
+			try {
+				implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+				implementation_ = nullptr;
+			}
 		}
 
 		Iterator(const IfcGeom::IteratorSettings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, size_t num_threads = 1)
@@ -95,11 +100,20 @@ namespace IfcGeom {
 			, settings_(settings)
 			, filters_(filters)
 		{
-			implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
+			try {
+				implementation_ = iterator_implementations<P, PP>().construct(file_->schema()->name(), settings, file, filters_, num_threads);
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+				implementation_ = nullptr;
+			}
 		}
 
 		bool initialize() {
-			return implementation_->initialize();
+			if (implementation_) {
+				return implementation_->initialize();
+			} else {
+				return false;
+			}
 		}
 
 		int progress() const { return implementation_->progress(); }
