@@ -1926,7 +1926,9 @@ class IfcExporter():
         elif representation['subcontext'] == 'CoG':
             pass
         elif representation['subcontext'] == 'FootPrint':
-            pass
+            if representation['target_view'] in ['PLAN_VIEW', 'REFLECTED_PLAN_VIEW']:
+                return self.file.createIfcRepresentationMap(self.origin,
+                        self.create_geometric_curve_set_representation(representation, is_2d=True))
         elif representation['subcontext'] == 'Reference':
             pass
         elif representation['subcontext'] == 'SurveyPoints':
@@ -1984,8 +1986,8 @@ class IfcExporter():
             'Curve',
             self.create_curves(representation['raw']))
 
-    def create_geometric_curve_set_representation(self, representation):
-        geometric_curve_set = self.file.createIfcGeometricCurveSet(self.create_curves(representation['raw']))
+    def create_geometric_curve_set_representation(self, representation, is_2d=False):
+        geometric_curve_set = self.file.createIfcGeometricCurveSet(self.create_curves(representation['raw'], is_2d=is_2d))
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
