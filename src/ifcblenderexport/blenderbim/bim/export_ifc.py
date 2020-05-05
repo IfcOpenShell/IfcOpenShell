@@ -1891,7 +1891,7 @@ class IfcExporter():
                     self.create_geometric_set_representation(representation))
         elif representation['subcontext'] == 'Axis':
             return self.file.createIfcRepresentationMap(
-                self.origin, self.create_curve3d_axis_representation(representation))
+                self.origin, self.create_curve3d_representation(representation))
         elif representation['subcontext'] == 'Body':
             return self.create_variable_representation(representation)
         elif representation['subcontext'] == 'Box':
@@ -1908,6 +1908,9 @@ class IfcExporter():
             if representation['target_view'] == 'GRAPH_VIEW':
                 return self.file.createIfcRepresentationMap(
                     self.origin, self.create_structural_reference_representation(representation))
+        elif representation['subcontext'] == 'Profile':
+            return self.file.createIfcRepresentationMap(
+                self.origin, self.create_curve3d_representation(representation))
         elif representation['subcontext'] == 'SurveyPoints':
             return self.file.createIfcRepresentationMap(self.origin,
                     self.create_geometric_curve_set_representation(representation))
@@ -1919,7 +1922,7 @@ class IfcExporter():
             return self.file.createIfcRepresentationMap(self.origin, shape_representation)
         elif representation['subcontext'] == 'Axis':
             return self.file.createIfcRepresentationMap(
-                self.origin, self.create_curve2d_axis_representation(representation))
+                self.origin, self.create_curve2d_representation(representation))
         elif representation['subcontext'] == 'Body':
             pass
         elif representation['subcontext'] == 'Box':
@@ -1933,6 +1936,8 @@ class IfcExporter():
                 return self.file.createIfcRepresentationMap(self.origin,
                         self.create_geometric_curve_set_representation(representation, is_2d=True))
         elif representation['subcontext'] == 'Reference':
+            pass
+        elif representation['subcontext'] == 'Profile':
             pass
         elif representation['subcontext'] == 'SurveyPoints':
             pass
@@ -2021,14 +2026,14 @@ class IfcExporter():
         # Find tangent and return.
         return (pt1 - pt0) * usq3 + (pt2 - pt1) * ut6 + (pt3 - pt2) * tsq3
 
-    def create_curve3d_axis_representation(self, representation):
+    def create_curve3d_representation(self, representation):
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'Curve3D',
             self.create_curves(representation['raw']))
 
-    def create_curve2d_axis_representation(self, representation):
+    def create_curve2d_representation(self, representation):
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
@@ -2510,7 +2515,7 @@ class IfcExportSettings:
         self.has_representations = True
         self.has_quantities = True
         self.contexts = ['Model', 'Plan']
-        self.subcontexts = ['Annotation', 'Axis', 'Box', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'SurveyPoints']
+        self.subcontexts = ['Annotation', 'Axis', 'Box', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'Profile', 'SurveyPoints']
         self.generated_subcontexts = ['Box']
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
