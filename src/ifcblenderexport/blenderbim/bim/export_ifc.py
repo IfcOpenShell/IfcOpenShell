@@ -1111,7 +1111,9 @@ class IfcExporter():
         self.create_units()
         self.create_people()
         self.create_organisations()
-        self.set_common_definitions()
+        self.create_origin()
+        self.create_owner_history()
+        self.set_header()
         self.create_rep_context()
         self.create_project()
         self.create_library_information()
@@ -1156,11 +1158,11 @@ class IfcExporter():
         self.relate_objects_to_groups()
         self.write_ifc_file()
 
-    def set_common_definitions(self):
-        # Owner history doesn't actually work like this, but for now, it does :)
-        self.origin = self.file.by_type('IfcAxis2Placement3D')[0]
-        self.create_owner_history()
-        self.set_header()
+    def create_origin(self):
+        self.origin = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0., 0., 0.)),
+            self.file.createIfcDirection((0., 0., 1.)),
+            self.file.createIfcDirection((1., 0., 0.)))
 
     def set_header(self):
         # TODO: add all metadata, pending bug #747
@@ -1449,14 +1451,15 @@ class IfcExporter():
 
     def create_rep_context(self):
         self.ifc_rep_context = {}
-        self.ifc_rep_context['Model'] = {
-            'ifc': self.file.createIfcGeometricRepresentationContext(
-                None, 'Model', 3, 1.0E-05, self.origin)}
-        if 'Plan' in self.ifc_export_settings.contexts:
-            self.ifc_rep_context['Plan'] = {
-                'ifc': self.file.createIfcGeometricRepresentationContext(
-                    None, 'Plan', 2, 1.0E-05, self.origin)}
         for context in self.ifc_export_settings.context_tree:
+            if context['name'] == 'Model':
+                self.ifc_rep_context['Model'] = {
+                    'ifc': self.file.createIfcGeometricRepresentationContext(
+                        None, 'Model', 3, 1.0E-05, self.origin)}
+            elif context['name'] == 'Plan':
+                self.ifc_rep_context['Plan'] = {
+                    'ifc': self.file.createIfcGeometricRepresentationContext(
+                        None, 'Plan', 2, 1.0E-05, self.origin)}
             for subcontext in context['subcontexts']:
                 self.ifc_rep_context[context['name']][subcontext['name']] = {}
                 for target_view in subcontext['target_views']:
