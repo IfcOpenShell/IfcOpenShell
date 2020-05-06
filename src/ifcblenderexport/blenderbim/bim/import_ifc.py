@@ -927,7 +927,18 @@ class IfcImporter():
         for association in element.HasAssociations:
             if association.is_a('IfcRelAssociatesDocument'):
                 reference = obj.BIMObjectProperties.document_references.add()
-                reference.name = association.RelatingDocument.Identification
+                data_map = {
+                    'name': 'Identification',
+                    'human_name': 'Name',
+                    'description': 'Description',
+                    'location': 'Location'
+                }
+                attributes = {}
+                for key, value in data_map.items():
+                    if hasattr(association.RelatingDocument, value) \
+                            and getattr(association.RelatingDocument, value):
+                        setattr(reference, key, getattr(association.RelatingDocument, value))
+
 
     def place_objects_in_spatial_tree(self):
         for global_id, obj in self.added_data.items():
