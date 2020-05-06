@@ -377,7 +377,6 @@ class StrProperty(PropertyGroup):
 
 class Variable(PropertyGroup):
     name: StringProperty(name="Name")
-    global_id: StringProperty(name="Global ID")
     prop_key: StringProperty(name="Property Key")
 
 
@@ -415,6 +414,7 @@ class BIMTextProperties(PropertyGroup):
         ('None', 'None', ''),
         ('rectangle-tag', 'Rectangle Tag', ''),
         ], update=refreshFontSize, name='Symbol')
+    related_element: PointerProperty(name='Related Element', type=bpy.types.Object)
     variables: CollectionProperty(name='Variables', type=Variable)
 
 

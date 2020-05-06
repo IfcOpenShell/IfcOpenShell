@@ -124,6 +124,7 @@ if bpy is not None:
         operator.ResizeText,
         operator.AddVariable,
         operator.RemoveVariable,
+        operator.PropagateTextData,
         prop.StrProperty,
         prop.Variable,
         prop.Classification,

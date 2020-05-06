@@ -16,13 +16,17 @@ class Annotator:
         return float(sizes[str(size)])
 
     @staticmethod
-    def add_text():
+    def add_text(related_element=None):
         curve = bpy.data.curves.new(type='FONT', name='Text')
         curve.body = 'TEXT'
         obj = bpy.data.objects.new('Text', curve)
         obj.matrix_world = bpy.context.scene.camera.matrix_world
-        co1, co2 = Annotator.get_placeholder_coords()
-        obj.location = co1
+        if related_element is None:
+            location, co2 = Annotator.get_placeholder_coords()
+        else:
+            obj.data.BIMTextProperties.related_element = related_element
+            location = related_element.location
+        obj.location = location
         obj.hide_render = True
         font = bpy.data.fonts.get('OpenGost TypeB TT')
         if not font:
