@@ -939,7 +939,6 @@ class IfcImporter():
                             and getattr(association.RelatingDocument, value):
                         setattr(reference, key, getattr(association.RelatingDocument, value))
 
-
     def place_objects_in_spatial_tree(self):
         for global_id, obj in self.added_data.items():
             self.place_object_in_spatial_tree(self.file.by_guid(global_id), obj)
