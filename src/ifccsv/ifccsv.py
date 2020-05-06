@@ -176,16 +176,13 @@ class IfcAttributeExtractor():
             return getattr(element, key)
         elif '.' not in key:
             return None
-        elif key[0:3] == 'Qto':
-            qto_name, prop = key.split('.')
-            qto = IfcAttributeExtractor.get_element_qto(element, qto_name)
-            if qto:
-                return IfcAttributeExtractor.get_qto_property(qto, prop)
-        else:
-            pset_name, prop = key.split('.')
-            pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
-            if pset:
-                return IfcAttributeExtractor.get_pset_property(pset, prop)
+        pset_name, prop = key.split('.')
+        pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
+        if pset:
+            return IfcAttributeExtractor.get_pset_property(pset, prop)
+        qto = IfcAttributeExtractor.get_element_qto(element, pset_name)
+        if qto:
+            return IfcAttributeExtractor.get_qto_property(qto, prop)
         return None
 
     @staticmethod

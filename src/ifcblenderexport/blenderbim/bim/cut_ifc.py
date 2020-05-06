@@ -219,7 +219,13 @@ class IfcCutter:
             for variable in text_obj.data.BIMTextProperties.variables:
                 element = self.get_ifc_element(variable.global_id)
                 if element:
-                    text_obj_data[variable.name] = self.ifc_attribute_extractor.get_element_key(element, variable.prop_key)
+                    if '{{' in variable.prop_key:
+                        prop_key = variable.prop_key.split('{{')[1].split('}}')[0]
+                        prop_value = self.ifc_attribute_extractor.get_element_key(element, prop_key)
+                        variable_value = eval(variable.prop_key.replace('{{' + prop_key + '}}', str(prop_value)))
+                    else:
+                        variable_value = self.ifc_attribute_extractor.get_element_key(element, variable.prop_key)
+                    text_obj_data[variable.name] = variable_value
             if text_obj_data:
                 data[text_obj.name] = text_obj_data
 
