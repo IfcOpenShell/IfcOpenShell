@@ -658,10 +658,14 @@ class BIM_PT_text(Panel):
         props = context.active_object.data.BIMTextProperties
 
         row = layout.row()
-        row.prop(props, 'font_size')
+        row.operator('bim.propagate_text_data')
 
         row = layout.row()
+        row.prop(props, 'font_size')
+        row = layout.row()
         row.prop(props, 'symbol')
+        row = layout.row()
+        row.prop(props, 'related_element')
 
         row = layout.row()
         row.operator('bim.add_variable')
@@ -670,8 +674,6 @@ class BIM_PT_text(Panel):
             row = layout.row(align=True)
             row.prop(variable, 'name')
             row.operator('bim.remove_variable', icon='X', text='').index = index
-            row = layout.row()
-            row.prop(variable, 'global_id')
             row = layout.row()
             row.prop(variable, 'prop_key')
 

@@ -2405,7 +2405,11 @@ class AddAnnotation(bpy.types.Operator):
         if not bpy.context.scene.camera:
             return {'FINISHED'}
         if self.data_type == 'text':
-            obj = annotation.Annotator.add_text()
+            if bpy.context.selected_objects:
+                for selected_object in bpy.context.selected_objects:
+                    obj = annotation.Annotator.add_text(related_element=selected_object)
+            else:
+                obj = annotation.Annotator.add_text()
         else:
             obj = annotation.Annotator.get_annotation_obj(self.obj_name, self.data_type)
             obj = annotation.Annotator.add_line_to_annotation(obj)
@@ -2442,4 +2446,27 @@ class RemoveVariable(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.active_object.data.BIMTextProperties.variables.remove(self.index)
+        return {'FINISHED'}
+
+
+class PropagateTextData(bpy.types.Operator):
+    bl_idname = 'bim.propagate_text_data'
+    bl_label = 'Propagate Text Data'
+
+    def execute(self, context):
+        source = bpy.context.active_object
+        for obj in bpy.context.selected_objects:
+            if obj == source:
+                continue
+            obj.data.body = source.data.body
+            obj.data.align_x = source.data.align_x
+            obj.data.align_y = source.data.align_y
+            obj.data.BIMTextProperties.font_size = source.data.BIMTextProperties.font_size
+            obj.data.BIMTextProperties.symbol = source.data.BIMTextProperties.symbol
+            while len(obj.data.BIMTextProperties.variables) > 0:
+                obj.data.BIMTextProperties.variables.remove(0)
+            for variable in source.data.BIMTextProperties.variables:
+                new_variable = obj.data.BIMTextProperties.variables.add()
+                new_variable.name = variable.name
+                new_variable.prop_key = variable.prop_key
         return {'FINISHED'}

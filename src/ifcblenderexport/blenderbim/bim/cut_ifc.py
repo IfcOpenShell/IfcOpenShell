@@ -214,18 +214,7 @@ class IfcCutter:
 
         data = {}
         for text_obj in self.text_objs:
-            text_obj_data = {}
-            text_body = text_obj.data.body
-            for variable in text_obj.data.BIMTextProperties.variables:
-                element = self.get_ifc_element(variable.global_id)
-                if element:
-                    if '{{' in variable.prop_key:
-                        prop_key = variable.prop_key.split('{{')[1].split('}}')[0]
-                        prop_value = self.ifc_attribute_extractor.get_element_key(element, prop_key)
-                        variable_value = eval(variable.prop_key.replace('{{' + prop_key + '}}', str(prop_value)))
-                    else:
-                        variable_value = self.ifc_attribute_extractor.get_element_key(element, variable.prop_key)
-                    text_obj_data[variable.name] = variable_value
+            text_obj_data = self.get_text_variables(text_obj)
             if text_obj_data:
                 data[text_obj.name] = text_obj_data
 
@@ -233,6 +222,27 @@ class IfcCutter:
             pickle.dump(data, text_file, protocol=pickle.HIGHEST_PROTOCOL)
 
         self.template_variables = data
+
+    def get_text_variables(self, text_obj):
+        text_obj_data = {}
+        text_body = text_obj.data.body
+        related_element = text_obj.data.BIMTextProperties.related_element
+        if not related_element:
+            return
+        global_id = related_element.BIMObjectProperties.attributes.get('GlobalId')
+        if not global_id:
+            return
+        element = self.get_ifc_element(global_id.string_value)
+        for variable in text_obj.data.BIMTextProperties.variables:
+            if element:
+                if '{{' in variable.prop_key:
+                    prop_key = variable.prop_key.split('{{')[1].split('}}')[0]
+                    prop_value = self.ifc_attribute_extractor.get_element_key(element, prop_key)
+                    variable_value = eval(variable.prop_key.replace('{{' + prop_key + '}}', str(prop_value)))
+                else:
+                    variable_value = self.ifc_attribute_extractor.get_element_key(element, variable.prop_key)
+                text_obj_data[variable.name] = variable_value
+        return text_obj_data
 
     def get_product_shapes(self):
         if not self.should_recut:
