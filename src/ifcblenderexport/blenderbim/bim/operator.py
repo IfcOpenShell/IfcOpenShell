@@ -2517,3 +2517,57 @@ class PropagateTextData(bpy.types.Operator):
                 new_variable.name = variable.name
                 new_variable.prop_key = variable.prop_key
         return {'FINISHED'}
+
+
+class PushRepresentation(bpy.types.Operator):
+    bl_idname = 'bim.push_representation'
+    bl_label = 'Push Representation'
+
+    # Warning: This is an incredibly experimental operator.
+    def execute(self, context):
+        logger = logging.getLogger('ExportIFC')
+        output_file = 'tmp.ifc'
+        ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
+        ifc_parser = export_ifc.IfcParser(ifc_export_settings)
+        ifc_parser.parse([bpy.context.active_object])
+        qto_calculator = export_ifc.QtoCalculator()
+        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
+        ifc_exporter.file = ifcopenshell.open(ifc_exporter.template_file)
+        ifc_exporter.create_origin()
+        ifc_exporter.create_rep_context()
+        ifc_exporter.create_representations()
+
+        self.context, self.subcontext, self.target_view, self.mesh_name = bpy.context.active_object.data.name.split('/')
+        self.file = ifc.IfcStore.get_file()
+        rep_context = self.get_geometric_representation_context()
+
+        for key, rep in ifc_exporter.ifc_parser.representations.items():
+            if key != bpy.context.active_object.data.name:
+                continue
+            if rep_context:
+                ifc_exporter.file.add(rep_context)
+                rep['ifc'].MappedRepresentation.ContextOfItems = rep_context
+            self.push_representation(rep['ifc'])
+            break
+        self.file.write(bpy.context.scene.BIMProperties.ifc_file[0:-4] + '-patch.ifc')
+        return {'FINISHED'}
+
+    def get_geometric_representation_context(self):
+        for element in self.file.by_type('IfcGeometricRepresentationSubContext'):
+            if self.is_current_context(element):
+                return element
+
+    def push_representation(self, new_representation):
+        element = self.file.by_guid(bpy.context.active_object.BIMObjectProperties.attributes.get('GlobalId').string_value)
+        representations = list(element.Representation.Representations)
+        for i, representation in enumerate(representations):
+            if self.is_current_context(representation.ContextOfItems):
+                del representations[i]
+                break
+        representations.append(self.file.add(new_representation.MappedRepresentation))
+        element.Representation.Representations = representations
+
+    def is_current_context(self, element):
+        return element.ContextType == self.context \
+            and element.ContextIdentifier == self.subcontext \
+            and element.TargetView == self.target_view
