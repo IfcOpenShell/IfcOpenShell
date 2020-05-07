@@ -1203,11 +1203,7 @@ class ValidateIfcFile(bpy.types.Operator):
         import ifcopenshell.validate
         logger = logging.getLogger('validate')
         logger.setLevel(logging.DEBUG)
-        if bpy.context.scene.BIMProperties.ifc_file \
-                and bpy.context.scene.BIMProperties.ifc_file != ifc.IfcStore.path:
-            ifc.IfcStore.file = ifcopenshell.open(bpy.context.scene.BIMProperties.ifc_file)
-            ifc.IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
-        ifcopenshell.validate.validate(ifc.IfcStore.file, logger)
+        ifcopenshell.validate.validate(ifc.IfcStore.get_file(), logger)
         return {'FINISHED'}
 
 
@@ -1757,6 +1753,57 @@ class AssignContext(bpy.types.Operator):
                 name[0:6] == 'Model/' \
                 or name[0:5] == 'Plan/' \
             )
+
+
+class SwitchContext(bpy.types.Operator):
+    bl_idname = 'bim.switch_context'
+    bl_label = 'Switch Context'
+
+    # Warning: This is an incredibly experimental operator. It effectively does
+    # a mini-import. A better approach will make this obsolete in the future.
+    def execute(self, context):
+        self.obj = bpy.context.active_object
+
+        if '/' not in self.obj.data.name:
+            self.obj.data.name = 'Model/Body/MODEL_VIEW/' + self.obj.data.name
+
+        self.context = bpy.context.scene.BIMProperties.available_contexts
+        self.subcontext = bpy.context.scene.BIMProperties.available_subcontexts
+        self.target_view = bpy.context.scene.BIMProperties.available_target_views
+
+        global_id = self.obj.BIMObjectProperties.attributes.get('GlobalId').string_value
+
+        mesh = bpy.data.meshes.get('{}/{}/{}/{}'.format(
+            self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3]))
+        if not mesh:
+            try:
+                mesh = self.pull_mesh_from_ifc(global_id)
+            except:
+                mesh = bpy.data.meshes.new('{}/{}/{}/{}'.format(
+                    self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3]))
+
+        self.obj.data = mesh
+        return {'FINISHED'}
+
+    def pull_mesh_from_ifc(self, global_id):
+        self.file = ifc.IfcStore.get_file()
+        logger = logging.getLogger('ImportIFC')
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, ifc.IfcStore.path, logger)
+        element = self.file.by_id(global_id)
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.INCLUDE_CURVES, True)
+        rep = [r for r in element.Representation.Representations if
+                r.ContextOfItems.ContextType == self.context \
+                and r.ContextOfItems.ContextIdentifier == self.subcontext \
+                and r.ContextOfItems.TargetView == self.target_view][0]
+        shape = ifcopenshell.geom.create_shape(settings, rep)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        mesh = ifc_importer.create_mesh(element, shape)
+        mesh.name = '{}/{}/{}/{}'.format(
+            self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3])
+        material_creator = import_ifc.MaterialCreator(ifc_import_settings)
+        material_creator.create(element, self.obj, mesh)
+        return mesh
 
 
 class SetViewPreset1(bpy.types.Operator):

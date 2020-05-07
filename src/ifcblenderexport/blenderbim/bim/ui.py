@@ -367,7 +367,9 @@ class BIM_PT_mesh(Panel):
         row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
-        row = layout.row()
+
+        row = layout.row(align=True)
+        row.operator('bim.switch_context')
         row.operator('bim.assign_context')
 
         row = layout.row()
