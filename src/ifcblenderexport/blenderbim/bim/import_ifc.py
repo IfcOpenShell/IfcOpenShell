@@ -227,6 +227,7 @@ class IfcImporter():
         if self.ifc_import_settings.should_auto_set_workarounds:
             self.auto_set_workarounds()
         self.calculate_unit_scale()
+        self.set_units()
         self.create_geometric_representation_contexts()
         self.create_project()
         self.create_classifications()
@@ -706,13 +707,31 @@ class IfcImporter():
         units = self.file.by_type('IfcUnitAssignment')[0]
         for unit in units.Units:
             if not hasattr(unit, 'UnitType') \
-                or unit.UnitType != 'LENGTHUNIT':
+                    or unit.UnitType != 'LENGTHUNIT':
                 continue
             while unit.is_a('IfcConversionBasedUnit'):
                 self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
                 unit = unit.ConversionFactor.UnitComponent
             if unit.is_a('IfcSIUnit'):
                 self.unit_scale *= SIUnitHelper.get_prefix_multiplier(unit.Prefix)
+
+    def set_units(self):
+        units = self.file.by_type('IfcUnitAssignment')[0]
+        for unit in units.Units:
+            if unit.UnitType == 'LENGTHUNIT':
+                if unit.is_a('IfcSIUnit'):
+                    bpy.context.scene.unit_settings.system = 'METRIC'
+                    if unit.Name == 'METRE':
+                        if not unit.Prefix:
+                            bpy.context.scene.unit_settings.length_unit = 'METERS'
+                        else:
+                            bpy.context.scene.unit_settings.length_unit = f'{unit.Prefix}METERS'
+                else:
+                    bpy.context.scene.unit_settings.system = 'IMPERIAL'
+                    if unit.Name == 'inch':
+                        bpy.context.scene.unit_settings.length_unit = 'INCHES'
+                    elif unit.Name == 'foot':
+                        bpy.context.scene.unit_settings.length_unit = 'FEET'
 
     def create_geometric_representation_contexts(self):
         bpy.context.scene.BIMProperties.has_model_context = False
