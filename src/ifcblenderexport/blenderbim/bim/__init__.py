@@ -126,6 +126,7 @@ if bpy is not None:
         operator.AddVariable,
         operator.RemoveVariable,
         operator.PropagateTextData,
+        operator.PushRepresentation,
         prop.StrProperty,
         prop.Variable,
         prop.Classification,

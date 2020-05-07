@@ -372,6 +372,10 @@ class BIM_PT_mesh(Panel):
         row.operator('bim.switch_context')
         row.operator('bim.assign_context')
 
+        row = layout.row(align=True)
+        row.operator('bim.push_representation')
+
+
         row = layout.row()
         row.prop(props, 'presentation_layer')
 
