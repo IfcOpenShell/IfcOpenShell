@@ -97,6 +97,7 @@ if bpy is not None:
         operator.ActivateView,
         operator.ExecuteIfcDiff,
         operator.AssignContext,
+        operator.SwitchContext,
         operator.SetViewPreset1,
         operator.SetViewPreset2,
         operator.OpenUpstream,
