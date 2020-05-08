@@ -1,4 +1,194 @@
 {
+    "IfcDoorStyle": {
+        "is_abstract": false,
+        "parent": "IfcTypeProduct",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ApplicableOccurrence",
+                "type": "IfcIdentifier",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Tag",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "OperationType",
+                "type": "IfcDoorStyleOperationEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "SINGLE_SWING_LEFT",
+                    "SINGLE_SWING_RIGHT",
+                    "DOUBLE_DOOR_SINGLE_SWING",
+                    "DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT",
+                    "DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT",
+                    "DOUBLE_SWING_LEFT",
+                    "DOUBLE_SWING_RIGHT",
+                    "DOUBLE_DOOR_DOUBLE_SWING",
+                    "SLIDING_TO_LEFT",
+                    "SLIDING_TO_RIGHT",
+                    "DOUBLE_DOOR_SLIDING",
+                    "FOLDING_TO_LEFT",
+                    "FOLDING_TO_RIGHT",
+                    "DOUBLE_DOOR_FOLDING",
+                    "REVOLVING",
+                    "ROLLINGUP",
+                    "SWING_FIXED_LEFT",
+                    "SWING_FIXED_RIGHT",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ConstructionType",
+                "type": "IfcDoorStyleConstructionEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "ALUMINIUM",
+                    "HIGH_GRADE_STEEL",
+                    "STEEL",
+                    "WOOD",
+                    "ALUMINIUM_WOOD",
+                    "ALUMINIUM_PLASTIC",
+                    "PLASTIC",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ParameterTakesPrecedence",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Sizeable",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            }
+
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
+    "IfcWindowStyle": {
+        "is_abstract": false,
+        "parent": "IfcTypeProduct",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ApplicableOccurrence",
+                "type": "IfcIdentifier",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Tag",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ConstructionType",
+                "type": "IfcWindowStyleConstructionEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "ALUMINIUM",
+                    "HIGH_GRADE_STEEL",
+                    "STEEL",
+                    "WOOD",
+                    "ALUMINIUM_WOOD",
+                    "ALUMINIUM_PLASTIC",
+                    "PLASTIC",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "OperationType",
+                "type": "IfcWindowStyleOperationEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "SINGLE_PANEL",
+                    "DOUBLE_PANEL_VERTICAL",
+                    "DOUBLE_PANEL_HORIZONTAL",
+                    "TRIPLE_PANEL_VERTICAL",
+                    "TRIPLE_PANEL_BOTTOM",
+                    "TRIPLE_PANEL_TOP",
+                    "TRIPLE_PANEL_LEFT",
+                    "TRIPLE_PANEL_RIGHT",
+                    "TRIPLE_PANEL_HORIZONTAL",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            },
+            {
+                "name": "ParameterTakesPrecedence",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Sizeable",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    },
     "IfcActuatorType": {
         "is_abstract": false,
         "parent": "IfcDistributionControlElementType",
