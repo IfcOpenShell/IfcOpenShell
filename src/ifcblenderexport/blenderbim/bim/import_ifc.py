@@ -206,6 +206,7 @@ class IfcImporter():
         self.classifications = {}
         self.spatial_structure_elements = {}
         self.elements = {}
+        self.type_collection = None
         self.type_products = {}
         self.meshes = {}
         self.mesh_shapes = {}
@@ -408,17 +409,36 @@ class IfcImporter():
 
     def create_type_products(self):
         type_products = self.file.by_type('IfcTypeProduct')
+        self.type_collection = bpy.data.collections.new('Types')
+        self.project['blender'].children.link(self.type_collection)
         for type_product in type_products:
             self.create_type_product(type_product)
+        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.type_collection.name].hide_viewport = True
 
-    def create_type_product(self, type_product):
-        obj = bpy.data.objects.new(self.get_name(type_product), None)
-        self.add_element_attributes(type_product, obj)
-        self.add_element_classifications(type_product, obj)
-        self.add_element_document_relations(type_product, obj)
-        self.add_type_product_psets(type_product, obj)
-        self.project['blender'].objects.link(obj)
-        self.type_products[type_product.GlobalId] = obj
+    def create_type_product(self, element):
+        self.ifc_import_settings.logger.info('Creating object {}'.format(element))
+        representation_map = self.get_type_product_body_representation_map(element)
+        mesh = None
+        if representation_map:
+            shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
+            mesh = self.create_mesh(element, shape)
+        obj = bpy.data.objects.new(self.get_name(element), mesh)
+        self.add_element_attributes(element, obj)
+        self.add_element_classifications(element, obj)
+        self.add_element_document_relations(element, obj)
+        self.add_type_product_psets(element, obj)
+        self.type_collection.objects.link(obj)
+        self.type_products[element.GlobalId] = obj
+
+    def get_type_product_body_representation_map(self, element):
+        if not element.RepresentationMaps:
+            return
+        for representation_map in element.RepresentationMaps:
+            context = representation_map.MappedRepresentation.ContextOfItems
+            if context.ContextType == 'Model' \
+                    and context.ContextIdentifier == 'Body' \
+                    and context.TargetView == 'MODEL_VIEW':
+                return representation_map
 
     def create_products_legacy(self):
         elements = self.file.by_type('IfcElement') + self.file.by_type('IfcSpace')
