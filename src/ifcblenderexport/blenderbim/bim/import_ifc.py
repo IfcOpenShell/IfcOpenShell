@@ -35,7 +35,8 @@ class MaterialCreator():
     def create(self, element, obj, mesh):
         self.obj = obj
         self.mesh = mesh
-        if not element.Representation:
+        if (hasattr(element, 'Representation') and not element.Representation) \
+                or (hasattr(element, 'RepresentationMaps') and not element.RepresentationMaps):
             return
         if self.ifc_import_settings.should_treat_styled_item_as_material \
                 and self.mesh.name in self.parsed_meshes:
@@ -49,9 +50,14 @@ class MaterialCreator():
 
     def parse_representations(self, element):
         has_parsed = False
-        for representation in element.Representation.Representations:
-            if self.parse_representation(representation):
-                has_parsed = True
+        if hasattr(element, 'Representation'):
+            for representation in element.Representation.Representations:
+                if self.parse_representation(representation):
+                    has_parsed = True
+        elif hasattr(element, 'RepresentationMaps'):
+            for representation_map in element.RepresentationMaps:
+                if self.parse_representation(representation_map.MappedRepresentation):
+                    has_parsed = True
         return has_parsed
 
     def parse_representation(self, representation):
@@ -423,6 +429,8 @@ class IfcImporter():
             shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
             mesh = self.create_mesh(element, shape)
         obj = bpy.data.objects.new(self.get_name(element), mesh)
+        if mesh:
+            self.material_creator.create(element, obj, mesh)
         self.add_element_attributes(element, obj)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
@@ -490,6 +498,8 @@ class IfcImporter():
                 if element.is_a('IfcReinforcingBar'):
                     mesh = self.create_mesh(element, shape, is_curve=True)
                     mesh.bevel_depth = self.native_elements[element.GlobalId]['radius']
+                elif bpy.data.meshes.get(shape.geometry.id):
+                    mesh = bpy.data.meshes.get(shape.geometry.id)
                 else:
                     mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
