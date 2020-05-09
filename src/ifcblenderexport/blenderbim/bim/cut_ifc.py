@@ -1,4 +1,5 @@
 import os
+import bpy
 import math
 import time
 import numpy
@@ -867,13 +868,14 @@ class SvgWriter():
                     'dominant-baseline': 'middle'
                 }))
 
-        for obj in self.ifc_cutter.hidden_objs:
-            self.draw_line_annotation(obj, ['hidden'])
+        for obj_data in self.ifc_cutter.hidden_objs:
+            self.draw_line_annotation(obj_data, ['hidden'])
 
-        for obj in self.ifc_cutter.solid_objs:
-            self.draw_line_annotation(obj, ['solid'])
+        for obj_data in self.ifc_cutter.solid_objs:
+            self.draw_line_annotation(obj_data, ['solid'])
 
-        self.draw_line_annotation(self.ifc_cutter.leader_obj, ['leader'])
+        if self.ifc_cutter.leader_obj:
+            self.draw_line_annotation(self.ifc_cutter.leader_obj, ['leader'])
 
         if self.ifc_cutter.plan_level_obj:
             for spline in self.ifc_cutter.plan_level_obj.data.splines:
@@ -951,21 +953,36 @@ class SvgWriter():
 
         self.draw_text_annotations()
 
-    def draw_line_annotation(self, obj, classes):
+    def draw_line_annotation(self, obj_data, classes):
         # TODO: properly scope these offsets
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
+        obj, data = obj_data
+
         classes.extend(['annotation'])
         matrix_world = obj.matrix_world
-        for spline in obj.data.splines:
-            points = self.get_spline_points(spline)
-            projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
-            d = ' '.join(['L {} {}'.format(
-                (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
-                for p in projected_points])
-            d = 'M{}'.format(d[1:])
-            path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
+
+        if isinstance(data, bpy.types.Curve):
+            for spline in data.splines:
+                points = self.get_spline_points(spline)
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+                d = ' '.join(['L {} {}'.format(
+                    (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points])
+                d = 'M{}'.format(d[1:])
+                path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
+        elif isinstance(data, bpy.types.Mesh):
+            for edge in data.edges:
+                v0_global = matrix_world @ data.vertices[edge.vertices[0]].co.xyz
+                v1_global = matrix_world @ data.vertices[edge.vertices[1]].co.xyz
+                v0 = self.project_point_onto_camera(v0_global)
+                v1 = self.project_point_onto_camera(v1_global)
+                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+                vector = end - start
+                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+                    end=tuple(end * self.scale), class_=' '.join(classes)))
 
     def draw_text_annotations(self):
         x_offset = self.raw_width / 2
