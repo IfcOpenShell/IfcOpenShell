@@ -1588,7 +1588,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.text_objs = []
         for obj in camera.users_collection[0].objects:
             if 'Leader' in obj.name:
-                ifc_cutter.leader_obj = obj
+                ifc_cutter.leader_obj = (obj, obj.data)
             elif 'Stair' in obj.name:
                 ifc_cutter.stair_obj = obj
             elif 'Equal' in obj.name:
@@ -1596,9 +1596,9 @@ class CutSection(bpy.types.Operator):
             elif 'Dimension' in obj.name:
                 ifc_cutter.dimension_obj = obj
             elif 'Hidden' in obj.name:
-                ifc_cutter.hidden_objs.append(obj)
+                ifc_cutter.hidden_objs.append((obj, obj.data))
             elif 'Solid' in obj.name:
-                ifc_cutter.solid_objs.append(obj)
+                ifc_cutter.solid_objs.append((obj, obj.data))
             elif 'IfcGrid' in obj.name:
                 ifc_cutter.grid_objs.append(obj)
             elif 'Plan Level' in obj.name:
@@ -1609,6 +1609,17 @@ class CutSection(bpy.types.Operator):
                 ifc_cutter.camera_obj = obj
             elif obj.type == 'FONT':
                 ifc_cutter.text_objs.append(obj)
+
+        for obj in bpy.context.visible_objects:
+            for subcontext in  obj.BIMObjectProperties.representation_contexts:
+                if subcontext.context == 'Plan' \
+                        and subcontext.name == 'Annotation' \
+                        and subcontext.target_view == 'PLAN_VIEW' \
+                        and '/' in obj.data.name:
+                    data = bpy.data.meshes.get('Plan/Annotation/PLAN_VIEW/{}'.format(obj.data.name.split('/')[-1]))
+                    if data:
+                        ifc_cutter.solid_objs.append((obj, data))
+
         ifc_cutter.section_box = {
             'projection': tuple(projection),
             'x_axis': tuple(x_axis),
