@@ -932,17 +932,19 @@ class SvgWriter():
                 }))
 
         if self.ifc_cutter.stair_obj:
+            matrix_world = self.ifc_cutter.stair_obj.matrix_world
             for spline in self.ifc_cutter.stair_obj.data.splines:
                 classes = ['annotation', 'stair']
                 points = self.get_spline_points(spline)
-                d = ' '.join(['L {} {}'.format((x_offset + p.co.x) * self.scale, (y_offset - p.co.y) * self.scale) for p in points])
+                projected_points = [self.project_point_onto_camera(matrix_world @ p.co.xyz) for p in points]
+                d = ' '.join(['L {} {}'.format(
+                    (x_offset + p.x) * self.scale, (y_offset - p.y) * self.scale)
+                    for p in projected_points])
                 d = 'M{}'.format(d[1:])
-                start = Vector(((x_offset + points[0].co.x), (y_offset - points[0].co.y)))
-                next_point = Vector(((x_offset + points[1].co.x), (y_offset - points[1].co.y)))
+                start = Vector(((x_offset + projected_points[0].x), (y_offset - projected_points[0].y)))
+                next_point = Vector(((x_offset + projected_points[1].x), (y_offset - projected_points[1].y)))
                 text_position = (start * self.scale) - ((next_point - start).normalized() * 5)
                 path = self.svg.add(self.svg.path(d=d, class_=' '.join(classes)))
-                path['marker-start'] = 'url(#stair-marker-start)'
-                path['marker-end'] = 'url(#stair-marker-end)'
                 self.svg.add(self.svg.text('UP', insert=tuple(text_position), **{
                     'font-size': annotation.Annotator.get_svg_text_size(2.5),
                     'font-family': 'OpenGost Type B TT',

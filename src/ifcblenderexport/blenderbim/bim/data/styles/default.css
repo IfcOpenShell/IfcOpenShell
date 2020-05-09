@@ -3,4 +3,5 @@
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .hidden { stroke-dasharray: 3, 2; }
 .leader { marker-end: url(#leader-marker); }
+.stair { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
 .solid {}

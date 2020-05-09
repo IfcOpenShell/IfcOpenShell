@@ -36,7 +36,7 @@
         <circle cx="5" cy="5" fill="black" stroke="none" r="5"/>
     </marker>
     <marker id="stair-marker-end" markerHeight="42" markerWidth="21" orient="auto" refX="21" refY="21">
-        <path d="M 0 0 L 21 21 L 0 42" class="annotation stair" style="stroke-width:2" />
+        <path d="M 0 0 L 21 21 L 0 42" class="annotation stair" style="stroke-width:2; marker-start: none; marker-end: none;" />
     </marker>
     <marker id="plan-level-marker" markerHeight="30" markerWidth="30" refX="15" refY="15">
         <g>
