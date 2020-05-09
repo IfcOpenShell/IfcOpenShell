@@ -838,7 +838,7 @@ class IfcParser():
         if not self.ifc_export_settings.has_representations:
             return
         for product in self.selected_products \
-                + self.type_products \
+                + self.selected_types \
                 + self.selected_spatial_structure_elements:
             self.prevent_data_name_duplicates(product)
             self.load_product_representations(product)
