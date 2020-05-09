@@ -435,6 +435,7 @@ class IfcImporter():
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_type_product_psets(element, obj)
+        self.add_product_representation_contexts(element, obj)
         self.type_collection.objects.link(obj)
         self.type_products[element.GlobalId] = obj
 
@@ -523,6 +524,7 @@ class IfcImporter():
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
+        self.add_product_representation_contexts(element, obj)
         self.added_data[element.GlobalId] = obj
         return obj
 
@@ -626,6 +628,29 @@ class IfcImporter():
         bpy.ops.mesh.dissolve_limited(context_override)
         bpy.ops.mesh.normals_make_consistent(context_override)
         bpy.ops.object.editmode_toggle(context_override)
+
+    def add_product_representation_contexts(self, element, obj):
+        subcontexts = []
+        if element.is_a('IfcProduct'):
+            if not element.Representation:
+                return
+            for r in element.Representation.Representations:
+                subcontexts.append('{}/{}/{}'.format(
+                    r.ContextOfItems.ContextType,
+                    r.ContextOfItems.ContextIdentifier,
+                    r.ContextOfItems.TargetView))
+        elif element.is_a('IfcTypeProduct'):
+            if not element.RepresentationMaps:
+                return
+            for r in element.RepresentationMaps:
+                subcontexts.append('{}/{}/{}'.format(
+                    r.MappedRepresentation.ContextOfItems.ContextType,
+                    r.MappedRepresentation.ContextOfItems.ContextIdentifier,
+                    r.MappedRepresentation.ContextOfItems.TargetView))
+        subcontexts = set(subcontexts)
+        for subcontext in subcontexts:
+            representation_context = obj.BIMObjectProperties.representation_contexts.add()
+            representation_context.context, representation_context.name, representation_context.target_view = subcontext.split('/')
 
     def add_product_definitions(self, element, obj):
         if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:

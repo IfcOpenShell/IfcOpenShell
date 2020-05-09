@@ -1757,6 +1757,9 @@ class AssignContext(bpy.types.Operator):
 class SwitchContext(bpy.types.Operator):
     bl_idname = 'bim.switch_context'
     bl_label = 'Switch Context'
+    context_name: bpy.props.StringProperty()
+    subcontext_name: bpy.props.StringProperty()
+    target_view_name: bpy.props.StringProperty()
 
     # Warning: This is an incredibly experimental operator. It effectively does
     # a mini-import. A better approach will make this obsolete in the future.
@@ -1770,16 +1773,26 @@ class SwitchContext(bpy.types.Operator):
         self.subcontext = bpy.context.scene.BIMProperties.available_subcontexts
         self.target_view = bpy.context.scene.BIMProperties.available_target_views
 
-        global_id = self.obj.BIMObjectProperties.attributes.get('GlobalId').string_value
+        if self.context_name:
+            self.context = self.context_name
+        if self.subcontext_name:
+            self.subcontext = self.subcontext_name
+        if self.target_view_name:
+            self.target_view = self.target_view_name
 
         mesh = bpy.data.meshes.get('{}/{}/{}/{}'.format(
             self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3]))
         if not mesh:
             try:
+                global_id = self.obj.BIMObjectProperties.attributes.get('GlobalId').string_value
                 mesh = self.pull_mesh_from_ifc(global_id)
             except:
                 mesh = bpy.data.meshes.new('{}/{}/{}/{}'.format(
                     self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3]))
+                representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
+                representation_context.context = self.context
+                representation_context.name = self.subcontext
+                representation_context.target_view = self.target_view
 
         self.obj.data = mesh
         return {'FINISHED'}
@@ -1806,6 +1819,7 @@ class SwitchContext(bpy.types.Operator):
         mesh = ifc_importer.create_mesh(element, shape)
         mesh.name = '{}/{}/{}/{}'.format(
             self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3])
+        self.obj.data = mesh
         material_creator = import_ifc.MaterialCreator(ifc_import_settings)
         material_creator.create(element, self.obj, mesh)
         return mesh

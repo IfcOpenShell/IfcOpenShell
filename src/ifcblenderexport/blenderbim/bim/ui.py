@@ -221,6 +221,38 @@ class BIM_PT_documents(Panel):
                     layout.label(text="Reference is invalid")
 
 
+class BIM_PT_representations(Panel):
+    bl_label = 'Representations'
+    bl_idname = 'BIM_PT_representations'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
+
+        if not props.representation_contexts:
+            layout.label(text="No representations found")
+
+        row = layout.row(align=True)
+        row.prop(bpy.context.scene.BIMProperties, 'available_contexts', text='')
+        row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
+        row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
+        row.operator('bim.switch_context', icon='ADD', text='')
+
+        for index, subcontext in enumerate(props.representation_contexts):
+            row = layout.row(align=True)
+            row.prop(subcontext, 'context', text='')
+            row.prop(subcontext, 'name', text='')
+            row.prop(subcontext, 'target_view', text='')
+            op = row.operator('bim.switch_context', icon='OUTLINER_DATA_MESH', text='')
+            op.context_name = subcontext.context
+            op.subcontext_name = subcontext.name
+            op.target_view_name = subcontext.target_view
+
+
 class BIM_PT_classification_references(Panel):
     bl_label = 'Classification References'
     bl_idname = 'BIM_PT_classification_references'
@@ -368,8 +400,7 @@ class BIM_PT_mesh(Panel):
         row.prop(bpy.context.scene.BIMProperties, 'available_subcontexts', text='')
         row.prop(bpy.context.scene.BIMProperties, 'available_target_views', text='')
 
-        row = layout.row(align=True)
-        row.operator('bim.switch_context')
+        row = layout.row()
         row.operator('bim.assign_context')
 
         row = layout.row(align=True)

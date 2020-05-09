@@ -382,6 +382,7 @@ class Variable(PropertyGroup):
 
 class Subcontext(PropertyGroup):
     name: StringProperty(name='Name')
+    context: StringProperty(name='Context')
     target_view: StringProperty(name='Target View')
 
 
@@ -1017,6 +1018,7 @@ class BIMObjectProperties(PropertyGroup):
     has_boundary_condition: BoolProperty(name='Has Boundary Condition')
     boundary_condition: PointerProperty(name='Boundary Condition', type=BoundaryCondition)
     structural_member_connection: PointerProperty(name='Structural Member Connection', type=bpy.types.Object)
+    representation_contexts: CollectionProperty(name="Representation Contexts", type=Subcontext)
 
 
 class BIMMaterialProperties(PropertyGroup):
