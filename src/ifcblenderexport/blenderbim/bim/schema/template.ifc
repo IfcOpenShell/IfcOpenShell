@@ -1,9 +1,0 @@
-ISO-10303-21;
-HEADER;
-FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
-FILE_NAME('$filename','2019-05-12T12:33:45',('$owner','$email'),('$company'),'IfcOpenShell','IfcOpenShell','');
-FILE_SCHEMA(('IFC4'));
-ENDSEC;
-DATA;
-ENDSEC;
-END-ISO-10303-21;

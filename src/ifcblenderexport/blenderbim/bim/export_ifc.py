@@ -640,7 +640,11 @@ class IfcParser():
     def get_classification_reference_maps(self):
         results = {}
         for filename, classification in self.classifications.items():
-            results[filename] = { e.Identification: e for e in schema.ifc.classification_files[filename].by_type('IfcClassificationReference')}
+            ifc_file = schema.ifc.classification_files[filename]
+            if ifc_file.schema == 'IFC2X3':
+                results[filename] = { e.ItemReference: e for e in ifc_file.by_type('IfcClassificationReference')}
+            else:
+                results[filename] = { e.Identification: e for e in ifc_file.by_type('IfcClassificationReference')}
         return results
 
     def get_classification_references(self):
@@ -1104,9 +1108,10 @@ class IfcExporter():
         self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
         self.qto_calculator = qto_calculator
+        self.schema = 'IFC4'
 
     def export(self, selected_objects):
-        self.file = ifcopenshell.open(self.template_file)
+        self.file = ifcopenshell.file(schema=self.schema)
         self.ifc_parser.parse(selected_objects)
         self.create_units()
         self.create_people()

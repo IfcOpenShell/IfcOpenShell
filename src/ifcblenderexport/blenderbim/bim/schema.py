@@ -74,7 +74,8 @@ class IfcSchema():
 
     def get_classification_references(self, classification):
         references = {}
-        if not classification.HasReferences:
+        if not hasattr(classification, 'HasReferences') \
+                or not classification.HasReferences:
             return references
         for reference in classification.HasReferences:
             references[reference.Identification] = {
