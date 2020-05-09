@@ -2530,6 +2530,8 @@ class PushRepresentation(bpy.types.Operator):
 
     # Warning: This is an incredibly experimental operator.
     def execute(self, context):
+        self.file = ifc.IfcStore.get_file()
+
         logger = logging.getLogger('ExportIFC')
         output_file = 'tmp.ifc'
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
@@ -2537,13 +2539,12 @@ class PushRepresentation(bpy.types.Operator):
         ifc_parser.parse([bpy.context.active_object])
         qto_calculator = export_ifc.QtoCalculator()
         self.ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
-        self.ifc_exporter.file = ifcopenshell.open(self.ifc_exporter.template_file)
+        self.ifc_exporter.file = ifcopenshell.file(schema=self.file.schema)
         self.ifc_exporter.create_origin()
         self.ifc_exporter.create_rep_context()
         self.ifc_exporter.create_representations()
 
         self.context, self.subcontext, self.target_view, self.mesh_name = bpy.context.active_object.data.name.split('/')
-        self.file = ifc.IfcStore.get_file()
         rep_context = self.get_geometric_representation_context()
 
         for key, rep in self.ifc_exporter.ifc_parser.representations.items():
