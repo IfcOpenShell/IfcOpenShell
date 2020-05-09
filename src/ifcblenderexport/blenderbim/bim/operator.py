@@ -980,7 +980,6 @@ class AssignSweptSolidOuterCurve(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.mode_set(mode='EDIT')
         vertices = [v.index for v in bpy.context.active_object.data.vertices if v.select == True]
-        print(vertices)
         bpy.context.active_object.data.BIMMeshProperties.swept_solids[self.index].outer_curve = json.dumps(vertices)
         return {'FINISHED'}
 
@@ -1792,10 +1791,16 @@ class SwitchContext(bpy.types.Operator):
         element = self.file.by_id(global_id)
         settings = ifcopenshell.geom.settings()
         settings.set(settings.INCLUDE_CURVES, True)
-        rep = [r for r in element.Representation.Representations if
-                r.ContextOfItems.ContextType == self.context \
-                and r.ContextOfItems.ContextIdentifier == self.subcontext \
-                and r.ContextOfItems.TargetView == self.target_view][0]
+        if element.is_a('IfcProduct'):
+            rep = [r for r in element.Representation.Representations if
+                    r.ContextOfItems.ContextType == self.context \
+                    and r.ContextOfItems.ContextIdentifier == self.subcontext \
+                    and r.ContextOfItems.TargetView == self.target_view][0]
+        else:
+            rep = [rm.MappedRepresentation for rm in element.RepresentationMaps if
+                    rm.MappedRepresentation.ContextOfItems.ContextType == self.context \
+                    and rm.MappedRepresentation.ContextOfItems.ContextIdentifier == self.subcontext \
+                    and rm.MappedRepresentation.ContextOfItems.TargetView == self.target_view][0]
         shape = ifcopenshell.geom.create_shape(settings, rep)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         mesh = ifc_importer.create_mesh(element, shape)
@@ -2531,21 +2536,21 @@ class PushRepresentation(bpy.types.Operator):
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         ifc_parser.parse([bpy.context.active_object])
         qto_calculator = export_ifc.QtoCalculator()
-        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
-        ifc_exporter.file = ifcopenshell.open(ifc_exporter.template_file)
-        ifc_exporter.create_origin()
-        ifc_exporter.create_rep_context()
-        ifc_exporter.create_representations()
+        self.ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
+        self.ifc_exporter.file = ifcopenshell.open(self.ifc_exporter.template_file)
+        self.ifc_exporter.create_origin()
+        self.ifc_exporter.create_rep_context()
+        self.ifc_exporter.create_representations()
 
         self.context, self.subcontext, self.target_view, self.mesh_name = bpy.context.active_object.data.name.split('/')
         self.file = ifc.IfcStore.get_file()
         rep_context = self.get_geometric_representation_context()
 
-        for key, rep in ifc_exporter.ifc_parser.representations.items():
+        for key, rep in self.ifc_exporter.ifc_parser.representations.items():
             if key != bpy.context.active_object.data.name:
                 continue
             if rep_context:
-                ifc_exporter.file.add(rep_context)
+                self.ifc_exporter.file.add(rep_context)
                 rep['ifc'].MappedRepresentation.ContextOfItems = rep_context
             self.push_representation(rep['ifc'])
             break
@@ -2559,12 +2564,65 @@ class PushRepresentation(bpy.types.Operator):
 
     def push_representation(self, new_representation):
         element = self.file.by_guid(bpy.context.active_object.BIMObjectProperties.attributes.get('GlobalId').string_value)
-        representations = list(element.Representation.Representations)
-        for i, representation in enumerate(representations):
+        old_shape = None
+        new_shape = self.file.add(new_representation.MappedRepresentation)
+        if element.is_a('IfcProduct'):
+            representations = element.Representation.Representations
+        else:
+            representations = [rm.MappedRepresentation for rm in element.RepresentationMaps]
+        for representation in representations:
             if self.is_current_context(representation.ContextOfItems):
-                del representations[i]
+                old_shape = self.resolve_mapped_representation(representation)
                 break
-        representations.append(self.file.add(new_representation.MappedRepresentation))
+        if old_shape:
+            self.swap_old_representation(old_shape, new_shape)
+        else:
+            self.add_new_representation(element, new_shape)
+
+    def resolve_mapped_representation(self, representation):
+        if representation.RepresentationType == 'MappedRepresentation':
+            if representation.Items:
+                return representation.Items[0].MappingSource.MappedRepresentation
+        return representation
+
+    def swap_old_representation(self, old, new):
+        inverse_elements = self.file.get_inverse(old)
+        for element in inverse_elements:
+            for i, attribute in enumerate(element):
+                if (isinstance(attribute, list) or isinstance(attribute, tuple)) \
+                        and old in attribute:
+                    items = list(attribute)
+                    for j, item in enumerate(items):
+                        if item == old:
+                            del items[j]
+                    items.append(new)
+                    element[i] = items
+                elif attribute == old:
+                    element[i] = new
+
+    def add_new_representation(self, element, new):
+        if element.is_a('IfcProduct'):
+            self.add_new_representation_to_product(element, new)
+            return
+
+        if element.RepresentationMaps:
+            representation_maps = list(element.RepresentationMaps)
+            representation_maps.append(self.file.createIfcRepresentationMap(self.ifc_exporter.origin, new))
+            element.RepresentationMaps = representation_maps
+        else:
+            element.RepresentationMaps = (self.file.createIfcRepresentationMap(self.ifc_exporter.origin, new))
+
+        if hasattr(element, 'Types'):
+            related_objects = element.Types[0].RelatedObjects
+        elif hasattr(element, 'ObjectTypeOf'): # IFC2X3
+            related_objects = element.ObjectTypeOf[0].RelatedObjects
+
+        for related_object in related_objects:
+            self.add_new_representation_to_product(related_object, new)
+
+    def add_new_representation_to_product(self, element, new):
+        representations = list(element.Representation.Representations)
+        representations.append(new)
         element.Representation.Representations = representations
 
     def is_current_context(self, element):
