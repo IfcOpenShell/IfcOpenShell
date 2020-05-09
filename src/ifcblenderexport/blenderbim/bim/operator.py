@@ -1580,7 +1580,8 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.stair_obj = None
         ifc_cutter.dimension_obj = None
         ifc_cutter.equal_obj = None
-        ifc_cutter.hidden_obj = None
+        ifc_cutter.hidden_objs = []
+        ifc_cutter.solid_objs = []
         ifc_cutter.plan_level_obj = None
         ifc_cutter.section_level_obj = None
         ifc_cutter.grid_objs = []
@@ -1595,7 +1596,9 @@ class CutSection(bpy.types.Operator):
             elif 'Dimension' in obj.name:
                 ifc_cutter.dimension_obj = obj
             elif 'Hidden' in obj.name:
-                ifc_cutter.hidden_obj = obj
+                ifc_cutter.hidden_objs.append(obj)
+            elif 'Solid' in obj.name:
+                ifc_cutter.solid_objs.append(obj)
             elif 'IfcGrid' in obj.name:
                 ifc_cutter.grid_objs.append(obj)
             elif 'Plan Level' in obj.name:
@@ -1841,17 +1844,8 @@ class SetViewPreset2(bpy.types.Operator):
         bpy.context.scene.display.shading.light = 'FLAT'
         bpy.context.scene.display.shading.color_type = 'SINGLE'
         bpy.context.scene.display.shading.single_color = (1, 1, 1)
-        bpy.context.scene.use_nodes = True
-        rgb_curves = bpy.context.scene.node_tree.nodes.new(type='CompositorNodeCurveRGB')
-        rgb_curves.mapping.curves[3].points.new(.4, 0) # Increase black contrast
-        rgb_curves.mapping.update()
-        for node in bpy.context.scene.node_tree.nodes:
-            if node.type == 'R_LAYERS':
-                render_layers = node
-            elif node.type == 'COMPOSITE':
-                composite = node
-        bpy.context.scene.node_tree.links.new(render_layers.outputs[0], rgb_curves.inputs[1])
-        bpy.context.scene.node_tree.links.new(rgb_curves.outputs[0], composite.inputs[0])
+        bpy.context.scene.view_settings.use_curve_mapping = True
+        bpy.context.scene.view_settings.curve_mapping.curves[3].points.new(.4, 0) # Increase black contrast
         return {'FINISHED'}
 
 
