@@ -1,3 +1,6 @@
 .cut { fill: black; stroke: black; stroke-linecap: 'round'; stroke-width: 0.35; }
 .background { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
+.hidden { stroke-dasharray: 3, 2; }
+.leader { marker-end: url(#leader-marker); }
+.solid {}
