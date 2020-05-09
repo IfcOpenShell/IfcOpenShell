@@ -129,11 +129,10 @@ class IfcCutter:
         self.cut_polygons = []
         self.template_variables = {}
         self.data_dir = ''
-        self.ifc_files = []
-        self.unit = None
+        self.ifc_filenames = []
+        self.ifc_files = {}
         self.resolved_pixels = set()
         self.should_get_background = False
-        self.shapes_pickle_file = 'shapes.pickle'
         self.text_pickle_file = 'text.pickle'
         self.cut_pickle_file = 'cut.pickle'
         self.should_recut = True
@@ -199,11 +198,10 @@ class IfcCutter:
             return
 
         loaded_files = []
-        for ifc_file in self.ifc_files:
-            print('Loading file {} ...'.format(ifc_file))
-            if ifc_file:
-                loaded_files.append(ifcopenshell.open(ifc_file))
-        self.ifc_files = loaded_files
+        for filename in self.ifc_filenames:
+            print('Loading file {} ...'.format(filename))
+            if filename:
+                self.ifc_files[filename] = ifcopenshell.open(filename)
 
     def get_template_variables(self):
         if not self.should_extract:
@@ -248,24 +246,29 @@ class IfcCutter:
         if not self.should_recut:
             return
 
-        shape_map = {}
-
-        if os.path.isfile(self.shapes_pickle_file):
-            with open(self.shapes_pickle_file, 'rb') as shape_file:
-                shape_map = pickle.load(shape_file)
-
         settings = ifcopenshell.geom.settings()
         settings.set(settings.USE_PYTHON_OPENCASCADE, True)
         products = []
-        for ifc_file in self.ifc_files:
+
+        for filename, ifc_file in self.ifc_files.items():
+            shape_pickle = os.path.join(
+                self.data_dir, 'cache', 'shapes', '{}.pickle'.format(os.path.basename(filename)))
+            shape_map = {}
+            if os.path.isfile(shape_pickle):
+                with open(shape_pickle, 'rb') as shape_file:
+                    shape_map = pickle.load(shape_file)
+
             # TODO: This should perhaps be configurable, e.g. spaces cut to show zones in the drawing
             products.extend(ifc_file.by_type('IfcElement'))
-        total_products = len(products)
-        for i, product in enumerate(products):
-            print('{}/{} geometry processed ...'.format(i, total_products), end='\r', flush=True)
-            if product.is_a('IfcOpeningElement') or product.is_a('IfcSite'):
-                continue
-            if product.Representation is not None:
+
+            total_products = len(products)
+            for i, product in enumerate(products):
+                print('{}/{} geometry processed ...'.format(i, total_products), end='\r', flush=True)
+                if product.is_a('IfcOpeningElement') \
+                        or product.is_a('IfcSite') \
+                        or product.Representation is None \
+                        or self.has_annotation(product):
+                    continue
                 try:
                     if product.GlobalId in shape_map:
                         shape = shape_map[product.GlobalId]
@@ -276,9 +279,15 @@ class IfcCutter:
                 except:
                     print('Failed to create shape for {}'.format(product))
 
-        if not os.path.isfile(self.shapes_pickle_file):
-            with open(self.shapes_pickle_file, 'wb') as shape_file:
+            with open(shape_pickle, 'wb') as shape_file:
                 pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def has_annotation(self, element):
+        for representation in element.Representation.Representations:
+            if representation.ContextOfItems.ContextType == 'Plan' \
+                    and representation.ContextOfItems.ContextIdentifier == 'Annotation':
+                return True
+        return False
 
     def sort_background_elements(self, reverse=None):
         if reverse:
@@ -643,7 +652,7 @@ class IfcCutter:
     def get_ifc_element(self, global_id):
         # TODO: make this less bad
         element = None
-        for ifc_file in self.ifc_files:
+        for ifc_file in self.ifc_files.values():
             try:
                 element = ifc_file.by_id(global_id)
                 return element
@@ -772,9 +781,7 @@ class SvgWriter():
         self.svg.save(pretty=True)
 
     def calculate_scale(self):
-        # TODO: properly handle units
-        if self.ifc_cutter.unit == 'METRE':
-            self.scale *= 1000
+        self.scale *= 1000 # IFC is in meters, SVG is in mm
         self.raw_width = self.ifc_cutter.section_box['x']
         self.raw_height = self.ifc_cutter.section_box['y']
         self.width = self.raw_width * self.scale
