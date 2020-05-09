@@ -1572,12 +1572,10 @@ class CutSection(bpy.types.Operator):
         ifc_cutter = cut_ifc.IfcCutter()
         import ifccsv
         ifc_cutter.ifc_attribute_extractor = ifccsv.IfcAttributeExtractor
-        ifc_cutter.ifc_files = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
+        ifc_cutter.ifc_filenames = [i.name for i in bpy.context.scene.DocProperties.ifc_files]
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
-        if bpy.context.scene.unit_settings.length_unit == 'METERS':
-            ifc_cutter.unit = 'METRE'
         ifc_cutter.leader_obj = None
         ifc_cutter.stair_obj = None
         ifc_cutter.dimension_obj = None
@@ -1619,7 +1617,6 @@ class CutSection(bpy.types.Operator):
             'shape': None,
             'face': None
         }
-        ifc_cutter.shapes_pickle_file = os.path.join(ifc_cutter.data_dir, 'shapes.pickle')
         ifc_cutter.cut_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-cut.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
         ifc_cutter.should_extract = bpy.context.scene.DocProperties.should_extract
