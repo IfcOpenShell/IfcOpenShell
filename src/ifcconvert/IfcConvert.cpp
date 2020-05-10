@@ -357,7 +357,8 @@ int main(int argc, char** argv) {
             "Use a negative value to use the system's default precision (should be 6 typically). "
             "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
             " and any other value means that 6 or 7 decimals are used.")
-		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output");
+		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output")
+		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output");
 
     po::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(ifc_options).add(serializer_options);
@@ -688,6 +689,9 @@ int main(int argc, char** argv) {
 		}
 		if (vmap.count("print-space-names") != 0) {
 			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceNames(true);
+		}
+		if (vmap.count("print-space-areas") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
 		}
 		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
             static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());

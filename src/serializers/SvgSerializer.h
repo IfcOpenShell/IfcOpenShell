@@ -38,7 +38,7 @@ protected:
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<double> section_height;
-	bool rescale, print_space_names_;
+	bool rescale, print_space_names_, print_space_areas_;
 	std::multimap<IfcUtil::IfcBaseEntity*, path_object> paths;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
@@ -74,6 +74,7 @@ public:
     void setBoundingRectangle(double width, double height);
 	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0) { section_height = h; storey_ = storey; }
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
+	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
     std::string nameElement(const IfcGeom::Element<real_t>* elem);
     std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 };

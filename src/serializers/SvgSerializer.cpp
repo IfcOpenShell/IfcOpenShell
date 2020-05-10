@@ -383,7 +383,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 
 		for (int i = 1; i <= wires->Length(); ++i) {
 			const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
-			if (wire.Closed() && print_space_names_ && o->type() == "IfcSpace") {
+			if (wire.Closed() && (print_space_names_ || print_space_areas_) && o->type() == "IfcSpace") {
 				// we explicitly specify the surface here, to later on
 				// simplify the projection from {x,y,z} to {u, v} because
 				// we know we can simply discard z.
@@ -448,8 +448,11 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}
 
 		if (center_point) {
-			std::vector<std::string> labels = { o->name() };
-			if (o->type() == "IfcSpace") {
+			std::vector<std::string> labels;
+			if (print_space_names_) {
+				labels.push_back(o->name());
+			}
+			if (print_space_names_ && o->type() == "IfcSpace") {
 				auto attr = o->product()->get("LongName");
 				if (!attr->isNull()) {
 					std::string long_name = *attr;
@@ -457,6 +460,14 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 						labels.insert(labels.begin(), long_name);
 					}
 				}
+			}
+			if (print_space_areas_) {
+				GProp_GProps prop;
+				BRepGProp::SurfaceProperties(largest_closed_wire_face, prop);
+				const double area = prop.Mass();
+				std::stringstream ss;
+				ss << std::setprecision(2) << std::fixed << std::showpoint << area;
+				labels.push_back(ss.str() + "m&#178;");
 			}
 
 			path_object& po = p;
@@ -468,9 +479,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			path.add("\" y=\"");
 			ycoords.push_back(path.add(center_point->Y()));
 			path.add("\">");
-			for (auto it = labels.begin(); it != labels.end(); ++it) {
-				const auto& l = *it;
-				double dy = labels.begin() == it
+			for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+				const auto& l = *lit;
+				double dy = labels.begin() == lit
 					? 0.35 - (labels.size() - 1.) / 2.
 					: 1.0; // <- dy is relative to the previous text element, so
 					       //    always 1 for successive spans.
