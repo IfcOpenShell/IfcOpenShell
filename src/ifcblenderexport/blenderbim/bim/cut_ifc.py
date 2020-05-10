@@ -129,12 +129,14 @@ class IfcCutter:
         self.background_elements = []
         self.cut_polygons = []
         self.template_variables = {}
+        self.metadata = {}
         self.data_dir = ''
         self.ifc_filenames = []
         self.ifc_files = {}
         self.resolved_pixels = set()
         self.should_get_background = False
         self.text_pickle_file = 'text.pickle'
+        self.metadata_pickle_file = 'metadata.pickle'
         self.cut_pickle_file = 'cut.pickle'
         self.should_recut = True
         self.should_extract = True
@@ -172,6 +174,10 @@ class IfcCutter:
         start_time = time.time()
         print('# Get cut polygons')
         self.get_cut_polygons()
+        print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
+        start_time = time.time()
+        print('# Get cut polygon metadata')
+        self.get_cut_polygon_metadata()
         print('# Timer logged at {:.2f} seconds'.format(time.time() - start_time))
 
         if not self.should_get_background:
@@ -627,6 +633,25 @@ class IfcCutter:
         else:
             self.get_pickled_cut_polygons()
 
+    def get_cut_polygon_metadata(self):
+        if not self.should_extract:
+            if os.path.isfile(self.metadata_pickle_file):
+                with open(self.metadata_pickle_file, 'rb') as metadata_file:
+                    self.metadata = pickle.load(metadata_file)
+
+            for polygon in self.cut_polygons:
+                if polygon['global_id'] in self.metadata:
+                    polygon['metadata'] = self.metadata[polygon['global_id']]
+            return
+
+        for polygon in self.cut_polygons:
+            metadata = { 'classes': self.get_classes(self.get_ifc_element(polygon['global_id']), 'cut') }
+            self.metadata[polygon['global_id']] = metadata
+            polygon['metadata'] = metadata
+
+        with open(self.metadata_pickle_file, 'wb') as metadata_file:
+            pickle.dump(self.metadata, metadata_file, protocol=pickle.HIGHEST_PROTOCOL)
+
     def pickle_cut_polygons(self):
         with open(self.cut_pickle_file, 'wb') as pickle_file:
             pickle.dump(self.cut_polygons, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
@@ -641,7 +666,7 @@ class IfcCutter:
         with multiprocessing.Pool(9) as p:
             results = p.map(do_cut, process_data)
             for result in results:
-                polygons = [self.get_polygon_metadata(p, 'cut') for p in result if p['points']]
+                polygons = [p for p in result if p['points']]
                 self.cut_polygons.extend(polygons)
 
     def get_polygon_metadata(self, polygon, position):
@@ -805,7 +830,6 @@ class SvgWriter():
             self.svg.defs.add(External(child))
 
     def add_patterns(self):
-        return
         tree = ET.parse('{}templates/patterns.svg'.format(self.ifc_cutter.data_dir))
         root = tree.getroot()
         for child in root.getchildren():
