@@ -3,4 +3,8 @@
     <g id="rectangle-tag">
         <rect x="-6" y="-2.5" width="12" height="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
     </g>
+    <g id="door-tag">
+        <circle cy="1.75" r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <line x1="-5" y1="1.75" x2="5" y2="1.75" style="stroke:black; stroke-width: 0.25;" />
+    </g>
 </svg>
