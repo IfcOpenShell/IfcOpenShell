@@ -414,6 +414,7 @@ class BIMTextProperties(PropertyGroup):
     symbol: EnumProperty(items=[
         ('None', 'None', ''),
         ('rectangle-tag', 'Rectangle Tag', ''),
+        ('door-tag', 'Door Tag', ''),
         ], update=refreshFontSize, name='Symbol')
     related_element: PointerProperty(name='Related Element', type=bpy.types.Object)
     variables: CollectionProperty(name='Variables', type=Variable)
