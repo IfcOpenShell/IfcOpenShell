@@ -31,6 +31,33 @@
 #include <string>
 #include <limits>
 
+struct storey_sorter {
+	bool operator()(IfcUtil::IfcBaseEntity* a, IfcUtil::IfcBaseEntity* b) const {
+		const bool a_is_storey = a->declaration().is("IfcBuildingStorey");
+		const bool b_is_storey = b->declaration().is("IfcBuildingStorey");
+		if (a_is_storey && b_is_storey) {
+			boost::optional<double> a_elev, b_elev;
+			try {
+				a_elev = static_cast<double>(*a->get("Elevation"));
+				b_elev = static_cast<double>(*b->get("Elevation"));
+			} catch (...) {};
+			if (a_elev && b_elev) {
+				return std::less<double>()(*a_elev, *b_elev);
+			}
+
+			boost::optional<std::string> a_name, b_name;
+			try {
+				a_name = static_cast<std::string>(*a->get("Name"));
+				b_name = static_cast<std::string>(*b->get("Name"));
+			} catch (...) {};
+			if (a_name && b_name) {
+				return std::less<std::string>()(*a_name, *b_name);
+			}
+		}
+		return std::less<IfcUtil::IfcBaseEntity*>()(a, b);
+	}
+};
+
 class SvgSerializer : public GeometrySerializer {
 public:
 	typedef std::pair<std::string, std::vector<util::string_buffer> > path_object;
@@ -39,7 +66,7 @@ protected:
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<double> section_height;
 	bool rescale, print_space_names_, print_space_areas_;
-	std::multimap<IfcUtil::IfcBaseEntity*, path_object> paths;
+	std::multimap<IfcUtil::IfcBaseEntity*, path_object, storey_sorter> paths;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > radii;

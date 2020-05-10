@@ -581,7 +581,7 @@ namespace {
 }
 
 std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem) {
-	return nameElement_({ {"id", object_id(elem)}, {"class", elem->type()} });
+	return nameElement_({ {"id", object_id(elem)}, {"class", elem->type()}, {"data-name", elem->name()} });
 }
 
 std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
@@ -589,6 +589,10 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 
 	const std::string& entity = elem->declaration().name();
 	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
+	std::string ifc_name;
+	if (!elem->get("Name")->isNull()) {
+		ifc_name = *elem->get("Name");
+	}
 
     const std::string name =  
 		(settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
@@ -597,7 +601,7 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 				? static_cast<std::string>(*elem->get("Name"))
 				: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
 
-	return nameElement_({ {"id", type + "-" + name}, {"class", entity} });
+	return nameElement_({ {"id", type + "-" + name}, {"class", entity}, {"data-name", ifc_name} });
 }
 
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
