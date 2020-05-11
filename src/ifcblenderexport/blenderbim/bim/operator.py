@@ -1636,6 +1636,8 @@ class CutSection(bpy.types.Operator):
             'face': None
         }
         ifc_cutter.cut_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-cut.pickle'.format(self.diagram_name))
+        ifc_cutter.text_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-text.pickle'.format(self.diagram_name))
+        ifc_cutter.metadata_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-metadata.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
         ifc_cutter.should_extract = bpy.context.scene.DocProperties.should_extract
         svg_writer = cut_ifc.SvgWriter(ifc_cutter)
