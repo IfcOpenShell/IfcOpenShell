@@ -9,6 +9,7 @@ import tempfile
 from . import export_ifc
 from . import import_ifc
 from . import cut_ifc
+from . import svgwriter
 from . import sheeter
 from . import schema
 from . import bcf
@@ -1640,7 +1641,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.metadata_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-metadata.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
         ifc_cutter.should_extract = bpy.context.scene.DocProperties.should_extract
-        svg_writer = cut_ifc.SvgWriter(ifc_cutter)
+        svg_writer = svgwriter.SvgWriter(ifc_cutter)
         numerator, denominator = camera.data.BIMCameraProperties.diagram_scale.split(':')
         if camera.data.BIMCameraProperties.is_nts:
             svg_writer.human_scale = 'NTS'
