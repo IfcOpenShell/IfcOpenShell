@@ -1579,6 +1579,7 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.leader_obj = None
         ifc_cutter.stair_obj = None
         ifc_cutter.dimension_obj = None
+        ifc_cutter.break_obj = None
         ifc_cutter.equal_obj = None
         ifc_cutter.hidden_objs = []
         ifc_cutter.solid_objs = []
@@ -1595,6 +1596,8 @@ class CutSection(bpy.types.Operator):
                 ifc_cutter.equal_obj = obj
             elif 'Dimension' in obj.name:
                 ifc_cutter.dimension_obj = obj
+            elif 'Break' in obj.name:
+                ifc_cutter.break_obj = obj
             elif 'Hidden' in obj.name:
                 ifc_cutter.hidden_objs.append((obj, obj.data))
             elif 'Solid' in obj.name:
