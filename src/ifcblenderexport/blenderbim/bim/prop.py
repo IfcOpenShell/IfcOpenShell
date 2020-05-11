@@ -353,7 +353,7 @@ def getViews(self, context):
     for collection in views_collection.children:
         for obj in collection.objects:
             if obj.type == 'CAMERA':
-                views_enum.append((obj.name, obj.name, ''))
+                views_enum.append((obj.name.split('/')[1], obj.name.split('/')[1], ''))
     return views_enum
 
 
