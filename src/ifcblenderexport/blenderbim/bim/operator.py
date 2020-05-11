@@ -1728,7 +1728,7 @@ class ActivateView(bpy.types.Operator):
     bl_label = 'Activate View'
 
     def execute(self, context):
-        camera = bpy.data.objects.get(bpy.context.scene.DocProperties.available_views)
+        camera = bpy.data.objects.get('IfcGroup/' + bpy.context.scene.DocProperties.available_views)
         if not camera:
             return {'FINISHED'}
         bpy.context.scene.camera = camera
