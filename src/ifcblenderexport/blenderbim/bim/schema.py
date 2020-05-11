@@ -20,7 +20,8 @@ class IfcSchema():
             'IfcMaterialDefinition',
             'IfcParameterizedProfileDef',
             'IfcBoundaryCondition',
-            'IfcElementType'
+            'IfcElementType',
+            'IfcAnnotation'
         ]
         self.elements = {}
 
