@@ -118,7 +118,7 @@ def do_cut(process_data):
             point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
             points.append((point.X(), -point.Y()))
             exp.Next()
-        cut_polygons.append({ 'global_id': global_id, 'points': points })
+        cut_polygons.append({ 'global_id': global_id, 'metadata': {}, 'points': points })
     return cut_polygons
 
 
@@ -1168,4 +1168,8 @@ class SvgWriter():
 
     def draw_polygon(self, polygon, position):
         points = [(p[0] * self.scale, p[1] * self.scale) for p in polygon['points']]
-        self.svg.add(self.svg.polygon(points=points, class_=' '.join(polygon['metadata']['classes'])))
+        if 'classes' in polygon['metadata']:
+            classes = ' '.join(polygon['metadata']['classes'])
+        else:
+            classes = ''
+        self.svg.add(self.svg.polygon(points=points, class_=classes))

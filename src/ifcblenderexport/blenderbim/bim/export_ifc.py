@@ -80,6 +80,7 @@ class IfcParser():
         self.selected_products = []
         self.selected_types = []
         self.selected_spatial_structure_elements = []
+        self.selected_groups = []
         self.global_ids = []
 
         self.product_index = 0
@@ -98,7 +99,7 @@ class IfcParser():
         self.materials = {}
         self.spatial_structure_elements = []
         self.spatial_structure_elements_tree = []
-        self.structural_analysis_models = []
+        self.groups = []
         self.rel_contained_in_spatial_structure = {}
         self.rel_nests = {}
         self.rel_space_boundaries = {}
@@ -150,7 +151,7 @@ class IfcParser():
         self.materials = self.get_materials()
         self.styled_items = self.get_styled_items()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
-        self.structural_analysis_models = self.get_structural_analysis_models()
+        self.groups = self.get_groups()
 
         self.project = self.get_project()
         self.libraries = self.get_libraries()
@@ -524,8 +525,8 @@ class IfcParser():
             reference = self.get_spatial_structure_element_reference(collection.name)
             self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
             product['relating_structure'] = reference
-        elif self.is_a_structural_analysis_model(class_name):
-            reference = self.get_structural_analysis_model_reference(collection.name)
+        elif self.is_a_group(class_name):
+            reference = self.get_group_reference(collection.name)
             self.rel_assigns_to_group.setdefault(reference, []).append(self.product_index)
         elif self.is_a_rel_aggregates(class_name):
             pass
@@ -578,6 +579,8 @@ class IfcParser():
                 self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
             elif self.is_a_type(self.get_ifc_class(obj.name)):
                 self.selected_types.append({'raw': obj, 'metadata': metadata})
+            elif self.is_a_group(self.get_ifc_class(obj.name)):
+                self.selected_groups.append({'raw': obj, 'metadata': metadata})
             elif obj.instance_type == 'COLLECTION':
                 self.categorise_selected_objects(
                     obj.instance_collection.objects,
@@ -820,16 +823,16 @@ class IfcParser():
             elements.append(element)
         return elements
 
-    def get_structural_analysis_models(self):
+    def get_groups(self):
         elements = []
-        for collection in bpy.data.collections:
-            if 'IfcStructuralAnalysisModel' in collection.name:
-                elements.append({
-                    'ifc': None,
-                    'raw': collection,
-                    'class': self.get_ifc_class(collection.name),
-                    'attributes': self.get_object_attributes(collection)
-                })
+        for selected_element in self.selected_groups:
+            obj = selected_element['raw']
+            elements.append({
+                'ifc': None,
+                'raw': obj,
+                'class': self.get_ifc_class(obj.name),
+                'attributes': self.get_object_attributes(obj)
+            })
         return elements
 
     def load_presentation_layer_assignments(self):
@@ -856,6 +859,8 @@ class IfcParser():
     def load_product_representations(self, product):
         obj = product['raw']
         if obj.data and obj.data.name in self.representations:
+            return
+        if isinstance(obj.data, bpy.types.Camera):
             return
         self.append_representation_per_context(obj)
 
@@ -935,6 +940,7 @@ class IfcParser():
             'is_curve': isinstance(mesh, bpy.types.Curve),
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
+            'is_text': isinstance(mesh, bpy.types.TextCurve),
             'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
@@ -1058,9 +1064,9 @@ class IfcParser():
         return ['{}/{}'.format(e['class'], e['attributes']['Name'])
                 for e in self.spatial_structure_elements].index(name)
 
-    def get_structural_analysis_model_reference(self, name):
+    def get_group_reference(self, name):
         return ['{}/{}'.format(e['class'], e['attributes']['Name'])
-                for e in self.structural_analysis_models].index(name)
+                for e in self.groups].index(name)
 
     def get_type_product_reference(self, name):
         return [p['attributes']['Name']
@@ -1095,8 +1101,8 @@ class IfcParser():
     def is_a_library(self, class_name):
         return class_name == 'IfcProjectLibrary'
 
-    def is_a_structural_analysis_model(self, class_name):
-        return class_name == 'IfcStructuralAnalysisModel'
+    def is_a_group(self, class_name):
+        return class_name in [g for g in schema.ifc.IfcGroup.keys()]
 
     def is_a_type(self, class_name):
         return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
@@ -1134,7 +1140,7 @@ class IfcExporter():
         self.create_materials()
         self.create_type_products()
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
-        self.create_structural_analysis_models()
+        self.create_groups()
         self.create_qtos()
         self.create_products()
         self.create_styled_items()
@@ -1589,11 +1595,11 @@ class IfcExporter():
                 ifcopenshell.guid.new(),
                 self.owner_history, None, None, relating_object, related_objects)
 
-    def create_structural_analysis_models(self):
-        for model in self.ifc_parser.structural_analysis_models:
-            model['ifc'] = self.file.create_entity('IfcStructuralAnalysisModel', **model['attributes'])
+    def create_groups(self):
+        for group in self.ifc_parser.groups:
+            group['ifc'] = self.file.create_entity(group['class'], **group['attributes'])
             self.file.createIfcRelDeclares(ifcopenshell.guid.new(),
-                self.owner_history, None, None, self.ifc_parser.project['ifc'], [model['ifc']])
+                self.owner_history, None, None, self.ifc_parser.project['ifc'], [group['ifc']])
 
     def create_styled_items(self):
         for styled_item in self.ifc_parser.styled_items:
@@ -1922,8 +1928,11 @@ class IfcExporter():
 
     def create_plan_representation(self, representation):
         if representation['subcontext'] == 'Annotation':
-            shape_representation = self.create_geometric_curve_set_representation(representation, is_2d=True)
-            shape_representation.RepresentationType = 'Annotation2D'
+            if representation['is_text']:
+                shape_representation = self.create_text_representation(representation)
+            else:
+                shape_representation = self.create_geometric_curve_set_representation(representation, is_2d=True)
+                shape_representation.RepresentationType = 'Annotation2D'
             return self.file.createIfcRepresentationMap(self.origin, shape_representation)
         elif representation['subcontext'] == 'Axis':
             return self.file.createIfcRepresentationMap(
@@ -1950,16 +1959,16 @@ class IfcExporter():
     def create_variable_representation(self, representation):
         if representation['is_wireframe']:
             return self.file.createIfcRepresentationMap(self.origin,
-                    self.create_wireframe_representation(representation))
+                self.create_wireframe_representation(representation))
         elif representation['is_curve']:
             return self.file.createIfcRepresentationMap(self.origin,
                 self.create_curve_representation(representation))
         elif representation['is_swept_solid']:
             return self.file.createIfcRepresentationMap(self.origin,
-                    self.create_swept_solid_representation(representation))
+                self.create_swept_solid_representation(representation))
         elif representation['is_point_cloud']:
             return self.file.createIfcRepresentationMap(self.origin,
-                    self.create_point_cloud_representation(representation))
+                self.create_point_cloud_representation(representation))
         return self.file.createIfcRepresentationMap(self.origin,
                 self.create_solid_representation(representation))
 
@@ -1990,6 +1999,14 @@ class IfcExporter():
             representation['subcontext'],
             'BoundingBox',
             [cog])
+
+    def create_text_representation(self, representation):
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'],
+            'Annotation2D',
+            [self.create_text(representation['raw'])])
 
     def create_wireframe_representation(self, representation):
         return self.file.createIfcShapeRepresentation(
@@ -2114,6 +2131,25 @@ class IfcExporter():
         return self.file.createIfcEdge(
             self.create_vertex_point(points[0].co),
             self.create_vertex_point(points[1].co))
+
+    def create_text(self, text):
+        if text.align_y in ['TOP_BASELINE', 'BOTTOM_BASELINE', 'BOTTOM']:
+            y = 'bottom'
+        elif text.align_y == 'CENTER':
+            y = 'middle'
+        elif text.align_y == 'TOP':
+            y = 'top'
+
+        if text.align_x == 'LEFT':
+            x = 'left'
+        elif text.align_x == 'CENTER':
+            x = 'middle'
+        elif text.align_x == 'RIGHT':
+            x = 'right'
+
+        # TODO: Planar extent right now is wrong ...
+        return self.file.createIfcTextLiteralWithExtent(text.body, self.origin,
+            'RIGHT', self.file.createIfcPlanarExtent(1000, 1000), f'{y}-{x}')
 
     def create_curves(self, curve, is_2d=False):
         if isinstance(curve, bpy.types.Mesh):
@@ -2491,7 +2527,7 @@ class IfcExporter():
             self.file.createIfcRelAssignsToGroup(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [self.ifc_parser.products[o]['ifc'] for o in related_objects], None,
-                self.ifc_parser.structural_analysis_models[relating_group]['ifc'])
+                self.ifc_parser.groups[relating_group]['ifc'])
 
     def convert_si_to_unit(self, co):
         return co / self.ifc_parser.unit_scale

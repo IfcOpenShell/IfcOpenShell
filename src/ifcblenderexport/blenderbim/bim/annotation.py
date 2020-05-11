@@ -17,9 +17,9 @@ class Annotator:
 
     @staticmethod
     def add_text(related_element=None):
-        curve = bpy.data.curves.new(type='FONT', name='Text')
+        curve = bpy.data.curves.new(type='FONT', name='Plan/Annotation/PLAN_VIEW/Text')
         curve.body = 'TEXT'
-        obj = bpy.data.objects.new('Text', curve)
+        obj = bpy.data.objects.new('IfcAnnotation/Text', curve)
         obj.matrix_world = bpy.context.scene.camera.matrix_world
         if related_element is None:
             location, co2 = Annotator.get_placeholder_coords()
