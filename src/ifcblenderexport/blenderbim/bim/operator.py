@@ -1517,9 +1517,10 @@ class CreateView(bpy.types.Operator):
         if not bpy.data.collections.get('Views'):
             bpy.context.scene.collection.children.link(bpy.data.collections.new('Views'))
         views_collection = bpy.data.collections.get('Views')
-        view_collection = bpy.data.collections.new(bpy.context.scene.DocProperties.view_name)
+        view_collection = bpy.data.collections.new('IfcGroup/' + bpy.context.scene.DocProperties.view_name)
         views_collection.children.link(view_collection)
-        camera = bpy.data.objects.new(bpy.context.scene.DocProperties.view_name, bpy.data.cameras.new(bpy.context.scene.DocProperties.view_name))
+        camera = bpy.data.objects.new('IfcGroup/' + bpy.context.scene.DocProperties.view_name,
+                bpy.data.cameras.new(bpy.context.scene.DocProperties.view_name))
         camera.data.type = 'ORTHO'
         camera.data.BIMCameraProperties.diagram_scale = '1:100'
         bpy.context.scene.camera = camera
@@ -1548,7 +1549,7 @@ class CutSection(bpy.types.Operator):
         camera = bpy.context.scene.camera
         if not (camera.type == 'CAMERA' and camera.data.type == 'ORTHO'):
             return {'FINISHED'}
-        self.diagram_name = camera.name
+        self.diagram_name = camera.name.split('/')[1]
         bpy.context.scene.render.filepath = os.path.join(
             bpy.context.scene.BIMProperties.data_dir,
             'diagrams',

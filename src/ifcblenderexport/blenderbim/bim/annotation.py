@@ -78,12 +78,12 @@ class Annotator:
             if name in obj.name:
                 return obj
         if data_type == 'mesh':
-            data = bpy.data.meshes.new(name)
+            data = bpy.data.meshes.new('Plan/Annotation/PLAN_VIEW/' + name)
         elif data_type == 'curve':
-            data = bpy.data.curves.new(name, type='CURVE')
+            data = bpy.data.curves.new('Plan/Annotation/PLAN_VIEW/' + name, type='CURVE')
             data.dimensions = '3D'
             data.resolution_u = 2
-        obj = bpy.data.objects.new(name, data)
+        obj = bpy.data.objects.new('IfcAnnotation/' + name, data)
         collection.objects.link(obj)
         return obj
 
