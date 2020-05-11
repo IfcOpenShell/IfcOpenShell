@@ -124,8 +124,14 @@ def refreshBoundaryConditionAttributes(self, context):
 def getIfcProducts(self, context):
     global products_enum
     if len(products_enum) < 1:
-        products_enum.extend([(e, e, '') for e in
-            ['IfcElement', 'IfcElementType', 'IfcSpatialElement', 'IfcGroup', 'IfcStructural', 'IfcContext']])
+        products_enum.extend([(e, e, '') for e in [
+            'IfcElement',
+            'IfcElementType',
+            'IfcSpatialElement',
+            'IfcGroup',
+            'IfcStructural',
+            'IfcContext',
+            'IfcAnnotation']])
     return products_enum
 
 
