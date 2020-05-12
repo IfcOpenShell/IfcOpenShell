@@ -591,7 +591,7 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
 	std::string ifc_name;
 	if (!elem->get("Name")->isNull()) {
-		ifc_name = *elem->get("Name");
+		ifc_name = (std::string) *elem->get("Name");
 	}
 
     const std::string name =  
