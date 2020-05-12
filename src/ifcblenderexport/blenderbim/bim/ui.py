@@ -535,6 +535,9 @@ class BIM_PT_gis(Panel):
         layout.row().prop(scene.TargetCRS, 'map_zone')
         layout.row().prop(scene.TargetCRS, 'map_unit')
 
+        row = layout.row(align=True)
+        row.operator('bim.convert_local_to_global')
+
 
 class BIM_PT_documentation(Panel):
     bl_label = "Documentation"

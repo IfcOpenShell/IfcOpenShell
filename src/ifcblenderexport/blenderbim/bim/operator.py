@@ -18,7 +18,7 @@ from . import annotation
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
 from mathutils import Vector, Matrix, Euler
-from math import radians, atan, tan
+from math import radians, atan, tan, cos, sin, atan2
 from pathlib import Path
 
 colour_list = [
@@ -2653,3 +2653,29 @@ class PushRepresentation(bpy.types.Operator):
         return element.ContextType == self.context \
             and element.ContextIdentifier == self.subcontext \
             and element.TargetView == self.target_view
+
+
+class ConvertLocalToGlobal(bpy.types.Operator):
+    bl_idname = 'bim.convert_local_to_global'
+    bl_label = 'Convert Local To Global'
+
+    def execute(self, context):
+        x, y, z = bpy.context.scene.cursor.location
+
+        if bpy.context.scene.MapConversion.scale:
+            scale = float(bpy.context.scene.MapConversion.scale)
+        else:
+            scale = 1.
+
+        rotation = atan2(
+            float(bpy.context.scene.MapConversion.x_axis_ordinate),
+            float(bpy.context.scene.MapConversion.x_axis_abscissa))
+        a = scale * cos(rotation)
+        b = scale * sin(rotation)
+
+        eastings = (a * x) - (b * y) + float(bpy.context.scene.MapConversion.eastings)
+        northings = (b * x) + (a * y) + float(bpy.context.scene.MapConversion.northings)
+        height = z + float(bpy.context.scene.MapConversion.orthogonal_height)
+
+        bpy.context.scene.cursor.location = (eastings, northings, height)
+        return {'FINISHED'}
