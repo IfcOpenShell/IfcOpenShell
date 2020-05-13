@@ -1,13 +1,19 @@
 #!python
 
+import collision
 import ifcopenshell
 import ifcopenshell.geom
 import multiprocessing
 import numpy as np
-import fcl
 import json
 import argparse
 import logging
+
+
+class Mesh:
+    faces: []
+    vertices: []
+
 
 class IfcClasher:
     def __init__(self, a_file, b_file, settings):
@@ -18,78 +24,52 @@ class IfcClasher:
         self.b = None
         self.a_file = a_file
         self.b_file = b_file
-        self.a_geoms = []
-        self.b_geoms = []
-        self.a_objs = []
-        self.b_objs = []
-        self.a_global_ids = []
-        self.b_global_ids = []
-        self.a_geom_to_global_id = {}
-        self.b_geom_to_global_id = {}
-        self.a_manager = None
-        self.b_manager = None
-        self.clashes = []
-        self.meshes = {}
+        self.clashes = {}
+        self.a_meshes = {}
+        self.b_meshes = {}
 
     def clash(self):
-        self.load_files()
-        for ab in ('a', 'b'):
-            if self.settings.should_use_legacy:
-                self.create_collision_objects_legacy(ab)
-            else:
-                self.create_collision_objects(ab)
-            self.create_manager(ab)
-            self.create_data_maps(ab)
+        for ab in ['a', 'b']:
+            self.settings.logger.info(f'Loading file {ab} ...')
+            setattr(self, ab, ifcopenshell.open(getattr(self, f'{ab}_file')))
+            self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
+            self.purge_elements(ab)
+            self.settings.logger.info(f'Creating collision manager {ab} ...')
+            setattr(self, f'{ab}_cm', collision.CollisionManager())
+            self.add_collision_objects(ab)
+        results = self.a_cm.in_collision_other(self.b_cm, return_data=True)
 
-        self.settings.logger.info('Colliding models')
-        req = fcl.CollisionRequest(num_max_contacts=1, enable_contact=True)
-        rdata = fcl.CollisionData(request = req)
-        self.a_manager.collide(self.b_manager, rdata, fcl.defaultCollisionCallback)
-        for contact in rdata.result.contacts:
-            if contact.penetration_depth < self.tolerance:
-                continue
-            a_global_id = self.a_geom_to_global_id[id(contact.o1)]
-            b_global_id = self.b_geom_to_global_id[id(contact.o2)]
+        if not results[0]:
+            return
+
+        for contact in results[1]:
+            a_global_id, b_global_id = contact.names
             a = self.a.by_guid(a_global_id)
             b = self.b.by_guid(b_global_id)
-            self.clashes.append({
+            if contact.raw.penetration_depth < self.tolerance:
+                continue
+            self.clashes[f'{a_global_id}-{b_global_id}'] = {
                 'a_global_id': a_global_id,
                 'b_global_id': b_global_id,
                 'a_ifc_class': a.is_a(),
                 'b_ifc_class': b.is_a(),
                 'a_name': a.Name,
                 'b_name': b.Name,
-                'normal': list(contact.normal),
-                'position': list(contact.pos),
-                'penetration_depth': contact.penetration_depth
-            })
+                'normal': list(contact.raw.normal),
+                'position': list(contact.raw.pos),
+                'penetration_depth': contact.raw.penetration_depth
+            }
 
-    def load_files(self):
-        self.settings.logger.info('Loading files')
-        self.a = ifcopenshell.open(self.a_file)
-        self.b = ifcopenshell.open(self.b_file)
+    def purge_elements(self, ab):
+        # TODO: more filtering abilities
+        for element in getattr(self, ab).by_type('IfcSpace'):
+            getattr(self, ab).remove(element)
 
-    def create_collision_objects_legacy(self, ab):
-        self.settings.logger.info('Creating legacy collision data for {}'.format(ab))
-        elements = getattr(self, ab).by_type('IfcElement')
-        for element in elements:
-            try:
-                shape = ifcopenshell.geom.create_shape(self.geom_settings, element)
-            except:
-                self.settings.logger.error('Failed to generate shape for {}'.format(element))
-                continue
-            mesh = self.create_mesh(element, shape)
-            transform = self.get_transform(self.get_local_placement(element.ObjectPlacement))
-            getattr(self, '{}_geoms'.format(ab)).append(mesh)
-            getattr(self, '{}_objs'.format(ab)).append(fcl.CollisionObject(mesh, transform))
-            getattr(self, '{}_global_ids'.format(ab)).append(element.GlobalId)
-
-    def create_collision_objects(self, ab):
+    def add_collision_objects(self, ab):
         self.settings.logger.info('Creating collision data for {}'.format(ab))
         iterator = ifcopenshell.geom.iterator(self.geom_settings, getattr(self, ab), multiprocessing.cpu_count())
         valid_file = iterator.initialize()
         if not valid_file:
-            self.create_collision_objects_legacy()
             return False
         old_progress = -1
         while True:
@@ -97,21 +77,21 @@ class IfcClasher:
             if progress > old_progress:
                 print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
                 old_progress = progress
-            self.create_collision_object(ab, iterator.get())
+            self.add_collision_object(ab, iterator.get())
             if not iterator.next():
                 break
 
-    def create_collision_object(self, ab, shape):
+    def add_collision_object(self, ab, shape):
         if shape is None:
             return
         element = getattr(self, ab).by_id(shape.guid)
         self.settings.logger.info('Creating object {}'.format(element))
         mesh_name = f'mesh-{shape.geometry.id}'
-        if mesh_name in self.meshes:
-            mesh = self.meshes[mesh_name]
+        if mesh_name in getattr(self, f'{ab}_meshes'):
+            mesh = getattr(self, f'{ab}_meshes')[mesh_name]
         else:
-            mesh = self.create_mesh(element, shape)
-            self.meshes[mesh_name] = mesh
+            mesh = self.create_mesh(shape)
+            getattr(self, f'{ab}_meshes')[mesh_name] = mesh
 
         m = shape.transformation.matrix.data
         mat = np.array(
@@ -123,72 +103,18 @@ class IfcClasher:
             ]
         )
         mat.transpose()
-        transform = self.get_transform(mat)
-        getattr(self, '{}_geoms'.format(ab)).append(mesh)
-        getattr(self, '{}_objs'.format(ab)).append(fcl.CollisionObject(mesh, transform))
-        getattr(self, '{}_global_ids'.format(ab)).append(element.GlobalId)
+        getattr(self, f'{ab}_cm').add_object(shape.guid, mesh, mat)
 
-    def create_manager(self, ab):
-        name = '{}_manager'.format(ab)
-        setattr(self, name, fcl.DynamicAABBTreeCollisionManager())
-        getattr(self, name).registerObjects(getattr(self, '{}_objs'.format(ab)))
-        getattr(self, name).setup()
-
-    def create_data_maps(self, ab):
-        setattr(self, '{}_geom_to_global_id'.format(ab),
-            {
-                id(geom) : global_id
-                for geom, global_id
-                in zip(
-                    getattr(self, '{}_geoms'.format(ab)),
-                    getattr(self, '{}_global_ids'.format(ab))
-                )
-            }
-        )
-
-    def get_transform(self, m):
-        R = np.array(
-            [
-                [m[0][0], m[1][0], m[2][0]],
-                [m[0][1], m[1][1], m[2][1]],
-                [m[0][2], m[1][2], m[2][2]]
-            ]
-        )
-        T = np.array([m[0][3], m[1][3], m[2][3]])
-        return fcl.Transform(R, T)
-
-    def create_mesh(self, element, shape):
+    def create_mesh(self, shape):
         f = shape.geometry.faces
         v = shape.geometry.verts
-        vertices = np.array([[v[i], v[i + 1], v[i + 2]]
+        mesh = Mesh()
+        mesh.vertices = np.array([[v[i], v[i + 1], v[i + 2]]
                  for i in range(0, len(v), 3)])
-        faces = np.array([[f[i], f[i + 1], f[i + 2]]
+        mesh.faces = np.array([[f[i], f[i + 1], f[i + 2]]
                  for i in range(0, len(f), 3)])
-        m = fcl.BVHModel()
-        m.beginModel(len(vertices), len(faces))
-        m.addSubModel(vertices, faces)
-        m.endModel()
-        return m
+        return mesh
 
-    def get_local_placement(self, plc):
-        if plc.PlacementRelTo is None:
-            parent = np.eye(4)
-        else:
-            parent = self.get_local_placement(plc.PlacementRelTo)
-        return np.dot(self.get_axis2placement(plc.RelativePlacement), parent)
-
-    def a2p(self, o, z, x):
-        y = np.cross(z, x)
-        r = np.eye(4)
-        r[:-1,:-1] = x,y,z
-        r[-1,:-1] = o
-        return r.T
-
-    def get_axis2placement(self, plc):
-        z = np.array(plc.Axis.DirectionRatios if plc.Axis else (0,0,1))
-        x = np.array(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0))
-        o = plc.Location.Coordinates
-        return self.a2p(o,z,x)
 
 parser = argparse.ArgumentParser(
     description='Clashes geometry between two IFC files')
@@ -231,4 +157,4 @@ ifc_clasher = IfcClasher(args.a, args.b, settings)
 ifc_clasher.clash()
 
 with open(args.output, 'w', encoding='utf-8') as clashes_file:
-    json.dump(ifc_clasher.clashes, clashes_file, indent=4)
+    json.dump(list(ifc_clasher.clashes.values()), clashes_file, indent=4)
