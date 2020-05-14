@@ -836,14 +836,23 @@ class IfcImporter():
             for key, value in data_map.items():
                 if hasattr(element, value) and getattr(element, value):
                     setattr(classification, key, str(getattr(element, value)))
-            classification_file = ifcopenshell.file(schema=self.file.wrapped_data.schema)
-            references = [element]
-            while references:
-                entities_to_add = references
-                references = self.get_classification_references(references)
-            classification_file.add(element)
-            for entity in entities_to_add:
-                classification_file.add(entity)
+            classification_file = ifcopenshell.file()
+
+            # IFC2X3 has no references, so let's manually add them
+            if self.file.wrapped_data.schema == 'IFC2X3':
+                classification_element = classification_file.createIfcClassification(
+                    element.Source, element.Edition, element.EditionDate, element.Name)
+                for reference in self.file.by_type('IfcClassificationReference'):
+                    classification_file.createIfcClassificationReference(
+                        reference.Location, reference.ItemReference, reference.Name, classification_element)
+            else:
+                references = [element]
+                while references:
+                    entities_to_add = references
+                    references = self.get_classification_references(references)
+                for entity in entities_to_add:
+                    classification_file.add(entity)
+
             classification_filename = '{}-{}'.format(
                 Path(os.path.basename(self.ifc_import_settings.input_file)).stem, element.Name)
             classification_file.write(os.path.join(
@@ -1094,6 +1103,8 @@ class IfcImporter():
                 'name': 'Identification', 'location': 'Location', 'human_name': 'Name',
                 'description': 'Description', 'sort': 'Sort'
             }
+            if self.file.schema == 'IFC2X3':
+                data_map['name'] = 'ItemReference'
             for key, value in data_map.items():
                 if hasattr(data, value) and getattr(data, value):
                     setattr(reference, key, getattr(data, value))
