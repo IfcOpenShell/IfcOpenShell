@@ -773,7 +773,7 @@ class IfcImporter():
     def set_units(self):
         units = self.file.by_type('IfcUnitAssignment')[0]
         for unit in units.Units:
-            if unit.UnitType == 'LENGTHUNIT':
+            if unit.is_a('IfcNamedUnit') and unit.UnitType == 'LENGTHUNIT':
                 if unit.is_a('IfcSIUnit'):
                     bpy.context.scene.unit_settings.system = 'METRIC'
                     if unit.Name == 'METRE':
