@@ -406,7 +406,7 @@ class IfcParser():
         type_product = obj.BIMObjectProperties.relating_type
         if type_product \
                 and self.is_a_type(self.get_ifc_class(type_product.name)):
-            reference = self.get_type_product_reference(type_product.name)
+            reference = self.get_type_product_reference(self.get_name_attribute(type_product))
             self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
 
         if product['has_boundary_condition']:
@@ -1070,7 +1070,7 @@ class IfcParser():
 
     def get_type_product_reference(self, name):
         return [p['attributes']['Name']
-                for p in self.type_products].index(self.get_ifc_name(name))
+                for p in self.type_products].index(name)
 
     def get_ifc_class(self, name):
         return name.split('/')[0]
@@ -1081,6 +1081,12 @@ class IfcParser():
         except IndexError:
             self.ifc_export_settings.logger.error(
                 'Name "{}" does not follow the format of "IfcClass/Name"'.format(name))
+
+    def get_name_attribute(self, obj):
+        name = obj.BIMObjectProperties.attributes.get('Name')
+        if name:
+            return name.string_value
+        return self.get_ifc_name(obj.name)
 
     def is_a_spatial_structure_element(self, class_name):
         return class_name in [
