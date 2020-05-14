@@ -635,10 +635,16 @@ class IfcImporter():
             if not element.Representation:
                 return
             for r in element.Representation.Representations:
-                subcontexts.append('{}/{}/{}'.format(
-                    r.ContextOfItems.ContextType,
-                    r.ContextOfItems.ContextIdentifier,
-                    r.ContextOfItems.TargetView))
+                if r.ContextOfItems.is_a('IfcGeometricRepresentationSubContext'):
+                    subcontexts.append('{}/{}/{}'.format(
+                        r.ContextOfItems.ContextType,
+                        r.ContextOfItems.ContextIdentifier,
+                        r.ContextOfItems.TargetView))
+                else:
+                    subcontexts.append('{}/{}/{}'.format(
+                        r.ContextOfItems.ContextType,
+                        r.ContextOfItems.ContextIdentifier,
+                        None))
         elif element.is_a('IfcTypeProduct'):
             if not element.RepresentationMaps:
                 return
