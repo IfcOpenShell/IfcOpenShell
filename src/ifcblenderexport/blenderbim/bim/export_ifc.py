@@ -1386,6 +1386,7 @@ class IfcExporter():
     def create_qto_properties(self, qto):
         if qto['attributes']['Name'] in schema.ifc.qtos:
             return self.create_templated_qto_properties(qto)
+        return self.create_custom_qto_properties(qto)
 
     def create_pset_properties(self, pset):
         if pset['attributes']['Name'] in schema.ifc.psets:
@@ -1399,6 +1400,22 @@ class IfcExporter():
                 self.file.create_entity('IfcPropertySingleValue', **{
                     'Name': key,
                     'NominalValue': self.file.create_entity('IfcLabel', value)
+                }))
+        return properties
+
+    def create_custom_qto_properties(self, qto):
+        properties = []
+        for key, value in qto['raw'].items():
+            if 'Area' in key:
+                quantity_type = 'Area'
+            elif 'Volume' in key:
+                quantity_type = 'Volume'
+            else:
+                quantity_type = 'Length'
+            properties.append(
+                self.file.create_entity(f'IfcQuantity{quantity_type}', **{
+                    'Name': key,
+                    f'{quantity_type}Value': float(value)
                 }))
         return properties
 
