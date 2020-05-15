@@ -266,3 +266,5 @@ class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
 
     def __repr__(self):
         return self.str
+
+Generator = SchemaClass
