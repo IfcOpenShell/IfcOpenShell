@@ -427,7 +427,11 @@ class IfcImporter():
         mesh = None
         if representation_map:
             shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
-            mesh = self.create_mesh(element, shape)
+            mesh_name = f'mesh-{shape.id}'
+            mesh = self.meshes.get(mesh_name)
+            if mesh is None:
+                mesh = self.create_mesh(element, shape)
+                self.meshes[mesh_name] = mesh
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         if mesh:
             self.material_creator.create(element, obj, mesh)
@@ -499,8 +503,6 @@ class IfcImporter():
                 if element.is_a('IfcReinforcingBar'):
                     mesh = self.create_mesh(element, shape, is_curve=True)
                     mesh.bevel_depth = self.native_elements[element.GlobalId]['radius']
-                elif bpy.data.meshes.get(shape.geometry.id):
-                    mesh = bpy.data.meshes.get(shape.geometry.id)
                 else:
                     mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
