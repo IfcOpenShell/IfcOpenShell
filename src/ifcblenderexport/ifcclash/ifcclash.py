@@ -6,6 +6,7 @@ import ifcopenshell.geom
 import multiprocessing
 import numpy as np
 import json
+import sys
 import argparse
 import logging
 
@@ -145,45 +146,37 @@ class IfcClasher:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
 
-parser = argparse.ArgumentParser(
-    description='Clashes geometry between two IFC files')
-parser.add_argument(
-    'a',
-    type=str,
-    help='The IFC file containing group A of objects to clash')
-parser.add_argument(
-    'b',
-    type=str,
-    help='The IFC file containing group B of objects to clash')
-parser.add_argument(
-    '-o',
-    '--output',
-    type=str,
-    help='The JSON diff file to output. Defaults to clashes.json',
-    default='clashes.json')
-parser.add_argument(
-    '-l',
-    '--legacy',
-    default=False,
-    action='store_true',
-    help='Use legacy element parser')
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Clashes geometry between two IFC files')
+    parser.add_argument(
+        'a',
+        type=str,
+        help='The IFC file containing group A of objects to clash')
+    parser.add_argument(
+        'b',
+        type=str,
+        help='The IFC file containing group B of objects to clash')
+    parser.add_argument(
+        '-o',
+        '--output',
+        type=str,
+        help='The JSON diff file to output. Defaults to clashes.json',
+        default='clashes.json')
+    args = parser.parse_args()
 
-class IfcClashSettings:
-    def __init__(self):
-        self.logger = None
-        self.should_use_legacy = False
+    class IfcClashSettings:
+        def __init__(self):
+            self.logger = None
 
-settings = IfcClashSettings()
-settings.should_use_legacy = args.legacy
-settings.logger = logging.getLogger('Clash')
-settings.logger.setLevel(logging.DEBUG)
-import sys
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-settings.logger.addHandler(handler)
-ifc_clasher = IfcClasher(args.a, args.b, settings)
-ifc_clasher.clash()
+    settings = IfcClashSettings()
+    settings.logger = logging.getLogger('Clash')
+    settings.logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    settings.logger.addHandler(handler)
+    ifc_clasher = IfcClasher(args.a, args.b, settings)
+    ifc_clasher.clash()
 
-with open(args.output, 'w', encoding='utf-8') as clashes_file:
-    json.dump(list(ifc_clasher.clashes.values()), clashes_file, indent=4)
+    with open(args.output, 'w', encoding='utf-8') as clashes_file:
+        json.dump(list(ifc_clasher.clashes.values()), clashes_file, indent=4)
