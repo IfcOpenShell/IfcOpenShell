@@ -32,6 +32,7 @@ class IfcClasher:
         for ab in ['a', 'b']:
             self.settings.logger.info(f'Loading file {ab} ...')
             setattr(self, ab, ifcopenshell.open(getattr(self, f'{ab}_file')))
+            self.patch_ifc(ab)
             self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
             self.purge_elements(ab)
             self.settings.logger.info(f'Creating collision manager {ab} ...')
@@ -114,6 +115,34 @@ class IfcClasher:
         mesh.faces = np.array([[f[i], f[i + 1], f[i + 2]]
                  for i in range(0, len(f), 3)])
         return mesh
+
+    def patch_ifc(self, ab):
+        project = getattr(self, ab).by_type('IfcProject')[0]
+        sites = self.find_decomposed_ifc_class(project, 'IfcSite')
+        for site in sites:
+            self.patch_placement_to_origin(site)
+        buildings = self.find_decomposed_ifc_class(project, 'IfcBuilding')
+        for building in buildings:
+            self.patch_placement_to_origin(building)
+
+    def find_decomposed_ifc_class(self, element, ifc_class):
+        results = []
+        rel_aggregates = element.IsDecomposedBy
+        if not rel_aggregates:
+            return results
+        for rel_aggregate in rel_aggregates:
+            for part in rel_aggregate.RelatedObjects:
+                if part.is_a(ifc_class):
+                    results.append(part)
+                results.extend(self.find_decomposed_ifc_class(part, ifc_class))
+        return results
+
+    def patch_placement_to_origin(self, element):
+        element.ObjectPlacement.RelativePlacement.Location.Coordinates = (0., 0., 0.)
+        if element.ObjectPlacement.RelativePlacement.Axis:
+            element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
+        if element.ObjectPlacement.RelativePlacement.RefDirection:
+            element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
 
 parser = argparse.ArgumentParser(
