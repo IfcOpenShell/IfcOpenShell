@@ -1608,13 +1608,18 @@ class IfcExporter():
             placement_rel_to = None
         else:
             placement_rel_to = relating_object.ObjectPlacement
+
         related_objects = []
         for node in element_tree:
             element = self.ifc_parser.spatial_structure_elements[node['reference']]
+
+            placement = self.file.createIfcLocalPlacement(
+                placement_rel_to, self.get_relative_placement(element, placement_rel_to))
+
             self.cast_attributes(element['class'], element['attributes'])
             element['attributes'].update({
                 'OwnerHistory': self.owner_history,  # TODO: unhardcode
-                'ObjectPlacement': self.file.createIfcLocalPlacement(placement_rel_to, self.origin),
+                'ObjectPlacement': placement,
                 'Representation': self.get_product_shape(element)
             })
             element['ifc'] = self.file.create_entity(element['class'], **element['attributes'])
@@ -1624,6 +1629,44 @@ class IfcExporter():
             self.file.createIfcRelAggregates(
                 ifcopenshell.guid.new(),
                 self.owner_history, None, None, relating_object, related_objects)
+
+    def get_relative_placement(self, element, placement_rel_to):
+        if placement_rel_to:
+            relating_object_matrix = self.get_local_placement(placement_rel_to)
+        else:
+            relating_object_matrix = Matrix()
+        z = Vector(element['up_axis'])
+        x = Vector(element['forward_axis'])
+        o = Vector(element['location'])
+        object_matrix = self.a2p(o, z, x)
+        relative_placement_matrix = relating_object_matrix.inverted() @ object_matrix
+        return self.create_ifc_axis_2_placement_3d(
+            relative_placement_matrix.translation,
+            self.get_axis(relative_placement_matrix, 2),
+            self.get_axis(relative_placement_matrix, 0))
+
+    def get_axis(self, matrix, axis):
+        return matrix.col[axis].to_3d().normalized()
+
+    def get_local_placement(self, plc):
+        if plc.PlacementRelTo is None:
+            parent = Matrix()
+        else:
+            parent = self.get_local_placement(plc.PlacementRelTo)
+        return parent @ self.get_axis2placement(plc.RelativePlacement)
+
+    def a2p(self, o, z, x):
+        y = z.cross(x)
+        r = Matrix((x, y, z, o))
+        r.resize_4x4()
+        r.transpose()
+        return r
+
+    def get_axis2placement(self, plc):
+        z = Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1))
+        x = Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0))
+        o = plc.Location.Coordinates
+        return self.a2p(o,z,x)
 
     def create_groups(self):
         for group in self.ifc_parser.groups:
@@ -1778,12 +1821,11 @@ class IfcExporter():
             placement_rel_to = None
 
         if product['has_scale']:
-            placement = self.file.createIfcLocalPlacement(placement_rel_to, self.origin)
+            # Omission of the relative placement here is not as per implementer agreements
+            placement = self.file.createIfcLocalPlacement(None, self.origin)
         else:
             placement = self.file.createIfcLocalPlacement(placement_rel_to,
-                self.create_ifc_axis_2_placement_3d(product['location'],
-                    product['up_axis'],
-                    product['forward_axis']))
+                self.get_relative_placement(product, placement_rel_to))
 
         self.cast_attributes(product['class'], product['attributes'])
 
