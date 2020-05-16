@@ -520,6 +520,8 @@ class IfcImporter():
             mat.transpose()
             obj.matrix_world = mat
             self.material_creator.create(element, obj, mesh)
+        elif hasattr(element, 'ObjectPlacement'):
+            obj.matrix_world = self.get_element_matrix(element)
 
         self.add_element_attributes(element, obj)
         self.add_element_classifications(element, obj)
@@ -1133,31 +1135,32 @@ class IfcImporter():
                 return element.Identification
         return self.get_referenced_source_name(element.ReferencedSource)
 
-    def get_element_matrix(self, element, mesh_name):
+    def get_element_matrix(self, element, mesh_name=None):
         element_matrix = self.get_local_placement(element.ObjectPlacement)
 
-        # Blender supports reusing a mesh with a different transformation
-        # applied at the object level. In contrast, IFC supports reusing a mesh
-        # with a different transformation applied at the mesh level _as well as_
-        # the object level. For this reason, if the end-goal is to re-use mesh
-        # data, we must combine IFC's mesh-level transformation into Blender's
-        # object level transformation.
+        if mesh_name:
+            # Blender supports reusing a mesh with a different transformation
+            # applied at the object level. In contrast, IFC supports reusing a mesh
+            # with a different transformation applied at the mesh level _as well as_
+            # the object level. For this reason, if the end-goal is to re-use mesh
+            # data, we must combine IFC's mesh-level transformation into Blender's
+            # object level transformation.
 
-        # The first step to do this is to _undo_ the mesh-level transformation
-        # from whatever shared mesh we are using, as it is not necessarily the
-        # same as the current mesh.
-        shared_shape_transformation = self.get_representation_cartesian_transformation(
-            self.file.by_id(self.mesh_shapes[mesh_name].product.id()))
-        if shared_shape_transformation:
-            shared_transform = self.get_cartesiantransformationoperator(shared_shape_transformation)
-            shared_transform.invert()
-            element_matrix = element_matrix @ shared_transform
+            # The first step to do this is to _undo_ the mesh-level transformation
+            # from whatever shared mesh we are using, as it is not necessarily the
+            # same as the current mesh.
+            shared_shape_transformation = self.get_representation_cartesian_transformation(
+                self.file.by_id(self.mesh_shapes[mesh_name].product.id()))
+            if shared_shape_transformation:
+                shared_transform = self.get_cartesiantransformationoperator(shared_shape_transformation)
+                shared_transform.invert()
+                element_matrix = element_matrix @ shared_transform
 
-        # The next step is to apply the current element's mesh level
-        # transformation to our current element's object transformation
-        transformation = self.get_representation_cartesian_transformation(element)
-        if transformation:
-            element_matrix = self.get_cartesiantransformationoperator(transformation) @ element_matrix
+            # The next step is to apply the current element's mesh level
+            # transformation to our current element's object transformation
+            transformation = self.get_representation_cartesian_transformation(element)
+            if transformation:
+                element_matrix = self.get_cartesiantransformationoperator(transformation) @ element_matrix
 
         element_matrix[0][3] *= self.unit_scale
         element_matrix[1][3] *= self.unit_scale
