@@ -526,10 +526,7 @@ class IfcParser():
             return
         class_name = self.get_ifc_class(collection.name)
         if self.is_a_spatial_structure_element(class_name):
-            spatial_structure_element = [o for o in collection.objects if o.name == collection.name][0]
-            reference = self.get_spatial_structure_element_reference('{}/{}'.format(
-                self.get_ifc_class(spatial_structure_element.name),
-                self.get_name_attribute(spatial_structure_element)))
+            reference = self.get_spatial_structure_element_reference(collection.name)
             self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
             product['relating_structure'] = reference
         elif self.is_a_group(class_name):
@@ -1070,8 +1067,7 @@ class IfcParser():
         return children
 
     def get_spatial_structure_element_reference(self, name):
-        return ['{}/{}'.format(e['class'], e['attributes']['Name'])
-                for e in self.spatial_structure_elements].index(name)
+        return [e['raw'].name for e in self.spatial_structure_elements].index(name)
 
     def get_group_reference(self, name):
         return ['{}/{}'.format(e['class'], e['attributes']['Name'])
