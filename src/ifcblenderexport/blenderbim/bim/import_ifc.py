@@ -12,7 +12,7 @@ import multiprocessing
 import zipfile
 import tempfile
 from pathlib import Path
-from .helper import SIUnitHelper
+from . import helper
 from . import schema
 from . import ifc
 
@@ -758,6 +758,15 @@ class IfcImporter():
                 for filename in Path(unzipped_path).glob('**/*.ifc'):
                     self.file = ifcopenshell.open(filename)
                     break
+        elif extension == 'ifcxml':
+            # We write the IFCXML out to a regular IFC then re-read it, because
+            # right now IfcOpenShells interface for accessing an IFCXML is very
+            # different for some reason. When it gets standardised, we can read
+            # it directly.
+            ifcxml_file = ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file)
+            with tempfile.NamedTemporaryFile() as temp_file:
+                ifcxml_file.write(temp_file.name)
+                self.file = ifcopenshell.open(temp_file.name)
         elif extension == 'ifc':
             self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
         ifc.IfcStore.file = self.file
@@ -776,7 +785,7 @@ class IfcImporter():
                 self.unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
                 unit = unit.ConversionFactor.UnitComponent
             if unit.is_a('IfcSIUnit'):
-                self.unit_scale *= SIUnitHelper.get_prefix_multiplier(unit.Prefix)
+                self.unit_scale *= helper.SIUnitHelper.get_prefix_multiplier(unit.Prefix)
 
     def set_units(self):
         units = self.file.by_type('IfcUnitAssignment')[0]
