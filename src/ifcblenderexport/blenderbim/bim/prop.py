@@ -929,6 +929,8 @@ class BIMProperties(PropertyGroup):
     active_document_information_index: IntProperty(name='Active Document Information Index')
     document_references: CollectionProperty(name='Document References', type=DocumentReference)
     active_document_reference_index: IntProperty(name='Active Document Reference Index')
+    ifc_clash_a: StringProperty(name="IFC Clash A")
+    ifc_clash_b: StringProperty(name="IFC Clash B")
 
 
 class BCFProperties(PropertyGroup):

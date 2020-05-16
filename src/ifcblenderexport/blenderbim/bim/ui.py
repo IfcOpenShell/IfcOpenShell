@@ -1272,3 +1272,28 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator('bim.open_upstream', text='Visit Wiki').page = 'wiki'
         row.operator('bim.open_upstream', text='Visit Community').page = 'community'
+
+
+class BIM_PT_ifcclash(Panel):
+    bl_label = "IFC Clash"
+    bl_idname = "BIM_PT_ifcclash"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row(align=True)
+        row.prop(props, 'ifc_clash_a')
+
+        row = layout.row(align=True)
+        row.prop(props, 'ifc_clash_b')
+
+        row = layout.row()
+        row.operator('bim.execute_ifc_clash')

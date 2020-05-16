@@ -163,6 +163,25 @@ endif
 	cp -r dist/working/lark-parser-0.8.5/lark dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+ifeq ($(PLATFORM), linux)
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/0c/fa/00d85f893b02289e2942849d97f8818dde8e2111182e825fb3a735677791/python_fcl-0.0.12-cp37-cp37m-manylinux1_x86_64.whl
+	cd dist/working && unzip python_fcl*
+	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+endif
+
+ifeq ($(PLATFORM), win)
+	mkdir dist/working
+	cd dist/working && wget https://blenderbim.org/builds/fcl-py37-win.zip
+	cd dist/working && unzip fcl*
+	cp -r dist/working/fcl dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+endif
+
+	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/collision.py
+	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/ifcclash.py
+
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccsv/ifccsv.py
 

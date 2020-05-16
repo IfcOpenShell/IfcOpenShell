@@ -1153,6 +1153,32 @@ class ExecuteIfcDiff(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ExecuteIfcClash(bpy.types.Operator):
+    bl_idname = 'bim.execute_ifc_clash'
+    bl_label = 'Execute IFC Clash'
+    filename_ext = '.json'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.json')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        import ifcclash
+        settings = ifcclash.IfcClashSettings()
+        self.filepath = bpy.path.ensure_ext(self.filepath, '.json')
+        settings.output = self.filepath
+        settings.logger = logging.getLogger('Clash')
+        settings.logger.setLevel(logging.DEBUG)
+        ifc_clasher = ifcclash.IfcClasher(
+            bpy.context.scene.BIMProperties.ifc_clash_a, bpy.context.scene.BIMProperties.ifc_clash_b, settings)
+        ifc_clasher.clash()
+        ifc_clasher.export()
+        return {'FINISHED'}
+
+
 class SelectBcfFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_file"
     bl_label = "Select BCF File"
