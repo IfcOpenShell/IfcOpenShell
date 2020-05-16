@@ -153,7 +153,8 @@ class IfcParser():
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
 
-        self.project = self.get_project()
+        self.projects = self.get_projects()
+        self.project = self.projects[0]
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
         self.window_attributes = self.get_window_attributes()
@@ -163,7 +164,10 @@ class IfcParser():
         self.map_conversion = self.get_map_conversion()
         self.target_crs = self.get_target_crs()
         self.library_information = self.get_library_information()
-        self.spatial_structure_elements_tree = self.get_spatial_structure_elements_tree(self.project)
+
+        self.spatial_structure_elements_tree = []
+        for project in self.projects:
+            self.spatial_structure_elements_tree.extend(self.get_spatial_structure_elements_tree(project))
 
     def get_units(self):
         return {
@@ -522,7 +526,10 @@ class IfcParser():
             return
         class_name = self.get_ifc_class(collection.name)
         if self.is_a_spatial_structure_element(class_name):
-            reference = self.get_spatial_structure_element_reference(collection.name)
+            spatial_structure_element = [o for o in collection.objects if o.name == collection.name][0]
+            reference = self.get_spatial_structure_element_reference('{}/{}'.format(
+                self.get_ifc_class(spatial_structure_element.name),
+                self.get_name_attribute(spatial_structure_element)))
             self.rel_contained_in_spatial_structure.setdefault(reference, []).append(self.product_index)
             product['relating_structure'] = reference
         elif self.is_a_group(class_name):
@@ -736,16 +743,18 @@ class IfcParser():
             }
         return results
 
-    def get_project(self):
+    def get_projects(self):
+        results = []
         for collection in bpy.data.collections:
             if self.is_a_project(self.get_ifc_class(collection.name)):
                 obj = bpy.data.objects.get(collection.name)
-                return {
+                results.append({
                     'ifc': None,
                     'raw': collection,
                     'class': self.get_ifc_class(collection.name),
                     'attributes': self.get_object_attributes(obj)
-                }
+                })
+        return results
 
     def get_libraries(self):
         results = []
@@ -1589,6 +1598,8 @@ class IfcExporter():
     def relate_objects_to_objects(self):
         for relating_object, related_objects_reference in self.ifc_parser.rel_aggregates.items():
             relating_object = self.ifc_parser.products[relating_object]
+            if related_objects_reference not in self.ifc_parser.aggregates:
+                continue
             related_objects = [self.ifc_parser.products[o]['ifc']
                                for o in self.ifc_parser.aggregates[related_objects_reference]]
             self.file.createIfcRelAggregates(
