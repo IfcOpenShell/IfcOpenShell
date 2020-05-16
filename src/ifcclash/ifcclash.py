@@ -62,6 +62,10 @@ class IfcClasher:
                 'penetration_depth': contact.raw.penetration_depth
             }
 
+    def export(self):
+        with open(self.settings.output, 'w', encoding='utf-8') as clashes_file:
+            json.dump(list(self.clashes.values()), clashes_file, indent=4)
+
     def purge_elements(self, ab):
         # TODO: more filtering abilities
         for element in getattr(self, ab).by_type('IfcSpace'):
@@ -146,6 +150,12 @@ class IfcClasher:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
 
+class IfcClashSettings:
+    def __init__(self):
+        self.logger = None
+        self.output = 'clashes.json'
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Clashes geometry between two IFC files')
@@ -165,11 +175,8 @@ if __name__ == '__main__':
         default='clashes.json')
     args = parser.parse_args()
 
-    class IfcClashSettings:
-        def __init__(self):
-            self.logger = None
-
     settings = IfcClashSettings()
+    settings.output = args.output
     settings.logger = logging.getLogger('Clash')
     settings.logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
@@ -177,6 +184,4 @@ if __name__ == '__main__':
     settings.logger.addHandler(handler)
     ifc_clasher = IfcClasher(args.a, args.b, settings)
     ifc_clasher.clash()
-
-    with open(args.output, 'w', encoding='utf-8') as clashes_file:
-        json.dump(list(ifc_clasher.clashes.values()), clashes_file, indent=4)
+    ifc_clasher.export()
