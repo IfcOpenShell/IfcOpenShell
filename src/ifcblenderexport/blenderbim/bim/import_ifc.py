@@ -761,14 +761,8 @@ class IfcImporter():
                     self.file = ifcopenshell.open(filename)
                     break
         elif extension == 'ifcxml':
-            # We write the IFCXML out to a regular IFC then re-read it, because
-            # right now IfcOpenShells interface for accessing an IFCXML is very
-            # different for some reason. When it gets standardised, we can read
-            # it directly.
-            ifcxml_file = ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file)
-            with tempfile.NamedTemporaryFile() as temp_file:
-                ifcxml_file.write(temp_file.name)
-                self.file = ifcopenshell.open(temp_file.name)
+            self.file = ifcopenshell.file(
+                ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file))
         elif extension == 'ifc':
             self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
         ifc.IfcStore.file = self.file
