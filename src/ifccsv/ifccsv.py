@@ -217,7 +217,7 @@ class IfcAttributeExtractor():
             return getattr(prop, prop.is_a()[len('IfcQuantity'):] + 'Value')
 
     @staticmethod
-    def set_qto_property(qto, name, avlue):
+    def set_qto_property(qto, name, value):
         for prop in qto.Quantities:
             if prop.Name != name:
                 continue

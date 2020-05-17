@@ -3,6 +3,7 @@
 import collision
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.selector
 import multiprocessing
 import numpy as np
 import json
@@ -36,9 +37,10 @@ class IfcClasher:
                 data['ifc'] = ifcopenshell.open(data['file'])
                 self.patch_ifc(data['ifc'])
                 self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
-                self.purge_elements(data['ifc'])
+                self.purge_elements(data)
                 self.settings.logger.info(f'Creating collision data for {ab} ...')
-                self.add_collision_objects(data, getattr(self, f'{ab}_cm'))
+                if len(data['ifc'].by_type('IfcElement')) > 0:
+                    self.add_collision_objects(data, getattr(self, f'{ab}_cm'))
         results = self.a_cm.in_collision_other(self.b_cm, return_data=True)
 
         if not results[0]:
@@ -79,10 +81,23 @@ class IfcClasher:
             except:
                 pass
 
-    def purge_elements(self, ifc_file):
-        # TODO: more filtering abilities
-        for element in ifc_file.by_type('IfcSpace'):
-            ifc_file.remove(element)
+    def purge_elements(self, data):
+        if not data['selector']:
+            for element in data['ifc'].by_type('IfcSpace'):
+                ifc_file.remove(element)
+            return
+
+        selector = ifcopenshell.util.selector.Selector()
+        elements = selector.parse(data['ifc'], data['selector'])
+
+        if data['mode'] == 'e':
+            for element in data['ifc'].by_type('IfcElement'):
+                if element in elements:
+                    data['ifc'].remove(element)
+        elif data['mode'] == 'i':
+            for element in data['ifc'].by_type('IfcElement'):
+                if element not in elements:
+                    data['ifc'].remove(element)
 
     def add_collision_objects(self, data, cm):
         iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count())
@@ -175,12 +190,36 @@ if __name__ == '__main__':
         '-a',
         type=str,
         nargs='+',
-        help='The IFC file containing group A of objects to clash')
+        help='The IFC files containing group A of objects to clash')
     parser.add_argument(
         '-b',
         type=str,
         nargs='+',
-        help='The IFC file containing group B of objects to clash')
+        help='The IFC files containing group B of objects to clash')
+    parser.add_argument(
+        '-as',
+        '--a-selector',
+        type=str,
+        nargs='+',
+        help='Selector queries for each IFC file in group A')
+    parser.add_argument(
+        '-bs',
+        '--b-selector',
+        type=str,
+        nargs='+',
+        help='Selector queries for each IFC file in group B')
+    parser.add_argument(
+        '-am',
+        '--a-mode',
+        type=str,
+        nargs='+',
+        help='Selection mode for each file in group A. "i" for include, and "e" for exclude')
+    parser.add_argument(
+        '-bm',
+        '--b-mode',
+        type=str,
+        nargs='+',
+        help='Selection mode for each file in group B. "i" for include, and "e" for exclude')
     parser.add_argument(
         '-t',
         '--tolerance',
@@ -203,8 +242,21 @@ if __name__ == '__main__':
     handler.setLevel(logging.DEBUG)
     settings.logger.addHandler(handler)
     ifc_clasher = IfcClasher(settings)
-    ifc_clasher.a.extend([{'file': a, 'meshes': {}} for a in args.a])
-    ifc_clasher.b.extend([{'file': b, 'meshes': {}} for b in args.b])
+    for ab in ['a', 'b']:
+        getattr(ifc_clasher, ab).extend([{
+                'file': a,
+                'meshes': {},
+                'selector': '',
+                'mode': ''
+            } for i, a in enumerate(getattr(args, ab))])
+
+        if getattr(args, f'{ab}_selector'):
+            for i, selector in enumerate(getattr(args, f'{ab}_selector')):
+                getattr(ifc_clasher, ab)[i]['selector'] = selector
+
+        if getattr(args, f'{ab}_mode'):
+            for i, mode in enumerate(getattr(args, f'{ab}_mode')):
+                getattr(ifc_clasher, ab)[i]['mode'] = mode
     ifc_clasher.tolerance = args.tolerance
     ifc_clasher.clash()
     ifc_clasher.export()
