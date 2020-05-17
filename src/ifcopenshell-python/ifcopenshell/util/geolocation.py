@@ -1,5 +1,7 @@
+import math
+
 def dms2dd(degrees, minutes, seconds, milliseconds=0):
-    dd = float(degrees) + float(minutes)/60 + float(seconds)/(3600)
+    dd = float(degrees) + float(minutes)/60 + float(seconds)/(3600) + float(milliseconds/3600000)
     return dd
 
 def dd2dms(dd):
@@ -15,9 +17,9 @@ def dd2dms(dd):
 def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
     if scale is None:
         scale = 1.
-    rotation = atan2(x_axis_ordinate, x_axis_abscissa)
-    a = scale * cos(rotation)
-    b = scale * sin(rotation)
+    rotation = math.atan2(x_axis_ordinate, x_axis_abscissa)
+    a = scale * math.cos(rotation)
+    b = scale * math.sin(rotation)
     eastings = (a * x) - (b * y) + eastings
     northings = (b * x) + (a * y) + northings
     height = z + orthogonal_height
