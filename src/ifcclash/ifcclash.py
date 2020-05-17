@@ -41,7 +41,10 @@ class IfcClasher:
                 self.settings.logger.info(f'Creating collision data for {ab} ...')
                 if len(data['ifc'].by_type('IfcElement')) > 0:
                     self.add_collision_objects(data, getattr(self, f'{ab}_cm'))
-        results = self.a_cm.in_collision_other(self.b_cm, return_data=True)
+        if self.b:
+            results = self.a_cm.in_collision_other(self.b_cm, return_data=True)
+        else:
+            results = self.a_cm.in_collision_internal(return_data=True)
 
         if not results[0]:
             return
@@ -49,7 +52,10 @@ class IfcClasher:
         for contact in results[1]:
             a_global_id, b_global_id = contact.names
             a = self.get_element('a', a_global_id)
-            b = self.get_element('b', b_global_id)
+            if self.b:
+                b = self.get_element('b', b_global_id)
+            else:
+                b = self.get_element('a', b_global_id)
             if contact.raw.penetration_depth < self.tolerance:
                 continue
             key = f'{a_global_id}-{b_global_id}'
@@ -243,11 +249,13 @@ if __name__ == '__main__':
     settings.logger.addHandler(handler)
     ifc_clasher = IfcClasher(settings)
     for ab in ['a', 'b']:
+        if not getattr(args, ab):
+            continue
         getattr(ifc_clasher, ab).extend([{
                 'file': a,
                 'meshes': {},
                 'selector': '',
-                'mode': ''
+                'mode': 'e'
             } for i, a in enumerate(getattr(args, ab))])
 
         if getattr(args, f'{ab}_selector'):
