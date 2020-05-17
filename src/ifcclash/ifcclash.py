@@ -17,28 +17,28 @@ class Mesh:
 
 
 class IfcClasher:
-    def __init__(self, a_file, b_file, settings):
+    def __init__(self, settings):
         self.settings = settings
         self.geom_settings = ifcopenshell.geom.settings()
         self.tolerance = 0.01
-        self.a = None
-        self.b = None
-        self.a_file = a_file
-        self.b_file = b_file
+        self.a = []
+        self.b = []
+        self.a_cm = None
+        self.b_cm = None
         self.clashes = {}
-        self.a_meshes = {}
-        self.b_meshes = {}
 
     def clash(self):
         for ab in ['a', 'b']:
-            self.settings.logger.info(f'Loading file {ab} ...')
-            setattr(self, ab, ifcopenshell.open(getattr(self, f'{ab}_file')))
-            self.patch_ifc(ab)
-            self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
-            self.purge_elements(ab)
             self.settings.logger.info(f'Creating collision manager {ab} ...')
             setattr(self, f'{ab}_cm', collision.CollisionManager())
-            self.add_collision_objects(ab)
+            self.settings.logger.info(f'Loading files {ab} ...')
+            for data in getattr(self, ab):
+                data['ifc'] = ifcopenshell.open(data['file'])
+                self.patch_ifc(data['ifc'])
+                self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
+                self.purge_elements(data['ifc'])
+                self.settings.logger.info(f'Creating collision data for {ab} ...')
+                self.add_collision_objects(data, getattr(self, f'{ab}_cm'))
         results = self.a_cm.in_collision_other(self.b_cm, return_data=True)
 
         if not results[0]:
@@ -46,8 +46,8 @@ class IfcClasher:
 
         for contact in results[1]:
             a_global_id, b_global_id = contact.names
-            a = self.a.by_guid(a_global_id)
-            b = self.b.by_guid(b_global_id)
+            a = self.get_element('a', a_global_id)
+            b = self.get_element('b', b_global_id)
             if contact.raw.penetration_depth < self.tolerance:
                 continue
             self.clashes[f'{a_global_id}-{b_global_id}'] = {
@@ -66,14 +66,22 @@ class IfcClasher:
         with open(self.settings.output, 'w', encoding='utf-8') as clashes_file:
             json.dump(list(self.clashes.values()), clashes_file, indent=4)
 
-    def purge_elements(self, ab):
-        # TODO: more filtering abilities
-        for element in getattr(self, ab).by_type('IfcSpace'):
-            getattr(self, ab).remove(element)
+    def get_element(self, ab, global_id):
+        for data in getattr(self, ab):
+            try:
+                element = data['ifc'].by_guid(global_id)
+                if element:
+                    return element
+            except:
+                pass
 
-    def add_collision_objects(self, ab):
-        self.settings.logger.info('Creating collision data for {}'.format(ab))
-        iterator = ifcopenshell.geom.iterator(self.geom_settings, getattr(self, ab), multiprocessing.cpu_count())
+    def purge_elements(self, ifc_file):
+        # TODO: more filtering abilities
+        for element in ifc_file.by_type('IfcSpace'):
+            ifc_file.remove(element)
+
+    def add_collision_objects(self, data, cm):
+        iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count())
         valid_file = iterator.initialize()
         if not valid_file:
             return False
@@ -83,21 +91,21 @@ class IfcClasher:
             if progress > old_progress:
                 print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
                 old_progress = progress
-            self.add_collision_object(ab, iterator.get())
+            self.add_collision_object(data, cm, iterator.get())
             if not iterator.next():
                 break
 
-    def add_collision_object(self, ab, shape):
+    def add_collision_object(self, data, cm, shape):
         if shape is None:
             return
-        element = getattr(self, ab).by_id(shape.guid)
+        element = data['ifc'].by_id(shape.guid)
         self.settings.logger.info('Creating object {}'.format(element))
         mesh_name = f'mesh-{shape.geometry.id}'
-        if mesh_name in getattr(self, f'{ab}_meshes'):
-            mesh = getattr(self, f'{ab}_meshes')[mesh_name]
+        if mesh_name in data['meshes']:
+            mesh = data['meshes'][mesh_name]
         else:
             mesh = self.create_mesh(shape)
-            getattr(self, f'{ab}_meshes')[mesh_name] = mesh
+            data['meshes'][mesh_name] = mesh
 
         m = shape.transformation.matrix.data
         mat = np.array(
@@ -109,7 +117,7 @@ class IfcClasher:
             ]
         )
         mat.transpose()
-        getattr(self, f'{ab}_cm').add_object(shape.guid, mesh, mat)
+        cm.add_object(shape.guid, mesh, mat)
 
     def create_mesh(self, shape):
         f = shape.geometry.faces
@@ -121,8 +129,8 @@ class IfcClasher:
                  for i in range(0, len(f), 3)])
         return mesh
 
-    def patch_ifc(self, ab):
-        project = getattr(self, ab).by_type('IfcProject')[0]
+    def patch_ifc(self, ifc_file):
+        project = ifc_file.by_type('IfcProject')[0]
         sites = self.find_decomposed_ifc_class(project, 'IfcSite')
         for site in sites:
             self.patch_placement_to_origin(site)
@@ -160,12 +168,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Clashes geometry between two IFC files')
     parser.add_argument(
-        'a',
+        '-a',
         type=str,
+        nargs='+',
         help='The IFC file containing group A of objects to clash')
     parser.add_argument(
-        'b',
+        '-b',
         type=str,
+        nargs='+',
         help='The IFC file containing group B of objects to clash')
     parser.add_argument(
         '-o',
@@ -182,6 +192,8 @@ if __name__ == '__main__':
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
     settings.logger.addHandler(handler)
-    ifc_clasher = IfcClasher(args.a, args.b, settings)
+    ifc_clasher = IfcClasher(settings)
+    ifc_clasher.a.extend([{'file': a, 'meshes': {}} for a in args.a])
+    ifc_clasher.b.extend([{'file': b, 'meshes': {}} for b in args.b])
     ifc_clasher.clash()
     ifc_clasher.export()
