@@ -50,7 +50,11 @@ class IfcClasher:
             b = self.get_element('b', b_global_id)
             if contact.raw.penetration_depth < self.tolerance:
                 continue
-            self.clashes[f'{a_global_id}-{b_global_id}'] = {
+            key = f'{a_global_id}-{b_global_id}'
+            if key in self.clashes \
+                    and self.clashes[key]['penetration_depth'] > contact.raw.penetration_depth:
+                continue
+            self.clashes[key] = {
                 'a_global_id': a_global_id,
                 'b_global_id': b_global_id,
                 'a_ifc_class': a.is_a(),
@@ -178,6 +182,12 @@ if __name__ == '__main__':
         nargs='+',
         help='The IFC file containing group B of objects to clash')
     parser.add_argument(
+        '-t',
+        '--tolerance',
+        type=float,
+        help='The distance tolerance that clashes should exceed',
+        default=0.01)
+    parser.add_argument(
         '-o',
         '--output',
         type=str,
@@ -195,5 +205,6 @@ if __name__ == '__main__':
     ifc_clasher = IfcClasher(settings)
     ifc_clasher.a.extend([{'file': a, 'meshes': {}} for a in args.a])
     ifc_clasher.b.extend([{'file': b, 'meshes': {}} for b in args.b])
+    ifc_clasher.tolerance = args.tolerance
     ifc_clasher.clash()
     ifc_clasher.export()
