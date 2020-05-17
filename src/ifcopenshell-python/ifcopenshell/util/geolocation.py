@@ -1,7 +1,7 @@
 import math
 
 def dms2dd(degrees, minutes, seconds, milliseconds=0):
-    dd = float(degrees) + float(minutes)/60 + float(seconds)/(3600) + float(milliseconds/3600000)
+    dd = float(degrees) + float(minutes)/60.0 + float(seconds)/(3600.0) + float(milliseconds/3600000.0)
     return dd
 
 def dd2dms(dd):
