@@ -21,48 +21,52 @@ class IfcClasher:
     def __init__(self, settings):
         self.settings = settings
         self.geom_settings = ifcopenshell.geom.settings()
-        self.tolerance = 0.01
-        self.a = []
-        self.b = []
-        self.a_cm = None
-        self.b_cm = None
-        self.clashes = {}
+        self.clash_sets = []
+        #self.tolerance = 0.01
 
     def clash(self):
+        for clash_set in self.clash_sets:
+            self.process_clash_set(clash_set)
+
+    def process_clash_set(self, clash_set):
         for ab in ['a', 'b']:
             self.settings.logger.info(f'Creating collision manager {ab} ...')
-            setattr(self, f'{ab}_cm', collision.CollisionManager())
+            clash_set[f'{ab}_cm'] = collision.CollisionManager()
             self.settings.logger.info(f'Loading files {ab} ...')
-            for data in getattr(self, ab):
+            for data in clash_set[ab]:
                 data['ifc'] = ifcopenshell.open(data['file'])
                 self.patch_ifc(data['ifc'])
                 self.settings.logger.info(f'Purging unnecessary elements {ab} ...')
                 self.purge_elements(data)
                 self.settings.logger.info(f'Creating collision data for {ab} ...')
                 if len(data['ifc'].by_type('IfcElement')) > 0:
-                    self.add_collision_objects(data, getattr(self, f'{ab}_cm'))
-        if self.b:
-            results = self.a_cm.in_collision_other(self.b_cm, return_data=True)
+                    self.add_collision_objects(data, clash_set[f'{ab}_cm'])
+
+        if 'b' in clash_set:
+            results = clash_set['a_cm'].in_collision_other(clash_set['b_cm'], return_data=True)
         else:
-            results = self.a_cm.in_collision_internal(return_data=True)
+            results = clash_set['a_cm'].in_collision_internal(return_data=True)
 
         if not results[0]:
             return
 
+        tolerance = clash_set['tolerance'] if 'tolerance' in clash_set else 0.01
+        clash_set['clashes'] = {}
+
         for contact in results[1]:
             a_global_id, b_global_id = contact.names
-            a = self.get_element('a', a_global_id)
-            if self.b:
-                b = self.get_element('b', b_global_id)
+            a = self.get_element(clash_set['a'], a_global_id)
+            if 'b' in clash_set:
+                b = self.get_element(clash_set['b'], b_global_id)
             else:
-                b = self.get_element('a', b_global_id)
-            if contact.raw.penetration_depth < self.tolerance:
+                b = self.get_element(clash_set['a'], b_global_id)
+            if contact.raw.penetration_depth < tolerance:
                 continue
             key = f'{a_global_id}-{b_global_id}'
-            if key in self.clashes \
-                    and self.clashes[key]['penetration_depth'] > contact.raw.penetration_depth:
+            if key in clash_set['clashes'] \
+                    and clash_set['clashes'][key]['penetration_depth'] > contact.raw.penetration_depth:
                 continue
-            self.clashes[key] = {
+            clash_set['clashes'][key] = {
                 'a_global_id': a_global_id,
                 'b_global_id': b_global_id,
                 'a_ifc_class': a.is_a(),
@@ -75,11 +79,23 @@ class IfcClasher:
             }
 
     def export(self):
-        with open(self.settings.output, 'w', encoding='utf-8') as clashes_file:
-            json.dump(list(self.clashes.values()), clashes_file, indent=4)
+        results = self.clash_sets.copy()
+        for result in results:
+            del result['a_cm']
+            del result['b_cm']
+            for data in result['a']:
+                del data['ifc']
+                del data['meshes']
+            for data in result['b']:
+                del data['ifc']
+                del data['meshes']
+        print(results)
 
-    def get_element(self, ab, global_id):
-        for data in getattr(self, ab):
+        with open(self.settings.output, 'w', encoding='utf-8') as clashes_file:
+            json.dump(results, clashes_file, indent=4)
+
+    def get_element(self, clash_group, global_id):
+        for data in clash_group:
             try:
                 element = data['ifc'].by_guid(global_id)
                 if element:
@@ -88,7 +104,7 @@ class IfcClasher:
                 pass
 
     def purge_elements(self, data):
-        if not data['selector']:
+        if 'selector' not in data:
             for element in data['ifc'].by_type('IfcSpace'):
                 ifc_file.remove(element)
             return
@@ -106,6 +122,7 @@ class IfcClasher:
                     data['ifc'].remove(element)
 
     def add_collision_objects(self, data, cm):
+        data['meshes'] = {}
         iterator = ifcopenshell.geom.iterator(self.geom_settings, data['ifc'], multiprocessing.cpu_count())
         valid_file = iterator.initialize()
         if not valid_file:
@@ -193,51 +210,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Clashes geometry between two IFC files')
     parser.add_argument(
-        '-a',
+        'input',
         type=str,
-        nargs='+',
-        help='The IFC files containing group A of objects to clash')
-    parser.add_argument(
-        '-b',
-        type=str,
-        nargs='+',
-        help='The IFC files containing group B of objects to clash')
-    parser.add_argument(
-        '-as',
-        '--a-selector',
-        type=str,
-        nargs='+',
-        help='Selector queries for each IFC file in group A')
-    parser.add_argument(
-        '-bs',
-        '--b-selector',
-        type=str,
-        nargs='+',
-        help='Selector queries for each IFC file in group B')
-    parser.add_argument(
-        '-am',
-        '--a-mode',
-        type=str,
-        nargs='+',
-        help='Selection mode for each file in group A. "i" for include, and "e" for exclude')
-    parser.add_argument(
-        '-bm',
-        '--b-mode',
-        type=str,
-        nargs='+',
-        help='Selection mode for each file in group B. "i" for include, and "e" for exclude')
-    parser.add_argument(
-        '-t',
-        '--tolerance',
-        type=float,
-        help='The distance tolerance that clashes should exceed',
-        default=0.01)
+        help='A JSON dataset describing a series of clashsets')
     parser.add_argument(
         '-o',
         '--output',
         type=str,
-        help='The JSON diff file to output. Defaults to clashes.json',
-        default='clashes.json')
+        help='The JSON diff file to output. Defaults to output.json',
+        default='output.json')
     args = parser.parse_args()
 
     settings = IfcClashSettings()
@@ -248,23 +229,7 @@ if __name__ == '__main__':
     handler.setLevel(logging.DEBUG)
     settings.logger.addHandler(handler)
     ifc_clasher = IfcClasher(settings)
-    for ab in ['a', 'b']:
-        if not getattr(args, ab):
-            continue
-        getattr(ifc_clasher, ab).extend([{
-                'file': a,
-                'meshes': {},
-                'selector': '',
-                'mode': 'e'
-            } for i, a in enumerate(getattr(args, ab))])
-
-        if getattr(args, f'{ab}_selector'):
-            for i, selector in enumerate(getattr(args, f'{ab}_selector')):
-                getattr(ifc_clasher, ab)[i]['selector'] = selector
-
-        if getattr(args, f'{ab}_mode'):
-            for i, mode in enumerate(getattr(args, f'{ab}_mode')):
-                getattr(ifc_clasher, ab)[i]['mode'] = mode
-    ifc_clasher.tolerance = args.tolerance
+    with open(args.input, 'r') as clash_sets_file:
+        ifc_clasher.clash_sets = json.loads(clash_sets_file.read())
     ifc_clasher.clash()
     ifc_clasher.export()

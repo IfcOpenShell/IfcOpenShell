@@ -1,0 +1,17 @@
+[
+    {
+        "name": "Clashset foo",
+        "tolerance": 0.01,
+        "a": [
+            { "file": "/home/dion/one.ifc" }
+        ],
+        "b": [
+            {
+                "file": "/home/dion/two.ifc",
+                "selector": ".IfcProduct",
+                "mode": "i"
+            }
+        ]
+    }
+]
+
