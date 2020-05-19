@@ -83,14 +83,11 @@ class IfcClasher:
         for result in results:
             del result['a_cm']
             del result['b_cm']
-            for data in result['a']:
-                del data['ifc']
-                del data['meshes']
-            for data in result['b']:
-                del data['ifc']
-                del data['meshes']
-        print(results)
-
+            for ab in ['a', 'b']:
+                for data in result[ab]:
+                    for key in ['ifc', 'meshes']:
+                        if key in data:
+                            del data[key]
         with open(self.settings.output, 'w', encoding='utf-8') as clashes_file:
             json.dump(results, clashes_file, indent=4)
 
