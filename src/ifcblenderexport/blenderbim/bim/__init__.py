@@ -96,6 +96,8 @@ if bpy is not None:
         operator.OpenView,
         operator.ActivateView,
         operator.ExecuteIfcDiff,
+        operator.ExportClashSets,
+        operator.ImportClashSets,
         operator.AddClashSet,
         operator.RemoveClashSet,
         operator.AddClashSource,

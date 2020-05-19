@@ -1153,6 +1153,77 @@ class ExecuteIfcDiff(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ExportClashSets(bpy.types.Operator):
+    bl_idname = 'bim.export_clash_sets'
+    bl_label = 'Export Clash Sets'
+    filename_ext = '.json'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.json')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        self.filepath = bpy.path.ensure_ext(self.filepath, '.json')
+        clash_sets = []
+        for clash_set in bpy.context.scene.BIMProperties.clash_sets:
+            self.a = []
+            self.b = []
+            for ab in ['a', 'b']:
+                for data in getattr(clash_set, ab):
+                    clash_source = { 'file': data.name }
+                    if data.selector:
+                        clash_source['selector'] = data.selector
+                        clash_source['mode'] = data.mode
+                    getattr(self, ab).append(clash_source)
+            clash_sets.append({
+                'name': clash_set.name,
+                'tolerance': clash_set.tolerance,
+                'a': self.a,
+                'b': self.b
+                })
+        with open(self.filepath, 'w') as destination:
+            destination.write(json.dumps(clash_sets, indent=4))
+        return {'FINISHED'}
+
+
+class ImportClashSets(bpy.types.Operator):
+    bl_idname = 'bim.import_clash_sets'
+    bl_label = 'Import Clash Sets'
+    filename_ext = '.json'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.json')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        with open(self.filepath) as f:
+            clash_sets = json.load(f)
+        for clash_set in clash_sets:
+            new = bpy.context.scene.BIMProperties.clash_sets.add()
+            new.name = clash_set['name']
+            new.tolerance = clash_set['tolerance']
+            for clash_source in clash_set['a']:
+                new_source = new.a.add()
+                new_source.name = clash_source['file']
+                if 'selector' in clash_source:
+                    new_source.selector = clash_source['selector']
+                    new_source.mode = clash_source['mode']
+            if clash_set['b']:
+                for clash_source in clash_set['b']:
+                    new_source = new.b.add()
+                    new_source.name = clash_source['file']
+                    if 'selector' in clash_source:
+                        new_source.selector = clash_source['selector']
+                        new_source.mode = clash_source['mode']
+        return {'FINISHED'}
+
+
 class AddClashSet(bpy.types.Operator):
     bl_idname = 'bim.add_clash_set'
     bl_label = 'Add Clash Set'
