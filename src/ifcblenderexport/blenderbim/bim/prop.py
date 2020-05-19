@@ -467,6 +467,22 @@ class DocumentReference(PropertyGroup):
     referenced_document: StringProperty(name="Referenced Document")
 
 
+class ClashSource(PropertyGroup):
+    name: StringProperty(name='File')
+    selector: StringProperty(name='Selector')
+    mode: EnumProperty(items=[
+        ('i', 'Include', 'Only the selected objects are included for clashing'),
+        ('e', 'Exclude', 'All objects except the selected objects are included for clashing')
+        ], name='Mode')
+
+
+class ClashSet(PropertyGroup):
+    name: StringProperty(name='Name')
+    tolerance: FloatProperty(name='Tolerance')
+    a: CollectionProperty(name='Group A', type=ClashSource)
+    b: CollectionProperty(name='Group B', type=ClashSource)
+
+
 class BcfTopic(PropertyGroup):
     name: StringProperty(name='Name')
 
@@ -929,8 +945,8 @@ class BIMProperties(PropertyGroup):
     active_document_information_index: IntProperty(name='Active Document Information Index')
     document_references: CollectionProperty(name='Document References', type=DocumentReference)
     active_document_reference_index: IntProperty(name='Active Document Reference Index')
-    ifc_clash_a: StringProperty(name="IFC Clash A")
-    ifc_clash_b: StringProperty(name="IFC Clash B")
+    clash_sets: CollectionProperty(name='Clash Sets', type=ClashSet)
+    active_clash_set_index: IntProperty(name='Active Clash Set Index')
 
 
 class BCFProperties(PropertyGroup):

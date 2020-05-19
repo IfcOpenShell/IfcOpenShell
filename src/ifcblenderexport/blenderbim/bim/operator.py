@@ -1153,6 +1153,67 @@ class ExecuteIfcDiff(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AddClashSet(bpy.types.Operator):
+    bl_idname = 'bim.add_clash_set'
+    bl_label = 'Add Clash Set'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.clash_sets.add()
+        new.name = 'New Clash Set'
+        new.tolerance = 0.01
+        return {'FINISHED'}
+
+
+class RemoveClashSet(bpy.types.Operator):
+    bl_idname = 'bim.remove_clash_set'
+    bl_label = 'Remove Clash Set'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.clash_sets.remove(self.index)
+        return {'FINISHED'}
+
+
+class AddClashSource(bpy.types.Operator):
+    bl_idname = 'bim.add_clash_source'
+    bl_label = 'Add Clash Source'
+    group: bpy.props.StringProperty()
+
+    def execute(self, context):
+        clash_set = bpy.context.scene.BIMProperties.clash_sets[bpy.context.scene.BIMProperties.active_clash_set_index]
+        source = getattr(clash_set, self.group).add()
+        return {'FINISHED'}
+
+
+class RemoveClashSource(bpy.types.Operator):
+    bl_idname = 'bim.remove_clash_source'
+    bl_label = 'Remove Clash Source'
+    index: bpy.props.IntProperty()
+    group: bpy.props.StringProperty()
+
+    def execute(self, context):
+        clash_set = bpy.context.scene.BIMProperties.clash_sets[bpy.context.scene.BIMProperties.active_clash_set_index]
+        getattr(clash_set, self.group).remove(self.index)
+        return {'FINISHED'}
+
+
+class SelectClashSource(bpy.types.Operator):
+    bl_idname = "bim.select_clash_source"
+    bl_label = "Select Clash Source"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    index: bpy.props.IntProperty()
+    group: bpy.props.StringProperty()
+
+    def execute(self, context):
+        clash_set = bpy.context.scene.BIMProperties.clash_sets[bpy.context.scene.BIMProperties.active_clash_set_index]
+        getattr(clash_set, self.group)[self.index].name = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 class ExecuteIfcClash(bpy.types.Operator):
     bl_idname = 'bim.execute_ifc_clash'
     bl_label = 'Execute IFC Clash'
@@ -1172,8 +1233,24 @@ class ExecuteIfcClash(bpy.types.Operator):
         settings.output = self.filepath
         settings.logger = logging.getLogger('Clash')
         settings.logger.setLevel(logging.DEBUG)
-        ifc_clasher = ifcclash.IfcClasher(
-            bpy.context.scene.BIMProperties.ifc_clash_a, bpy.context.scene.BIMProperties.ifc_clash_b, settings)
+        ifc_clasher = ifcclash.IfcClasher(settings)
+        ifc_clasher.clash_sets = []
+        for clash_set in bpy.context.scene.BIMProperties.clash_sets:
+            self.a = []
+            self.b = []
+            for ab in ['a', 'b']:
+                for data in getattr(clash_set, ab):
+                    clash_source = { 'file': data.name }
+                    if data.selector:
+                        clash_source['selector'] = data.selector
+                        clash_source['mode'] = data.mode
+                    getattr(self, ab).append(clash_source)
+            ifc_clasher.clash_sets.append({
+                'name': clash_set.name,
+                'tolerance': clash_set.tolerance,
+                'a': self.a,
+                'b': self.b
+                })
         ifc_clasher.clash()
         ifc_clasher.export()
         return {'FINISHED'}

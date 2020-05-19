@@ -1225,6 +1225,15 @@ class BIM_UL_topics(bpy.types.UIList):
             layout.label(text="", translate=False)
 
 
+class BIM_UL_clash_sets(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
+
+
 class BIM_UL_document_information(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
@@ -1284,16 +1293,64 @@ class BIM_PT_ifcclash(Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
 
         scene = context.scene
         props = scene.BIMProperties
 
-        row = layout.row(align=True)
-        row.prop(props, 'ifc_clash_a')
-
-        row = layout.row(align=True)
-        row.prop(props, 'ifc_clash_b')
-
         row = layout.row()
-        row.operator('bim.execute_ifc_clash')
+        row.operator('bim.add_clash_set')
+
+        if not props.clash_sets:
+            return
+
+        layout.template_list('BIM_UL_clash_sets', '', props, 'clash_sets', props, 'active_clash_set_index')
+
+        if props.active_clash_set_index < len(props.clash_sets):
+            clash_set = props.clash_sets[props.active_clash_set_index]
+
+            row = layout.row(align=True)
+            row.prop(clash_set, 'name')
+            row.operator('bim.remove_clash_set', icon='X', text='').index = props.active_clash_set_index
+
+            row = layout.row(align=True)
+            row.prop(clash_set, 'tolerance')
+
+            layout.label(text="Group A:")
+            row = layout.row()
+            row.operator('bim.add_clash_source').group = 'a'
+
+            for index, source in enumerate(clash_set.a):
+                row = layout.row(align=True)
+                row.prop(source, 'name', text='')
+                op = row.operator('bim.select_clash_source', icon='FILE_FOLDER', text='')
+                op.index = index
+                op.group = 'a'
+                op = row.operator('bim.remove_clash_source', icon='X', text='')
+                op.index = index
+                op.group = 'a'
+
+                row = layout.row(align=True)
+                row.prop(source, 'mode', text='')
+                row.prop(source, 'selector', text='')
+
+            layout.label(text="Group B:")
+            row = layout.row()
+            row.operator('bim.add_clash_source').group = 'b'
+
+            for index, source in enumerate(clash_set.b):
+                row = layout.row(align=True)
+                row.prop(source, 'name', text='')
+                op = row.operator('bim.select_clash_source', icon='FILE_FOLDER', text='')
+                op.index = index
+                op.group = 'b'
+                op = row.operator('bim.remove_clash_source', icon='X', text='')
+                op.index = index
+                op.group = 'b'
+
+                row = layout.row(align=True)
+                row.prop(source, 'mode', text='')
+                row.prop(source, 'selector', text='')
+
+            row = layout.row()
+            row.operator('bim.execute_ifc_clash')
+
