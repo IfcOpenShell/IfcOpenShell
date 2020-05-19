@@ -1297,8 +1297,10 @@ class BIM_PT_ifcclash(Panel):
         scene = context.scene
         props = scene.BIMProperties
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.operator('bim.add_clash_set')
+        row.operator('bim.import_clash_sets', text='', icon='IMPORT')
+        row.operator('bim.export_clash_sets', text='', icon='EXPORT')
 
         if not props.clash_sets:
             return
