@@ -1355,4 +1355,3 @@ class BIM_PT_ifcclash(Panel):
 
             row = layout.row()
             row.operator('bim.execute_ifc_clash')
-
