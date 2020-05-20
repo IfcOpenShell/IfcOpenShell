@@ -7,6 +7,10 @@ if bpy is not None:
     import bpy
     from . import ui, prop, operator
 
+    from .module.covetool import prop as covetool_prop
+    from .module.covetool import ui as covetool_ui
+    from .module.covetool import operator as covetool_operator
+
     classes = (
         operator.AssignClass,
         operator.SelectClass,
@@ -201,6 +205,13 @@ if bpy is not None:
         ui.BIM_UL_topics,
         ui.BIM_UL_classifications,
         ui.BIM_ADDON_preferences,
+        covetool_prop.CoveToolProject,
+        covetool_prop.CoveToolSimpleAnalysis,
+        covetool_prop.CoveToolProperties,
+        covetool_ui.BIM_UL_covetool_projects,
+        covetool_ui.BIM_PT_covetool,
+        covetool_operator.Login,
+        covetool_operator.RunSimpleAnalysis,
         )
 
     def menu_func_export(self, context):
@@ -234,6 +245,7 @@ if bpy is not None:
         bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
+        bpy.types.Scene.CoveToolProperties = bpy.props.PointerProperty(type=covetool_prop.CoveToolProperties)
 
     def unregister():
         for cls in reversed(classes):
