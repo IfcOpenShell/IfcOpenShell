@@ -1925,20 +1925,25 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 
 IfcSchema::IfcRepresentation* IfcGeom::Kernel::representation_mapped_to(const IfcSchema::IfcRepresentation* representation) {
 	IfcSchema::IfcRepresentation* representation_mapped_to = 0;
-	IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
-	if (items->size() == 1) {
-		IfcSchema::IfcRepresentationItem* item = *items->begin();
-		if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
-			if (item->StyledByItem()->size() == 0) {
-				IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-				if (is_identity_transform(mapped_item->MappingTarget())) {
-					IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
-					if (is_identity_transform(map->MappingOrigin())) {
-						representation_mapped_to = map->MappedRepresentation();
+	try {
+		IfcSchema::IfcRepresentationItem::list::ptr items = representation->Items();
+		if (items->size() == 1) {
+			IfcSchema::IfcRepresentationItem* item = *items->begin();
+			if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
+				if (item->StyledByItem()->size() == 0) {
+					IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
+					if (is_identity_transform(mapped_item->MappingTarget())) {
+						IfcSchema::IfcRepresentationMap* map = mapped_item->MappingSource();
+						if (is_identity_transform(map->MappingOrigin())) {
+							representation_mapped_to = map->MappedRepresentation();
+						}
 					}
 				}
 			}
 		}
+	} catch (const IfcParse::IfcException& e) {
+		Logger::Error(e);
+		// @todo reset representation_mapped_to to zero?
 	}
 	return representation_mapped_to;
 }
