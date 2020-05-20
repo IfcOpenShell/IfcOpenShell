@@ -101,27 +101,29 @@ class file(object):
             return entity_instance(self.wrapped_data.by_guid(str(key)))
 
     def by_id(self, id):
-        """Return IFC objects filtered by IFC ID.
+        """Return an IFC entity instance filtered by IFC ID.
 
         :param id: STEP numerical identifier
         :type id: int
-        :returns: Returned objects are unwrapped IFC objects.
+        :returns: An ifcopenshell.entity_instance.entity_instance
         :rtype: ifcopenshell.entity_instance.entity_instance
         """
         return self[id]
 
     def by_guid(self, guid):
-        """Return IFC objects filtered by IFC GUID.
+        """Return an IFC entity instance filtered by IFC GUID.
 
         :param guid: GlobalId value in 22-character encoded form
         :type guid: string
-        :returns: Returned objects are unwrapped IFC objects.
+        :returns: An ifcopenshell.entity_instance.entity_instance
         :rtype: ifcopenshell.entity_instance.entity_instance
         """
         return self[guid]
 
     def add(self, inst):
-        """Undocumented function"""
+        """Adds an entity including any dependent entities to an IFC file.
+        
+        If the entity already exists, it is not re-added."""
         inst.wrapped_data.this.disown()
         return entity_instance(self.wrapped_data.add(inst.wrapped_data))
 
@@ -138,7 +140,7 @@ class file(object):
         return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
 
     def traverse(self, inst, max_levels=None):
-        """Get a list of all referenced entities for a particular entity
+        """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
         :type inst: ifcopenshell.entity_instance.entity_instance
@@ -164,7 +166,9 @@ class file(object):
     def remove(self, inst):
         """Deletes an IFC object in the file.
 
-        Other entities that reference the deleted object will be set to null.
+        Attribute values in other entity instances that reference the deleted
+        object will be set to null. In the case of a list or set of references,
+        the reference to the deleted will be removed from the aggregate.
 
         :param inst: The entity instance to delete
         :type inst: ifcopenshell.entity_instance.entity_instance
