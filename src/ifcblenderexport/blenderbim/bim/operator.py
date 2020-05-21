@@ -1147,7 +1147,8 @@ class ExecuteIfcDiff(bpy.types.Operator):
         ifc_diff = ifcdiff.IfcDiff(
             bpy.context.scene.BIMProperties.diff_old_file,
             bpy.context.scene.BIMProperties.diff_new_file,
-            self.filepath
+            self.filepath,
+            bpy.context.scene.BIMProperties.diff_relationships.split()
         )
         ifc_diff.diff()
         ifc_diff.export()
