@@ -208,6 +208,7 @@ class IfcImporter():
             self.settings.set(self.settings.INCLUDE_CURVES, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
+        self.existing_elements = {}
         self.project = None
         self.classifications = {}
         self.spatial_structure_elements = {}
@@ -227,6 +228,7 @@ class IfcImporter():
         self.material_creator = MaterialCreator(ifc_import_settings)
 
     def execute(self):
+        self.load_existing_rooted_elements()
         self.load_diff()
         self.cache_file()
         self.load_file()
@@ -382,16 +384,28 @@ class IfcImporter():
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
 
     def create_groups(self):
-        collection = bpy.data.collections.new('Groups')
-        self.project['blender'].children.link(collection)
+        group_collection = None
+        for collection in self.project['blender'].children:
+            if collection.name == 'Groups':
+                group_collection = collection
+                break
+        if group_collection is None:
+            group_collection = bpy.data.collections.new('Groups')
+            self.project['blender'].children.link(group_collection)
         for element in self.file.by_type('IfcGroup'):
+            self.create_group(element, group_collection)
+
+    def create_group(self, element, group_collection):
+        if element.GlobalId in self.existing_elements:
+            obj = self.existing_elements[element.GlobalId]
+        else:
             obj = bpy.data.objects.new(f'IfcGroup/{element.Name}', None)
             self.add_element_attributes(element, obj)
-            collection.objects.link(obj)
-            self.groups[element.GlobalId] = {
-                'ifc': element,
-                'blender': obj
-            }
+            group_collection.objects.link(obj)
+        self.groups[element.GlobalId] = {
+            'ifc': element,
+            'blender': obj
+        }
 
     def create_grids(self):
         grids = self.file.by_type('IfcGrid')
@@ -415,14 +429,21 @@ class IfcImporter():
 
     def create_type_products(self):
         type_products = self.file.by_type('IfcTypeProduct')
-        self.type_collection = bpy.data.collections.new('Types')
-        self.project['blender'].children.link(self.type_collection)
+        for collection in self.project['blender'].children:
+            if collection.name == 'Types':
+                self.type_collection = collection
+                break
+        if not self.type_collection:
+            self.type_collection = bpy.data.collections.new('Types')
+            self.project['blender'].children.link(self.type_collection)
         for type_product in type_products:
             self.create_type_product(type_product)
         bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.type_collection.name].hide_viewport = True
 
     def create_type_product(self, element):
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
+        if element.GlobalId in self.existing_elements:
+            return
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
         if representation_map:
@@ -491,6 +512,9 @@ class IfcImporter():
         if not self.ifc_import_settings.should_import_spaces \
                 and element.is_a('IfcSpace'):
             return
+
+        if element.GlobalId in self.existing_elements:
+            return self.existing_elements[element.GlobalId]
 
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
@@ -736,6 +760,11 @@ class IfcImporter():
         if related_type:
             obj.BIMObjectProperties.relating_type = self.type_products[related_type.GlobalId]
 
+    def load_existing_rooted_elements(self):
+        for obj in bpy.data.objects:
+            if hasattr(obj, 'BIMObjectProperties') and obj.BIMObjectProperties.attributes.get('GlobalId'):
+                self.existing_elements[obj.BIMObjectProperties.attributes.get('GlobalId').string_value] = obj
+
     def load_diff(self):
         if not self.ifc_import_settings.diff_file:
             return
@@ -824,6 +853,9 @@ class IfcImporter():
 
     def create_project(self):
         self.project = { 'ifc': self.file.by_type('IfcProject')[0] }
+        if self.project['ifc'].GlobalId in self.existing_elements:
+            self.project['blender'] = self.existing_elements[self.project['ifc'].GlobalId].users_collection[0]
+            return
         self.project['blender'] = bpy.data.collections.new('IfcProject/{}'.format(self.project['ifc'].Name))
         bpy.context.scene.collection.children.link(self.project['blender'])
         obj = self.create_product(self.project['ifc'])
@@ -924,13 +956,17 @@ class IfcImporter():
             if element.is_a('IfcSpace'):
                 continue
             global_id = element.GlobalId
-            collection = bpy.data.collections.new(self.get_name(element))
-            self.spatial_structure_elements[global_id] = { 'blender': collection }
-            parent.children.link(collection)
-            obj = self.create_product(element)
-            if obj:
-                collection.objects.link(obj)
-                del self.added_data[element.GlobalId]
+            if global_id in self.existing_elements:
+                collection = self.existing_elements[global_id].users_collection[0]
+                self.spatial_structure_elements[global_id] = { 'blender': collection }
+            else:
+                collection = bpy.data.collections.new(self.get_name(element))
+                self.spatial_structure_elements[global_id] = { 'blender': collection }
+                parent.children.link(collection)
+                obj = self.create_product(element)
+                if obj:
+                    collection.objects.link(obj)
+                    del self.added_data[element.GlobalId]
             if element.IsDecomposedBy:
                 for rel_aggregate in element.IsDecomposedBy:
                     self.add_related_objects(collection, rel_aggregate.RelatedObjects)
