@@ -12,6 +12,7 @@ from .helper import SIUnitHelper
 from . import schema
 import ifcopenshell
 import addon_utils
+from .ifc2json import IFC2JSON
 
 class ArrayModifier:
     count: int
@@ -2617,6 +2618,10 @@ class IfcExporter():
                     zf.write(tmp_file)
         elif extension == 'ifc':
             self.file.write(self.ifc_export_settings.output_file)
+        elif extension == 'ifcjson':
+            ifc2json = IFC2JSON(self.file).convert()
+            with open(self.ifc_export_settings.output_file, 'w') as f:
+                f.write(json.dumps(ifc2json, indent = 4))
 
 
 class IfcExportSettings:

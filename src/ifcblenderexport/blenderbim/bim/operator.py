@@ -57,6 +57,8 @@ class ExportIFC(bpy.types.Operator):
         extension = self.filepath.split('.')[-1]
         if extension == 'ifczip':
             output_file = bpy.path.ensure_ext(self.filepath, '.ifczip')
+        elif extension == 'ifcjson':
+            output_file = bpy.path.ensure_ext(self.filepath, '.ifcjson')
         else:
             output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
