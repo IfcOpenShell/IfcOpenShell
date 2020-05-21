@@ -48,6 +48,11 @@ def run_tests(args):
 
 def get_features(args):
     has_features = False
+    if args.feature:
+        shutil.copyfile(args.feature, os.path.join(
+            get_resource_path('features'),
+            os.path.basename(args.feature)[0:-len('.requirement')] + '.feature'))
+        return True
     if os.path.exists('features') and is_dist:
         shutil.copytree('features', get_resource_path('features'))
         has_features = True
@@ -115,17 +120,25 @@ class TestPurger:
         self.file = None
 
     def purge(self):
-        for filename in Path('features/').glob('*.feature'):
+        filenames = []
+        if os.path.exists('features'):
+            for filename in Path('features/').glob('*.feature'):
+                filenames.append(filename)
+        for f in os.listdir('.'):
+            if f.endswith('.requirement'):
+                filenames.append(f)
+
+        for filename in filenames:
             with open(filename, 'r') as feature_file:
                 old_file = feature_file.readlines()
             with open(filename, 'w') as new_file:
                 for line in old_file:
                     is_purged = False
-                    if 'Given the IFC file ' in line and 'exists' not in line:
+                    if 'The IFC file "' in line and '" must be provided' in line:
                         filename = line.split('"')[1]
                         print('Loading file {} ...'.format(filename))
                         self.file = ifcopenshell.open(filename)
-                    if line.strip()[0:4] == 'Then':
+                    if line.strip()[0:2] == '* ':
                         words = line.strip().split()
                         for word in words:
                             if self.is_a_global_id(word):
