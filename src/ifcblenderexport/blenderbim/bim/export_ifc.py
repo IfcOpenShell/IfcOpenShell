@@ -827,6 +827,7 @@ class IfcParser():
                 'attributes': self.get_object_attributes(obj)
             }
             self.append_product_attributes(element, obj)
+            self.get_product_psets_qtos(element, obj, is_pset=True)
             elements.append(element)
         return elements
 
@@ -1437,9 +1438,11 @@ class IfcExporter():
                 else:
                     # The IFC spec is missing some, so we provide a fallback
                     value_type = 'IfcLabel'
-                nominal_value = self.file.create_entity(
-                    value_type,
-                    self.cast_to_base_type(value_type, pset['raw'][name]))
+                nominal_value = self.cast_edge_case(value_type, name, pset['raw'][name])
+                if not nominal_value:
+                    nominal_value = self.file.create_entity(
+                        value_type,
+                        self.cast_to_base_type(value_type, pset['raw'][name]))
                 properties.append(
                     self.file.create_entity('IfcPropertySingleValue', **{
                         'Name': name,
@@ -1735,7 +1738,7 @@ class IfcExporter():
 
     def cast_attributes(self, ifc_class, attributes):
         for key, value in attributes.items():
-            edge_case_attribute = self.cast_edge_case_attribute(ifc_class, key, value)
+            edge_case_attribute = self.cast_edge_case(ifc_class, key, value)
             if edge_case_attribute:
                 attributes[key] = edge_case_attribute
                 continue
@@ -1750,9 +1753,14 @@ class IfcExporter():
                 continue
             attributes[key] = self.cast_to_base_type(var_type, value)
 
-    def cast_edge_case_attribute(self, ifc_class, key, value):
+    def cast_edge_case(self, ifc_class, key, value):
         if key == 'RefLatitude' or key == 'RefLongitude':
             return self.dd2dms(value)
+        elif ifc_class == 'IfcNamedUnit' and key == 'MapUnit':
+            return self.file.createIfcSIUnit(
+                None, 'LENGTHUNIT',
+                SIUnitHelper.get_prefix(value),
+                SIUnitHelper.get_unit_name(value))
 
     # TODO: migrate to ifcopenshell.util
     def dd2dms(self, dd):
