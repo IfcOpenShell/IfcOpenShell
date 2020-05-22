@@ -883,6 +883,7 @@ class BIMProperties(PropertyGroup):
         items = getIfcPredefinedTypes,
         name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    export_schema: EnumProperty(items=[('IFC4', 'IFC4', ''), ('IFC2X3', 'IFC2X3', '')], name='IFC Schema')
     export_has_representations: BoolProperty(name="Export Representations", default=True)
     export_should_export_all_materials_as_styled_items: BoolProperty(name="Export All Materials as Styled Items", default=False)
     export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment", default=False)
