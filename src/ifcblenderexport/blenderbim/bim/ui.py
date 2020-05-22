@@ -1152,6 +1152,9 @@ class BIM_PT_mvd(Panel):
         scene = context.scene
         bim_properties = scene.BIMProperties
 
+        row = layout.row()
+        row.prop(bim_properties, 'export_schema')
+
         layout.label(text='Custom MVD:')
 
         row = layout.row()
