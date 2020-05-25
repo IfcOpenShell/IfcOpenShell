@@ -42,7 +42,7 @@ class IfcClasher:
                 if len(data['ifc'].by_type('IfcElement')) > 0:
                     self.add_collision_objects(data, clash_set[f'{ab}_cm'])
 
-        if 'b' in clash_set:
+        if 'b' in clash_set and clash_set['b']:
             results = clash_set['a_cm'].in_collision_other(clash_set['b_cm'], return_data=True)
         else:
             results = clash_set['a_cm'].in_collision_internal(return_data=True)
@@ -56,7 +56,7 @@ class IfcClasher:
         for contact in results[1]:
             a_global_id, b_global_id = contact.names
             a = self.get_element(clash_set['a'], a_global_id)
-            if 'b' in clash_set:
+            if 'b' in clash_set and clash_set['b']:
                 b = self.get_element(clash_set['b'], b_global_id)
             else:
                 b = self.get_element(clash_set['a'], b_global_id)
@@ -103,7 +103,7 @@ class IfcClasher:
     def purge_elements(self, data):
         if 'selector' not in data:
             for element in data['ifc'].by_type('IfcSpace'):
-                ifc_file.remove(element)
+                data['ifc'].remove(element)
             return
 
         selector = ifcopenshell.util.selector.Selector()
