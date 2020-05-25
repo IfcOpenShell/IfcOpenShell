@@ -108,6 +108,7 @@ if bpy is not None:
         operator.RemoveClashSource,
         operator.SelectClashSource,
         operator.ExecuteIfcClash,
+        operator.SelectIfcClashResults,
         operator.AssignContext,
         operator.SwitchContext,
         operator.SetViewPreset1,

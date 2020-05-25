@@ -1330,6 +1330,37 @@ class ExecuteIfcClash(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class SelectIfcClashResults(bpy.types.Operator):
+    bl_idname = 'bim.select_ifc_clash_results'
+    bl_label = 'Select IFC Clash Results'
+    filename_ext = '.json'
+    filepath: bpy.props.StringProperty(subtype='FILE_PATH')
+
+    def invoke(self, context, event):
+        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, '.json')
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        self.filepath = bpy.path.ensure_ext(self.filepath, '.json')
+        with open(self.filepath) as f:
+            clash_sets = json.load(f)
+        clash_set_name = bpy.context.scene.BIMProperties.clash_sets[
+            bpy.context.scene.BIMProperties.active_clash_set_index].name
+        global_ids = []
+        for clash_set in clash_sets:
+            if clash_set['name'] != clash_set_name:
+                continue
+            for clash in clash_set['clashes'].values():
+                global_ids.extend([clash['a_global_id'], clash['b_global_id']])
+        for obj in bpy.context.visible_objects:
+            global_id = obj.BIMObjectProperties.attributes.get('GlobalId')
+            if global_id and global_id.string_value in global_ids:
+                obj.select_set(True)
+        return {'FINISHED'}
+
+
 class SelectBcfFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_file"
     bl_label = "Select BCF File"
