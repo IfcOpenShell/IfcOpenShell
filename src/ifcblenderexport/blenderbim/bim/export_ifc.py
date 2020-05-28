@@ -133,6 +133,12 @@ class IfcParser():
         self.products = []
 
     def parse(self, selected_objects):
+        self.projects = self.get_projects()
+        if not self.projects:
+            self.setup_project()
+            self.projects = self.get_projects()
+
+        self.project = self.projects[0]
         self.units = self.get_units()
         self.unit_scale = self.get_unit_scale()
         self.people = self.get_people()
@@ -154,8 +160,6 @@ class IfcParser():
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
 
-        self.projects = self.get_projects()
-        self.project = self.projects[0]
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
         self.window_attributes = self.get_window_attributes()
@@ -753,6 +757,20 @@ class IfcParser():
                     'attributes': self.get_object_attributes(obj)
                 })
         return results
+
+    def setup_project(self):
+        bpy.ops.bim.quick_project_setup()
+        for collection in bpy.data.collections:
+            if collection.name == 'IfcBuildingStorey/Ground Floor':
+                break
+        for obj in bpy.context.selected_objects:
+            if hasattr(obj, 'data') \
+                    and isinstance(obj.data, bpy.types.Mesh) \
+                    and '/' not in obj.name:
+                obj.name = 'IfcBuildingElementProxy/{}'.format(obj.name)
+                for user_collection in obj.users_collection:
+                    user_collection.objects.unlink(obj)
+                collection.objects.link(obj)
 
     def get_libraries(self):
         results = []
