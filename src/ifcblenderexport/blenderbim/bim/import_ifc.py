@@ -1298,6 +1298,8 @@ class IfcImporter():
         return self.a2p(o,z,x)
 
     def get_local_placement(self, plc):
+        if plc is None:
+            return mathutils.Matrix()
         if plc.PlacementRelTo is None:
             parent = mathutils.Matrix()
         else:
