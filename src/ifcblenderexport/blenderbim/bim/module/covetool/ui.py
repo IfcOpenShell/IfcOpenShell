@@ -26,6 +26,9 @@ class BIM_PT_covetool(bpy.types.Panel):
 
         layout.template_list('BIM_UL_covetool_projects', '', props, 'projects', props, 'active_project_index')
 
+        row = layout.row()
+        row.operator('bim.covetool_run_analysis')
+
         prop_names = [ 'si_units', 'building_height', 'roof_area', 'floor_area',
             'skylight_area', 'wall_area_e', 'wall_area_ne', 'wall_area_n',
             'wall_area_nw', 'wall_area_w', 'wall_area_sw', 'wall_area_s',

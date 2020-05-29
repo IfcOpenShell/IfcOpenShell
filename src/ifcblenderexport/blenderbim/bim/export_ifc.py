@@ -159,7 +159,6 @@ class IfcParser():
         self.styled_items = self.get_styled_items()
         self.spatial_structure_elements = self.get_spatial_structure_elements()
         self.groups = self.get_groups()
-
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
         self.window_attributes = self.get_window_attributes()

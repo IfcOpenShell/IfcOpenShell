@@ -213,6 +213,7 @@ if bpy is not None:
         covetool_ui.BIM_PT_covetool,
         covetool_operator.Login,
         covetool_operator.RunSimpleAnalysis,
+        covetool_operator.RunAnalysis,
         )
 
     def menu_func_export(self, context):
