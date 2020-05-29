@@ -15,7 +15,7 @@ class Api:
     def post_request(self, path, data, use_token=True):
         url = self._api_url(path)
         headers = self._headers(use_token)
-        response = requests.post(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, json=data)
         return self._handle_response(response)
 
     def get_request(self, path, use_token=True):
