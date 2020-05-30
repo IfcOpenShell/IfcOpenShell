@@ -1,5 +1,6 @@
 import bpy
 import json
+from math import degrees, atan2
 
 from .api import Api
 
@@ -81,13 +82,25 @@ class RunAnalysis(bpy.types.Operator):
         data = {
             'run': bpy.context.scene.CoveToolProperties.projects[bpy.context.scene.CoveToolProperties.active_project_index].run_set,
             'source': 'BlenderBIM',
-            'rotation_angle': 0,
+            'rotation_angle': self.get_rotation_angle(),
             **self.inputs
         }
         result = api.post_request('run-values', data)
         covetool_results = bpy.data.texts.new('cove.tool Results')
         covetool_results.write(json.dumps(result, indent=4))
         return {'FINISHED'}
+
+    def get_rotation_angle(self):
+        if not bpy.context.scene.BIMProperties.has_georeferencing \
+                or not bpy.context.scene.MapConversion.x_axis_abscissa \
+                or not bpy.context.scene.MapConversion.x_axis_ordinate:
+            return 0
+        rotation = -1 * degrees(atan2(
+            float(bpy.context.scene.MapConversion.x_axis_ordinate),
+            float(bpy.context.scene.MapConversion.x_axis_abscissa)))
+        if rotation < 0:
+            rotation = 360 - rotation
+        return rotation
 
     def parse_objects(self):
         for obj in bpy.context.visible_objects:
