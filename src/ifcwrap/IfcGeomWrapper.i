@@ -171,6 +171,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return new IfcGeom::Iterator<T>(settings, file, {ef}, num_threads);
 	}
 
+	template <typename T>
+	IfcGeom::Iterator<T>* construct_iterator_with_include_exclude_globalid_(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+		std::set<std::string> elems_set(elems.begin(), elems.end());
+		IfcGeom::attribute_filter af;
+		af.attribute_name = "GlobalId";
+		af.populate(elems_set);
+		af.include = include;
+		return new IfcGeom::Iterator<T>(settings, file, {af}, num_threads);
+	}
+
 	IfcGeom::Iterator<float>* construct_iterator_single_precision_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		return construct_iterator_with_include_exclude_<float>(settings, file, elems, include, num_threads);
 	}
@@ -178,11 +188,21 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	IfcGeom::Iterator<double>* construct_iterator_double_precision_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		return construct_iterator_with_include_exclude_<double>(settings, file, elems, include, num_threads);
 	}
+
+	IfcGeom::Iterator<float>* construct_iterator_single_precision_with_include_exclude_globalid(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+		return construct_iterator_with_include_exclude_globalid_<float>(settings, file, elems, include, num_threads);
+	}
+
+	IfcGeom::Iterator<double>* construct_iterator_double_precision_with_include_exclude_globalid(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+		return construct_iterator_with_include_exclude_globalid_<double>(settings, file, elems, include, num_threads);
+	}
 %}
 
 %ignore construct_iterator_with_include_exclude_;
 %newobject construct_iterator_single_precision_with_include_exclude;
 %newobject construct_iterator_double_precision_with_include_exclude;
+%newobject construct_iterator_single_precision_with_include_exclude_globalid;
+%newobject construct_iterator_double_precision_with_include_exclude_globalid;
 
 %extend IfcGeom::Iterator<float> {
 	static int mantissa_size() {
