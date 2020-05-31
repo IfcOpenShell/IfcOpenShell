@@ -166,7 +166,7 @@ class IFC2CA:
                 'geometry': geometry,
                 'orientation': orientation,
                 'appliedCondition': self.get_connection_input(item),
-                'relatedElements': [con.is_a() + '|' + str(con.id()) for con in con.ConnectsStructuralMembers]
+                'relatedElements': [con.is_a() + '|' + str(con.id()) for con in item.ConnectsStructuralMembers]
             }
 
     def get_transformation(self, placement):
