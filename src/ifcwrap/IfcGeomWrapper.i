@@ -160,6 +160,30 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	%}
 }
 
+
+// I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
+// anyway it does not matter as SWIG generates C code without actual constructors
+%inline %{
+	template <typename T>
+	IfcGeom::Iterator<T>* construct_iterator_with_include_exclude_(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+		std::set<std::string> elems_set(elems.begin(), elems.end());
+		IfcGeom::entity_filter ef{ include, false, elems_set };
+		return new IfcGeom::Iterator<T>(settings, file, {ef}, num_threads);
+	}
+
+	IfcGeom::Iterator<float>* construct_iterator_single_precision_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+		return construct_iterator_with_include_exclude_<float>(settings, file, elems, include, num_threads);
+	}
+
+	IfcGeom::Iterator<double>* construct_iterator_double_precision_with_include_exclude(IfcGeom::IteratorSettings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+		return construct_iterator_with_include_exclude_<double>(settings, file, elems, include, num_threads);
+	}
+%}
+
+%ignore construct_iterator_with_include_exclude_;
+%newobject construct_iterator_single_precision_with_include_exclude;
+%newobject construct_iterator_double_precision_with_include_exclude;
+
 %extend IfcGeom::Iterator<float> {
 	static int mantissa_size() {
 		return std::numeric_limits<float>::digits;
