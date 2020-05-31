@@ -23,6 +23,7 @@ from __future__ import print_function
 
 import os
 import sys
+import operator
 
 from .. import ifcopenshell_wrapper
 from ..file import file
@@ -86,12 +87,30 @@ class iterator(_iterator):
             # Couldn't get the typemaps properly applied using %extend so we
             # replicate the SWIG-generated __init__ call on the output of a
             # free function.
-            # @todo verify this works with SWIG 4            
-            self.this = ifcopenshell_wrapper.\
-                construct_iterator_double_precision_with_include_exclude(
+            # @todo verify this works with SWIG 4
+            
+            include_or_exclude = include if exclude is None else exclude
+            include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
+            print(include_or_exclude_type)
+            
+            if include_or_exclude_type == {"entity_instance"}:
+                if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
+                    raise ValueError("include and exclude need to be an aggregate of IfcProduct")
+                    
+                initializer = ifcopenshell_wrapper.\
+                    construct_iterator_double_precision_with_include_exclude_globalid
+                    
+                decode_unicode = lambda x: x.encode('ascii') if x.__class__.__name__ == "unicode" else x
+                include_or_exclude = list(map(decode_unicode, map(operator.attrgetter('GlobalId'), include_or_exclude)))
+            else:
+                initializer = ifcopenshell_wrapper.\
+                    construct_iterator_double_precision_with_include_exclude
+        
+            import pdb; pdb.set_trace()
+            self.this = initializer(
                     self.settings, 
                     file_or_filename, 
-                    include if exclude is None else exclude, 
+                    include_or_exclude, 
                     include is not None, 
                     num_threads)
         else:
