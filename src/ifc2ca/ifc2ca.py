@@ -166,7 +166,7 @@ class IFC2CA:
                 'geometry': geometry,
                 'orientation': orientation,
                 'appliedCondition': self.get_connection_input(item),
-                'relatedElements': [con.is_a() + '|' + str(con.id()) for con in item.ConnectsStructuralMembers]
+                'relatedElements': [con.is_a() + '|' + str(con.id()) for con in con.ConnectsStructuralMembers]
             }
 
     def get_transformation(self, placement):
@@ -438,7 +438,7 @@ class IFC2CA:
             }
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01'];
+    fileNames = ['cantilever_01', 'portal_01']
     files = fileNames
 
     for fileName in files:
