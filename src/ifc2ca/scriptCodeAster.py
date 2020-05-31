@@ -185,7 +185,7 @@ model = AFFE_MODELE(
                 if 'shearModulus' in material['mechProps']:
                     poissonRatio = (material['mechProps']['youngModulus'] / 2.0 / material['mechProps']['shearModulus']) - 1
                 else:
-                    poissonRation = 0
+                    poissonRatio = 0.0
 
             context = {
                 'matNameID': 'mat'+ '_%s' % i,
@@ -726,7 +726,7 @@ FIN()
         conn['liaisons'] = liaisons
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01'];
+    fileNames = ['cantilever_01', 'portal_01']
     files = fileNames
 
     for fileName in files:

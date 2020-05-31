@@ -355,7 +355,7 @@ class MODEL:
         pprint('ALL Operations Completed in %g sec' % (elapsed_time))
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01'];
+    fileNames = ['cantilever_01', 'portal_01']
     files = fileNames
 
     meshSize = 0.1
