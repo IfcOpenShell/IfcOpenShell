@@ -376,6 +376,8 @@ namespace IfcGeom {
 			if (num_threads_ != 1) {
 				collect();
 				process_concurrently();
+
+				return all_processed_elements_.size();
 			} else {
 				if (!create()) {
 					return false;
