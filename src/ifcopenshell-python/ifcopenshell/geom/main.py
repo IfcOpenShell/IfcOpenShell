@@ -72,13 +72,30 @@ _iterator = ifcopenshell_wrapper.iterator_double_precision
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(_iterator):
-    def __init__(self, settings, file_or_filename, num_threads = 1):
+    def __init__(self, settings, file_or_filename, num_threads = 1, include = None, exclude = None):
         self.settings = settings
         if isinstance(file_or_filename, file):
             file_or_filename = file_or_filename.wrapped_data
         else:
             file_or_filename = os.path.abspath(file_or_filename)
-        _iterator.__init__(self, settings, file_or_filename, num_threads)
+        
+        if include is not None and exclude is not None:
+            raise ValueError("include and exclude cannot be specified simultaneously")
+        
+        if include is not None or exclude is not None:
+            # Couldn't get the typemaps properly applied using %extend so we
+            # replicate the SWIG-generated __init__ call on the output of a
+            # free function.
+            # @todo verify this works with SWIG 4            
+            self.this = ifcopenshell_wrapper.\
+                construct_iterator_double_precision_with_include_exclude(
+                    self.settings, 
+                    file_or_filename, 
+                    include if exclude is None else exclude, 
+                    include is not None, 
+                    num_threads)
+        else:
+            _iterator.__init__(self, settings, file_or_filename, num_threads)
 
     if has_occ:
         def get(self):
@@ -165,8 +182,8 @@ def create_shape(settings, inst, repr=None):
         ))
 
 
-def iterate(settings, filename):
-    it = iterator(settings, filename)
+def iterate(settings, file_or_filename, num_threads = 1, include = None, exclude = None):
+    it = iterator(settings, file_or_filename, num_threads, include, exclude)
     if it.initialize():
         while True:
             yield it.get()
