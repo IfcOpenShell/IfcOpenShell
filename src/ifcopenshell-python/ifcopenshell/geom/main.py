@@ -106,7 +106,6 @@ class iterator(_iterator):
                 initializer = ifcopenshell_wrapper.\
                     construct_iterator_double_precision_with_include_exclude
         
-            import pdb; pdb.set_trace()
             self.this = initializer(
                     self.settings, 
                     file_or_filename, 
