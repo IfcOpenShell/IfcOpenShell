@@ -1983,6 +1983,7 @@ class AssignContext(bpy.types.Operator):
 class SwitchContext(bpy.types.Operator):
     bl_idname = 'bim.switch_context'
     bl_label = 'Switch Context'
+    has_target_context: bpy.props.BoolProperty()
     context_name: bpy.props.StringProperty()
     subcontext_name: bpy.props.StringProperty()
     target_view_name: bpy.props.StringProperty()
@@ -1999,11 +2000,9 @@ class SwitchContext(bpy.types.Operator):
         self.subcontext = bpy.context.scene.BIMProperties.available_subcontexts
         self.target_view = bpy.context.scene.BIMProperties.available_target_views
 
-        if self.context_name:
+        if self.has_target_context:
             self.context = self.context_name
-        if self.subcontext_name:
             self.subcontext = self.subcontext_name
-        if self.target_view_name:
             self.target_view = self.target_view_name
 
         mesh = bpy.data.meshes.get('{}/{}/{}/{}'.format(
@@ -2031,17 +2030,27 @@ class SwitchContext(bpy.types.Operator):
         settings = ifcopenshell.geom.settings()
         settings.set(settings.INCLUDE_CURVES, True)
         if element.is_a('IfcProduct'):
-            rep = [r for r in element.Representation.Representations if
-                    r.ContextOfItems.ContextType == self.context \
-                    and r.ContextOfItems.ContextIdentifier == self.subcontext \
-                    and r.ContextOfItems.TargetView == self.target_view][0]
+            representations = element.Representation.Representations
         else:
-            rep = [rm.MappedRepresentation for rm in element.RepresentationMaps if
-                    rm.MappedRepresentation.ContextOfItems.ContextType == self.context \
-                    and rm.MappedRepresentation.ContextOfItems.ContextIdentifier == self.subcontext \
-                    and rm.MappedRepresentation.ContextOfItems.TargetView == self.target_view][0]
+            representations = element.RepresentationMaps
+
+        for rep in element.Representation.Representations:
+            if rep.ContextOfItems.is_a('IfcGeometricRepresentationSubContext') \
+                    and rep.ContextOfItems.ContextType == self.context \
+                    and rep.ContextOfItems.ContextIdentifier == self.subcontext \
+                    and rep.ContextOfItems.TargetView == self.target_view:
+                break
+            elif rep.ContextOfItems.is_a('IfcGeometricRepresentationContext') \
+                    and rep.ContextOfItems.ContextType == self.context \
+                    and rep.ContextOfItems.ContextIdentifier == self.subcontext:
+                break
+
+        if not element.is_a('IfcProduct'):
+            rep = rep.MappedRepresentation
+
         shape = ifcopenshell.geom.create_shape(settings, rep)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
         mesh = ifc_importer.create_mesh(element, shape)
         mesh.name = '{}/{}/{}/{}'.format(
             self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3])
