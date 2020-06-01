@@ -1025,8 +1025,8 @@ class IfcParser():
             for slot in obj.material_slots:
                 if slot.material is None:
                     continue
-                if not self.ifc_export_settings.should_export_all_materials_as_styled_items and (
-                        slot.material.name in results or slot.link == 'DATA'):
+                if not self.ifc_export_settings.should_export_all_materials_as_styled_items \
+                        and (slot.material.name in results or slot.link == 'DATA'):
                     continue
                 results.append({
                     'ifc': None,
@@ -1708,13 +1708,14 @@ class IfcExporter():
             product = self.ifc_parser.products[
                 self.ifc_parser.get_product_index_from_raw_name(
                     styled_item['related_product_name'])]
+            valid_material_slots = [ms for ms in product['raw'].material_slots if ms.link == 'OBJECT']
             material_slots = {}
             if product['ifc'].Representation:
                 for representation in product['ifc'].Representation.Representations:
                     for mapped_item in representation.Items:
                         items = mapped_item[0].MappedRepresentation.Items
                         for i, item in enumerate(items):
-                            material_slots[product['raw'].material_slots[i].name] = item
+                            material_slots[valid_material_slots[i].name] = item
             for styled_item_name, representation_item in material_slots.items():
                 if styled_item_name == styled_item['attributes']['Name']:
                     styled_item['ifc'] = self.create_styled_item(styled_item, representation_item)
@@ -2444,17 +2445,18 @@ class IfcExporter():
         if not representation['is_parametric']:
             mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         self.create_vertices(mesh.vertices)
-        ifc_faces = [None] * len(representation['raw_object'].material_slots)
-        for i, value in enumerate(ifc_faces):
-            ifc_faces[i] = []
-        if not ifc_faces:
-            ifc_faces = [[]]
+        ifc_raw_items = [None] * len(representation['raw_object'].material_slots)
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+        if not ifc_raw_items:
+            ifc_raw_items = [[]]
         for polygon in mesh.polygons:
-            ifc_faces[polygon.material_index].append(self.file.createIfcFace([
+            ifc_raw_items[polygon.material_index].append(self.file.createIfcFace([
                 self.file.createIfcFaceOuterBound(
                     self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
-        items = [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(f)) for f in ifc_faces if f]
+        # TODO: May not actually be a closed shell, but who checks anyway?
+        items = [self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(i)) for i in ifc_raw_items if i]
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],

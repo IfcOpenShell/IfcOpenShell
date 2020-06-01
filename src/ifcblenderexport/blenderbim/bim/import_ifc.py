@@ -41,12 +41,12 @@ class MaterialCreator():
         if self.ifc_import_settings.should_treat_styled_item_as_material \
                 and self.mesh.name in self.parsed_meshes:
             return
+        self.parse_material(element)
+        self.parsed_meshes.append(self.mesh.name)
         if self.parse_representations(element):
             self.assign_material_slots_to_faces(obj, self.mesh)
             self.parsed_meshes.append(self.mesh.name)
             return # styled items override material styles
-        self.parse_material(element)
-        self.parsed_meshes.append(self.mesh.name)
 
     def parse_representations(self, element):
         has_parsed = False
