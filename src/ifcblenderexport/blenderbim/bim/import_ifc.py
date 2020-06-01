@@ -46,7 +46,6 @@ class MaterialCreator():
         if self.parse_representations(element):
             self.assign_material_slots_to_faces(obj, self.mesh)
             self.parsed_meshes.append(self.mesh.name)
-            return # styled items override material styles
 
     def parse_representations(self, element):
         has_parsed = False
@@ -1220,6 +1219,17 @@ class IfcImporter():
                 and representation.RepresentationType == 'MappedRepresentation':
                 return representation.Items[0].MappingTarget
 
+    def get_geometry_type(self, element):
+        if hasattr(element, 'Representation'):
+            tree = self.file.traverse(element.Representation)
+        elif hasattr(element, 'RepresentationMaps'):
+            tree = self.file.traverse(element.RepresentationMaps)
+        representations = [e for e in tree if e.is_a('IfcRepresentation') \
+            and e.RepresentationIdentifier == 'Body' \
+            and e.RepresentationType != 'MappedRepresentation']
+        for representation in representations:
+            return representation.Items[0].is_a()
+
     def create_mesh(self, element, shape, is_curve=False):
         try:
             if hasattr(shape, 'geometry'):
@@ -1252,6 +1262,7 @@ class IfcImporter():
                     ios_materials.append(mat.name)
             mesh['ios_materials'] = ios_materials
             mesh['ios_material_ids'] = geometry.material_ids
+            mesh.BIMMeshProperties.geometry_type = self.get_geometry_type(element)
             return mesh
         except:
             self.ifc_import_settings.logger.error('Could not create mesh for {}: {}/{}'.format(element.GlobalId, self.get_name(element)))
