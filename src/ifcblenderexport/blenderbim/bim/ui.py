@@ -248,6 +248,7 @@ class BIM_PT_representations(Panel):
             row.prop(subcontext, 'name', text='')
             row.prop(subcontext, 'target_view', text='')
             op = row.operator('bim.switch_context', icon='OUTLINER_DATA_MESH', text='')
+            op.has_target_context = True
             op.context_name = subcontext.context
             op.subcontext_name = subcontext.name
             op.target_view_name = subcontext.target_view
