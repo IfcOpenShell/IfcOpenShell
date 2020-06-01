@@ -251,6 +251,7 @@ class IfcImporter():
         self.parse_native_products()
         self.filter_ifc()
         self.patch_ifc()
+        self.create_georeferencing()
         self.create_groups()
         self.create_grids()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
@@ -381,6 +382,39 @@ class IfcImporter():
             element.ObjectPlacement.RelativePlacement.Axis.DirectionRatios = (0., 0., 1.)
         if element.ObjectPlacement.RelativePlacement.RefDirection:
             element.ObjectPlacement.RelativePlacement.RefDirection.DirectionRatios = (1., 0., 0.)
+
+    def create_georeferencing(self):
+        try:
+            map_conversion = self.file.by_type('IfcMapConversion')
+            projected_crs = self.file.by_type('IfcProjectedCRS')
+            if not map_conversion or not projected_crs:
+                return
+        except:
+            return # For example, in IFC2X3
+        map_conversion = map_conversion[0]
+        projected_crs = projected_crs[0]
+        scene = bpy.context.scene
+        scene.BIMProperties.has_georeferencing = True
+        scene.MapConversion.eastings = str(map_conversion.Eastings)
+        scene.MapConversion.northings = str(map_conversion.Northings)
+        scene.MapConversion.orthogonal_height = str(map_conversion.OrthogonalHeight)
+        scene.MapConversion.x_axis_abscissa = str(map_conversion.XAxisAbscissa)
+        scene.MapConversion.x_axis_ordinate = str(map_conversion.XAxisOrdinate)
+        scene.MapConversion.scale = str(map_conversion.Scale)
+        scene.TargetCRS.name = projected_crs.Name
+        scene.TargetCRS.description = projected_crs.Description
+        scene.TargetCRS.geodetic_datum = projected_crs.GeodeticDatum
+        scene.TargetCRS.vertical_datum = projected_crs.VerticalDatum
+        scene.TargetCRS.map_projection = projected_crs.MapProjection
+        scene.TargetCRS.map_zone = projected_crs.MapZone
+        scene.TargetCRS.map_unit = self.get_unit_name(projected_crs.MapUnit)
+
+    def get_unit_name(self, named_unit):
+        name = ''
+        if hasattr(named_unit, 'Prefix') and named_unit.Prefix:
+            name += named_unit.Prefix
+        name += named_unit.Name
+        return name
 
     def create_groups(self):
         group_collection = None
