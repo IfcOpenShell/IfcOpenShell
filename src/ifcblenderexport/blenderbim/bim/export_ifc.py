@@ -414,7 +414,7 @@ class IfcParser():
         type_product = obj.BIMObjectProperties.relating_type
         if type_product \
                 and self.is_a_type(self.get_ifc_class(type_product.name)):
-            reference = self.get_type_product_reference(self.get_name_attribute(type_product))
+            reference = self.get_type_product_reference(type_product.name)
             self.rel_defines_by_type.setdefault(reference, []).append(self.product_index)
 
         if product['has_boundary_condition']:
@@ -1093,7 +1093,7 @@ class IfcParser():
                 for e in self.groups].index(name)
 
     def get_type_product_reference(self, name):
-        return [p['attributes']['Name']
+        return [p['raw'].name
                 for p in self.type_products].index(name)
 
     def get_ifc_class(self, name):
