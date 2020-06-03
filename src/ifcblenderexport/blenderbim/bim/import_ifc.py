@@ -496,12 +496,15 @@ class IfcImporter():
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
         if representation_map:
-            shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
-            mesh_name = f'mesh-{shape.id}'
-            mesh = self.meshes.get(mesh_name)
-            if mesh is None:
-                mesh = self.create_mesh(element, shape)
-                self.meshes[mesh_name] = mesh
+            try:
+                shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
+                mesh_name = f'mesh-{shape.id}'
+                mesh = self.meshes.get(mesh_name)
+                if mesh is None:
+                    mesh = self.create_mesh(element, shape)
+                    self.meshes[mesh_name] = mesh
+            except:
+                self.ifc_import_settings.logger.error('Failed to generate shape for {}'.format(element))
         obj = bpy.data.objects.new(self.get_name(element), mesh)
         if mesh:
             self.material_creator.create(element, obj, mesh)
@@ -1273,7 +1276,9 @@ class IfcImporter():
         if hasattr(element, 'Representation'):
             tree = self.file.traverse(element.Representation)
         elif hasattr(element, 'RepresentationMaps'):
-            tree = self.file.traverse(element.RepresentationMaps)
+            tree = []
+            for representation_map in element.RepresentationMaps:
+                tree.extend(self.file.traverse(representation_map))
         representations = [e for e in tree if e.is_a('IfcRepresentation') \
             and e.RepresentationIdentifier == 'Body' \
             and e.RepresentationType != 'MappedRepresentation']
