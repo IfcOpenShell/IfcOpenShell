@@ -99,7 +99,7 @@ class MaterialCreator():
         for index, polygon in enumerate(mesh.polygons):
             material = mesh['ios_materials'][mesh['ios_material_ids'][index]]
             if 'surface-style-' in material:
-                material = material[len('surface-style-'):]
+                material = material.split('-')[2]
             try:
                 polygon.material_index = slots.index(material)
             except:
@@ -112,20 +112,36 @@ class MaterialCreator():
                 material_select = association.RelatingMaterial
                 if material_select.is_a('IfcMaterialDefinition'):
                     self.create_definition(material_select)
+                elif material_select.is_a('IfcMaterialLayerSetUsage'):
+                    self.create_layer_set_usage(material_select)
+
+    def create_layer_set_usage(self, usage):
+        # TODO import rest of the layer set usage data
+        self.create_definition(usage.ForLayerSet)
 
     def create_definition(self, material):
         if material.is_a('IfcMaterial'):
             self.create_single(material)
+        elif material.is_a('IfcMaterialLayerSet'):
+            self.create_layer_set(material)
 
     def create_single(self, material):
         if material.Name not in self.materials:
             self.create_new_single(material)
         return self.assign_material_to_mesh(self.materials[material.Name])
 
+    def create_layer_set(self, layer_set):
+        for layer in layer_set.MaterialLayers:
+            if layer.Material:
+                if layer.Material.Name not in self.materials:
+                    # TODO import rest of the layer set data
+                    self.create_new_single(layer.Material)
+                self.assign_material_to_mesh(self.materials[layer.Material.Name])
+
     def create_new_single(self, material):
         self.materials[material.Name] = bpy.data.materials.new(material.Name)
         if not material.HasRepresentation \
-            or not material.HasRepresentation[0].Representations:
+                or not material.HasRepresentation[0].Representations:
             return
         for representation in material.HasRepresentation[0].Representations:
             if not representation.Items:
