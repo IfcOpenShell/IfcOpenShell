@@ -164,33 +164,38 @@ class SelectPset(bpy.types.Operator):
 class AssignClass(bpy.types.Operator):
     bl_idname = 'bim.assign_class'
     bl_label = 'Assign IFC Class'
+    object_name: bpy.props.StringProperty()
 
     def execute(self, context):
-        for object in bpy.context.selected_objects:
+        if self.object_name:
+            objects = [bpy.data.objects.get(self.object_name)]
+        else:
+            objects = bpy.context.selected_objects
+        for obj in objects:
             existing_class = None
-            if '/' in object.name \
-                and object.name[0:3] == 'Ifc':
-                existing_class = object.name.split('/')[0]
+            if '/' in obj.name \
+                and obj.name[0:3] == 'Ifc':
+                existing_class = obj.name.split('/')[0]
             if existing_class:
-                object.name = '{}/{}'.format(
+                obj.name = '{}/{}'.format(
                     bpy.context.scene.BIMProperties.ifc_class,
-                    object.name.split('/')[1])
+                    obj.name.split('/')[1])
             else:
-                object.name = '{}/{}'.format(
+                obj.name = '{}/{}'.format(
                     bpy.context.scene.BIMProperties.ifc_class,
-                    object.name)
-            predefined_type_index = object.BIMObjectProperties.attributes.find('PredefinedType')
+                    obj.name)
+            predefined_type_index = obj.BIMObjectProperties.attributes.find('PredefinedType')
             if predefined_type_index >= 0:
-                object.BIMObjectProperties.attributes.remove(predefined_type_index)
-            object_type_index = object.BIMObjectProperties.attributes.find('ObjectType')
+                obj.BIMObjectProperties.attributes.remove(predefined_type_index)
+            object_type_index = obj.BIMObjectProperties.attributes.find('ObjectType')
             if object_type_index >= 0:
-                object.BIMObjectProperties.attributes.remove(object_type_index)
+                obj.BIMObjectProperties.attributes.remove(object_type_index)
             if bpy.context.scene.BIMProperties.ifc_predefined_type:
-                predefined_type = object.BIMObjectProperties.attributes.add()
+                predefined_type = obj.BIMObjectProperties.attributes.add()
                 predefined_type.name = 'PredefinedType'
                 predefined_type.string_value = bpy.context.scene.BIMProperties.ifc_predefined_type # TODO: make it an enum
             if bpy.context.scene.BIMProperties.ifc_predefined_type == 'USERDEFINED':
-                object_type = object.BIMObjectProperties.attributes.add()
+                object_type = obj.BIMObjectProperties.attributes.add()
                 object_type.name = 'ObjectType'
                 object_type.string_value = bpy.context.scene.BIMProperties.ifc_userdefined_type
         return {'FINISHED'}
