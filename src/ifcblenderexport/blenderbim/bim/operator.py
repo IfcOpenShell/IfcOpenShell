@@ -898,7 +898,7 @@ class RemoveObjectDocumentReference(bpy.types.Operator):
 
 class GenerateGlobalId(bpy.types.Operator):
     bl_idname = 'bim.generate_global_id'
-    bl_label = 'Generate GlobalId'
+    bl_label = 'Regenerate GlobalId'
 
     def execute(self, context):
         index = bpy.context.active_object.BIMObjectProperties.attributes.find('GlobalId')
