@@ -48,6 +48,9 @@ bunch of library files in the ``2.81/`` folder too. This is a non-standard
 location to place files, but is a hack to allow people to use precompiled builds
 from Conda.
 
+If you receive an error when enabling the add-on, you may have installed the
+package for the wrong platform.
+
 Updating
 --------
 
