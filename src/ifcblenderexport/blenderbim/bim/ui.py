@@ -119,7 +119,7 @@ class BIM_PT_object(Panel):
 
 
 class BIM_PT_document_information(Panel):
-    bl_label = 'Documents'
+    bl_label = 'IFC Documents'
     bl_idname = 'BIM_PT_document_information'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -198,7 +198,7 @@ class BIM_PT_document_information(Panel):
 
 
 class BIM_PT_documents(Panel):
-    bl_label = 'Documents'
+    bl_label = 'IFC Documents'
     bl_idname = 'BIM_PT_documents'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -239,7 +239,7 @@ class BIM_PT_documents(Panel):
 
 
 class BIM_PT_representations(Panel):
-    bl_label = 'Representations'
+    bl_label = 'IFC Representations'
     bl_idname = 'BIM_PT_representations'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -272,7 +272,7 @@ class BIM_PT_representations(Panel):
 
 
 class BIM_PT_classification_references(Panel):
-    bl_label = 'Classification References'
+    bl_label = 'IFC Classification References'
     bl_idname = 'BIM_PT_classification_references'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -302,7 +302,7 @@ class BIM_PT_classification_references(Panel):
 
 
 class BIM_PT_psets(Panel):
-    bl_label = 'Psets'
+    bl_label = 'IFC Property Sets'
     bl_idname = 'BIM_PT_psets'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -346,7 +346,7 @@ class BIM_PT_psets(Panel):
 
 
 class BIM_PT_classifications(Panel):
-    bl_label = 'Classifications'
+    bl_label = 'IFC Classifications References'
     bl_idname = 'BIM_PT_classifications'
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -560,7 +560,7 @@ class BIM_PT_gis(Panel):
 
 
 class BIM_PT_documentation(Panel):
-    bl_label = "Documentation"
+    bl_label = "BIM Documentation"
     bl_idname = "BIM_PT_documentation"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -739,7 +739,7 @@ class BIM_PT_text(Panel):
 
 
 class BIM_PT_owner(Panel):
-    bl_label = "Owner History"
+    bl_label = "IFC Owner History"
     bl_idname = "BIM_PT_owner"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -760,7 +760,7 @@ class BIM_PT_owner(Panel):
 
 
 class BIM_PT_context(Panel):
-    bl_label = "Geometric Representation Contexts"
+    bl_label = "IFC Geometric Representation Contexts"
     bl_idname = "BIM_PT_context"
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -864,7 +864,7 @@ class BIM_PT_bim(Panel):
 
 
 class BIM_PT_search(Panel):
-    bl_label = "BIM Search"
+    bl_label = "IFC Search"
     bl_idname = "BIM_PT_search"
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -904,7 +904,7 @@ class BIM_PT_search(Panel):
 
 
 class BIM_PT_ifccsv(Panel):
-    bl_label = "IFC CSV"
+    bl_label = "IFC CSV Import/Export"
     bl_idname = "BIM_PT_ifccsv"
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -935,7 +935,7 @@ class BIM_PT_ifccsv(Panel):
 
 
 class BIM_PT_bcf(Panel):
-    bl_label = "BIM Collaboration Format"
+    bl_label = "BIM Collaboration Format (BCF)"
     bl_idname = "BIM_PT_bcf"
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -1099,7 +1099,7 @@ class BIM_PT_qa(Panel):
         row.operator("bim.select_audited")
 
 class BIM_PT_library(Panel):
-    bl_label = "BIM Server Library"
+    bl_label = "IFC BIM Server Library"
     bl_idname = "BIM_PT_library"
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
@@ -1160,7 +1160,7 @@ class BIM_PT_diff(Panel):
 
 
 class BIM_PT_mvd(Panel):
-    bl_label = "Model View Definitions"
+    bl_label = "Model View Definitions (MVD)"
     bl_idname = "BIM_PT_mvd"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -1310,7 +1310,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
 
 class BIM_PT_ifcclash(Panel):
-    bl_label = "IFC Clash"
+    bl_label = "IFC Clash Sets"
     bl_idname = "BIM_PT_ifcclash"
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
