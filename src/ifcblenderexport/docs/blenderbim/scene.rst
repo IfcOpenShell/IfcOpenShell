@@ -4,8 +4,8 @@ Scene Properties
 The scene properties panels allow you to manage data that applies to your entire
 IFC project as a whole, or to multiple elements.
 
-Building Information Modeling Panel
------------------------------------
+BIM/IFC Setup Panel
+-------------------
 
 System Setup
 ^^^^^^^^^^^^
@@ -112,8 +112,8 @@ Aggregates
    to select and modify the aggregate parts.
  - **Save Aggregate** - this does the opposite of *Edit Aggregate*.
 
-Classifications
-^^^^^^^^^^^^^^^
+BIM/IFC Classifications Panel
+-----------------------------
 
  - **Classification** - this lets you select which classification system you'd
    like to use. The list of possible classification systems is derived from the
@@ -132,8 +132,8 @@ Classifications
  - **Unassign Classification** - this removes the currently active *Reference*
    in all of the selected objects.
 
-Owner History Panel
--------------------
+BIM/IFC Owner History Panel
+---------------------------
 
  - **Person** - this lets you select who you are. The values are derived from
    the ``{DATA_DIR}/owner/person.json`` file, particularly the
@@ -151,8 +151,8 @@ Owner History Panel
    will also be recorded as the author of the IFC file.
 
 
-Geometric Representation Contexts Panel
----------------------------------------
+BIM/IFC Geometric Representation Contexts Panel
+-----------------------------------------------
 
  - **Has Model Context** - enabling this will allow you to export geometric data
    related to the model view of your BIM data. This is generally 3D
