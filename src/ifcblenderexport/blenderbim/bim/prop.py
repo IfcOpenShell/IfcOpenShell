@@ -940,7 +940,7 @@ class BIMProperties(PropertyGroup):
     active_property_set_template: PointerProperty(type=PropertySetTemplate)
     property_templates: CollectionProperty(name='Property Templates', type=PropertyTemplate)
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
-    section_plane_colour: FloatVectorProperty(name='Section Plane Colour', subtype='COLOR', default=(1, 0, 0), min=0.0, max=1.0)
+    section_plane_colour: FloatVectorProperty(name='Temporary Section Cutaway Colour', subtype='COLOR', default=(1, 0, 0), min=0.0, max=1.0)
     ifc_selector: StringProperty(default='', name='IFC Selector')
     csv_attributes: CollectionProperty(name='CSV Attributes', type=StrProperty)
     document_information: CollectionProperty(name='Document Information', type=DocumentInformation)
