@@ -643,7 +643,7 @@ class BIM_PT_documentation(Panel):
 
 
 class BIM_PT_section_plane(Panel):
-    bl_label = "Section Planes"
+    bl_label = "Temporary Section Cutaways"
     bl_idname = "BIM_PT_section_plane"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'

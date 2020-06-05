@@ -2325,7 +2325,7 @@ class RemovePropertyTemplate(bpy.types.Operator):
 
 class AddSectionPlane(bpy.types.Operator):
     bl_idname = 'bim.add_section_plane'
-    bl_label = 'Add Section Plane'
+    bl_label = 'Add Temporary Section Cutaway'
 
     def execute(self, context):
         obj = self.create_section_obj()
@@ -2479,7 +2479,7 @@ class AddSectionPlane(bpy.types.Operator):
 
 class RemoveSectionPlane(bpy.types.Operator):
     bl_idname = 'bim.remove_section_plane'
-    bl_label = 'Remove Section Plane'
+    bl_label = 'Remove Temporary Section Cutaway'
 
     def execute(self, context):
         name = bpy.context.active_object.name
