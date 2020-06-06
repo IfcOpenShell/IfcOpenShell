@@ -264,6 +264,7 @@ class IfcImporter():
             self.create_aggregates()
         if self.ifc_import_settings.should_import_opening_elements:
             self.create_openings_collection()
+        self.purge_non_body_representations()
         self.parse_native_products()
         self.filter_ifc()
         self.patch_ifc()
@@ -323,6 +324,12 @@ class IfcImporter():
         return abs(point.Coordinates[0]) > 1000000 \
             or abs(point.Coordinates[1]) > 1000000 \
             or abs(point.Coordinates[2]) > 1000000
+
+    def purge_non_body_representations(self):
+        # See https://github.com/IfcOpenShell/IfcOpenShell/issues/771
+        for element in self.file.by_type('IfcShapeRepresentation'):
+            if element.RepresentationIdentifier != 'Body':
+                self.file.remove(element)
 
     def parse_native_products(self):
         # TODO: simple code for now as we only treat rebar specially
