@@ -62,7 +62,7 @@ class Annotator:
             obj.data.vertices.add(2)
             obj.data.vertices[-2].co = co1
             obj.data.vertices[-1].co = co2
-            obj.data.edges.add(2)
+            obj.data.edges.add(1)
             obj.data.edges[-1].vertices = (obj.data.vertices[-2].index, obj.data.vertices[-1].index)
         if isinstance(obj.data, bpy.types.Curve):
             polyline = obj.data.splines.new('POLY')
