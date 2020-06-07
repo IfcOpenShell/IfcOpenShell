@@ -255,6 +255,8 @@ int main(int argc, char** argv) {
 		("enable-layerset-slicing", 
 			"Specifies whether to enable the slicing of products according "
 			"to their associated IfcMaterialLayerSet.")
+		("layerset-first", "Assigns the first layer material of the layerset "
+			"to the complete product.")
         ("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
             "Specifies that the entities that match a specific filtering criteria are to be included in the geometrical output:\n"
             "1) 'entities': the following list of types should be included. SVG output defaults "
@@ -390,6 +392,7 @@ int main(int argc, char** argv) {
 	const bool include_plan = vmap.count("plan") != 0;
 	const bool include_model = vmap.count("model") != 0 || (!include_plan);
 	const bool enable_layerset_slicing = vmap.count("enable-layerset-slicing") != 0;
+	const bool layerset_first = vmap.count("layerset-first") != 0;
 	const bool use_element_names = vmap.count("use-element-names") != 0;
 	const bool use_element_guids = vmap.count("use-element-guids") != 0;
 	const bool use_material_names = vmap.count("use-material-names") != 0;
@@ -603,6 +606,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::INCLUDE_CURVES,               include_plan);
 	settings.set(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES,  !include_model);
 	settings.set(IfcGeom::IteratorSettings::APPLY_LAYERSETS,              enable_layerset_slicing);
+	settings.set(IfcGeom::IteratorSettings::LAYERSET_FIRST,               layerset_first);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
 	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy);
