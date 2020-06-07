@@ -285,6 +285,8 @@ namespace IfcGeom {
 							GCPnts_QuasiUniformDeflection tessellater(crv, settings().deflection_tolerance());
 							int n = tessellater.NbPoints();
 							int start = (int)_verts.size() / 3;
+							int previous = -1;
+							
 							for (int i = 1; i <= n; ++i) {
 								gp_XYZ p = tessellater.Value(i).XYZ();
 								
@@ -325,16 +327,17 @@ namespace IfcGeom {
 								
 								_material_ids.push_back(surface_style_id);
 
-								_verts.push_back(static_cast<P>(p.X()));
-								_verts.push_back(static_cast<P>(p.Y()));
-								_verts.push_back(static_cast<P>(p.Z()));
+								int current = addVertex(surface_style_id, p);
 
 								if (i > 1) {
-									_edges.push_back(start + i - 2);
-									_edges.push_back(start + i - 1);
+									_edges.push_back(previous);
+									_edges.push_back(current);
+
 									// _edges.push_back(start + 3 * (i - 2) + 2);
 									// _edges.push_back(start + 3 * (i - 1) + 2);
 								}
+
+								previous = current;
 
 								// _edges.push_back(start + 3 * (i - 1) + 0);
 								// _edges.push_back(start + 3 * (i - 1) + 2);
