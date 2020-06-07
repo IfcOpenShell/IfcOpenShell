@@ -1084,6 +1084,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_DIMENSIONALITY:
 		dimensionality = value;
 		break;
+	case GV_LAYERSET_FIRST:
+		layerset_first = value;
+		break;
 	default:
 		assert(!"never reach here");
 	}
@@ -1114,6 +1117,9 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		break;
 	case GV_DIMENSIONALITY:
 		return dimensionality;
+		break;
+	case GV_LAYERSET_FIRST:
+		return layerset_first;
 		break;
 	}
 	assert(!"never reach here");
@@ -1422,7 +1428,7 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 		// the first material (in accordance with other viewers) when layerset-slicing is disabled.
 		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
 			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-			if (layerset->MaterialLayers()->size() >= 1) {
+			if (getValue(GV_LAYERSET_FIRST) > 0.0 ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
 				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
 				if (layer->hasMaterial()) {
 					single_material = layer->Material();

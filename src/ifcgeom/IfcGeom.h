@@ -108,6 +108,7 @@ private:
 	double ifc_planeangle_unit;
 	double modelling_precision;
 	double dimensionality;
+	double layerset_first;
 
 #ifndef NO_CACHE
 	Cache cache;
@@ -146,7 +147,7 @@ public:
 		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
 		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));
 		setValue(GV_DIMENSIONALITY,           other.getValue(GV_DIMENSIONALITY));
-		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
+		setValue(GV_LAYERSET_FIRST,           other.getValue(GV_LAYERSET_FIRST));
 		return *this;
 	}
 
@@ -181,7 +182,8 @@ public:
 		// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
 		GV_PRECISION,
 		// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
-		GV_DIMENSIONALITY
+		GV_DIMENSIONALITY,
+		GV_LAYERSET_FIRST
 	};
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);

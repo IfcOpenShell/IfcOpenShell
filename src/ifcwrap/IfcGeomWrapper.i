@@ -301,6 +301,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcGeom::Kernel kernel;
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_SEW, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? 1000 : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
+		kernel.setValue(IfcGeom::Kernel::GV_LAYERSET_FIRST,
+			settings.get(IteratorSettings::LAYERSET_FIRST)
+			? +1.0
+			: -1.0
+		);
+
 		std::pair<std::string, double> length_unit = kernel.initializeUnits(project->UnitsInContext());
 			
 		if (instance->is(IfcSchema::Type::IfcProduct)) {
