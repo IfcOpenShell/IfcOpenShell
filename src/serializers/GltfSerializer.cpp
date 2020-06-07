@@ -189,8 +189,21 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 
 		auto mid1 = o->geometry().material_ids().begin();
 		auto mid0 = mid1;
-		auto fid0 = o->geometry().faces().begin();
-		
+
+		std::vector<int>::const_iterator fid0;
+		int stride;
+		int primitive_type;
+
+		if (!o->geometry().faces().empty()) {
+			stride = 3;
+			fid0 = o->geometry().faces().begin();
+			primitive_type = PRIM_TRIANGLES;
+		} else {
+			stride = 2;
+			fid0 = o->geometry().edges().begin();
+			primitive_type = PRIM_LINES;
+		}
+
 		json mesh;
 		mesh["name"] = o->geometry().id();
 		
@@ -206,14 +219,14 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 
 			if ((mid1 == o->geometry().material_ids().end()) || (*mid1 != *mid0)) {
 				auto n = std::distance(mid0, mid1);
-				auto fid1 = fid0 + n * 3;
+				auto fid1 = fid0 + n * stride;
 
 				auto idx_range = std::minmax_element(fid0, fid1);
 				const auto& idx_begin = *idx_range.first;
 				const auto& idx_end = *idx_range.second + 1;
 
 				std::vector<int> idx_transformed;
-				idx_transformed.reserve((n * 3));
+				idx_transformed.reserve((n * stride));
 				std::transform(fid0, fid1, std::back_inserter(idx_transformed), [idx_begin](int i) {
 					return i - idx_begin;
 				});
@@ -226,12 +239,14 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement<real_t>* o) {
 				std::vector<float> vf(vbegin + idx_begin * 3, vbegin + idx_end * 3);
 				primitive["attributes"]["POSITION"] = write_accessor<3U>(json_, tmp_fstream2_, vf.begin(), vf.end());
 
-				auto nbegin = o->geometry().normals().begin();
-				std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
-				primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end());
+				if (o->geometry().normals().size()) {
+					auto nbegin = o->geometry().normals().begin();
+					std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
+					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end());
+				}
 				
 				primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
-				primitive["mode"] = PRIM_TRIANGLES;
+				primitive["mode"] = primitive_type;
 				
 				mesh["primitives"].push_back(primitive);
 
