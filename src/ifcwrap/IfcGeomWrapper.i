@@ -325,6 +325,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		IfcGeom::Kernel kernel(file);
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_ORIENT, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
+		kernel.setValue(IfcGeom::Kernel::GV_LAYERSET_FIRST,
+			settings.get(IteratorSettings::LAYERSET_FIRST)
+			? +1.0
+			: -1.0
+		);
 			
 		if (instance->declaration().is(Schema::IfcProduct::Class())) {
 			if (representation) {
