@@ -1231,6 +1231,7 @@ void IfcEntityInstanceData::setArgument(unsigned int i, Argument* a, IfcUtil::Ar
 	case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 		IfcEntityList::ptr instances = *a;
 		IfcEntityList::ptr mapped_instances(new IfcEntityList);
+		// @todo mapped_instances are not actually mapped to the file using add().
 		for (IfcEntityList::it it = instances->begin(); it != instances->end(); ++it) {
 			mapped_instances->push(*it);
 		}
