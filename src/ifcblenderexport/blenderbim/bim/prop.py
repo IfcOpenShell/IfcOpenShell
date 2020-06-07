@@ -896,6 +896,7 @@ class BIMProperties(PropertyGroup):
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
     import_should_treat_styled_item_as_material: BoolProperty(name="Import Treating Styled Item as Material", default=False)
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
+    import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=False)
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
     import_should_merge_aggregates: BoolProperty(name="Import and Merge Aggregates", default=False)
