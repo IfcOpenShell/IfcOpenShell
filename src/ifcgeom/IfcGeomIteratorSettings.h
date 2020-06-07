@@ -86,8 +86,10 @@ namespace IfcGeom
 			BUILDING_LOCAL_PLACEMENT = 1 << 16,
 			///
 			VALIDATE_QUANTITIES = 1 << 17,
+			/// Assigns the first layer material to the entire product
+			LAYERSET_FIRST = 1 << 18,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 17
+			NUM_SETTINGS = 18
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;

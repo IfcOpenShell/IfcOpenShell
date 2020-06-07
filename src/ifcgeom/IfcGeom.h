@@ -221,7 +221,8 @@ private:
 	double ifc_planeangle_unit;
 	double modelling_precision;
 	double dimensionality;
-	
+	double layerset_first;
+
 #ifndef NO_CACHE
 	MAKE_TYPE_NAME(Cache) cache;
 #endif
@@ -259,7 +260,7 @@ public:
 		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
 		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));
 		setValue(GV_DIMENSIONALITY,           other.getValue(GV_DIMENSIONALITY));
-		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
+		setValue(GV_LAYERSET_FIRST,           other.getValue(GV_LAYERSET_FIRST));
 		return *this;
 	}
 

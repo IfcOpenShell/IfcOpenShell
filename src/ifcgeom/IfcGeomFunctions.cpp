@@ -1317,6 +1317,9 @@ void IfcGeom::Kernel::setValue(GeomValue var, double value) {
 	case GV_MAX_FACES_TO_ORIENT:
 		max_faces_to_orient = value;
 		break;
+	case GV_LAYERSET_FIRST:
+		layerset_first = value;
+		break;
 	default:
 		throw std::runtime_error("Invalid setting");
 	}
@@ -1342,6 +1345,8 @@ double IfcGeom::Kernel::getValue(GeomValue var) const {
 		return dimensionality;
 	case GV_MAX_FACES_TO_ORIENT:
 		return max_faces_to_orient;
+	case GV_LAYERSET_FIRST:
+		return layerset_first;
 	}
 	throw std::runtime_error("Invalid setting");
 }
@@ -1644,11 +1649,11 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 		IfcSchema::IfcMaterialSelect* associated_material = (*associated_materials->begin())->RelatingMaterial();
 		single_material = associated_material->as<IfcSchema::IfcMaterial>();
 
-		// NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
-		// in accordance with other viewers.
+		// NB: IfcMaterialLayerSets are also considered, regardless of --enable-layerset-slicing. Picking 
+		// the first material (in accordance with other viewers) when layerset-slicing is disabled.
 		if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
 			IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-			if (layerset->MaterialLayers()->size() == 1) {
+			if (getValue(GV_LAYERSET_FIRST) > 0.0 ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
 				IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
 				if (layer->hasMaterial()) {
 					single_material = layer->Material();

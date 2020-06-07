@@ -49,7 +49,8 @@ namespace IfcGeom {
 			// Default: 0.00001 (obtained from IfcGeometricRepresentationContext if available)
 			GV_PRECISION,
 			// Whether to process shapes of type Face or higher (1) Wire or lower (-1) or all (0)
-			GV_DIMENSIONALITY
+			GV_DIMENSIONALITY,
+            GV_LAYERSET_FIRST
 		};
 
 		Kernel(IfcParse::IfcFile* file_ = 0);
