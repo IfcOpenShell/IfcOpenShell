@@ -325,14 +325,12 @@ namespace IfcGeom {
 
 								trsf.Transforms(p);
 								
-								_material_ids.push_back(surface_style_id);
-
 								int current = addVertex(surface_style_id, p);
 
 								if (i > 1) {
 									_edges.push_back(previous);
 									_edges.push_back(current);
-
+									_material_ids.push_back(surface_style_id);
 									// _edges.push_back(start + 3 * (i - 2) + 2);
 									// _edges.push_back(start + 3 * (i - 1) + 2);
 								}
