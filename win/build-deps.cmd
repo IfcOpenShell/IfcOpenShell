@@ -24,6 +24,13 @@
 @echo off
 echo.
 
+for %%Q in ("%~dp0\.") DO set "batpath=%%~fQ"
+
+if NOT "%CD%" == "%batpath%" (
+    GOTO :ErrorAndPrintUsage
+)
+
+
 set PROJECT_NAME=IfcOpenShell
 call utils\cecho.cmd 15 0 "This script fetches and builds all %PROJECT_NAME% dependencies"
 echo.
@@ -561,4 +568,6 @@ echo  4. Visual Studio 2008 or newer (2013 or newer recommended) with C++ toolse
 echo   - https://www.visualstudio.com/
 echo  5. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
+echo.
+echo NB: This script needs to be ran from the directory directly containing it.
 echo.

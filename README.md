@@ -48,6 +48,8 @@ Instructions in a nutshell (**assuming Visual Studio 2015 x64 environment variab
     > build-deps.cmd
     > run-cmake.bat
 
+NB: `build-deps.cmd` need to be ran from the directory containing it, i.e. the `./win` folder.
+
 You can now open and build the solution file in Visual Studio:
 
     > ..\build-vs2015-x64\IfcOpenShell.sln
