@@ -1191,6 +1191,8 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'import_should_use_legacy')
         row = layout.row()
+        row.prop(bim_properties, 'import_should_import_native')
+        row = layout.row()
         row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
 
         layout.label(text='Simplifications:')

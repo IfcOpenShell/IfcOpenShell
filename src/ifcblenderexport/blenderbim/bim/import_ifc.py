@@ -1,6 +1,7 @@
 import ifcopenshell
 import ifcopenshell.geom
 import bpy
+import bmesh
 import os
 import shutil
 import threading
@@ -93,7 +94,7 @@ class MaterialCreator():
         return True
 
     def assign_material_slots_to_faces(self, obj, mesh):
-        if not mesh['ios_materials']:
+        if 'ios_materials' not in mesh or not mesh['ios_materials']:
             return
         slots = [s.name for s in obj.material_slots]
         for index, polygon in enumerate(mesh.polygons):
@@ -264,8 +265,8 @@ class IfcImporter():
             self.create_aggregates()
         if self.ifc_import_settings.should_import_opening_elements:
             self.create_openings_collection()
-        self.purge_non_body_representations()
-        self.parse_native_products()
+        if self.ifc_import_settings.should_import_native:
+            self.parse_native_products()
         self.filter_ifc()
         self.patch_ifc()
         self.create_georeferencing()
@@ -325,31 +326,62 @@ class IfcImporter():
             or abs(point.Coordinates[1]) > 1000000 \
             or abs(point.Coordinates[2]) > 1000000
 
-    def purge_non_body_representations(self):
-        # See https://github.com/IfcOpenShell/IfcOpenShell/issues/771
-        for element in self.file.by_type('IfcShapeRepresentation'):
-            if element.RepresentationIdentifier != 'Body':
-                self.file.remove(element)
 
     def parse_native_products(self):
-        # TODO: simple code for now as we only treat rebar specially
-        for element in self.file.by_type('IfcReinforcingBar'):
-            for representation in element.Representation.Representations:
-                self.replace_with_directrix(representation, element)
-                for item in representation.Items:
-                    if item.is_a('IfcMappedItem'):
-                        self.replace_with_directrix(item.MappingSource.MappedRepresentation, element)
+        self.parse_native_swept_disk_solid()
+        self.parse_native_extruded_area_solid()
 
-    def replace_with_directrix(self, representation, element):
-        new_items = []
-        for item in representation.Items:
-            if item.is_a('IfcSweptDiskSolid'):
-                new_items.append(item.Directrix)
-                radius = round(self.unit_scale * item.Radius, 3)
-                self.native_elements[element.GlobalId] = { 'radius': radius }
-            else:
-                new_items.append(item)
-        representation.Items = new_items
+    def parse_native_swept_disk_solid(self):
+        for element in self.file.by_type('IfcSweptDiskSolid'):
+            dummy_geometry = self.get_dummy_geometry()
+            inverse_elements = self.file.get_inverse(element)
+            for inverse_element in inverse_elements:
+                if inverse_element.is_a('IfcShapeRepresentation'):
+                    inverse_element.RepresentationType = 'Curve'
+                    for product in self.get_products_from_shape_representation(inverse_element):
+                        self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
+                self.replace_attribute(inverse_element, element, dummy_geometry)
+
+    def parse_native_extruded_area_solid(self):
+        for element in self.file.by_type('IfcExtrudedAreaSolid'):
+            if element.SweptArea.is_a() not in [
+                    'IfcArbitraryClosedProfileDef',
+                    'IfcRectangleProfileDef'
+                    ]:
+                continue
+            dummy_geometry = self.get_dummy_geometry()
+            inverse_elements = self.file.get_inverse(element)
+            for inverse_element in inverse_elements:
+                if inverse_element.is_a('IfcShapeRepresentation'):
+                    inverse_element.RepresentationType = 'Curve'
+                    for product in self.get_products_from_shape_representation(inverse_element):
+                        self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
+                self.replace_attribute(inverse_element, element, dummy_geometry)
+
+    def get_dummy_geometry(self):
+        point = self.file.createIfcCartesianPoint((0., 0., 0.))
+        direction = self.file.createIfcVector(self.file.createIfcDirection((0., 0., 1.)), 1000.)
+        return self.file.createIfcLine(point, direction)
+
+    def get_products_from_shape_representation(self, element):
+        products = [pr.ShapeOfProduct[0] for pr in element.OfProductRepresentation]
+        for rep_map in element.RepresentationMap:
+            for usage in rep_map.MapUsage:
+                for inverse_element in self.file.get_inverse(usage):
+                    if inverse_element.is_a('IfcShapeRepresentation'):
+                        products.extend(self.get_products_from_shape_representation(inverse_element))
+        return products
+
+    def replace_attribute(self, element, old, new):
+        for i, attribute in enumerate(element):
+            if attribute == old:
+                element[i] = new
+            elif isinstance(attribute, tuple):
+                new_attribute = list(attribute)
+                for j, item in enumerate(attribute):
+                    if item == old:
+                        new_attribute[j] = new
+                        element[i] = new_attribute
 
     def filter_ifc(self):
         for element in self.file.by_type('IfcElement'):
@@ -582,11 +614,9 @@ class IfcImporter():
             mesh_name = f'mesh-{shape.geometry.id}'
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
-                # TODO: figure out a design pattern for native objects
-                if element.is_a('IfcReinforcingBar'):
-                    mesh = self.create_mesh(element, shape, is_curve=True)
-                    mesh.bevel_depth = self.native_elements[element.GlobalId]['radius']
-                else:
+                if element.GlobalId in self.native_elements:
+                    mesh = self.create_native_mesh(element, shape)
+                if mesh is None:
                     mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
         else:
@@ -614,6 +644,120 @@ class IfcImporter():
         self.add_product_representation_contexts(element, obj)
         self.added_data[element.GlobalId] = obj
         return obj
+
+    def create_native_mesh(self, element, shape):
+        data = self.native_elements[element.GlobalId]
+        bmeshes = []
+        curves = []
+        materials = []
+        for representation in self.get_body_representations(element.Representation.Representations):
+            for item in representation['raw'].Items:
+                if item.id() in data:
+                    item = data[item.id()]
+                if item.is_a() == 'IfcExtrudedAreaSolid':
+                    bm = self.create_native_extruded_area_solid(item, element)
+                    if bm:
+                        bmesh.ops.transform(bm, matrix=representation['matrix'], verts=bm.verts)
+                        bmeshes.append(bm)
+                elif item.is_a('IfcSweptDiskSolid'):
+                    curves.append(self.transform_curve(
+                        self.create_native_swept_disk_solid(item, element), representation['matrix']))
+
+        if not bmeshes and not curves:
+            return None
+
+        bevel_depth = None
+        merged_curve = None
+        for curve in curves:
+            if bevel_depth is None:
+                bevel_depth = curve.bevel_depth
+                merged_curve = curve
+            elif curve.bevel_depth == bevel_depth:
+                self.merge_curves(merged_curve, curve)
+            else:
+                # TODO: handle if there are multiple different radiuses
+                pass
+        if merged_curve:
+            return merged_curve
+        # TODO: handle both curve and bmeshes combined
+        mesh = bpy.data.meshes.new('Native Mesh')
+        merged_bm = self.merge_bmeshes(bmeshes)
+        merged_bm.to_mesh(mesh)
+        merged_bm.free()
+        return mesh
+
+    def transform_curve(self, curve, matrix):
+        for spline in curve.splines:
+            for point in spline.points:
+                point.co = matrix @ point.co
+        return curve
+
+    def merge_curves(self, a, b):
+        for spline in b.splines:
+            new_spline = a.splines.new('POLY')
+            is_first = True
+            for point in spline.points:
+                if is_first:
+                    is_first = False
+                else:
+                    new_spline.points.add(1)
+                new_spline.points[-1].co = point.co
+        return a
+
+    def merge_bmeshes(self, bmeshes):
+        merged_bm = bmesh.new()
+        mesh = bpy.data.meshes.new('x')
+        for bm in bmeshes:
+            bm.to_mesh(mesh)
+            bm.free()
+            merged_bm.from_mesh(mesh)
+        return merged_bm
+
+    def create_native_swept_disk_solid(self, item, element):
+        # TODO: support inner radius, start param, and end param
+        shape = ifcopenshell.geom.create_shape(self.settings, item.Directrix)
+        mesh = self.create_mesh(element, shape, is_curve=True)
+        mesh.bevel_depth = self.unit_scale * item.Radius
+        return mesh
+
+    def create_native_extruded_area_solid(self, item, element):
+        #print(shape.materials)
+        if item.SweptArea.is_a() == 'IfcArbitraryClosedProfileDef':
+            shape = ifcopenshell.geom.create_shape(self.settings, item.SweptArea.OuterCurve)
+            bm = self.bmesh_from_pydata(*self.shape_to_mesh(shape))
+            bm.faces.new([v for v in bm.verts])
+            bm.faces.ensure_lookup_table()
+        elif item.SweptArea.is_a() == 'IfcRectangleProfileDef':
+            bm = self.bmesh_from_rectangle(item.SweptArea.XDim, item.SweptArea.YDim)
+            if item.SweptArea.Position:
+                bmesh.ops.transform(bm, matrix=self.get_axis2placement(item.SweptArea.Position), verts=bm.verts)
+                bmesh.ops.transform(bm, matrix=mathutils.Matrix() * self.unit_scale, verts=bm.verts)
+        else:
+            # TODO: what if we can't handle it?
+            return
+        results = bmesh.ops.extrude_face_region(bm, geom=[bm.faces[0]])
+        bm.faces.ensure_lookup_table()
+        offset = self.unit_scale * item.Depth * mathutils.Vector(item.ExtrudedDirection.DirectionRatios)
+        for geom in results['geom']:
+            if isinstance(geom, bmesh.types.BMVert):
+                geom.co += offset
+        if item.Position:
+            bmesh.ops.transform(bm, matrix=self.get_axis2placement(item.Position), verts=bm.verts)
+        return bm
+        #mesh['ios_material_ids'] = [0] * len(bm.faces)
+
+    def bmesh_from_rectangle(self, x, y):
+        bm = bmesh.new()
+        bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=x/2)
+        bm.verts.ensure_lookup_table()
+        diff_vector = mathutils.Vector((0., (x - y) / 2., 0.))
+        bm.verts[0].co += diff_vector
+        bm.verts[1].co += diff_vector
+        bm.verts[2].co -= diff_vector
+        bm.verts[3].co -= diff_vector
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        return bm
 
     def merge_aggregates(self):
         self.merge_objects_inside_aggregates()
@@ -1256,6 +1400,27 @@ class IfcImporter():
 
         return element_matrix
 
+    def get_body_representations(self, representations, matrix=None):
+        if matrix is None:
+            matrix = mathutils.Matrix()
+        results = []
+        for representation in representations:
+            if representation.RepresentationIdentifier == 'Body' \
+                    and representation.RepresentationType == 'MappedRepresentation':
+                for item in representation.Items:
+                    # TODO: Confirm if this transformation is right
+                    transform = self.get_axis2placement(item.MappingSource.MappingOrigin)
+                    if item.MappingTarget:
+                        transform = transform @ self.get_cartesiantransformationoperator(item.MappingTarget)
+                    results.extend(self.get_body_representations([item.MappingSource.MappedRepresentation],
+                        transform @ matrix))
+            elif representation.RepresentationIdentifier == 'Body':
+                matrix[0][3] *= self.unit_scale
+                matrix[1][3] *= self.unit_scale
+                matrix[2][3] *= self.unit_scale
+                results.append({ 'raw': representation, 'matrix': matrix })
+        return results
+
     def get_representation_id(self, element):
         if not element.Representation:
             return None
@@ -1263,7 +1428,7 @@ class IfcImporter():
             if not representation.is_a('IfcShapeRepresentation'):
                 continue
             if representation.RepresentationIdentifier == 'Body' \
-                and representation.RepresentationType != 'MappedRepresentation':
+                    and representation.RepresentationType != 'MappedRepresentation':
                 return representation.id()
             elif representation.RepresentationIdentifier == 'Body':
                 return representation.Items[0].MappingSource.MappedRepresentation.id()
@@ -1326,7 +1491,7 @@ class IfcImporter():
             mesh.BIMMeshProperties.geometry_type = self.get_geometry_type(element)
             return mesh
         except:
-            self.ifc_import_settings.logger.error('Could not create mesh for {}: {}/{}'.format(element.GlobalId, self.get_name(element)))
+            self.ifc_import_settings.logger.error('Could not create mesh for {}: {}'.format(element.GlobalId, element))
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type='CURVE')
@@ -1350,6 +1515,47 @@ class IfcImporter():
             polyline.points[-1].co = v2
         return curve
 
+    def shape_to_mesh(self, shape):
+        if hasattr(shape, 'geometry'):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+        f = geometry.faces
+        e = geometry.edges
+        v = geometry.verts
+        vertices = [[v[i], v[i + 1], v[i + 2]]
+                 for i in range(0, len(v), 3)]
+        faces = [[f[i], f[i + 1], f[i + 2]]
+                 for i in range(0, len(f), 3)]
+        if faces:
+            edges = []
+        else:
+            edges = [[e[i], e[i + 1]]
+                     for i in range(0, len(e), 2)]
+        return (vertices, edges, faces)
+
+    def bmesh_from_pydata(self, verts=[], edges=[], faces=[]):
+        bm = bmesh.new()
+        [bm.verts.new(co) for co in verts]
+        bm.verts.index_update()
+        bm.verts.ensure_lookup_table()
+        if faces:
+            for face in faces:
+                bm.faces.new(tuple(bm.verts[i] for i in face))
+            bm.faces.index_update()
+        bm.faces.ensure_lookup_table()
+        if edges:
+            for edge in edges:
+                edge_seq = tuple(bm.verts[i] for i in edge)
+                try:
+                    bm.edges.new(edge_seq)
+                except ValueError:
+                    # edge exists!
+                    pass
+            bm.edges.index_update()
+        bm.edges.ensure_lookup_table()
+        return bm
+
     def a2p(self, o, z, x):
         y = z.cross(x)
         r = mathutils.Matrix((x, y, z, o))
@@ -1358,9 +1564,17 @@ class IfcImporter():
         return r
 
     def get_axis2placement(self, plc):
-        z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1))
-        x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0))
-        o = plc.Location.Coordinates
+        if plc.is_a('IfcAxis2Placement3D'):
+            z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0,0,1))
+            x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1,0,0))
+            o = plc.Location.Coordinates
+        else:
+            z = mathutils.Vector((0,0,1))
+            if plc.RefDirection:
+                x = mathutils.Vector(list(plc.RefDirection.DirectionRatios) + [0])
+            else:
+                x = mathutils.Vector((1,0,0))
+            o = list(plc.Location.Coordinates) + [0]
         return self.a2p(o,z,x)
 
     def get_cartesiantransformationoperator(self, plc):
@@ -1392,6 +1606,7 @@ class IfcImportSettings:
         self.should_import_spaces = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
+        self.should_import_native = False
         self.should_use_legacy = False
         self.should_merge_aggregates = False
         self.should_merge_by_class = False
@@ -1416,6 +1631,7 @@ class IfcImportSettings:
         settings.should_auto_set_workarounds = scene_bim.import_should_auto_set_workarounds
         settings.should_treat_styled_item_as_material = scene_bim.import_should_treat_styled_item_as_material
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
+        settings.should_import_native = scene_bim.import_should_import_native
         settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates
         settings.should_merge_aggregates = scene_bim.import_should_merge_aggregates
