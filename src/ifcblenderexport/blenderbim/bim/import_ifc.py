@@ -98,7 +98,11 @@ class MaterialCreator():
             return
         slots = [s.name for s in obj.material_slots]
         for index, polygon in enumerate(mesh.polygons):
-            material = mesh['ios_materials'][mesh['ios_material_ids'][index]]
+            material_id = mesh['ios_material_ids'][index]
+            # Magic number 999999 represents no material, until this has a better approach
+            if material_id == 999999:
+                continue
+            material = mesh['ios_materials'][material_id]
             if 'surface-style-' in material:
                 material = material.split('-')[2]
             try:
@@ -647,44 +651,72 @@ class IfcImporter():
 
     def create_native_mesh(self, element, shape):
         data = self.native_elements[element.GlobalId]
-        bmeshes = []
-        curves = []
         materials = []
+        items = []
         for representation in self.get_body_representations(element.Representation.Representations):
             for item in representation['raw'].Items:
+                materials.append(self.get_representation_item_material_name(item))
                 if item.id() in data:
                     item = data[item.id()]
                 if item.is_a() == 'IfcExtrudedAreaSolid':
                     bm = self.create_native_extruded_area_solid(item, element)
                     if bm:
                         bmesh.ops.transform(bm, matrix=representation['matrix'], verts=bm.verts)
-                        bmeshes.append(bm)
+                        items.append(bm)
+                    else:
+                        items.append(None)
                 elif item.is_a('IfcSweptDiskSolid'):
-                    curves.append(self.transform_curve(
+                    items.append(self.transform_curve(
                         self.create_native_swept_disk_solid(item, element), representation['matrix']))
+                else:
+                    items.append(None)
 
-        if not bmeshes and not curves:
+        if not items:
             return None
 
         bevel_depth = None
         merged_curve = None
-        for curve in curves:
-            if bevel_depth is None:
-                bevel_depth = curve.bevel_depth
-                merged_curve = curve
-            elif curve.bevel_depth == bevel_depth:
-                self.merge_curves(merged_curve, curve)
-            else:
-                # TODO: handle if there are multiple different radiuses
-                pass
+        merged_bm = bmesh.new()
+        material_ids = []
+        for i, item in enumerate(items):
+            if not item:
+                continue
+            if isinstance(item, bpy.types.Curve):
+                if bevel_depth is None:
+                    bevel_depth = item.bevel_depth
+                    merged_curve = item
+                elif item.bevel_depth == bevel_depth:
+                    self.merge_curves(merged_curve, item)
+                else:
+                    # TODO: handle if there are multiple different radiuses
+                    # We don't have a choice but to meshify it
+                    pass
+            elif isinstance(item, bmesh.types.BMesh):
+                total_polygons = len(item.faces)
+                if merged_bm is None:
+                    merged_bm = item
+                else:
+                    self.merge_bmeshes(merged_bm, item)
+                if materials[i]:
+                    material_ids += [i] * total_polygons
+                else:
+                    # Magic number 999999 represents no material, until this has a better approach
+                    material_ids += [999999] * total_polygons
         if merged_curve:
             return merged_curve
         # TODO: handle both curve and bmeshes combined
         mesh = bpy.data.meshes.new('Native Mesh')
-        merged_bm = self.merge_bmeshes(bmeshes)
         merged_bm.to_mesh(mesh)
         merged_bm.free()
+        mesh['ios_materials'] = materials
+        mesh['ios_material_ids'] = material_ids
         return mesh
+
+    def get_representation_item_material_name(self, item):
+        if not item.StyledByItem:
+            return
+        styled_item = item.StyledByItem[0]
+        return self.material_creator.get_material_name(styled_item)
 
     def transform_curve(self, curve, matrix):
         for spline in curve.splines:
@@ -704,14 +736,12 @@ class IfcImporter():
                 new_spline.points[-1].co = point.co
         return a
 
-    def merge_bmeshes(self, bmeshes):
-        merged_bm = bmesh.new()
+    def merge_bmeshes(self, a, b):
         mesh = bpy.data.meshes.new('x')
-        for bm in bmeshes:
-            bm.to_mesh(mesh)
-            bm.free()
-            merged_bm.from_mesh(mesh)
-        return merged_bm
+        b.to_mesh(mesh)
+        b.free()
+        a.from_mesh(mesh)
+        return a
 
     def create_native_swept_disk_solid(self, item, element):
         # TODO: support inner radius, start param, and end param
