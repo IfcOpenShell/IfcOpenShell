@@ -640,6 +640,7 @@ class IfcImporter():
         elif hasattr(element, 'ObjectPlacement'):
             obj.matrix_world = self.get_element_matrix(element)
 
+        self.add_element_representation_items(element, obj)
         self.add_element_attributes(element, obj)
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
@@ -648,6 +649,15 @@ class IfcImporter():
         self.add_product_representation_contexts(element, obj)
         self.added_data[element.GlobalId] = obj
         return obj
+
+    def add_element_representation_items(self, element, obj):
+        if not obj.data or 'ios_items' not in obj.data:
+            return
+        cumulative_vertex_index = 0
+        for item in obj.data['ios_items']:
+            vg = obj.vertex_groups.new(name=item['name'])
+            vg.add([v.index for v in obj.data.vertices[cumulative_vertex_index:cumulative_vertex_index+item['total_vertices']]], 1, 'ADD')
+            cumulative_vertex_index += item['total_vertices']
 
     def create_native_mesh(self, element, shape):
         data = self.native_elements[element.GlobalId]
@@ -662,12 +672,15 @@ class IfcImporter():
                     bm = self.create_native_extruded_area_solid(item, element)
                     if bm:
                         bmesh.ops.transform(bm, matrix=representation['matrix'], verts=bm.verts)
-                        items.append(bm)
+                        items.append({'blender': bm, 'raw': item})
                     else:
                         items.append(None)
                 elif item.is_a('IfcSweptDiskSolid'):
-                    items.append(self.transform_curve(
-                        self.create_native_swept_disk_solid(item, element), representation['matrix']))
+                    items.append({
+                        'blender': self.transform_curve(
+                            self.create_native_swept_disk_solid(item, element), representation['matrix']),
+                        'raw': item
+                    })
                 else:
                     items.append(None)
 
@@ -678,25 +691,30 @@ class IfcImporter():
         merged_curve = None
         merged_bm = bmesh.new()
         material_ids = []
+        representation_items = []
         for i, item in enumerate(items):
             if not item:
                 continue
-            if isinstance(item, bpy.types.Curve):
+            if isinstance(item['blender'], bpy.types.Curve):
                 if bevel_depth is None:
-                    bevel_depth = item.bevel_depth
-                    merged_curve = item
-                elif item.bevel_depth == bevel_depth:
-                    self.merge_curves(merged_curve, item)
+                    bevel_depth = item['blender'].bevel_depth
+                    merged_curve = item['blender']
+                elif item['blender'].bevel_depth == bevel_depth:
+                    self.merge_curves(merged_curve, item['blender'])
                 else:
                     # TODO: handle if there are multiple different radiuses
                     # We don't have a choice but to meshify it
                     pass
-            elif isinstance(item, bmesh.types.BMesh):
-                total_polygons = len(item.faces)
+            elif isinstance(item['blender'], bmesh.types.BMesh):
+                representation_items.append({
+                    'name': item['raw'].is_a(),
+                    'total_vertices': len(item['blender'].verts)
+                })
+                total_polygons = len(item['blender'].faces)
                 if merged_bm is None:
-                    merged_bm = item
+                    merged_bm = item['blender']
                 else:
-                    self.merge_bmeshes(merged_bm, item)
+                    self.merge_bmeshes(merged_bm, item['blender'])
                 if materials[i]:
                     material_ids += [i] * total_polygons
                 else:
@@ -710,6 +728,10 @@ class IfcImporter():
         merged_bm.free()
         mesh['ios_materials'] = materials
         mesh['ios_material_ids'] = material_ids
+        mesh['ios_items'] = representation_items
+        for representation_item in representation_items:
+            new = mesh.BIMMeshProperties.representation_items.add()
+            new.name = representation_item['name']
         return mesh
 
     def get_representation_item_material_name(self, item):
