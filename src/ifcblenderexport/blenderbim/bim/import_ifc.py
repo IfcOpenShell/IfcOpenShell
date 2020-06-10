@@ -281,6 +281,7 @@ class IfcImporter():
             self.create_products_legacy()
         else:
             self.create_products()
+        self.relate_openings()
         self.place_objects_in_spatial_tree()
         if self.ifc_import_settings.should_merge_aggregates:
             self.merge_aggregates()
@@ -337,14 +338,7 @@ class IfcImporter():
 
     def parse_native_swept_disk_solid(self):
         for element in self.file.by_type('IfcSweptDiskSolid'):
-            dummy_geometry = self.get_dummy_geometry()
-            inverse_elements = self.file.get_inverse(element)
-            for inverse_element in inverse_elements:
-                if inverse_element.is_a('IfcShapeRepresentation'):
-                    inverse_element.RepresentationType = 'Curve'
-                    for product in self.get_products_from_shape_representation(inverse_element):
-                        self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
-                self.replace_attribute(inverse_element, element, dummy_geometry)
+            self.swap_out_with_dummy_geometry(element)
 
     def parse_native_extruded_area_solid(self):
         for element in self.file.by_type('IfcExtrudedAreaSolid'):
@@ -353,14 +347,17 @@ class IfcImporter():
                     'IfcRectangleProfileDef'
                     ]:
                 continue
-            dummy_geometry = self.get_dummy_geometry()
-            inverse_elements = self.file.get_inverse(element)
-            for inverse_element in inverse_elements:
-                if inverse_element.is_a('IfcShapeRepresentation'):
-                    inverse_element.RepresentationType = 'Curve'
-                    for product in self.get_products_from_shape_representation(inverse_element):
-                        self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
-                self.replace_attribute(inverse_element, element, dummy_geometry)
+            self.swap_out_with_dummy_geometry(element)
+
+    def swap_out_with_dummy_geometry(self, element):
+        dummy_geometry = self.get_dummy_geometry()
+        inverse_elements = self.file.get_inverse(element)
+        for inverse_element in inverse_elements:
+            if inverse_element.is_a('IfcShapeRepresentation'):
+                inverse_element.RepresentationType = 'Curve'
+                for product in self.get_products_from_shape_representation(inverse_element):
+                    self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
+            self.replace_attribute(inverse_element, element, dummy_geometry)
 
     def get_dummy_geometry(self):
         point = self.file.createIfcCartesianPoint((0., 0., 0.))
@@ -645,6 +642,7 @@ class IfcImporter():
         self.add_element_classifications(element, obj)
         self.add_element_document_relations(element, obj)
         self.add_defines_by_type_relation(element, obj)
+        self.add_opening_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.add_product_representation_contexts(element, obj)
         self.added_data[element.GlobalId] = obj
@@ -718,6 +716,8 @@ class IfcImporter():
                 if materials[i]:
                     material_ids += [i] * total_polygons
                 else:
+                    # Magic string NULLMAT represents no material, unless this has a better approach
+                    materials[i] = 'NULLMAT'
                     # Magic number 999999 represents no material, until this has a better approach
                     material_ids += [999999] * total_polygons
         if merged_curve:
@@ -783,7 +783,7 @@ class IfcImporter():
             bm = self.bmesh_from_rectangle(item.SweptArea.XDim, item.SweptArea.YDim)
             if item.SweptArea.Position:
                 bmesh.ops.transform(bm, matrix=self.get_axis2placement(item.SweptArea.Position), verts=bm.verts)
-                bmesh.ops.transform(bm, matrix=mathutils.Matrix() * self.unit_scale, verts=bm.verts)
+            bmesh.ops.transform(bm, matrix=mathutils.Matrix() * self.unit_scale, verts=bm.verts)
         else:
             # TODO: what if we can't handle it?
             return
@@ -794,7 +794,8 @@ class IfcImporter():
             if isinstance(geom, bmesh.types.BMVert):
                 geom.co += offset
         if item.Position:
-            bmesh.ops.transform(bm, matrix=self.get_axis2placement(item.Position), verts=bm.verts)
+            bmesh.ops.transform(
+                bm, matrix=self.scale_matrix(self.get_axis2placement(item.Position)), verts=bm.verts)
         return bm
         #mesh['ios_material_ids'] = [0] * len(bm.faces)
 
@@ -999,20 +1000,23 @@ class IfcImporter():
                     new_prop.string_value = str(value)
 
     def add_defines_by_type_relation(self, element, obj):
-        related_type = None
-        if self.file.schema == 'IFC2X3':
-            if not hasattr(element, 'IsDefinedBy') or not element.IsDefinedBy:
-                return
-            for relationship in element.IsDefinedBy:
-                if relationship.is_a('IfcRelDefinesByType'):
-                    related_type = relationship.RelatingType
-                    break
-        else:
-            if not hasattr(element, 'IsTypedBy') or not element.IsTypedBy:
-                return
-            related_type = element.IsTypedBy[0].RelatingType
+        related_type = self.get_type(element)
         if related_type:
             obj.BIMObjectProperties.relating_type = self.type_products[related_type.GlobalId]
+
+    # TODO: migrate into util function
+    def get_type(self, element):
+        if hasattr(element, 'IsTypedBy') and element.IsTypedBy:
+            return element.IsTypedBy[0].RelatingType
+        elif hasattr(element, 'IsDefinedBy') and element.IsDefinedBy: # IFC2X3
+            for relationship in element.IsDefinedBy:
+                if relationship.is_a('IfcRelDefinesByType'):
+                    return relationship.RelatingType
+
+    def add_opening_relation(self, element, obj):
+        if not element.is_a('IfcOpeningElement'):
+            return
+        self.openings[element.GlobalId] = obj
 
     def load_existing_rooted_elements(self):
         for obj in bpy.data.objects:
@@ -1249,8 +1253,9 @@ class IfcImporter():
         self.aggregates[element.GlobalId] = obj
 
     def create_openings_collection(self):
-        collection = bpy.data.collections.new('IfcOpeningElements')
-        bpy.context.scene.collection.children.link(collection)
+        self.opening_collection = bpy.data.collections.new('IfcOpeningElements')
+        self.project['blender'].children.link(self.opening_collection)
+        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.opening_collection.name].hide_viewport = True
 
     def get_name(self, element):
         return '{}/{}'.format(element.is_a(), element.Name)
@@ -1325,6 +1330,16 @@ class IfcImporter():
                             and getattr(association.RelatingDocument, value):
                         setattr(reference, key, getattr(association.RelatingDocument, value))
 
+    def relate_openings(self):
+        for global_id, opening in self.openings.items():
+            building_element_global_id = self.file.by_guid(global_id).VoidsElements[0].RelatingBuildingElement.GlobalId
+            if building_element_global_id not in self.added_data:
+                continue
+            building_element = self.added_data[building_element_global_id]
+            modifier = building_element.modifiers.new('IfcOpeningElement', 'BOOLEAN')
+            modifier.operation = 'DIFFERENCE'
+            modifier.object = opening
+
     def place_objects_in_spatial_tree(self):
         for global_id, obj in self.added_data.items():
             self.place_object_in_spatial_tree(self.file.by_guid(global_id), obj)
@@ -1360,7 +1375,7 @@ class IfcImporter():
                 self.ifc_import_settings.logger.error('An element could not be placed in the spatial tree {}'.format(element))
         elif hasattr(element, 'HasFillings') \
                 and element.HasFillings:
-            bpy.data.collections.get('IfcOpeningElements').objects.link(obj)
+            self.opening_collection.objects.link(obj)
         else:
             self.ifc_import_settings.logger.warning('Warning: this object is outside the spatial hierarchy')
             bpy.context.scene.collection.objects.link(obj)
@@ -1467,11 +1482,14 @@ class IfcImporter():
                     results.extend(self.get_body_representations([item.MappingSource.MappedRepresentation],
                         transform @ matrix))
             elif representation.RepresentationIdentifier == 'Body':
-                matrix[0][3] *= self.unit_scale
-                matrix[1][3] *= self.unit_scale
-                matrix[2][3] *= self.unit_scale
-                results.append({ 'raw': representation, 'matrix': matrix })
+                results.append({ 'raw': representation, 'matrix': self.scale_matrix(matrix) })
         return results
+
+    def scale_matrix(self, matrix):
+        matrix[0][3] *= self.unit_scale
+        matrix[1][3] *= self.unit_scale
+        matrix[2][3] *= self.unit_scale
+        return matrix
 
     def get_representation_id(self, element):
         if not element.Representation:
