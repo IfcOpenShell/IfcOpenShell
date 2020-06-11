@@ -12,7 +12,7 @@ def execute(args):
     ifc_file = ifcopenshell.open(args.input)
     print('# Loading patch recipe ...')
     patcher = getattr(__import__(f'recipes.{args.recipe}'), args.recipe).Patcher(
-            ifc_file, logger, args.arguments)
+            args.input, ifc_file, logger, args.arguments)
     print('# Patching ...')
     patcher.patch()
     print('# Writing patched file ...')
