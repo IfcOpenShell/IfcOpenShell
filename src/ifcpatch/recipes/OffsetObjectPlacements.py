@@ -1,7 +1,8 @@
 import math
 
 class Patcher:
-    def __init__(self, file, logger, args=None):
+    def __init__(self, src, file, logger, args=None):
+        self.src = src
         self.file = file
         self.logger = logger
         self.args = args
