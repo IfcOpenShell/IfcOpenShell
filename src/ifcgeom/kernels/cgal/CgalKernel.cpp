@@ -16,6 +16,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "CgalKernel.h"
 
@@ -214,6 +216,169 @@ namespace {
 	}
 }
 
+namespace {
+	typedef std::pair<double, double> parameter_range;
+
+	static const parameter_range unbounded = {
+		-std::numeric_limits<double>::infinity(),
+		+std::numeric_limits<double>::infinity()
+	};
+
+	void evaluate_curve(const taxonomy::line& c, double u, taxonomy::point3& p) {
+		Eigen::Vector4d xy{ u, 0, 0, 1. };
+		*p.components = (*c.matrix.components * xy).head<3>();
+	}
+
+	void evaluate_curve(const taxonomy::circle& c, double u, taxonomy::point3& p) {
+		Eigen::Vector4d xy{ c.radius * std::cos(u), c.radius * std::sin(u), 0, 1. };
+		*p.components = (*c.matrix.components * xy).head<3>();
+	}
+
+	void evaluate_curve(const taxonomy::ellipse& c, double u, taxonomy::point3& p) {
+		Eigen::Vector4d xy{ c.radius * std::cos(u), c.radius2 * std::sin(u), 0, 1. };
+		*p.components = (*c.matrix.components * xy).head<3>();
+	}
+
+	// ----
+
+	void project_onto_curve(const taxonomy::line& c, const taxonomy::point3& p, double& u) {
+		u = (c.matrix.components->inverse() * p.components->homogeneous())(0);
+	}
+
+	void project_onto_curve(const taxonomy::circle& c, const taxonomy::point3& p, double& u) {
+		Eigen::Vector2d xy = (c.matrix.components->inverse() * p.components->homogeneous()).head<2>();
+		u = std::atan2(xy(1), xy(0));
+	}
+
+	void project_onto_curve(const taxonomy::ellipse& c, const taxonomy::point3& p, double& u) {
+		Eigen::Vector2d xy = (c.matrix.components->inverse() * p.components->homogeneous()).head<2>();
+		u = std::atan2(xy(1), xy(0));
+	}
+
+	struct point_projection_visitor_ {
+		taxonomy::point3 p;
+		double u;
+
+		void operator()(const taxonomy::line& c) {
+			project_onto_curve(c, p, u);
+		}
+
+		void operator()(const taxonomy::circle& c) {
+			project_onto_curve(c, p, u);
+		}
+
+		void operator()(const taxonomy::ellipse& c) {
+			project_onto_curve(c, p, u);
+		}
+
+		void operator()(const taxonomy::item& c) {
+			throw std::runtime_error("Point projection not implemented on this geometry type");
+		}
+	};
+
+	struct point_projection_visitor {
+		taxonomy::item* curve;
+		double u;
+		
+		void operator()(const taxonomy::point3& p) {
+			point_projection_visitor_ v{ p };
+			dispatch_curve_creation<point_projection_visitor_>::dispatch(curve, v);
+			u = v.u;
+		}
+
+		void operator()(const double& u) {
+			this->u = u;
+		}
+	};
+
+	struct cgal_curve_creation_visitor {
+		static const int FULL_CIRCLE_NUM_SEGMENTS = 32;
+		parameter_range param;
+
+		std::vector<taxonomy::point3> points;
+
+		cgal_curve_creation_visitor() : param(unbounded) {}
+		cgal_curve_creation_visitor(const parameter_range& p) : param(p) {}
+
+		void operator()(const taxonomy::line& l) {
+			if (param == unbounded) {
+				throw std::runtime_error("Cannot represent infinite line segment");
+			}
+			taxonomy::point3 start, end;
+			evaluate_curve(l, param.first, start);
+			evaluate_curve(l, param.second, end);
+			points.push_back(start);
+			points.push_back(end);
+		}
+
+		template <typename T>
+		void evaluate_conic(const T& t) {
+			double a, b;
+			if (param == unbounded) {
+				a = 0.;
+				b = 2 * M_PI;
+			} else {
+				std::tie(a, b) = param;
+			}
+			int num_segments = (int)std::ceil(std::fabs(a - b) / (2 * M_PI) * FULL_CIRCLE_NUM_SEGMENTS);
+			double du = (b - a) / num_segments;
+			taxonomy::point3 P;
+			// @nb for loop is not inclusive of the both end points
+			evaluate_curve(t, a, P);
+			points.push_back(P);
+			for (int i = 1; i < num_segments; ++i) {
+				double u = a + du * i;
+				evaluate_curve(t, u, P);
+				points.push_back(P);
+			}
+			evaluate_curve(t, b, P);
+			points.push_back(P);
+		}
+
+		void operator()(const taxonomy::circle& c) {
+			evaluate_conic(c);
+		}
+
+		void operator()(const taxonomy::ellipse& e) {
+			evaluate_conic(e);
+		}
+
+		void operator()(const taxonomy::trimmed_curve& e) {
+			point_projection_visitor v1, v2;
+			boost::apply_visitor(v1, e.start);
+			boost::apply_visitor(v2, e.end);
+
+			cgal_curve_creation_visitor v({ v1.u, v2.u });
+
+			dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(e.basis, v);
+			this->points = v.points;
+		}
+
+		void operator()(const taxonomy::item& e) {
+			throw std::runtime_error("Not supported");
+		}
+	};
+
+	void convert_curve(taxonomy::item* i, std::vector<taxonomy::point3>& points) {
+		cgal_curve_creation_visitor v;
+		dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(i, v);
+		points = v.points;
+	}
+
+	// @nb mutates a
+	void extend_wire(std::vector<taxonomy::point3>& a, const std::vector<taxonomy::point3>& b) {
+		if (a.empty()) {
+			a = b;
+		}
+		if (b.empty()) {
+			return;
+		}
+		double d = (*a.back().components - *b.front().components).norm();
+		size_t offset = d < 1.e-5 ? 1 : 0;
+		a.insert(a.end(), b.begin() + offset, b.end());
+	}
+}
+
 bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	// @todo only implement polygonal loops
 
@@ -222,16 +387,27 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 
 	for (auto& e : edges) {
 		if (e->basis) {
-			Logger::Error("Only polyhedra supported :(");
-			return false;
+			std::vector<taxonomy::point3> edge;
+			convert_curve(e->basis, points);
+			extend_wire(points, edge);
+		} else {
+			extend_wire(points, {
+				boost::get<taxonomy::point3>(e->start),
+				boost::get<taxonomy::point3>(e->end)
+				});
 		}
-		points.push_back(boost::get<taxonomy::point3>(e->start));
+	}
+
+	if (points.size() >= 2) {
+		// the edges -> <p0, ... pn> conversion left us with a duplicate global begin,end point.
+		double d = (*points.back().components - *points.front().components).norm();
+		points.erase(points.end() - 1);
 	}
 
 	// Parse and store the points in a sequence
 	cgal_wire_t polygon = std::vector<Kernel_::Point_3>();
 	for (auto& p : points) {
-		cgal_point_t pnt(p.components(0), p.components(1), p.components(2));
+		cgal_point_t pnt((*p.components)(0), (*p.components)(1), (*p.components)(2));
 		polygon.push_back(pnt);
 	}
 
