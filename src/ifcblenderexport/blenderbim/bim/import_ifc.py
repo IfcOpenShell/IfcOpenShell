@@ -227,6 +227,11 @@ class IfcImporter():
         self.settings = ifcopenshell.geom.settings()
         if self.ifc_import_settings.should_import_curves:
             self.settings.set(self.settings.INCLUDE_CURVES, True)
+        self.settings_native = ifcopenshell.geom.settings()
+        self.settings_native.set(self.settings_native.INCLUDE_CURVES, True)
+        if self.ifc_import_settings.should_import_native:
+            self.settings.set(self.settings.DISABLE_OPENING_SUBTRACTIONS, True)
+            self.ifc_import_settings.should_import_opening_elements = True
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.existing_elements = {}
@@ -281,6 +286,7 @@ class IfcImporter():
         self.create_georeferencing()
         self.create_groups()
         self.create_grids()
+        self.create_native_products()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy:
             self.create_products_legacy()
@@ -350,6 +356,20 @@ class IfcImporter():
     def parse_native_elements(self):
         self.parse_native_swept_disk_solid()
         self.parse_native_extruded_area_solid()
+        if self.include_elements:
+            include_global_ids = [e.GlobalId for e in self.include_elements]
+            filtered_native_elements = {}
+            for global_id in self.native_elements.keys():
+                if global_id in include_global_ids:
+                    filtered_native_elements[global_id] = self.native_elements[global_id]
+            self.native_elements = filtered_native_elements
+        elif self.exclude_elements:
+            exclude_global_ids = [e.GlobalId for e in self.exclude_elements]
+            filtered_native_elements = {}
+            for global_id in self.native_elements.keys():
+                if global_id not in exclude_global_ids:
+                    filtered_native_elements[global_id] = self.native_elements[global_id]
+            self.native_elements = filtered_native_elements
 
     def parse_native_swept_disk_solid(self):
         for element in self.file.by_type('IfcSweptDiskSolid'):
@@ -586,6 +606,28 @@ class IfcImporter():
         for element in elements:
             self.create_product_legacy(element)
 
+    def create_native_products(self):
+        if not self.ifc_import_settings.should_import_native or not self.native_elements:
+            return
+        iterator = ifcopenshell.geom.iterator(
+            self.settings_native, self.file, multiprocessing.cpu_count(),
+            include=[self.file.by_guid(guid) for guid in self.native_elements.keys()] or None)
+        valid_file = iterator.initialize()
+        if not valid_file:
+            return False
+        old_progress = -1
+        while True:
+            progress = iterator.progress() // 2
+            if progress > old_progress:
+                print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
+                old_progress = progress
+            shape = iterator.get()
+            if shape:
+                self.create_product(self.file.by_id(shape.guid), shape)
+            if not iterator.next():
+                break
+        print("\rDone creating geometry" + " " * 30)
+
     def create_products(self):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
@@ -788,7 +830,7 @@ class IfcImporter():
 
     def create_native_swept_disk_solid(self, item, element):
         # TODO: support inner radius, start param, and end param
-        shape = ifcopenshell.geom.create_shape(self.settings, item.Directrix)
+        shape = ifcopenshell.geom.create_shape(self.settings_native, item.Directrix)
         mesh = self.create_mesh(element, shape, is_curve=True)
         mesh.bevel_depth = self.unit_scale * item.Radius
         return mesh
@@ -796,7 +838,7 @@ class IfcImporter():
     def create_native_extruded_area_solid(self, item, element):
         #print(shape.materials)
         if item.SweptArea.is_a() == 'IfcArbitraryClosedProfileDef':
-            shape = ifcopenshell.geom.create_shape(self.settings, item.SweptArea.OuterCurve)
+            shape = ifcopenshell.geom.create_shape(self.settings_native, item.SweptArea.OuterCurve)
             bm = self.bmesh_from_pydata(*self.shape_to_mesh(shape))
             bm.faces.new([v for v in bm.verts])
             bm.faces.ensure_lookup_table()
