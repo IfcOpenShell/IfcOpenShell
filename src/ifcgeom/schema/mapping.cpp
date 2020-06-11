@@ -185,10 +185,25 @@ namespace {
 	}
 
 	template <typename Fn>
+	bool apply_predicate_to_collection(taxonomy::item* i, Fn fn) {
+		if (i->kind() == taxonomy::COLLECTION) {
+			auto c = (taxonomy::collection*) i;
+			for (auto& child : c->children) {
+				if (apply_predicate_to_collection(child, fn)) {
+					return true;
+				}
+			}
+		} else {
+			return fn(i);
+		}
+	}
+
+	// @nb traverses nested collections
+	template <typename Fn>
 	taxonomy::collection* filter(taxonomy::collection* collection, Fn fn) {
 		auto filtered = new taxonomy::collection;
 		for (auto& child : collection->children) {
-			if (fn(child)) {
+			if (apply_predicate_to_collection(child, fn)) {
 				filtered->children.push_back(child);
 			}
 		}
@@ -207,16 +222,23 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
 	if (items == nullptr) {
 		return nullptr;
 	}
+
+	/*
+	// Don't blindly flatten, as we're culling away IfcMappedItem transformations
+
 	auto flat = flatten(items);
 	if (flat == nullptr) {
 		return nullptr;
 	}
-	auto filtered = filter(flat, [&use_body](taxonomy::item* i) {
+	*/
+
+	auto filtered = filter(items, [&use_body](taxonomy::item* i) {
 		// @todo just filter loops for now.
 		return (i->kind() != taxonomy::LOOP) == use_body;
 	});
+
 	delete items;
-	delete flat;
+
 	return filtered;
 }
 
@@ -416,24 +438,92 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcAxis2Placement2D* inst) {
 	return new taxonomy::matrix4(P, axis, V);
 }
 
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2DnonUniform* inst) {
-	// @todo
-	return new taxonomy::matrix4();
-}
-
-taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3DnonUniform* inst) {
-	// @todo
-	return new taxonomy::matrix4();
-}
-
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator2D* inst) {
-	// @todo
-	return new taxonomy::matrix4();
+	auto m = new taxonomy::matrix4;
+	
+	Eigen::Vector4d origin, axis1(1.0, 0.0, 0.0, 0.0), axis2(0.0, 1.0, 0.0, 0.0), axis3(0.0, 0.0, 1.0, 0.0);
+	
+	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
+	origin << *O.components, 1.0;
+	
+	if (inst->hasAxis1()) {
+		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
+		axis1 << *ax1.components, 0.0;
+	}	
+	if (inst->hasAxis2()) {
+		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis1()));
+		axis2 << *ax2.components, 0.0;
+	}
+
+	double scale1, scale2;
+	scale1 = scale2 = 1.0;
+
+	if (inst->hasScale()) {
+		scale1 = inst->Scale();
+	}
+	if (inst->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>()) {
+		auto nu = inst->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>();
+		scale2 = nu->hasScale2() ? nu->Scale2() : scale1;
+	}
+
+	*m->components << 
+		axis1 * scale1, 
+		axis2 * scale2, 
+		axis3, 
+		origin;
+
+	m->components->transposeInPlace();
+
+	return m;
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOperator3D* inst) {
-	// @todo
-	return new taxonomy::matrix4();
+	auto m = new taxonomy::matrix4;
+
+	Eigen::Vector4d origin;
+	Eigen::Vector4d axis1(1., 0., 0., 0.);
+	Eigen::Vector4d axis2(0., 1., 0., 0.);
+	Eigen::Vector4d axis3(0., 0., 1., 0.);
+
+	taxonomy::point3 O = as<taxonomy::point3>(map(inst->LocalOrigin()));
+	origin << *O.components, 1.0;
+
+	if (inst->hasAxis1()) {
+		taxonomy::direction3 ax1 = as<taxonomy::direction3>(map(inst->Axis1()));
+		axis1 << *ax1.components, 0.0;
+	}
+	if (inst->hasAxis2()) {
+		taxonomy::direction3 ax2 = as<taxonomy::direction3>(map(inst->Axis2()));
+		axis2 << *ax2.components, 0.0;
+	}
+	if (inst->hasAxis3()) {
+		taxonomy::direction3 ax3 = as<taxonomy::direction3>(map(inst->Axis3()));
+		axis3 << *ax3.components, 0.0;
+	}
+
+	double scale1, scale2, scale3;
+	scale1 = scale2 = scale3 = 1.;
+
+	if (inst->hasScale()) {
+		scale1 = inst->Scale();
+	}
+	if (inst->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>()) {
+		auto nu = inst->as<IfcSchema::IfcCartesianTransformationOperator3DnonUniform>();
+		scale2 = nu->hasScale2() ? nu->Scale2() : scale1;
+		scale3 = nu->hasScale3() ? nu->Scale3() : scale1;
+	}
+
+	*m->components <<
+		axis1 * scale1,
+		axis2 * scale2,
+		axis3 * scale3,
+		origin;
+
+	m->components->transposeInPlace();
+
+	// @todo tag identity?
+
+	return m;
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
@@ -1545,8 +1635,19 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	for (auto& segment : *segments) {
 		auto crv = map(segment->ParentCurve());
 		if (crv) {
-			((taxonomy::geom_item*)crv)->orientation = segment->SameSense();
-			loop->children.push_back(crv);
+			if (crv->kind() == taxonomy::EDGE) {
+				((taxonomy::geom_item*)crv)->orientation = segment->SameSense();
+				loop->children.push_back(crv);
+			} else if (crv->kind() == taxonomy::LOOP) {
+				if (!segment->SameSense()) {
+					crv->reverse();
+				}
+				auto curve_segments = ((taxonomy::loop*)crv)->children_as<taxonomy::edge>();
+				for (auto& s : curve_segments) {
+					loop->children.push_back(s);
+				}
+				// @todo delete crv without children
+			}
 		}
 	}
 	IfcEntityList::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);

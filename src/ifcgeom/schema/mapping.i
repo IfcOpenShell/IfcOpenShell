@@ -122,9 +122,9 @@ BIND(IfcDirection);
 BIND(IfcAxis2Placement2D);
 BIND(IfcAxis2Placement3D);
 // BIND(IfcAxis1Placement);
-BIND(IfcCartesianTransformationOperator2DnonUniform);
-BIND(IfcCartesianTransformationOperator3DnonUniform);
+// IfcCartesianTransformationOperator2DnonUniform included
 BIND(IfcCartesianTransformationOperator2D);
+// IfcCartesianTransformationOperator3DnonUniform included
 BIND(IfcCartesianTransformationOperator3D);
 BIND(IfcLocalPlacement);
 // BIND(IfcVector);
