@@ -490,7 +490,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 						auto item = mapping_->map(*product->get("ObjectPlacement"));
 						if (item) {
 							auto matrix = (ifcopenshell::geometry::taxonomy::matrix4*) item;
-							const double& Z = matrix->components(3, 2);
+							const double& Z = (*matrix->components)(3, 2);
 							setSectionHeight(Z + 1.);
 							Logger::Warning("No building storeys encountered, used for reference:", product);
 							return;

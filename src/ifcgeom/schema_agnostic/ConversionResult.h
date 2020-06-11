@@ -75,11 +75,11 @@ namespace ifcopenshell { namespace geometry {
 			: id(id), shape(shape->clone()) {}
 		void append(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
 			// @todo verify order
-			placement.components = placement.components * trsf.components;
+			*placement.components = *placement.components * *trsf.components;
 		}
 		void prepend(const ifcopenshell::geometry::taxonomy::matrix4& trsf) {
 			// @todo verify order
-			placement.components = trsf.components * placement.components;
+			*placement.components = *trsf.components * *placement.components;
 		}
 		const ConversionResultShape* Shape() const { return shape; }
 		const ifcopenshell::geometry::taxonomy::matrix4& Placement() const { return placement; }

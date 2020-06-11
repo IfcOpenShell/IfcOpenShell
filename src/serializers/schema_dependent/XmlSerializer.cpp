@@ -131,7 +131,7 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 				std::stringstream stream;
 				for (int i = 0; i < 4; ++i) {
 					for (int j = 0; j < 4; ++j) {
-						const double trsf_value = matrix->components(j, i);
+						const double trsf_value = (*matrix->components)(j, i);
 						stream << trsf_value;
 						if (i < 3 && j < 3) {
 							stream << " ";

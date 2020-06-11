@@ -123,8 +123,8 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 					auto p0 = boost::get<taxonomy::point3>(first_vertex);
 					auto p1 = boost::get<taxonomy::point3>(last_vertex);
 					
-					auto v0 = ((taxonomy::geom_item*)item)->matrix.components * p0.components.homogeneous();
-					auto v1 = ((taxonomy::geom_item*)item)->matrix.components * p1.components.homogeneous();
+					auto v0 = *((taxonomy::geom_item*)item)->matrix.components * p0.components->homogeneous();
+					auto v1 = *((taxonomy::geom_item*)item)->matrix.components * p1.components->homogeneous();
 
 					auto P0 = Kernel_::Point_3(v0(0), v0(1), v0(2));
 					auto P1 = Kernel_::Point_3(v1(0), v1(1), v1(2));

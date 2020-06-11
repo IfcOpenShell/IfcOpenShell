@@ -49,14 +49,12 @@ namespace ifcopenshell { namespace geometry {
 			// internally in IfcOpenShell everything is measured in meters.
 			if (settings.get(settings::CONVERT_BACK_UNITS)) {
 				for (int i = 0; i <= 2; ++i) {
-					matrix_.components(3, i) /= settings.unit_magnitude();
+					(*matrix_.components)(3, i) /= settings.unit_magnitude();
 				}
 			}
 		}
 		const ifcopenshell::geometry::taxonomy::matrix4& data() const { return matrix_; }
 		const element_settings& settings() const { return settings_; }
-
-		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	};
 
 	class Element {
@@ -136,8 +134,6 @@ namespace ifcopenshell { namespace geometry {
 		}
 
 		virtual ~Element() {}
-
-		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	};
 
 	class NativeElement : public Element {

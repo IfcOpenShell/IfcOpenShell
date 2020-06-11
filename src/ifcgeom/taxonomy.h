@@ -31,50 +31,90 @@ struct item {
 	const IfcUtil::IfcBaseClass* instance;
     virtual item* clone() const = 0;
 	virtual kinds kind() const = 0;
+	virtual void print(std::ostream&, int indent=0) const = 0;
 	virtual void reverse() { throw taxonomy::topology_error(); }
 
 	item(const IfcUtil::IfcBaseClass* instance = nullptr) : instance(instance) {}
-
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct matrix4 : public item {
+template <typename T>
+struct eigen_base {
+	T* components;
+
+	eigen_base() {
+		components = new T;
+	}
+
+	eigen_base(const eigen_base& other) {
+		this->components = new T(*other.components);
+	}
+
+	eigen_base(const T& other) {
+		this->components = new T(other);
+	}
+
+	eigen_base& operator=(const eigen_base& other) {
+		if (this != &other) {
+			this->components = new T(*other.components);
+		}
+		return *this;
+	}
+
+	void print_impl(std::ostream& o, const std::string& class_name, int indent = 0) const {
+		o << std::string(indent, ' ') << class_name;
+		for (size_t i = 0; i < 16; ++i) {
+			o << " " << (*components)(i);
+		}
+		o << std::endl;
+	}
+
+	~eigen_base() {
+		delete this->components;
+	}
+};
+
+struct matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
     enum tag_t {
         IDENTITY, AFFINE_WO_SCALE, AFFINE_W_UNIFORM_SCALE, AFFINE_W_NONUNIFORM_SCALE, OTHER
     };
     tag_t tag;
-	
-	Eigen::Matrix4d components;
 
-	matrix4() : components(Eigen::Matrix4d::Identity()), tag(IDENTITY) {}
-	matrix4(const Eigen::Matrix4d& c) : components(c), tag(OTHER) {}
+	matrix4() : eigen_base(Eigen::Matrix4d::Identity()), tag(IDENTITY) {}
+	matrix4(const Eigen::Matrix4d& c) : eigen_base(c), tag(OTHER) {}
 	matrix4(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) : tag(AFFINE_WO_SCALE) {
 		auto X = x.normalized();
 		auto Y = z.cross(x).normalized();
 		auto Z = z.normalized();
-		components << 
+		components = new Eigen::Matrix4d;
+		(*components) <<
 			X(0), Y(0), Z(0), o(0),
 			X(1), Y(1), Z(1), o(1),
 			X(2), Y(2), Z(2), o(2),
 			0, 0, 0, 1.;
 	}
 
+	void print(std::ostream& o, int indent = 0) const {
+		print_impl(o, "matrix4", indent);
+	}
+
 	virtual item* clone() const { return new matrix4(*this); }
 	virtual kinds kind() const { return MATRIX4; }
 };
 
-struct colour : public item {
-	Eigen::Vector3d components;
+struct colour : public item, public eigen_base<Eigen::Vector3d> {
+	void print(std::ostream& o, int indent = 0) const {
+		print_impl(o, "colour", indent);
+	}
 
 	virtual item* clone() const { return new colour(*this); }
 	virtual kinds kind() const { return COLOUR; }
 
-	colour() : components(Eigen::Vector3d::Zero()) {}
-	colour(double r, double g, double b) { components << r, g, b; }
+	colour() : eigen_base(Eigen::Vector3d::Zero()) {}
+	colour(double r, double g, double b) { (*components) << r, g, b; }
 
-	const double& r() const { return components[0]; }
-	const double& g() const { return components[1]; }
-	const double& b() const { return components[2]; }
+	const double& r() const { return (*components)[0]; }
+	const double& g() const { return (*components)[1]; }
+	const double& b() const { return (*components)[2]; }
 };
 
 struct style : public item {
@@ -83,6 +123,22 @@ struct style : public item {
 	boost::optional<colour> diffuse;
 	boost::optional<colour> specular;
 	boost::optional<double> specularity, transparency;
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << std::string(indent, ' ') << "style" << std::endl;
+		if (name) {
+			o << std::string(indent, ' ') << "     " << "name" << (*name) << std::endl;
+		}
+		if (diffuse) {
+			o << std::string(indent, ' ') << "     " << "diffuse" << (*name) << std::endl;
+			diffuse->print(o, indent + 5 + 7);
+		}
+		if (diffuse) {
+			o << std::string(indent, ' ') << "     " << "specular" << (*name) << std::endl;
+			diffuse->print(o, indent + 5 + 8);
+		}
+		// @todo
+	}
 
 	virtual item* clone() const { return new style(*this); }
 	virtual kinds kind() const { return STYLE; }
@@ -105,16 +161,18 @@ struct geom_item : public item {
 };
 
 template <size_t N>
-struct cartesian_base : public geom_item {
-	Eigen::Vector3d components;
-
-	cartesian_base() : components(Eigen::Vector3d::Zero()) {}
-	cartesian_base(double x, double y, double z = 0.) { components << x, y, z; }
+struct cartesian_base : public geom_item, public eigen_base<Eigen::Vector3d> {
+	cartesian_base() : eigen_base(Eigen::Vector3d::Zero()) {}
+	cartesian_base(double x, double y, double z = 0.) : eigen_base(Eigen::Vector3d(x, y, z)) {}
 };
 
 struct point3 : public cartesian_base<3> {
     virtual item* clone() const { return new point3(*this); }
 	virtual kinds kind() const { return POINT3; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		print_impl(o, "point3", indent);
+	}
 
 	point3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
 };
@@ -122,6 +180,10 @@ struct point3 : public cartesian_base<3> {
 struct direction3 : public cartesian_base<3> {
 	virtual item* clone() const { return new direction3(*this); }
 	virtual kinds kind() const { return DIRECTION3; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		print_impl(o, "direction3", indent);
+	}
 
 	direction3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
 };
@@ -131,6 +193,10 @@ struct curve : public geom_item {};
 struct line : public curve {
 	virtual item* clone() const { return new line(*this); }
 	virtual kinds kind() const { return LINE; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << "not implemented";
+	}
 };
 
 struct circle : public curve {
@@ -138,6 +204,10 @@ struct circle : public curve {
 
 	virtual item* clone() const { return new circle(*this); }
 	virtual kinds kind() const { return CIRCLE; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << "not implemented";
+	}
 };
 
 struct ellipse : public circle {
@@ -145,11 +215,19 @@ struct ellipse : public circle {
 
 	virtual item* clone() const { return new ellipse(*this); }
 	virtual kinds kind() const { return ELLIPSE; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << "not implemented";
+	}
 };
 
 struct bspline_curve : public curve {
 	virtual item* clone() const { return new bspline_curve(*this); }
 	virtual kinds kind() const { return BSPLINE_CURVE; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << "not implemented";
+	}
 };
 
 struct trimmed_curve : public curve {
@@ -166,6 +244,13 @@ struct trimmed_curve : public curve {
 	virtual void reverse() {
 		// std::swap(start, end);
 		orientation = !orientation;
+	}
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << std::string(indent, ' ') << "trimmed_curve" << std::endl;
+		if (basis) {
+			basis->print(o, indent + 4);
+		}
 	}
 };
 
@@ -199,6 +284,13 @@ struct collection : public geom_item {
 			child->reverse();
 		}
 	}
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << std::string(indent, ' ') << "collection" << std::endl;
+		for (auto& c : children) {
+			c->print(o, indent + 4);
+		}
+	}
 };
 
 struct shell : public collection {
@@ -213,6 +305,10 @@ struct surface : public geom_item {};
 struct plane : public surface {
 	virtual item* clone() const { return new plane(*this); }
 	virtual kinds kind() const { return PLANE; }
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << "not implemented";
+	}
 };
 
 struct face : public collection {
@@ -244,6 +340,12 @@ struct extrusion : public sweep {
 	virtual kinds kind() const { return EXTRUSION; }
 
 	extrusion(matrix4 m, face basis, direction3 dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
+
+	void print(std::ostream& o, int indent = 0) const {
+		o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
+		direction.print(o, indent + 4);
+		basis.print(o, indent + 4);
+	}
 };
 
 struct node : public collection {

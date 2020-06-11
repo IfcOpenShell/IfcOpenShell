@@ -475,8 +475,8 @@ struct intersection_validator {
 
 			for (auto& g : geom_object->geometry()) {
 				auto s = ((ifcopenshell::geometry::CgalShape*) g.Shape())->shape();
-				const auto& m = g.Placement().components;
-				const auto& n = geom_object->transformation().data().components;
+				const auto& m = *g.Placement().components;
+				const auto& n = *geom_object->transformation().data().components;
 
 				const cgal_placement_t trsf(
 					m(0, 0), m(0, 1), m(0, 2), m(0, 3),

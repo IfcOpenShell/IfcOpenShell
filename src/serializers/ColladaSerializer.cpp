@@ -197,14 +197,14 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(matrixStack.top().data().components * transformation.data().components);
+		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(*matrixStack.top().data().components * *transformation.data().components);
 		relative_trsf = new ifcopenshell::geometry::Transformation(transformation.settings(), m4);
 		transformation_towrite = relative_trsf;
 	}
 
 	// @todo verify
 
-	const double* m = transformation_towrite->data().components.data();
+	const double* m = transformation_towrite->data().components->data();
 
 	double matrix_array[4][4] = {
 		{ m[0], m[4], m[8], m[12] },
@@ -251,14 +251,14 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const ifcopensh
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
-		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(matrixStack.top().data().components * parent_trsf.data().components);
+		auto m4 = ifcopenshell::geometry::taxonomy::matrix4(*matrixStack.top().data().components * *parent_trsf.data().components);
 		relative_trsf = new ifcopenshell::geometry::Transformation(parent_trsf.settings(), m4);
 		transformation_towrite = relative_trsf;
 	}
 
 	// @todo verify
 
-	const double* parentMatrix = transformation_towrite->data().components.data();
+	const double* parentMatrix = transformation_towrite->data().components->data();
 
 	double matrix_array[4][4] = {
 		{ (double)parentMatrix[0], (double)parentMatrix[3], (double)parentMatrix[6], (double)parentMatrix[9] },
@@ -280,7 +280,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const ifcopensh
 	current_node->addMatrix(matrix_array);
 
 	// Add the node to the parent stack
-	matrixStack.push(ifcopenshell::geometry::Transformation(parent_trsf.settings(), ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data().components.inverse())));
+	matrixStack.push(ifcopenshell::geometry::Transformation(parent_trsf.settings(), ifcopenshell::geometry::taxonomy::matrix4(parent_trsf.data().components->inverse())));
 	parentNodes.push(current_node);
 	serializer->parentStackId.push(parent.id());
 }
@@ -320,11 +320,11 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::write
 	COLLADASW::EffectProfile effect(mSW);
 	effect.setShaderType(COLLADASW::EffectProfile::LAMBERT);
 	if (material.diffuse) {
-		auto diffuse = material.diffuse.get().components;
+		const auto& diffuse = *material.diffuse.get().components;
 		effect.setDiffuse(COLLADASW::ColorOrTexture(COLLADASW::Color(diffuse[0],diffuse[1],diffuse[2])));
 	}
 	if (material.specular) {
-		auto specular = material.specular.get().components;
+		const auto& specular = *material.specular.get().components;
 		effect.setSpecular(COLLADASW::ColorOrTexture(COLLADASW::Color(specular[0],specular[1],specular[2])));
 	}
 	if (material.specularity) {
@@ -348,9 +348,11 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::close
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const ifcopenshell::geometry::taxonomy::style& material) {
 	if (!contains(material)) {
-		// @todo original_name
-		std::string material_name = *(serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-	 		? material.name : material.name);
+		// @todo original_name?
+
+		// @todo apparently material.name is unitialized in some cases now.
+
+		std::string material_name = material.name.get_value_or("missing-material");
 
 		if (material_name.empty()) {
 			material_name = "missing-material-" + *material.name;
