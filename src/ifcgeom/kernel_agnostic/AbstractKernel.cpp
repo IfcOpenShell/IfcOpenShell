@@ -7,29 +7,6 @@
 
 #include "../../ifcgeom/kernels/cgal/CgalKernel.h"
 
-namespace {
-	/* A compile-time for loop over the taxonomy kinds */
-	template <size_t N>
-	struct dispatch_conversion {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, const ifcopenshell::geometry::taxonomy::item* item, ifcopenshell::geometry::ConversionResults& results) {
-			if (N == item->kind()) {
-				auto concrete_item = static_cast<const ifcopenshell::geometry::taxonomy::type_by_kind::type<N>*>(item);
-				return kernel->convert_impl(concrete_item, results);
-			} else {
-				return dispatch_conversion<N + 1>::dispatch(kernel, item, results);
-			}
-		}
-	};
-
-	template <>
-	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::item* item, ifcopenshell::geometry::ConversionResults&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
-			return false;
-		}
-	};
-}
-
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::item* item, ifcopenshell::geometry::ConversionResults& results) {
 	try {
 		return dispatch_conversion<0>::dispatch(this, item, results);

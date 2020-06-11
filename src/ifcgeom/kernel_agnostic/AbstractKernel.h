@@ -71,4 +71,51 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 }
 }
 
+
+namespace {
+	/* A compile-time for loop over the taxonomy kinds */
+	template <size_t N>
+	struct dispatch_conversion {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, const ifcopenshell::geometry::taxonomy::item* item, ifcopenshell::geometry::ConversionResults& results) {
+			if (N == item->kind()) {
+				auto concrete_item = static_cast<const ifcopenshell::geometry::taxonomy::type_by_kind::type<N>*>(item);
+				return kernel->convert_impl(concrete_item, results);
+			} else {
+				return dispatch_conversion<N + 1>::dispatch(kernel, item, results);
+			}
+		}
+	};
+
+	template <>
+	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::item* item, ifcopenshell::geometry::ConversionResults&) {
+			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			return false;
+		}
+	};
+
+	/* A compile-time for loop over the curve kinds */
+	template <typename T, size_t N = 0>
+	struct dispatch_curve_creation {
+		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T& visitor) {
+			// @todo it should be possible to eliminate this dynamic_cast when there is a static equivalent to kind()
+			const ifcopenshell::geometry::taxonomy::curves::type<N>* v = dynamic_cast<const ifcopenshell::geometry::taxonomy::curves::type<N>*>(item);
+			if (v) {
+				visitor(*v);
+				return true;
+			} else {
+				return dispatch_curve_creation<T, N + 1>::dispatch(item, visitor);
+			}
+		}
+	};
+
+	template <typename T>
+	struct dispatch_curve_creation<T, ifcopenshell::geometry::taxonomy::curves::max> {
+		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T&) {
+			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			return false;
+		}
+	};
+}
+
 #endif
