@@ -224,6 +224,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcFaceBasedSurfaceModel* ins
 	return map_to_collection(this, inst->FbsmFaces());
 }
 
+taxonomy::item* mapping::map_impl(const IfcSchema::IfcShellBasedSurfaceModel* inst) {
+	return map_to_collection(this, inst->SbsmBoundary());
+}
+
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcManifoldSolidBrep* inst) {
 	// @todo voids
 	return map(inst->Outer());
