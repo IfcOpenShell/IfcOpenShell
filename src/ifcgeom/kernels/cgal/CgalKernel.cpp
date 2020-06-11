@@ -183,17 +183,18 @@ bool CgalKernel::convert(const taxonomy::face* face, cgal_face_t& result) {
 }
 
 namespace {
+	// @todo obsolete?
 	bool convert_curve(CgalKernel* kernel, const taxonomy::item* curve, cgal_wire_t& builder) {
 		if (curve->kind() == taxonomy::EDGE) {
 			auto e = (taxonomy::edge*) curve;
 			if (true || e->basis == nullptr) {
 				if (builder.empty()) {
 					const auto& p = boost::get<taxonomy::point3>(e->start);
-					cgal_point_t pnt(p.components(0), p.components(1), p.components(2));
+					cgal_point_t pnt((*p.components)(0), (*p.components)(1), (*p.components)(2));
 					builder.push_back(pnt);
 				}
 				const auto& p = boost::get<taxonomy::point3>(e->end);
-				cgal_point_t pnt(p.components(0), p.components(1), p.components(2));
+				cgal_point_t pnt((*p.components)(0), (*p.components)(1), (*p.components)(2));
 				builder.push_back(pnt);
 			} else if (e->basis->kind() == taxonomy::CIRCLE) {
 				// @todo
@@ -308,7 +309,7 @@ bool CgalKernel::convert(const taxonomy::extrusion* extrusion, cgal_shape_t &sha
 	}
 	//  std::cout << "Face vertices: " << face.outer.size() << std::endl;
 
-	auto fs = extrusion->direction.components;
+	auto fs = *extrusion->direction.components;
 	cgal_direction_t dir(fs(0), fs(1), fs(2));
 	//  std::cout << "Direction: " << dir << std::endl;
 
@@ -584,7 +585,7 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 
 namespace {
 	bool convert_placement(const ifcopenshell::geometry::taxonomy::matrix4& place, cgal_placement_t& trsf) {
-		const auto& m = place.components;
+		const auto& m = *place.components;
 
 		// @todo check
 		trsf = cgal_placement_t(
@@ -623,7 +624,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result* br, ifcopenshell::
 		for (auto it = cr.begin(); it != cr.end(); ++it) {
 			const cgal_shape_t& entity_shape_unlocated(((CgalShape*)it->Shape())->shape());
 			cgal_shape_t entity_shape(entity_shape_unlocated);
-			if (!it->Placement().components.isIdentity()) {
+			if (!it->Placement().components->isIdentity()) {
 				cgal_placement_t trsf;
 				convert_placement(it->Placement(), trsf);
 				for (auto &vertex : vertices(entity_shape)) {

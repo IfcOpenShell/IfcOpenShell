@@ -134,8 +134,8 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion* extrusion, TopoDS_Sha
 	auto trsf = gtrsf.Trsf();
 	*/
 
-	auto fs = extrusion->direction.components.data();
-	gp_Dir dir(fs[0], fs[1], fs[2]);
+	const auto& fs = *extrusion->direction.components;
+	gp_Dir dir(fs(0), fs(1), fs(2));
 	
 	shape.Nullify();
 
@@ -559,17 +559,17 @@ namespace {
 		}
 
 		curve_creation_visitor_result_type operator()(const taxonomy::line& l) {
-			const auto& m = l.matrix.components;
+			const auto& m = *l.matrix.components;
 			return result = Handle(Geom_Curve)(new Geom_Line(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(0))));
 		}
 
 		curve_creation_visitor_result_type operator()(const taxonomy::circle& c) {
-			const auto& m = c.matrix.components;
+			const auto& m = *c.matrix.components;
 			return result = Handle(Geom_Curve)(new Geom_Circle(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), c.radius));
 		}
 
 		curve_creation_visitor_result_type operator()(const taxonomy::ellipse& e) {
-			const auto& m = e.matrix.components;
+			const auto& m = *e.matrix.components;
 			return result = Handle(Geom_Curve)(new Geom_Ellipse(gp_Ax2(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)), convert_xyz2<gp_Dir>(m.col(0))), e.radius, e.radius2));
 		}
 
@@ -2251,7 +2251,7 @@ bool OpenCascadeKernel::flatten_shape_list(const ifcopenshell::geometry::Convers
 }
 
 TopoDS_Shape OpenCascadeKernel::apply_transformation(const TopoDS_Shape& s, const taxonomy::matrix4& t) {
-	if (t.components.isIdentity()) {
+	if (t.components->isIdentity()) {
 		return s;
 	} else {
 		gp_GTrsf trsf;
@@ -2294,7 +2294,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face* face, ifcopenshell::g
 	}
 
 	// @todo boundary
-	const auto& m = ((taxonomy::geom_item*)face->basis)->matrix.components;
+	const auto& m = *((taxonomy::geom_item*)face->basis)->matrix.components;
 	gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
 	const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? -pln.Axis().Direction() : pln.Axis().Direction());
 	TopoDS_Shape shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();

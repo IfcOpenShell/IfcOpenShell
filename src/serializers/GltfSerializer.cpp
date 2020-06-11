@@ -94,7 +94,7 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style&
 	base.fill(1.0);
 	if (style.diffuse) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style.diffuse->components[i];
+			base[i] = (*style.diffuse->components)[i];
 		}
 	}
 	if (style.transparency) {
@@ -167,7 +167,7 @@ void GltfSerializer::write(const ifcopenshell::geometry::TriangulationElement* o
 
 	node_array_.push_back(json_["nodes"].size());
 
-	const double* m = o->transformation().data().components.data();
+	const double* m = o->transformation().data().components->data();
 
 	// nb: note that this applies the Y-UP transform.
 	const std::array<double, 16> matrix_flat = {
