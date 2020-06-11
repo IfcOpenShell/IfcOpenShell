@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.selector
 import bpy
 import bmesh
 import os
@@ -229,12 +230,15 @@ class IfcImporter():
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
         self.existing_elements = {}
+        self.include_elements = []
+        self.exclude_elements = []
         self.project = None
         self.classifications = {}
         self.spatial_structure_elements = {}
         self.elements = {}
         self.type_collection = None
         self.type_products = {}
+        self.openings = {}
         self.meshes = {}
         self.mesh_shapes = {}
         self.time = 0
@@ -269,8 +273,9 @@ class IfcImporter():
             self.create_aggregates()
         if self.ifc_import_settings.should_import_opening_elements:
             self.create_openings_collection()
+        self.process_element_filter()
         if self.ifc_import_settings.should_import_native:
-            self.parse_native_products()
+            self.parse_native_elements()
         self.filter_ifc()
         self.patch_ifc()
         self.create_georeferencing()
@@ -331,8 +336,18 @@ class IfcImporter():
             or abs(point.Coordinates[1]) > 1000000 \
             or abs(point.Coordinates[2]) > 1000000
 
+    def process_element_filter(self):
+        if not self.ifc_import_settings.ifc_selector:
+            return
+        self.include_elements = []
+        selector = ifcopenshell.util.selector.Selector()
+        elements = selector.parse(self.file, self.ifc_import_settings.ifc_selector)
+        if self.ifc_import_settings.ifc_import_filter == 'WHITELIST':
+            self.include_elements = elements
+        elif self.ifc_import_settings.ifc_import_filter == 'BLACKLIST':
+            self.exclude_elements = elements
 
-    def parse_native_products(self):
+    def parse_native_elements(self):
         self.parse_native_swept_disk_solid()
         self.parse_native_extruded_area_solid()
 
@@ -573,12 +588,18 @@ class IfcImporter():
 
     def create_products(self):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(self.settings, self.file, multiprocessing.cpu_count())
+            iterator = ifcopenshell.geom.iterator(
+                self.settings, self.file, multiprocessing.cpu_count(),
+                include=self.include_elements or None,
+                exclude=self.exclude_elements or None
+                )
         else:
-            iterator = ifcopenshell.geom.iterator(self.settings, self.file)
+            iterator = ifcopenshell.geom.iterator(
+                self.settings, self.file,
+                include=self.include_elements or None,
+                exclude=self.exclude_elements or None)
         valid_file = iterator.initialize()
         if not valid_file:
-            self.create_products_legacy() # Sometimes, this can still work, not 100% sure why yet
             return False
         old_progress = -1
         while True:
@@ -1692,6 +1713,8 @@ class IfcImportSettings:
         settings.input_file = input_file
         settings.logger = logger
         settings.diff_file = scene_bim.diff_json_file
+        settings.ifc_import_filter = scene_bim.ifc_import_filter
+        settings.ifc_selector = scene_bim.ifc_selector
         settings.should_ignore_site_coordinates = scene_bim.import_should_ignore_site_coordinates
         settings.should_ignore_building_coordinates = scene_bim.import_should_ignore_building_coordinates
         settings.should_reset_absolute_coordinates = scene_bim.import_should_reset_absolute_coordinates

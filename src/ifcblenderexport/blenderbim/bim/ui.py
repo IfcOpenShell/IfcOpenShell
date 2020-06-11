@@ -427,6 +427,8 @@ class BIM_PT_mesh(Panel):
         row = layout.row()
         row.prop(props, 'geometry_type')
 
+        layout.template_list('BIM_UL_representation_items', '', props, 'representation_items', props, 'active_representation_item_index')
+
         row = layout.row()
         row.prop(props, 'presentation_layer')
 
@@ -1175,6 +1177,11 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'export_schema')
 
+        row = layout.row()
+        row.prop(bim_properties, 'ifc_import_filter')
+        row = layout.row()
+        row.prop(bim_properties, 'ifc_selector')
+
         layout.label(text='Custom MVD:')
 
         row = layout.row()
@@ -1296,6 +1303,15 @@ class BIM_UL_classifications(bpy.types.UIList):
                 layout.label(text='', icon='BLANK1')
             layout.prop(item, "name", text="", emboss=False)
             layout.label(text=itemdata['name'])
+
+
+class BIM_UL_representation_items(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
