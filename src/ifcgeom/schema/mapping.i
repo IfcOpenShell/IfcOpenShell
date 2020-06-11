@@ -26,7 +26,7 @@
 
 BIND(IfcProduct);
 
-// BIND(IfcShellBasedSurfaceModel);
+BIND(IfcShellBasedSurfaceModel);
 BIND(IfcFaceBasedSurfaceModel);
 BIND(IfcRepresentation);
 BIND(IfcMappedItem);
