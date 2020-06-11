@@ -890,7 +890,7 @@ class BIMProperties(PropertyGroup):
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)
     import_should_reset_absolute_coordinates: BoolProperty(name="Import Resetting Absolute Coordinates", default=False)
-    import_should_import_curves: BoolProperty(name="Import Curves", default=True)
+    import_should_import_curves: BoolProperty(name="Import Curves", default=False)
     import_should_import_opening_elements: BoolProperty(name="Import Opening Elements", default=False)
     import_should_import_spaces: BoolProperty(name="Import Spaces", default=False)
     import_should_auto_set_workarounds: BoolProperty(name="Automatically Set Vendor Workarounds", default=True)
@@ -942,6 +942,11 @@ class BIMProperties(PropertyGroup):
     property_templates: CollectionProperty(name='Property Templates', type=PropertyTemplate)
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(name='Temporary Section Cutaway Colour', subtype='COLOR', default=(1, 0, 0), min=0.0, max=1.0)
+    ifc_import_filter: EnumProperty(items=[
+        ('NONE', 'None', ''),
+        ('WHITELIST', 'Whitelist', ''),
+        ('BLACKLIST', 'Blacklist', ''),
+        ], name='Import Filter')
     ifc_selector: StringProperty(default='', name='IFC Selector')
     csv_attributes: CollectionProperty(name='CSV Attributes', type=StrProperty)
     document_information: CollectionProperty(name='Document Information', type=DocumentInformation)
@@ -1069,6 +1074,11 @@ class SweptSolid(PropertyGroup):
     extrusion: StringProperty(name="Extrusion")
 
 
+class RepresentationItem(PropertyGroup):
+    name: StringProperty(name="Name")
+    vgroup: StringProperty(name="Vertex Group")
+
+
 class BIMMeshProperties(PropertyGroup):
     is_wireframe: BoolProperty(name="Is Wireframe")
     is_swept_solid: BoolProperty(name="Is Swept Solid")
@@ -1076,3 +1086,5 @@ class BIMMeshProperties(PropertyGroup):
     is_parametric: BoolProperty(name='Is Parametric', default=False)
     presentation_layer: StringProperty(name="Presentation Layer")
     geometry_type: StringProperty(name="Geometry Type")
+    representation_items: CollectionProperty(name="Representation Items", type=RepresentationItem)
+    active_representation_item_index: IntProperty(name='Active Representation Item Index')
