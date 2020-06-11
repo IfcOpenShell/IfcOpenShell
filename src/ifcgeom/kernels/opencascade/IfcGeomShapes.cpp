@@ -512,32 +512,9 @@ bool OpenCascadeKernel::convert(const taxonomy::face* face, TopoDS_Shape& result
 #include <Approx_Curve3d.hxx>
 
 namespace {
-	/* A compile-time for loop over the curve kinds */
-	template <typename T, size_t N=0>
-	struct dispatch_curve_creation {
-		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T& visitor) {
-			// @todo it should be possible to eliminate this dynamic_cast when there is a static equivalent to kind()
-			const ifcopenshell::geometry::taxonomy::curves::type<N>* v = dynamic_cast<const ifcopenshell::geometry::taxonomy::curves::type<N>*>(item);
-			if (v) {
-				visitor(*v);
-				return true;
-			} else {
-				return dispatch_curve_creation<T, N + 1>::dispatch(item, visitor);
-			}
-		}
-	};
-
-	template <typename T>
-	struct dispatch_curve_creation<T, ifcopenshell::geometry::taxonomy::curves::max> {
-		static bool dispatch(const ifcopenshell::geometry::taxonomy::item* item, T& visitor) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
-			return false;
-		}
-	};
-
 	template <typename T, typename U>
 	T convert_xyz(const U& u) {
-		const auto& vs = u.components;
+		const auto& vs = *u.components;
 		return T(vs(0), vs(1), vs(2));
 	}
 
@@ -936,14 +913,41 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::shell *shell, ifcopenshell:
 
 bool OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf) {
 	// @todo check
-	gp_Trsf tr;
-	const auto& m = matrix->components;
-	tr.SetValues(
-		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+	const auto& m = *matrix->components;
+	gp_Mat mat(
+		m(0, 0), m(0, 1), m(0, 2),
+		m(1, 0), m(1, 1), m(1, 2),
+		m(2, 0), m(2, 1), m(2, 2)
 	);
-	trsf = tr;
+
+	if (matrix->instance && matrix->instance->declaration().name() == "IfcCartesianTransformationOperator3DnonUniform") {
+		std::wcout << "non uniform" << std::endl;
+	}
+
+	// @nb SetVectorialPart() sets gp_GTrsf.scale to 0.0, causing an non-invertable
+	// matrix later on which cannot be in TopLoc_Location.
+
+	std::array<double, 3> ms{ {
+		mat.Column(1).Modulus(),
+		mat.Column(2).Modulus(),
+		mat.Column(3).Modulus()
+	} };
+	std::sort(ms.begin(), ms.end());
+
+	if (std::fabs(ms.front() - ms.back()) < 1.e-7) {
+		gp_Trsf tr;
+		tr.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+		trsf = tr;
+	} else {
+		trsf.SetVectorialPart(mat);
+		trsf.SetTranslationPart(gp_XYZ(m(0, 3), m(1, 3), m(2, 3)));
+		trsf.SetForm();
+	}
+
 	return true;
 }
 
