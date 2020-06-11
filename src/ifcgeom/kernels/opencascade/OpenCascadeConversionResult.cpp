@@ -7,18 +7,30 @@
 
 #include <map>
 
+namespace {
+	// We bypass the conversion to gp_GTrsf, because it does not work
+	void taxonomy_transform(const Eigen::Matrix4d* m, gp_XYZ& xyz) {
+		Eigen::Vector4d v(xyz.X(), xyz.Y(), xyz.Z(), 1.0);
+		auto v2 = (*m * v).eval();
+		xyz.ChangeData()[0] = v2(0);
+		xyz.ChangeData()[1] = v2(1);
+		xyz.ChangeData()[2] = v2(2);
+	}
+}
+
 void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int surface_style_id) const {
 
-	// @todo check
-	gp_GTrsf trsf;
-	gp_Trsf tr;
-	const auto& m = place.components;
-	tr.SetValues(
-		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
-		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
-		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4* matrix, gp_GTrsf& trsf);
+	// above can be static?
+
+	const auto& m = *place.components;
+
+	// A 3x3 matrix to rotate the vertex normals
+	gp_Mat rotation_matrix(
+		m(0, 0), m(0, 1), m(0, 2),
+		m(1, 0), m(1, 1), m(1, 2),
+		m(2, 0), m(2, 1), m(2, 2)
 	);
-	trsf = tr;
 
 	// Triangulate the shape
 	try {
@@ -41,9 +53,6 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 
 		if (!tri.IsNull()) {
 
-			// A 3x3 matrix to rotate the vertex normals
-			const gp_Mat rotation_matrix = trsf.VectorialPart();
-
 			// Keep track of the number of times an edge is used
 			// Manifold edges (i.e. edges used twice) are deemed invisible
 			std::map<std::pair<int, int>, int> edgecount;
@@ -61,7 +70,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(const settings& setti
 
 			for (int i = 1; i <= nodes.Length(); ++i) {
 				coords.push_back(nodes(i).Transformed(loc).XYZ());
-				trsf.Transforms(*coords.rbegin());
+				taxonomy_transform(place.components, *coords.rbegin());
 				const gp_XYZ& last = *coords.rbegin();
 				dict[i] = t->addVertex(surface_style_id, last.X(), last.Y(), last.Z());
 
