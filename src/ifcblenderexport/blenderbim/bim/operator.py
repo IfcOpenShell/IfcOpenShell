@@ -2371,14 +2371,14 @@ class AddSectionPlane(bpy.types.Operator):
         compare = group.nodes.new(type='ShaderNodeMath')
         compare.operation = 'COMPARE'
         compare.inputs[1].default_value = 2
-        group.links.new(group_input.outputs[''], separate_xyz_a.inputs['Vector'])
-        group.links.new(group_input.outputs[''], separate_xyz_b.inputs['Vector'])
-        group.links.new(separate_xyz_a.outputs['Z'], gt_a.inputs[0])
-        group.links.new(separate_xyz_b.outputs['Z'], gt_b.inputs[0])
-        group.links.new(gt_a.outputs['Value'], add.inputs[0])
-        group.links.new(gt_b.outputs['Value'], add.inputs[1])
-        group.links.new(add.outputs['Value'], compare.inputs[0])
-        group.links.new(compare.outputs['Value'], group_output.inputs[''])
+        group.links.new(group_input.outputs[''], separate_xyz_a.inputs[0])
+        group.links.new(group_input.outputs[''], separate_xyz_b.inputs[0])
+        group.links.new(separate_xyz_a.outputs[2], gt_a.inputs[0])
+        group.links.new(separate_xyz_b.outputs[2], gt_b.inputs[0])
+        group.links.new(gt_a.outputs[0], add.inputs[0])
+        group.links.new(gt_b.outputs[0], add.inputs[1])
+        group.links.new(add.outputs[0], compare.inputs[0])
+        group.links.new(compare.outputs[0], group_output.inputs[''])
 
     def create_section_override_node(self, obj):
         group = bpy.data.node_groups.new('Section Override', type='ShaderNodeTree')
@@ -2389,9 +2389,9 @@ class AddSectionPlane(bpy.types.Operator):
         backfacing = group.nodes.new(type='ShaderNodeNewGeometry')
         backfacing_mix = group.nodes.new(type='ShaderNodeMixShader')
         emission = group.nodes.new(type='ShaderNodeEmission')
-        emission.inputs['Color'].default_value = list(bpy.context.scene.BIMProperties.section_plane_colour) + [1]
+        emission.inputs[0].default_value = list(bpy.context.scene.BIMProperties.section_plane_colour) + [1]
 
-        group.links.new(backfacing.outputs['Backfacing'], backfacing_mix.inputs['Fac'])
+        group.links.new(backfacing.outputs['Backfacing'], backfacing_mix.inputs[0])
         group.links.new(group_input.outputs[''], backfacing_mix.inputs[1])
         group.links.new(emission.outputs['Emission'], backfacing_mix.inputs[2])
 
@@ -2412,8 +2412,8 @@ class AddSectionPlane(bpy.types.Operator):
         value = group.nodes.new(type='ShaderNodeValue')
         value.name = 'Mock Section'
         group.links.new(cut_obj.outputs['Object'], section_compare.inputs[0])
-        group.links.new(value.outputs['Value'], section_compare.inputs[1])
-        group.links.new(section_compare.outputs['Value'], section_mix.inputs['Fac'])
+        group.links.new(value.outputs[0], section_compare.inputs[1])
+        group.links.new(section_compare.outputs[0], section_mix.inputs[0])
 
     def append_obj_to_section_override_node(self, obj):
         group = bpy.data.node_groups.get('Section Override')
@@ -2427,10 +2427,10 @@ class AddSectionPlane(bpy.types.Operator):
         mock_section = group.nodes.get('Mock Section')
         section_mix = group.nodes.get('Section Mix')
 
-        group.links.new(last_compare.outputs['Value'], section_compare.inputs[0])
-        group.links.new(mock_section.outputs['Value'], section_compare.inputs[1])
+        group.links.new(last_compare.outputs[0], section_compare.inputs[0])
+        group.links.new(mock_section.outputs[0], section_compare.inputs[1])
         group.links.new(cut_obj.outputs['Object'], last_compare.inputs[1])
-        group.links.new(section_compare.outputs['Value'], section_mix.inputs['Fac'])
+        group.links.new(section_compare.outputs[0], section_mix.inputs[0])
 
         section_compare.name = 'Last Section Compare'
 
@@ -2468,13 +2468,20 @@ class AddSectionPlane(bpy.types.Operator):
                 continue
             material.blend_method = 'HASHED'
             material.shadow_method = 'HASHED'
-            material_output = material.node_tree.nodes['Material Output']
-            from_socket = material_output.inputs['Surface'].links[0].from_socket
+            material_output = self.get_node(material.node_tree.nodes, 'OUTPUT_MATERIAL')
+            if not material_output:
+                continue
+            from_socket = material_output.inputs[0].links[0].from_socket
             section_override = material.node_tree.nodes.new(type='ShaderNodeGroup')
             section_override.name = 'Section Override'
             section_override.node_tree = override
             material.node_tree.links.new(from_socket, section_override.inputs[0])
-            material.node_tree.links.new(section_override.outputs[0], material_output.inputs['Surface'])
+            material.node_tree.links.new(section_override.outputs[0], material_output.inputs[0])
+
+    def get_node(self, nodes, node_type):
+        for node in nodes:
+            if node.type == node_type:
+                return node
 
 
 class RemoveSectionPlane(bpy.types.Operator):
@@ -2509,7 +2516,7 @@ class RemoveSectionPlane(bpy.types.Operator):
             old_last_compare = section_override.nodes.get('Last Section Compare')
             old_last_compare.name = 'Section Compare'
             section_mix = section_override.nodes.get('Section Mix')
-            new_last_compare = section_mix.inputs['Fac'].links[0].from_node
+            new_last_compare = section_mix.inputs[0].links[0].from_node
             new_last_compare.name = 'Last Section Compare'
         bpy.ops.object.delete({"selected_objects": [bpy.context.active_object]})
         return {'FINISHED'}
@@ -2520,6 +2527,8 @@ class RemoveSectionPlane(bpy.types.Operator):
             if not material.node_tree:
                 continue
             override = material.node_tree.nodes.get('Section Override')
+            if not override:
+                continue
             material.node_tree.links.new(
                 override.inputs[0].links[0].from_socket,
                 override.outputs[0].links[0].to_socket)
