@@ -286,7 +286,8 @@ class IfcImporter():
         self.create_georeferencing()
         self.create_groups()
         self.create_grids()
-        self.create_native_products()
+        if self.ifc_import_settings.should_import_native:
+            self.create_native_products()
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy:
             self.create_products_legacy()
@@ -570,7 +571,7 @@ class IfcImporter():
             return
         representation_map = self.get_type_product_body_representation_map(element)
         mesh = None
-        if representation_map:
+        if self.ifc_import_settings.should_import_type_representations and representation_map:
             try:
                 shape = ifcopenshell.geom.create_shape(self.settings, representation_map.MappedRepresentation)
                 mesh_name = f'mesh-{shape.id}'
@@ -607,7 +608,7 @@ class IfcImporter():
             self.create_product_legacy(element)
 
     def create_native_products(self):
-        if not self.ifc_import_settings.should_import_native or not self.native_elements:
+        if not self.native_elements:
             return
         iterator = ifcopenshell.geom.iterator(
             self.settings_native, self.file, multiprocessing.cpu_count(),
@@ -965,7 +966,7 @@ class IfcImporter():
             if obj.type == 'MESH':
                 obj.select_set(True)
                 last_obj = obj
-        if not obj:
+        if not last_obj:
             return
         bpy.context.view_layer.objects.active = last_obj
         context_override = {}
@@ -1734,6 +1735,7 @@ class IfcImportSettings:
         self.should_ignore_building_coordinates = False
         self.should_reset_absolute_coordinates = False
         self.should_merge_materials_by_colour = False
+        self.should_import_type_representations = False
         self.should_import_curves = False
         self.should_import_opening_elements = False
         self.should_import_spaces = False
@@ -1760,6 +1762,7 @@ class IfcImportSettings:
         settings.should_ignore_site_coordinates = scene_bim.import_should_ignore_site_coordinates
         settings.should_ignore_building_coordinates = scene_bim.import_should_ignore_building_coordinates
         settings.should_reset_absolute_coordinates = scene_bim.import_should_reset_absolute_coordinates
+        settings.should_import_type_representations = scene_bim.import_should_import_type_representations
         settings.should_import_curves = scene_bim.import_should_import_curves
         settings.should_import_opening_elements = scene_bim.import_should_import_opening_elements
         settings.should_import_spaces = scene_bim.import_should_import_spaces
