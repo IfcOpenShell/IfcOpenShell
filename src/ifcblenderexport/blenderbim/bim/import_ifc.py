@@ -305,7 +305,7 @@ class IfcImporter():
                 or (self.ifc_import_settings.should_auto_set_workarounds \
                     and len(self.material_creator.materials) > 300):
             self.merge_materials_by_colour()
-        if self.ifc_import_settings.should_clean_mesh:
+        if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type('IfcElement')) < 10000:
             self.clean_mesh()
 
     def auto_set_workarounds(self):
