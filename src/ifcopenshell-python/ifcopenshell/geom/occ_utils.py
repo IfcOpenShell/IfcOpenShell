@@ -183,8 +183,8 @@ def display_shape(shape, clr=None, viewer_handle=None):
     return ais_handle
 
 
-def set_shape_transparency(ais, t):
-    handle.Context.SetTransparency(ais, t)
+def set_shape_transparency(ais, t, update_viewer=True):
+    handle.Context.SetTransparency(ais, t, update_viewer)
 
 
 def get_bounding_box_center(bbox):
