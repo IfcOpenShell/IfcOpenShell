@@ -102,20 +102,19 @@ class MaterialCreator():
     def assign_material_slots_to_faces(self, obj, mesh):
         if 'ios_materials' not in mesh or not mesh['ios_materials']:
             return
+        if len(obj.material_slots) == 1:
+            return
         slots = [s.name for s in obj.material_slots]
-        for index, polygon in enumerate(mesh.polygons):
-            material_id = mesh['ios_material_ids'][index]
-            # Magic number 999999 represents no material, until this has a better approach
-            if material_id == 999999:
-                continue
-            material = mesh['ios_materials'][material_id]
+        material_to_slot = {}
+        for i, material in enumerate(mesh['ios_materials']):
             if 'surface-style-' in material:
                 material = material.split('-')[2]
-            try:
-                polygon.material_index = slots.index(material)
-            except:
-                self.ifc_import_settings.logger.error(
-                        'Failed to assign material {} to object {}'.format(material, obj.name))
+            material_to_slot[i] = slots.index(material)
+
+        if len(mesh.polygons) == len(mesh['ios_material_ids']):
+            material_index = [(material_to_slot[mat_id] if mat_id != 999999
+                else 0) for mat_id in mesh['ios_material_ids']]
+            mesh.polygons.foreach_set('material_index', material_index)
 
     def parse_material(self, element):
         for association in element.HasAssociations:
@@ -259,6 +258,7 @@ class IfcImporter():
         self.native_data = {}
         self.groups = {}
         self.aggregates = {}
+        self.aggregate_collections = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings)
 
@@ -282,8 +282,7 @@ class IfcImporter():
         self.create_type_products()
         if self.ifc_import_settings.should_import_aggregates:
             self.create_aggregates()
-        if self.ifc_import_settings.should_import_opening_elements:
-            self.create_openings_collection()
+        self.create_openings_collection()
         self.process_element_filter()
         if self.ifc_import_settings.should_import_native:
             self.parse_native_elements()
@@ -311,6 +310,7 @@ class IfcImporter():
                 or (self.ifc_import_settings.should_auto_set_workarounds \
                     and len(self.material_creator.materials) > 300):
             self.merge_materials_by_colour()
+        self.add_project_to_scene()
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type('IfcElement')) < 10000:
             self.clean_mesh()
 
@@ -569,7 +569,6 @@ class IfcImporter():
             self.project['blender'].children.link(self.type_collection)
         for type_product in type_products:
             self.create_type_product(type_product)
-        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.type_collection.name].hide_viewport = True
 
     def create_type_product(self, element):
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
@@ -616,24 +615,26 @@ class IfcImporter():
     def create_native_products(self):
         if not self.native_elements:
             return
+        # TODO: the iterator is kind of useless here, rewrite this
         iterator = ifcopenshell.geom.iterator(
             self.settings_native, self.file, multiprocessing.cpu_count(),
             include=[self.file.by_guid(guid) for guid in self.native_elements.keys()] or None)
         valid_file = iterator.initialize()
+        total = 0
+        checkpoint = time.time()
         if not valid_file:
             return False
-        old_progress = -1
         while True:
-            progress = iterator.progress() // 2
-            if progress > old_progress:
-                print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
-                old_progress = progress
+            total += 1
+            if total % 250 == 0:
+                print('{} elements processed in {:.2f}s ...'.format(total, time.time() - checkpoint))
+                checkpoint = time.time()
             shape = iterator.get()
             if shape:
                 self.create_product(self.file.by_id(shape.guid), shape)
             if not iterator.next():
                 break
-        print("\rDone creating geometry" + " " * 30)
+        print('Done creating geometry')
 
     def create_products(self):
         if self.ifc_import_settings.should_use_cpu_multiprocessing:
@@ -650,18 +651,19 @@ class IfcImporter():
         valid_file = iterator.initialize()
         if not valid_file:
             return False
-        old_progress = -1
+        checkpoint = time.time()
+        total = 0
         while True:
-            progress = iterator.progress() // 2
-            if progress > old_progress:
-                print("\r[" + "#" * progress + " " * (50 - progress) + "]", end="")
-                old_progress = progress
+            total += 1
+            if total % 250 == 0:
+                print('{} elements processed in {:.2f}s ...'.format(total, time.time() - checkpoint))
+                checkpoint = time.time()
             shape = iterator.get()
             if shape:
                 self.create_product(self.file.by_id(shape.guid), shape)
             if not iterator.next():
                 break
-        print("\rDone creating geometry" + " " * 30)
+        print('Done creating geometry')
 
     def create_product(self, element, shape=None):
         if element is None:
@@ -680,6 +682,7 @@ class IfcImporter():
 
         self.ifc_import_settings.logger.info('Creating object {}'.format(element))
 
+        is_fresh_mesh = False
         if shape:
             # TODO: make names more meaningful
             mesh_name = f'mesh-{shape.geometry.id}'
@@ -690,6 +693,7 @@ class IfcImporter():
                 if mesh is None:
                     mesh = self.create_mesh(element, shape)
                 self.meshes[mesh_name] = mesh
+                is_fresh_mesh = True
         else:
             mesh = None
 
@@ -703,7 +707,8 @@ class IfcImporter():
                                     [m[9], m[10], m[11], 1]))
             mat.transpose()
             obj.matrix_world = mat
-            self.material_creator.create(element, obj, mesh)
+            if is_fresh_mesh:
+                self.material_creator.create(element, obj, mesh)
         elif hasattr(element, 'ObjectPlacement'):
             obj.matrix_world = self.get_element_matrix(element)
 
@@ -733,7 +738,11 @@ class IfcImporter():
         items = []
         for representation in self.get_body_representations(element.Representation.Representations):
             for item in representation['raw'].Items:
-                materials.append(self.get_representation_item_material_name(item))
+                material_name = self.get_representation_item_material_name(item)
+                if not material_name:
+                    # Magic string NULLMAT represents no material, unless this has a better approach
+                    material_name = 'NULLMAT'
+                materials.append(material_name)
                 if item.id() in data:
                     item = data[item.id()]
                 if item.is_a() == 'IfcExtrudedAreaSolid':
@@ -783,13 +792,12 @@ class IfcImporter():
                     merged_bm = item['blender']
                 else:
                     self.merge_bmeshes(merged_bm, item['blender'])
-                if materials[i]:
-                    material_ids += [i] * total_polygons
-                else:
-                    # Magic string NULLMAT represents no material, unless this has a better approach
-                    materials[i] = 'NULLMAT'
+                # Magic string NULLMAT represents no material, unless this has a better approach
+                if materials[i] == 'NULLMAT':
                     # Magic number 999999 represents no material, until this has a better approach
                     material_ids += [999999] * total_polygons
+                else:
+                    material_ids += [i] * total_polygons
         if merged_curve:
             return merged_curve
         # TODO: handle both curve and bmeshes combined
@@ -888,9 +896,7 @@ class IfcImporter():
 
     def merge_objects_inside_aggregates(self):
         global_ids_to_delete = []
-        for collection in bpy.data.collections:
-            if 'IfcRelAggregates/' not in collection.name:
-                continue
+        for collection in self.aggregate_collections.values():
             obs = []
             for i, ob in enumerate(collection.objects):
                 if ob.type == 'MESH':
@@ -964,6 +970,13 @@ class IfcImporter():
 
         for material in self.material_creator.materials.values():
             bpy.data.materials.remove(material)
+
+    def add_project_to_scene(self):
+        bpy.context.scene.collection.children.link(self.project['blender'])
+        for collection in self.aggregate_collections.values():
+            bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[collection.name].hide_viewport = True
+        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.opening_collection.name].hide_viewport = True
+        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.type_collection.name].hide_viewport = True
 
     def clean_mesh(self):
         obj = None
@@ -1185,7 +1198,6 @@ class IfcImporter():
             self.project['blender'] = self.existing_elements[self.project['ifc'].GlobalId].users_collection[0]
             return
         self.project['blender'] = bpy.data.collections.new('IfcProject/{}'.format(self.project['ifc'].Name))
-        bpy.context.scene.collection.children.link(self.project['blender'])
         obj = self.create_product(self.project['ifc'])
         if obj:
                 self.project['blender'].objects.link(obj)
@@ -1308,7 +1320,6 @@ class IfcImporter():
     def create_aggregate(self, rel_aggregate):
         collection = bpy.data.collections.new(f'IfcRelAggregates/{rel_aggregate.id()}')
         self.project['blender'].children.link(collection)
-        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[collection.name].hide_viewport = True
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new('{}/{}'.format(element.is_a(), element.Name), None)
@@ -1321,11 +1332,11 @@ class IfcImporter():
         self.add_defines_by_type_relation(element, obj)
         self.add_product_definitions(element, obj)
         self.aggregates[element.GlobalId] = obj
+        self.aggregate_collections[rel_aggregate.id()] = collection
 
     def create_openings_collection(self):
         self.opening_collection = bpy.data.collections.new('IfcOpeningElements')
         self.project['blender'].children.link(self.opening_collection)
-        bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.opening_collection.name].hide_viewport = True
 
     def get_name(self, element):
         return '{}/{}'.format(element.is_a(), element.Name)
@@ -1420,23 +1431,21 @@ class IfcImporter():
                 and element.ContainedInStructure[0].RelatingStructure:
             container = element.ContainedInStructure[0].RelatingStructure
             if container.is_a('IfcSpace'):
-                if container.GlobalId in self.added_data:
+                if self.ifc_import_settings.should_import_spaces and container.GlobalId in self.added_data:
                     obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
-            relating_structure_global_id = container.GlobalId
-            if relating_structure_global_id in self.spatial_structure_elements:
-                self.spatial_structure_elements[relating_structure_global_id]['blender'].objects.link(obj)
+            self.spatial_structure_elements[container.GlobalId]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
             collection = None
             if element.Decomposes[0].RelatingObject.is_a('IfcProject'):
-                collection = bpy.data.collections.get(f'IfcProject/{element.Decomposes[0].RelatingObject.Name}')
+                collection = self.project['blender']
             elif element.Decomposes[0].RelatingObject.is_a('IfcSpatialStructureElement'):
                 global_id = element.Decomposes[0].RelatingObject.GlobalId
                 if global_id in self.spatial_structure_elements:
                     collection = self.spatial_structure_elements[global_id]['blender']
             elif self.ifc_import_settings.should_import_aggregates:
-                collection = bpy.data.collections.get(f'IfcRelAggregates/{element.Decomposes[0].id()}')
+                collection = self.aggregate_collections[element.Decomposes[0].id()]
             else:
                 return self.place_object_in_spatial_tree(element.Decomposes[0].RelatingObject, obj)
             if collection:
@@ -1607,19 +1616,25 @@ class IfcImporter():
                 return self.create_curve(geometry)
 
             mesh = bpy.data.meshes.new(geometry.id)
-            f = geometry.faces
-            e = geometry.edges
-            v = geometry.verts
-            vertices = [[v[i], v[i + 1], v[i + 2]]
-                     for i in range(0, len(v), 3)]
-            faces = [[f[i], f[i + 1], f[i + 2]]
-                     for i in range(0, len(f), 3)]
-            if faces:
-                edges = []
-            else:
-                edges = [[e[i], e[i + 1]]
-                         for i in range(0, len(e), 2)]
-            mesh.from_pydata(vertices, edges, faces)
+
+            vertices = geometry.verts
+            num_vertices = len(vertices) // 3
+            vertex_index = geometry.faces
+            total_faces = len(geometry.faces)
+            loop_start = range(0, total_faces, 3)
+            num_loops = total_faces // 3
+            loop_total = [3] * num_loops
+            num_vertex_indices = len(vertex_index)
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set('co', vertices)
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set('vertex_index', vertex_index)
+            mesh.polygons.add(num_loops)
+            mesh.polygons.foreach_set('loop_start', loop_start)
+            mesh.polygons.foreach_set('loop_total', loop_total)
+            mesh.update()
+
             ios_materials = []
             for mat in geometry.materials:
                 if mat.original_name():
