@@ -363,6 +363,7 @@ class IfcImporter():
     def parse_native_elements(self):
         self.parse_native_swept_disk_solid()
         self.parse_native_extruded_area_solid()
+        self.parse_native_faceted_brep()
         if self.include_elements:
             include_global_ids = [e.GlobalId for e in self.include_elements]
             filtered_native_elements = {}
@@ -389,6 +390,10 @@ class IfcImporter():
                     'IfcRectangleProfileDef'
                     ]:
                 continue
+            self.swap_out_with_dummy_geometry(element)
+
+    def parse_native_faceted_brep(self):
+        for element in self.file.by_type('IfcFacetedBrep'):
             self.swap_out_with_dummy_geometry(element)
 
     def swap_out_with_dummy_geometry(self, element):
@@ -758,6 +763,13 @@ class IfcImporter():
                             self.create_native_swept_disk_solid(item, element), representation['matrix']),
                         'raw': item
                     })
+                elif item.is_a('IfcFacetedBrep'):
+                    bm = self.create_native_faceted_brep(item, element)
+                    if bm:
+                        bmesh.ops.transform(bm, matrix=representation['matrix'], verts=bm.verts)
+                        items.append({'blender': bm, 'raw': item})
+                    else:
+                        items.append(None)
                 else:
                     items.append(None)
 
@@ -842,6 +854,23 @@ class IfcImporter():
         b.free()
         a.from_mesh(mesh)
         return a
+
+    def create_native_faceted_brep(self, item, element):
+        vertex_map = {}
+        vertices = []
+        faces = []
+        vertex_index = 0
+        for face in item.Outer.CfsFaces:
+            if len(face.Bounds) > 1:
+                # TODO: implement tesselate_polygon
+                return None
+            for point in face.Bounds[0].Bound.Polygon:
+                if point.id() not in vertex_map:
+                    vertices.append([c * self.unit_scale for c in point.Coordinates])
+                    vertex_map[point.id()] = vertex_index
+                    vertex_index += 1
+            faces.append([vertex_map[p.id()] for p in face.Bounds[0].Bound.Polygon])
+        return self.bmesh_from_pydata(vertices, [], faces)
 
     def create_native_swept_disk_solid(self, item, element):
         # TODO: support inner radius, start param, and end param
