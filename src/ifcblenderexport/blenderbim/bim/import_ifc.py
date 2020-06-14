@@ -31,10 +31,12 @@ class MaterialCreator():
     def __init__(self, ifc_import_settings):
         self.mesh = None
         self.materials = {}
+        self.current_object_materials = []
         self.parsed_meshes = []
         self.ifc_import_settings = ifc_import_settings
 
     def create(self, element, obj, mesh):
+        self.current_object_materials = []
         self.obj = obj
         self.mesh = mesh
         if (hasattr(element, 'Representation') and not element.Representation) \
@@ -76,7 +78,10 @@ class MaterialCreator():
 
         material_name = self.get_material_name(styled_item)
 
-        if material_name not in self.materials:
+        if material_name in self.current_object_materials:
+            return True
+
+        if material_name not in self.materials.keys():
             material = bpy.data.materials.get(material_name)
             if material:
                 self.materials[material_name] = material
@@ -214,6 +219,7 @@ class MaterialCreator():
 
     def assign_material_to_mesh(self, material, is_styled_item=False):
         self.mesh.materials.append(material)
+        self.current_object_materials.append(material.name)
         if is_styled_item:
             index = len(self.obj.material_slots) - 1
             self.obj.material_slots[index].link = 'OBJECT'
