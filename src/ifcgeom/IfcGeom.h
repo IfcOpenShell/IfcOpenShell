@@ -250,22 +250,38 @@ public:
 		, ifc_planeangle_unit(-1.0)
 		, modelling_precision(0.00001)
 		, dimensionality(1.)
-		, placement_rel_to(0)
+		, placement_rel_to(nullptr)
 		, faceset_helper_(nullptr)
 	{}
 
-	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other) : IfcGeom::Kernel(0) {
-		*this = other;
+	MAKE_TYPE_NAME(Kernel)(const MAKE_TYPE_NAME(Kernel)& other)
+		: IfcGeom::Kernel(0)
+		, deflection_tolerance(other.deflection_tolerance)
+		, max_faces_to_orient(other.max_faces_to_orient)
+		, ifc_length_unit(other.ifc_length_unit)
+		, ifc_planeangle_unit(other.ifc_planeangle_unit)
+		, modelling_precision(other.modelling_precision)
+		, dimensionality(other.dimensionality)
+		, placement_rel_to(other.placement_rel_to)
+		// @nb faceset_helper_ always initialized to 0
+		, faceset_helper_(nullptr)
+		, offset(other.offset)
+		, rotation(other.rotation)
+		, offset_and_rotation(other.offset_and_rotation)
+	{
 	}
 
 	MAKE_TYPE_NAME(Kernel)& operator=(const MAKE_TYPE_NAME(Kernel)& other) {
-		setValue(GV_DEFLECTION_TOLERANCE,     other.getValue(GV_DEFLECTION_TOLERANCE));
-		setValue(GV_MAX_FACES_TO_ORIENT,      other.getValue(GV_MAX_FACES_TO_ORIENT));
-		setValue(GV_LENGTH_UNIT,              other.getValue(GV_LENGTH_UNIT));
-		setValue(GV_PLANEANGLE_UNIT,          other.getValue(GV_PLANEANGLE_UNIT));
-		setValue(GV_PRECISION,                other.getValue(GV_PRECISION));
-		setValue(GV_DIMENSIONALITY,           other.getValue(GV_DIMENSIONALITY));
-		setValue(GV_LAYERSET_FIRST,           other.getValue(GV_LAYERSET_FIRST));
+		deflection_tolerance = other.deflection_tolerance;
+		max_faces_to_orient = other.max_faces_to_orient;
+		ifc_length_unit = other.ifc_length_unit;
+		ifc_planeangle_unit = other.ifc_planeangle_unit;
+		modelling_precision = other.modelling_precision;
+		dimensionality = other.dimensionality;
+		placement_rel_to = other.placement_rel_to;
+		offset = other.offset;
+		rotation = other.rotation;
+		offset_and_rotation = other.offset_and_rotation;
 		return *this;
 	}
 
