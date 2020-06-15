@@ -708,6 +708,60 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryOpenProfileDef* l, To
 	return convert_wire(l->Curve(), result);
 }
 
+#include <Extrema_ExtPC.hxx>
+
+namespace {
+	bool create_edge_over_curve_with_log_messages(const Handle_Geom_Curve& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
+		if (crv->IsClosed() && p1.Distance(p2) <= eps) {
+			BRepBuilderAPI_MakeEdge me(crv);
+			if (me.IsDone()) {
+				result = me.Edge();
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		BRep_Builder builder;
+		TopoDS_Vertex v1, v2;
+		/// @todo project first and emit warnings accordingly
+		builder.MakeVertex(v1, p1, eps);
+		builder.MakeVertex(v2, p2, eps);
+
+		BRepBuilderAPI_MakeEdge me(crv, v1, v2);
+		if (!me.IsDone()) {
+			const double eps2 = eps * eps;
+			if (me.Error() == BRepLib_PointProjectionFailed) {
+				GeomAdaptor_Curve GAC(crv);
+				const gp_Pnt* ps[2] = { &p1, &p2 };
+				for (int i = 0; i < 2; ++i) {
+					Extrema_ExtPC extrema(*ps[i], GAC);
+					if (extrema.IsDone()) {
+						int n = extrema.NbExt();
+						double dmin = std::numeric_limits<double>::infinity();
+						for (int j = 1; j <= n; j++) {
+							const double d = extrema.SquareDistance(j);
+							if (d < dmin) {
+								dmin = d;
+							}
+						}
+						if (dmin == std::numeric_limits<double>::infinity()) {
+							Logger::Error("No extrema for point");
+						} else if (dmin > eps2) {
+							Logger::Error("Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
+						}
+					} else {
+						Logger::Error("Failed to calculate extrema for point");
+					}
+				}
+			}
+			return false;
+		}
+		result = me.Edge();
+		return true;
+	}
+}
+
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& result) {
 	IfcSchema::IfcPoint* pnt1 = ((IfcSchema::IfcVertexPoint*) l->EdgeStart())->VertexGeometry();
 	IfcSchema::IfcPoint* pnt2 = ((IfcSchema::IfcVertexPoint*) l->EdgeEnd())->VertexGeometry();
@@ -734,13 +788,14 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 	const bool is_bounded = l->EdgeGeometry()->declaration().is(IfcSchema::IfcBoundedCurve::Class());
 
 	if (!is_bounded && convert_curve(l->EdgeGeometry(), crv)) {
-		BRepBuilderAPI_MakeEdge me(crv, p1, p2);
-		if (!me.IsDone()) {
+		TopoDS_Edge e;
+		if (create_edge_over_curve_with_log_messages(crv, getValue(GV_PRECISION), p1, p2, e)) {
+			mw.Add(e);
+			result = mw;
+			return true;
+		} else {
 			return false;
 		}
-		mw.Add(me.Edge());
-		result = mw;
-		return true;
 	} else if (is_bounded && convert_wire(l->EdgeGeometry(), result)) {
 		if (!l->SameSense()) {
 			result.Reverse();
@@ -777,18 +832,11 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcEdgeCurve* l, TopoDS_Wire& res
 				continue;
 			}
 
-			if (ecrv->IsClosed() && a.Distance(b) < getValue(GV_PRECISION)) {
-				// When vertices are close enough and the curve is closed,
-				// use the entire curve.
-				mw.Add(BRepBuilderAPI_MakeEdge(ecrv));
+			TopoDS_Edge e;
+			if (create_edge_over_curve_with_log_messages(ecrv, getValue(GV_PRECISION), a, b, e)) {
+				mw.Add(e);
 			} else {
-				BRep_Builder builder;
-				TopoDS_Vertex v1, v2;
-				/// @todo project first and emit warnings accordingly
-				builder.MakeVertex(v1, a, getValue(GV_PRECISION));
-				builder.MakeVertex(v2, b, getValue(GV_PRECISION));
-
-				mw.Add(BRepBuilderAPI_MakeEdge(ecrv, v1, v2));
+				return false;
 			}
 
 			first = false;
