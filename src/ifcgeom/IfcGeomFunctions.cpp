@@ -4391,8 +4391,8 @@ IfcGeom::Kernel::faceset_helper::faceset_helper(Kernel* kernel, const IfcSchema:
 			edge_set_t segment_set;
 
 			loop_(ps, [&segments, &segment_set](int C, int D, bool) {
-				segment_set.insert({ { C, D } });
-				segments.push_back({ C, D });
+				segment_set.insert(edge_t{C,D});
+				segments.push_back(std::make_pair(C, D));
 			});
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
