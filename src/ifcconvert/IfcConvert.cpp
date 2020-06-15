@@ -32,6 +32,7 @@
 #include "../serializers/StepSerializer.h"
 #include "../serializers/WavefrontObjSerializer.h"
 #include "../serializers/XmlSerializer.h"
+#include "../serializers/JsonSerializer.h"
 #include "../serializers/SvgSerializer.h"
 
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
@@ -102,7 +103,8 @@ void print_usage(bool suggest_help = true)
 #endif
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
-        << "  .xml   XML            Property definitions and decomposition tree\n"
+        << "  .xml   XML            Property definitions and decomposition tree in XML\n"
+        << "  .json  JSON           Property definitions and decomposition tree in JSON\n"
         << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
@@ -660,7 +662,8 @@ int main(int argc, char** argv) {
 		IGS = IfcUtil::path::from_utf8(".igs"),
 		SVG = IfcUtil::path::from_utf8(".svg"),
 		XML = IfcUtil::path::from_utf8(".xml"),
-		IFC = IfcUtil::path::from_utf8(".ifc");
+		IFC = IfcUtil::path::from_utf8(".ifc"),
+        JSON = IfcUtil::path::from_utf8("json"); // getting output_extension gets only 4 last characters
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -709,6 +712,27 @@ int main(int argc, char** argv) {
 		write_log(!quiet);
 		return exit_code;
 	}
+    else if (output_extension == JSON) {
+        int exit_code = EXIT_FAILURE;
+        try {
+            if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+                time_t start, end;
+                time(&start);
+                JsonSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
+                Logger::Status("Writing JSON output...");
+                s.finalize();
+                time(&end);
+                Logger::Status("Done! Conversion took " +  format_duration(start, end));
+
+                IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+                exit_code = EXIT_SUCCESS;
+            }
+        } catch (const std::exception& e) {
+            Logger::Error(e);
+        }
+        write_log(!quiet);
+        return exit_code;
+    }
 
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
