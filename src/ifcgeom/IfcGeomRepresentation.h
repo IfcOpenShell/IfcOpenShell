@@ -290,57 +290,52 @@ namespace IfcGeom {
 							for (int i = 1; i <= n; ++i) {
 								gp_XYZ p = tessellater.Value(i).XYZ();
 								
-								/*
-								// In case you want direction arrows on your edges
-								double u = tessellater.Parameter(i);
-								gp_XYZ p2, p3;
-								gp_Pnt tmp;
-								gp_Vec tmp2;
-								crv.D1(u, tmp, tmp2);
-								gp_Dir d1, d2, d3, d4;
-								d1 = tmp2;
-								if (texp.Current().Orientation() == TopAbs_REVERSED) {
-									d1 = -d1;
-								}
-								if (fabs(d1.Z()) < 0.5) {
-									d2 = d1.Crossed(gp::DZ());
-								} else {
-									d2 = d1.Crossed(gp::DY());
-								}
-								d3 = d1.XYZ() + d2.XYZ();
-								d4 = d1.XYZ() - d2.XYZ();
-								p2 = p - d3.XYZ() / 10.;
-								p3 = p - d4.XYZ() / 10.;
-								trsf.Transforms(p2);
-								trsf.Transforms(p3);
-								_material_ids.push_back(surface_style_id);
-								_material_ids.push_back(surface_style_id);
-								_verts.push_back(static_cast<P>(p2.X()));
-								_verts.push_back(static_cast<P>(p2.Y()));
-								_verts.push_back(static_cast<P>(p2.Z()));
-								_verts.push_back(static_cast<P>(p3.X()));
-								_verts.push_back(static_cast<P>(p3.Y()));
-								_verts.push_back(static_cast<P>(p3.Z()));
-								*/
-
-								trsf.Transforms(p);
-								
 								int current = addVertex(surface_style_id, p);
 
+								std::vector<std::pair<int, int>> segments;
 								if (i > 1) {
-									_edges.push_back(previous);
-									_edges.push_back(current);
+									segments.push_back(std::make_pair(previous, current));
+								}
+
+								if (settings().get(IfcGeom::IteratorSettings::EDGE_ARROWS)) {
+									// In case you want direction arrows on your edges
+									double u = tessellater.Parameter(i);
+									gp_XYZ p2, p3;
+									gp_Pnt tmp;
+									gp_Vec tmp2;
+									crv.D1(u, tmp, tmp2);
+									gp_Dir d1, d2, d3, d4;
+									d1 = tmp2;
+									if (texp.Current().Orientation() == TopAbs_REVERSED) {
+										d1 = -d1;
+									}
+									if (fabs(d1.Z()) < 0.5) {
+										d2 = d1.Crossed(gp::DZ());
+									} else {
+										d2 = d1.Crossed(gp::DY());
+									}
+									d3 = d1.XYZ() + d2.XYZ();
+									d4 = d1.XYZ() - d2.XYZ();
+									p2 = p - d3.XYZ() / 10.;
+									p3 = p - d4.XYZ() / 10.;
+									trsf.Transforms(p2);
+									trsf.Transforms(p3);
+									trsf.Transforms(p);
+
+									int left = addVertex(surface_style_id, p2);
+									int right = addVertex(surface_style_id, p3);
+
+									segments.push_back(std::make_pair(left, current));
+									segments.push_back(std::make_pair(right, current));
+								}
+
+								for (auto& s : segments) {
+									_edges.push_back(s.first);
+									_edges.push_back(s.second);
 									_material_ids.push_back(surface_style_id);
-									// _edges.push_back(start + 3 * (i - 2) + 2);
-									// _edges.push_back(start + 3 * (i - 1) + 2);
 								}
 
 								previous = current;
-
-								// _edges.push_back(start + 3 * (i - 1) + 0);
-								// _edges.push_back(start + 3 * (i - 1) + 2);
-								// _edges.push_back(start + 3 * (i - 1) + 1);
-								// _edges.push_back(start + 3 * (i - 1) + 2);
 							}
 						}
 					}

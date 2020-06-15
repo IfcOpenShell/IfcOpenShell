@@ -90,8 +90,10 @@ namespace IfcGeom
 			VALIDATE_QUANTITIES = 1 << 17,
 			/// Assigns the first layer material to the entire product
 			LAYERSET_FIRST = 1 << 18,
+			/// Adds arrow heads to edge segments to signify edge direction
+			EDGE_ARROWS = 1 << 19,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 18
+			NUM_SETTINGS = 19
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
