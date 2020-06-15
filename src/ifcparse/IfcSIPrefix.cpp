@@ -23,6 +23,7 @@
 #include "../ifcparse/Ifc4.h"
 #include "../ifcparse/Ifc4x1.h"
 #include "../ifcparse/Ifc4x2.h"
+#include "../ifcparse/Ifc4x3_rc1.h"
 
 double IfcParse::IfcSIPrefixToValue(const std::string& v) {
 	if      ( v == "EXA"   ) return 1.e18;
@@ -76,3 +77,4 @@ template double IfcParse::get_SI_equivalent<Ifc2x3>(typename Ifc2x3::IfcNamedUni
 template double IfcParse::get_SI_equivalent<Ifc4>(typename Ifc4::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x1>(typename Ifc4x1::IfcNamedUnit* named_unit);
 template double IfcParse::get_SI_equivalent<Ifc4x2>(typename Ifc4x2::IfcNamedUnit* named_unit);
+template double IfcParse::get_SI_equivalent<Ifc4x3_rc1>(typename Ifc4x3_rc1::IfcNamedUnit* named_unit);
