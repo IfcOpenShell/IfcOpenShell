@@ -363,7 +363,9 @@ int main(int argc, char** argv) {
             "Applicable for OBJ and DAE output. For DAE output, value >= 15 means that up to 16 decimals are used, "
             " and any other value means that 6 or 7 decimals are used.")
 		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output")
-		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output");
+		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output")
+		("edge-arrows", "Adds arrow heads to edge segments to signify edge direction")
+		;
 
     po::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(ifc_options).add(serializer_options);
@@ -425,6 +427,7 @@ int main(int argc, char** argv) {
 	const bool building_local_placement = vmap.count("building-local-placement") != 0;
 	const bool generate_uvs = vmap.count("generate-uvs") != 0;
 	const bool validate = vmap.count("validate") != 0;
+	const bool edge_arrows = vmap.count("edge-arrows") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -654,6 +657,7 @@ int main(int argc, char** argv) {
 	settings.set(IfcGeom::IteratorSettings::LAYERSET_FIRST,               layerset_first);
     settings.set(IfcGeom::IteratorSettings::NO_NORMALS, no_normals);
     settings.set(IfcGeom::IteratorSettings::GENERATE_UVS, generate_uvs);
+	settings.set(IfcGeom::IteratorSettings::EDGE_ARROWS, edge_arrows);
 	settings.set(IfcGeom::IteratorSettings::SEARCH_FLOOR, use_element_hierarchy || output_extension == SVG);
 	settings.set(IfcGeom::IteratorSettings::SITE_LOCAL_PLACEMENT, site_local_placement);
 	settings.set(IfcGeom::IteratorSettings::BUILDING_LOCAL_PLACEMENT, building_local_placement);
