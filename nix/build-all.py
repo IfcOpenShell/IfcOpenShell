@@ -496,10 +496,12 @@ os.environ["LDFLAGS"] = LDFLAGS
 if "json" in targets:
     json_url = "https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp".format(**locals())
     json_install_path = "{DEPS_DIR}/install/json/nlohmann/json.hpp".format(**locals())
+    logger.info("\rFetching json from: '%s'...   " % (json_url,))
     if not os.path.exists(os.path.dirname(json_install_path)):
         os.makedirs(os.path.dirname(json_install_path))
     if not os.path.exists(json_install_path):
         urlretrieve(json_url, json_install_path)
+    logger.info("\rInstalled json to: '%s'" % (json_install_path,))
 
 if "pcre" in targets:
     build_dependency(
