@@ -735,6 +735,10 @@ class IfcImporter():
         for item in obj.data['ios_items']:
             vg = obj.vertex_groups.new(name=item['name'])
             vg.add([v.index for v in obj.data.vertices[cumulative_vertex_index:cumulative_vertex_index+item['total_vertices']]], 1, 'ADD')
+            for subitem in item['subitems']:
+                vg = obj.vertex_groups.new(name=subitem['name'])
+                vg.add([v + cumulative_vertex_index for v in subitem['vertices']],
+                    1, 'ADD')
             cumulative_vertex_index += item['total_vertices']
 
     def create_native_mesh(self, element, shape):
@@ -751,23 +755,25 @@ class IfcImporter():
                 if item.id() in data:
                     item = data[item.id()]
                 if item.is_a() == 'IfcExtrudedAreaSolid':
-                    bm = self.create_native_extruded_area_solid(item, element)
-                    if bm:
-                        bmesh.ops.transform(bm, matrix=representation['matrix'], verts=bm.verts)
-                        items.append({'blender': bm, 'raw': item})
+                    native = self.create_native_extruded_area_solid(item, element)
+                    if native:
+                        bmesh.ops.transform(
+                            native['blender'], matrix=representation['matrix'], verts=native['blender'].verts)
+                        items.append(native)
                     else:
                         items.append(None)
                 elif item.is_a('IfcSweptDiskSolid'):
                     items.append({
                         'blender': self.transform_curve(
                             self.create_native_swept_disk_solid(item, element), representation['matrix']),
-                        'raw': item
+                        'raw': item,
+                        'subitems': []
                     })
                 elif item.is_a('IfcFacetedBrep'):
                     bm = self.create_native_faceted_brep(item, element)
                     if bm:
                         bmesh.ops.transform(bm, matrix=representation['matrix'], verts=bm.verts)
-                        items.append({'blender': bm, 'raw': item})
+                        items.append({'blender': bm, 'raw': item, 'subitems': []})
                     else:
                         items.append(None)
                 else:
@@ -797,7 +803,8 @@ class IfcImporter():
             elif isinstance(item['blender'], bmesh.types.BMesh):
                 representation_items.append({
                     'name': item['raw'].is_a(),
-                    'total_vertices': len(item['blender'].verts)
+                    'total_vertices': len(item['blender'].verts),
+                    'subitems': item['subitems']
                 })
                 total_polygons = len(item['blender'].faces)
                 if merged_bm is None:
@@ -881,29 +888,46 @@ class IfcImporter():
 
     def create_native_extruded_area_solid(self, item, element):
         #print(shape.materials)
+        subitems = []
         if item.SweptArea.is_a() == 'IfcArbitraryClosedProfileDef':
             shape = ifcopenshell.geom.create_shape(self.settings_native, item.SweptArea.OuterCurve)
             bm = self.bmesh_from_pydata(*self.shape_to_mesh(shape))
             bm.faces.new([v for v in bm.verts])
             bm.faces.ensure_lookup_table()
+            subitems.append({
+                'name': item.SweptArea.is_a(),
+                'vertices': range(0, len(bm.verts))
+            })
         elif item.SweptArea.is_a() == 'IfcRectangleProfileDef':
             bm = self.bmesh_from_rectangle(item.SweptArea.XDim, item.SweptArea.YDim)
             if item.SweptArea.Position:
                 bmesh.ops.transform(bm, matrix=self.get_axis2placement(item.SweptArea.Position), verts=bm.verts)
             bmesh.ops.transform(bm, matrix=mathutils.Matrix() * self.unit_scale, verts=bm.verts)
+            subitems.append({
+                'name': item.SweptArea.is_a(),
+                'vertices': [0, 1, 2, 3]
+            })
         else:
             # TODO: what if we can't handle it?
             return
         results = bmesh.ops.extrude_face_region(bm, geom=[bm.faces[0]])
         bm.faces.ensure_lookup_table()
         offset = self.unit_scale * item.Depth * mathutils.Vector(item.ExtrudedDirection.DirectionRatios)
+        subitems.append({
+            'name': 'ExtrudedDirection',
+            'vertices': [0, len(subitems[-1]['vertices'])]
+        })
         for geom in results['geom']:
             if isinstance(geom, bmesh.types.BMVert):
                 geom.co += offset
         if item.Position:
             bmesh.ops.transform(
                 bm, matrix=self.scale_matrix(self.get_axis2placement(item.Position)), verts=bm.verts)
-        return bm
+        return {
+            'blender': bm,
+            'raw': item,
+            'subitems': subitems
+        }
         #mesh['ios_material_ids'] = [0] * len(bm.faces)
 
     def bmesh_from_rectangle(self, x, y):
