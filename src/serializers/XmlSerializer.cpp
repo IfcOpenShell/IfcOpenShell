@@ -4,12 +4,14 @@ extern void init_XmlSerializerIfc2x3(XmlSerializerFactory::Factory*);
 extern void init_XmlSerializerIfc4(XmlSerializerFactory::Factory*);
 extern void init_XmlSerializerIfc4x1(XmlSerializerFactory::Factory*);
 extern void init_XmlSerializerIfc4x2(XmlSerializerFactory::Factory*);
+extern void init_XmlSerializerIfc4x3_rc1(XmlSerializerFactory::Factory*);
 
 XmlSerializerFactory::Factory::Factory() {
 	init_XmlSerializerIfc2x3(this);
 	init_XmlSerializerIfc4(this);
 	init_XmlSerializerIfc4x1(this);
 	init_XmlSerializerIfc4x2(this);
+	init_XmlSerializerIfc4x3_rc1(this);
 }
 
 void XmlSerializerFactory::Factory::bind(const std::string& schema_name, fn f) {

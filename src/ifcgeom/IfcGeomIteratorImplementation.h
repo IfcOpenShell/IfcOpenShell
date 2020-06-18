@@ -985,6 +985,8 @@ namespace IfcGeom {
 			} else if (settings.get(IteratorSettings::SITE_LOCAL_PLACEMENT)) {
 				kernel.set_conversion_placement_rel_to(&IfcSchema::IfcSite::Class());
 			}
+			kernel.set_offset(settings.offset);
+			kernel.set_rotation(settings.rotation);
 		}
 		
 	public:

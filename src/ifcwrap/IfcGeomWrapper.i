@@ -326,7 +326,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		kernel.setValue(IfcGeom::Kernel::GV_MAX_FACES_TO_ORIENT, settings.get(IfcGeom::IteratorSettings::SEW_SHELLS) ? std::numeric_limits<double>::infinity() : -1);
 		kernel.setValue(IfcGeom::Kernel::GV_DIMENSIONALITY, (settings.get(IfcGeom::IteratorSettings::INCLUDE_CURVES) ? (settings.get(IfcGeom::IteratorSettings::EXCLUDE_SOLIDS_AND_SURFACES) ? -1. : 0.) : +1.));
 		kernel.setValue(IfcGeom::Kernel::GV_LAYERSET_FIRST,
-			settings.get(IteratorSettings::LAYERSET_FIRST)
+			settings.get(IfcGeom::IteratorSettings::LAYERSET_FIRST)
 			? +1.0
 			: -1.0
 		);
@@ -456,6 +456,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return helper_fn_create_shape<Ifc2x3>(settings, instance, representation);
 		} else if (schema_name == "IFC4") {
 			return helper_fn_create_shape<Ifc4>(settings, instance, representation);
+		} else if (schema_name == "IFC4X1") {
+			return helper_fn_create_shape<Ifc4x1>(settings, instance, representation);
+		} else if (schema_name == "IFC4X2") {
+			return helper_fn_create_shape<Ifc4x2>(settings, instance, representation);
+		} else if (schema_name == "IFC4X3_RC1") {
+			return helper_fn_create_shape<Ifc4x3_rc1>(settings, instance, representation);
 		} else {
 			throw IfcParse::IfcException("No geometry support for " + schema_name);
 		}

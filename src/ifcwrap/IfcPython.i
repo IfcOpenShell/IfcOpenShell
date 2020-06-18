@@ -76,6 +76,9 @@
 	
 	#include "../ifcparse/Ifc2x3.h"
 	#include "../ifcparse/Ifc4.h"
+	#include "../ifcparse/Ifc4x1.h"
+	#include "../ifcparse/Ifc4x2.h"
+	#include "../ifcparse/Ifc4x3_rc1.h"
 	#include "../ifcparse/IfcBaseClass.h"
 	#include "../ifcparse/IfcFile.h"
 	#include "../ifcparse/IfcSchema.h"

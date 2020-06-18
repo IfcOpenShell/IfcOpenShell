@@ -477,6 +477,13 @@ Ifc4x2::IfcStyledItem* create_styled_item(Ifc4x2::IfcRepresentationItem* item, I
 	style_assignments->push(style_assignment);
 	return new Ifc4x2::IfcStyledItem(item, style_assignments, boost::none);
 }
+
+Ifc4x3_rc1::IfcStyledItem* create_styled_item(Ifc4x3_rc1::IfcRepresentationItem* item, Ifc4x3_rc1::IfcPresentationStyleAssignment* style_assignment) {
+	IfcEntityList::ptr style_assignments(new IfcEntityList);
+	style_assignments->push(style_assignment);
+	return new Ifc4x3_rc1::IfcStyledItem(item, style_assignments, boost::none);
+}
+
 template <typename Schema>
 void IfcHierarchyHelper<Schema>::setSurfaceColour(typename Schema::IfcRepresentation* rep, 
 	typename Schema::IfcPresentationStyleAssignment* style_assignment) 
@@ -573,3 +580,4 @@ template IFC_PARSE_API class IfcHierarchyHelper<Ifc2x3>;
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc4>;
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x1>;
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x2>;
+template IFC_PARSE_API class IfcHierarchyHelper<Ifc4x3_rc1>;

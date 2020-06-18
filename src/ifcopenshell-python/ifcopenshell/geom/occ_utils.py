@@ -29,8 +29,10 @@ from collections import namedtuple, Iterable
 
 try:
     from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    USE_OCCT_HANDLE = False
 except ImportError:
     from OCC import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    USE_OCCT_HANDLE = True
 
 shape_tuple = namedtuple('shape_tuple', ('data', 'geometry', 'styles'))
 
@@ -76,10 +78,15 @@ def initialize_display():
         for l in lights:
             viewer.DelLight(l)
 
-        for dir in [V3d.V3d_TypeOfOrientation_Yup_AxoRight, V3d.V3d_TypeOfOrientation_Zup_AxoRight]:
+        if hasattr(V3d, 'V3d_TypeOfOrientation_Yup_AxoRight'):
+            dirs = [[V3d.V3d_TypeOfOrientation_Yup_AxoRight], [V3d.V3d_TypeOfOrientation_Zup_AxoRight]]
+        else:
+            dirs = [(3, 2, 1), (-1, -2, -3)]
+
+        for dir in dirs:
             light = V3d.V3d_DirectionalLight(viewer_handle)
-            light.SetDirection(dir)
-            viewer.SetLightOn(light)
+            light.SetDirection(*dir)
+            viewer.SetLightOn(light.GetHandle() if USE_OCCT_HANDLE else light)
 
     setup()
     return handle
@@ -177,14 +184,14 @@ def display_shape(shape, clr=None, viewer_handle=None):
         clr = Quantity.Quantity_Color(r(), r(), r(), Quantity.Quantity_TOC_RGB)
         ais.SetColor(clr)
 
-    ais_handle = ais
+    ais_handle = ais.GetHandle() if USE_OCCT_HANDLE else ais
     viewer_handle.Context.Display(ais_handle, False)
 
     return ais_handle
 
 
-def set_shape_transparency(ais, t, update_viewer=True):
-    handle.Context.SetTransparency(ais, t, update_viewer)
+def set_shape_transparency(ais, t):
+    handle.Context.SetTransparency(ais, t)
 
 
 def get_bounding_box_center(bbox):

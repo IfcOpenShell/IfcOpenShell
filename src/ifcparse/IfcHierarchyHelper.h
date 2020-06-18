@@ -36,6 +36,7 @@
 #include "../ifcparse/Ifc4.h"
 #include "../ifcparse/Ifc4x1.h"
 #include "../ifcparse/Ifc4x2.h"
+#include "../ifcparse/Ifc4x3_rc1.h"
 
 
 #include "../ifcparse/IfcFile.h"
@@ -65,6 +66,10 @@ namespace {
 		return t->RelatingStructure();
 	}
 
+	Ifc4x3_rc1::IfcObjectDefinition* get_parent_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatingStructure();
+	}
+
 	IfcEntityList::ptr get_children_of_relation(IfcUtil::IfcBaseClass* t) {
 		return *t->data().getArgument(
 			t->declaration().as_entity()->attribute_index("RelatedElements")
@@ -86,6 +91,11 @@ namespace {
 	IfcEntityList::ptr get_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t) {
 		return t->RelatedElements()->generalize();
 	}
+
+	IfcEntityList::ptr get_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t) {
+		return t->RelatedElements()->generalize();
+	}
+
 	void set_children_of_relation(IfcUtil::IfcBaseClass* t, IfcEntityList::ptr& cs) {
 		IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument;
 		attr->set(cs);
@@ -109,6 +119,10 @@ namespace {
 
 	void set_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
 		t->setRelatedElements(cs->as<Ifc4x2::IfcProduct>());
+	}
+
+	void set_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure* t, IfcEntityList::ptr& cs) {
+		t->setRelatedElements(cs->as<Ifc4x3_rc1::IfcProduct>());
 	}
 }
 template <typename Schema>
