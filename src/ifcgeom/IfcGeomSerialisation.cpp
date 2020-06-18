@@ -75,16 +75,18 @@ void opencascade_array_to_vector2(T& t, std::vector< std::vector<U> >& u) {
 }
 
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
-IfcSchema::IfcKnotType::Value opencascade_knotspec_to_ifc(GeomAbs_BSplKnotDistribution bspline_knot_spec) {
-	IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;
-	if (bspline_knot_spec == GeomAbs_Uniform) {
-		knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNIFORM_KNOTS;
-	} else if (bspline_knot_spec == GeomAbs_QuasiUniform) {
-		knot_spec = IfcSchema::IfcKnotType::IfcKnotType_QUASI_UNIFORM_KNOTS;
-	} else if (bspline_knot_spec == GeomAbs_PiecewiseBezier) {
-		knot_spec = IfcSchema::IfcKnotType::IfcKnotType_PIECEWISE_BEZIER_KNOTS;
+namespace {
+	IfcSchema::IfcKnotType::Value opencascade_knotspec_to_ifc(GeomAbs_BSplKnotDistribution bspline_knot_spec) {
+		IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNSPECIFIED;
+		if (bspline_knot_spec == GeomAbs_Uniform) {
+			knot_spec = IfcSchema::IfcKnotType::IfcKnotType_UNIFORM_KNOTS;
+		} else if (bspline_knot_spec == GeomAbs_QuasiUniform) {
+			knot_spec = IfcSchema::IfcKnotType::IfcKnotType_QUASI_UNIFORM_KNOTS;
+		} else if (bspline_knot_spec == GeomAbs_PiecewiseBezier) {
+			knot_spec = IfcSchema::IfcKnotType::IfcKnotType_PIECEWISE_BEZIER_KNOTS;
+		}
+		return knot_spec;
 	}
-	return knot_spec;
 }
 #endif
 

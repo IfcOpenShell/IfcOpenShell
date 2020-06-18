@@ -19,9 +19,21 @@ template <typename P, typename PP>
 extern void init_IteratorImplementation_Ifc4(IteratorFactoryImplementation<P, PP>*);
 
 template <typename P, typename PP>
+extern void init_IteratorImplementation_Ifc4x1(IteratorFactoryImplementation<P, PP>*);
+
+template <typename P, typename PP>
+extern void init_IteratorImplementation_Ifc4x2(IteratorFactoryImplementation<P, PP>*);
+
+template <typename P, typename PP>
+extern void init_IteratorImplementation_Ifc4x3_rc1(IteratorFactoryImplementation<P, PP>*);
+
+template <typename P, typename PP>
 IteratorFactoryImplementation<P, PP>::IteratorFactoryImplementation() {
 	init_IteratorImplementation_Ifc2x3(this);
 	init_IteratorImplementation_Ifc4(this);
+	init_IteratorImplementation_Ifc4x1(this);
+	init_IteratorImplementation_Ifc4x2(this);
+	init_IteratorImplementation_Ifc4x3_rc1(this);
 }
 
 template <typename P, typename PP>

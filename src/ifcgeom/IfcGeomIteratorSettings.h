@@ -20,6 +20,8 @@
 #ifndef IFCGEOMITERATORSETTINGS_H
 #define IFCGEOMITERATORSETTINGS_H
 
+#include <array>
+
 #include "ifc_geom_api.h"
 #include "../ifcparse/IfcException.h"
 #include "../ifcparse/IfcBaseClass.h"
@@ -88,8 +90,10 @@ namespace IfcGeom
 			VALIDATE_QUANTITIES = 1 << 17,
 			/// Assigns the first layer material to the entire product
 			LAYERSET_FIRST = 1 << 18,
+			/// Adds arrow heads to edge segments to signify edge direction
+			EDGE_ARROWS = 1 << 19,
 			/// Number of different setting flags.
-			NUM_SETTINGS = 18
+			NUM_SETTINGS = 19
         };
         /// Used to store logical OR combination of setting flags.
         typedef unsigned SettingField;
@@ -131,6 +135,11 @@ namespace IfcGeom
                 settings_ &= ~setting;
             }
         }
+
+        /// Optional offset that is applied to serialized objects, (0,0,0) by default.
+        std::array<double,3> offset = std::array<double,3>{0.0, 0.0, 0.0};
+        /// Optional rotation that is applied to serialized objects, (0,0,0,1) by default.
+        std::array<double,4> rotation = std::array<double,4>{0.0, 0.0, 0.0, 1.0};
 
     protected:
         SettingField settings_;
