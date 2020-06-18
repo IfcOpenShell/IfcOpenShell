@@ -732,11 +732,11 @@ class IfcImporter():
         if not obj.data or 'ios_items' not in obj.data:
             return
         cumulative_vertex_index = 0
-        for item in obj.data['ios_items']:
-            vg = obj.vertex_groups.new(name=item['name'])
+        for i, item in enumerate(obj.data['ios_items']):
+            vg = obj.vertex_groups.new(name=f'Item/{i}/' + item['name'])
             vg.add([v.index for v in obj.data.vertices[cumulative_vertex_index:cumulative_vertex_index+item['total_vertices']]], 1, 'ADD')
             for subitem in item['subitems']:
-                vg = obj.vertex_groups.new(name=subitem['name'])
+                vg = obj.vertex_groups.new(name=f'Subitem/{i}/' + subitem['name'])
                 vg.add([v + cumulative_vertex_index for v in subitem['vertices']],
                     1, 'ADD')
             cumulative_vertex_index += item['total_vertices']
@@ -826,6 +826,7 @@ class IfcImporter():
         mesh['ios_materials'] = materials
         mesh['ios_material_ids'] = material_ids
         mesh['ios_items'] = representation_items
+        mesh.BIMMeshProperties.is_native = True
         for representation_item in representation_items:
             new = mesh.BIMMeshProperties.representation_items.add()
             new.name = representation_item['name']

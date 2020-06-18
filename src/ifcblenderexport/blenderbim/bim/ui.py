@@ -437,6 +437,8 @@ class BIM_PT_mesh(Panel):
         row = layout.row()
         row.prop(props, 'is_wireframe')
         row = layout.row()
+        row.prop(props, 'is_native')
+        row = layout.row()
         row.prop(props, 'is_swept_solid')
 
         row = layout.row()

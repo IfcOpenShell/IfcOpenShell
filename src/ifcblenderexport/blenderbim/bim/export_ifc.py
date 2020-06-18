@@ -967,6 +967,7 @@ class IfcParser():
             'is_structural': self.is_structural(obj),
             'is_text': isinstance(mesh, bpy.types.TextCurve),
             'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
+            'is_native': mesh.BIMMeshProperties.is_native if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
             'presentation_layer': mesh.BIMMeshProperties.presentation_layer if hasattr(mesh, 'BIMMeshProperties') else None,
@@ -2068,6 +2069,9 @@ class IfcExporter():
         elif representation['is_curve']:
             return self.file.createIfcRepresentationMap(self.origin,
                 self.create_curve_representation(representation))
+        elif representation['is_native']:
+            return self.file.createIfcRepresentationMap(self.origin,
+                self.create_native_representation(representation))
         elif representation['is_swept_solid']:
             return self.file.createIfcRepresentationMap(self.origin,
                 self.create_swept_solid_representation(representation))
@@ -2303,7 +2307,61 @@ class IfcExporter():
             results.append(self.file.createIfcPolyline(points))
         return results
 
+    def create_native_representation(self, representation):
+        obj = representation['raw_object']
+        items = {}
+        for index, vg in enumerate(obj.vertex_groups):
+            components = vg.name.split('/')
+            key = components[1]
+            if components[0] == 'Item':
+                items[key] = {
+                    'name': components[2],
+                    'subitems': {}
+                }
+            elif components[0] == 'Subitem':
+                items[key]['subitems'][components[2]] = self.get_vertices_in_vertex_group(obj, index)
+        ifc_items = []
+        for item in items.values():
+            if item['name'] == 'IfcExtrudedAreaSolid':
+                ifc_items.append(self.create_native_extruded_area_solid(obj, item))
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'SweptSolid', ifc_items)
+
+    def get_vertices_in_vertex_group(self, obj, vg_index):
+        return [v.index for v in obj.data.vertices if vg_index in [g.group for g in v.groups]]
+
+    def get_edge_distance(self, obj, edge):
+        return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
+
+    def create_native_extruded_area_solid(self, obj, item):
+        extrusion_edge = self.get_edges_in_v_indices(obj, item['subitems']['ExtrudedDirection'])[0]
+
+        if 'IfcArbitraryClosedProfileDef' in item['subitems']:
+            outer_curve_loop = self.get_loop_from_v_indices(obj, item['subitems']['IfcArbitraryClosedProfileDef'])
+            curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
+            outer_curve = self.create_polyline_from_loop(obj, outer_curve_loop, curve_ucs)
+            curve = self.file.createIfcArbitraryClosedProfileDef('AREA', None, outer_curve)
+        elif 'IfcRectangleProfileDef' in item['subitems']:
+            outer_curve_loop = self.get_loop_from_v_indices(obj, item['subitems']['IfcRectangleProfileDef'])
+            curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
+            ydim = self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[0]])
+            xdim = self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[2]])
+            curve = self.file.createIfcRectangleProfileDef('AREA', None, None, xdim, ydim)
+
+        position = self.create_ifc_axis_2_placement_3d(
+            curve_ucs['center'], curve_ucs['z_axis'], curve_ucs['x_axis'])
+        direction = self.get_extrusion_direction(obj, outer_curve_loop, extrusion_edge, curve_ucs)
+        unit_direction = direction.normalized()
+
+        return self.file.createIfcExtrudedAreaSolid(
+            curve, position, self.file.createIfcDirection((
+                unit_direction.x, unit_direction.y, unit_direction.z)),
+            self.convert_si_to_unit(direction.length))
+
     def create_swept_solid_representation(self, representation):
+        # TODO: deprecate this in favour of native representations
         obj = representation['raw_object']
         mesh = representation['raw']
         items = []
@@ -2357,7 +2415,10 @@ class IfcExporter():
         profile_faces = [tuple(range(0, len(profile_verts)))]
         profile_face.from_pydata(profile_verts, [], profile_faces)
         center = profile_face.polygons[0].center
-        x_axis = (obj.data.vertices[loop[0]].co - center).normalized()
+        if (obj.data.vertices[loop[1]].co - obj.data.vertices[loop[0]].co).length < 0.01:
+            x_axis = (obj.data.vertices[loop[0]].co - center).normalized()
+        else:
+            x_axis = (obj.data.vertices[loop[1]].co - obj.data.vertices[loop[0]].co).normalized()
         z_axis = profile_face.polygons[0].normal.normalized()
         y_axis = z_axis.cross(x_axis).normalized()
         matrix = Matrix((x_axis, y_axis, z_axis))
