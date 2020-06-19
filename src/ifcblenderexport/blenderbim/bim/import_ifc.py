@@ -1177,17 +1177,17 @@ class IfcImporter():
     def load_file(self):
         self.ifc_import_settings.logger.info('loading file {}'.format(self.ifc_import_settings.input_file))
         extension = self.ifc_import_settings.input_file.split('.')[-1]
-        if extension == 'ifczip':
+        if extension.lower() == 'ifczip':
             with tempfile.TemporaryDirectory() as unzipped_path:
                 with zipfile.ZipFile(self.ifc_import_settings.input_file, 'r') as zip_ref:
                     zip_ref.extractall(unzipped_path)
                 for filename in Path(unzipped_path).glob('**/*.ifc'):
                     self.file = ifcopenshell.open(filename)
                     break
-        elif extension == 'ifcxml':
+        elif extension.lower() == 'ifcxml':
             self.file = ifcopenshell.file(
                 ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(self.ifc_import_settings.input_file))
-        elif extension == 'ifc':
+        elif extension.lower() == 'ifc':
             self.file = ifcopenshell.open(self.ifc_import_settings.input_file)
         ifc.IfcStore.file = self.file
 
@@ -1700,7 +1700,7 @@ class IfcImporter():
             mesh.BIMMeshProperties.geometry_type = self.get_geometry_type(element)
             return mesh
         except:
-            self.ifc_import_settings.logger.error('Could not create mesh for {}: {}'.format(element.GlobalId, element))
+            self.ifc_import_settings.logger.error('Could not create mesh for {}'.format(element))
 
     def create_curve(self, geometry):
         curve = bpy.data.curves.new(geometry.id, type='CURVE')
