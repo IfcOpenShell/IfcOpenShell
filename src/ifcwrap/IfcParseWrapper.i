@@ -522,7 +522,10 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;
 %newobject read;
+
+#ifdef WITH_IFCXML
 %newobject parse_ifcxml;
+#endif
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& fn) {
@@ -530,9 +533,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return f;
 	}
 
+#ifdef WITH_IFCXML
 	IfcParse::IfcFile* parse_ifcxml(const std::string& fn) {
 		return IfcParse::parse_ifcxml(fn);
 	}
+#endif
 
     IfcParse::IfcFile* read(const std::string& data) {
 		char* copiedData = new char[data.length()];
