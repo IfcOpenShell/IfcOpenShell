@@ -535,7 +535,7 @@ class IfcImporter():
         if element.GlobalId in self.existing_elements:
             obj = self.existing_elements[element.GlobalId]
         else:
-            obj = bpy.data.objects.new(f'IfcGroup/{element.Name}', None)
+            obj = bpy.data.objects.new(f'{element.is_a()}/{element.Name}', None)
             self.add_element_attributes(element, obj)
             group_collection.objects.link(obj)
         self.groups[element.GlobalId] = {
