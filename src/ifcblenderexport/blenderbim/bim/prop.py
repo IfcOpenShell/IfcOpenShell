@@ -1082,7 +1082,7 @@ class RepresentationItem(PropertyGroup):
 
 class BIMMeshProperties(PropertyGroup):
     is_wireframe: BoolProperty(name="Is Wireframe")
-    is_native: BoolProperty(name="Is Native")
+    is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     swept_solids: CollectionProperty(name="Swept Solids", type=SweptSolid)
     is_parametric: BoolProperty(name='Is Parametric', default=False)

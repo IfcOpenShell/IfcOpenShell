@@ -1671,23 +1671,30 @@ class IfcImporter():
 
             mesh = bpy.data.meshes.new(geometry.id)
 
-            vertices = geometry.verts
-            num_vertices = len(vertices) // 3
-            vertex_index = geometry.faces
-            total_faces = len(geometry.faces)
-            loop_start = range(0, total_faces, 3)
-            num_loops = total_faces // 3
-            loop_total = [3] * num_loops
-            num_vertex_indices = len(vertex_index)
+            if geometry.faces:
+                num_vertices = len(geometry.verts) // 3
+                total_faces = len(geometry.faces)
+                loop_start = range(0, total_faces, 3)
+                num_loops = total_faces // 3
+                loop_total = [3] * num_loops
+                num_vertex_indices = len(geometry.faces)
 
-            mesh.vertices.add(num_vertices)
-            mesh.vertices.foreach_set('co', vertices)
-            mesh.loops.add(num_vertex_indices)
-            mesh.loops.foreach_set('vertex_index', vertex_index)
-            mesh.polygons.add(num_loops)
-            mesh.polygons.foreach_set('loop_start', loop_start)
-            mesh.polygons.foreach_set('loop_total', loop_total)
-            mesh.update()
+                mesh.vertices.add(num_vertices)
+                mesh.vertices.foreach_set('co', geometry.verts)
+                mesh.loops.add(num_vertex_indices)
+                mesh.loops.foreach_set('vertex_index', geometry.faces)
+                mesh.polygons.add(num_loops)
+                mesh.polygons.foreach_set('loop_start', loop_start)
+                mesh.polygons.foreach_set('loop_total', loop_total)
+                mesh.update()
+            else:
+                e = geometry.edges
+                v = geometry.verts
+                vertices = [[v[i], v[i + 1], v[i + 2]]
+                         for i in range(0, len(v), 3)]
+                edges = [[e[i], e[i + 1]]
+                         for i in range(0, len(e), 2)]
+                mesh.from_pydata(vertices, edges, [])
 
             ios_materials = []
             for mat in geometry.materials:
