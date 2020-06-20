@@ -846,7 +846,8 @@ class BIM_PT_bim(Panel):
             row = layout.row()
             row.prop(bim_properties, "ifc_userdefined_type")
         row = layout.row()
-        row.operator("bim.assign_class")
+        op = row.operator("bim.assign_class")
+        op.object_name = ''
 
         row = layout.row(align=True)
         row.operator("bim.select_class")
