@@ -1663,6 +1663,9 @@ class IfcExporter():
     def get_relative_placement(self, element, placement_rel_to):
         if placement_rel_to:
             relating_object_matrix = self.get_local_placement(placement_rel_to)
+            relating_object_matrix[0][3] = self.convert_unit_to_si(relating_object_matrix[0][3])
+            relating_object_matrix[1][3] = self.convert_unit_to_si(relating_object_matrix[1][3])
+            relating_object_matrix[2][3] = self.convert_unit_to_si(relating_object_matrix[2][3])
         else:
             relating_object_matrix = Matrix()
         z = Vector(element['up_axis'])
@@ -1846,7 +1849,7 @@ class IfcExporter():
             qto['ifc'] = self.file.create_entity('IfcElementQuantity', **qto['attributes'])
 
     def create_product(self, product):
-        if product['relating_structure']:
+        if product['relating_structure'] is not None:
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']][
                 'ifc'].ObjectPlacement
         elif product['relating_host'] is not None:
@@ -2349,8 +2352,8 @@ class IfcExporter():
         elif 'IfcRectangleProfileDef' in item['subitems']:
             outer_curve_loop = self.get_loop_from_v_indices(obj, item['subitems']['IfcRectangleProfileDef'])
             curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
-            ydim = self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[0]])
-            xdim = self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[2]])
+            ydim = self.convert_si_to_unit(self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[0]]))
+            xdim = self.convert_si_to_unit(self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[2]]))
             curve = self.file.createIfcRectangleProfileDef('AREA', None, None, xdim, ydim)
 
         position = self.create_ifc_axis_2_placement_3d(
@@ -2701,6 +2704,9 @@ class IfcExporter():
 
     def convert_si_to_unit(self, co):
         return co / self.ifc_parser.unit_scale
+
+    def convert_unit_to_si(self, co):
+        return co * self.ifc_parser.unit_scale
 
     def write_ifc_file(self):
         extension = self.ifc_export_settings.output_file.split('.')[-1]
