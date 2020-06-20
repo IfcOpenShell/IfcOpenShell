@@ -2324,6 +2324,9 @@ class IfcExporter():
         for item in items.values():
             if item['name'] == 'IfcExtrudedAreaSolid':
                 ifc_items.append(self.create_native_extruded_area_solid(obj, item))
+            elif item['name'] == 'IfcFacetedBrep':
+                # TODO: check if we allow representation item type mixing
+                return self.create_solid_representation(representation)
         return self.file.createIfcShapeRepresentation(
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
