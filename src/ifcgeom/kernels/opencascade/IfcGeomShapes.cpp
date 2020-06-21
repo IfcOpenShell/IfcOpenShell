@@ -848,6 +848,19 @@ bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
 
 	for (auto& segment : segments) {
 		auto segment_wire = boost::get<TopoDS_Wire>(convert_curve(this, segment));
+		
+#ifdef IFOPSH_DEBUG
+		std::ostringstream o;
+		segment->print(o);
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(segment_wire, v0, v1);
+		gp_Pnt p0 = BRep_Tool::Pnt(v0);
+		gp_Pnt p1 = BRep_Tool::Pnt(v1);
+		o << "p0 " << p0.X() << " " << p0.Y() << " " << p0.Z() << std::endl;
+		o << "p1 " << p1.X() << " " << p1.Y() << " " << p1.Z() << std::endl;
+		auto o_str = o.str();
+		std::wcout << o_str.c_str() << std::endl;
+#endif
 
 		if (!segment->orientation) {
 			segment_wire.Reverse();
