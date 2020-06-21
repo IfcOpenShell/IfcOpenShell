@@ -62,7 +62,8 @@ struct eigen_base {
 
 	void print_impl(std::ostream& o, const std::string& class_name, int indent = 0) const {
 		o << std::string(indent, ' ') << class_name;
-		for (size_t i = 0; i < 16; ++i) {
+		int n = T::RowsAtCompileTime * T::ColsAtCompileTime;
+		for (size_t i = 0; i < n; ++i) {
 			o << " " << (*components)(i);
 		}
 		o << std::endl;
@@ -188,14 +189,19 @@ struct direction3 : public cartesian_base<3> {
 	direction3(double x = 0., double y = 0., double z = 0.) : cartesian_base(x, y, z) {}
 };
 
-struct curve : public geom_item {};
+struct curve : public geom_item {
+	void print_impl(std::ostream& o, const std::string& classname, int indent = 0) const {
+		o << std::string(indent, ' ') << classname << std::endl;
+		this->matrix.print(o, indent + 4);
+	}
+};
 
 struct line : public curve {
 	virtual item* clone() const { return new line(*this); }
 	virtual kinds kind() const { return LINE; }
 
 	void print(std::ostream& o, int indent = 0) const {
-		o << "not implemented";
+		print_impl(o, "line", indent);
 	}
 };
 
@@ -206,7 +212,7 @@ struct circle : public curve {
 	virtual kinds kind() const { return CIRCLE; }
 
 	void print(std::ostream& o, int indent = 0) const {
-		o << "not implemented";
+		print_impl(o, "circle", indent);
 	}
 };
 
@@ -217,7 +223,7 @@ struct ellipse : public circle {
 	virtual kinds kind() const { return ELLIPSE; }
 
 	void print(std::ostream& o, int indent = 0) const {
-		o << "not implemented";
+		print_impl(o, "ellipse", indent);
 	}
 };
 
@@ -226,7 +232,7 @@ struct bspline_curve : public curve {
 	virtual kinds kind() const { return BSPLINE_CURVE; }
 
 	void print(std::ostream& o, int indent = 0) const {
-		o << "not implemented";
+		o << std::string(indent, ' ') << "bspline curve" << std::endl;
 	}
 };
 
@@ -250,6 +256,20 @@ struct trimmed_curve : public curve {
 		o << std::string(indent, ' ') << "trimmed_curve" << std::endl;
 		if (basis) {
 			basis->print(o, indent + 4);
+		}
+
+		const boost::variant<point3, double> const * start_end[2] = { &start, &end };
+		for (int i = 0; i < 2; ++i) {
+			o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
+			if (start_end[i]->which() == 0) {
+				boost::get<point3>(*start_end[i]).print(o, indent + 4);
+			} else if (start_end[i]->which() == 1) {
+				o << std::string(indent + 4, ' ') << "parameter " << boost::get<double>(*start_end[i]) << std::endl;
+			}
+		}
+
+		if (this->instance) {
+			o << std::string(indent, ' ') << this->instance->data().toString() << std::endl;
 		}
 	}
 };

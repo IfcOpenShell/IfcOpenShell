@@ -1668,13 +1668,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	IfcEntityList::ptr trims1 = inst->Trim1();
 	IfcEntityList::ptr trims2 = inst->Trim2();
 
-	unsigned sense_agreement = inst->SenseAgreement() ? 0 : 1;
+	// reversed orientation handling happens in geometry kernel
+	unsigned sense_agreement = 0; // inst->SenseAgreement() ? 0 : 1;
 	double flts[2];
 	taxonomy::point3 pnts[2];
 	bool has_flts[2] = { false,false };
 	bool has_pnts[2] = { false,false };
 
-	tc->orientation = sense_agreement != 0;
+	tc->orientation = inst->SenseAgreement();
 
 	for (IfcEntityList::it it = trims1->begin(); it != trims1->end(); it++) {
 		IfcUtil::IfcBaseClass* i = *it;

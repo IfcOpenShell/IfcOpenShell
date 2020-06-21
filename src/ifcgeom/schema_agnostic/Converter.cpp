@@ -58,7 +58,15 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	auto place = taxonomy::matrix4();
 	std::swap(place, product_node->matrix);
 
-	kernel_->convert(product_node, shapes);
+	try {
+		kernel_->convert(product_node, shapes);
+	} catch (...) {
+		std::ostringstream oss;
+		product_node->print(oss);
+		std::string s = oss.str();
+		std::wcout << s.c_str() << std::endl;
+		return nullptr;
+	}
 
 	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
 
