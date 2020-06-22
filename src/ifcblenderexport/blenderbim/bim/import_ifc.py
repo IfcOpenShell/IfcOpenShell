@@ -381,6 +381,8 @@ class IfcImporter():
 
     def parse_native_swept_disk_solid(self):
         for element in self.file.by_type('IfcSweptDiskSolid'):
+            if [e for e in self.file.get_inverse(element) if e.is_a('IfcBooleanResult')]:
+                continue
             self.swap_out_with_dummy_geometry(element)
 
     def parse_native_extruded_area_solid(self):
@@ -390,10 +392,14 @@ class IfcImporter():
                     'IfcRectangleProfileDef'
                     ]:
                 continue
+            if [e for e in self.file.get_inverse(element) if e.is_a('IfcBooleanResult')]:
+                continue
             self.swap_out_with_dummy_geometry(element)
 
     def parse_native_faceted_brep(self):
         for element in self.file.by_type('IfcFacetedBrep'):
+            if [e for e in self.file.get_inverse(element) if e.is_a('IfcBooleanResult')]:
+                continue
             self.swap_out_with_dummy_geometry(element)
 
     def swap_out_with_dummy_geometry(self, element):
