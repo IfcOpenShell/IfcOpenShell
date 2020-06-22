@@ -68,10 +68,17 @@ endif()
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
 IF(PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "")
-    EXECUTE_PROCESS(
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
-        OUTPUT_VARIABLE python_package_dir
-    )
+    IF (USERSPACE_PYTHON_PREFIX)
+        EXECUTE_PROCESS(
+            COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import site; sys.stdout.write(site.USER_SITE)"
+            OUTPUT_VARIABLE python_package_dir
+        )
+    ELSE ()
+        EXECUTE_PROCESS(
+            COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils.sysconfig import get_python_lib; sys.stdout.write(get_python_lib(1))"
+            OUTPUT_VARIABLE python_package_dir
+        )
+    ENDIF()
 
     IF("${python_package_dir}" STREQUAL "")
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")

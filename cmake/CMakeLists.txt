@@ -49,6 +49,7 @@ endif()
 if (${BUILD_CONVERT})
 OPTION(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
 endif()
+OPTION(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 
 # TODO QtViewer is deprecated ATM as it uses the 0.4 API
 # OPTION(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer (requires Qt 4 framework)." OFF)
