@@ -174,7 +174,7 @@ class AssignClass(bpy.types.Operator):
         for obj in objects:
             existing_class = None
             if '/' in obj.name \
-                and obj.name[0:3] == 'Ifc':
+                    and obj.name[0:3] == 'Ifc':
                 existing_class = obj.name.split('/')[0]
             if existing_class:
                 obj.name = '{}/{}'.format(
@@ -199,6 +199,25 @@ class AssignClass(bpy.types.Operator):
                 object_type.name = 'ObjectType'
                 object_type.string_value = bpy.context.scene.BIMProperties.ifc_userdefined_type
         return {'FINISHED'}
+
+
+class UnassignClass(bpy.types.Operator):
+    bl_idname = 'bim.unassign_class'
+    bl_label = 'Unassign IFC Class'
+    object_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        if self.object_name:
+            objects = [bpy.data.objects.get(self.object_name)]
+        else:
+            objects = bpy.context.selected_objects
+        for obj in objects:
+            existing_class = None
+            if '/' in obj.name \
+                    and obj.name[0:3] == 'Ifc':
+                obj.name = '/'.join(obj.name.split('/')[1:])
+        return {'FINISHED'}
+
 
 class SelectClass(bpy.types.Operator):
     bl_idname = 'bim.select_class'
