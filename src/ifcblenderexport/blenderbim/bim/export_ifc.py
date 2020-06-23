@@ -478,7 +478,7 @@ class IfcParser():
                     obj[key], []).append(product)
 
         for slot in obj.material_slots:
-            if slot.link == 'OBJECT':
+            if slot.material is None or slot.link == 'OBJECT':
                 continue
             if obj.BIMObjectProperties.material_type == 'IfcMaterialLayerSet':
                 self.rel_associates_material_layer_set.setdefault(self.product_index, []).append(
