@@ -421,11 +421,11 @@ namespace {
                 (object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByType::RelatingType);
 #endif
 
-            // Format type
+            // Format type, an IfcObject can have 0-1 types
             for (IfcSchema::IfcTypeObject::list::it it = types->begin(); it != types->end(); ++it) {
                 IfcSchema::IfcTypeObject* type = *it;
 
-                json::reference to = getEmptyObjectReferenceInArray(type->declaration().name(), targetObject);
+                json::reference to = targetObject[type->declaration().name()] = json::object();
                 format_entity_instance(type, to, true);
             }
         }
