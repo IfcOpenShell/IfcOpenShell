@@ -13,6 +13,7 @@ if bpy is not None:
 
     classes = (
         operator.AssignClass,
+        operator.UnassignClass,
         operator.SelectClass,
         operator.SelectType,
         operator.SelectBcfFile,
