@@ -2512,13 +2512,10 @@ class IfcExporter():
         if not representation['is_parametric']:
             mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         self.create_vertices(mesh.vertices)
-        ifc_raw_items = [None] * len(representation['raw_object'].material_slots)
-        for i, value in enumerate(ifc_raw_items):
-            ifc_raw_items[i] = []
-        if not ifc_raw_items:
-            ifc_raw_items = [[]]
+        n_slots = max(1, len(representation['raw_object'].material_slots))
+        ifc_raw_items = [[]] * n_slots 
         for polygon in mesh.polygons:
-            ifc_raw_items[polygon.material_index].append(self.file.createIfcFace([
+            ifc_raw_items[polygon.material_index % n_slots].append(self.file.createIfcFace([
                 self.file.createIfcFaceOuterBound(
                     self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
                     True)]))
