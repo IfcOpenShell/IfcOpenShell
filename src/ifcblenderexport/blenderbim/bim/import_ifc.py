@@ -107,7 +107,9 @@ class MaterialCreator():
         slots = [s.name for s in obj.material_slots]
         material_to_slot = {}
         for i, material in enumerate(mesh['ios_materials']):
-            if 'surface-style-' in material:
+            if material == 'NULLMAT':
+                continue
+            elif 'surface-style-' in material:
                 material = material.split('-')[2]
             material_to_slot[i] = slots.index(material)
 
@@ -315,8 +317,10 @@ class IfcImporter():
             self.clean_mesh()
 
     def auto_set_workarounds(self):
-        if 'DDS-CAD' in self.file.wrapped_data.header.file_name.originating_system:
+        if 'DDS-CAD' in self.file.wrapped_data.header.file_name.originating_system \
+                or 'DDS' in self.file.wrapped_data.header.file_name.preprocessor_version:
             self.ifc_import_settings.should_treat_styled_item_as_material = True
+            self.ifc_import_settings.should_reset_absolute_coordinates = True
         applications = self.file.by_type('IfcApplication')
         if not applications:
             return
@@ -345,9 +349,13 @@ class IfcImporter():
 
     def is_point_far_away(self, point):
         # Arbitrary threshold based on experience
-        return abs(point.Coordinates[0]) > 1000000 \
-            or abs(point.Coordinates[1]) > 1000000 \
-            or abs(point.Coordinates[2]) > 1000000
+        if hasattr(point, 'Coordinates'):
+            return abs(point.Coordinates[0]) > 1000000 \
+                or abs(point.Coordinates[1]) > 1000000 \
+                or abs(point.Coordinates[2]) > 1000000
+        return abs(point[0]) > 1000000 \
+            or abs(point[1]) > 1000000 \
+            or abs(point[2]) > 1000000
 
     def process_element_filter(self):
         if not self.ifc_import_settings.ifc_selector:
@@ -461,6 +469,22 @@ class IfcImporter():
         # 12D can have some funky coordinates out of any sensible range. This
         # method will not work all the time, but will catch most issues.
         offset_point = None
+        for point_list in self.file.by_type('IfcCartesianPointList3D'):
+            coord_list = [None] * len(point_list.CoordList)
+            for i, point in enumerate(point_list.CoordList):
+                if len(point) == 2 or not self.is_point_far_away(point):
+                    coord_list[i] = point
+                    continue
+                if not offset_point:
+                    offset_point = (point[0], point[1], point[2])
+                    self.ifc_import_settings.logger.info(f'Resetting absolute coordinates by {point}')
+                point = (
+                    point[0] - offset_point[0],
+                    point[1] - offset_point[1],
+                    point[2] - offset_point[2]
+                )
+                coord_list[i] = point
+            point_list.CoordList = coord_list
         for point in self.file.by_type('IfcCartesianPoint'):
             if len(point.Coordinates) == 2 or not self.is_point_far_away(point):
                 continue
@@ -504,19 +528,33 @@ class IfcImporter():
         projected_crs = projected_crs[0]
         scene = bpy.context.scene
         scene.BIMProperties.has_georeferencing = True
-        scene.MapConversion.eastings = str(map_conversion.Eastings)
-        scene.MapConversion.northings = str(map_conversion.Northings)
-        scene.MapConversion.orthogonal_height = str(map_conversion.OrthogonalHeight)
-        scene.MapConversion.x_axis_abscissa = str(map_conversion.XAxisAbscissa)
-        scene.MapConversion.x_axis_ordinate = str(map_conversion.XAxisOrdinate)
-        scene.MapConversion.scale = str(map_conversion.Scale)
-        scene.TargetCRS.name = projected_crs.Name
-        scene.TargetCRS.description = projected_crs.Description
-        scene.TargetCRS.geodetic_datum = projected_crs.GeodeticDatum
-        scene.TargetCRS.vertical_datum = projected_crs.VerticalDatum
-        scene.TargetCRS.map_projection = projected_crs.MapProjection
-        scene.TargetCRS.map_zone = projected_crs.MapZone
-        scene.TargetCRS.map_unit = self.get_unit_name(projected_crs.MapUnit)
+        map_conversion_map = {
+            'Eastings': 'eastings',
+            'Northings': 'northings',
+            'OrthogonalHeight': 'orthogonal_height',
+            'XAxisAbscissa': 'x_axis_abscissa',
+            'XAxisOrdinate': 'x_axis_ordinate',
+            'Scale': 'scale'
+        }
+        target_crs_map = {
+            'Name': 'name',
+            'Description': 'description',
+            'GeodeticDatum': 'geodetic_datum',
+            'VerticalDatum': 'vertical_datum',
+            'MapProjection': 'map_projection',
+            'MapZone': 'map_zone',
+            'MapUnit': 'map_unit'
+        }
+        for keyA, keyB in map_conversion_map.items():
+            value = getattr(map_conversion, keyA)
+            if value is not None:
+                setattr(scene.MapConversion, keyB, str(value))
+        for keyA, keyB in target_crs_map.items():
+            value = getattr(projected_crs, keyA)
+            if value is not None:
+                if keyA == 'MapUnit':
+                    value = self.get_unit_name(value)
+                setattr(scene.TargetCRS, keyB, str(value))
 
     def get_unit_name(self, named_unit):
         name = ''
