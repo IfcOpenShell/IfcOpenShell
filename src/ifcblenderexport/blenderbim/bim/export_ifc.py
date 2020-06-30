@@ -1568,12 +1568,16 @@ class IfcExporter():
         )
 
     def create_target_crs(self):
-        self.ifc_parser.target_crs['attributes']['MapUnit'] = self.file.createIfcSIUnit(
-            None,
-            'LENGTHUNIT',
-            SIUnitHelper.get_prefix(self.ifc_parser.target_crs['attributes']['MapUnit']),
-            SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit'])
-        )
+        for key, value in self.ifc_parser.target_crs['attributes'].items():
+            if not self.ifc_parser.target_crs['attributes'][key]:
+                self.ifc_parser.target_crs['attributes'][key] = None
+        if self.ifc_parser.target_crs['attributes']['MapUnit']:
+            self.ifc_parser.target_crs['attributes']['MapUnit'] = self.file.createIfcSIUnit(
+                None,
+                'LENGTHUNIT',
+                SIUnitHelper.get_prefix(self.ifc_parser.target_crs['attributes']['MapUnit']),
+                SIUnitHelper.get_unit_name(self.ifc_parser.target_crs['attributes']['MapUnit'])
+            )
         self.ifc_parser.target_crs['ifc'] = self.file.create_entity(
             'IfcProjectedCRS',
             **self.ifc_parser.target_crs['attributes']
