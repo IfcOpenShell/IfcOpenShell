@@ -571,7 +571,7 @@ class BIM_PT_gis(Panel):
 
 
 class BIM_PT_documentation(Panel):
-    bl_label = "BIM Documentation"
+    bl_label = "Drawings and Sheets"
     bl_idname = "BIM_PT_documentation"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -587,7 +587,7 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.set_view_preset_2')
 
         row = layout.row()
-        row.prop(props, 'view_name')
+        row.prop(props, 'view_name', text='Drawing Name')
         row.operator('bim.create_view', icon='ADD', text='')
 
         row = layout.row()
@@ -595,7 +595,7 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.create_sheet', icon='ADD', text='')
 
         row = layout.row()
-        row.prop(props, 'available_views')
+        row.prop(props, 'available_views', text='Available Drawings')
         row.operator('bim.open_view', icon='URL', text='')
         row.operator('bim.activate_view', icon='SCENE', text='')
 
