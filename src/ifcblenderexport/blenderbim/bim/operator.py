@@ -1696,25 +1696,18 @@ class FetchObjectPassport(bpy.types.Operator):
     bl_label = 'Fetch Object Passport'
 
     def execute(self, context):
-        for document in bpy.context.active_object.BIMObjectProperties.documents:
-            if not document.file[-6:] == '.opass':
-                continue
-            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, 'doc', document.file)) as f:
-                self.object_pass = json.load(f)
-            if 'blender' in self.object_pass:
-                self.fetch_blender()
+        for reference in bpy.context.active_object.BIMObjectProperties.document_references:
+            reference = bpy.context.scene.BIMProperties.document_references[reference.name]
+            if reference.location[-6:] == '.blend':
+                self.fetch_blender(reference)
         return {'FINISHED'}
 
-    def fetch_blender(self):
-        identification = self.object_pass['blender']['identification']
-        uri = os.path.join(bpy.context.scene.BIMProperties.data_dir,
-                           'doc',
-                           self.object_pass['blender']['uri'])
+    def fetch_blender(self, reference):
         bpy.ops.wm.link(
-            filename=identification,
-            directory=os.path.join(uri, 'Mesh')
+            filename=reference.name,
+            directory=os.path.join(reference.location, 'Mesh')
         )
-        bpy.context.active_object.data = bpy.data.meshes[identification]
+        bpy.context.active_object.data = bpy.data.meshes[reference.name]
 
 
 class AddSubcontext(bpy.types.Operator):
