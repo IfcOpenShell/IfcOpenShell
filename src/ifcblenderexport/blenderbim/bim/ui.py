@@ -275,6 +275,7 @@ class BIM_PT_representations(Panel):
             op.context_name = subcontext.context
             op.subcontext_name = subcontext.name
             op.target_view_name = subcontext.target_view
+            row.operator('bim.remove_context', icon='X', text='').index = index
 
 
 class BIM_PT_classification_references(Panel):

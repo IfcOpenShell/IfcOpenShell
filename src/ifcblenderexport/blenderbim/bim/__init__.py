@@ -112,6 +112,7 @@ if bpy is not None:
         operator.SelectIfcClashResults,
         operator.AssignContext,
         operator.SwitchContext,
+        operator.RemoveContext,
         operator.SetViewPreset1,
         operator.SetViewPreset2,
         operator.OpenUpstream,
