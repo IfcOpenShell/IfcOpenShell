@@ -2084,6 +2084,34 @@ class SwitchContext(bpy.types.Operator):
         return mesh
 
 
+class RemoveContext(bpy.types.Operator):
+    bl_idname = 'bim.remove_context'
+    bl_label = 'Remove Context'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        data = obj.BIMObjectProperties.representation_contexts[self.index]
+
+        if '/' not in obj.data.name:
+            obj.data.name = 'Model/Body/MODEL_VIEW/' + obj.data.name
+
+        mesh = bpy.data.meshes.get('{}/{}/{}/{}'.format(
+            data.context, data.name, data.target_view, obj.data.name.split('/')[3]))
+
+        if mesh:
+            if obj.data == mesh:
+                void_name = 'Void/Void/Void/' + obj.data.name.split('/')[3]
+                void_mesh = bpy.data.meshes.get(void_name)
+                if not void_mesh:
+                    void_mesh = bpy.data.meshes.new(void_name)
+                obj.data = void_mesh
+            bpy.data.meshes.remove(mesh)
+
+        obj.BIMObjectProperties.representation_contexts.remove(self.index)
+        return {'FINISHED'}
+
+
 class SetViewPreset1(bpy.types.Operator):
     bl_idname = 'bim.set_view_preset_1'
     bl_label = 'Set View Preset 1'
