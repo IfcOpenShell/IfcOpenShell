@@ -2342,9 +2342,6 @@ class IfcExporter():
     def get_vertices_in_vertex_group(self, obj, vg_index):
         return [v.index for v in obj.data.vertices if vg_index in [g.group for g in v.groups]]
 
-    def get_edge_distance(self, obj, edge):
-        return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
-
     def create_native_extruded_area_solid(self, obj, item):
         extrusion_edge = self.get_edges_in_v_indices(obj, item['subitems']['ExtrudedDirection'])[0]
 
@@ -2356,8 +2353,10 @@ class IfcExporter():
         elif 'IfcRectangleProfileDef' in item['subitems']:
             outer_curve_loop = self.get_loop_from_v_indices(obj, item['subitems']['IfcRectangleProfileDef'])
             curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
-            ydim = self.convert_si_to_unit(self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[0]]))
-            xdim = self.convert_si_to_unit(self.get_edge_distance(obj, obj.data.edges[outer_curve_loop[2]]))
+            xdim = self.convert_si_to_unit(
+                (obj.data.vertices[outer_curve_loop[0]].co - obj.data.vertices[outer_curve_loop[1]].co).length)
+            ydim = self.convert_si_to_unit(
+                (obj.data.vertices[outer_curve_loop[1]].co - obj.data.vertices[outer_curve_loop[2]].co).length)
             curve = self.file.createIfcRectangleProfileDef('AREA', None, None, xdim, ydim)
 
         position = self.create_ifc_axis_2_placement_3d(
