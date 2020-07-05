@@ -87,7 +87,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	void write(const std::string& fn) {
-		std::ofstream f(fn.c_str());
+		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
 		f << (*$self);
 	}
 
