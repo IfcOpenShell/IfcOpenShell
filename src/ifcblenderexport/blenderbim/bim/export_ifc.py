@@ -2204,6 +2204,8 @@ class IfcExporter():
         # TODO: support unclosed surfaces
         swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
             self.create_curves(representation['raw'].bevel_object.data)[0])
+        if (representation['raw'].bevel_object.scale - Vector((1, 1, 1))).length > 0.01:
+            self.scale_ifc_representation(swept_area, representation['raw'].bevel_object.scale)
         swept_area_solids = []
         for spline in representation['raw'].splines:
             points = self.get_spline_points(spline)
@@ -2241,6 +2243,15 @@ class IfcExporter():
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'AdvancedSweptSolid',
             swept_area_solids)
+
+    def scale_ifc_representation(self, rep, scale):
+        for element in self.file.traverse(rep):
+            if not element.is_a('IfcCartesianPoint'):
+                continue
+            element.Coordinates = tuple(Vector(element.Coordinates) @ Matrix((
+                (scale[0], 0, 0),
+                (0, scale[1], 0),
+                (0, 0, scale[2]))))
 
     def create_vertex_point(self, point):
         return self.file.createIfcVertexPoint(
