@@ -203,6 +203,46 @@ class BIM_PT_document_information(Panel):
             row.operator('bim.unassign_document_reference', text='Unassign Reference')
 
 
+class BIM_PT_constraints(Panel):
+    bl_label = 'IFC Constraints'
+    bl_idname = 'BIM_PT_constraints'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.operator('bim.add_constraint')
+
+        if props.constraints:
+            layout.template_list('BIM_UL_constraints', '', props, 'constraints', props, 'active_constraint_index')
+
+            if props.active_constraint_index < len(props.constraints):
+                constraint = props.constraints[props.active_constraint_index]
+                row = layout.row(align=True)
+                row.prop(constraint, 'name')
+                row.operator('bim.remove_constraint', icon='X', text='').index = props.active_constraint_index
+                row = layout.row()
+                row.prop(constraint, 'description')
+                row = layout.row()
+                row.prop(constraint, 'constraint_grade')
+                if constraint.constraint_grade == 'USERDEFINED':
+                    row = layout.row()
+                    row.prop(constraint, 'user_defined_grade')
+                row = layout.row()
+                row.prop(constraint, 'constraint_source')
+                row = layout.row()
+                row.prop(constraint, 'objective_qualifier')
+                if constraint.objective_qualifier == 'USERDEFINED':
+                    row = layout.row()
+                    row.prop(constraint, 'user_defined_qualifier')
+
+
 class BIM_PT_documents(Panel):
     bl_label = 'IFC Documents'
     bl_idname = 'BIM_PT_documents'
@@ -1275,6 +1315,15 @@ class BIM_UL_topics(bpy.types.UIList):
 
 
 class BIM_UL_clash_sets(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
+
+
+class BIM_UL_constraints(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         ob = data
         if item:

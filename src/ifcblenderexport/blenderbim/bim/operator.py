@@ -820,6 +820,26 @@ class RemoveMaterialPset(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AddConstraint(bpy.types.Operator):
+    bl_idname = 'bim.add_constraint'
+    bl_label = 'Add Constraint'
+
+    def execute(self, context):
+        constraint = bpy.context.scene.BIMProperties.constraints.add()
+        constraint.name = 'New Constraint'
+        return {'FINISHED'}
+
+
+class RemoveConstraint(bpy.types.Operator):
+    bl_idname = 'bim.remove_constraint'
+    bl_label = 'Remove Constraint'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.constraints.remove(self.index)
+        return {'FINISHED'}
+
+
 class AddDocumentInformation(bpy.types.Operator):
     bl_idname = 'bim.add_document_information'
     bl_label = 'Add Document Information'
