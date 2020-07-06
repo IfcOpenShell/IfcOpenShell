@@ -94,7 +94,7 @@ class IfcParser():
         self.document_references = {}
         self.classifications = []
         self.classification_references = {}
-        self.objectives = {}
+        self.constraints = {}
         self.qtos = {}
         self.aggregates = {}
         self.materials = {}
@@ -152,7 +152,7 @@ class IfcParser():
         self.classifications = self.get_classifications()
         self.classification_reference_maps = self.get_classification_reference_maps()
         self.classification_references = self.get_classification_references()
-        self.objectives = self.get_objectives()
+        self.constraints = self.get_constraints()
         self.load_representations()
         self.load_presentation_layer_assignments()
         self.materials = self.get_materials()
@@ -670,18 +670,27 @@ class IfcParser():
                 }
         return results
 
-    def get_objectives(self):
+    def get_constraints(self):
         results = {}
-        class_path = self.data_dir + 'constraint/'
-        with open(class_path + 'objectives.csv', 'r') as f:
-            data = list(csv.reader(f))
-            keys = data.pop(0)
-            for row in data:
-                results[row[0]] = {
-                    'ifc': None,
-                    'raw': row,
-                    'attributes': dict(zip(keys, row))
-                }
+        data_map = {
+            'name': 'Name',
+            'description': 'Description',
+            'constraint_grade': 'ConstraintGrade',
+            'constraint_source': 'ConstraintSource',
+            'user_defined_grade': 'UserDefinedGrade',
+            'objective_qualifier': 'ObjectiveQualifier',
+            'user_defined_qualifier': 'UserDefinedQualifier',
+        }
+        for constraint in bpy.context.scene.BIMProperties.constraints:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(constraint, key):
+                    attributes[value] = getattr(constraint, key)
+            results[constraint.name] = {
+                'ifc': None,
+                'raw': constraint,
+                'attributes': attributes
+            }
         return results
 
     def get_people(self):
@@ -1163,7 +1172,7 @@ class IfcExporter():
         self.create_document_references()
         self.create_classifications()
         self.create_classification_references()
-        self.create_objectives()
+        self.create_constraints()
         self.create_psets()
         self.create_libraries()
         self.create_map_conversion()
@@ -1391,8 +1400,8 @@ class IfcExporter():
         for reference in self.ifc_parser.classification_references.values():
             reference['ifc'] = self.file.add(reference['raw_element'])
 
-    def create_objectives(self):
-        for objective in self.ifc_parser.objectives.values():
+    def create_constraints(self):
+        for objective in self.ifc_parser.constraints.values():
             objective['ifc'] = self.file.create_entity(
                 'IfcObjective', **objective['attributes'])
 
