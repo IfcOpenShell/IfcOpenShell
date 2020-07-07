@@ -1077,6 +1077,8 @@ class BIMObjectProperties(PropertyGroup):
     applicable_attributes: EnumProperty(items=getApplicableAttributes, name="Attribute Names")
     document_references: CollectionProperty(name="Document References", type=DocumentReference)
     active_document_reference_index: IntProperty(name='Active Document Reference Index')
+    constraints: CollectionProperty(name='Constraints', type=Constraint)
+    active_constraint_index: IntProperty(name='Active Constraint Index')
     classifications: CollectionProperty(name="Classifications", type=ClassificationReference)
     material_type: EnumProperty(items=getMaterialTypes, name="Material Type")
     pset_name: EnumProperty(items=getPsetNames, name='Pset Name')
