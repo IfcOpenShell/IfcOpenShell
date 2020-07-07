@@ -840,6 +840,43 @@ class RemoveConstraint(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AssignConstraint(bpy.types.Operator):
+    bl_idname = 'bim.assign_constraint'
+    bl_label = 'Assign Constraint'
+
+    def execute(self, context):
+        identification = bpy.context.scene.BIMProperties.constraints[bpy.context.scene.BIMProperties.active_constraint_index].name
+        for obj in bpy.context.selected_objects:
+            if obj.BIMObjectProperties.constraints.get(identification):
+                continue
+            constraint = obj.BIMObjectProperties.constraints.add()
+            constraint.name = identification
+        return {'FINISHED'}
+
+
+class UnassignConstraint(bpy.types.Operator):
+    bl_idname = 'bim.unassign_constraint'
+    bl_label = 'Unassign Constraint'
+
+    def execute(self, context):
+        identification = bpy.context.scene.BIMProperties.constraints[bpy.context.scene.BIMProperties.active_constraint_index].name
+        for obj in bpy.context.selected_objects:
+            index = obj.BIMObjectProperties.constraints.find(identification)
+            if index >= 0:
+                obj.BIMObjectProperties.constraints.remove(index)
+        return {'FINISHED'}
+
+
+class RemoveObjectConstraint(bpy.types.Operator):
+    bl_idname = 'bim.remove_object_constraint'
+    bl_label = 'Remove Object Constraint'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.active_object.BIMObjectProperties.constraints.remove(self.index)
+        return {'FINISHED'}
+
+
 class AddDocumentInformation(bpy.types.Operator):
     bl_idname = 'bim.add_document_information'
     bl_label = 'Add Document Information'

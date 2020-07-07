@@ -115,8 +115,8 @@ class IfcParser():
         self.rel_associates_material_layer_set = {}
         self.rel_associates_material_constituent_set = {}
         self.rel_associates_material_profile_set = {}
-        self.rel_associates_constraint_objective_object = {}
-        self.rel_associates_constraint_objective_type = {}
+        self.rel_associates_constraint_object = {}
+        self.rel_associates_constraint_type = {}
         self.rel_aggregates = {}
         self.rel_voids_elements = {}
         self.rel_fills_elements = {}
@@ -472,10 +472,9 @@ class IfcParser():
             self.rel_associates_classification_object.setdefault(
                 classification.name, []).append(product)
 
-        for key in obj.keys():
-            if key[0:9] == 'Objective':
-                self.rel_associates_constraint_objective_object.setdefault(
-                    obj[key], []).append(product)
+        for constraint in obj.BIMObjectProperties.constraints:
+            self.rel_associates_constraint_object.setdefault(
+                constraint.name, []).append(product)
 
         for slot in obj.material_slots:
             if slot.material is None or slot.link == 'OBJECT':
@@ -1203,8 +1202,7 @@ class IfcExporter():
         self.relate_to_documents(self.ifc_parser.rel_associates_document_type)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_object)
         self.relate_to_classifications(self.ifc_parser.rel_associates_classification_type)
-        self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_object)
-        self.relate_to_objectives(self.ifc_parser.rel_associates_constraint_objective_type)
+        self.relate_to_constraints(self.ifc_parser.rel_associates_constraint_object)
         self.relate_structural_members_to_connections()
         self.relate_objects_to_groups()
         self.write_ifc_file()
@@ -1401,9 +1399,9 @@ class IfcExporter():
             reference['ifc'] = self.file.add(reference['raw_element'])
 
     def create_constraints(self):
-        for objective in self.ifc_parser.constraints.values():
-            objective['ifc'] = self.file.create_entity(
-                'IfcObjective', **objective['attributes'])
+        for constraint in self.ifc_parser.constraints.values():
+            constraint['ifc'] = self.file.create_entity(
+                'IfcObjective', **constraint['attributes'])
 
     def create_psets(self):
         for pset in self.ifc_parser.psets.values():
@@ -2704,12 +2702,12 @@ class IfcExporter():
                 [o['ifc'] for o in related_objects],
                 self.ifc_parser.classification_references[relating_key]['ifc'])
 
-    def relate_to_objectives(self, relationships):
+    def relate_to_constraints(self, relationships):
         for relating_key, related_objects in relationships.items():
             self.file.createIfcRelAssociatesConstraint(
                 ifcopenshell.guid.new(), self.owner_history, None, None,
                 [o['ifc'] for o in related_objects], None,
-                self.ifc_parser.objectives[relating_key]['ifc'])
+                self.ifc_parser.constraints[relating_key]['ifc'])
 
     def relate_structural_members_to_connections(self):
         for relating_member, relating_connection in self.ifc_parser.rel_connects_structural_member.items():
