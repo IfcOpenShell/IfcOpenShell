@@ -37,6 +37,14 @@ struct item {
 	item(const IfcUtil::IfcBaseClass* instance = nullptr) : instance(instance) {}
 };
 
+bool less(const item*, const item*);
+
+struct less_functor {
+	bool operator()(const item* a, const item* b) const {
+		return less(a, b);
+	}
+};
+
 template <typename T>
 struct eigen_base {
 	T* components;
@@ -258,7 +266,7 @@ struct trimmed_curve : public curve {
 			basis->print(o, indent + 4);
 		}
 
-		const boost::variant<point3, double> const * start_end[2] = { &start, &end };
+		const boost::variant<point3, double> * const start_end[2] = { &start, &end };
 		for (int i = 0; i < 2; ++i) {
 			o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
 			if (start_end[i]->which() == 0) {
@@ -307,6 +315,9 @@ struct collection : public geom_item {
 
 	void print(std::ostream& o, int indent = 0) const {
 		o << std::string(indent, ' ') << "collection" << std::endl;
+		if (!matrix.components->isIdentity()) {
+			matrix.print(o, indent + 4);
+		}
 		for (auto& c : children) {
 			c->print(o, indent + 4);
 		}
@@ -326,7 +337,7 @@ struct plane : public surface {
 	virtual item* clone() const { return new plane(*this); }
 	virtual kinds kind() const { return PLANE; }
 
-	void print(std::ostream& o, int indent = 0) const {
+	void print(std::ostream& o, int) const {
 		o << "not implemented";
 	}
 };
@@ -386,7 +397,7 @@ struct boolean_result : public collection {
 };
 
 namespace impl {
-	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, edge, plane, loop, face, shell, extrusion, node, collection, boolean_result> KindsTuple;
+	typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, plane, edge, loop, face, shell, extrusion, node, collection, boolean_result> KindsTuple;
 	typedef std::tuple<line, circle, ellipse, bspline_curve, loop, edge> CurvesTuple;
 }
 

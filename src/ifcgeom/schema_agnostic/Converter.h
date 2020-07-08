@@ -18,6 +18,8 @@ namespace ifcopenshell { namespace geometry {
 		abstract_mapping* mapping_;
 		kernels::AbstractKernel* kernel_;
 		ifcopenshell::geometry::settings settings_;
+		std::map<ifcopenshell::geometry::taxonomy::item*, ifcopenshell::geometry::ConversionResults, ifcopenshell::geometry::taxonomy::less_functor> cache_;
+
 	public:
 		kernels::AbstractKernel* kernel() { return kernel_; }
 

@@ -54,18 +54,29 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	}
 
 	std::clock_t geom_start = std::clock();
-	
-	auto place = taxonomy::matrix4();
-	std::swap(place, product_node->matrix);
 
-	try {
-		kernel_->convert(product_node, shapes);
-	} catch (...) {
+	if (false) {
 		std::ostringstream oss;
 		product_node->print(oss);
 		std::string s = oss.str();
 		std::wcout << s.c_str() << std::endl;
-		return nullptr;
+	}
+	
+	auto place = taxonomy::matrix4();
+	std::swap(place, product_node->matrix);
+
+	auto it = cache_.find(product_node);
+	if (it == cache_.end()) {
+		try {
+			kernel_->convert(product_node, shapes);
+		} catch (...) {
+			return nullptr;
+		}
+		cache_.insert(it, { product_node, shapes });
+	} else {
+		Logger::Notice("Reusing geometry for", product);
+		Logger::Notice("Found", it->first->instance);
+		shapes = it->second;
 	}
 
 	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
