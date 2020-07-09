@@ -877,6 +877,86 @@ class RemoveObjectConstraint(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AddPerson(bpy.types.Operator):
+    bl_idname = 'bim.add_person'
+    bl_label = 'Add Person'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.people.add()
+        new.name = 'New Person'
+        return {'FINISHED'}
+
+
+class RemovePerson(bpy.types.Operator):
+    bl_idname = 'bim.remove_person'
+    bl_label = 'Remove Person'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.people.remove(self.index)
+        return {'FINISHED'}
+
+
+class AddPersonAddress(bpy.types.Operator):
+    bl_idname = 'bim.add_person_address'
+    bl_label = 'Add Person Address'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.people[bpy.context.scene.BIMProperties.active_person_index].addresses.add()
+        new.name = 'IfcPostalAddress'
+        return {'FINISHED'}
+
+
+class RemovePersonAddress(bpy.types.Operator):
+    bl_idname = 'bim.remove_person_address'
+    bl_label = 'Remove Person Address'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.people[bpy.context.scene.BIMProperties.active_person_index].addresses.remove(self.index)
+        return {'FINISHED'}
+
+
+class AddOrganisation(bpy.types.Operator):
+    bl_idname = 'bim.add_organisation'
+    bl_label = 'Add Organisation'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.organisations.add()
+        new.name = 'New Organisation'
+        return {'FINISHED'}
+
+
+class RemoveOrganisation(bpy.types.Operator):
+    bl_idname = 'bim.remove_organisation'
+    bl_label = 'Remove Organisation'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.organisations.remove(self.index)
+        return {'FINISHED'}
+
+
+class AddOrganisationAddress(bpy.types.Operator):
+    bl_idname = 'bim.add_organisation_address'
+    bl_label = 'Add Organisation Address'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.organisations[bpy.context.scene.BIMProperties.active_organisation_index].addresses.add()
+        new.name = 'IfcPostalAddress'
+        return {'FINISHED'}
+
+
+class RemoveOrganisationAddress(bpy.types.Operator):
+    bl_idname = 'bim.remove_organisation_address'
+    bl_label = 'Remove Organisation Address'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.organisations[bpy.context.scene.BIMProperties.active_organisation_index].addresses.remove(self.index)
+        return {'FINISHED'}
+
+
 class AddDocumentInformation(bpy.types.Operator):
     bl_idname = 'bim.add_document_information'
     bl_label = 'Add Document Information'
