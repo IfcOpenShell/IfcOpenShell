@@ -513,12 +513,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpe
 		scale3 = nu->hasScale3() ? nu->Scale3() : scale1;
 	}
 
-	*m->components <<
+	Eigen::Matrix4d tmp;
+	tmp <<
 		axis1 * scale1,
 		axis2 * scale2,
 		axis3 * scale3,
 		origin;
 
+	*m->components = tmp.inverse();
 	m->components->transposeInPlace();
 
 	// @todo tag identity?
@@ -560,7 +562,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcLocalPlacement* inst) {
 	return m4;
 }
 
-IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation) {
+IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation, bool only_direct) {
 	IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
 
 	IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
@@ -573,6 +575,10 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 		// IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
 		// Let's find the IfcProducts that reference the IfcProductRepresentation anyway
 		products->push((*it)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>());
+	}
+
+	if (only_direct) {
+		return products;
 	}
 
 	IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
@@ -777,43 +783,13 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
 	int task_index = 0;
 	
 	for (auto representation : *representations) {
+		// There used to be a whole lot of magic in here to pair multiple products with,
+		// representations but this is now handled at a later stage where equivalent
+		// taxonomy::items (sorted based on std::less) are grouped.
 
-		// Init. the list of filtered IfcProducts for this representation
-		
-		// Include only the desired products for processing.
-		IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation), filters);
+		IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, true), filters);
 		
 		if (ifcproducts->size() == 0) {
-			continue;
-		}
-
-		auto geometry_reuse_ok_for_current_representation_ = reuse_ok_(s, ifcproducts);
-
-		IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
-
-		if (!geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
-			// unfiltered_products contains products represented by this representation by means of mapped items.
-			// For example because of openings applied to products, reuse might not be acceptable and then the
-			// products will be processed by means of their immediate representation and not the mapped representation.
-
-			// IfcRepresentationMaps are also used for IfcTypeProducts, so an additional check is performed whether the map
-			// is indeed used by IfcMappedItems.
-			IfcSchema::IfcRepresentationMap* map = *maps->begin();
-			if (map->MapUsage()->size() > 0) {
-				continue;
-			}
-		}
-
-		// Check if this represenation has (or will be) processed as part its mapped representation
-		bool representation_processed_as_mapped_item = false;
-		IfcSchema::IfcRepresentation* rep_mapped_to = representation_mapped_to(representation);
-		if (rep_mapped_to) {
-			representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ && (
-				ok_mapped_representations->contains(rep_mapped_to) || reuse_ok_(s, filter_products(products_represented_by(rep_mapped_to), filters)));
-		}
-
-		if (representation_processed_as_mapped_item) {
-			ok_mapped_representations->push(rep_mapped_to);
 			continue;
 		}
 

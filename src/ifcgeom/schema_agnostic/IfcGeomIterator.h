@@ -105,6 +105,17 @@
 #undef max
 #endif
 
+namespace ifcopenshell { namespace geometry {
+
+struct geometry_conversion_result {
+	taxonomy::item* item;
+	std::vector<std::pair<IfcUtil::IfcBaseEntity*, taxonomy::matrix4>> products;
+	std::vector<ifcopenshell::geometry::NativeElement*> breps;
+	std::vector<ifcopenshell::geometry::Element*> elements;
+};
+
+} }
+
 namespace {
 	ifcopenshell::geometry::Element* process_based_on_settings(
 		const ifcopenshell::geometry::settings& settings,
@@ -137,11 +148,12 @@ namespace {
 	void create_element(
 		ifcopenshell::geometry::Converter* converter, 
 		const ifcopenshell::geometry::settings& settings,
-		ifcopenshell::geometry::geometry_conversion_task* rep)
+		ifcopenshell::geometry::geometry_conversion_result* rep)
 	{
-		IfcUtil::IfcBaseEntity* representation = rep->representation;
-		IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *rep->products->begin();
-		auto brep = converter->create_brep_for_representation_and_product(representation, product);
+		ifcopenshell::geometry::taxonomy::item* representation = rep->item;
+		auto place = rep->products.front().second;
+		auto brep = converter->create_brep_for_representation_and_product(representation, place);
+
 		if (!brep) {
 			return;
 		}
@@ -154,10 +166,11 @@ namespace {
 		rep->breps = { brep };
 		rep->elements = { elem };
 
-		for (auto it = rep->products->begin() + 1; it != rep->products->end(); ++it) {
-			auto brep2 = converter->create_brep_for_processed_representation(representation, (IfcUtil::IfcBaseEntity*) *it, brep);
+		for (auto it = rep->products.begin() + 1; it != rep->products.end(); ++it) {
+			const auto& p = *it;
+			auto brep2 = converter->create_brep_for_processed_representation(p.first, p.second, brep);
 			if (brep2) {
-				auto elem2 = process_based_on_settings(settings, brep, dynamic_cast<ifcopenshell::geometry::TriangulationElement*>(elem));
+				auto elem2 = process_based_on_settings(settings, brep2, dynamic_cast<ifcopenshell::geometry::TriangulationElement*>(elem));
 				if (elem2) {
 					rep->breps.push_back(brep2);
 					rep->elements.push_back(elem2);
@@ -174,8 +187,8 @@ namespace ifcopenshell { namespace geometry {
 
 		int num_threads_;
 		std::atomic<int> progress_;
-		std::vector<geometry_conversion_task> tasks_;
-		std::vector<geometry_conversion_task>::iterator task_iterator_;
+		std::vector<geometry_conversion_result> tasks_;
+		std::vector<geometry_conversion_result>::iterator task_iterator_;
 
 		std::vector<ifcopenshell::geometry::Element*> all_processed_elements_;
 		std::vector<ifcopenshell::geometry::NativeElement*> all_processed_native_elements_;
@@ -210,7 +223,34 @@ namespace ifcopenshell { namespace geometry {
 
 		bool initialize() {
 			converter_ = new Converter(geometry_library_, ifc_file, settings_);
-			converter_->mapping()->get_representations(tasks_, filters_, settings_);
+			std::vector<geometry_conversion_task> reps;
+			converter_->mapping()->get_representations(reps, filters_, settings_);
+			std::vector<IfcUtil::IfcBaseClass*> products;
+			for (auto& r : reps) {
+				std::copy(r.products->begin(), r.products->end(), std::back_inserter(products));
+			}
+			std::vector<taxonomy::item*> items;
+			std::map<taxonomy::item*, taxonomy::matrix4> placements;
+			std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](IfcUtil::IfcBaseClass* p) {
+				auto item = converter_->mapping()->map(p);
+				// Product placements do not affect item reuse and should temporarily be swapped to identity
+				std::swap(placements[item], ((taxonomy::geom_item*)item)->matrix);
+				return item;
+			});
+			std::sort(items.begin(), items.end(), taxonomy::less);
+			auto it = items.begin();
+			while (it < items.end()) {
+				auto jt = std::upper_bound(it, items.end(), *it, taxonomy::less);
+				geometry_conversion_result r;
+				r.item = *it;
+				std::transform(it, jt, std::back_inserter(r.products), [&r, &placements](taxonomy::item* product_node) {
+					return std::make_pair((IfcUtil::IfcBaseEntity*) product_node->instance, placements[product_node]);
+				});
+				tasks_.push_back(r);
+				it = jt;
+			}
+
+			Logger::Notice("Created " + boost::lexical_cast<std::string>(tasks_.size()) + " tasks for " + boost::lexical_cast<std::string>(products.size()) + " products");
 
 			if (tasks_.size() == 0) {
 				Logger::Warning("No representations encountered, aborting");
@@ -386,8 +426,8 @@ namespace ifcopenshell { namespace geometry {
 			++done;
 		}		
 
-		IfcUtil::IfcBaseClass* create_shape_model_for_next_entity() {
-			geometry_conversion_task* task = nullptr;
+		const IfcUtil::IfcBaseClass* create_shape_model_for_next_entity() {
+			geometry_conversion_result* task = nullptr;
 			while (task_iterator_ != tasks_.end()) {
 				task = &*task_iterator_++;
 				create_element(converter_, settings_, task);
@@ -400,7 +440,7 @@ namespace ifcopenshell { namespace geometry {
 			if (task) {
 				all_processed_elements_.insert(all_processed_elements_.end(), task->elements.begin(), task->elements.end());
 				all_processed_native_elements_.insert(all_processed_native_elements_.end(), task->breps.begin(), task->breps.end());
-				return (*task->products)[0];
+				return task->item->instance;
 			} else {
 				return nullptr;
 			}
@@ -410,7 +450,7 @@ namespace ifcopenshell { namespace geometry {
 
         /// Moves to the next shape representation, create its geometry, and returns the associated product.
         /// Use get() to retrieve the created geometry.
-		IfcUtil::IfcBaseClass* next() {
+		const IfcUtil::IfcBaseClass* next() {
 			if (num_threads_ != 1) {
 				task_result_index_++;
 				if (task_result_index_ == all_processed_elements_.size()) {
@@ -555,8 +595,8 @@ namespace ifcopenshell { namespace geometry {
 			*/
 		}
 
-		IfcUtil::IfcBaseClass* create() {
-			IfcUtil::IfcBaseClass* product = nullptr;
+		const IfcUtil::IfcBaseClass* create() {
+			const IfcUtil::IfcBaseClass* product = nullptr;
 			try {
 				product = create_shape_model_for_next_entity();
 			} catch (const std::exception& e) {

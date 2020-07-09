@@ -31,7 +31,7 @@ namespace geometry {
 		
 		const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct* product);
 		IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
-		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation);
+		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation, bool only_direct=false);
 		bool reuse_ok_(settings& s, const IfcSchema::IfcProduct::list::ptr& products);
 		IfcEntityList::ptr find_openings(const IfcSchema::IfcProduct* product);
 		IfcUtil::IfcBaseEntity* get_decomposing_entity(IfcUtil::IfcBaseEntity* product, bool include_openings);

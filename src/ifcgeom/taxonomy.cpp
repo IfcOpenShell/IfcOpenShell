@@ -89,6 +89,8 @@ namespace {
 	bool compare(const collection& a, const collection& b);
 
 	bool compare(const extrusion& a, const extrusion& b) {
+		// @todo extrusions can also have non-identity matrices right? perhaps it's time
+		//       for a dedicated transform node and not on the abstract geom_item.
 		const int order[3] = {
 			less_to_order(a.basis, b.basis),
 			less_to_order(a.direction, b.direction),
@@ -211,8 +213,8 @@ namespace {
 				}
 				return a_lt_b;
 			}
-			// Vectors equal.
-			return false;
+			// Vectors equal, compare matrix (in case of mapped items).
+			return compare(a.matrix, b.matrix);
 		} else {
 			return a.children.size() < b.children.size();
 		}
