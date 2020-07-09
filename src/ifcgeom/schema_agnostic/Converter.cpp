@@ -9,14 +9,13 @@ ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library
 	mapping_ = impl::mapping_implementations().construct(file, settings_);
 }
 
-ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(
-	IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product) {
-
-	std::stringstream representation_id_builder;
-
+ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(taxonomy::item* product_node, const taxonomy::matrix4& place) {
+	auto product = (IfcUtil::IfcBaseEntity*) product_node->instance;
 	const std::string product_type = product->declaration().name();
 	// @todo
 	element_settings s(settings_, 1.0 /*getValue(GV_LENGTH_UNIT) */, product_type);
+
+	std::stringstream representation_id_builder;
 
 	int parent_id = -1;
 	try {
@@ -30,61 +29,33 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 
 	const std::string guid = product->get_value<std::string>("GlobalId");
 	const std::string name = product->get_value_or<std::string>("Name", "");
-	
-	representation_id_builder << representation->data().id();
 
-	ifcopenshell::geometry::Representation::BRep* shape;
-	ifcopenshell::geometry::ConversionResults shapes;
+	// @todo should be rep id.
+	representation_id_builder << product->data().id();
 
-	/*
-	auto rep_item = mapping_->map(representation);
-	// @todo should map() throw an exception instead?
-	if (rep_item == nullptr) {
-		return nullptr;
-	}
-	*/
+	brep_ptr shape;
 
-
-	std::clock_t map_start = std::clock();
-
-	// @todo how to combine product_node and rep_item?
-	auto product_node = (taxonomy::geom_item*) mapping_->map(product);
-	if (product_node == nullptr) {
-		return nullptr;
-	}
-
-	std::clock_t geom_start = std::clock();
-
-	if (false) {
-		std::ostringstream oss;
-		product_node->print(oss);
-		std::string s = oss.str();
-		std::wcout << s.c_str() << std::endl;
-	}
-	
-	auto place = taxonomy::matrix4();
-	std::swap(place, product_node->matrix);
-
-	auto it = cache_.find(product_node);
+	auto it = cache_.end(); //  cache_.find(product_node);
 	if (it == cache_.end()) {
 		try {
+			ifcopenshell::geometry::ConversionResults shapes;
+
+			std::clock_t geom_start = std::clock();
 			kernel_->convert(product_node, shapes);
+			std::clock_t geom_end = std::clock();
+
+			total_geom_time += (geom_end - geom_start) / (double)CLOCKS_PER_SEC;
+
+			shape = brep_ptr(new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes));
 		} catch (...) {
 			return nullptr;
 		}
-		cache_.insert(it, { product_node, shapes });
+		cache_.insert(it, { product_node, shape });
 	} else {
 		Logger::Notice("Reusing geometry for", product);
 		Logger::Notice("Found", it->first->instance);
-		shapes = it->second;
+		shape = it->second;
 	}
-
-	shape = new ifcopenshell::geometry::Representation::BRep(s, representation_id_builder.str(), shapes);
-
-	std::clock_t geom_end = std::clock();
-
-	total_map_time += (geom_start - map_start) / (double) CLOCKS_PER_SEC;
-	total_geom_time += (geom_end - geom_start) / (double) CLOCKS_PER_SEC;
 
 	return new NativeElement(
 		product->data().id(),
@@ -96,9 +67,32 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 		"",
 		place,
 		// product_node->matrix,
-		boost::shared_ptr<ifcopenshell::geometry::Representation::BRep>(shape),
+		shape,
 		product
 	);
+}
+
+ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(
+	// @todo representation is not used yet.
+	IfcUtil::IfcBaseEntity*, IfcUtil::IfcBaseEntity* product) {
+
+	std::clock_t map_start = std::clock();
+
+	// @todo how to combine product_node and rep_item?
+	auto product_node = (taxonomy::geom_item*) mapping_->map(product);
+	if (product_node == nullptr) {
+		return nullptr;
+	}
+
+	std::clock_t map_end = std::clock();
+
+	auto place = taxonomy::matrix4();
+	std::swap(place, product_node->matrix);
+
+	total_map_time += (map_end - map_start) / (double)CLOCKS_PER_SEC;
+
+	return create_brep_for_representation_and_product(product_node, place);
+
 	
 	/*
 	std::stringstream representation_id_builder;
@@ -238,6 +232,47 @@ ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create
 	return elem;
 
 	*/
+}
+
+ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(
+	IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4& place, ifcopenshell::geometry::NativeElement* brep) {
+
+	int parent_id = -1;
+	try {
+		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
+		if (parent_object) {
+			parent_id = parent_object->data().id();
+		}
+	} catch (const std::exception& e) {
+		Logger::Error(e);
+	}
+
+	const std::string guid = product->get_value<std::string>("GlobalId");
+	const std::string name = product->get_value_or<std::string>("Name", "");
+
+	/*
+	std::string context_string = "";
+	if (representation->hasRepresentationIdentifier()) {
+		context_string = representation->RepresentationIdentifier();
+	} else if (representation->ContextOfItems()->hasContextType()) {
+		context_string = representation->ContextOfItems()->ContextType();
+	}
+	*/
+
+	const std::string product_type = product->declaration().name();
+
+	return new NativeElement(
+		product->data().id(),
+		parent_id,
+		name,
+		product_type,
+		guid,
+		// @todo
+		"",
+		place,
+		brep->geometry_pointer(),
+		product
+	);
 }
 
 ifcopenshell::geometry::NativeElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(

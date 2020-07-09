@@ -15,15 +15,10 @@ namespace ifcopenshell {
 
 namespace geometry {
 
-	class Element;
-	class NativeElement;
-
 	struct geometry_conversion_task {
 		int index;
 		IfcUtil::IfcBaseEntity* representation;
 		IfcEntityList::ptr products;
-		std::vector<ifcopenshell::geometry::NativeElement*> breps;
-		std::vector<ifcopenshell::geometry::Element*> elements;
 	};
 
 	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;

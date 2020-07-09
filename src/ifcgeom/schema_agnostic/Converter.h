@@ -14,11 +14,13 @@ namespace ifcopenshell { namespace geometry {
 	class NativeElement;
 
 	class Converter {
+	public:
+		typedef boost::shared_ptr<ifcopenshell::geometry::Representation::BRep> brep_ptr;
 	private:
 		abstract_mapping* mapping_;
 		kernels::AbstractKernel* kernel_;
 		ifcopenshell::geometry::settings settings_;
-		std::map<ifcopenshell::geometry::taxonomy::item*, ifcopenshell::geometry::ConversionResults, ifcopenshell::geometry::taxonomy::less_functor> cache_;
+		std::map<ifcopenshell::geometry::taxonomy::item*, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
 
 	public:
 		kernels::AbstractKernel* kernel() { return kernel_; }
@@ -95,6 +97,9 @@ namespace ifcopenshell { namespace geometry {
 
 		ifcopenshell::geometry::NativeElement* create_brep_for_representation_and_product(IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product);
 		ifcopenshell::geometry::NativeElement* create_brep_for_processed_representation(IfcUtil::IfcBaseEntity* representation, IfcUtil::IfcBaseEntity* product, ifcopenshell::geometry::NativeElement* brep);
+
+		ifcopenshell::geometry::NativeElement* create_brep_for_representation_and_product(taxonomy::item*, const taxonomy::matrix4&);
+		ifcopenshell::geometry::NativeElement* create_brep_for_processed_representation(IfcUtil::IfcBaseEntity*, const taxonomy::matrix4&, ifcopenshell::geometry::NativeElement*);
 
 		/*
 		static int count(const ifcopenshell::geometry::ConversionResultShape*, int, bool unique=false);
