@@ -828,6 +828,48 @@ class PropertyTemplate(PropertyGroup):
         ], name='Primary Measure Type')
 
 
+class Address(PropertyGroup):
+    name: StringProperty(name="Name") # Stores IfcPostalAddress or IfcTelecomAddress
+    purpose: StringProperty(name="Purpose")
+    description: StringProperty(name="Description")
+    user_defined_purpose: StringProperty(name="Custom Purpose")
+
+    internal_location: StringProperty(name="Internal Location")
+    address_lines: StringProperty(name="Address")
+    postal_box: StringProperty(name="PO Box")
+    town: StringProperty(name="Town")
+    region: StringProperty(name="Region")
+    postal_code: StringProperty(name="Postal Code")
+    country: StringProperty(name="Country")
+
+    telephone_numbers: StringProperty(name="Telephone Numbers")
+    fascimile_numbers: StringProperty(name="Fascimile Numbers")
+    pager_number: StringProperty(name="Pager Number")
+    electronic_mail_addresses: StringProperty(name="Emails")
+    www_home_page_url: StringProperty(name="Websites")
+    messaging_ids: StringProperty(name="IMs")
+
+
+class Organisation(PropertyGroup):
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
+    roles: StringProperty(name="Roles")
+    addresses: CollectionProperty(name="Addresses", type=Address)
+    active_address_index: bpy.props.IntProperty()
+
+
+class Person(PropertyGroup):
+    name: StringProperty(name="Identification")
+    family_name: StringProperty(name="Family Name")
+    given_name: StringProperty(name="Given Name")
+    middle_names: StringProperty(name="Middle Names")
+    prefix_titles: StringProperty(name="Prefixes")
+    suffix_titles: StringProperty(name="Suffixes")
+    roles: StringProperty(name="Roles")
+    addresses: CollectionProperty(name="Addresses", type=Address)
+    active_address_index: bpy.props.IntProperty()
+
+
 class Classification(PropertyGroup):
     name: StringProperty(name="Name")
     source: StringProperty(name="Source")
@@ -938,6 +980,10 @@ class BIMProperties(PropertyGroup):
     qa_reject_element_reason: StringProperty(name="Element Rejection Reason")
     person: EnumProperty(items=getPersons, name="Person")
     organisation: EnumProperty(items=getOrganisations, name="Organisation")
+    people: CollectionProperty(name="People", type=Person)
+    organisations: CollectionProperty(name="Organisations", type=Organisation)
+    active_person_index: IntProperty(name='Active Person Index')
+    active_organisation_index: IntProperty(name='Active Organisation Index')
     has_georeferencing: BoolProperty(name="Has Georeferencing", default=False)
     has_library: BoolProperty(name="Has Project Library", default=False)
     search_regex: BoolProperty(name="Search With Regex", default=False)

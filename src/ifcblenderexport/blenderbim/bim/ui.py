@@ -840,6 +840,7 @@ class BIM_PT_text(Panel):
 class BIM_PT_owner(Panel):
     bl_label = "IFC Owner History"
     bl_idname = "BIM_PT_owner"
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -856,6 +857,137 @@ class BIM_PT_owner(Panel):
 
         row = layout.row()
         row.prop(props, 'organisation')
+
+
+class BIM_PT_people(Panel):
+    bl_label = "IFC People"
+    bl_idname = "BIM_PT_people"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.operator('bim.add_person')
+
+        if props.people:
+            layout.template_list('BIM_UL_topics', '',
+                props, 'people', props, 'active_person_index')
+
+            if props.active_person_index < len(props.people):
+                person = props.people[props.active_person_index]
+                row = layout.row()
+                row.prop(person, 'name')
+                row.operator('bim.remove_person', icon='X', text='').index = props.active_person_index
+                row = layout.row()
+                row.prop(person, 'family_name')
+                row = layout.row()
+                row.prop(person, 'given_name')
+                row = layout.row()
+                row.prop(person, 'middle_names')
+                row = layout.row()
+                row.prop(person, 'prefix_titles')
+                row = layout.row()
+                row.prop(person, 'suffix_titles')
+                row = layout.row()
+                row.prop(person, 'roles')
+
+                layout.label(text="Addresses:")
+
+                draw_addresses_ui(layout, person, 'person')
+
+
+class BIM_PT_organisations(Panel):
+    bl_label = "IFC Organisations"
+    bl_idname = "BIM_PT_organisations"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.operator('bim.add_organisation')
+
+        if props.organisations:
+            layout.template_list('BIM_UL_topics', '',
+                props, 'organisations', props, 'active_organisation_index')
+
+            if props.active_organisation_index < len(props.organisations):
+                organisation = props.organisations[props.active_organisation_index]
+                row = layout.row()
+                row.prop(organisation, 'name')
+                row.operator('bim.remove_organisation', icon='X', text='').index = props.active_organisation_index
+                row = layout.row()
+                row.prop(organisation, 'description')
+                row = layout.row()
+                row.prop(organisation, 'roles')
+
+                layout.label(text="Addresses:")
+
+                draw_addresses_ui(layout, organisation, 'organisation')
+
+
+def draw_addresses_ui(layout, parent, parent_type):
+    row = layout.row()
+    row.operator(f'bim.add_{parent_type}_address')
+
+    if parent.addresses:
+        layout.template_list('BIM_UL_topics', '',
+            parent, 'addresses', parent, 'active_address_index')
+
+        if parent.active_address_index < len(parent.addresses):
+            address = parent.addresses[parent.active_address_index]
+            row = layout.row()
+            row.prop(address, 'name')
+            row.operator(f'bim.remove_{parent_type}_address', icon='X', text='').index = parent.active_address_index
+            row = layout.row()
+            row.prop(address, 'purpose')
+            if address.purpose == 'USERDEFINED':
+                row = layout.row()
+                row.prop(address, 'user_defined_purpose')
+            row = layout.row()
+            row.prop(address, 'description')
+
+            if 'IfcPostalAddress' in address.name:
+                row = layout.row()
+                row.prop(address, 'internal_location')
+                row = layout.row()
+                row.prop(address, 'address_lines')
+                row = layout.row()
+                row.prop(address, 'postal_box')
+                row = layout.row()
+                row.prop(address, 'town')
+                row = layout.row()
+                row.prop(address, 'region')
+                row = layout.row()
+                row.prop(address, 'postal_code')
+                row = layout.row()
+                row.prop(address, 'country')
+            elif 'IfcTelecomAddress' in address.name:
+                row = layout.row()
+                row.prop(address, 'telephone_numbers')
+                row = layout.row()
+                row.prop(address, 'fascimile_numbers')
+                row = layout.row()
+                row.prop(address, 'pager_number')
+                row = layout.row()
+                row.prop(address, 'electronic_mail_addresses')
+                row = layout.row()
+                row.prop(address, 'www_home_page_url')
+                row = layout.row()
+                row.prop(address, 'messaging_ids')
 
 
 class BIM_PT_context(Panel):
@@ -1351,6 +1483,15 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_ignore_building_coordinates')
         row = layout.row()
         row.prop(bim_properties, 'import_should_treat_styled_item_as_material')
+
+
+class BIM_UL_generic(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        ob = data
+        if item:
+            layout.prop(item, 'name', text='', emboss=False)
+        else:
+            layout.label(text="", translate=False)
 
 
 class BIM_UL_topics(bpy.types.UIList):
