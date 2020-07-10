@@ -1622,7 +1622,12 @@ class CreateAggregate(bpy.types.Operator):
 
         aggregate = bpy.data.collections.new('IfcRelAggregates/{}'.format(
             bpy.context.scene.BIMProperties.aggregate_class))
-        bpy.context.scene.collection.children.link(aggregate)
+        for project in [c for c in bpy.context.view_layer.layer_collection.children if 'IfcProject' in c.name]:
+            for aggregate_collection in [c for c in project.children if 'Aggregates' in c.name]:
+                aggregate_collection.collection.children.link(aggregate)
+                aggregate_collection.children[aggregate.name].hide_viewport = True
+                break
+            break
         for obj in bpy.context.selected_objects:
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
@@ -1635,8 +1640,6 @@ class CreateAggregate(bpy.types.Operator):
         instance.instance_type = 'COLLECTION'
         instance.instance_collection = aggregate
         spatial_container.objects.link(instance)
-
-        bpy.context.view_layer.layer_collection.children[aggregate.name].hide_viewport = True
         return {'FINISHED'}
 
 class EditAggregate(bpy.types.Operator):
@@ -1646,10 +1649,14 @@ class EditAggregate(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         if obj.instance_type != 'COLLECTION' \
-            or 'IfcRelAggregates' not in obj.instance_collection.name:
+                or 'IfcRelAggregates' not in obj.instance_collection.name:
             return {'FINISHED'}
         bpy.context.view_layer.objects[obj.name].hide_viewport = True
-        bpy.context.view_layer.layer_collection.children[obj.instance_collection.name].hide_viewport = False
+        for project in [c for c in bpy.context.view_layer.layer_collection.children if 'IfcProject' in c.name]:
+            for aggregate_collection in [c for c in project.children if 'Aggregates' in c.name]:
+                for aggregate in [c for c in aggregate_collection.children if c.name == obj.instance_collection.name]:
+                    aggregate.hide_viewport = False
+                    break
         return {'FINISHED'}
 
 class SaveAggregate(bpy.types.Operator):
@@ -1659,11 +1666,13 @@ class SaveAggregate(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         aggregate = None
-        for collection in obj.users_collection:
-            if 'IfcRelAggregates' in collection.name:
-                bpy.context.view_layer.layer_collection.children[collection.name].hide_viewport = True
-                aggregate = collection
-                break
+        names = [c.name for c in obj.users_collection]
+        for project in [c for c in bpy.context.view_layer.layer_collection.children if 'IfcProject' in c.name]:
+            for aggregate_collection in [c for c in project.children if 'Aggregates' in c.name]:
+                for collection in [c for c in aggregate_collection.children if c.name in names]:
+                    collection.hide_viewport = True
+                    aggregate = collection.collection
+                    break
         if not aggregate:
             return {'FINISHED'}
         for obj in bpy.context.view_layer.objects:
@@ -1679,7 +1688,7 @@ class ExplodeAggregate(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.context.active_object
         if obj.instance_type != 'COLLECTION' \
-            or 'IfcRelAggregates' not in obj.instance_collection.name:
+                or 'IfcRelAggregates' not in obj.instance_collection.name:
             return {'FINISHED'}
         aggregate_collection = bpy.data.collections.get(obj.instance_collection.name)
         spatial_collection = obj.users_collection[0]

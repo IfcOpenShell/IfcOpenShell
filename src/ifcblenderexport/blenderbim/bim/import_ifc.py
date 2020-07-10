@@ -261,6 +261,7 @@ class IfcImporter():
         self.native_data = {}
         self.groups = {}
         self.aggregates = {}
+        self.aggregate_collection = None
         self.aggregate_collections = {}
 
         self.material_creator = MaterialCreator(ifc_import_settings)
@@ -1075,8 +1076,8 @@ class IfcImporter():
 
     def add_project_to_scene(self):
         bpy.context.scene.collection.children.link(self.project['blender'])
-        for collection in self.aggregate_collections.values():
-            bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[collection.name].hide_viewport = True
+        for collection in bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.aggregate_collection.name].children:
+            collection.hide_viewport = True
         bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.opening_collection.name].hide_viewport = True
         bpy.context.view_layer.layer_collection.children[self.project['blender'].name].children[self.type_collection.name].hide_viewport = True
 
@@ -1416,12 +1417,20 @@ class IfcImporter():
     def create_aggregates(self):
         rel_aggregates = [a for a in self.file.by_type('IfcRelAggregates')
                 if a.RelatingObject.is_a('IfcElement')]
+        for collection in self.project['blender'].children:
+            if collection.name == 'Aggregates':
+                self.aggregate_collection = collection
+                break
+        if not self.aggregate_collection:
+            self.aggregate_collection = bpy.data.collections.new('Aggregates')
+            self.project['blender'].children.link(self.aggregate_collection)
+
         for rel_aggregate in rel_aggregates:
             self.create_aggregate(rel_aggregate)
 
     def create_aggregate(self, rel_aggregate):
         collection = bpy.data.collections.new(f'IfcRelAggregates/{rel_aggregate.id()}')
-        self.project['blender'].children.link(collection)
+        self.aggregate_collection.children.link(collection)
         element = rel_aggregate.RelatingObject
 
         obj = bpy.data.objects.new('{}/{}'.format(element.is_a(), element.Name), None)
