@@ -1144,7 +1144,8 @@ class IfcParser():
         return class_name in [g for g in schema.ifc.IfcGroup.keys()]
 
     def is_a_type(self, class_name):
-        return class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type'
+        return (class_name[0:3] == 'Ifc' and class_name[-4:] == 'Type') \
+            or (class_name[0:3] == 'Ifc' and class_name[-5:] == 'Style')
 
 
 class IfcExporter():
@@ -1484,9 +1485,8 @@ class IfcExporter():
         invalid_pset_keys = [k for k in pset['raw'].keys() if k not in templates.keys()]
         if invalid_pset_keys:
             self.ifc_export_settings.logger.error(
-                'One or more properties were invalid in the pset {}/{}: {}'.format(
+                'One or more properties were invalid in the pset {}: {}'.format(
                     pset['attributes']['Name'],
-                    pset['attributes']['Description'],
                     invalid_pset_keys))
         return properties
 
@@ -1605,7 +1605,7 @@ class IfcExporter():
                 product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
             except RuntimeError as e:
                 self.ifc_export_settings.logger.error(
-                    'The product "{}/{}" could not be created: {}'.format(
+                    'The type product "{}/{}" could not be created: {}'.format(
                         product['class'],
                         product['attributes']['Name'],
                         e.args)
