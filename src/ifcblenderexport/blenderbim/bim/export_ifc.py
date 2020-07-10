@@ -573,6 +573,10 @@ class IfcParser():
         for obj in selected_objects:
             if obj.BIMObjectProperties.relating_type:
                 added_objs.append(obj.BIMObjectProperties.relating_type)
+            if obj.instance_type == 'COLLECTION':
+                for obj2 in obj.instance_collection.objects:
+                    if obj2.BIMObjectProperties.relating_type:
+                        added_objs.append(obj2.BIMObjectProperties.relating_type)
         selected_objects.update(added_objs)
         selected_objects = set(selected_objects)
 
