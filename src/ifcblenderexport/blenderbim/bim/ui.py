@@ -785,6 +785,8 @@ class BIM_PT_camera(Panel):
         row = layout.row()
         row.prop(dprops, 'should_recut')
         row = layout.row()
+        row.prop(dprops, 'should_recut_selected')
+        row = layout.row()
         row.prop(dprops, 'should_render')
         row = layout.row()
         row.prop(dprops, 'should_extract')

@@ -2011,6 +2011,16 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.text_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-text.pickle'.format(self.diagram_name))
         ifc_cutter.metadata_pickle_file = os.path.join(ifc_cutter.data_dir, '{}-metadata.pickle'.format(self.diagram_name))
         ifc_cutter.should_recut = bpy.context.scene.DocProperties.should_recut
+        ifc_cutter.should_recut_selected = bpy.context.scene.DocProperties.should_recut_selected
+        selected_global_ids = []
+        for obj in bpy.context.selected_objects:
+            if 'Ifc' not in obj.name:
+                continue
+            for attribute in obj.BIMObjectProperties.attributes:
+                if attribute.name == 'GlobalId':
+                    selected_global_ids.append(attribute.string_value)
+                    break
+        ifc_cutter.selected_global_ids = selected_global_ids
         ifc_cutter.should_extract = bpy.context.scene.DocProperties.should_extract
         svg_writer = svgwriter.SvgWriter(ifc_cutter)
         numerator, denominator = camera.data.BIMCameraProperties.diagram_scale.split(':')

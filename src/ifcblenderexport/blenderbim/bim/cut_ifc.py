@@ -128,6 +128,8 @@ class IfcCutter:
         self.metadata_pickle_file = 'metadata.pickle'
         self.cut_pickle_file = 'cut.pickle'
         self.should_recut = True
+        self.should_recut_selected = True
+        self.selected_global_ids = []
         self.should_extract = True
         self.diagram_name = None
         self.background_image = None
@@ -250,7 +252,7 @@ class IfcCutter:
             shape_pickle = os.path.join(
                 self.data_dir, 'cache', 'shapes', '{}.pickle'.format(os.path.basename(filename)))
             shape_map = {}
-            if os.path.isfile(shape_pickle):
+            if self.should_recut_selected and os.path.isfile(shape_pickle):
                 with open(shape_pickle, 'rb') as shape_file:
                     shape_map = pickle.load(shape_file)
 
@@ -266,7 +268,11 @@ class IfcCutter:
                         or self.has_annotation(product):
                     continue
                 try:
-                    if product.GlobalId in shape_map:
+                    if self.should_recut_selected \
+                            and product.GlobalId in self.selected_global_ids:
+                        shape = ifcopenshell.geom.create_shape(settings, product).geometry
+                        shape_map[product.GlobalId] = shape
+                    elif product.GlobalId in shape_map:
                         shape = shape_map[product.GlobalId]
                     else:
                         shape = ifcopenshell.geom.create_shape(settings, product).geometry

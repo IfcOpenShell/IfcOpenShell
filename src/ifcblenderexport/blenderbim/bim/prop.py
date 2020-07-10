@@ -394,6 +394,7 @@ class Subcontext(PropertyGroup):
 
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
+    should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
     should_render: BoolProperty(name="Should Render", default=True)
     should_extract: BoolProperty(name="Should Extract", default=True)
     view_name: StringProperty(name="View Name")
