@@ -1,5 +1,6 @@
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.selector
 import bpy
 import bmesh
@@ -1575,13 +1576,8 @@ class IfcImporter():
 
     def cast_edge_case_attribute(self, ifc_class, key, value):
         if key == 'RefLatitude' or key == 'RefLongitude':
-            return self.dms2dd(*value)
+            return ifcopenshell.util.geolocation.dms2dd(*value)
         return value
-
-    # TODO: migrate to ifcopenshell.util
-    def dms2dd(self, degrees, minutes, seconds, milliseconds=0):
-        dd = float(degrees) + float(minutes)/60 + float(seconds)/(3600)
-        return dd
 
     def add_element_classifications(self, element, obj):
         if not element.HasAssociations:
