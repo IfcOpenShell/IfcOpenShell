@@ -598,6 +598,7 @@ class IfcImporter():
             element_matrix[2][3] *= self.unit_scale
             self.create_grid_axes(grid.UAxes, collection, element_matrix)
             self.create_grid_axes(grid.VAxes, collection, element_matrix)
+            self.create_grid_axes(grid.WAxes, collection, element_matrix)
 
     def create_grid_axes(self, axes, grid, matrix_world):
         if not axes:
