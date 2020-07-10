@@ -600,6 +600,8 @@ class IfcImporter():
             self.create_grid_axes(grid.VAxes, collection, element_matrix)
 
     def create_grid_axes(self, axes, grid, matrix_world):
+        if not axes:
+            return
         for axis in axes:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
