@@ -1038,9 +1038,6 @@ class IfcParser():
             for slot in obj.material_slots:
                 if slot.material is None:
                     continue
-                if not self.ifc_export_settings.should_export_all_materials_as_styled_items \
-                        and (slot.material.name in results or slot.link == 'DATA'):
-                    continue
                 results.append({
                     'ifc': None,
                     'raw': slot.material,
@@ -1727,14 +1724,13 @@ class IfcExporter():
             product = self.ifc_parser.products[
                 self.ifc_parser.get_product_index_from_raw_name(
                     styled_item['related_product_name'])]
-            valid_material_slots = [ms for ms in product['raw'].material_slots if ms.link == 'OBJECT']
             material_slots = {}
             if product['ifc'].Representation:
                 for representation in product['ifc'].Representation.Representations:
                     for mapped_item in representation.Items:
                         items = mapped_item[0].MappedRepresentation.Items
                         for i, item in enumerate(items):
-                            material_slots[valid_material_slots[i].name] = item
+                            material_slots[product['raw'].material_slots[i].name] = item
             for styled_item_name, representation_item in material_slots.items():
                 if styled_item_name == styled_item['attributes']['Name']:
                     styled_item['ifc'] = self.create_styled_item(styled_item, representation_item)
@@ -2538,7 +2534,9 @@ class IfcExporter():
             mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         self.create_vertices(mesh.vertices)
         n_slots = max(1, len(representation['raw_object'].material_slots))
-        ifc_raw_items = [[]] * n_slots 
+        ifc_raw_items = [None] * n_slots
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
         for polygon in mesh.polygons:
             ifc_raw_items[polygon.material_index % n_slots].append(self.file.createIfcFace([
                 self.file.createIfcFaceOuterBound(
@@ -2763,7 +2761,6 @@ class IfcExportSettings:
         self.schema = 'IFC4'
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
-        self.should_export_all_materials_as_styled_items = False
         self.should_use_presentation_style_assignment = False
         self.context_tree = []
 
@@ -2777,7 +2774,6 @@ class IfcExportSettings:
         settings.schema_dir = scene_bim.schema_dir
         settings.has_representations = scene_bim.export_has_representations
         settings.schema = scene_bim.export_schema
-        settings.should_export_all_materials_as_styled_items = scene_bim.export_should_export_all_materials_as_styled_items
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
         settings.context_tree = []
         for ifc_context in ['model', 'plan']:
