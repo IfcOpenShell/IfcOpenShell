@@ -167,6 +167,9 @@ public:
 	/// IfcWall will also return IfcWallStandardCase entities
 	IfcEntityList::ptr instances_by_type(const std::string& t);
 
+	/// Returns all entities in the file that match the positional argument.
+	IfcEntityList::ptr instances_by_type_excl_subtypes(const std::string& t);
+	
 	/// Returns all entities in the file that reference the id
 	IfcEntityList::ptr instances_by_reference(int id);
 
