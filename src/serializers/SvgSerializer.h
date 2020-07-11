@@ -65,7 +65,7 @@ protected:
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
 	boost::optional<std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>>> section_heights;
-	bool rescale, print_space_names_, print_space_areas_;
+	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_;
 	std::multimap<IfcUtil::IfcBaseEntity*, path_object, storey_sorter> paths;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > ycoords;
@@ -103,6 +103,7 @@ public:
 	void setSectionHeightsFromStoreys(double offset=1.);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
+	void setDrawDoorArcs(bool b) { draw_door_arcs_ = b; }
     std::string nameElement(const IfcGeom::Element<real_t>* elem);
     std::string nameElement(const IfcUtil::IfcBaseEntity* elem);
 };

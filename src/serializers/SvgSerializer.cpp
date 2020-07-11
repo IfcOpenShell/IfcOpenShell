@@ -59,6 +59,11 @@
 #include <BRepGProp.hxx>
 #include <BRepTopAdaptor_FClass2d.hxx>
 
+#include <Bnd_Box.hxx>
+#include <BRep_Builder.hxx>
+#include <BRepBndLib.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+
 #include "../ifcparse/IfcGlobalId.h"
 
 #include "SvgSerializer.h"
@@ -290,9 +295,6 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* st
 	return p;
 }
 
-#include <Bnd_Box.hxx>
-#include <BRepBndLib.hxx>
-
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
 	std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>> section_heights_storage;
@@ -321,25 +323,119 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}
 	}
 
+	TopoDS_Shape compound_local = o->geometry().as_compound();
+	const gp_Trsf& trsf = o->transformation().data();
+	BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
+	make_transform_global.Build();
+	// (When determinant < 0, copy is implied and the input is not mutated.)
+	auto compound = make_transform_global.Shape();
+
+	// SVG has a coordinate system with the origin in the *upper*-left corner
+	// therefore we mirror the shape along the XZ-plane.	
+	gp_Trsf trsf_mirror;
+	trsf_mirror.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+	BRepBuilderAPI_Transform make_transform_mirror(compound, trsf_mirror, true);
+	make_transform_mirror.Build();
+	// (When determinant < 0, copy is implied and the input is not mutated.)
+	compound = make_transform_mirror.Shape();
+
+	TopoDS_Wire annotation;
+
+	if (draw_door_arcs_ && o->product()->declaration().is("IfcDoor")) {	
+
+		boost::optional<std::string> operation_type;
+
+		try {
+			IfcEntityList::ptr rels;
+			if (o->product()->declaration().schema()->name() == "IFC2X3") {
+				rels = o->product()->get_inverse("IsDefinedBy");
+			} else {
+				// Damn you, IFC
+				rels = o->product()->get_inverse("IsTypedBy");
+			}
+			for (auto& rel : *rels) {
+				if (rel->declaration().name() == "IfcRelDefinesByType") {
+					IfcUtil::IfcBaseClass* ty = *((IfcUtil::IfcBaseEntity*)rel)->get("RelatingType");
+					const std::string& ty_entity_name = ty->declaration().name();
+					// Damn you, IFC
+					if (ty_entity_name == "IfcDoorStyle" || ty_entity_name == "IfcDoorType") {
+						operation_type = *((IfcUtil::IfcBaseEntity*)ty)->get("OperationType");
+					}
+				}
+			}
+		} catch (std::exception& e) {
+			Logger::Error(e);
+		}
+
+		if (operation_type && (*operation_type == "SINGLE_SWING_LEFT") || (*operation_type == "SINGLE_SWING_RIGHT")) {
+			const bool is_left = *operation_type == "SINGLE_SWING_LEFT";
+
+			Bnd_Box bb;
+			BRepBndLib::Add(compound_local, bb);
+
+			if (bb.IsVoid()) {
+				return;
+			}
+
+			double x1, y1, z1, x2, y2, z2;
+			bb.Get(x1, y1, z1, x2, y2, z2);
+			double width = x2 - x1;
+			double y12 = (y1 + y2) / 2.;
+
+			gp_Pnt center(is_left ? x1 : x2, y12, 0);
+			gp_Pnt p1(is_left ? x2 : x1, y12, 0);
+			gp_Pnt p2(is_left ? x1 : x2, y12 + width, 0);
+
+			if (!is_left) {
+				// circles are counter clockwise, so for swing right
+				// we need to reverse the points in order to get the
+				// shorter part of the circle arc.
+				std::swap(p1, p2);
+			}
+
+			BRepBuilderAPI_MakeEdge me(gp_Circ(gp_Ax2(center, gp::DZ()), width), p1, p2);
+			if (me.IsDone()) {
+				BRep_Builder B;
+				B.MakeWire(annotation);
+				auto edge = me.Edge();
+
+				make_transform_global.Perform(edge, true);
+				auto edge_global = make_transform_global.Shape();
+				make_transform_mirror.Perform(edge_global, true);
+				auto edge_global_mirrored = make_transform_mirror.Shape();
+
+				center.Transform(trsf);
+				p1.Transform(trsf);
+				p2.Transform(trsf);
+				center.Transform(trsf_mirror);
+				p1.Transform(trsf_mirror);
+				p2.Transform(trsf_mirror);
+
+				if (!is_left) {
+					// For the purpose of the SVG serializer we do not a topologically
+					// connected wire. So adding disconnected edges is fine.
+
+					B.Add(annotation, BRepBuilderAPI_MakeEdge(center, p1).Edge());
+				}
+
+				B.Add(annotation, edge_global_mirrored);
+
+				if (is_left) {
+					B.Add(annotation, BRepBuilderAPI_MakeEdge(p2, center).Edge());
+				}
+			}
+		}		
+	}
+
 	for (auto& pair : *section_heights_used) {
 		auto cut_z = pair.first;
 		auto storey = pair.second;
-
-		// SVG has a coordinate system with the origin in the *upper*-left corner
-		// therefore we mirror the shape along the XZ-plane.
-		TopoDS_Shape compound = o->geometry().as_compound();
-		gp_Trsf trsf;
-		trsf.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-		BRepBuilderAPI_Transform make_transform(compound, trsf);
-		make_transform.Build();
-		// When determinant < 0, copy is implied and the input is not mutated.
-		compound = make_transform.Shape();
 
 		TopoDS_Iterator it(compound);
 
 		TopoDS_Face largest_closed_wire_face;
 		double largest_closed_wire_area = 0.;
-		path_object* po;
+		path_object* po = nullptr;
 
 		// Iterate over components of compound to have better chance of matching section edges to closed wires
 		for (; it.More(); it.Next()) {
@@ -501,6 +597,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 				path.add("</text>");
 				po->second.push_back(path);
 			}
+		}
+
+		if (po && !annotation.IsNull()) {
+			write(*po, annotation);
 		}
 	}
 }
