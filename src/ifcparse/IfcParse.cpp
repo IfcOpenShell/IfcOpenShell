@@ -1902,6 +1902,10 @@ IfcEntityList::ptr IfcFile::instances_by_type(const std::string& t) {
 	return instances_by_type(schema()->declaration_by_name(t));
 }
 
+IfcEntityList::ptr IfcFile::instances_by_type_excl_subtypes(const std::string& t) {
+	return instances_by_type_excl_subtypes(schema()->declaration_by_name(t));
+}
+
 IfcEntityList::ptr IfcFile::instances_by_reference(int t) {
 	entities_by_ref_t::const_iterator it = byref.find(t);
 	IfcEntityList::ptr ret;
