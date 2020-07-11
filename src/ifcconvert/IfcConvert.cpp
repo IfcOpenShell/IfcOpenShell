@@ -325,6 +325,7 @@ int main(int argc, char** argv) {
 #endif
     short precision;
 	double section_height;
+
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
 #ifdef HAVE_ICU
@@ -337,7 +338,8 @@ int main(int argc, char** argv) {
             "output will be scaled. Only used when converting to SVG.")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
-        ("use-element-names",
+		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1")
+		("use-element-names",
             "Use entity names instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
         ("use-element-guids",
@@ -695,19 +697,6 @@ int main(int argc, char** argv) {
 	} else if (output_extension == SVG) {
 		settings.set(IfcGeom::IteratorSettings::DISABLE_TRIANGULATION, true);
 		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), settings);
-		if (vmap.count("section-height") != 0) {
-			Logger::Notice("Overriding section height");
-			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
-		}
-		if (vmap.count("print-space-names") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceNames(true);
-		}
-		if (vmap.count("print-space-areas") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
-		}
-		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
-            static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
-		}
 	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
@@ -823,9 +812,31 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    serializer->setFile(context_iterator.file());
+	serializer->setFile(context_iterator.file());
 
-	if (convert_back_units) {
+	if (output_extension == SVG) {
+		if (vmap.count("section-height-from-storeys") != 0) {
+			if (vmap.count("section-height")) {
+				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys(section_height);
+			} else {
+				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys();
+			}
+		} else if (vmap.count("section-height") != 0) {
+			Logger::Notice("Overriding section height");
+			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
+		}
+		if (vmap.count("print-space-names") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceNames(true);
+		}
+		if (vmap.count("print-space-areas") != 0) {
+			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
+		}
+		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
+			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
+		}
+	}
+
+    if (convert_back_units) {
 		serializer->setUnitNameAndMagnitude(context_iterator.unit_name(), static_cast<float>(context_iterator.unit_magnitude()));
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);

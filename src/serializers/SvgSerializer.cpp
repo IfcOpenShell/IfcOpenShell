@@ -290,211 +290,217 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* st
 	return p;
 }
 
+#include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
+
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
-	IfcUtil::IfcBaseEntity* storey = storey_;
-	boost::optional<double> storey_elevation = boost::none;
+	std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>> section_heights_storage;
+	const std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>>* section_heights_used = &section_heights_storage;
 
-	for (const auto& p : o->parents()) {
-		if (p->type() == "IfcBuildingStorey") {
-			try {
-				const IfcGeom::ElementSettings& settings = o->geometry().settings();
-				double e = *p->product()->get("Elevation");
-				storey_elevation = e * settings.unit_magnitude();
-			} catch (...) {
+	if (section_heights) {
+		section_heights_used = section_heights.get_ptr();
+	} else {
+		for (const auto& p : o->parents()) {
+			if (p->type() == "IfcBuildingStorey") {
+				try {
+					const IfcGeom::ElementSettings& settings = o->geometry().settings();
+					double e = *p->product()->get("Elevation");
+					double storey_elevation = e * settings.unit_magnitude();
+					section_heights_storage.push_back({ storey_elevation + 1. , p->product() });
+				} catch (...) {
+					continue;
+				}
+				break;
+			}
+		}
+
+		if (section_heights_storage.empty()) {
+			Logger::Warning("No global section height and unable to determine building storey for:", o->product());
+			return;
+		}
+	}
+
+	for (auto& pair : *section_heights_used) {
+		auto cut_z = pair.first;
+		auto storey = pair.second;
+
+		// SVG has a coordinate system with the origin in the *upper*-left corner
+		// therefore we mirror the shape along the XZ-plane.
+		TopoDS_Shape compound = o->geometry().as_compound();
+		gp_Trsf trsf;
+		trsf.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
+		BRepBuilderAPI_Transform make_transform(compound, trsf);
+		make_transform.Build();
+		// When determinant < 0, copy is implied and the input is not mutated.
+		compound = make_transform.Shape();
+
+		TopoDS_Iterator it(compound);
+
+		TopoDS_Face largest_closed_wire_face;
+		double largest_closed_wire_area = 0.;
+		path_object* po;
+
+		// Iterate over components of compound to have better chance of matching section edges to closed wires
+		for (; it.More(); it.Next()) {
+
+			const TopoDS_Shape& subshape = it.Value();
+			
+			Bnd_Box bb;
+			BRepBndLib::Add(it.Value(), bb);
+
+			// Empty geometry
+			if (bb.IsVoid()) {
 				continue;
 			}
-			storey = p->product();
-			break;
-		}
-	}
 
-	// With a global section height, building storeys are not a requirement.
-	if (!storey && !section_height) {
-		Logger::Warning("No global section height and unable to determine building storey for:", o->product());
-		return;
-	}
+			double x1, y1, zmin, x2, y2, zmax;
+			bb.Get(x1, y1, zmin, x2, y2, zmax);
+						
+			// Determine slicing plane z coordinate, priority:
+			// 1) explicitly set global section height
+			// 2) containing building storey elevation + 1m
+			// 3) zmin (from geometry bounding box) + 1m
 
-	path_object& p = start_path(storey, nameElement(o));
+			if (std::isnan(cut_z)) {
+				cut_z = zmin + 1.;
+			}
+			
+			// No intersection with bounding box, fail early
+			if (zmin > cut_z || zmax < cut_z) continue;
 
-	// SVG has a coordinate system with the origin in the *upper*-left corner
-	// therefore we mirror the shape along the XZ-plane.
-	TopoDS_Shape compound = o->geometry().as_compound();
-	gp_Trsf trsf;
-	trsf.SetMirror(gp_Ax2(gp::Origin(), gp::DY()));
-	BRepBuilderAPI_Transform make_transform(compound, trsf);
-	make_transform.Build();
-	// When determinant < 0, copy is implied and the input is not mutated.
-	compound = make_transform.Shape();
+			po = &start_path(storey, nameElement(o));
 
-	TopoDS_Iterator it(compound);
+			// Create a horizontal cross section 1 meter above the bottom point of the shape		
+			const gp_Pln pln(gp_Pnt(0, 0, cut_z), gp::DZ());
+			TopoDS_Shape result = BRepAlgoAPI_Section(subshape, pln);
 
-	TopoDS_Face largest_closed_wire_face;
-	double largest_closed_wire_area = 0.;
+			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+			Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+			{
+				TopExp_Explorer exp(result, TopAbs_EDGE);
+				for (; exp.More(); exp.Next()) {
+					edges->Append(exp.Current());
+				}
+			}
+			ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-5, false, wires);
 
-	// Iterate over components of compound to have better chance of matching section edges to closed wires
-	for (; it.More(); it.Next()) {
-		
-		const TopoDS_Shape& subshape = it.Value();
+			gp_Pnt prev;
 
-		const double inf = std::numeric_limits<double>::infinity();
-		double zmin = inf;
-		double zmax = -inf;
-		{TopExp_Explorer exp(subshape, TopAbs_VERTEX);
-		for (; exp.More(); exp.Next()) {
-			const TopoDS_Vertex& vertex = TopoDS::Vertex(exp.Current());
-			gp_Pnt pnt = BRep_Tool::Pnt(vertex);
-			if (pnt.Z() < zmin) { zmin = pnt.Z(); }
-			if (pnt.Z() > zmax) { zmax = pnt.Z(); }
-		}}
-		
-		// Empty geometry, no vertices encountered
-		if (zmin == inf) continue;
-		
-		// Determine slicing plane z coordinate, priority:
-		// 1) explicitly set global section height
-		// 2) containing building storey elevation + 1m
-		// 3) zmin (from geometry bounding box) + 1m
-		double cut_z;
-		if (section_height) {
-			cut_z = section_height.get();
-		} else if (storey_elevation && !(zmin > *storey_elevation || zmax < *storey_elevation)) {
-			cut_z = storey_elevation.get() + 1.;
-		} else {
-			cut_z = zmin + 1.;
+			for (int i = 1; i <= wires->Length(); ++i) {
+				const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
+				if (wire.Closed() && (print_space_names_ || print_space_areas_) && o->type() == "IfcSpace") {
+					// we explicitly specify the surface here, to later on
+					// simplify the projection from {x,y,z} to {u, v} because
+					// we know we can simply discard z.
+					BRepBuilderAPI_MakeFace mf(pln, wire);
+					if (mf.IsDone()) {
+						TopoDS_Face f = mf.Face();
+						GProp_GProps prop;
+						BRepGProp::SurfaceProperties(f, prop);
+						const double area = prop.Mass();
+						if (area > largest_closed_wire_area) {
+							largest_closed_wire_face = f;
+							largest_closed_wire_area = area;
+						}
+					}
+
+				}
+				write(*po, wire);
+			}
 		}
 
-		// No intersection with bounding box, fail early
-		if (zmin > cut_z || zmax < cut_z) continue;
-        
-		// Create a horizontal cross section 1 meter above the bottom point of the shape		
-		const gp_Pln pln(gp_Pnt(0, 0, cut_z), gp::DZ());
-		TopoDS_Shape result = BRepAlgoAPI_Section(subshape, pln);
+		if (!largest_closed_wire_face.IsNull()) {
+			std::vector<gp_Pnt> points;
+			TopExp_Explorer exp(largest_closed_wire_face, TopAbs_VERTEX);
+			for (; exp.More(); exp.Next()) {
+				if (exp.Current().Orientation() == TopAbs_FORWARD) {
+					const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
+					points.push_back(BRep_Tool::Pnt(v));
+				}
+			}
 
-		Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
-		Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
-		{TopExp_Explorer exp(result, TopAbs_EDGE);
-		for (; exp.More(); exp.Next()) {
-			edges->Append(exp.Current());
-		}}
-		ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-5, false, wires);
+			// we brute force the largest distance between pairs of points where
+			// the center is contained in the face.
 
-		gp_Pnt prev;
+			std::pair<const gp_Pnt*, const gp_Pnt*> furthest_points = { nullptr, nullptr };
+			double furthest_points_distance = 0.;
+			boost::optional<gp_Pnt> center_point;
 
-		for (int i = 1; i <= wires->Length(); ++i) {
-			const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
-			if (wire.Closed() && (print_space_names_ || print_space_areas_) && o->type() == "IfcSpace") {
-				// we explicitly specify the surface here, to later on
-				// simplify the projection from {x,y,z} to {u, v} because
-				// we know we can simply discard z.
-				BRepBuilderAPI_MakeFace mf(pln, wire);
-				if (mf.IsDone()) {
-					TopoDS_Face f = mf.Face();
+			BRepTopAdaptor_FClass2d fcls(largest_closed_wire_face, BRep_Tool::Tolerance(largest_closed_wire_face));
+
+			for (size_t i = 0; i < points.size(); ++i) {
+				for (size_t j = 0; j < i; ++j) {
+					const gp_Pnt& pa = points[i];
+					const gp_Pnt& pb = points[j];
+					// Since the text is always displayed horizontally,
+					// the distance is not simply euclidian, but we
+					// favour the x-component;
+					const double d = std::sqrt(
+						10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +
+						1 * ((pa.Y() - pb.Y()) * (pa.Y() - pb.Y()))
+					);
+					if (d > furthest_points_distance) {
+						gp_Pnt p3d((pa.XYZ() + pb.XYZ()) / 2.);
+						gp_Pnt2d p2d(p3d.X(), p3d.Y());
+
+						if (fcls.Perform(p2d) == TopAbs_IN) {
+							furthest_points = { &pa, &pb };
+							furthest_points_distance = d;
+							center_point = p3d;
+						}
+					}
+				}
+			}
+
+			if (center_point) {
+				std::vector<std::string> labels;
+				if (print_space_names_) {
+					labels.push_back(o->name());
+				}
+				if (print_space_names_ && o->type() == "IfcSpace") {
+					auto attr = o->product()->get("LongName");
+					if (!attr->isNull()) {
+						std::string long_name = *attr;
+						if (!long_name.empty()) {
+							labels.insert(labels.begin(), long_name);
+						}
+					}
+				}
+				if (print_space_areas_) {
 					GProp_GProps prop;
-					BRepGProp::SurfaceProperties(f, prop);
+					BRepGProp::SurfaceProperties(largest_closed_wire_face, prop);
 					const double area = prop.Mass();
-					if (area > largest_closed_wire_area) {
-						largest_closed_wire_face = f;
-						largest_closed_wire_area = area;
-					}
+					std::stringstream ss;
+					ss << std::setprecision(2) << std::fixed << std::showpoint << area;
+					labels.push_back(ss.str() + "m&#178;");
 				}
-				
-			}
-			write(p, wire);
-		}
-	}
 
-	if (!largest_closed_wire_face.IsNull()) {
-		std::vector<gp_Pnt> points;
-		TopExp_Explorer exp(largest_closed_wire_face, TopAbs_VERTEX);
-		for (; exp.More(); exp.Next()) {
-			if (exp.Current().Orientation() == TopAbs_FORWARD) {
-				const TopoDS_Vertex& v = TopoDS::Vertex(exp.Current());
-				points.push_back(BRep_Tool::Pnt(v));
-			}
-		}
-
-		// we brute force the largest distance between pairs of points where
-		// the center is contained in the face.
-
-		std::pair<const gp_Pnt*, const gp_Pnt*> furthest_points = { nullptr, nullptr };
-		double furthest_points_distance = 0.;
-		boost::optional<gp_Pnt> center_point;
-
-		BRepTopAdaptor_FClass2d fcls(largest_closed_wire_face, BRep_Tool::Tolerance(largest_closed_wire_face));
-
-		for (size_t i = 0; i < points.size(); ++i) {
-			for (size_t j = 0; j < i; ++j) {
-				const gp_Pnt& pa = points[i];
-				const gp_Pnt& pb = points[j];
-				// Since the text is always displayed horizontally,
-				// the distance is not simply euclidian, but we
-				// favour the x-component;
-				const double d = std::sqrt(
-					10 * ((pa.X() - pb.X()) * (pa.X() - pb.X())) +
-					1 * ((pa.Y() - pb.Y()) * (pa.Y() - pb.Y()))
-				);
-				if (d > furthest_points_distance) {
-					gp_Pnt p3d((pa.XYZ() + pb.XYZ()) / 2.);
-					gp_Pnt2d p2d(p3d.X(), p3d.Y());
-
-					if (fcls.Perform(p2d) == TopAbs_IN) {
-						furthest_points = { &pa, &pb };
-						furthest_points_distance = d;
-						center_point = p3d;
-					}
-				}
-			}
-		}
-
-		if (center_point) {
-			std::vector<std::string> labels;
-			if (print_space_names_) {
-				labels.push_back(o->name());
-			}
-			if (print_space_names_ && o->type() == "IfcSpace") {
-				auto attr = o->product()->get("LongName");
-				if (!attr->isNull()) {
-					std::string long_name = *attr;
-					if (!long_name.empty()) {
-						labels.insert(labels.begin(), long_name);
-					}
-				}
-			}
-			if (print_space_areas_) {
-				GProp_GProps prop;
-				BRepGProp::SurfaceProperties(largest_closed_wire_face, prop);
-				const double area = prop.Mass();
-				std::stringstream ss;
-				ss << std::setprecision(2) << std::fixed << std::showpoint << area;
-				labels.push_back(ss.str() + "m&#178;");
-			}
-
-			path_object& po = p;
-			util::string_buffer path;
-			// dominant-baseline="central" is not well supported in IE.
-			// so we add a 0.35 offset to the dy of the tspans
-			path.add("            <text text-anchor=\"middle\" x=\"");
-			xcoords.push_back(path.add(center_point->X()));
-			path.add("\" y=\"");
-			ycoords.push_back(path.add(center_point->Y()));
-			path.add("\">");
-			for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
-				const auto& l = *lit;
-				double dy = labels.begin() == lit
-					? 0.35 - (labels.size() - 1.) / 2.
-					: 1.0; // <- dy is relative to the previous text element, so
-					       //    always 1 for successive spans.
-				path.add("<tspan x=\"");
+				util::string_buffer path;
+				// dominant-baseline="central" is not well supported in IE.
+				// so we add a 0.35 offset to the dy of the tspans
+				path.add("            <text text-anchor=\"middle\" x=\"");
 				xcoords.push_back(path.add(center_point->X()));
-				path.add("\" dy=\"");
-				path.add(boost::lexical_cast<std::string>(dy));
-				path.add("em\">");
-				path.add(l);
-				path.add("</tspan>");
+				path.add("\" y=\"");
+				ycoords.push_back(path.add(center_point->Y()));
+				path.add("\">");
+				for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+					const auto& l = *lit;
+					double dy = labels.begin() == lit
+						? 0.35 - (labels.size() - 1.) / 2.
+						: 1.0; // <- dy is relative to the previous text element, so
+							   //    always 1 for successive spans.
+					path.add("<tspan x=\"");
+					xcoords.push_back(path.add(center_point->X()));
+					path.add("\" dy=\"");
+					path.add(boost::lexical_cast<std::string>(dy));
+					path.add("em\">");
+					path.add(l);
+					path.add("</tspan>");
+				}
+				path.add("</text>");
+				po->second.push_back(path);
 			}
-			path.add("</text>");
-			po.second.push_back(path);
 		}
 	}
 }
@@ -633,5 +639,33 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 		}
 
 		Logger::Warning("No building storeys encountered, output might be invalid or missing");
+	}
+}
+
+void SvgSerializer::setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey) {
+	section_heights.emplace();
+	section_heights->push_back({ h, storey });
+}
+
+void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
+	section_heights.emplace();
+	auto storeys = file->instances_by_type("IfcBuildingStorey");
+	const double lu = file->getUnit("LENGTHUNIT").second;
+	if (storeys && storeys->size() > 0) {
+		for (auto& s : *storeys) {
+			auto attr_value = ((IfcUtil::IfcBaseEntity*)s)->get("Elevation");
+			if (!attr_value->isNull()) {
+				double elev;
+				try {
+					elev = *attr_value;
+				} catch (std::exception& e) {
+					Logger::Error(e);
+					continue;
+				}
+				section_heights->push_back({ elev * lu + offset , (IfcUtil::IfcBaseEntity*)s });
+			}			
+		}
+	} else {
+		section_heights->push_back({ std::numeric_limits<double>::quiet_NaN(), nullptr });
 	}
 }
