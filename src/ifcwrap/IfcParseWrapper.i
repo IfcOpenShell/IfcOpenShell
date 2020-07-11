@@ -266,16 +266,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	IfcEntityList::ptr get_inverse(const std::string& a) {
-		const std::vector<const IfcParse::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
-		for (; it != attrs.end(); ++it) {
-			if ((*it)->name() == a) {
-				return self->data().getInverse(
-					(*it)->entity_reference(),
-					(*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
-			}
+		if ($self->declaration().as_entity()) {
+			return ((IfcUtil::IfcBaseEntity*)$self)->get_inverse(a);
+		} else {
+			throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
 		}
-		throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
 	}
 
 	const char* const get_argument_type(unsigned int i) const {

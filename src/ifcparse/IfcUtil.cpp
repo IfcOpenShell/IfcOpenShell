@@ -205,6 +205,19 @@ Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
 	return data().getArgument(declaration().attribute_index(name));
 }
 
+IfcEntityList::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
+	const std::vector<const IfcParse::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
+	std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
+	for (; it != attrs.end(); ++it) {
+		if ((*it)->name() == name) {
+			return data().getInverse(
+				(*it)->entity_reference(),
+				(*it)->entity_reference()->attribute_index((*it)->attribute_reference()));
+		}
+	}
+	throw IfcParse::IfcException(name + " not found on " + declaration().name());
+}
+
 void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* d) {
 	delete data_;
 	data_ = d; 
