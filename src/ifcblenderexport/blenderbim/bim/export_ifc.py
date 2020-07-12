@@ -2627,10 +2627,11 @@ class IfcExporter():
 
     def relate_objects_to_psets(self):
         for relating_property_key, related_objects in self.ifc_parser.rel_defines_by_pset.items():
-            self.file.createIfcRelDefinesByProperties(
-                ifcopenshell.guid.new(), self.owner_history, None, None,
-                [o['ifc'] for o in related_objects],
-                self.ifc_parser.psets[relating_property_key]['ifc'])
+            if self.ifc_parser.psets[relating_property_key]['ifc']:
+                self.file.createIfcRelDefinesByProperties(
+                    ifcopenshell.guid.new(), self.owner_history, None, None,
+                    [o['ifc'] for o in related_objects],
+                    self.ifc_parser.psets[relating_property_key]['ifc'])
 
     def relate_objects_to_materials(self):
         if not self.ifc_export_settings.has_representations:
