@@ -130,6 +130,7 @@ def getIfcProducts(self, context):
             'IfcSpatialElement',
             'IfcGroup',
             'IfcStructural',
+            'IfcPositioningElement',
             'IfcContext',
             'IfcAnnotation']])
     return products_enum
