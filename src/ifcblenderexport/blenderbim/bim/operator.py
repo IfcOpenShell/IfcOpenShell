@@ -87,6 +87,7 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.execute()
         ifc_import_settings.logger.info('Import finished in {:.2f} seconds'.format(time.time() - start))
+        print('Import finished in {:.2f} seconds'.format(time.time() - start))
         return {'FINISHED'}
 
 class SelectGlobalId(bpy.types.Operator):

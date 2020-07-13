@@ -270,57 +270,101 @@ class IfcImporter():
 
         self.material_creator = MaterialCreator(ifc_import_settings)
 
+    def profile_code(self, message):
+        if not self.ifc_import_settings.should_import_with_profiling:
+            return
+        if not self.time:
+            self.time = time.time()
+        print('{} :: {:.2f}'.format(message, time.time() - self.time))
+        self.time = time.time()
+
     def execute(self):
+        self.profile_code('Starting import process')
         self.load_existing_rooted_elements()
+        self.profile_code('Load existing rooted elements')
         self.load_diff()
+        self.profile_code('Load diff')
         self.cache_file()
+        self.profile_code('Caching file')
         self.load_file()
+        self.profile_code('Loading file')
         self.set_ifc_file()
+        self.profile_code('Setting file')
         if self.ifc_import_settings.should_auto_set_workarounds:
             self.auto_set_workarounds()
+            self.profile_code('Set vendor worksarounds')
         self.calculate_unit_scale()
+        self.profile_code('Calculate unit scale')
         self.set_units()
+        self.profile_code('Set units')
         self.create_geometric_representation_contexts()
+        self.profile_code('Create contexts')
         self.create_project()
+        self.profile_code('Create project')
         self.create_classifications()
+        self.profile_code('Create classifications')
         self.create_document_information()
+        self.profile_code('Create doc info')
         self.create_document_references()
+        self.profile_code('Create doc refs')
         self.create_spatial_hierarchy()
+        self.profile_code('Create spatial hierarchy')
         self.purge_diff()
+        self.profile_code('Purge diffs')
         self.create_type_products()
+        self.profile_code('Create type products')
         if self.ifc_import_settings.should_import_aggregates:
             self.create_aggregates()
+            self.profile_code('Create aggregates')
         self.create_openings_collection()
+        self.profile_code('Create opening collection')
         self.process_element_filter()
+        self.profile_code('Process element filter')
         if self.ifc_import_settings.should_import_native:
             self.parse_native_elements()
+            self.profile_code('Parsing native elements')
         self.filter_ifc()
+        self.profile_code('Filtering ifc')
         self.patch_ifc()
+        self.profile_code('Patching ifc')
         self.create_georeferencing()
+        self.profile_code('Georeferencing ifc')
         self.create_groups()
+        self.profile_code('Creating groups')
         self.create_grids()
+        self.profile_code('Creating grids')
         if self.ifc_import_settings.should_import_native:
             self.create_native_products()
+        self.profile_code('Creating native products')
         # TODO: Deprecate after bug #682 is fixed and the new importer is stable
         if self.ifc_import_settings.should_use_legacy:
             self.create_products_legacy()
         else:
             self.create_products()
+            self.profile_code('Creating meshified products')
         self.relate_openings()
+        self.profile_code('Relating openings')
         self.place_objects_in_spatial_tree()
+        self.profile_code('Placing objects in spatial tree')
         if self.ifc_import_settings.should_merge_aggregates:
             self.merge_aggregates()
+            self.profile_code('Merging aggregates')
         if self.ifc_import_settings.should_merge_by_class:
             self.merge_by_class()
+            self.profile_code('Merging by class')
         elif self.ifc_import_settings.should_merge_by_material:
             self.merge_by_material()
+            self.profile_code('Merging by material')
         if self.ifc_import_settings.should_merge_materials_by_colour \
                 or (self.ifc_import_settings.should_auto_set_workarounds \
                     and len(self.material_creator.materials) > 300):
             self.merge_materials_by_colour()
+            self.profile_code('Merging by colour')
         self.add_project_to_scene()
+        self.profile_code('Add project to scene')
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type('IfcElement')) < 10000:
             self.clean_mesh()
+            self.profile_code('Mesh cleaning')
 
     def auto_set_workarounds(self):
         if 'DDS-CAD' in self.file.wrapped_data.header.file_name.originating_system \
@@ -1879,6 +1923,7 @@ class IfcImportSettings:
         self.should_import_spaces = False
         self.should_treat_styled_item_as_material = False
         self.should_use_cpu_multiprocessing = False
+        self.should_import_with_profiling = False
         self.should_import_native = False
         self.should_use_legacy = False
         self.should_merge_aggregates = False
@@ -1907,6 +1952,7 @@ class IfcImportSettings:
         settings.should_auto_set_workarounds = scene_bim.import_should_auto_set_workarounds
         settings.should_treat_styled_item_as_material = scene_bim.import_should_treat_styled_item_as_material
         settings.should_use_cpu_multiprocessing = scene_bim.import_should_use_cpu_multiprocessing
+        settings.should_import_with_profiling = scene_bim.import_should_import_with_profiling
         settings.should_import_native = scene_bim.import_should_import_native
         settings.should_use_legacy = scene_bim.import_should_use_legacy
         settings.should_import_aggregates = scene_bim.import_should_import_aggregates

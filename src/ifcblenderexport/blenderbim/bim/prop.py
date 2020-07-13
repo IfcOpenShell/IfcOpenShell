@@ -1004,6 +1004,7 @@ class BIMProperties(PropertyGroup):
     import_should_use_legacy: BoolProperty(name="Import with Legacy Importer", default=False)
     import_should_import_native: BoolProperty(name="Import Native Representations", default=False)
     import_should_use_cpu_multiprocessing: BoolProperty(name="Import with CPU Multiprocessing", default=False)
+    import_should_import_with_profiling: BoolProperty(name="Import with Profiling", default=True)
     import_should_import_aggregates: BoolProperty(name="Import Aggregates", default=True)
     import_should_merge_aggregates: BoolProperty(name="Import and Merge Aggregates", default=False)
     import_should_merge_by_class: BoolProperty(name="Import and Merge by Class", default=False)
