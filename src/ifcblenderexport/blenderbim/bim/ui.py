@@ -854,11 +854,17 @@ class BIM_PT_owner(Panel):
         scene = context.scene
         props = scene.BIMProperties
 
-        row = layout.row()
-        row.prop(props, 'person')
+        if not props.person:
+            layout.label(text="No people found.")
+        else:
+            row = layout.row()
+            row.prop(props, 'person')
 
-        row = layout.row()
-        row.prop(props, 'organisation')
+        if not props.organisation:
+            layout.label(text="No organisations found.")
+        else:
+            row = layout.row()
+            row.prop(props, 'organisation')
 
 
 class BIM_PT_people(Panel):
@@ -879,7 +885,7 @@ class BIM_PT_people(Panel):
         row.operator('bim.add_person')
 
         if props.people:
-            layout.template_list('BIM_UL_topics', '',
+            layout.template_list('BIM_UL_generic', '',
                 props, 'people', props, 'active_person_index')
 
             if props.active_person_index < len(props.people):
@@ -897,11 +903,9 @@ class BIM_PT_people(Panel):
                 row.prop(person, 'prefix_titles')
                 row = layout.row()
                 row.prop(person, 'suffix_titles')
-                row = layout.row()
-                row.prop(person, 'roles')
-
+                layout.label(text="Roles:")
+                draw_roles_ui(layout, person, 'person')
                 layout.label(text="Addresses:")
-
                 draw_addresses_ui(layout, person, 'person')
 
 
@@ -923,7 +927,7 @@ class BIM_PT_organisations(Panel):
         row.operator('bim.add_organisation')
 
         if props.organisations:
-            layout.template_list('BIM_UL_topics', '',
+            layout.template_list('BIM_UL_generic', '',
                 props, 'organisations', props, 'active_organisation_index')
 
             if props.active_organisation_index < len(props.organisations):
@@ -933,12 +937,30 @@ class BIM_PT_organisations(Panel):
                 row.operator('bim.remove_organisation', icon='X', text='').index = props.active_organisation_index
                 row = layout.row()
                 row.prop(organisation, 'description')
-                row = layout.row()
-                row.prop(organisation, 'roles')
-
+                layout.label(text="Roles:")
+                draw_roles_ui(layout, organisation, 'organisation')
                 layout.label(text="Addresses:")
-
                 draw_addresses_ui(layout, organisation, 'organisation')
+
+
+def draw_roles_ui(layout, parent, parent_type):
+    row = layout.row()
+    row.operator(f'bim.add_{parent_type}_role')
+
+    if parent.roles:
+        layout.template_list('BIM_UL_generic', '',
+            parent, 'roles', parent, 'active_role_index')
+
+        if parent.active_role_index < len(parent.roles):
+            role = parent.roles[parent.active_role_index]
+            row = layout.row()
+            row.prop(role, 'name')
+            row.operator(f'bim.remove_{parent_type}_role', icon='X', text='').index = parent.active_role_index
+            if role.name == 'USERDEFINED':
+                row = layout.row()
+                row.prop(role, 'user_defined_role')
+            row = layout.row()
+            row.prop(role, 'description')
 
 
 def draw_addresses_ui(layout, parent, parent_type):
@@ -946,7 +968,7 @@ def draw_addresses_ui(layout, parent, parent_type):
     row.operator(f'bim.add_{parent_type}_address')
 
     if parent.addresses:
-        layout.template_list('BIM_UL_topics', '',
+        layout.template_list('BIM_UL_generic', '',
             parent, 'addresses', parent, 'active_address_index')
 
         if parent.active_address_index < len(parent.addresses):
@@ -1437,6 +1459,8 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_import_native')
         row = layout.row()
         row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
+        row = layout.row()
+        row.prop(bim_properties, 'import_should_import_with_profiling')
 
         layout.label(text='Simplifications:')
 

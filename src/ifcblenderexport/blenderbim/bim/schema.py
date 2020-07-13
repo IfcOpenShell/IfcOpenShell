@@ -17,6 +17,7 @@ class IfcSchema():
             'IfcSpatialElement',
             'IfcGroup',
             'IfcStructural',
+            'IfcPositioningElement',
             'IfcMaterialDefinition',
             'IfcParameterizedProfileDef',
             'IfcBoundaryCondition',
