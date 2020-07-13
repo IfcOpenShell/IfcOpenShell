@@ -697,12 +697,120 @@ class IfcParser():
         return results
 
     def get_people(self):
-        with open(self.data_dir + 'owner/person.json') as file:
-            return [{'raw': p} for p in json.load(file)]
+        data_map = {
+            'name': 'Identification',
+            'family_name': 'FamilyName',
+            'given_name': 'GivenName',
+        }
+        list_data_map = {
+            'middle_names': 'MiddleNames',
+            'prefix_titles': 'PrefixTitles',
+            'suffix_titles': 'SuffixTitles',
+        }
+        results = []
+        for person in bpy.context.scene.BIMProperties.people:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(person, key):
+                    attributes[value] = getattr(person, key)
+            for key, value in list_data_map.items():
+                if getattr(person, key):
+                    attributes[value] = getattr(person, key).split(',')
+            results.append({
+                'ifc': None,
+                'raw': person,
+                'attributes': attributes,
+                'roles': self.get_roles(person.roles),
+                'addresses': self.get_addresses(person.addresses)
+            })
+        return results
 
     def get_organisations(self):
-        with open(self.data_dir + 'owner/organisation.json') as file:
-            return [{'raw': o} for o in json.load(file)]
+        data_map = {
+            'name': 'Name',
+            'description': 'Description',
+        }
+        results = []
+        for organisation in bpy.context.scene.BIMProperties.organisations:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(organisation, key):
+                    attributes[value] = getattr(organisation, key)
+            results.append({
+                'ifc': None,
+                'raw': organisation,
+                'attributes': attributes,
+                'roles': self.get_roles(organisation.roles),
+                'addresses': self.get_addresses(organisation.addresses)
+            })
+        return results
+
+    def get_roles(self, roles):
+        data_map = {
+            'name': 'Role',
+            'user_defined_role': 'UserDefinedRole',
+            'description': 'Description',
+        }
+        results = []
+        for role in roles:
+            attributes = {}
+            for key, value in data_map.items():
+                if getattr(role, key):
+                    attributes[value] = getattr(role, key)
+            results.append({
+                'ifc': None,
+                'raw': role,
+                'attributes': attributes
+            })
+        return results
+
+    def get_addresses(self, addresses):
+        results = []
+        address_data_map = {
+            'purpose': 'Purpose',
+            'description': 'Description',
+            'user_defined_purpose': 'UserDefinedPurpose',
+        }
+        postal_data_map = {
+            'internal_location': 'InternalLocation',
+            'postal_box': 'PostalBox',
+            'town': 'Town',
+            'region': 'Region',
+            'postal_code': 'PostalCode',
+            'country': 'Country',
+        }
+        telecom_data_map = {
+            'pager_number': 'PagerNumber',
+            'www_home_page_url': 'WWWHomePageURL',
+        }
+        telecom_list_data_map = {
+            'telephone_numbers': 'TelephoneNumbers',
+            'fascimile_numbers': 'FascimileNumbers',
+            'electronic_mail_addresses': 'ElectronicMailAddresses',
+            'messaging_ids': 'MessagingIDs',
+        }
+        for address in addresses:
+            attributes = {}
+            if 'IfcPostalAddress' in address.name:
+                merged_data_map = {**address_data_map, **postal_data_map}
+                if address.address_lines:
+                    attributes['AddressLines'] = address.address_lines.split('/')
+            elif 'IfcTelecomAddress' in address.name:
+                merged_data_map = {**address_data_map, **telecom_data_map}
+                for key, value in telecom_list_data_map.items():
+                    if getattr(address, key):
+                        attributes[value] = getattr(address, key).split(',')
+            for key, value in merged_data_map.items():
+                if getattr(address, key):
+                    attributes[value] = getattr(address, key)
+            results.append({
+                'ifc': None,
+                'raw': address,
+                'is_postal': 'IfcPostalAddress' in address.name,
+                'is_telecom': 'IfcTelecomAddress' in address.name,
+                'attributes': attributes
+            })
+        return results
 
     def get_document_references(self):
         results = {}
@@ -1221,15 +1329,55 @@ class IfcExporter():
         self.file.wrapped_data.header.file_name.time_stamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone().replace(microsecond=0).isoformat()
         self.file.wrapped_data.header.file_name.preprocessor_version = 'IfcOpenShell {}'.format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = '{} {}'.format(
-            self.owner_history.OwningApplication.ApplicationFullName,
-            self.owner_history.OwningApplication.Version,
-        )
-        if self.schema == 'IFC2X3':
-            self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
+            self.get_application_name(), self.get_application_version())
+        if self.owner_history:
+            if self.schema == 'IFC2X3':
+                self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Id
+            else:
+                self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Identification
         else:
-            self.file.wrapped_data.header.file_name.authorization = self.owner_history.OwningUser.ThePerson.Identification
+            self.file.wrapped_data.header.file_name.authorization = 'Nobody'
+
+    def get_application_name(self):
+        return 'BlenderBIM'
+
+    def get_application_version(self):
+        return '.'.join([str(x) for x in [addon.bl_info.get('version', (-1,-1,-1)) for addon in addon_utils.modules() if addon.bl_info['name'] == 'BlenderBIM'][0]])
+
+    def get_application_organisation(self):
+        self.application_organisation = self.file.create_entity('IfcOrganization', **{
+            "Name": "IfcOpenShell",
+            "Description": "IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
+            "Roles": [self.file.create_entity('IfcActorRole', **{
+                "Role": "USERDEFINED",
+                "UserDefinedRole": "CONTRIBUTOR"
+            })],
+            "Addresses": [
+                self.file.create_entity('IfcTelecomAddress', **{
+                    "Purpose": "USERDEFINED",
+                    "UserDefinedPurpose": "WEBPAGE",
+                    "Description": "The main webpage of the software collection.",
+                    "WWWHomePageURL": "https://ifcopenshell.org"
+                }),
+                self.file.create_entity('IfcTelecomAddress', **{
+                    "Purpose": "USERDEFINED",
+                    "UserDefinedPurpose": "WEBPAGE",
+                    "Description": "The BlenderBIM Add-on webpage of the software collection.",
+                    "WWWHomePageURL": "https://blenderbim.org"
+                }),
+                self.file.create_entity('IfcTelecomAddress', **{
+                    "Purpose": "USERDEFINED",
+                    "UserDefinedPurpose": "REPOSITORY",
+                    "Description": "The source code repository of the software collection.",
+                    "WWWHomePageURL": "https://github.com/IfcOpenShell/IfcOpenShell.git"
+                })
+            ]
+        })
+        return self.application_organisation
 
     def create_owner_history(self):
+        person = None
+        organisation = None
         for person in self.ifc_parser.people:
             if self.schema == 'IFC2X3' and person['ifc'].Id == bpy.context.scene.BIMProperties.person:
                 break
@@ -1238,18 +1386,20 @@ class IfcExporter():
         for organisation in self.ifc_parser.organisations:
             if organisation['ifc'].Name == bpy.context.scene.BIMProperties.organisation:
                 break
+        if not person or not organisation:
+            self.owner_history = None
+            return
         person_and_organisation = self.file.create_entity('IfcPersonAndOrganization', **{
             'ThePerson': person['ifc'],
             'TheOrganization': organisation['ifc'],
             'Roles': None # TODO
         })
-        version = '.'.join([str(x) for x in [addon.bl_info.get('version', (-1,-1,-1)) for addon in addon_utils.modules() if addon.bl_info['name'] == 'BlenderBIM'][0]])
-        developer_organisation = [o for o in self.ifc_parser.organisations if o['ifc'].Name == 'IfcOpenShell'][0]['ifc']
+        developer_organisation = self.get_application_organisation()
         application = self.file.create_entity('IfcApplication', **{
             'ApplicationDeveloper': developer_organisation,
-            'Version': version,
-            'ApplicationFullName': 'BlenderBIM',
-            'ApplicationIdentifier': 'BlenderBIM'
+            'Version': self.get_application_version(),
+            'ApplicationFullName': self.get_application_name(),
+            'ApplicationIdentifier': self.get_application_name()
         })
         self.owner_history = self.file.create_entity('IfcOwnerHistory', **{
             'OwningUser': person_and_organisation,
@@ -1317,45 +1467,36 @@ class IfcExporter():
 
     def create_people(self):
         for person in self.ifc_parser.people:
-            data = person['raw'].copy()
-            if data['Roles']:
-                data['Roles'] = self.create_roles(data['Roles'])
-            if data['Addresses']:
-                data['Addresses'] = self.create_addresses(data['Addresses'])
-            if self.schema == 'IFC2X3' and 'Identification' in data:
-                data['Id'] = data['Identification']
-                del data['Identification']
-            person['ifc'] = self.file.create_entity('IfcPerson', **data)
+            if person['roles']:
+                person['attributes']['Roles'] = self.create_roles(person['roles'])
+            if person['addresses']:
+                person['attributes']['Addresses'] = self.create_addresses(person['addresses'])
+            if self.schema == 'IFC2X3' and 'Identification' in person['attributes']:
+                person['attributes']['Id'] = person['attributes']['Identification']
+                del person['attributes']['Identification']
+            person['ifc'] = self.file.create_entity('IfcPerson', **person['attributes'])
 
     def create_organisations(self):
         for organisation in self.ifc_parser.organisations:
-            data = organisation['raw'].copy()
-            if data['Roles']:
-                data['Roles'] = self.create_roles(data['Roles'])
-            if data['Addresses']:
-                data['Addresses'] = self.create_addresses(data['Addresses'])
-            organisation['ifc'] = self.file.create_entity('IfcOrganization', **data)
+            if organisation['roles']:
+                organisation['attributes']['Roles'] = self.create_roles(organisation['roles'])
+            if organisation['addresses']:
+                organisation['attributes']['Addresses'] = self.create_addresses(organisation['addresses'])
+            organisation['ifc'] = self.file.create_entity('IfcOrganization', **organisation['attributes'])
 
     def create_roles(self, roles):
         results = []
         for role in roles:
-            results.append(self.file.create_entity('IfcActorRole', **role))
+            results.append(self.file.create_entity('IfcActorRole', **role['attributes']))
         return results
 
     def create_addresses(self, addresses):
         results = []
         for address in addresses:
-            is_postal_address = False
-            for key in ['InternalLocation', 'AddressLines', 'PostalBox', 'Town',
-                        'Region', 'PostalCode', 'Country']:
-                if key in address:
-                    is_postal_address = True
-            if is_postal_address:
-                results.append(self.file.create_entity('IfcPostalAddress', **address))
-            else:
-                if self.schema == 'IFC2X3' and 'MessagingIDs' in address:
-                    del address['MessagingIDs']
-                results.append(self.file.create_entity('IfcTelecomAddress', **address))
+            if self.schema == 'IFC2X3' and 'MessagingIDs' in address['attributes']:
+                del address['attributes']['MessagingIDs']
+            results.append(self.file.create_entity('IfcPostalAddress' if
+                address['is_postal'] else 'IfcTelecomAddress', **address['attributes']))
         return results
 
     def create_library_information(self):
