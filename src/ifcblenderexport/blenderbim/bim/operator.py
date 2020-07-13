@@ -917,6 +917,25 @@ class RemovePersonAddress(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class AddPersonRole(bpy.types.Operator):
+    bl_idname = 'bim.add_person_role'
+    bl_label = 'Add Person Role'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.people[bpy.context.scene.BIMProperties.active_person_index].roles.add()
+        return {'FINISHED'}
+
+
+class RemovePersonRole(bpy.types.Operator):
+    bl_idname = 'bim.remove_person_role'
+    bl_label = 'Remove Person Role'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.people[bpy.context.scene.BIMProperties.active_person_index].roles.remove(self.index)
+        return {'FINISHED'}
+
+
 class AddOrganisation(bpy.types.Operator):
     bl_idname = 'bim.add_organisation'
     bl_label = 'Add Organisation'
@@ -954,6 +973,25 @@ class RemoveOrganisationAddress(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.BIMProperties.organisations[bpy.context.scene.BIMProperties.active_organisation_index].addresses.remove(self.index)
+        return {'FINISHED'}
+
+
+class AddOrganisationRole(bpy.types.Operator):
+    bl_idname = 'bim.add_organisation_role'
+    bl_label = 'Add Organisation Role'
+
+    def execute(self, context):
+        new = bpy.context.scene.BIMProperties.organisations[bpy.context.scene.BIMProperties.active_organisation_index].roles.add()
+        return {'FINISHED'}
+
+
+class RemoveOrganisationRole(bpy.types.Operator):
+    bl_idname = 'bim.remove_organisation_role'
+    bl_label = 'Remove Organisation Role'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.organisations[bpy.context.scene.BIMProperties.active_organisation_index].roles.remove(self.index)
         return {'FINISHED'}
 
 

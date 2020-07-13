@@ -152,21 +152,15 @@ def getProfileDef(self, context):
 
 def getPersons(self, context):
     global persons_enum
-    if len(persons_enum) < 1:
-        persons_enum.clear()
-        with open(os.path.join(self.data_dir, 'owner', 'person.json'), 'r') as f:
-            persons = json.load(f)
-        persons_enum.extend([(p['Identification'], p['Identification'], '') for p in persons])
+    persons_enum.clear()
+    persons_enum.extend([(p.name, p.name, '') for p in bpy.context.scene.BIMProperties.people])
     return persons_enum
 
 
 def getOrganisations(self, context):
     global organisations_enum
-    if len(organisations_enum) < 1:
-        organisations_enum.clear()
-        with open(os.path.join(self.data_dir, 'owner', 'organisation.json'), 'r') as f:
-            organisations = json.load(f)
-        organisations_enum.extend([(o['Name'], o['Name'], '') for o in organisations])
+    organisations_enum.clear()
+    organisations_enum.extend([(o.name, o.name, '') for o in bpy.context.scene.BIMProperties.organisations])
     return organisations_enum
 
 
@@ -832,13 +826,19 @@ class PropertyTemplate(PropertyGroup):
 
 class Address(PropertyGroup):
     name: StringProperty(name="Name") # Stores IfcPostalAddress or IfcTelecomAddress
-    purpose: StringProperty(name="Purpose")
+    purpose: EnumProperty(items=[
+        ('OFFICE', 'OFFICE', 'An office address.'),
+        ('SITE', 'SITE', 'A site address.'),
+        ('HOME', 'HOME', 'A home address.'),
+        ('DISTRIBUTIONPOINT', 'DISTRIBUTIONPOINT', 'A postal distribution point address.'),
+        ('USERDEFINED', 'USERDEFINED', 'A user defined address type to be provided.'),
+    ], name='Purpose')
     description: StringProperty(name="Description")
     user_defined_purpose: StringProperty(name="Custom Purpose")
 
     internal_location: StringProperty(name="Internal Location")
     address_lines: StringProperty(name="Address")
-    postal_box: StringProperty(name="PO Box")
+    postal_box: StringProperty(name="Postal Box")
     town: StringProperty(name="Town")
     region: StringProperty(name="Region")
     postal_code: StringProperty(name="Postal Code")
@@ -852,10 +852,41 @@ class Address(PropertyGroup):
     messaging_ids: StringProperty(name="IMs")
 
 
+class Role(PropertyGroup):
+    name: EnumProperty(items=[
+        ('SUPPLIER', 'SUPPLIER', ''),
+        ('MANUFACTURER', 'MANUFACTURER', ''),
+        ('CONTRACTOR', 'CONTRACTOR', ''),
+        ('SUBCONTRACTOR', 'SUBCONTRACTOR', ''),
+        ('ARCHITECT', 'ARCHITECT', ''),
+        ('STRUCTURALENGINEER', 'STRUCTURALENGINEER', ''),
+        ('COSTENGINEER', 'COSTENGINEER', ''),
+        ('CLIENT', 'CLIENT', ''),
+        ('BUILDINGOWNER', 'BUILDINGOWNER', ''),
+        ('BUILDINGOPERATOR', 'BUILDINGOPERATOR', ''),
+        ('MECHANICALENGINEER', 'MECHANICALENGINEER', ''),
+        ('ELECTRICALENGINEER', 'ELECTRICALENGINEER', ''),
+        ('PROJECTMANAGER', 'PROJECTMANAGER', ''),
+        ('FACILITIESMANAGER', 'FACILITIESMANAGER', ''),
+        ('CIVILENGINEER', 'CIVILENGINEER', ''),
+        ('COMMISSIONINGENGINEER', 'COMMISSIONINGENGINEER', ''),
+        ('ENGINEER', 'ENGINEER', ''),
+        ('OWNER', 'OWNER', ''),
+        ('CONSULTANT', 'CONSULTANT', ''),
+        ('CONSTRUCTIONMANAGER', 'CONSTRUCTIONMANAGER', ''),
+        ('FIELDCONSTRUCTIONMANAGER', 'FIELDCONSTRUCTIONMANAGER', ''),
+        ('RESELLER', 'RESELLER', ''),
+        ('USERDEFINED', 'USERDEFINED', ''),
+    ], name='Name')
+    user_defined_role: StringProperty(name="Custom Role")
+    description: StringProperty(name="Description")
+
+
 class Organisation(PropertyGroup):
     name: StringProperty(name="Name")
     description: StringProperty(name="Description")
-    roles: StringProperty(name="Roles")
+    roles: CollectionProperty(name="Roles", type=Role)
+    active_role_index: bpy.props.IntProperty()
     addresses: CollectionProperty(name="Addresses", type=Address)
     active_address_index: bpy.props.IntProperty()
 
@@ -867,7 +898,8 @@ class Person(PropertyGroup):
     middle_names: StringProperty(name="Middle Names")
     prefix_titles: StringProperty(name="Prefixes")
     suffix_titles: StringProperty(name="Suffixes")
-    roles: StringProperty(name="Roles")
+    roles: CollectionProperty(name="Roles", type=Role)
+    active_role_index: bpy.props.IntProperty()
     addresses: CollectionProperty(name="Addresses", type=Address)
     active_address_index: bpy.props.IntProperty()
 
