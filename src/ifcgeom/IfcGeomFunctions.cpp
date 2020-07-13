@@ -1640,11 +1640,12 @@ void IfcGeom::Kernel::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, T
 }
 
 IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
-	
-	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
+	std::vector<IfcSchema::IfcRelVoidsElement*> rs;
+
 	if ( product->declaration().is(IfcSchema::IfcElement::Class()) && !product->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 		IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)product;
-		openings = element->HasOpenings();
+		auto rels = element->HasOpenings();
+		rs.insert(rs.end(), rels->begin(), rels->end());
 	}
 
 	// Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
@@ -1655,11 +1656,21 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 		IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->RelatingObject();
 		if ( rel_obdef->declaration().is(IfcSchema::IfcElement::Class()) && !rel_obdef->declaration().is(IfcSchema::IfcOpeningElement::Class()) ) {
 			IfcSchema::IfcElement* element = (IfcSchema::IfcElement*)rel_obdef;
-			openings->push(element->HasOpenings());
+			auto rels = element->HasOpenings();
+			rs.insert(rs.end(), rels->begin(), rels->end());
 		}
 
 		obdef = rel_obdef;
 	}
+
+	// Filter openings in Reference view, solely marked as Reference.
+	IfcSchema::IfcRelVoidsElement::list::ptr openings(new IfcSchema::IfcRelVoidsElement::list);
+	std::for_each(rs.begin(), rs.end(), [&openings](IfcSchema::IfcRelVoidsElement* rel) {
+		auto reps = rel->RelatedOpeningElement()->Representation()->Representations();
+		if (!(reps->size() == 1 && (*reps->begin())->RepresentationIdentifier() == "Reference")) {
+			openings->push(rel);
+		}
+	});
 
 	return openings;
 }
