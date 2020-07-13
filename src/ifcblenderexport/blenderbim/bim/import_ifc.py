@@ -5,6 +5,7 @@ import ifcopenshell.util.selector
 import bpy
 import bmesh
 import os
+import re
 import shutil
 import threading
 import json
@@ -105,7 +106,7 @@ class MaterialCreator():
             return
         if len(obj.material_slots) == 1:
             return
-        slots = [s.name for s in obj.material_slots]
+        slots = [self.canonicalise_material_name(s.name) for s in obj.material_slots]
         material_to_slot = {}
         for i, material in enumerate(mesh['ios_materials']):
             if material == 'NULLMAT':
@@ -118,6 +119,9 @@ class MaterialCreator():
             material_index = [(material_to_slot[mat_id] if mat_id != 999999
                 else 0) for mat_id in mesh['ios_material_ids']]
             mesh.polygons.foreach_set('material_index', material_index)
+
+    def canonicalise_material_name(self, name):
+        return re.sub(r'\.[0-9]{3}', '', name)
 
     def parse_material(self, element):
         for association in element.HasAssociations:
