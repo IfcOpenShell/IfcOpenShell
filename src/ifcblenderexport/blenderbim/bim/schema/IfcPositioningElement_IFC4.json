@@ -1,0 +1,77 @@
+{
+    "IfcGrid": {
+        "is_abstract": false,
+        "parent": "IfcProduct",
+        "attributes": [
+            {
+                "name": "GlobalId",
+                "type": "IfcGloballyUniqueId",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Name",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "Description",
+                "type": "IfcText",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "ObjectType",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "PredefinedType",
+                "type": "IfcGridTypeEnum",
+                "is_enum": true,
+                "enum_values": [
+                    "RECTANGULAR",
+                    "RADIAL",
+                    "TRIANGULAR",
+                    "IRREGULAR",
+                    "USERDEFINED",
+                    "NOTDEFINED"
+                ]
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "OwnerHistory",
+                "type": "IfcOwnerHistory",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsDeclaredBy",
+                "type": "IfcRelDefinesByObject",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "IsTypedBy",
+                "type": "IfcRelDefinesByType",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "ObjectPlacement",
+                "type": "IfcObjectPlacement",
+                "is_select": false,
+                "select_types": []
+            },
+            {
+                "name": "Representation",
+                "type": "IfcProductRepresentation",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
+    }
+}
