@@ -1,3 +1,5 @@
+from __future__ import division
+from __future__ import print_function
 import os
 import time
 import json
@@ -5,7 +7,6 @@ import salome
 import salome_notebook
 import salome_version
 import numpy as np
-from pprint import pprint
 
 class MODEL:
     def __init__(self, dataFilename, medFilename, meshSize):
@@ -141,7 +142,7 @@ class MODEL:
 
         ### Define entities ###
         start_time = time.time()
-        pprint('Defining Object Geometry')
+        print('Defining Object Geometry')
         init_time = start_time
 
         # Loop 1
@@ -202,7 +203,7 @@ class MODEL:
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Building Geometry Defined in %g sec' % (elapsed_time))
+        print('Building Geometry Defined in %g sec' % (elapsed_time))
 
         if len([e for e in elements if e['geometryType'] == 'line']) > 0:
             buildingShapeType = 'EDGE'
@@ -242,7 +243,7 @@ class MODEL:
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Building Geometry Groups Defined in %g sec' % (elapsed_time))
+        print('Building Geometry Groups Defined in %g sec' % (elapsed_time))
 
         ###
         ### SMESH component
@@ -251,7 +252,7 @@ class MODEL:
         import SMESH
         from salome.smesh import smeshBuilder
 
-        pprint('Defining Mesh Components')
+        print('Defining Mesh Components')
 
         if NEW_SALOME:
             smesh = smeshBuilder.New()
@@ -287,7 +288,7 @@ class MODEL:
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Meshing Operations Completed in %g sec' % (elapsed_time))
+        print('Meshing Operations Completed in %g sec' % (elapsed_time))
 
         # Define and add groups for all curve and surface members
         if len([e for e in elements if e['geometryType'] == 'line']) > 0:
@@ -310,6 +311,7 @@ class MODEL:
             for j,rel in enumerate(el['connections']):
                 tempgroup = bldMesh.GroupOnGeom(el['connObjs'][j], self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']), SMESH.NODE)
                 smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + '_0DC_' + self.getGroupName(rel['relatedConnection']))
+                rel['node'] = (bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)).GetIDs()[0]
                 # if rel['eccentricity']:
                 #     tempgroup = bldMesh.GroupOnGeom(el['linkObjs'][j], self.getGroupName(el['ifcName']) + '_1DC_' + self.getGroupName(rel['relatedConnection']), SMESH.EDGE)
                 #     smesh.SetName(tempgroup, self.getGroupName(el['ifcName']) + '_1DC_' + self.getGroupName(rel['relatedConnection']))
@@ -321,13 +323,22 @@ class MODEL:
             nodesId = bldMesh.GetIDSource(tempgroup.GetNodeIDs(), SMESH.NODE)
             tempgroup = bldMesh.Add0DElementsToAllNodes(nodesId, self.getGroupName(conn['ifcName']))
             smesh.SetName(tempgroup, self.getGroupName(conn['ifcName']))
+            conn['node'] = nodesId.GetIDs()[0]
+
+        # create 1D SEG2 spring elements
+        for el in elements:
+            for j,rel in enumerate(el['connections']):
+                grpName = bldMesh.CreateEmptyGroup(SMESH.EDGE, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
+                smesh.SetName(grpName, self.getGroupName(el['ifcName']) + '_1DS_' + self.getGroupName(rel['relatedConnection']))
+                conn = [conn for conn in connections if conn['ifcName'] == rel['relatedConnection']][0]
+                grpName.Add([bldMesh.AddEdge([conn['node'], rel['node']])])
 
         self.mesh = bldMesh
         self.meshNodes = bldMesh.GetNodesId()
 
         elapsed_time = time.time() - init_time
         init_time += elapsed_time
-        pprint('Mesh Groups Defined in %g sec' % (elapsed_time))
+        print('Mesh Groups Defined in %g sec' % (elapsed_time))
 
         try:
             if NEW_SALOME:
@@ -342,7 +353,7 @@ class MODEL:
             else:
                 bldMesh.ExportMED(self.medFilename, 0, SMESH.MED_V2_2, 1, None, 0)
         except:
-            pprint('ExportMED() failed. Invalid file name?')
+            print('ExportMED() failed. Invalid file name?')
 
         if salome.sg.hasDesktop():
             if NEW_SALOME:
@@ -350,9 +361,8 @@ class MODEL:
             else:
                 salome.sg.updateObjBrowser(1)
 
-
         elapsed_time = init_time - start_time
-        pprint('ALL Operations Completed in %g sec' % (elapsed_time))
+        print('ALL Operations Completed in %g sec' % (elapsed_time))
 
 if __name__ == '__main__':
     fileNames = ['cantilever_01', 'portal_01']
