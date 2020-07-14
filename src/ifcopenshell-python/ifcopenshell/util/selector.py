@@ -1,3 +1,5 @@
+import ifcopenshell.util
+import ifcopenshell.util.element
 import lark
 
 class Selector():
@@ -129,13 +131,23 @@ class Selector():
             comparison = filter_rule.children[1].children[0].data
             value = filter_rule.children[2].children[0][1:-1]
         for element in elements:
-            element_value = IfcAttributeExtractor.get_element_key(element, key)
+            element_value = self.get_element_value(element, key)
             if not element_value:
                 continue
             if not comparison \
                     or self.filter_element(element, element_value, comparison, value):
                 results.append(element)
         return results
+
+    def get_element_value(self, element, key):
+        info = element.get_info()
+        if key in info:
+            return info[key]
+        elif '.' in key:
+            pset_name, prop = key.split('.')
+            psets = ifcopenshell.util.element.get_psets(element)
+            if pset_name in psets and prop in psets[pset_name]:
+                return psets[pset_name][prop]
 
     def filter_element(self, element, element_value, comparison, value):
         if comparison == 'equal':
