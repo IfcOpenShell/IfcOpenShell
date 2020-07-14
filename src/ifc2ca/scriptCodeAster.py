@@ -1,5 +1,8 @@
 import json
 import numpy as np
+import itertools
+
+flatten = itertools.chain.from_iterable
 
 class COMMANDFILE:
     def __init__(self, dataFilename, asterFilename):
@@ -32,6 +35,7 @@ class COMMANDFILE:
                 conn = [c for c in connections if c['ifcName'] == rel['relatedConnection']][0]
                 if conn['geometryType'] == 'point':
                     rel['groupName'] = self.getGroupName(rel['relatingElement']) + '_0DC_' + self.getGroupName(rel['relatedConnection'])
+                    rel['springGroupName'] = self.getGroupName(rel['relatingElement']) + '_1DS_' + self.getGroupName(rel['relatedConnection'])
                     self.calculateConstraints(rel)
                 conn['relatedElements'].append(rel)
         # End <--
@@ -42,6 +46,7 @@ class COMMANDFILE:
         edgeGroupNames = tuple([self.getGroupName(el['ifcName']) for el in elements if el['geometryType'] == 'line'])
         faceGroupNames = tuple([self.getGroupName(el['ifcName']) for el in elements if el['geometryType'] == 'surface'])
         point0DGroupNames = tuple([self.getGroupName(el['ifcName']) for el in connections if el['geometryType'] == 'point'])
+        spring1DGroupNames = tuple(flatten([[rel['springGroupName'] for rel in el['connections']] for el in elements]))
 
         unifiedConnection = False
         rigidLinkGroupNames = []
@@ -138,7 +143,7 @@ model = AFFE_MODELE(
         ),'''
 
             context = {
-                'groupNames': point0DGroupNames
+                'groupNames': tuple(flatten([point0DGroupNames, spring1DGroupNames]))
             }
 
             f.write(template.format(**context))
@@ -347,15 +352,35 @@ element = AFFE_CARA_ELEM(
         _F(
             GROUP_MA = '{groupName}',
             CARA = 'K_TR_D_N',
-            VALE = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            VALE = {stiffnesses},
             REPERE = 'LOCAL'
         ),'''
 
             context = {
-                'groupName': self.getGroupName(conn['ifcName'])
+                'groupName': self.getGroupName(conn['ifcName']),
+                'stiffnesses': conn['stiffnesses']
             }
 
             f.write(template.format(**context))
+
+            for rel in conn['relatedElements']:
+
+                template = \
+        '''
+        _F(
+            GROUP_MA = '{groupName}',
+            CARA = 'K_TR_D_L',
+            VALE = {stiffnesses},
+            REPERE = 'LOCAL'
+        ),'''
+
+                context = {
+                    'groupName': rel['springGroupName'],
+                    'stiffnesses': rel['stiffnesses']
+                }
+
+                f.write(template.format(**context))
+
 
         f.write(
 '''
@@ -400,6 +425,23 @@ element = AFFE_CARA_ELEM(
             }
 
             f.write(template.format(**context))
+
+            for rel in conn['relatedElements']:
+
+                template = \
+        '''
+        _F(
+            GROUP_MA = '{groupName}',
+            CARA = 'VECT_X_Y',
+            VALE = {localAxesXY}
+        ),'''
+
+                context = {
+                    'groupName': rel['springGroupName'],
+                    'localAxesXY': tuple(rel['orientation'][0] + rel['orientation'][1])
+                }
+
+                f.write(template.format(**context))
 
         f.write(
 '''
@@ -517,7 +559,8 @@ liaisons = AFFE_CHAR_MECA(
 
         f.write(
     '''
-)'''
+)
+'''
         )
 
         template = \
@@ -664,6 +707,7 @@ FIN()
             'coeffs': [],
             'dofs': []
         }
+        stiffnesses = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         if not rel['appliedCondition']:
             rel['appliedCondition'] = {
                         'dx': True,
@@ -673,26 +717,45 @@ FIN()
                         'dry': True,
                         'drz': True
                     }
-        if rel['appliedCondition']['dx']:
+        if isinstance(rel['appliedCondition']['dx'], bool) and rel['appliedCondition']['dx']:
             liaisons['coeffs'].append((o[0][0], o[1][0], o[2][0], -o[0][0], -o[1][0], -o[2][0]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ', 'DX', 'DY', 'DZ'))
-        if rel['appliedCondition']['dy']:
+        elif isinstance(rel['appliedCondition']['dx'], float) and rel['appliedCondition']['dx'] > 0:
+            stiffnesses[0] = rel['appliedCondition']['dx']
+
+        if isinstance(rel['appliedCondition']['dy'], bool) and rel['appliedCondition']['dy']:
             liaisons['coeffs'].append((o[0][1], o[1][1], o[2][1], -o[0][1], -o[1][1], -o[2][1]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ', 'DX', 'DY', 'DZ'))
-        if rel['appliedCondition']['dz']:
+        elif isinstance(rel['appliedCondition']['dy'], float) and rel['appliedCondition']['dy'] > 0:
+            stiffnesses[1] = rel['appliedCondition']['dy']
+
+        if isinstance(rel['appliedCondition']['dz'], bool) and rel['appliedCondition']['dz']:
             liaisons['coeffs'].append((o[0][2], o[1][2], o[2][2], -o[0][2], -o[1][2], -o[2][2]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ', 'DX', 'DY', 'DZ'))
-        if rel['appliedCondition']['drx']:
+        elif isinstance(rel['appliedCondition']['dz'], float) and rel['appliedCondition']['dz'] > 0:
+            stiffnesses[2] = rel['appliedCondition']['dz']
+
+        if isinstance(rel['appliedCondition']['drx'], bool) and rel['appliedCondition']['drx']:
             liaisons['coeffs'].append((o[0][0], o[1][0], o[2][0], -o[0][0], -o[1][0], -o[2][0]))
             liaisons['dofs'].append(('DRX', 'DRY', 'DRZ', 'DRX', 'DRY', 'DRZ'))
-        if rel['appliedCondition']['dry']:
+        elif isinstance(rel['appliedCondition']['drx'], float) and rel['appliedCondition']['drx'] > 0:
+            stiffnesses[3] = rel['appliedCondition']['drx']
+
+        if isinstance(rel['appliedCondition']['dry'], bool) and rel['appliedCondition']['dry']:
             liaisons['coeffs'].append((o[0][1], o[1][1], o[2][1], -o[0][1], -o[1][1], -o[2][1]))
             liaisons['dofs'].append(('DRX', 'DRY', 'DRZ', 'DRX', 'DRY', 'DRZ'))
-        if rel['appliedCondition']['drz']:
+        elif isinstance(rel['appliedCondition']['dry'], float) and rel['appliedCondition']['dry'] > 0:
+            stiffnesses[4] = rel['appliedCondition']['dry']
+
+        if isinstance(rel['appliedCondition']['drz'], bool) and rel['appliedCondition']['drz']:
             liaisons['coeffs'].append((o[0][2], o[1][2], o[2][2], -o[0][2], -o[1][2], -o[2][2]))
             liaisons['dofs'].append(('DRX', 'DRY', 'DRZ', 'DRX', 'DRY', 'DRZ'))
+        elif isinstance(rel['appliedCondition']['drz'], float) and rel['appliedCondition']['drz'] > 0:
+            stiffnesses[5] = rel['appliedCondition']['drz']
+
 
         rel['liaisons'] = liaisons
+        rel['stiffnesses'] = tuple(stiffnesses)
 
     def calculateRestraints(self, conn):
         group = self.getGroupName(conn['ifcName'])
@@ -702,28 +765,51 @@ FIN()
             'coeffs': [],
             'dofs': []
         }
+        stiffnesses = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
         if not conn['appliedCondition']:
+            conn['liaisons'] = liaisons
+            conn['stiffnesses'] = tuple(stiffnesses)
             return
-        if conn['appliedCondition']['dx']:
+    
+        if isinstance(conn['appliedCondition']['dx'], bool) and conn['appliedCondition']['dx']:
             liaisons['coeffs'].append((o[0][0], o[1][0], o[2][0]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ'))
-        if conn['appliedCondition']['dy']:
+        elif isinstance(conn['appliedCondition']['dx'], float) and conn['appliedCondition']['dx'] > 0:
+            stiffnesses[0] = conn['appliedCondition']['dx']
+
+        if isinstance(conn['appliedCondition']['dy'], bool) and conn['appliedCondition']['dy']:
             liaisons['coeffs'].append((o[0][1], o[1][1], o[2][1]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ'))
-        if conn['appliedCondition']['dz']:
+        elif isinstance(conn['appliedCondition']['dy'], float) and conn['appliedCondition']['dy'] > 0:
+            stiffnesses[1] = conn['appliedCondition']['dy']
+
+        if isinstance(conn['appliedCondition']['dz'], bool) and conn['appliedCondition']['dz']:
             liaisons['coeffs'].append((o[0][2], o[1][2], o[2][2]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ'))
-        if conn['appliedCondition']['drx']:
+        elif isinstance(conn['appliedCondition']['dz'], float) and conn['appliedCondition']['dz'] > 0:
+            stiffnesses[2] = conn['appliedCondition']['dz']
+
+        if isinstance(conn['appliedCondition']['drx'], bool) and conn['appliedCondition']['drx']:
             liaisons['coeffs'].append((o[0][0], o[1][0], o[2][0]))
             liaisons['dofs'].append(('DRX', 'DRY', 'DRZ'))
-        if conn['appliedCondition']['dry']:
+        elif isinstance(conn['appliedCondition']['drx'], float) and conn['appliedCondition']['drx'] > 0:
+            stiffnesses[3] = conn['appliedCondition']['drx']
+
+        if isinstance(conn['appliedCondition']['dry'], bool) and conn['appliedCondition']['dry']:
             liaisons['coeffs'].append((o[0][1], o[1][1], o[2][1]))
             liaisons['dofs'].append(('DRX', 'DRY', 'DRZ'))
-        if conn['appliedCondition']['drz']:
+        elif isinstance(conn['appliedCondition']['dry'], float) and conn['appliedCondition']['dry'] > 0:
+            stiffnesses[4] = conn['appliedCondition']['dry']
+
+        if isinstance(conn['appliedCondition']['drz'], bool) and conn['appliedCondition']['drz']:
             liaisons['coeffs'].append((o[0][2], o[1][2], o[2][2]))
             liaisons['dofs'].append(('DRX', 'DRY', 'DRZ'))
+        elif isinstance(conn['appliedCondition']['drz'], float) and conn['appliedCondition']['drz'] > 0:
+            stiffnesses[5] = conn['appliedCondition']['drz']
 
         conn['liaisons'] = liaisons
+        conn['stiffnesses'] = tuple(stiffnesses)
 
 if __name__ == '__main__':
     fileNames = ['cantilever_01', 'portal_01']
