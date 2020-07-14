@@ -1,3 +1,5 @@
+from __future__ import division
+from __future__ import print_function
 import json
 import ifcopenshell
 import numpy as np
@@ -17,7 +19,7 @@ class IFC2CA:
 
             materialdb = []
             materials = list(dict.fromkeys([e['material'] for e in elements]))
-            for mat in materials:
+            for mat in [mat for mat in materials if mat]:
                 id = int(mat.split('|')[1])
                 material = self.get_material_properties(self.file.by_id(id))
                 material['relatedElements'] = [e['ifcName'] for e in elements if 'material' in e and e['material'] == mat]
@@ -25,7 +27,7 @@ class IFC2CA:
 
             profiledb = []
             profiles = list(dict.fromkeys([e['profile'] for e in elements if 'profile' in e]))
-            for prof in profiles:
+            for prof in [prof for prof in profiles if prof]:
                 id = int(prof.split('|')[1])
                 profile = self.get_profile_properties(self.file.by_id(id))
                 profile['relatedElements'] = [e['ifcName'] for e in elements if 'profile' in e and e['profile'] == prof]
@@ -44,7 +46,7 @@ class IFC2CA:
                 'warnings': self.warnings
             }
 
-            print('Model %s converted' % model.Name)
+            print('Model "%s" converted' % model.Name)
             print('Number of elements: ', len(elements))
             print('Number of connections: ', len(connections))
             print('Number of materials: ', len(materialdb))
@@ -70,12 +72,19 @@ class IFC2CA:
         if item.is_a('IfcStructuralCurveMember'):
             representation = self.get_representation(item, 'Edge')
             material_profile = self.get_material_profile(item)
-            if not representation or not material_profile:
-                print(representation, material_profile)
+            if not representation:
+                # add to warnings
                 return
+            if not material_profile:
+                #add to warnings
+                materialId = None
+                profileId = None
+            else:
+                material = material_profile.Material
+                materialId = material.is_a() + '|' + str(material.id())
+                profile = material_profile.Profile
+                profileId = profile.is_a() + '|' + str(profile.id())
 
-            material = material_profile.Material
-            profile = material_profile.Profile
             geometry = self.get_geometry(representation)
             orientation = self.get_1D_orientation(geometry, item.Axis)
             connections = self.get_connection_data(item.ConnectedBy)
@@ -107,8 +116,8 @@ class IFC2CA:
                 'predefinedType': item.PredefinedType,
                 'geometry': geometry,
                 'orientation': orientation,
-                'material': material.is_a() + '|' + str(material.id()),
-                'profile': profile.is_a() + '|' + str(profile.id()),
+                'material': materialId,
+                'profile': profileId,
                 'connections': connections
             }
 
@@ -116,8 +125,13 @@ class IFC2CA:
             representation = self.get_representation(item, 'Face')
             material = self.get_material_profile(item)
             if not representation:
-                print(representation)
+                # add to warnings
                 return
+            if not material:
+                #add to warnings
+                materialId = None
+            else:
+                materialId = material.is_a() + '|' + str(material.id())
 
             geometry = self.get_geometry(representation)
             orientation = self.get_2D_orientation(representation)
@@ -140,14 +154,14 @@ class IFC2CA:
                 'thickness': item.Thickness,
                 'geometry': geometry,
                 'orientation': orientation,
-                'material': material.is_a() + '|' + str(material.id()),
+                'material': materialId,
                 'connections': connections
             }
 
         elif item.is_a('IfcStructuralPointConnection'):
             representation = self.get_representation(item, 'Vertex')
             if not representation:
-                print(representation)
+                # add to warnings
                 return
 
             geometry = self.get_geometry(representation)
@@ -219,7 +233,7 @@ class IFC2CA:
                     return rep
 
     def get_specific_representation(self, representation, rep_id, rep_type):
-        if representation.RepresentationIdentifier == rep_id \
+        if representation.RepresentationIdentifier == rep_id or rep_id is None \
                 and representation.RepresentationType == rep_type:
             return representation
         if representation.RepresentationType == 'MappedRepresentation':
@@ -334,6 +348,7 @@ class IFC2CA:
         return {
             'ifcName': material.is_a() + '|' + str(material.id()),
             'name': material.Name,
+            'category': material.Category,
             'mechProps': mechProps,
             'commonProps':commonProps
         }
