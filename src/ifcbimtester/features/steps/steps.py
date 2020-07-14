@@ -130,13 +130,17 @@ def get_subcontext(identifier, type, target_view):
 
 # Custom MicroMVD
 
+@step('The element {id} is an {ifc_class} only')
+def step_impl(context, id, ifc_class):
+    assert IfcFile.get().by_id(id).is_a() == ifc_class
 
-@step('the element {id} is an {ifc_class}')
+
+@step('The element {id} is an {ifc_class}')
 def step_impl(context, id, ifc_class):
     assert IfcFile.get().by_id(id).is_a(ifc_class)
 
 
-@step('the element {id} should not exist because {reason}')
+@step('The element {id} should not exist because {reason}')
 def step_impl(context, id, reason):
     assert not IfcFile.get().by_id(id)
 

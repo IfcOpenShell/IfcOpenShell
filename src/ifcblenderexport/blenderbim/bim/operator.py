@@ -335,9 +335,9 @@ class QAHelper():
                     if 'Scenario: 'in source_line \
                             and bpy.context.scene.BIMProperties.scenario == source_line.strip()[len('Scenario: '):]:
                         is_in_scenario = True
-                    if is_in_scenario and source_line.strip()[0:4] == 'Then':
+                    elif is_in_scenario:
                         for line in lines:
-                            destination.write((' '*8) + line + '\n')
+                            destination.write(line + '\n')
                         is_in_scenario = False
                     destination.write(source_line)
         os.remove(filename+'~')
@@ -352,7 +352,7 @@ class ApproveClass(bpy.types.Operator):
         for object in bpy.context.selected_objects:
             index = object.BIMObjectProperties.attributes.find('GlobalId')
             if index != -1:
-                lines.append('Then the element {} is an {}'.format(
+                lines.append(' * The element {} is an {}'.format(
                     object.BIMObjectProperties.attributes[index].string_value,
                     object.name.split('/')[0]))
         QAHelper.append_to_scenario(lines)
@@ -366,7 +366,7 @@ class RejectClass(bpy.types.Operator):
     def execute(self, context):
         lines = []
         for object in bpy.context.selected_objects:
-            lines.append('Then the element {} is an {}'.format(
+            lines.append(' * The element {} is an {}'.format(
                 object.BIMObjectProperties.attributes[
                     object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
                 bpy.context.scene.BIMProperties.audit_ifc_class))
@@ -381,7 +381,7 @@ class RejectElement(bpy.types.Operator):
     def execute(self, context):
         lines = []
         for object in bpy.context.selected_objects:
-            lines.append('Then the element {} should not exist because {}'.format(
+            lines.append(' * The element {} should not exist because {}'.format(
                 object.BIMObjectProperties.attributes[
                     object.BIMObjectProperties.attributes.find('GlobalId')].string_value,
                 bpy.context.scene.BIMProperties.qa_reject_element_reason))
