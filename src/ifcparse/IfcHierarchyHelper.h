@@ -173,13 +173,16 @@ public:
 		bool found = false;
 		for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
 			T* rel = *i;
-			if (get_parent_of_relation(rel) == relating_object) {
-				IfcEntityList::ptr products = get_children_of_relation(rel);
-				products->push(related_object);
-				set_children_of_relation(rel, products);
-				found = true;
-				break;
-			}
+            try {
+                if (get_parent_of_relation(rel) == relating_object) {
+                    IfcEntityList::ptr products = get_children_of_relation(rel);
+                    products->push(related_object);
+                    set_children_of_relation(rel, products);
+                    found = true;
+                    break;
+                }
+            }
+            catch (...) { /* */ }
 		}
 		if (! found) {
 			if (! owner_hist) {
