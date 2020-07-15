@@ -46,11 +46,14 @@
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcLogger.h"
 #include "../ifcparse/Argument.h"
+#include "../ifcparse/IfcEntityList.h"
 
 #include "../ifcparse/IfcSpfStream.h"
 
+#if defined(__llvm__)
+# define my_thread_local thread_local
+#elif defined(__GNUC__)
  /* gcc doesn't know _Thread_local from C11 yet */
-#ifdef __GNUC__
 # define my_thread_local __thread
 #elif __STDC_VERSION__ >= 201112L
 # define my_thread_local _Thread_local

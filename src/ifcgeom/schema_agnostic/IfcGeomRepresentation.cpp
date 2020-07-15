@@ -40,10 +40,10 @@ ifcopenshell::geometry::Representation::Serialization::Serialization(const BRep&
 
 	for (ifcopenshell::geometry::ConversionResults::const_iterator it = brep.begin(); it != brep.end(); ++ it) {
 		if (it->hasStyle() && it->Style().diffuse) {
-			auto clr = it->Style().diffuse.get().components;
-			surface_styles_.push_back(clr[0]);
-			surface_styles_.push_back(clr[1]);
-			surface_styles_.push_back(clr[2]);
+			const auto& clr = *it->Style().diffuse.get().components;
+			surface_styles_.push_back(clr(0));
+			surface_styles_.push_back(clr(1));
+			surface_styles_.push_back(clr(2));
 		} else {
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
@@ -96,7 +96,7 @@ ifcopenshell::geometry::ConversionResultShape* ifcopenshell::geometry::Represent
 		// @todo, check
 		gp_GTrsf trsf;
 		gp_Trsf tr;
-		const auto& m = it->Placement().components;
+		const auto& m = *it->Placement().components;
 		tr.SetValues(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
@@ -244,7 +244,7 @@ bool ifcopenshell::geometry::Representation::BRep::calculate_projected_surface_a
 		// @todo check
 		gp_GTrsf trsf;
 		gp_Trsf tr;
-		const auto& m = place.components;
+		const auto& m = *place.components;
 		tr.SetValues(
 			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
