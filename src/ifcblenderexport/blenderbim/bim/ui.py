@@ -108,7 +108,7 @@ class BIM_PT_object(Panel):
                     op.qto_index = index
                     op.prop_index = index2
                 elif 'width' in prop.name.lower() \
-                        and 'length' not in [p.name for p in qto.properties]:
+                        and 'length' not in [p.name.lower() for p in qto.properties]:
                     op = row.operator('bim.get_object_length', icon='IPO_EASE_IN_OUT', text='')
                     op.qto_index = index
                     op.prop_index = index2
