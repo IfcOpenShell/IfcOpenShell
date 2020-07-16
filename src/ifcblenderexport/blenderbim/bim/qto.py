@@ -4,11 +4,17 @@ class QtoCalculator():
     def get_units(self, o, vg_index):
         return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 
+    def get_linear_length(self, o):
+        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
+        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+        return max(x, y, z)
+
     def get_length(self, o, vg_index=None):
         if vg_index is None:
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-            return x if x > y else y
+            return max(x, y)
         length = 0
         edges = [e for e in o.data.edges if (
                 vg_index in [g.group for g in o.data.vertices[e.vertices[0]].groups] and
@@ -21,7 +27,7 @@ class QtoCalculator():
     def get_width(self, o):
         x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
         y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-        return x if x < y else y
+        return min(x, y)
 
     def get_height(self, o):
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
@@ -43,9 +49,7 @@ class QtoCalculator():
         x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
         y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
-        a1 = x * z
-        a2 = y * z
-        return a1 if a1 > a2 else a2
+        return max(x * z, y * z)
 
     def get_area(self, o, vg_index=None):
         if vg_index is None:

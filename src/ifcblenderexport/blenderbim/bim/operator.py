@@ -3196,6 +3196,18 @@ class GetObjectArea(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GetObjectLinearLength(bpy.types.Operator):
+    bl_idname = 'bim.get_object_linear_length'
+    bl_label = 'Get Object Linear Length'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_linear_length(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
 class GetObjectLength(bpy.types.Operator):
     bl_idname = 'bim.get_object_length'
     bl_label = 'Get Object Length'
