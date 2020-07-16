@@ -34,7 +34,7 @@ def get_resource_path(relative_path):
 
 def run_tests(args):
     if not get_features(args):
-        print('No requirements could be found to check.')
+        print('No features could be found to check.')
         return False
     behave_args = [get_resource_path('features')]
     if args.advanced_arguments:
@@ -51,20 +51,20 @@ def get_features(args):
     if args.feature:
         shutil.copyfile(args.feature, os.path.join(
             get_resource_path('features'),
-            os.path.basename(args.feature)[0:-len('.requirement')] + '.feature'))
+            os.path.basename(args.feature)))
         return True
     if os.path.exists('features') and is_dist:
         shutil.copytree('features', get_resource_path('features'))
         has_features = True
     for f in os.listdir('.'):
-        if not f.endswith('.requirement'):
+        if not f.endswith('.feature'):
             continue
         if args.feature and args.feature != f:
             continue
         has_features = True
         shutil.copyfile(f, os.path.join(
             get_resource_path('features'),
-            os.path.basename(f)[0:-len('.requirement')] + '.feature'))
+            os.path.basename(f)))
     return has_features
 
 
@@ -125,7 +125,7 @@ class TestPurger:
             for filename in Path('features/').glob('*.feature'):
                 filenames.append(filename)
         for f in os.listdir('.'):
-            if f.endswith('.requirement'):
+            if f.endswith('.feature'):
                 filenames.append(f)
 
         for filename in filenames:
@@ -181,7 +181,7 @@ parser.add_argument(
     '-f',
     '--feature',
     type=str,
-    help='Specify a requirements feature file to test',
+    help='Specify a feature file to test',
     default='')
 parser.add_argument(
     '-a',
