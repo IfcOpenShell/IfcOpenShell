@@ -8,6 +8,7 @@ import ifcopenshell
 import tempfile
 from . import export_ifc
 from . import import_ifc
+from . import qto
 from . import cut_ifc
 from . import svgwriter
 from . import sheeter
@@ -63,7 +64,7 @@ class ExportIFC(bpy.types.Operator):
             output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
-        qto_calculator = export_ifc.QtoCalculator()
+        qto_calculator = qto.QtoCalculator()
         ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
         ifc_export_settings.logger.info('Starting export')
         ifc_exporter.export(context.selected_objects)
@@ -3026,7 +3027,7 @@ class PushRepresentation(bpy.types.Operator):
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         ifc_parser.parse([bpy.context.active_object])
-        qto_calculator = export_ifc.QtoCalculator()
+        qto_calculator = qto.QtoCalculator()
         self.ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
         self.ifc_exporter.file = ifcopenshell.file(schema=self.file.schema)
         self.ifc_exporter.create_origin()
@@ -3144,4 +3145,88 @@ class ConvertLocalToGlobal(bpy.types.Operator):
         height = z + float(bpy.context.scene.MapConversion.orthogonal_height)
 
         bpy.context.scene.cursor.location = (eastings, northings, height)
+        return {'FINISHED'}
+
+
+class GetObjectVolume(bpy.types.Operator):
+    bl_idname = 'bim.get_object_volume'
+    bl_label = 'Get Object Volume'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_volume(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
+class GetObjectFootprintArea(bpy.types.Operator):
+    bl_idname = 'bim.get_object_footprint_area'
+    bl_label = 'Get Object Footprint Area'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_footprint_area(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
+class GetObjectSideArea(bpy.types.Operator):
+    bl_idname = 'bim.get_object_side_area'
+    bl_label = 'Get Object Side Area'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_side_area(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
+class GetObjectArea(bpy.types.Operator):
+    bl_idname = 'bim.get_object_area'
+    bl_label = 'Get Object Area'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_area(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
+class GetObjectLength(bpy.types.Operator):
+    bl_idname = 'bim.get_object_length'
+    bl_label = 'Get Object Length'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_length(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
+class GetObjectWidth(bpy.types.Operator):
+    bl_idname = 'bim.get_object_width'
+    bl_label = 'Get Object Width'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_width(bpy.context.active_object), 3))
+        return {'FINISHED'}
+
+
+class GetObjectHeight(bpy.types.Operator):
+    bl_idname = 'bim.get_object_height'
+    bl_label = 'Get Object Height'
+    qto_index: bpy.props.IntProperty()
+    prop_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_height(bpy.context.active_object), 3))
         return {'FINISHED'}

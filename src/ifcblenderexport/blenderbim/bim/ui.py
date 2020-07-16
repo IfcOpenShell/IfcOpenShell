@@ -99,10 +99,45 @@ class BIM_PT_object(Panel):
             row = layout.row(align=True)
             row.prop(qto, 'name', text='')
             row.operator('bim.remove_qto', icon='X', text='').index = index
-            for prop in qto.properties:
+            for index2, prop in enumerate(qto.properties):
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
+                if 'length' in prop.name.lower():
+                    op = row.operator('bim.get_object_length', icon='IPO_EASE_IN_OUT', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'width' in prop.name.lower() \
+                        and 'length' not in [p.name for p in qto.properties]:
+                    op = row.operator('bim.get_object_length', icon='IPO_EASE_IN_OUT', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'width' in prop.name.lower():
+                    op = row.operator('bim.get_object_width', icon='IPO_EASE_IN_OUT', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'height' in prop.name.lower():
+                    op = row.operator('bim.get_object_height', icon='IPO_EASE_IN_OUT', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'area' in prop.name.lower() \
+                        and 'footprint' in prop.name.lower():
+                    op = row.operator('bim.get_object_footprint_area', icon='MESH_CIRCLE', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'area' in prop.name.lower() \
+                        and 'side' in prop.name.lower():
+                    op = row.operator('bim.get_object_side_area', icon='MESH_CIRCLE', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'area' in prop.name.lower():
+                    op = row.operator('bim.get_object_area', icon='MESH_CIRCLE', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'volume' in prop.name.lower():
+                    op = row.operator('bim.get_object_volume', icon='SPHERE', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
 
         row = layout.row()
         row.prop(props, 'material_type')
