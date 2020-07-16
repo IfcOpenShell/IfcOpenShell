@@ -103,7 +103,13 @@ class BIM_PT_object(Panel):
                 row = layout.row(align=True)
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
-                if 'length' in prop.name.lower():
+                if 'length' in prop.name.lower() \
+                        and 'width' not in [p.name.lower() for p in qto.properties] \
+                        and 'height' not in [p.name.lower() for p in qto.properties]:
+                    op = row.operator('bim.get_object_linear_length', icon='IPO_EASE_IN_OUT', text='')
+                    op.qto_index = index
+                    op.prop_index = index2
+                elif 'length' in prop.name.lower():
                     op = row.operator('bim.get_object_length', icon='IPO_EASE_IN_OUT', text='')
                     op.qto_index = index
                     op.prop_index = index2
@@ -121,7 +127,7 @@ class BIM_PT_object(Panel):
                     op.qto_index = index
                     op.prop_index = index2
                 elif 'area' in prop.name.lower() \
-                        and 'footprint' in prop.name.lower():
+                        and ('footprint' in prop.name.lower() or 'section' in prop.name.lower()):
                     op = row.operator('bim.get_object_footprint_area', icon='MESH_CIRCLE', text='')
                     op.qto_index = index
                     op.prop_index = index2

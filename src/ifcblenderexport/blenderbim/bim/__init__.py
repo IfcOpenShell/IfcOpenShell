@@ -160,6 +160,7 @@ if bpy is not None:
         operator.PropagateTextData,
         operator.PushRepresentation,
         operator.ConvertLocalToGlobal,
+        operator.GetObjectLinearLength,
         operator.GetObjectLength,
         operator.GetObjectWidth,
         operator.GetObjectHeight,
