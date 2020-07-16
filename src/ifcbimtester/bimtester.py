@@ -167,11 +167,6 @@ parser.add_argument(
     action='store_true',
     help='Purge tests of deleted elements')
 parser.add_argument(
-    '-c',
-    '--cli',
-    action='store_true',
-    help='Run without a GUI, just as a CLI')
-parser.add_argument(
     '-r',
     '--report',
     action='store_true',
@@ -196,64 +191,11 @@ parser.add_argument(
     default='')
 args = parser.parse_args()
 
-if args.cli:
-    if args.purge:
-        TestPurger().purge()
-    elif args.report:
-        generate_report(args)
-    else:
-        run_tests(args)
-    print('# All tasks are complete :-)')
-    sys.exit()
-
-import tkinter
-import tkinter.filedialog
-import tkinter.messagebox
-
-class Application(tkinter.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master = master
-        self.master.title('BIMTester')
-        self.pack()
-        self.create_widgets()
-        self.directory = None
-
-    def create_widgets(self):
-        self.top_frame = tkinter.Frame(self, padx=5, pady=5)
-        self.top_frame.pack(side='top')
-        self.bottom_frame = tkinter.Frame(self, padx=5, pady=5)
-        self.bottom_frame.pack(side='bottom')
-
-        self.description = tkinter.Label(self.top_frame)
-        self.description['text'] = 'BIMTester'
-        self.description.pack(side='top')
-
-        self.browse = tkinter.Button(self.bottom_frame)
-        self.browse['text'] = 'Load Directory'
-        self.browse['command'] = self.load_file
-        self.browse.pack(side='left')
-
-        self.execute = tkinter.Button(self.bottom_frame)
-        self.execute['text'] = 'Check Requirements'
-        self.execute['command'] = self.check_requirements
-        self.execute.pack(side='right')
-
-    def load_file(self):
-        self.directory = tkinter.filedialog.askdirectory(parent=root, title='Choose a directory')
-        if self.directory:
-            os.chdir(self.directory)
-
-    def check_requirements(self):
-        if not self.directory:
-            tkinter.messagebox.showerror(message='Please select a directory first.')
-            return
-        if run_tests(args):
-            generate_report(args)
-            webbrowser.open(os.path.join(self.directory, 'report/'))
-        else:
-            tkinter.messagebox.showerror(message='No requirements were found or they were not able to be checked.')
-
-root = tkinter.Tk()
-app = Application(master=root)
-app.mainloop()
+if args.purge:
+    TestPurger().purge()
+elif args.report:
+    generate_report(args)
+else:
+    run_tests(args)
+print('# All tasks are complete :-)')
+sys.exit()
