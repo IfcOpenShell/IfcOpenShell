@@ -113,6 +113,8 @@ class MaterialCreator():
                 continue
             elif 'surface-style-' in material:
                 material = material.split('-')[2]
+            if len(material) > 63: # Blender material names are up to 63 characters
+                material = material[0:63]
             material_to_slot[i] = slots.index(material)
 
         if len(mesh.polygons) == len(mesh['ios_material_ids']):
