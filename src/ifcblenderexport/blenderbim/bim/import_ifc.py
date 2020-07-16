@@ -305,6 +305,8 @@ class IfcImporter():
         self.profile_code('Create project')
         self.create_classifications()
         self.profile_code('Create classifications')
+        self.create_constraints()
+        self.profile_code('Create constraints')
         self.create_document_information()
         self.profile_code('Create doc info')
         self.create_document_references()
@@ -1398,6 +1400,22 @@ class IfcImporter():
         for reference in references:
             results.extend(self.file.get_inverse(reference))
         return results
+
+    def create_constraints(self):
+        for element in self.file.by_type('IfcObjective'):
+            constraint = bpy.context.scene.BIMProperties.constraints.add()
+            data_map = {
+                'name': 'Name',
+                'description': 'Description',
+                'constraint_grade': 'ConstraintGrade',
+                'constraint_source': 'ConstraintSource',
+                'user_defined_grade': 'UserDefinedGrade',
+                'objective_qualifier': 'ObjectiveQualifier',
+                'user_defined_qualifier': 'UserDefinedQualifier',
+            }
+            for key, value in data_map.items():
+                if hasattr(element, value) and getattr(element, value):
+                    setattr(constraint, key, getattr(element, value))
 
     def create_document_information(self):
         for element in self.file.by_type('IfcDocumentInformation'):
