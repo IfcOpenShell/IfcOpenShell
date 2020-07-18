@@ -181,8 +181,11 @@ public:
                     found = true;
                     break;
                 }
-            }
-            catch (...) { /* */ }
+            } catch (std::exception& e) {
+				Logger::Error(e);
+			} catch (...) {
+				Logger::Error("Unknown error in addRelatedObject()");
+			}
 		}
 		if (! found) {
 			if (! owner_hist) {
