@@ -2347,7 +2347,10 @@ class IfcExporter():
         return spline.bezier_points if spline.bezier_points else spline.points
 
     def create_edge(self, curve):
-        points = self.get_spline_points(curve.splines[0])
+        if hasattr(curve, 'splines'):
+            points = self.get_spline_points(curve.splines[0])
+        else:
+            points = curve.vertices
         if not points:
             return
         return self.file.createIfcEdge(
