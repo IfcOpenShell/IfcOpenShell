@@ -991,6 +991,7 @@ class BIMProperties(PropertyGroup):
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
     export_schema: EnumProperty(items=[('IFC4', 'IFC4', ''), ('IFC2X3', 'IFC2X3', '')], name='IFC Schema')
     export_has_representations: BoolProperty(name="Export Representations", default=True)
+    export_should_guess_quantities: BoolProperty(name="Export with Guessed Quantities", default=False)
     export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment", default=False)
     import_should_ignore_site_coordinates: BoolProperty(name="Import Ignoring Site Coordinates", default=False)
     import_should_ignore_building_coordinates: BoolProperty(name="Import Ignoring Building Coordinates", default=False)

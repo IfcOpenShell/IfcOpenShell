@@ -63,9 +63,9 @@ class ExportIFC(bpy.types.Operator):
         else:
             output_file = bpy.path.ensure_ext(self.filepath, '.ifc')
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        ifc_parser = export_ifc.IfcParser(ifc_export_settings)
         qto_calculator = qto.QtoCalculator()
-        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
+        ifc_parser = export_ifc.IfcParser(ifc_export_settings, qto_calculator)
+        ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser)
         ifc_export_settings.logger.info('Starting export')
         ifc_exporter.export(context.selected_objects)
         ifc_export_settings.logger.info('Export finished in {:.2f} seconds'.format(time.time() - start))
@@ -3025,10 +3025,10 @@ class PushRepresentation(bpy.types.Operator):
         logger = logging.getLogger('ExportIFC')
         output_file = 'tmp.ifc'
         ifc_export_settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
-        ifc_parser = export_ifc.IfcParser(ifc_export_settings)
-        ifc_parser.parse([bpy.context.active_object])
         qto_calculator = qto.QtoCalculator()
-        self.ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser, qto_calculator)
+        ifc_parser = export_ifc.IfcParser(ifc_export_settings, qto_calculator)
+        ifc_parser.parse([bpy.context.active_object])
+        self.ifc_exporter = export_ifc.IfcExporter(ifc_export_settings, ifc_parser)
         self.ifc_exporter.file = ifcopenshell.file(schema=self.file.schema)
         self.ifc_exporter.create_origin()
         self.ifc_exporter.create_rep_context()
@@ -3148,97 +3148,16 @@ class ConvertLocalToGlobal(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GetObjectVolume(bpy.types.Operator):
-    bl_idname = 'bim.get_object_volume'
-    bl_label = 'Get Object Volume'
+class GuessQuantity(bpy.types.Operator):
+    bl_idname = 'bim.guess_quantity'
+    bl_label = 'Guess Quantity'
     qto_index: bpy.props.IntProperty()
     prop_index: bpy.props.IntProperty()
 
     def execute(self, context):
         qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_volume(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectFootprintArea(bpy.types.Operator):
-    bl_idname = 'bim.get_object_footprint_area'
-    bl_label = 'Get Object Footprint Area'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_footprint_area(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectSideArea(bpy.types.Operator):
-    bl_idname = 'bim.get_object_side_area'
-    bl_label = 'Get Object Side Area'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_side_area(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectArea(bpy.types.Operator):
-    bl_idname = 'bim.get_object_area'
-    bl_label = 'Get Object Area'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_area(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectLinearLength(bpy.types.Operator):
-    bl_idname = 'bim.get_object_linear_length'
-    bl_label = 'Get Object Linear Length'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_linear_length(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectLength(bpy.types.Operator):
-    bl_idname = 'bim.get_object_length'
-    bl_label = 'Get Object Length'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_length(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectWidth(bpy.types.Operator):
-    bl_idname = 'bim.get_object_width'
-    bl_label = 'Get Object Width'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_width(bpy.context.active_object), 3))
-        return {'FINISHED'}
-
-
-class GetObjectHeight(bpy.types.Operator):
-    bl_idname = 'bim.get_object_height'
-    bl_label = 'Get Object Height'
-    qto_index: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties[self.prop_index].string_value = str(round(qto_calculator.get_height(bpy.context.active_object), 3))
+        props = bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties
+        prop = props[self.prop_index]
+        prop.string_value = str(round(qto_calculator.guess_quantity(
+            prop.name, [p.name for p in props], bpy.context.active_object), 3))
         return {'FINISHED'}

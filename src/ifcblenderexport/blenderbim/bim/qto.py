@@ -1,6 +1,33 @@
 from mathutils import Vector
 
 class QtoCalculator():
+    def guess_quantity(self, prop_name, alternative_prop_names, obj):
+        prop_name = prop_name.lower()
+        alternative_prop_names = [p.lower() for p in alternative_prop_names]
+        if 'length' in prop_name \
+                and 'width' not in alternative_prop_names \
+                and 'height' not in alternative_prop_names:
+            return self.get_linear_length(obj)
+        elif 'length' in prop_name:
+            return self.get_length(obj)
+        elif 'width' in prop_name \
+                and 'length' not in alternative_prop_names:
+            return self.get_length(obj)
+        elif 'width' in prop_name:
+            return self.get_width(obj)
+        elif 'height' in prop_name:
+            return self.get_height(obj)
+        elif 'area' in prop_name \
+                and ('footprint' in prop_name or 'section' in prop_name):
+            return self.get_footprint_area(obj)
+        elif 'area' in prop_name \
+                and 'side' in prop_name:
+            return self.get_side_area(obj)
+        elif 'area' in prop_name:
+            return self.get_area(obj)
+        elif 'volume' in prop_name:
+            return self.get_volume(obj)
+
     def get_units(self, o, vg_index):
         return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 

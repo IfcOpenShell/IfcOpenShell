@@ -104,44 +104,17 @@ class BIM_PT_object(Panel):
                 row.prop(prop, 'name', text='')
                 row.prop(prop, 'string_value', text='')
                 if 'length' in prop.name.lower() \
-                        and 'width' not in [p.name.lower() for p in qto.properties] \
-                        and 'height' not in [p.name.lower() for p in qto.properties]:
-                    op = row.operator('bim.get_object_linear_length', icon='IPO_EASE_IN_OUT', text='')
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif 'length' in prop.name.lower():
-                    op = row.operator('bim.get_object_length', icon='IPO_EASE_IN_OUT', text='')
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif 'width' in prop.name.lower() \
-                        and 'length' not in [p.name.lower() for p in qto.properties]:
-                    op = row.operator('bim.get_object_length', icon='IPO_EASE_IN_OUT', text='')
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif 'width' in prop.name.lower():
-                    op = row.operator('bim.get_object_width', icon='IPO_EASE_IN_OUT', text='')
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif 'height' in prop.name.lower():
-                    op = row.operator('bim.get_object_height', icon='IPO_EASE_IN_OUT', text='')
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif 'area' in prop.name.lower() \
-                        and ('footprint' in prop.name.lower() or 'section' in prop.name.lower()):
-                    op = row.operator('bim.get_object_footprint_area', icon='MESH_CIRCLE', text='')
-                    op.qto_index = index
-                    op.prop_index = index2
-                elif 'area' in prop.name.lower() \
-                        and 'side' in prop.name.lower():
-                    op = row.operator('bim.get_object_side_area', icon='MESH_CIRCLE', text='')
+                        or 'width' in prop.name.lower() \
+                        or 'height' in prop.name.lower():
+                    op = row.operator('bim.guess_quantity', icon='IPO_EASE_IN_OUT', text='')
                     op.qto_index = index
                     op.prop_index = index2
                 elif 'area' in prop.name.lower():
-                    op = row.operator('bim.get_object_area', icon='MESH_CIRCLE', text='')
+                    op = row.operator('bim.guess_quantity', icon='MESH_CIRCLE', text='')
                     op.qto_index = index
                     op.prop_index = index2
                 elif 'volume' in prop.name.lower():
-                    op = row.operator('bim.get_object_volume', icon='SPHERE', text='')
+                    op = row.operator('bim.guess_quantity', icon='SPHERE', text='')
                     op.qto_index = index
                     op.prop_index = index2
 
@@ -1483,6 +1456,8 @@ class BIM_PT_mvd(Panel):
 
         row = layout.row()
         row.prop(bim_properties, 'export_has_representations')
+        row = layout.row()
+        row.prop(bim_properties, 'export_should_guess_quantities')
         row = layout.row()
         row.prop(bim_properties, 'import_should_import_type_representations')
         row = layout.row()

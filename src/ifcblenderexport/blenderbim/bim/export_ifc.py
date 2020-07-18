@@ -20,8 +20,9 @@ class ArrayModifier:
 
 
 class IfcParser():
-    def __init__(self, ifc_export_settings):
+    def __init__(self, ifc_export_settings, qto_calculator):
         self.data_dir = ifc_export_settings.data_dir
+        self.qto_calculator = qto_calculator
 
         self.ifc_export_settings = ifc_export_settings
 
@@ -447,6 +448,9 @@ class IfcParser():
             relationships = self.rel_defines_by_pset
         if is_qto:
             psets_qtos = obj.BIMObjectProperties.qtos
+            if not psets_qtos and self.ifc_export_settings.should_guess_quantities:
+                self.add_automatic_qtos(product['class'], obj)
+                psets_qtos = obj.BIMObjectProperties.qtos
             results = self.qtos
             relationships = self.rel_defines_by_qto
         for item in psets_qtos:
@@ -460,6 +464,37 @@ class IfcParser():
                 'attributes': { 'Name': item.name }
             }
             relationships.setdefault(item_key, []).append(product)
+
+    def add_automatic_qtos(self, ifc_class, obj):
+        qto_names = self.get_applicable_qtos(ifc_class)
+        for name in qto_names:
+            if name not in schema.ifc.qtos:
+                continue
+            has_automatic_value = False
+            props = schema.ifc.qtos[name]['HasPropertyTemplates'].keys()
+            guessed_values = {}
+            for prop_name in props:
+                value = self.qto_calculator.guess_quantity(prop_name, props, obj)
+                if value:
+                    guessed_values[prop_name] = value
+                    has_automatic_value = True
+            if has_automatic_value:
+                qto = obj.BIMObjectProperties.qtos.add()
+                qto.name = name
+                for prop_name in props:
+                    prop = qto.properties.add()
+                    prop.name = prop_name
+                    if prop_name in guessed_values:
+                        prop.string_value = str(guessed_values[prop_name])
+
+    def get_applicable_qtos(self, ifc_class):
+        results = []
+        empty = ifcopenshell.file()
+        element = empty.create_entity(ifc_class)
+        for ifc_class, qto_names in schema.ifc.applicable_qtos.items():
+            if element.is_a(ifc_class):
+                results.extend(qto_names)
+        return results
 
     def get_product_relating_structure(self, product, obj):
         relating_structure = obj.BIMObjectProperties.relating_structure
@@ -1205,11 +1240,10 @@ class IfcParser():
 
 
 class IfcExporter():
-    def __init__(self, ifc_export_settings, ifc_parser, qto_calculator):
+    def __init__(self, ifc_export_settings, ifc_parser):
         self.template_file = '{}template.ifc'.format(ifc_export_settings.schema_dir)
         self.ifc_export_settings = ifc_export_settings
         self.ifc_parser = ifc_parser
-        self.qto_calculator = qto_calculator
 
     def export(self, selected_objects):
         self.schema = self.ifc_export_settings.schema
@@ -2063,31 +2097,6 @@ class IfcExporter():
                 'MappedRepresentation',
                 [mapped_item])
 
-    def calculate_quantities(self, qto_name, obj):
-        quantities = []
-        for index, vg in enumerate(obj.vertex_groups):
-            if qto_name not in vg.name:
-                continue
-            if 'length' in vg.name.lower():
-                quantity = float(self.qto_calculator.get_length(obj, index))
-                quantities.append(self.file.createIfcQuantityLength(
-                    vg.name.split('/')[1], None,
-                    self.ifc_parser.units['length']['ifc'], quantity))
-            elif 'area' in vg.name.lower():
-                quantity = float(self.qto_calculator.get_area(obj, index))
-                quantities.append(self.file.createIfcQuantityArea(
-                    vg.name.split('/')[1], None,
-                    self.ifc_parser.units['area']['ifc'], quantity))
-            elif 'volume' in vg.name.lower():
-                quantity = float(self.qto_calculator.get_volume(obj, index))
-                quantities.append(self.file.createIfcQuantityVolume(
-                    vg.name.split('/')[1], None,
-                    self.ifc_parser.units['volume']['ifc'], quantity))
-            if not quantity:
-                self.ifc_export_settings.logger.warning('The calculated quantity {} for {} is zero.'.format(
-                    vg.name, obj.name))
-        return quantities
-
     def create_ifc_axis_2_placement_3d(self, point, up, forward):
         return self.file.createIfcAxis2Placement3D(
             self.create_cartesian_point(point.x, point.y, point.z),
@@ -2854,6 +2863,7 @@ class IfcExportSettings:
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
         self.should_use_presentation_style_assignment = False
+        self.should_guess_quantities = False
         self.context_tree = []
 
     @staticmethod
@@ -2867,6 +2877,7 @@ class IfcExportSettings:
         settings.has_representations = scene_bim.export_has_representations
         settings.schema = scene_bim.export_schema
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
+        settings.should_guess_quantities = scene_bim.export_should_guess_quantities
         settings.context_tree = []
         for ifc_context in ['model', 'plan']:
             if getattr(scene_bim, 'has_{}_context'.format(ifc_context)):
