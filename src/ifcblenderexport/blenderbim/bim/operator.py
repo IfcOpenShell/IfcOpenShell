@@ -2815,7 +2815,7 @@ class ExportIfcCsv(bpy.types.Operator):
         ifc_csv = ifccsv.IfcCsv()
         ifc_csv.output = self.filepath
         ifc_csv.attributes = [a.name for a in bpy.context.scene.BIMProperties.csv_attributes]
-        ifc_csv.export(ifc_selector_parser.results)
+        ifc_csv.export(ifc_selector_parser.file, ifc_selector_parser.results)
         return {'FINISHED'}
 
 

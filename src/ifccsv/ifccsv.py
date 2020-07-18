@@ -176,7 +176,7 @@ class IfcAttributeExtractor():
             return getattr(element, key)
         elif '.' not in key:
             return None
-        pset_name, prop = key.split('.')
+        pset_name, prop = key.split('.', 1)
         pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
         if pset:
             return IfcAttributeExtractor.get_pset_property(pset, prop)
@@ -192,11 +192,11 @@ class IfcAttributeExtractor():
         if '.' not in key:
             return
         if key[0:3] == 'Qto':
-            qto, prop = key.split('.')
+            qto, prop = key.split('.', 1)
             qto = IfcAttributeExtractor.get_element_qto(element, qto_name)
             if qto:
                 return IfcAttributeExtractor.set_qto_property(qto, prop, value)
-        pset_name, prop = key.split('.')
+        pset_name, prop = key.split('.', 1)
         pset = IfcAttributeExtractor.get_element_pset(element, pset_name)
         if pset:
             return IfcAttributeExtractor.set_pset_property(pset, prop, value)
@@ -257,13 +257,20 @@ class IfcCsv():
         self.attributes = []
         self.output = ''
 
-    def export(self, elements):
+    def export(self, ifc_file, elements):
+        self.ifc_file = ifc_file
         for element in elements:
             result = []
             if hasattr(element, 'GlobalId'):
                 result.append(element.GlobalId)
             else:
                 result.append(None)
+
+            for index, attribute in enumerate(self.attributes):
+                if '*' in attribute:
+                    self.attributes.extend(self.get_wildcard_attributes(attribute))
+                    del(self.attributes[index])
+
             for attribute in self.attributes:
                 result.append(IfcAttributeExtractor.get_element_key(element, attribute))
             self.results.append(result)
@@ -275,6 +282,19 @@ class IfcCsv():
             writer.writerow(header)
             for row in self.results:
                 writer.writerow(row)
+
+    def get_wildcard_attributes(self, attribute):
+        results = set()
+        pset_qto_name = attribute.split('.', 1)[0]
+        for element in self.ifc_file.by_type('IfcPropertySet') + self.ifc_file.by_type('IfcElementQuantity'):
+            print(element)
+            if element.Name != pset_qto_name:
+                continue
+            if element.is_a('IfcPropertySet'):
+                results.update([p.Name for p in element.HasProperties])
+            else:
+                results.update([p.Name for p in element.Quantities])
+        return ['{}.{}'.format(pset_qto_name, n) for n in results]
 
     def Import(self, ifc):
         ifc_file = ifcopenshell.open(ifc)
@@ -338,7 +358,7 @@ if __name__ == '__main__':
         ifc_csv = IfcCsv()
         ifc_csv.output = args.csv
         ifc_csv.attributes = args.arguments if args.arguments else []
-        ifc_csv.export(ifc_selector_parser.results)
+        ifc_csv.export(ifc_selector_parser.file, ifc_selector_parser.results)
     elif getattr(args, 'import'):
         ifc_csv = IfcCsv()
         ifc_csv.output = args.csv
