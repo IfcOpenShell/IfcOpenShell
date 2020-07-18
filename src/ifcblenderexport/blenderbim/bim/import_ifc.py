@@ -1824,7 +1824,7 @@ class IfcImporter():
                     ios_materials.append(mat.name)
             mesh['ios_materials'] = ios_materials
             mesh['ios_material_ids'] = geometry.material_ids
-            mesh.BIMMeshProperties.geometry_type = self.get_geometry_type(element)
+            mesh.BIMMeshProperties.geometry_type = str(self.get_geometry_type(element))
             return mesh
         except:
             self.ifc_import_settings.logger.error('Could not create mesh for {}'.format(element))
