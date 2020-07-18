@@ -384,6 +384,16 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire
 	for (IfcSchema::IfcCompositeCurveSegment::list::it it = segments->begin(); it != segments->end(); ++it) {
 
 		IfcSchema::IfcCurve* curve = (*it)->ParentCurve();
+
+		// The type of ParentCurve is IfcCurve, but the documentation says:
+		// ParentCurve: The *bounded curve* which defines the geometry of the segment. 
+		// At least let's exclude IfcLine as an infinite linear segment
+		// definitely does not make any sense.
+		if (curve->as<IfcSchema::IfcLine>()) {
+			Logger::Warning("IfcLine not allowed as ParentCurve of segment", *it);
+			continue;
+		}
+
 		TopoDS_Wire segment;
 
 		if (!convert_wire(curve, segment)) {
