@@ -132,17 +132,29 @@ def get_subcontext(identifier, type, target_view):
 
 @step('The element {id} is an {ifc_class} only')
 def step_impl(context, id, ifc_class):
-    assert IfcFile.get().by_id(id).is_a() == ifc_class
+    try:
+        element = IfcFile.get().by_id(id)
+    except:
+        assert False, f'The element with {id} could not be found.'
+    assert element.is_a() == ifc_class, 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
 
 
 @step('The element {id} is an {ifc_class}')
 def step_impl(context, id, ifc_class):
-    assert IfcFile.get().by_id(id).is_a(ifc_class)
+    try:
+        element = IfcFile.get().by_id(id)
+    except:
+        assert False, f'The element with {id} could not be found.'
+    assert element.is_a(ifc_class), 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
 
 
 @step('The element {id} should not exist because {reason}')
 def step_impl(context, id, reason):
-    assert not IfcFile.get().by_id(id)
+    try:
+        element = IfcFile.get().by_id(id)
+    except:
+        return
+    assert False, 'This element\'s existence should be reevaluated.'
 
 
 @step(u'there is at least one {ifc_class} element')
