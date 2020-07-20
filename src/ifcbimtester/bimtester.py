@@ -5,7 +5,6 @@
 
 from behave.__main__ import main as behave_main
 import behave.formatter.pretty # Needed for pyinstaller to package it
-import xml.etree.ElementTree as ET
 import ifcopenshell
 import pystache
 import os
@@ -16,16 +15,14 @@ import csv
 import re
 import shutil
 import webbrowser
+import datetime
 from pathlib import Path
-
 
 try:
     # PyInstaller creates a temp folder and stores path in _MEIPASS
     base_path = sys._MEIPASS
-    is_dist = True
 except Exception:
-    base_path = os.path.abspath(".")
-    is_dist = False
+    base_path = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_resource_path(relative_path):
@@ -39,23 +36,28 @@ def run_tests(args):
     behave_args = [get_resource_path('features')]
     if args.advanced_arguments:
         behave_args.extend(args.advanced_arguments.split())
-    else:
-        behave_args.extend(['--junit', '--junit-directory', args.junit_directory])
+    elif not args.console:
+        behave_args.extend(['--format', 'json.pretty', '--outfile', 'report/report.json'])
     behave_main(behave_args)
     print('# All tests are finished.')
     return True
 
 
 def get_features(args):
-    has_features = False
+    current_path = os.path.abspath(".")
+    features_dir = get_resource_path('features')
+    for f in os.listdir(features_dir):
+        if f.endswith('.feature'):
+            os.remove(os.path.join(features_dir, f))
     if args.feature:
         shutil.copyfile(args.feature, os.path.join(
             get_resource_path('features'),
             os.path.basename(args.feature)))
         return True
-    if os.path.exists('features') and is_dist:
+    if os.path.exists('features'):
         shutil.copytree('features', get_resource_path('features'))
-        has_features = True
+        return True
+    has_features = False
     for f in os.listdir('.'):
         if not f.endswith('.feature'):
             continue
@@ -72,45 +74,52 @@ def generate_report(args):
     print('# Generating HTML reports now.')
     if not os.path.exists('report'):
         os.mkdir('report')
-    if not os.path.exists(args.junit_directory):
-        os.mkdir(args.junit_directory)
-    for f in os.listdir(args.junit_directory):
-        if not f.endswith('.xml'):
-            continue
-        print(f'Processing {f} ...')
-        root = ET.parse('{}{}'.format(args.junit_directory, f)).getroot()
+    report_path = 'report/report.json'
+    if not os.path.exists(report_path):
+        return print('No report data was found.')
+    report = json.loads(open(report_path).read())
+    for feature in report:
+        file_name = os.path.basename(feature['location']).split(':')[0]
         data = {
-            'report_name': root.get('name'),
-            'testcases': []
+            'file_name': file_name,
+            'time': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'name': feature['name'],
+            'description': feature['description'],
+            'is_success': feature['status'] == 'passed',
+            'scenarios': []
             }
-        for testcase in root.findall('testcase'):
+        for scenario in feature['elements']:
             steps = []
-            system_out = testcase.findall('system-out')[0].text.splitlines()
-            for line in system_out:
-                if line.strip()[0:4] in ['Give', 'Then', 'When', 'And '] \
-                        or line.strip()[0:2] == '* ':
-                    is_success = True if ' ... passed in ' in line else False
-                    name, time = line.strip().split(' ... ')
-                    if name[0:2] == '* ':
-                        name = name[2:]
-                    steps.append({
-                        'name': name,
-                        'time': time,
-                        'is_success': is_success
-                    })
+            total_duration = 0
+            for step in scenario['steps']:
+                total_duration += step['result']['duration']
+                name = step['name']
+                if 'arguments' in step['match']:
+                    for a in step['match']['arguments']:
+                        name = name.replace(a['value'], '<b>' + a['value'] + '</b>')
+                steps.append({
+                    'name': name,
+                    'time': round(step['result']['duration'], 2),
+                    'is_success': step['result']['status'] == 'passed',
+                    'error_message': None if step['result']['status'] == 'passed' else step['result']['error_message']
+                })
             total_passes = len([s for s in steps if s['is_success'] == True])
             total_steps = len(steps)
             pass_rate = round((total_passes / total_steps) * 100)
-            data['testcases'].append({
-                'name': testcase.get('name'),
-                'is_success': testcase.get('status') == 'passed',
-                'time': testcase.get('time'),
+            data['scenarios'].append({
+                'name': scenario['name'],
+                'is_success': scenario['status'] == 'passed',
+                'time': round(total_duration, 2),
                 'steps': steps,
                 'total_passes': total_passes,
                 'total_steps': total_steps,
                 'pass_rate': pass_rate
                 })
-        with open('report/{}.html'.format(f[0:-4]), 'w') as out:
+        data['total_passes'] = sum([s['total_passes'] for s in data['scenarios']])
+        data['total_steps'] = sum([s['total_steps'] for s in data['scenarios']])
+        data['pass_rate'] = round((data['total_passes'] / data['total_steps']) * 100)
+
+        with open('report/{}.html'.format(file_name), 'w') as out:
             with open(get_resource_path('features/template.html')) as template:
                 out.write(pystache.render(template.read(), data))
 
@@ -172,11 +181,10 @@ parser.add_argument(
     action='store_true',
     help='Generate a HTML report')
 parser.add_argument(
-    '-j',
-    '--junit-directory',
-    type=str,
-    help='Specify your own JUnit directory',
-    default='junit/')
+    '-c',
+    '--console',
+    action='store_true',
+    help='Show results in the console')
 parser.add_argument(
     '-f',
     '--feature',
@@ -198,4 +206,3 @@ elif args.report:
 else:
     run_tests(args)
 print('# All tasks are complete :-)')
-sys.exit()
