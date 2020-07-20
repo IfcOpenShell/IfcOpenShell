@@ -158,7 +158,7 @@ Usage examples
 
 **Using the IfcOpenShell Python interface**
 
-    $ wget -O duplex.zip http://projects.buildingsmartalliance.org/files/?artifact_id=4278
+    $ wget -O duplex.zip https://portal.nibs.org/files/wl/?id=4DsTgHFQAcOXzFetxbpRCECPbbfUqpgo
     $ unzip duplex.zip
     $ python
     >>> import ifcopenshell
