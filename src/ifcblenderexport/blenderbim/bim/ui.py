@@ -1348,6 +1348,14 @@ class BIM_PT_qa(Panel):
 
             row = layout.row(align=True)
             row.prop(bim_properties, "scenario")
+        else:
+            return
+
+        row = layout.row()
+        row.operator("bim.execute_bim_tester")
+
+        row = layout.row()
+        row.operator("bim.bim_tester_purge")
 
         layout.label(text="Quality Auditing:")
 

@@ -3161,3 +3161,39 @@ class GuessQuantity(bpy.types.Operator):
         prop.string_value = str(round(qto_calculator.guess_quantity(
             prop.name, [p.name for p in props], bpy.context.active_object), 3))
         return {'FINISHED'}
+
+
+class ExecuteBIMTester(bpy.types.Operator):
+    bl_idname = 'bim.execute_bim_tester'
+    bl_label = 'Execute BIMTester'
+
+    def execute(self, context):
+        import bimtester
+        filename = os.path.join(
+            bpy.context.scene.BIMProperties.features_dir,
+            bpy.context.scene.BIMProperties.features_file + '.feature')
+        cwd = os.getcwd()
+        os.chdir(bpy.context.scene.BIMProperties.features_dir)
+        bimtester.run_tests({'feature': filename, 'advanced_arguments': None, 'console': False})
+        bimtester.generate_report()
+        webbrowser.open(os.path.join(
+            bpy.context.scene.BIMProperties.features_dir,
+            'report', bpy.context.scene.BIMProperties.features_file + '.feature.html'))
+        os.chdir(cwd)
+        return {'FINISHED'}
+
+
+class BIMTesterPurge(bpy.types.Operator):
+    bl_idname = 'bim.bim_tester_purge'
+    bl_label = 'Purge Tests'
+
+    def execute(self, context):
+        import bimtester
+        filename = os.path.join(
+            bpy.context.scene.BIMProperties.features_dir,
+            bpy.context.scene.BIMProperties.features_file + '.feature')
+        cwd = os.getcwd()
+        os.chdir(bpy.context.scene.BIMProperties.features_dir)
+        bimtester.TestPurger().purge()
+        os.chdir(cwd)
+        return {'FINISHED'}
