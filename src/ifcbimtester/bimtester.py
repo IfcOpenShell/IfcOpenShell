@@ -34,9 +34,9 @@ def run_tests(args):
         print('No features could be found to check.')
         return False
     behave_args = [get_resource_path('features')]
-    if args.advanced_arguments:
-        behave_args.extend(args.advanced_arguments.split())
-    elif not args.console:
+    if args['advanced_arguments']:
+        behave_args.extend(args['advanced_arguments'].split())
+    elif not args['console']:
         behave_args.extend(['--format', 'json.pretty', '--outfile', 'report/report.json'])
     behave_main(behave_args)
     print('# All tests are finished.')
@@ -49,10 +49,10 @@ def get_features(args):
     for f in os.listdir(features_dir):
         if f.endswith('.feature'):
             os.remove(os.path.join(features_dir, f))
-    if args.feature:
-        shutil.copyfile(args.feature, os.path.join(
+    if args['feature']:
+        shutil.copyfile(args['feature'], os.path.join(
             get_resource_path('features'),
-            os.path.basename(args.feature)))
+            os.path.basename(args['feature'])))
         return True
     if os.path.exists('features'):
         shutil.copytree('features', get_resource_path('features'))
@@ -61,7 +61,7 @@ def get_features(args):
     for f in os.listdir('.'):
         if not f.endswith('.feature'):
             continue
-        if args.feature and args.feature != f:
+        if args['feature'] and args['feature'] != f:
             continue
         has_features = True
         shutil.copyfile(f, os.path.join(
@@ -70,7 +70,7 @@ def get_features(args):
     return has_features
 
 
-def generate_report(args):
+def generate_report():
     print('# Generating HTML reports now.')
     if not os.path.exists('report'):
         os.mkdir('report')
@@ -197,12 +197,12 @@ parser.add_argument(
     type=str,
     help='Specify your own arguments to Python\'s Behave',
     default='')
-args = parser.parse_args()
+args = vars(parser.parse_args())
 
-if args.purge:
+if args['purge']:
     TestPurger().purge()
-elif args.report:
-    generate_report(args)
+elif args['report']:
+    generate_report()
 else:
     run_tests(args)
 print('# All tasks are complete :-)')

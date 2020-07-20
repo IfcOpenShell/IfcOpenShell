@@ -161,6 +161,8 @@ if bpy is not None:
         operator.PushRepresentation,
         operator.ConvertLocalToGlobal,
         operator.GuessQuantity,
+        operator.ExecuteBIMTester,
+        operator.BIMTesterPurge,
         prop.StrProperty,
         prop.Variable,
         prop.Role,

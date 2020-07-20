@@ -182,6 +182,35 @@ endif
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/collision.py
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/ifcclash.py
 
+	# Required by BIMTester
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/c8/4b/d0a8c23b6c8985e5544ea96d27105a273ea22051317f850c2cdbf2029fe4/behave-1.2.6.tar.gz
+	cd dist/working && tar -xzvf behave*
+	cd dist/working/behave-1.2.6/ && cp -r behave ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by behave
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/f4/65/220bb4075fddb09d5b3ea2c1c1fa66c1c72be9361ec187aab50fa161e576/parse-1.15.0.tar.gz
+	cd dist/working && tar -xzvf parse*
+	cd dist/working/parse-1.15.0/ && cp parse.py ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by behave
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/2e/79/81bebd1b0446d46733db99d74543b4bb80646ef4c988584bae0862e706bc/parse_type-0.5.2.tar.gz
+	cd dist/working && tar -xzvf parse_type*
+	cd dist/working/parse_type-0.5.2/ && cp -r parse_type ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Supplies BIMTester functionality
+	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester.py
+	mkdir dist/blenderbim/libs/site/packages/features/
+	mkdir dist/blenderbim/libs/site/packages/features/steps/
+	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/environment.py
+	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/template.html
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/steps.py
+
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccsv/ifccsv.py
 
