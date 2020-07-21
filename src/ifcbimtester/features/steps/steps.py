@@ -154,7 +154,7 @@ def step_impl(context, id, reason):
         element = IfcFile.get().by_id(id)
     except:
         return
-    assert False, 'This element\'s existence should be reevaluated.'
+    assert False, 'This element {} should be reevaluated.'.format(element)
 
 
 @step(u'there is at least one {ifc_class} element')
