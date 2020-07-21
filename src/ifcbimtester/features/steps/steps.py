@@ -158,7 +158,7 @@ def step_impl(context, id, predefined_type):
         return
     if element.PredefinedType == 'USERDEFINED' and element.ObjectType == 'predefined_type':
         return
-    assert False, 'The element {} has a predefined type of {} and an object type of instead of {}.'.format(element, element.PredefinedType, element.ObjectType, predefined_type)
+    assert False, 'The element {} has a predefined type of {} and an object type of {} instead of {}.'.format(element, element.PredefinedType, element.ObjectType, predefined_type)
 
 
 @step('The element {id} should not exist because {reason}')
