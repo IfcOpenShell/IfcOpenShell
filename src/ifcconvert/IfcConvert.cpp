@@ -443,7 +443,7 @@ int main(int argc, char** argv) {
         print_options(generic_options.add(geom_options).add(serializer_options));
         return EXIT_SUCCESS;
     } else if (!vmap.count("input-file")) {
-        std::cerr << "[Error] Input file not specified" << std::endl;
+        cerr_ << "[Error] Input file not specified" << std::endl;
         print_usage();
         return EXIT_FAILURE;
     }
@@ -455,7 +455,7 @@ int main(int argc, char** argv) {
 		} else if (log_format == "json") {
 			Logger::OutputFormat(Logger::FMT_JSON);
 		} else {
-			std::cerr << "[Error] --log-format should be either plain or json" << std::endl;
+			cerr_ << "[Error] --log-format should be either plain or json" << std::endl;
 			print_usage();
 			return EXIT_FAILURE;
 		}
@@ -466,7 +466,7 @@ int main(int argc, char** argv) {
         if (num_filters) {
             Logger::Notice(boost::lexical_cast<std::string>(num_filters) + " filters read from specifified file.");
         } else {
-            std::cerr << "[Error] No filters read from specifified file.\n";
+            cerr_ << "[Error] No filters read from specifified file.\n";
             return EXIT_FAILURE;
         }
     }
@@ -489,8 +489,8 @@ int main(int argc, char** argv) {
         try {
             IfcGeom::set_default_style_file(IfcUtil::path::to_utf8(default_material_filename));
         } catch (const std::exception& e) {
-            std::cerr << "[Error] Could not read default material file:" << std::endl;
-            std::cerr << e.what() << std::endl;
+            cerr_ << "[Error] Could not read default material file:" << std::endl;
+            cerr_ << e.what() << std::endl;
             return EXIT_FAILURE;
         }
     }
@@ -1393,11 +1393,11 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 				for (; old_progress < progress; ++old_progress) {
 					std::cout << ".";
 					if (stderr_progress)
-						std::cerr << ".";
+						cerr_ << ".";
 				}
 				std::cout << std::flush;
 				if (stderr_progress)
-					std::cerr << std::flush;
+					cerr_ << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -1410,11 +1410,11 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		for (; old_progress < 100; ++old_progress) {
 			std::cout << ".";
 			if (stderr_progress)
-				std::cerr << ".";
+				cerr_ << ".";
 		}
 		std::cout << std::flush;
 		if (stderr_progress)
-			std::cerr << std::flush;
+			cerr_ << std::flush;
 	} else {
 		Logger::Status("\rDone writing quantities for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
