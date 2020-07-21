@@ -148,6 +148,19 @@ def step_impl(context, id, ifc_class):
     assert element.is_a(ifc_class), 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
 
 
+@step('The element {id} is further defined as a {predefined_type}')
+def step_impl(context, id, predefined_type):
+    try:
+        element = IfcFile.get().by_id(id)
+    except:
+        assert False, f'The element with {id} could not be found.'
+    if element.PredefinedType == predefined_type:
+        return
+    if element.PredefinedType == 'USERDEFINED' and element.ObjectType == 'predefined_type':
+        return
+    assert False, 'The element {} has a predefined type of {} and an object type of instead of {}.'.format(element, element.PredefinedType, element.ObjectType, predefined_type)
+
+
 @step('The element {id} should not exist because {reason}')
 def step_impl(context, id, reason):
     try:
