@@ -246,7 +246,13 @@ namespace IfcGeom {
 		typedef P Precision;
 		typedef PP PlacementPrecision;
 
+		boost::optional<bool> initialization_outcome_;
+
 		bool initialize() {
+			if (initialization_outcome_) {
+				return *initialization_outcome_;
+			}
+
 			try {
 				initUnits();
 			} catch (const std::exception& e) {
@@ -364,27 +370,25 @@ namespace IfcGeom {
 
 			if (representations->size() == 0) {
 				Logger::Warning("No representations encountered, aborting");
-				return false;
-			}
-
-			representation_iterator = representations->begin();
-			ifcproducts.reset();
-
-			done = 0;
-			total = representations->size();
-
-			if (num_threads_ != 1) {
-				collect();
-				process_concurrently();
-
-				return all_processed_elements_.size();
+				initialization_outcome_ = false;
 			} else {
-				if (!create()) {
-					return false;
+				representation_iterator = representations->begin();
+				ifcproducts.reset();
+
+				done = 0;
+				total = representations->size();
+
+				if (num_threads_ != 1) {
+					collect();
+					process_concurrently();
+
+					initialization_outcome_ = !all_processed_elements_.empty();
+				} else {
+					initialization_outcome_ = create();
 				}
 			}
-			
-			return true;
+
+			return *initialization_outcome_;
 		}
 
 		void collect() {
