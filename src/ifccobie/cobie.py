@@ -357,7 +357,7 @@ class IfcCobieParser():
                 'CreatedOn': self.get_created_on_from_history(assembly.OwnerHistory),
                 'SheetName': 'Assembly',
                 'ParentName': self.get_object_name(assembly.RelatingObject),
-                'ChildNames': ','.join([o.Name for o in assembly.RelatedObjects]),
+                'ChildNames': ','.join([o.Name if o.Name else '' for o in assembly.RelatedObjects]),
                 'AssemblyType': 'n/a', # I don't understand this field
                 'ExtSystem': self.get_ext_system_from_history(assembly.OwnerHistory),
                 'ExtObject': self.get_ext_object(assembly),
