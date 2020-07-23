@@ -1,5 +1,6 @@
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico bimtester.py`
 
+import os
 import time
 import argparse
 import datetime
@@ -1095,19 +1096,11 @@ class CobieCsvWriter(CobieWriter):
         import csv
         super().write()
         for sheet, data in self.sheet_data.items():
-            with open('{}.csv'.format(sheet), 'w', newline='', encoding='utf-8') as file:
+            with open(os.path.join(self.filename, '{}.csv'.format(sheet)), 'w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
                 writer.writerow(data['headers'])
                 for row in data['rows']:
                     writer.writerow(row)
-
-    def write_file_old(self, csv_name, data, primary_key, fieldnames):
-        with open('{}.csv'.format(csv_name), 'w', newline='', encoding='utf-8') as file:
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
-            for name, row in data.items():
-                row[primary_key] = name
-                writer.writerow(row)
 
 
 class CobieXlsWriter(CobieWriter):
@@ -1187,6 +1180,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Converts COBie IFC MVD into its spreadsheet equivalent')
     parser.add_argument('input', type=str, help='Specify an IFC file to process')
+    parser.add_argument('output', type=str, help='The output directory for CSV or filename for other formats')
     parser.add_argument(
         '-l',
         '--log',
@@ -1199,12 +1193,6 @@ if __name__ == '__main__':
         type=str,
         help='Choose which format to export in (csv/xlsx)',
         default='csv')
-    parser.add_argument(
-        '-o',
-        '--output',
-        type=str,
-        help='The output filename excluding the extension. Not required for CSV.',
-        default='output')
     args = vars(parser.parse_args())
 
     print('Processing IFC file ...')
@@ -1225,7 +1213,7 @@ if __name__ == '__main__':
     elif args['format'] == 'ods':
         writer = CobieOdsWriter(parser, args['output'])
     else:
-        writer = CobieCsvWriter(parser)
+        writer = CobieCsvWriter(parser, args['output'])
     writer.write()
 
     logger.info('Finished conversion in {}s'.format(time.time() - start))
