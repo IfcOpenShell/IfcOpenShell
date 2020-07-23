@@ -1403,6 +1403,7 @@ class BIM_PT_library(Panel):
         layout.row().prop(scene.BIMLibrary, 'version_date')
         layout.row().prop(scene.BIMLibrary, 'description')
 
+
 class BIM_PT_diff(Panel):
     bl_label = "IFC Diff"
     bl_idname = "BIM_PT_diff"
@@ -1437,6 +1438,34 @@ class BIM_PT_diff(Panel):
 
         row = layout.row()
         row.operator('bim.execute_ifc_diff')
+
+
+class BIM_PT_cobie(Panel):
+    bl_label = "IFC COBie"
+    bl_idname = "BIM_PT_cobie"
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        scene = context.scene
+        props = scene.BIMProperties
+
+        row = layout.row(align=True)
+        row.prop(props, "cobie_ifc_file")
+        row.operator("bim.select_cobie_ifc_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        op = row.operator('bim.execute_ifc_cobie', text='CSV')
+        op.file_format = 'csv'
+        op = row.operator('bim.execute_ifc_cobie', text='ODS')
+        op.file_format = 'ods'
+        op = row.operator('bim.execute_ifc_cobie', text='XLSX')
+        op.file_format = 'xlsx'
 
 
 class BIM_PT_mvd(Panel):

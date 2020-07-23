@@ -672,7 +672,7 @@ class OpenBcfBimSnippetReference(bpy.types.Operator):
         if bpy.context.scene.BCFProperties.topic_snippet_is_external:
             webbrowser.open(bpy.context.scene.BCFProperties.topic_snippet_reference)
             return {'FINISHED'}
-        webbrowser.open('file:///' + os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bcfplugin.util.getBcfDir(),
             self.topic_guid,
             bpy.context.scene.BCFProperties.topic_snippet_reference
@@ -693,7 +693,7 @@ class OpenBcfDocumentReference(bpy.types.Operator):
         if doc.is_external:
             webbrowser.open(uri)
             return {'FINISHED'}
-        webbrowser.open('file:///' + os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bcfplugin.util.getBcfDir(),
             topic_guid, uri))
         return {'FINISHED'}
@@ -1288,6 +1288,55 @@ class SelectExternalMaterialDir(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class SelectCobieIfcFile(bpy.types.Operator):
+    bl_idname = "bim.select_cobie_ifc_file"
+    bl_label = "Select COBie IFC File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.cobie_ifc_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class ExecuteIfcCobie(bpy.types.Operator):
+    bl_idname = 'bim.execute_ifc_cobie'
+    bl_label = 'Execute IFCCOBie'
+    file_format: bpy.props.StringProperty()
+
+    def execute(self, context):
+        from cobie import IfcCobieParser
+        output_dir = os.path.dirname(bpy.context.scene.BIMProperties.cobie_ifc_file)
+        output = os.path.join(output_dir, 'output')
+        log = os.path.join(output_dir, 'cobie.log')
+
+        logging.basicConfig(
+            filename=log, filemode='a', level=logging.DEBUG)
+        logger = logging.getLogger('IFCtoCOBie')
+        parser = IfcCobieParser(logger)
+        parser.parse(bpy.context.scene.BIMProperties.cobie_ifc_file)
+        if self.file_format == 'xlsx':
+            from cobie import CobieXlsWriter
+            writer = CobieXlsWriter(parser, output)
+            writer.write()
+            webbrowser.open('file://' + output + '.' + self.file_format)
+        elif self.file_format == 'ods':
+            from cobie import CobieOdsWriter
+            writer = CobieOdsWriter(parser, output)
+            writer.write()
+            webbrowser.open('file://' + output + '.' + self.file_format)
+        else:
+            from cobie import CobieCsvWriter
+            writer = CobieCsvWriter(parser, output_dir)
+            writer.write()
+            webbrowser.open('file://' + output_dir)
+        return {'FINISHED'}
+
 
 class SelectDiffJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_json_file"
@@ -1947,7 +1996,7 @@ class OpenView(bpy.types.Operator):
     bl_label = 'Open View'
 
     def execute(self, context):
-        webbrowser.open('file:///' + os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'diagrams',
             bpy.context.scene.DocProperties.available_views + '.svg'))
         return {'FINISHED'}
@@ -2094,7 +2143,7 @@ class OpenSheet(bpy.types.Operator):
     bl_label = 'Open Sheet'
 
     def execute(self, context):
-        webbrowser.open('file:///' + os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'sheets',
             bpy.context.scene.DocProperties.available_sheets + '.svg'))
         return {'FINISHED'}
@@ -2105,7 +2154,7 @@ class OpenCompiledSheet(bpy.types.Operator):
     bl_label = 'Open Compiled Sheet'
 
     def execute(self, context):
-        webbrowser.open('file:///' + os.path.join(
+        webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'build',
             bpy.context.scene.DocProperties.available_sheets,
             bpy.context.scene.DocProperties.available_sheets + '.svg'))

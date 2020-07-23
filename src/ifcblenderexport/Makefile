@@ -157,12 +157,14 @@ endif
 	cp -r dist/working/*.xsd dist/blenderbim/libs/site/packages/bcfplugin/schemas/
 	rm -rf dist/working
 
+	# Required by IFCCSV and ifcopenshell.util.selector
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/18/4d/8d522136c37d9e1ea74062b41b8d5e1318ebf45063ae46ce72ed60af223b/lark-parser-0.8.5.tar.gz
 	cd dist/working && tar -xzvf lark-parser*
 	cp -r dist/working/lark-parser-0.8.5/lark dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
+	# Required by IFCClash
 ifeq ($(PLATFORM), linux)
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/0c/fa/00d85f893b02289e2942849d97f8818dde8e2111182e825fb3a735677791/python_fcl-0.0.12-cp37-cp37m-manylinux1_x86_64.whl
@@ -171,6 +173,7 @@ ifeq ($(PLATFORM), linux)
 	rm -rf dist/working
 endif
 
+	# Required by IFCClash
 ifeq ($(PLATFORM), win)
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/19/e6/6e9f33fb59e8f27c0e1592bd26e644bc92b85c942b072b2d3854105d5887/python_fcl_win32-0.0.12.post3-py3-none-win_amd64.whl
@@ -179,6 +182,7 @@ ifeq ($(PLATFORM), win)
 	rm -rf dist/working
 endif
 
+	# Provides IFCClash functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/collision.py
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcclash/ifcclash.py
 
@@ -203,7 +207,7 @@ endif
 	cd dist/working/parse_type-0.5.2/ && cp -r parse_type ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Supplies BIMTester functionality
+	# Provides BIMTester functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/bimtester.py
 	mkdir dist/blenderbim/libs/site/packages/features/
 	mkdir dist/blenderbim/libs/site/packages/features/steps/
@@ -211,7 +215,34 @@ endif
 	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/template.html
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/steps.py
 
+	# Required by IFCCOBie for XLSX support
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/0c/bc/82d6783f83f65f56d8b77d052773c4a2f952fa86385f0cd54e1e006658d7/XlsxWriter-1.2.9.tar.gz
+	cd dist/working && tar -xzvf XlsxWriter*
+	cd dist/working/XlsxWriter-1.2.9/ && cp -r xlsxwriter ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by IFCCOBie for ODS support
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/97/73/8ade73f6749177003f7ce3304f524774adda96e6aaab30ea79fd8fda7934/odfpy-1.4.1.tar.gz
+	cd dist/working && tar -xzvf odfpy*
+	cd dist/working/odfpy-1.4.1/ && cp -r odf ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Required by odfpy
+	mkdir dist/working
+	cd dist/working && wget https://files.pythonhosted.org/packages/a4/5f/f8aa58ca0cf01cbcee728abc9d88bfeb74e95e6cb4334cfd5bed5673ea77/defusedxml-0.6.0.tar.gz
+	cd dist/working && tar -xzvf defusedxml*
+	cd dist/working/defusedxml-0.6.0/ && cp -r defusedxml ../../blenderbim/libs/site/packages/
+	rm -rf dist/working
+
+	# Provides IFCCOBie functionality
+	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccobie/cobie.py
+
+	# Provides IFCDiff functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcdiff/ifcdiff.py
+
+	# Provides IFCCSV functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccsv/ifccsv.py
 
 	cd dist/blenderbim && sed -i "s/999999/$(VERSION)/" __init__.py
