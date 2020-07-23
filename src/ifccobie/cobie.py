@@ -973,18 +973,27 @@ class CobieWriter():
         self.parser = parser
         self.sheets = []
         self.sheet_data = {}
+        self.colours = {
+            'r': 'fdff8e', # Required
+            'i': 'fdcd94', # Internal reference
+            'e': 'cd95ff', # External reference
+            'o': 'cdffc8', # Optional
+            's': 'c0c0c0', # Secondary information
+            'p': '9ccaff', # Project specific
+            'n': '000000' # Not used
+            }
 
     def write(self):
         self.sheets = ['Contact', 'Facility', 'Floor', 'Space', 'Zone', 'Type',
             'Component', 'System', 'Assembly', 'Connection', 'Spare',
             'Resource', 'Job', 'Impact', 'Document', 'Attribute', 'Coordinate',
-            'Issue', 'Component', 'System', '']
+            'Issue']
         self.write_data('Contact', self.parser.contacts, 'Email',
             ['Email', 'CreatedBy', 'CreatedOn', 'Category', 'Company',
             'Phone', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'Department', 'OrganizationCode', 'GivenName', 'FamilyName',
             'Street', 'PostalBox', 'Town', 'StateRegion', 'PostalCode',
-            'Country'])
+            'Country'], 'ririrreeeoooooooooo')
         self.write_data('Facility', self.parser.facilities, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ProjectName',
             'SiteName', 'LinearUnits', 'AreaUnits', 'VolumeUnits', 'CostUnit',
@@ -992,17 +1001,17 @@ class CobieWriter():
             'ExternalProjectIdentifier', 'ExternalSiteObject',
             'ExternalSiteIdentifier', 'ExternalFacilityObject',
             'ExternalFacilityIdentifier', 'Description', 'ProjectDescription',
-            'SiteDescription', 'Phase'])
+            'SiteDescription', 'Phase'], 'ririrriiiireeeeeeeoooo')
         self.write_data('Floor', self.parser.floors, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'])
+            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'], 'ririeeeooo')
         self.write_data('Space', self.parser.spaces, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'FloorName',
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier', 'RoomTag',
-            'UsableHeight', 'GrossArea', 'NetArea'])
+            'UsableHeight', 'GrossArea', 'NetArea'], 'ririireeeoooo')
         self.write_data('Zone', self.parser.zones, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SpaceNames',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',], 'ririieeeo')
         self.write_data('Type', self.parser.types, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Description',
             'AssetType', 'Manufacturer', 'ModelNumber',
@@ -1013,63 +1022,64 @@ class CobieWriter():
             'NominalWidth', 'NominalHeight', 'ModelReference', 'Shape', 'Size',
             'Color', 'Finish', 'Grade', 'Material', 'Constituents', 'Features',
             'AccessibilityPerformance', 'CodePerformance',
-            'SustainabilityPerformance',])
+            'SustainabilityPerformance',], 'riririoooooooeeeooooooooooooooooooo')
         self.write_data('Component', self.parser.components, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'TypeName', 'Space',
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
-            'TagNumber', 'BarCode', 'AssetIdentifier',])
+            'TagNumber', 'BarCode', 'AssetIdentifier',], 'ririireeeoooooo')
         self.write_data('System', self.parser.systems, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',], 'ririieeeo')
         self.write_data('Assembly', self.parser.assemblies, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'SheetName', 'ParentName',
             'ChildNames', 'AssemblyType', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'Description',])
+            'ExtIdentifier', 'Description',], 'rirrrrreeeo')
         self.write_data('Connection', self.parser.connections, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'ConnectionType', 'SheetName',
             'RowName1', 'RowName2', 'RealizingElement', 'PortName1',
             'PortName2', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description',])
+            'Description',], 'ririiiiiiieeeo')
         self.write_data('Spare', self.parser.spares, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'TypeName',
             'Suppliers', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description', 'SetNumber', 'PartNumber',])
+            'Description', 'SetNumber', 'PartNumber',], 'ririiieeeooo')
         self.write_data('Resource', self.parser.resources, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description',])
+            'ExtObject', 'ExtIdentifier', 'Description',], 'ririeeeo')
         self.write_data('Job', self.parser.jobs, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Status', 'TypeName',
             'Description', 'Duration', 'DurationUnit', 'Start', 'TaskStartUnit',
             'Frequency', 'FrequencyUnit', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',])
+            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',], 'ririiirriririeeeoii')
         self.write_data('Impact', self.parser.impacts, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'ImpactType', 'ImpactStage',
             'SheetName', 'RowName', 'Value', 'Unit', 'LeadInTime', 'Duration',
             'LeadOutTime', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description',])
+            'Description',], 'ririiiirioooeeeo')
         self.write_data('Document', self.parser.documents, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ApprovalBy',
             'Stage', 'SheetName', 'RowName', 'Directory', 'File', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',])
+            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',], 'ririiiiirreeeoo')
         self.write_data('Attribute', self.parser.attributes, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
             'RowName', 'Value', 'Unit', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'Description', 'AllowedValues',])
+            'ExtIdentifier', 'Description', 'AllowedValues',], 'ririiirreeeoo')
         self.write_data('Coordinate', self.parser.coordinates, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
             'RowName', 'CoordinateXAxis', 'CoordinateYAxis', 'CoordinateZAxis',
             'ExtSystem', 'ExtObject', 'ExtIdentifier', 'ClockwiseRotation',
-            'ElevationalRotation', 'YawRotation',])
+            'ElevationalRotation', 'YawRotation',], 'ririiooooeeeooo')
         self.write_data('Issue', self.parser.issues, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Type', 'Risk', 'Chance',
             'Impact', 'SheetName1', 'RowName1', 'SheetName2', 'RowName2',
             'Description', 'Owner', 'Mitigation', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier',])
+            'ExtIdentifier',], 'ririooooooooooeee')
 
-    def write_data(self, sheet, data, primary_key, fieldnames):
+    def write_data(self, sheet, data, primary_key, fieldnames, colours):
         self.sheet_data[sheet] = {
             'headers': fieldnames,
+            'colours': colours,
             'rows': []
         }
         for name, row in data.items():
@@ -1104,15 +1114,6 @@ class CobieXlsWriter(CobieWriter):
     def write(self):
         from xlsxwriter import Workbook
         super().write()
-        self.colours = {
-            'r': 'fdff8e', # Required
-            'i': 'fdcd94', # Internal reference
-            'e': 'cd95ff', # External reference
-            'o': 'cdffc8', # Optional
-            's': 'c0c0c0', # Secondary information
-            'p': '9ccaff', # Project specific
-            'n': '000000' # Not used
-            }
         self.workbook = Workbook(self.filename + '.xlsx')
 
         self.cell_formats = {}
@@ -1120,27 +1121,11 @@ class CobieXlsWriter(CobieWriter):
             self.cell_formats[key] = self.workbook.add_format()
             self.cell_formats[key].set_bg_color(value)
 
-        self.write_worksheet('Contact', self.colours['r'], 'ririrreeeoooooooooo')
-        self.write_worksheet('Facility', self.colours['r'], 'ririrriiiireeeeeeeoooo')
-        self.write_worksheet('Floor', self.colours['r'], 'ririeeeooo')
-        self.write_worksheet('Space', self.colours['r'], 'ririireeeoooo')
-        self.write_worksheet('Zone', self.colours['r'], 'ririieeeo')
-        self.write_worksheet('Type', self.colours['r'], 'riririoooooooeeeooooooooooooooooooo')
-        self.write_worksheet('Component', self.colours['r'], 'ririireeeoooooo')
-        self.write_worksheet('System', self.colours['r'], 'ririieeeo')
-        self.write_worksheet('Assembly', self.colours['r'], 'rirrrrreeeo')
-        self.write_worksheet('Connection', self.colours['r'], 'ririiiiiiieeeo')
-        self.write_worksheet('Spare', self.colours['r'], 'ririiieeeooo')
-        self.write_worksheet('Resource', self.colours['r'], 'ririeeeo')
-        self.write_worksheet('Job', self.colours['r'], 'ririiirriririeeeoii')
-        self.write_worksheet('Impact', self.colours['r'], 'ririiiirioooeeeo')
-        self.write_worksheet('Document', self.colours['r'], 'ririiiiirreeeoo')
-        self.write_worksheet('Attribute', self.colours['r'], 'ririiirreeeoo')
-        self.write_worksheet('Coordinate', self.colours['r'], 'ririiooooeeeooo')
-        self.write_worksheet('Issue', self.colours['r'], 'ririooooooooooeee')
+        for sheet in self.sheets:
+            self.write_worksheet(sheet)
         self.workbook.close()
 
-    def write_worksheet(self, name, tab_colour, fill_map):
+    def write_worksheet(self, name):
         worksheet = self.workbook.add_worksheet(name)
         r = 0
         c = 0
@@ -1152,9 +1137,50 @@ class CobieXlsWriter(CobieWriter):
         for row in self.sheet_data[name]['rows']:
             c = 0
             for col in row:
-                cell = worksheet.write(r, c, col, self.cell_formats[fill_map[c]])
+                cell = worksheet.write(r, c, col, self.cell_formats[self.sheet_data[name]['colours'][c]])
                 c += 1
             r += 1
+
+
+class CobieOdsWriter(CobieWriter):
+    def write(self):
+        from odf.opendocument import OpenDocumentSpreadsheet
+        from odf.style import Style, TableCellProperties
+        super().write()
+        self.doc = OpenDocumentSpreadsheet()
+
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            style = Style(name=key, family='table-cell')
+            style.addElement(TableCellProperties(backgroundcolor='#' + value))
+            self.doc.automaticstyles.addElement(style)
+            self.cell_formats[key] = style
+
+        for sheet in self.sheets:
+            self.write_table(sheet)
+        self.doc.save(self.filename, True)
+
+    def write_table(self, name):
+        from odf.table import Table, TableRow, TableCell
+        from odf.text import P
+
+        table = Table(name=name)
+        tr = TableRow()
+        for header in self.sheet_data[name]['headers']:
+            tc = TableCell(valuetype='string', stylename='s')
+            tc.addElement(P(text=header))
+            tr.addElement(tc)
+        table.addElement(tr)
+        for row in self.sheet_data[name]['rows']:
+            tr = TableRow()
+            c = 0
+            for col in row:
+                tc = TableCell(valuetype='string', stylename=self.sheet_data[name]['colours'][c])
+                tc.addElement(P(text=col))
+                tr.addElement(tc)
+                c += 1
+            table.addElement(tr)
+        self.doc.spreadsheet.addElement(table)
 
 
 if __name__ == '__main__':
@@ -1196,6 +1222,8 @@ if __name__ == '__main__':
 
     if args['format'] == 'xlsx':
         writer = CobieXlsWriter(parser, args['output'])
+    elif args['format'] == 'ods':
+        writer = CobieOdsWriter(parser, args['output'])
     else:
         writer = CobieCsvWriter(parser)
     writer.write()
