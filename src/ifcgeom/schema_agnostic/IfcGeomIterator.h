@@ -430,6 +430,7 @@ namespace ifcopenshell { namespace geometry {
 			geometry_conversion_result* task = nullptr;
 			while (task_iterator_ != tasks_.end()) {
 				task = &*task_iterator_++;
+				done++;
 				create_element(converter_, settings_, task);
 				if (task->elements.empty()) {
 					task = nullptr;

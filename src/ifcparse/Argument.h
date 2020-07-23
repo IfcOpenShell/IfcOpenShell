@@ -27,8 +27,7 @@
 #include <algorithm>
 
 #include "ifc_parse_api.h"
-
-#include "../ifcparse/IfcEntityList.h"
+#include "../ifcparse/ArgumentType.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/dynamic_bitset.hpp>
@@ -37,9 +36,11 @@ class Argument;
 class IfcEntityList;
 class IfcEntityListList;
 class IfcEntityInstanceData;
+
 namespace IfcParse {
 	class IfcFile;
 }
+
 namespace IfcUtil {
 	class IfcBaseClass;
 
@@ -61,11 +62,11 @@ public:
 	virtual operator std::vector<double>() const;
 	virtual operator std::vector<std::string>() const;
 	virtual operator std::vector<boost::dynamic_bitset<> >() const;
-	virtual operator IfcEntityList::ptr() const;
+	virtual operator boost::shared_ptr<IfcEntityList>() const;
 
 	virtual operator std::vector< std::vector<int> >() const;
 	virtual operator std::vector< std::vector<double> >() const;
-	virtual operator IfcEntityListList::ptr() const;
+	virtual operator boost::shared_ptr<IfcEntityListList>() const;
 
 	virtual bool isNull() const = 0;
 	virtual unsigned int size() const = 0;

@@ -428,7 +428,7 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         logger.info( "\rInstalled %s     \n" % (name,))
     else:
         logger.info( "\rConfiguring %s..." % (name,))
-        run([bash, "./bootstrap.sh"], cwd=extract_dir)
+        run([bash, "./bootstrap.sh"] + (['--with-toolset=clang'] if "clang" in os.environ.get('CXX', '') else []), cwd=extract_dir)
         logger.info("\rBuilding %s...   " % (name,))
         run(["./b2", "-j%s" % (IFCOS_NUM_BUILD_PROCS,)]+build_tool_args, cwd=extract_dir)
         logger.info("\rInstalling %s... " % (name,))
@@ -662,11 +662,12 @@ if "boost" in targets:
             "--with-thread",
             "--with-date_time",
             "--with-iostreams",
-            "link={LINK_TYPE}".format(**locals())
+            "link={LINK_TYPE}".format(**locals()),
                                                                          ] + \
             BOOST_ADDRESS_MODEL                                            + \
             list(map(str_concat("cxxflags"), CXXFLAGS.strip().split(' '))) + \
             list(map(str_concat("linkflags"), LDFLAGS.strip().split(' '))) + \
+            (["toolset=clang"] if "clang" in os.environ.get('CXX', '') else []) +\
             ["stage", "-s", "NO_BZIP2=1"],
         download_url="http://downloads.sourceforge.net/project/boost/boost/{BOOST_VERSION}/".format(**locals()),
         download_name="boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2".format(**locals())

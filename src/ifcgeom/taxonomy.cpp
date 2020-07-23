@@ -3,6 +3,10 @@
 using namespace ifcopenshell::geometry::taxonomy;
 
 namespace {
+	bool compare(const trimmed_curve& a, const trimmed_curve& b);
+
+	bool compare(const collection& a, const collection& b);
+
 	template <typename T>
 	bool compare(const eigen_base<T>& t, const eigen_base<T>& u) {
 		auto t_begin = t.components->data();
@@ -83,10 +87,6 @@ namespace {
 		return a_lt_b ?
 			-1 : (!b_lt_a ? 0 : 1);
 	}
-
-	bool compare(const trimmed_curve& a, const trimmed_curve& b);
-
-	bool compare(const collection& a, const collection& b);
 
 	bool compare(const extrusion& a, const extrusion& b) {
 		// @todo extrusions can also have non-identity matrices right? perhaps it's time

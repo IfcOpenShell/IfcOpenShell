@@ -260,6 +260,7 @@ namespace {
 	struct point_projection_visitor_ {
 		taxonomy::point3 p;
 		double u;
+		typedef void result_type;
 
 		void operator()(const taxonomy::line& c) {
 			project_onto_curve(c, p, u);
@@ -281,6 +282,7 @@ namespace {
 	struct point_projection_visitor {
 		taxonomy::item* curve;
 		double u;
+		typedef void result_type;
 		
 		void operator()(const taxonomy::point3& p) {
 			point_projection_visitor_ v{ p };

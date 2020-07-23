@@ -23,9 +23,8 @@
 #include "ifc_parse_api.h"
 
 #include "../ifcparse/IfcEntityInstanceData.h"
+#include "../ifcparse/Argument.h"
 #include "../ifcparse/IfcSchema.h"
-
-class Argument;
 
 namespace IfcUtil {
 
