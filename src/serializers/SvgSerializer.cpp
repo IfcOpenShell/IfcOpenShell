@@ -465,7 +465,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			// No intersection with bounding box, fail early
 			if (zmin > cut_z || zmax < cut_z) continue;
 
-			po = &start_path(storey, nameElement(o));
+			po = &start_path(storey, nameElement(storey, o));
 
 			// Create a horizontal cross section 1 meter above the bottom point of the shape		
 			const gp_Pln pln(gp_Pnt(0, 0, cut_z), gp::DZ());
@@ -686,28 +686,41 @@ namespace {
 	}
 }
 
-std::string SvgSerializer::nameElement(const IfcGeom::Element<real_t>* elem) {
-	return nameElement_({ {"id", object_id(elem)}, {"class", elem->type()}, {"data-name", elem->name()} });
+std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* storey, const IfcGeom::Element<real_t>* elem) {
+	return nameElement_({
+		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : GeometrySerializer::object_id(elem)},
+		{"class", elem->type()},
+		{"data-name", elem->name()},
+		{"data-guid", elem->guid()}
+	});
+}
+
+std::string SvgSerializer::idElement(const IfcUtil::IfcBaseEntity* elem) {
+	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
+	const std::string name =
+		(settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
+			? static_cast<std::string>(*elem->get("GlobalId"))
+			: ((settings().get(SerializerSettings::USE_ELEMENT_NAMES) && !elem->get("Name")->isNull()))
+			? static_cast<std::string>(*elem->get("Name"))
+			: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
+	return type + "-" + name;
 }
 
 std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 	if (elem == 0) { return ""; }
 
 	const std::string& entity = elem->declaration().name();
-	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
 	std::string ifc_name;
 	if (!elem->get("Name")->isNull()) {
 		ifc_name = (std::string) *elem->get("Name");
 	}
 
-    const std::string name =  
-		(settings().get(SerializerSettings::USE_ELEMENT_GUIDS)
-			? static_cast<std::string>(*elem->get("GlobalId"))
-			: ((settings().get(SerializerSettings::USE_ELEMENT_NAMES) && !elem->get("Name")->isNull()))
-				? static_cast<std::string>(*elem->get("Name"))
-				: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
-
-	return nameElement_({ {"id", type + "-" + name}, {"class", entity}, {"data-name", ifc_name} });
+	return nameElement_({
+		{"id", idElement(elem)}, 
+		{"class", entity}, 
+		{"data-name", ifc_name},
+		{"data-guid", *elem->get("GlobalId")}
+	});
 }
 
 void SvgSerializer::setFile(IfcParse::IfcFile* f) {
@@ -748,6 +761,7 @@ void SvgSerializer::setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey) {
 }
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
+	with_section_heights_from_storey_ = true;
 	section_heights.emplace();
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
 	const double lu = file->getUnit("LENGTHUNIT").second;
