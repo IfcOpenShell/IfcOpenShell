@@ -1,30 +1,10 @@
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico bimtester.py`
 
-print('# IFC COBie')
-print('''
-IFC COBie is free software developed under the IfcOpenShell and BlenderBIM
-projects. IFC COBie will convert IFC files, ideally produced with the COBie MVD
-in mind, into a spreadsheet format for inspection. To learn more, visit:
-
- - http://ifcopenshell.org
- - https://blenderbim.org
-
-To run, a `input.ifc` file is required in the current folder.
-''')
-
-value = input('Would you like to run IFC COBie? [Y/n] ')
-if value == 'n':
-    quit()
-
-print('Loading libraries ...')
-
 import time
+import argparse
 import datetime
 import ifcopenshell
 import logging
-import csv
-from xlsxwriter import Workbook
-
 
 class IfcCobieParser():
     def __init__(self, logger):
@@ -119,8 +99,8 @@ class IfcCobieParser():
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
-    def parse(self):
-        self.file = ifcopenshell.open('input.ifc')
+    def parse(self, filename):
+        self.file = ifcopenshell.open(filename)
         self.get_contacts()
         self.get_facilities()
         self.get_floors()
@@ -987,18 +967,25 @@ class IfcCobieParser():
                 return address.ElectronicMailAddresses[0]
         self.logger.warning('An email address was not found for {}'.format(person_or_org))
 
-class CobieCsvWriter():
-    def __init__(self, parser):
+class CobieWriter():
+    def __init__(self, parser, filename=None):
+        self.filename = filename
         self.parser = parser
+        self.sheets = []
+        self.sheet_data = {}
 
     def write(self):
-        self.write_file('Contact', self.parser.contacts, 'Email',
+        self.sheets = ['Contact', 'Facility', 'Floor', 'Space', 'Zone', 'Type',
+            'Component', 'System', 'Assembly', 'Connection', 'Spare',
+            'Resource', 'Job', 'Impact', 'Document', 'Attribute', 'Coordinate',
+            'Issue', 'Component', 'System', '']
+        self.write_data('Contact', self.parser.contacts, 'Email',
             ['Email', 'CreatedBy', 'CreatedOn', 'Category', 'Company',
             'Phone', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'Department', 'OrganizationCode', 'GivenName', 'FamilyName',
             'Street', 'PostalBox', 'Town', 'StateRegion', 'PostalCode',
             'Country'])
-        self.write_file('Facility', self.parser.facilities, 'Name',
+        self.write_data('Facility', self.parser.facilities, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ProjectName',
             'SiteName', 'LinearUnits', 'AreaUnits', 'VolumeUnits', 'CostUnit',
             'AreaMeasurement', 'ExternalSystem', 'ExternalProjectObject',
@@ -1006,17 +993,17 @@ class CobieCsvWriter():
             'ExternalSiteIdentifier', 'ExternalFacilityObject',
             'ExternalFacilityIdentifier', 'Description', 'ProjectDescription',
             'SiteDescription', 'Phase'])
-        self.write_file('Floor', self.parser.floors, 'Name',
+        self.write_data('Floor', self.parser.floors, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
             'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'])
-        self.write_file('Space', self.parser.spaces, 'Name',
+        self.write_data('Space', self.parser.spaces, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'FloorName',
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier', 'RoomTag',
             'UsableHeight', 'GrossArea', 'NetArea'])
-        self.write_file('Zone', self.parser.zones, 'Name',
+        self.write_data('Zone', self.parser.zones, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SpaceNames',
             'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
-        self.write_file('Type', self.parser.types, 'Name',
+        self.write_data('Type', self.parser.types, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Description',
             'AssetType', 'Manufacturer', 'ModelNumber',
             'WarrantyGuarantorParts', 'WarrantyDurationParts',
@@ -1027,60 +1014,84 @@ class CobieCsvWriter():
             'Color', 'Finish', 'Grade', 'Material', 'Constituents', 'Features',
             'AccessibilityPerformance', 'CodePerformance',
             'SustainabilityPerformance',])
-        self.write_file('Component', self.parser.components, 'Name',
+        self.write_data('Component', self.parser.components, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'TypeName', 'Space',
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
             'TagNumber', 'BarCode', 'AssetIdentifier',])
-        self.write_file('System', self.parser.systems, 'Name',
+        self.write_data('System', self.parser.systems, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
             'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',])
-        self.write_file('Assembly', self.parser.assemblies, 'Name',
+        self.write_data('Assembly', self.parser.assemblies, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'SheetName', 'ParentName',
             'ChildNames', 'AssemblyType', 'ExtSystem', 'ExtObject',
             'ExtIdentifier', 'Description',])
-        self.write_file('Connection', self.parser.connections, 'Name',
+        self.write_data('Connection', self.parser.connections, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'ConnectionType', 'SheetName',
             'RowName1', 'RowName2', 'RealizingElement', 'PortName1',
             'PortName2', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'Description',])
-        self.write_file('Spare', self.parser.spares, 'Name',
+        self.write_data('Spare', self.parser.spares, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'TypeName',
             'Suppliers', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'Description', 'SetNumber', 'PartNumber',])
-        self.write_file('Resource', self.parser.resources, 'Name',
+        self.write_data('Resource', self.parser.resources, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
             'ExtObject', 'ExtIdentifier', 'Description',])
-        self.write_file('Job', self.parser.jobs, 'Name',
+        self.write_data('Job', self.parser.jobs, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Status', 'TypeName',
             'Description', 'Duration', 'DurationUnit', 'Start', 'TaskStartUnit',
             'Frequency', 'FrequencyUnit', 'ExtSystem', 'ExtObject',
             'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',])
-        self.write_file('Impact', self.parser.impacts, 'Name',
+        self.write_data('Impact', self.parser.impacts, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'ImpactType', 'ImpactStage',
             'SheetName', 'RowName', 'Value', 'Unit', 'LeadInTime', 'Duration',
             'LeadOutTime', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'Description',])
-        self.write_file('Document', self.parser.documents, 'Name',
+        self.write_data('Document', self.parser.documents, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ApprovalBy',
             'Stage', 'SheetName', 'RowName', 'Directory', 'File', 'ExtSystem',
             'ExtObject', 'ExtIdentifier', 'Description', 'Reference',])
-        self.write_file('Attribute', self.parser.attributes, 'Name',
+        self.write_data('Attribute', self.parser.attributes, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
             'RowName', 'Value', 'Unit', 'ExtSystem', 'ExtObject',
             'ExtIdentifier', 'Description', 'AllowedValues',])
-        self.write_file('Coordinate', self.parser.coordinates, 'Name',
+        self.write_data('Coordinate', self.parser.coordinates, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
             'RowName', 'CoordinateXAxis', 'CoordinateYAxis', 'CoordinateZAxis',
             'ExtSystem', 'ExtObject', 'ExtIdentifier', 'ClockwiseRotation',
             'ElevationalRotation', 'YawRotation',])
-        self.write_file('Issue', self.parser.issues, 'Name',
+        self.write_data('Issue', self.parser.issues, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Type', 'Risk', 'Chance',
             'Impact', 'SheetName1', 'RowName1', 'SheetName2', 'RowName2',
             'Description', 'Owner', 'Mitigation', 'ExtSystem', 'ExtObject',
             'ExtIdentifier',])
 
-    def write_file(self, csv_name, data, primary_key, fieldnames):
+    def write_data(self, sheet, data, primary_key, fieldnames):
+        self.sheet_data[sheet] = {
+            'headers': fieldnames,
+            'rows': []
+        }
+        for name, row in data.items():
+            row[primary_key] = name
+            values = []
+            for fieldname in fieldnames:
+                values.append(row[fieldname])
+            self.sheet_data[sheet]['rows'].append(values)
+
+
+class CobieCsvWriter(CobieWriter):
+    def write(self):
+        import csv
+        super().write()
+        for sheet, data in self.sheet_data.items():
+            with open('{}.csv'.format(sheet), 'w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(data['headers'])
+                for row in data['rows']:
+                    writer.writerow(row)
+
+    def write_file_old(self, csv_name, data, primary_key, fieldnames):
         with open('{}.csv'.format(csv_name), 'w', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
@@ -1088,8 +1099,11 @@ class CobieCsvWriter():
                 row[primary_key] = name
                 writer.writerow(row)
 
-class CobieXlsWriter(CobieCsvWriter):
+
+class CobieXlsWriter(CobieWriter):
     def write(self):
+        from xlsxwriter import Workbook
+        super().write()
         self.colours = {
             'r': 'fdff8e', # Required
             'i': 'fdcd94', # Internal reference
@@ -1099,8 +1113,7 @@ class CobieXlsWriter(CobieCsvWriter):
             'p': '9ccaff', # Project specific
             'n': '000000' # Not used
             }
-        super().write()
-        self.workbook = Workbook('output.xlsx')
+        self.workbook = Workbook(self.filename + '.xlsx')
 
         self.cell_formats = {}
         for key, value in self.colours.items():
@@ -1129,35 +1142,63 @@ class CobieXlsWriter(CobieCsvWriter):
 
     def write_worksheet(self, name, tab_colour, fill_map):
         worksheet = self.workbook.add_worksheet(name)
+        r = 0
+        c = 0
+        for header in self.sheet_data[name]['headers']:
+            cell = worksheet.write(r, c, header, self.cell_formats['s'])
+            c += 1
+        c = 0
+        r += 1
+        for row in self.sheet_data[name]['rows']:
+            c = 0
+            for col in row:
+                cell = worksheet.write(r, c, col, self.cell_formats[fill_map[c]])
+                c += 1
+            r += 1
 
-        with open('{}.csv'.format(name), 'r') as f:
-            reader = csv.reader(f)
-            for r, row in enumerate(reader):
-                for c, col in enumerate(row):
-                    if r == 0:
-                        cell = worksheet.write(r, c, col, self.cell_formats['s'])
-                    else:
-                        cell = worksheet.write(r, c, col, self.cell_formats[fill_map[c]])
 
-print('Processing IFC file ...')
-print('Note: view issues with your file in `process.log` ...')
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Converts COBie IFC MVD into its spreadsheet equivalent')
+    parser.add_argument('input', type=str, help='Specify an IFC file to process')
+    parser.add_argument(
+        '-l',
+        '--log',
+        type=str,
+        help='Specify where errors should be logged',
+        default='process.log')
+    parser.add_argument(
+        '-f',
+        '--format',
+        type=str,
+        help='Choose which format to export in (csv/xlsx)',
+        default='csv')
+    parser.add_argument(
+        '-o',
+        '--output',
+        type=str,
+        help='The output filename excluding the extension. Not required for CSV.',
+        default='output')
+    args = vars(parser.parse_args())
 
-start = time.time()
-logging.basicConfig(
-    filename='process.log',
-    filemode='a', level=logging.DEBUG)
-logger = logging.getLogger('IFCtoCOBie')
-logger.info('Starting conversion')
-parser = IfcCobieParser(logger)
-parser.parse()
+    print('Processing IFC file ...')
 
-print('Generating reports ...')
+    start = time.time()
+    logging.basicConfig(
+        filename=args['log'],
+        filemode='a', level=logging.DEBUG)
+    logger = logging.getLogger('IFCtoCOBie')
+    logger.info('Starting conversion')
+    parser = IfcCobieParser(logger)
+    parser.parse(args['input'])
 
-#writer = CobieCsvWriter(parser)
-#writer.write()
-writer = CobieXlsWriter(parser)
-writer.write()
-logger.info('Finished conversion in {}s'.format(time.time() - start))
+    print('Generating reports ...')
 
-print('# All reports are complete :-)')
-input('Press <enter> to quit.')
+    if args['format'] == 'xlsx':
+        writer = CobieXlsWriter(parser, args['output'])
+    else:
+        writer = CobieCsvWriter(parser)
+    writer.write()
+
+    logger.info('Finished conversion in {}s'.format(time.time() - start))
+    print('# All reports are complete :-)')
