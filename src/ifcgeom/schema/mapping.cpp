@@ -1325,7 +1325,7 @@ namespace {
 				*c->matrix.components = Eigen::Affine3d(Eigen::Translation3d(O)).matrix();
 				c->radius = *p.radius;
 				e->basis = c;
-				c->orientation = sign == -1.;
+				c->orientation.reset(sign == -1.);
 
 				loop->children.insert(std::find(loop->children.begin(), loop->children.end(), p.next), e);
 			}
@@ -1612,7 +1612,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		auto crv = map(segment->ParentCurve());
 		if (crv) {
 			if (crv->kind() == taxonomy::EDGE) {
-				((taxonomy::geom_item*)crv)->orientation = segment->SameSense();
+				((taxonomy::edge*)crv)->orientation_2.reset(segment->SameSense());
 				loop->children.push_back(crv);
 			} else if (crv->kind() == taxonomy::LOOP) {
 				if (!segment->SameSense()) {
@@ -1816,7 +1816,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid* inst) {
 	}
 	auto p = new taxonomy::plane;
 	p->matrix = as<taxonomy::matrix4>(map(((IfcSchema::IfcPlane*)surface)->Position()));
-	p->orientation = !inst->AgreementFlag();
+	p->orientation.reset(!inst->AgreementFlag());
 	auto f = new taxonomy::face;
 	f->basis = p;
 	return f;

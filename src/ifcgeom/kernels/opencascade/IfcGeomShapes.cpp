@@ -862,7 +862,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop* loop, TopoDS_Wire& wire) {
 		std::wcout << o_str.c_str() << std::endl;
 #endif
 
-		if (!segment->orientation) {
+		if (!segment->orientation_2.get_value_or(true)) {
 			segment_wire.Reverse();
 		}
 

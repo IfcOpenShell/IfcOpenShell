@@ -324,6 +324,11 @@ namespace {
 			} else {
 				std::tie(a, b) = param;
 			}
+			a = std::fmod(a, 2 * M_PI);
+			b = std::fmod(b, 2 * M_PI);
+			if (b < a) {
+				b += 2 * M_PI;
+			}
 			int num_segments = (int)std::ceil(std::fabs(a - b) / (2 * M_PI) * FULL_CIRCLE_NUM_SEGMENTS);
 			double du = (b - a) / num_segments;
 			taxonomy::point3 P;
@@ -351,6 +356,10 @@ namespace {
 			point_projection_visitor v1, v2;
 			boost::apply_visitor(v1, e.start);
 			boost::apply_visitor(v2, e.end);
+
+			if (!e.orientation.get_value_or(true)) {
+				std::swap(v1.u, v2.u);
+			}
 
 			cgal_curve_creation_visitor v({ v1.u, v2.u });
 
@@ -392,7 +401,10 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	for (auto& e : edges) {
 		if (e->basis) {
 			std::vector<taxonomy::point3> edge;
-			convert_curve(e->basis, points);
+			convert_curve(e, edge);
+			if (!e->orientation_2.get_value_or(true)) {
+				std::reverse(edge.begin(), edge.end());
+			}
 			extend_wire(points, edge);
 		} else {
 			extend_wire(points, {
