@@ -185,7 +185,7 @@ class CollisionManager(object):
         # if no transform passed, assume identity transform
         if transform is None:
             transform = np.eye(4)
-        transform = np.asanyarray(transform, dtype=np.float32)
+        transform = np.asanyarray(transform, dtype=np.float64)
         if transform.shape != (4, 4):
             raise ValueError('transform must be (4,4)!')
 
