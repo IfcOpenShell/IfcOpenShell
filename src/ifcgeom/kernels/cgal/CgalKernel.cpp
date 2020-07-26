@@ -353,7 +353,7 @@ namespace {
 		}
 
 		void operator()(const taxonomy::trimmed_curve& e) {
-			point_projection_visitor v1, v2;
+			point_projection_visitor v1{ e.basis }, v2{ e.basis };
 			boost::apply_visitor(v1, e.start);
 			boost::apply_visitor(v2, e.end);
 
