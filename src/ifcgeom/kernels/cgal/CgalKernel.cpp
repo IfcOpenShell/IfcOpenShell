@@ -365,6 +365,10 @@ namespace {
 
 			dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(e.basis, v);
 			this->points = v.points;
+
+			if (!e.orientation.get_value_or(true)) {
+				std::reverse(this->points.begin(), this->points.end());
+			}
 		}
 
 		void operator()(const taxonomy::item& e) {
@@ -442,6 +446,14 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
 		Logger::Message(Logger::LOG_WARNING, ss.str(), loop->instance);
 	}
+
+	/*
+	std::wcerr << "[" << std::endl;
+	for (auto& p : polygon) {
+		std::wcerr << "    (" << CGAL::to_double(p.cartesian(0)) << ", " << CGAL::to_double(p.cartesian(1)) << ", " << CGAL::to_double(p.cartesian(2)) << ")," << std::endl;
+	}
+	std::wcerr << "]" << std::endl;
+	*/
 
 	if (count < 3) {
 		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", loop->instance);
