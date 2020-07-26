@@ -5,34 +5,66 @@ import numpy
 import pickle
 import sys
 
-import OCC.gp
-import OCC.Geom
-import OCC.Bnd
-import OCC.BRepBndLib
-import OCC.BRep
-import OCC.BRepPrimAPI
-import OCC.BRepAlgoAPI
-import OCC.BRepBuilderAPI
-import OCC.TopOpeBRepTool
-import OCC.TopOpeBRepBuild
-import OCC.ShapeExtend
-import OCC.GProp
-import OCC.BRepGProp
-import OCC.GC
-import OCC.ShapeAnalysis
-import OCC.TopTools
-import OCC.TopExp
-import OCC.HLRAlgo
-import OCC.HLRBRep
-import OCC.TopLoc
-import OCC.Bnd
-import OCC.BRepBndLib
-import OCC.BRepTools
-import OCC.TopoDS
-import OCC.GeomLProp
-import OCC.IntCurvesFace
-
-from OCC.TopoDS import topods
+try:
+    from OCC.Core import (
+        gp,
+        Geom,
+        Bnd,
+        BRepBndLib,
+        BRep,
+        BRepPrimAPI,
+        BRepAlgoAPI,
+        BRepBuilderAPI,
+        TopOpeBRepTool,
+        TopOpeBRepBuild,
+        ShapeExtend,
+        GProp,
+        BRepGProp,
+        GC,
+        ShapeAnalysis,
+        TopTools,
+        TopExp,
+        HLRAlgo,
+        HLRBRep,
+        TopLoc,
+        Bnd,
+        BRepBndLib,
+        BRepTools,
+        TopoDS,
+        GeomLProp,
+        IntCurvesFace,
+    )
+    from OCC.Core.TopoDS import topods
+except ImportError:
+    from OCC import (
+        gp,
+        Geom,
+        Bnd,
+        BRepBndLib,
+        BRep,
+        BRepPrimAPI,
+        BRepAlgoAPI,
+        BRepBuilderAPI,
+        TopOpeBRepTool,
+        TopOpeBRepBuild,
+        ShapeExtend,
+        GProp,
+        BRepGProp,
+        GC,
+        ShapeAnalysis,
+        TopTools,
+        TopExp,
+        HLRAlgo,
+        HLRBRep,
+        TopLoc,
+        Bnd,
+        BRepBndLib,
+        BRepTools,
+        TopoDS,
+        GeomLProp,
+        IntCurvesFace,
+    )
+    from OCC.TopoDS import topods
 
 import ifcopenshell
 import ifcopenshell.geom
@@ -42,51 +74,51 @@ this_file = os.path.join(cwd, 'cut_ifc.py')
 
 def get_booleaned_edges(shape):
     edges = []
-    exp = OCC.TopExp.TopExp_Explorer(shape, OCC.TopAbs.TopAbs_EDGE)
+    exp = TopExp.TopExp_Explorer(shape, TopAbs.TopAbs_EDGE)
     while exp.More():
         edges.append(topods.Edge(exp.Current()))
         exp.Next()
     return edges
 
 def connect_edges_into_wires(unconnected_edges):
-    edges = OCC.TopTools.TopTools_HSequenceOfShape()
-    edges_handle = OCC.TopTools.Handle_TopTools_HSequenceOfShape(edges)
-    wires = OCC.TopTools.TopTools_HSequenceOfShape()
-    wires_handle = OCC.TopTools.Handle_TopTools_HSequenceOfShape(wires)
+    edges = TopTools.TopTools_HSequenceOfShape()
+    edges_handle = TopTools.Handle_TopTools_HSequenceOfShape(edges)
+    wires = TopTools.TopTools_HSequenceOfShape()
+    wires_handle = TopTools.Handle_TopTools_HSequenceOfShape(wires)
 
     for edge in unconnected_edges:
         edges.Append(edge)
 
-    OCC.ShapeAnalysis.ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, 1e-5, True, wires_handle)
+    ShapeAnalysis.ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, 1e-5, True, wires_handle)
     return wires_handle.GetObject()
 
 def do_cut(process_data):
     global_id, shape, section, trsf_data = process_data
 
-    axis = OCC.gp.gp_Ax2(
-        OCC.gp.gp_Pnt(
+    axis = gp.gp_Ax2(
+        gp.gp_Pnt(
             trsf_data['top_left_corner'][0],
             trsf_data['top_left_corner'][1],
             trsf_data['top_left_corner'][2]),
-        OCC.gp.gp_Dir(
+        gp.gp_Dir(
             trsf_data['projection'][0],
             trsf_data['projection'][1],
             trsf_data['projection'][2]),
-        OCC.gp.gp_Dir(
+        gp.gp_Dir(
             trsf_data['x_axis'][0],
             trsf_data['x_axis'][1],
             trsf_data['x_axis'][2])
         )
-    source = OCC.gp.gp_Ax3(axis)
-    destination = OCC.gp.gp_Ax3(
-        OCC.gp.gp_Pnt(0, 0, 0),
-        OCC.gp.gp_Dir(0, 0, -1),
-        OCC.gp.gp_Dir(1, 0, 0))
-    transformation = OCC.gp.gp_Trsf()
+    source = gp.gp_Ax3(axis)
+    destination = gp.gp_Ax3(
+        gp.gp_Pnt(0, 0, 0),
+        gp.gp_Dir(0, 0, -1),
+        gp.gp_Dir(1, 0, 0))
+    transformation = gp.gp_Trsf()
     transformation.SetDisplacement(source, destination)
 
     cut_polygons = []
-    section = OCC.BRepAlgoAPI.BRepAlgoAPI_Section(section, shape).Shape()
+    section = BRepAlgoAPI.BRepAlgoAPI_Section(section, shape).Shape()
     section_edges = get_booleaned_edges(section)
     if len(section_edges) <= 0:
         return cut_polygons
@@ -94,17 +126,17 @@ def do_cut(process_data):
     for i in range(wires.Length()):
         wire_shape = wires.Value(i+1)
 
-        transformed_wire = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
+        transformed_wire = BRepBuilderAPI.BRepBuilderAPI_Transform(
             wire_shape, transformation)
         wire_shape = transformed_wire.Shape()
 
         wire = topods.Wire(wire_shape)
-        face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(wire).Face()
+        face = BRepBuilderAPI.BRepBuilderAPI_MakeFace(wire).Face()
 
         points = []
-        exp = OCC.BRepTools.BRepTools_WireExplorer(wire)
+        exp = BRepTools.BRepTools_WireExplorer(wire)
         while exp.More():
-            point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
+            point = BRep.BRep_Tool.Pnt(exp.CurrentVertex())
             points.append((point.X(), -point.Y()))
             exp.Next()
         cut_polygons.append({ 'global_id': global_id, 'metadata': {}, 'points': points })
@@ -364,47 +396,47 @@ class IfcCutter:
         return
 
     def create_section_box(self):
-        top_left_corner = OCC.gp.gp_Pnt(
+        top_left_corner = gp.gp_Pnt(
             self.section_box['top_left_corner'][0],
             self.section_box['top_left_corner'][1],
             self.section_box['top_left_corner'][2])
-        axis = OCC.gp.gp_Ax2(
+        axis = gp.gp_Ax2(
             top_left_corner,
-            OCC.gp.gp_Dir(
+            gp.gp_Dir(
                 self.section_box['projection'][0],
                 self.section_box['projection'][1],
                 self.section_box['projection'][2]),
-            OCC.gp.gp_Dir(
+            gp.gp_Dir(
                 self.section_box['x_axis'][0],
                 self.section_box['x_axis'][1],
                 self.section_box['x_axis'][2])
             )
-        section_box = OCC.BRepPrimAPI.BRepPrimAPI_MakeBox(
+        section_box = BRepPrimAPI.BRepPrimAPI_MakeBox(
             axis, self.section_box['x'], self.section_box['y'], self.section_box['z']
             )
         self.section_box['shape'] = section_box.Shape()
         self.section_box['face'] = section_box.BottomFace()
 
-        source = OCC.gp.gp_Ax3(axis)
+        source = gp.gp_Ax3(axis)
         self.transformation_data = {
             'top_left_corner': self.section_box['top_left_corner'],
             'projection': self.section_box['projection'],
             'x_axis': self.section_box['x_axis']
         }
-        destination = OCC.gp.gp_Ax3(
-            OCC.gp.gp_Pnt(0, 0, 0),
-            OCC.gp.gp_Dir(0, 0, -1),
-            OCC.gp.gp_Dir(1, 0, 0))
+        destination = gp.gp_Ax3(
+            gp.gp_Pnt(0, 0, 0),
+            gp.gp_Dir(0, 0, -1),
+            gp.gp_Dir(1, 0, 0))
         self.transformation_dest = destination
-        self.transformation = OCC.gp.gp_Trsf()
+        self.transformation = gp.gp_Trsf()
         self.transformation.SetDisplacement(source, destination)
 
     def get_background_elements(self):
         total_product_shapes = len(self.product_shapes)
         n = 0
         intersections = []
-        compound = OCC.TopoDS.TopoDS_Compound()
-        builder = OCC.BRep.BRep_Builder()
+        compound = TopoDS.TopoDS_Compound()
+        builder = BRep.BRep_Builder()
         builder.MakeCompound(compound)
         for product, shape in self.product_shapes:
             builder.Add(compound, shape)
@@ -413,22 +445,22 @@ class IfcCutter:
             #print('Processing product {} '.format(product.Name))
             n += 1
 
-            intersection = OCC.BRepAlgoAPI.BRepAlgoAPI_Common(self.section_box['shape'], shape).Shape()
+            intersection = BRepAlgoAPI.BRepAlgoAPI_Common(self.section_box['shape'], shape).Shape()
             intersection_edges = self.get_booleaned_edges(intersection)
             if len(intersection_edges) <= 0:
                 continue
             intersections.append(intersection)
 
-            transformed_intersection = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
+            transformed_intersection = BRepBuilderAPI.BRepBuilderAPI_Transform(
                 intersection, self.transformation)
             intersection = transformed_intersection.Shape()
 
-            edge_face_map = OCC.TopTools.TopTools_IndexedDataMapOfShapeListOfShape()
-            OCC.TopExp.topexp.MapShapesAndAncestors(
-                    intersection, OCC.TopAbs.TopAbs_EDGE,
-                    OCC.TopAbs.TopAbs_FACE, edge_face_map)
+            edge_face_map = TopTools.TopTools_IndexedDataMapOfShapeListOfShape()
+            TopExp.topexp.MapShapesAndAncestors(
+                    intersection, TopAbs.TopAbs_EDGE,
+                    TopAbs.TopAbs_FACE, edge_face_map)
 
-            exp = OCC.TopExp.TopExp_Explorer(intersection, OCC.TopAbs.TopAbs_FACE)
+            exp = TopExp.TopExp_Explorer(intersection, TopAbs.TopAbs_FACE)
             while exp.More():
                 face = topods.Face(exp.Current())
                 normal = self.get_normal(face)
@@ -461,20 +493,20 @@ class IfcCutter:
         return hits
 
     def raycast(self, shape, point):
-        raycast = OCC.IntCurvesFace.IntCurvesFace_ShapeIntersector()
+        raycast = IntCurvesFace.IntCurvesFace_ShapeIntersector()
         raycast.Load(shape, 0.01)
-        line = OCC.gp.gp_Lin(
-            OCC.gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
-            OCC.gp.gp_Dir( 0, 0, -1))
+        line = gp.gp_Lin(
+            gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
+            gp.gp_Dir( 0, 0, -1))
         raycast.Perform(line, 0, self.section_box['z'])
         return raycast.NbPnt() != 0
 
     def raycast_at_projection_dir(self, shape, point):
-        raycast = OCC.IntCurvesFace.IntCurvesFace_ShapeIntersector()
+        raycast = IntCurvesFace.IntCurvesFace_ShapeIntersector()
         raycast.Load(shape, 0.01)
-        line = OCC.gp.gp_Lin(
-            OCC.gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
-            OCC.gp.gp_Dir(
+        line = gp.gp_Lin(
+            gp.gp_Pnt(float(point[0]), float(point[1]), float(point[2])),
+            gp.gp_Dir(
                 self.section_box['projection'][0],
                 self.section_box['projection'][1],
                 self.section_box['projection'][2]))
@@ -485,8 +517,8 @@ class IfcCutter:
             return { 'face': raycast.Face(1), 'z': raycast.WParameter(1) }
 
     def get_bbox(self, shape):
-        bbox = OCC.Bnd.Bnd_Box()
-        OCC.BRepBndLib.brepbndlib_Add(shape, bbox)
+        bbox = Bnd.Bnd_Box()
+        BRepBndLib.brepbndlib_Add(shape, bbox)
         return bbox
 
     def calculate_face_zpos(self, face):
@@ -496,11 +528,11 @@ class IfcCutter:
         return zpos, zmax
 
     def get_split_edges(self, edge_face_map, face, zmax, product):
-        exp2 = OCC.TopExp.TopExp_Explorer(face, OCC.TopAbs.TopAbs_EDGE)
+        exp2 = TopExp.TopExp_Explorer(face, TopAbs.TopAbs_EDGE)
         while exp2.More():
             edge = topods.Edge(exp2.Current())
-            adjface = OCC.TopoDS.TopoDS_Face()
-            getadj = OCC.TopOpeBRepBuild.TopOpeBRepBuild_Tools.GetAdjacentFace(face, edge, edge_face_map, adjface)
+            adjface = TopoDS.TopoDS_Face()
+            getadj = TopOpeBRepBuild.TopOpeBRepBuild_Tools.GetAdjacentFace(face, edge, edge_face_map, adjface)
             if getadj:
                 try:
                     edge_angle = math.degrees(self.get_angle_between_faces(face, adjface))
@@ -525,8 +557,8 @@ class IfcCutter:
                 self.get_normal(f1), self.get_normal(f2)))
 
     def get_normal(self, face):
-        surface = OCC.Geom.Handle_Geom_Surface(OCC.BRep.BRep_Tool.Surface(face))
-        props = OCC.GeomLProp.GeomLProp_SLProps(surface, 0, 0, 1, .001)
+        surface = Geom.Handle_Geom_Surface(BRep.BRep_Tool.Surface(face))
+        props = GeomLProp.GeomLProp_SLProps(surface, 0, 0, 1, .001)
         return props.Normal()
 
     def get_dot_product_of_normals(self, n1, n2):
@@ -541,34 +573,34 @@ class IfcCutter:
             and p1.Z() == p2.Z()
 
     def build_new_edge(self, edge, zpos):
-        exp = OCC.TopExp.TopExp_Explorer(edge, OCC.TopAbs.TopAbs_VERTEX)
+        exp = TopExp.TopExp_Explorer(edge, TopAbs.TopAbs_VERTEX)
         new_vertices = []
         while exp.More():
             current_vertex = topods.Vertex(exp.Current())
-            current_point = OCC.BRep.BRep_Tool.Pnt(current_vertex)
+            current_point = BRep.BRep_Tool.Pnt(current_vertex)
             current_point.SetZ(zpos)
-            new_vertices.append(OCC.BRepBuilderAPI.BRepBuilderAPI_MakeVertex(current_point).Vertex())
+            new_vertices.append(BRepBuilderAPI.BRepBuilderAPI_MakeVertex(current_point).Vertex())
             exp.Next()
         try:
-            return OCC.BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
+            return BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
                 new_vertices[0], new_vertices[1]
             ).Edge()
         except:
             return None
 
     def build_new_face(self, face, zpos, product):
-        exp = OCC.TopExp.TopExp_Explorer(face, OCC.TopAbs.TopAbs_WIRE)
+        exp = TopExp.TopExp_Explorer(face, TopAbs.TopAbs_WIRE)
         while exp.More():
-            wireexp = OCC.BRepTools.BRepTools_WireExplorer(topods.Wire(exp.Current()))
-            new_wire_builder = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeWire()
+            wireexp = BRepTools.BRepTools_WireExplorer(topods.Wire(exp.Current()))
+            new_wire_builder = BRepBuilderAPI.BRepBuilderAPI_MakeWire()
             first_vertex = None
             previous_vertex = None
             while wireexp.More():
                 current_vertex = wireexp.CurrentVertex()
-                current_point = OCC.BRep.BRep_Tool.Pnt(current_vertex)
+                current_point = BRep.BRep_Tool.Pnt(current_vertex)
                 # Dodgy technique to squash in Z axis
                 current_point.SetZ(zpos)
-                current_vertex = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeVertex(current_point).Vertex()
+                current_vertex = BRepBuilderAPI.BRepBuilderAPI_MakeVertex(current_point).Vertex()
                 if not first_vertex:
                     first_vertex = current_vertex
                 if not previous_vertex:
@@ -576,7 +608,7 @@ class IfcCutter:
                 else:
                     try:
                         new_wire_builder.Add(topods.Edge(
-                            OCC.BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
+                            BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
                                 previous_vertex, current_vertex
                             ).Edge()))
                         previous_vertex = current_vertex
@@ -588,14 +620,14 @@ class IfcCutter:
                 if not wireexp.More():
                     try:
                         new_wire_builder.Add(topods.Edge(
-                            OCC.BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
+                            BRepBuilderAPI.BRepBuilderAPI_MakeEdge(
                                 current_vertex, first_vertex
                             ).Edge()))
                     except:
                         pass
             try:
                 new_wire = new_wire_builder.Wire()
-                new_face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(new_wire).Face()
+                new_face = BRepBuilderAPI.BRepBuilderAPI_MakeFace(new_wire).Face()
                 self.background_elements.append({
                     'raw': product,
                     'geometry': new_wire,
@@ -609,13 +641,13 @@ class IfcCutter:
             exp.Next()
 
     def get_area(self, shape):
-        gprops = OCC.GProp.GProp_GProps()
-        OCC.BRepGProp.brepgprop.SurfaceProperties(shape, gprops)
+        gprops = GProp.GProp_GProps()
+        BRepGProp.brepgprop.SurfaceProperties(shape, gprops)
         return gprops.Mass()
 
     def get_booleaned_edges(self, shape):
         edges = []
-        exp = OCC.TopExp.TopExp_Explorer(shape, OCC.TopAbs.TopAbs_EDGE)
+        exp = TopExp.TopExp_Explorer(shape, TopAbs.TopAbs_EDGE)
         while exp.More():
             edges.append(topods.Edge(exp.Current()))
             exp.Next()
@@ -722,7 +754,7 @@ class IfcCutterDebug(IfcCutter):
         section_box_display = ifcopenshell.geom.utils.display_shape(self.section_box['shape'])
         ifcopenshell.geom.utils.set_shape_transparency(section_box_display, 0.5)
 
-        transformed_box = OCC.BRepBuilderAPI.BRepBuilderAPI_Transform(
+        transformed_box = BRepBuilderAPI.BRepBuilderAPI_Transform(
             self.section_box['shape'], self.transformation)
         box_display = ifcopenshell.geom.utils.display_shape(transformed_box.Shape())
         ifcopenshell.geom.utils.set_shape_transparency(box_display, 0.2)
@@ -735,7 +767,7 @@ class IfcCutterDebug(IfcCutter):
         self.occ_display.EraseAll()
         for polygon in self.cut_polygons:
             ifcopenshell.geom.utils.display_shape(polygon['geometry'], clr='BLACK')
-            face = OCC.BRepBuilderAPI.BRepBuilderAPI_MakeFace(polygon['geometry']).Face()
+            face = BRepBuilderAPI.BRepBuilderAPI_MakeFace(polygon['geometry']).Face()
             face_display = ifcopenshell.geom.utils.display_shape(face)
             ifcopenshell.geom.utils.set_shape_transparency(face_display, 0.5)
         input('Debug: showing cut polygons.')

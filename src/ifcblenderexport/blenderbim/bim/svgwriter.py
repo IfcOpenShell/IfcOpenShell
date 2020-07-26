@@ -7,6 +7,7 @@ import svgwrite
 from . import annotation
 from mathutils import Vector
 from mathutils import geometry
+from OCC.Core import BRep, BRepTools, TopExp, TopAbs
 
 class External(svgwrite.container.Group):
     def __init__(self, xml, **extra):
@@ -399,20 +400,20 @@ class SvgWriter():
 
     def draw_polyline(self, element, position):
         classes = self.get_classes(element['raw'], position)
-        exp = OCC.BRepTools.BRepTools_WireExplorer(element['geometry'])
+        exp = BRepTools.BRepTools_WireExplorer(element['geometry'])
         points = []
         while exp.More():
-            point = OCC.BRep.BRep_Tool.Pnt(exp.CurrentVertex())
+            point = BRep.BRep_Tool.Pnt(exp.CurrentVertex())
             points.append((point.X() * self.scale, -point.Y() * self.scale))
             exp.Next()
         self.svg.add(self.svg.polyline(points=points, class_=' '.join(classes)))
 
     def draw_line(self, element, position):
         classes = self.get_classes(element['raw'], position)
-        exp = OCC.TopExp.TopExp_Explorer(element['geometry'], OCC.TopAbs.TopAbs_VERTEX)
+        exp = TopExp.TopExp_Explorer(element['geometry'], TopAbs.TopAbs_VERTEX)
         points = []
         while exp.More():
-            point = OCC.BRep.BRep_Tool.Pnt(topods.Vertex(exp.Current()))
+            point = BRep.BRep_Tool.Pnt(topods.Vertex(exp.Current()))
             points.append((point.X() * self.scale, -point.Y() * self.scale))
             exp.Next()
         self.svg.add(self.svg.line(start=points[0], end=points[1], class_=' '.join(classes)))
