@@ -1,132 +1,5 @@
-import ifcopenshell
 from behave import step
-
-class IfcFile(object):
-    file = None
-    bookmarks = {}
-
-    @classmethod
-    def load(cls, path=None):
-        cls.file = ifcopenshell.open(path)
-
-    @classmethod
-    def get(cls):
-        if not cls.file:
-            assert False, 'No file was loaded, so this requirement cannot be checked'
-        return cls.file
-
-    @classmethod
-    def get_pset(cls, element, pset_name):
-        if not element.IsDefinedBy:
-            return
-        for relationship in element.IsDefinedBy:
-            if relationship.RelatingPropertyDefinition.Name == pset_name:
-                return relationship.RelatingPropertyDefinition
-
-    @classmethod
-    def get_property(cls, element, pset_name, property_name):
-        pset = cls.get_pset(element, pset_name)
-        if not pset:
-            return
-        for prop in pset.HasProperties:
-            if prop.Name == property_name:
-                return prop
-
-
-# Project setup MicroMVD
-
-
-@step('The IFC file "{file}" must be provided')
-def step_impl(context, file):
-    try:
-        IfcFile.load(file)
-    except:
-        assert False, f'The file {file} could not be loaded'
-
-
-@step('IFC data must use the {schema} schema')
-def step_impl(context, schema):
-    assert IfcFile.get().schema == schema, \
-        'We expected a schema of {} but instead got {}'.format(
-            schema, IfcFile.get().schema)
-
-
-@step('The IFC file "{file}" is exempt from being provided')
-def step_impl(context, file):
-    pass
-
-
-@step('No further requirements are specified because {reason}')
-def step_impl(context, reason):
-    pass
-
-
-@step('The project name, code, or short identifier must be "{value}"')
-def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'Name')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
-
-
-@step('The project must have a longer form name of "{value}"')
-def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'LongName')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
-
-
-@step('The project must be described as "{value}"')
-def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'Description')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
-
-
-@step('The project must be categorised under "{value}"')
-def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'ObjectType')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
-
-
-@step('The project must contain information about the "{value}" phase')
-def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'Phase')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
-
-
-@step('The project must contain 3D geometry representing the shape of objects')
-def step_impl(context):
-    assert get_subcontext('Body', 'Model', 'MODEL_VIEW')
-
-
-@step('The project must contain 3D geometry representing clearance zones')
-def step_impl(context):
-    assert get_subcontext('Clearance', 'Model', 'MODEL_VIEW')
-
-
-@step('The project must contain 3D geometry representing the center of gravity of objects')
-def step_impl(context):
-    assert get_subcontext('CoG', 'Model', 'MODEL_VIEW')
-
-
-@step('The project must contain 3D geometry representing the object bounding boxes')
-def step_impl(context):
-    assert get_subcontext('Box', 'Model', 'MODEL_VIEW')
-
-
-def get_subcontext(identifier, type, target_view):
-    project = IfcFile.get().by_type('IfcProject')[0]
-    for rep_context in project.RepresentationContexts:
-        for subcontext in rep_context.HasSubContexts:
-            if subcontext.ContextIdentifier == identifier \
-                    and subcontext.ContextType == type \
-                    and subcontext.TargetView == target_view:
-                return True
-    assert False, 'The subcontext with identifier {}, type {}, and target view {} could not be found'.format(
-        identifier, type, target_view)
-
+from utils import IfcFile
 
 # Custom MicroMVD
 
@@ -170,9 +43,6 @@ def step_impl(context, id, reason):
     assert False, 'This element {} should be reevaluated.'.format(element)
 
 
-@step(u'there is at least one {ifc_class} element')
-def step_impl(context, ifc_class):
-    assert len(IfcFile.get().by_type(ifc_class)) >= 1
 
 
 @step(u'there are no {ifc_class} elements because {reason}')
@@ -296,30 +166,7 @@ def step_impl(context, ifc_class, qto_name, quantity_name):
         if not is_successful:
             assert False
 
-@step(u'the project should have geolocation data')
-def step_impl(context):
-    if IfcFile.get().schema == 'IFC2X3':
-        for site in IfcFile.get().by_type('IfcSite'):
-            if not IfcFile.get_pset(site, 'EPset_MapConversion'):
-                assert False
-    else:
-        project = IfcFile.get().by_type('IfcProject')[0]
-        for context in project.RepresentationContexts:
-            if context.is_a('IfcGeometricRepresentationContext') \
-                    and context.ContextType == 'Model' \
-                    and context.HasCoordinateOperation:
-                IfcFile.bookmarks['geolocation'] = context.HasCoordinateOperation[0].id()
-                return
-        assert False
 
-@step(u'the project geolocation uses the "{crs_name}" CRS')
-def step_impl(context, crs_name):
-    if IfcFile.get().schema == 'IFC2X3':
-        for site in IfcFile.get().by_type('IfcSite'):
-            if IfcFile.get_property(site, 'EPset_ProjectedCRS', 'Name').NominalValue.wrappedValue != crs_name:
-                assert False
-    else:
-        assert IfcFile.get().by_id(IfcFile.bookmarks['geolocation']).TargetCRS.Name == crs_name
 
 
 use_step_matcher('re')
