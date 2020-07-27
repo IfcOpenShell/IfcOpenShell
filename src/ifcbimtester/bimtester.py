@@ -92,15 +92,22 @@ def generate_report():
             steps = []
             total_duration = 0
             for step in scenario['steps']:
-                total_duration += step['result']['duration']
+                if 'result' in step:
+                    total_duration += step['result']['duration']
                 name = step['name']
-                if 'arguments' in step['match']:
+                if 'match' in step and 'arguments' in step['match']:
                     for a in step['match']['arguments']:
                         name = name.replace(a['value'], '<b>' + a['value'] + '</b>')
+                if 'result' not in step or step['result']['status'] == 'undefined':
+                    step['result'] = {}
+                    step['result']['status'] = 'undefined'
+                    step['result']['duration'] = 0
+                    step['result']['error_message'] = 'This requirement has not yet been specified.'
                 steps.append({
                     'name': name,
                     'time': round(step['result']['duration'], 2),
                     'is_success': step['result']['status'] == 'passed',
+                    'is_unspecified': 'result' not in step or step['result']['status'] == 'undefined',
                     'error_message': None if step['result']['status'] == 'passed' else step['result']['error_message']
                 })
             total_passes = len([s for s in steps if s['is_success'] == True])

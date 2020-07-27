@@ -13,10 +13,12 @@
         span.success { background-color: #97cc64; padding: 5px; border-radius: 5px; color: #FFF; font-weight: bold; }
         span.failure { background-color: #fb5a3e; padding: 5px; border-radius: 5px; color: #FFF; font-weight: bold; }
         p.failure { background-color: #fb5a3e; padding: 5px; border-radius: 5px; color: #fff; }
+        p.unspecified { background-color: #994f00; padding: 5px; border-radius: 5px; color: #fff; }
         p.description { background-color: #eee; border-radius: 5px; padding: 20px; margin-left: auto; margin-right: auto; display: inline-block; font-weight: bold;}
         li { padding: 10px; font-family: monospace; }
         li.success { background-color: #b6cca1; color: #333; }
         li.failure { background-color: #fbb4a8; color: #900; }
+        li.unspecified { background-color: #ffd37f; color: #a30; }
         li p { margin-bottom: 0px; }
         footer { color: #999; font-size: 0.8em; }
         header { text-align: center; }
@@ -50,11 +52,11 @@
         </p>
         <ol>
             {{#steps}}
-            <li class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}">
+            <li class="{{#is_success}}success{{/is_success}}{{^is_success}}failure{{/is_success}}{{#is_unspecified}} unspecified{{/is_unspecified}}">
                 {{{name}}}
                 <span class="step-time">{{time}}s</span>
                 {{^is_success}}
-                <p class="failure">
+                <p class="failure{{#is_unspecified}} unspecified{{/is_unspecified}}">
                     {{error_message}}
                 </p>
                 {{/is_success}}
