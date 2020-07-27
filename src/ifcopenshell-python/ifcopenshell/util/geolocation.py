@@ -24,3 +24,7 @@ def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_
     northings = (b * x) + (a * y) + northings
     height = z + orthogonal_height
     return (eastings, northings, height)
+
+# Used for converting the X and Y vectors of the X Axis in IFC geolocation
+def xy2angle(x, y):
+    return math.degrees(math.atan2(y, x)) - 90
