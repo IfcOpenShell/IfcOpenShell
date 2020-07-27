@@ -7,7 +7,11 @@ import svgwrite
 from . import annotation
 from mathutils import Vector
 from mathutils import geometry
-from OCC.Core import BRep, BRepTools, TopExp, TopAbs
+
+try:
+    from OCC.Core import BRep, BRepTools, TopExp, TopAbs
+except ImportError:
+    from OCC import BRep, BRepTools, TopExp, TopAbs
 
 class External(svgwrite.container.Group):
     def __init__(self, xml, **extra):
