@@ -1,50 +1,6 @@
 from behave import step
 from utils import IfcFile
 
-# Custom MicroMVD
-
-@step('The element {id} is an {ifc_class} only')
-def step_impl(context, id, ifc_class):
-    try:
-        element = IfcFile.get().by_id(id)
-    except:
-        assert False, f'The element with {id} could not be found.'
-    assert element.is_a() == ifc_class, 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
-
-
-@step('The element {id} is an {ifc_class}')
-def step_impl(context, id, ifc_class):
-    try:
-        element = IfcFile.get().by_id(id)
-    except:
-        assert False, f'The element with {id} could not be found.'
-    assert element.is_a(ifc_class), 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
-
-
-@step('The element {id} is further defined as a {predefined_type}')
-def step_impl(context, id, predefined_type):
-    try:
-        element = IfcFile.get().by_id(id)
-    except:
-        assert False, f'The element with {id} could not be found.'
-    if element.PredefinedType == predefined_type:
-        return
-    if element.PredefinedType == 'USERDEFINED' and element.ObjectType == 'predefined_type':
-        return
-    assert False, 'The element {} has a predefined type of {} and an object type of {} instead of {}.'.format(element, element.PredefinedType, element.ObjectType, predefined_type)
-
-
-@step('The element {id} should not exist because {reason}')
-def step_impl(context, id, reason):
-    try:
-        element = IfcFile.get().by_id(id)
-    except:
-        return
-    assert False, 'This element {} should be reevaluated.'.format(element)
-
-
-
-
 @step(u'there are no {ifc_class} elements because {reason}')
 def step_impl(context, ifc_class, reason):
     assert len(IfcFile.get().by_type(ifc_class)) == 0
@@ -165,19 +121,6 @@ def step_impl(context, ifc_class, qto_name, quantity_name):
                         is_successful = True
         if not is_successful:
             assert False
-
-
-
-
-use_step_matcher('re')
-@step(u'the geolocated datum has an? (?P<attribute>.*) of "(?P<value>.*)"')
-def step_impl(context, attribute, value):
-    if IfcFile.get().schema == 'IFC2X3':
-        site = IfcFile.get().by_type('IfcSite')[0]
-        actual_value = IfcFile.get_property(site, 'EPset_MapConversion', attribute).NominalValue.wrappedValue
-    else:
-        actual_value = getattr(IfcFile.get().by_id(IfcFile.bookmarks['geolocation']), attribute)
-    assert str(actual_value) == value, f'The value was {actual_value}'
 
 
 use_step_matcher('parse')
