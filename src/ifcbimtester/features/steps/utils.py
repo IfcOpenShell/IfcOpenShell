@@ -30,12 +30,16 @@ def assert_number(number):
         assert False, 'A number should be specified, not {}'.format(number)
 
 def assert_attribute(element, name, value):
+    if value == 'NULL':
+        value = None
     if not hasattr(element, name):
         assert False, 'The element {} does not have the attribute {}'.format(element, name)
     actual_value = getattr(element, name)
-    assert actual_value == value, 'We expected a value of "{}" but instead got "{}"'.format(value, actual_value)
+    assert actual_value == value, 'We expected a value of "{}" but instead got "{}" for the element {}'.format(value, actual_value, element)
 
 def assert_pset(element, pset_name, prop_name=None, value=None):
+    if value == 'NULL':
+        value = None
     psets = ifcopenshell.util.element.get_psets(site)
     if pset_name not in psets:
         assert False, 'The element {} does not have a property set named {}'.format(element, pset_name)
@@ -46,4 +50,4 @@ def assert_pset(element, pset_name, prop_name=None, value=None):
     if value is None:
         return psets[pset_name][prop_name]
     actual_value = psets[pset_name][prop_name]
-    assert actual_value == value, 'We expected a value of "{}" but instead got "{}"'.format(value, actual_value)
+    assert actual_value == value, 'We expected a value of "{}" but instead got "{}" for the element {}'.format(value, actual_value, element)
