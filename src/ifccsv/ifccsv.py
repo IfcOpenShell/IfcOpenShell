@@ -248,7 +248,18 @@ class IfcAttributeExtractor():
     def set_pset_property(pset, name, value):
         for property in pset.HasProperties:
             if property.Name == name:
-                property.NominalValue.wrappedValue = value
+                # In lieu of loading a map for data casting, we only have four
+                # options, which this ugly method will determine.
+                try:
+                    property.NominalValue.wrappedValue = str(value)
+                except:
+                    try:
+                        property.NominalValue.wrappedValue = float(value)
+                    except:
+                        try:
+                            property.NominalValue.wrappedValue = int(value)
+                        except:
+                            property.NominalValue.wrappedValue = True if value.lower() in ['1', 't', 'true', 'yes', 'y', 'uh-huh'] else False
 
 
 class IfcCsv():
