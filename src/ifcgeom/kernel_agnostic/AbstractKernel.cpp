@@ -34,6 +34,9 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	}
 	for (auto i = s; i < r.size(); ++i) {
 		r[i].prepend(collection->matrix);
+		if (!r[i].hasStyle()) {
+			r[i].setStyle(collection->surface_style);
+		}
 	}
 	return r.size() > s;
 }

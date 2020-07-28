@@ -364,6 +364,14 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	auto c = new taxonomy::collection;
 	c->matrix = as<taxonomy::matrix4>(map(inst->ObjectPlacement()));
 
+	const IfcSchema::IfcMaterial* single_material = get_single_material_association(inst);
+	if (single_material) {
+		auto material_style = map(single_material);
+		if (material_style) {
+			c->surface_style = as<taxonomy::style>(material_style);
+		}
+	}
+
 	if (openings->size() && !settings_.get(settings::DISABLE_OPENING_SUBTRACTIONS) && use_body) {
 		auto ci = c->matrix.components->inverse();
 
@@ -387,6 +395,7 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 			return nullptr;			
 		}
 	}
+
 	return c;
 }
 
