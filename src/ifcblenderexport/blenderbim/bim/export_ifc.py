@@ -2296,6 +2296,28 @@ class IfcExporter():
             [self.create_edge(representation['raw'])])
 
     def create_curve_representation(self, representation):
+        if representation['raw'].bevel_object:
+            swept_area_solids = self.create_extruded_area_solids(representation)
+        else:
+            swept_area_solids = self.create_swept_disk_solids(representation)
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'AdvancedSweptSolid',
+            swept_area_solids)
+
+    def create_swept_disk_solids(self, representation):
+        results = []
+        radius = self.convert_si_to_unit(representation['raw'].bevel_depth)
+        start_param = representation['raw'].bevel_factor_start
+        end_param = representation['raw'].bevel_factor_end
+        directrixes = self.create_curves(representation['raw'])
+        for directrix in directrixes:
+            results.append(self.file.createIfcSweptDiskSolid(
+                directrix, radius, None, start_param, end_param))
+        return results
+
+    def create_extruded_area_solids(self, representation):
         # TODO: support unclosed surfaces
         swept_area = self.file.createIfcArbitraryClosedProfileDef('AREA', None,
             self.create_curves(representation['raw'].bevel_object.data)[0])
@@ -2333,11 +2355,7 @@ class IfcExporter():
         # swept_area_solid = self.file.createIfcFixedReferenceSweptAreaSolid(
         #    swept_area, self.origin, #    self.create_curves(representation['raw'])[0],
         #    0., 1., self.file.createIfcDirection((0.0, -1.0, 0.0)))
-        return self.file.createIfcShapeRepresentation(
-            self.ifc_rep_context[representation['context']][representation['subcontext']][
-                representation['target_view']]['ifc'],
-            representation['subcontext'], 'AdvancedSweptSolid',
-            swept_area_solids)
+        return swept_area_solids
 
     def scale_ifc_representation(self, rep, scale):
         for element in self.file.traverse(rep):
