@@ -386,6 +386,7 @@ namespace {
 	void extend_wire(std::vector<taxonomy::point3>& a, const std::vector<taxonomy::point3>& b) {
 		if (a.empty()) {
 			a = b;
+			return;
 		}
 		if (b.empty()) {
 			return;
@@ -403,25 +404,29 @@ bool CgalKernel::convert(const taxonomy::loop* loop, cgal_wire_t& result) {
 	std::vector<taxonomy::point3> points;
 
 	for (auto& e : edges) {
+		std::vector<taxonomy::point3> edge;
 		if (e->basis) {
-			std::vector<taxonomy::point3> edge;
 			convert_curve(e, edge);
 			if (!e->orientation_2.get_value_or(true)) {
 				std::reverse(edge.begin(), edge.end());
 			}
-			extend_wire(points, edge);
 		} else {
-			extend_wire(points, {
+			edge = {
 				boost::get<taxonomy::point3>(e->start),
 				boost::get<taxonomy::point3>(e->end)
-				});
+			};
 		}
+		extend_wire(points, edge);
 	}
 
 	if (points.size() >= 2) {
 		// the edges -> <p0, ... pn> conversion left us with a duplicate global begin,end point.
 		double d = (*points.back().components - *points.front().components).norm();
-		points.erase(points.end() - 1);
+		if (d < 1.e-5) {
+			points.erase(points.end() - 1);
+		} else {
+			Logger::Warning("Loop not closed", loop->instance);
+		}		
 	}
 
 	// Parse and store the points in a sequence
