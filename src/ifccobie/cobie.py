@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico bimtester.py`
 
 import os

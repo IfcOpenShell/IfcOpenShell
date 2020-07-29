@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifcdiff.py`
 
 import ifcopenshell
