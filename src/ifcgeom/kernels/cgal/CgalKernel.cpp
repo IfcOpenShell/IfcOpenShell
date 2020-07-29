@@ -49,7 +49,8 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 	// Stitch edges
 	//  std::cout << "Before: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
 	CGAL::Polygon_mesh_processing::stitch_borders(polyhedron);
-	if (!polyhedron.is_valid()) {
+	polyhedron.normalize_border();
+	if (!polyhedron.is_valid(false, 1)) {
 		Logger::Message(Logger::LOG_ERROR, "create_polyhedron: Polyhedron not valid!");
 		//    std::ofstream fresult;
 		//    fresult.open("/Users/ken/Desktop/invalid.off");
