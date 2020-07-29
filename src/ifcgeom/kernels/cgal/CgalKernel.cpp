@@ -25,6 +25,7 @@
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
 
 #include <CGAL/minkowski_sum_3.h>
+#include <CGAL/exceptions.h>
 
 using namespace ifcopenshell::geometry; 
 using namespace ifcopenshell::geometry::kernels;
@@ -58,8 +59,12 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 		//    fresult.close();
 		return CGAL::Polyhedron_3<Kernel_>();
 	} if (polyhedron.is_closed()) {
-		if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
-			CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
 		}
 	}
 
