@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # Unix:
 # $ pyinstaller --onefile --clean --icon=icon.ico --add-data "features:features" bimtester.py`
 # Windows:
