@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # This code is taken from the trimesh project at https://github.com/mikedh/trimesh/blob/master/trimesh/collision.py
 # License MIT https://github.com/mikedh/trimesh/blob/master/LICENSE.md
 
