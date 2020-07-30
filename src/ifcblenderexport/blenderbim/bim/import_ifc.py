@@ -529,7 +529,12 @@ class IfcImporter():
         # 12D can have some funky coordinates out of any sensible range. This
         # method will not work all the time, but will catch most issues.
         offset_point = None
-        for point_list in self.file.by_type('IfcCartesianPointList3D'):
+        try:
+            point_lists = self.file.by_type('IfcCartesianPointList3D')
+        except:
+            # IFC2X3 does not have IfcCartesianPointList3D
+            point_lists = []
+        for point_list in point_lists:
             coord_list = [None] * len(point_list.CoordList)
             for i, point in enumerate(point_list.CoordList):
                 if len(point) == 2 or not self.is_point_far_away(point):
