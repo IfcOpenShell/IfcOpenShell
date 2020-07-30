@@ -1098,16 +1098,39 @@ namespace {
 		TopExp::Vertices(wire, v0, v1);
 		TopTools_IndexedDataMapOfShapeListOfShape map;
 		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
-		if (map.Contains(v0) && map.FindFromKey(v0).Extent() == 1) {
+		if (v0.IsSame(v1) && map.Contains(v0) && map.FindFromKey(v0).Extent() == 2) {
+			// Closed wire, with more than 1 edges
+			auto es = map.FindFromKey(v0);
+			auto e1 = TopoDS::Edge(es.First());
+			auto e2 = TopoDS::Edge(es.Last());
+			
+			double u0, u1;
+
+			gp_Vec accum;
+			
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(e1, u0, u1);
+			crv->D1(TopExp::FirstVertex(e1).IsSame(v0) ? u0 : u1, directrix_origin, directrix_tangent);
+
+			accum += directrix_tangent;
+
+			crv = BRep_Tool::Curve(e2, u0, u1);
+			crv->D1(TopExp::FirstVertex(e2).IsSame(v0) ? u0 : u1, directrix_origin, directrix_tangent);
+
+			accum += directrix_tangent;
+
+			directrix_tangent = accum;
+
+		} else if (map.Contains(v0) && map.FindFromKey(v0).Extent() == 1) {
 			edge = TopoDS::Edge(map.FindFromKey(v0).First());
+
+			double u0, u1;
+			Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
+			crv->D1(u0, directrix_origin, directrix_tangent);
 		} else {
 			Logger::Error("Unable to locate first edge");
 			return false;
 		}
-
-		double u0, u1;
-		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
-		crv->D1(u0, directrix_origin, directrix_tangent);
+		
 		directrix = gp_Ax2(directrix_origin, directrix_tangent);
 
 		return true;
@@ -1187,8 +1210,12 @@ namespace {
 		// @todo this creates the ancestor map twice
 		TopExp::Vertices(wire, v0, v1);
 
+		bool ignore_first_equality_because_closed = v0.IsSame(v1);
+
+		// @todo this probably still does not work on a closed wire consisting of one (circular) edge.
 		
-		while (!v0.IsSame(v1)) {
+		while (!v0.IsSame(v1) || ignore_first_equality_because_closed) {
+			ignore_first_equality_because_closed = false;
 			if (!map.Contains(v0)) {
 				throw std::runtime_error("Disconnected vertex");
 			}
@@ -1243,7 +1270,7 @@ namespace {
 		wires.emplace_back();
 		B.MakeWire(wires.back());
 
-		for (size_t i = 0; i < sorted_edges.size() - 1; ++i) {
+		for (int i = 0; i < (int) sorted_edges.size() - 1; ++i) {
 			const auto& e = sorted_edges[i];
 			Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
 			const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
@@ -1260,7 +1287,9 @@ namespace {
 			}
 		}
 
-		B.Add(wires.back(), sorted_edges.back());
+		if (!sorted_edges.empty()) {
+			B.Add(wires.back(), sorted_edges.back());
+		}
 	}
 
 	// @todo make this generic for other sweeps not just swept disk
@@ -1341,6 +1370,10 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcSweptDiskSolid* l, TopoDS_Shap
 	// its entirety.
 	
 	process_sweep(wire, l->Radius() * getValue(GV_LENGTH_UNIT), shape);
+
+	if (shape.IsNull()) {
+		return false;
+	}
 
 	double r2 = 0.;
 
