@@ -115,7 +115,13 @@ class MaterialCreator():
                 material = material.split('-')[2]
             if len(material) > 63: # Blender material names are up to 63 characters
                 material = material[0:63]
-            material_to_slot[i] = slots.index(material)
+            try:
+                material_to_slot[i] = slots.index(material)
+            except:
+                # If the material name duplicates, a `.001` is added, this
+                # reduces the maxmium characters for the material name to 59.
+                material = material[0:59]
+                material_to_slot[i] = slots.index(material)
 
         if len(mesh.polygons) == len(mesh['ios_material_ids']):
             material_index = [(material_to_slot[mat_id] if mat_id != 999999
