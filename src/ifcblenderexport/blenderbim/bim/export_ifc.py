@@ -1852,6 +1852,8 @@ class IfcExporter():
                     for mapped_item in representation.Items:
                         items = mapped_item[0].MappedRepresentation.Items
                         for i, item in enumerate(items):
+                            if i >= len(product['raw'].material_slots):
+                                i = 0
                             material_slots[product['raw'].material_slots[i].name] = item
             for styled_item_name, representation_item in material_slots.items():
                 if styled_item_name == styled_item['attributes']['Name']:
