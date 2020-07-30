@@ -1225,7 +1225,7 @@ class IfcImporter():
 
     def add_qto(self, qto, obj):
         new_qto = obj.BIMObjectProperties.qtos.add()
-        new_qto.name = qto.Name
+        new_qto.name = str(qto.Name)
         if new_qto.name in schema.ifc.qtos:
             for prop_name in schema.ifc.qtos[new_qto.name]['HasPropertyTemplates'].keys():
                 prop = new_qto.properties.add()
