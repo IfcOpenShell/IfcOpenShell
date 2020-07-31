@@ -1778,10 +1778,10 @@ class IfcImporter():
                 return representation.Items[0].MappingTarget
 
     def get_geometry_type(self, element):
+        tree = []
         if hasattr(element, 'Representation'):
             tree = self.file.traverse(element.Representation)
         elif hasattr(element, 'RepresentationMaps'):
-            tree = []
             for representation_map in element.RepresentationMaps:
                 tree.extend(self.file.traverse(representation_map))
         representations = [e for e in tree if e.is_a('IfcRepresentation') \
