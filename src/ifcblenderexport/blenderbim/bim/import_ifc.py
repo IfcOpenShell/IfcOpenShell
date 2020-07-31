@@ -124,7 +124,7 @@ class MaterialCreator():
                 material_to_slot[i] = slots.index(material)
 
         if len(mesh.polygons) == len(mesh['ios_material_ids']):
-            material_index = [(material_to_slot[mat_id] if mat_id != 999999
+            material_index = [(material_to_slot[mat_id] if mat_id != -1
                 else 0) for mat_id in mesh['ios_material_ids']]
             mesh.polygons.foreach_set('material_index', material_index)
 
@@ -947,8 +947,8 @@ class IfcImporter():
                     self.merge_bmeshes(merged_bm, item['blender'])
                 # Magic string NULLMAT represents no material, unless this has a better approach
                 if materials[i] == 'NULLMAT':
-                    # Magic number 999999 represents no material, until this has a better approach
-                    material_ids += [999999] * total_polygons
+                    # Magic number -1 represents no material, until this has a better approach
+                    material_ids += [-1] * total_polygons
                 else:
                     material_ids += [i] * total_polygons
         if merged_curve:
