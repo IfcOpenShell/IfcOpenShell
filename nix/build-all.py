@@ -748,9 +748,14 @@ if "IfcOpenShell-Python" in targets:
     for PYTHON_VERSION, _, TAG in PYTHON_VERSION_CONFS():
         logger.info("\rConfiguring python {PYTHON_VERSION}{TAG} wrapper...".format(**locals()))
 
-        python_dir = os.path.join(IFCOS_DIR, "python-{PYTHON_VERSION}{TAG}".format(**locals()))
+        # python_dir = os.path.join(IFCOS_DIR, "python-{PYTHON_VERSION}{TAG}".format(**locals()))
+        python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
         if not os.path.exists(python_dir):
             os.makedirs(python_dir)
+
+        cache_path = os.path.join(python_dir, "CMakeCache.txt")
+        if os.path.exists(cache_path):
+            os.unlink(cache_path)
 
         PYTHON_LIBRARY=run([bash, "-c", "ls    {DEPS_DIR}/install/python-{PYTHON_VERSION}{TAG}/lib/libpython*.*".format(**locals())])
         PYTHON_INCLUDE=run([bash, "-c", "ls -d {DEPS_DIR}/install/python-{PYTHON_VERSION}{TAG}/include/python*".format(**locals())])
