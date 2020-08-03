@@ -116,6 +116,7 @@ class SvgWriter():
             self.draw_dimension_annotations(self.ifc_cutter.equal_obj, text_override='EQ')
         if self.ifc_cutter.dimension_obj:
             self.draw_dimension_annotations(self.ifc_cutter.dimension_obj)
+        self.draw_measureit_arch_dimension_annotations()
 
         if self.ifc_cutter.break_obj:
             self.draw_break_annotations(self.ifc_cutter.break_obj)
@@ -340,52 +341,63 @@ class SvgWriter():
             path = self.svg.add(self.svg.path(d=d, class_=' '.join(['breakline'])))
 
     def draw_dimension_annotations(self, dimension_obj, text_override=None):
-        x_offset = self.raw_width / 2
-        y_offset = self.raw_height / 2
-
         matrix_world = dimension_obj.matrix_world
         for spline in dimension_obj.data.splines:
             points = self.get_spline_points(spline)
             for i, p in enumerate(points):
                 if i+1 >= len(points):
                     continue
-                classes = ['annotation', 'dimension', 'blahblah']
                 v0_global = matrix_world @ points[i].co.xyz
                 v1_global = matrix_world @ points[i+1].co.xyz
-                v0 = self.project_point_onto_camera(v0_global)
-                v1 = self.project_point_onto_camera(v1_global)
-                start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
-                end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
-                mid = ((end - start) / 2) + start
-                # TODO: hardcoded meters to mm conversion, until I properly do units
-                vector = end - start
-                perpendicular = Vector((vector.y, -vector.x)).normalized()
-                dimension = (v1_global - v0_global).length * 1000
-                sheet_dimension = ((end*self.scale) - (start*self.scale)).length
-                if sheet_dimension < 5: # annotation can't fit
-                    # offset text to right of marker
-                    text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
-                else:
-                    text_position = (mid * self.scale) + perpendicular
-                rotation = math.degrees(vector.angle_signed(Vector((1, 0))))
-                line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
-                    end=tuple(end * self.scale), class_=' '.join(classes)))
-                line['marker-start'] = 'url(#dimension-marker-start)'
-                line['marker-end'] = 'url(#dimension-marker-end)'
-                if text_override is not None:
-                    text = text_override
-                else:
-                    text = str(round(dimension))
-                self.svg.add(self.svg.text(text, insert=tuple(text_position), **{
-                    'transform': 'rotate({} {} {})'.format(
-                        rotation,
-                        text_position.x,
-                        text_position.y
-                    ),
-                    'font-size': annotation.Annotator.get_svg_text_size(2.5),
-                    'font-family': 'OpenGost Type B TT',
-                    'text-anchor': 'middle'
-                }))
+                self.draw_dimension_annotation(v0_global, v1_global, text_override)
+
+    def draw_measureit_arch_dimension_annotations(self):
+        try:
+            import MeasureIt_ARCH.measureit_arch_external_utils
+            coords = MeasureIt_ARCH.measureit_arch_external_utils.blenderBIM_get_coords(bpy.context)
+        except:
+            return
+        for coord in coords:
+            self.draw_dimension_annotation(Vector(coord[0]), Vector(coord[1]))
+
+    def draw_dimension_annotation(self, v0_global, v1_global, text_override=None):
+        classes = ['annotation', 'dimension']
+        x_offset = self.raw_width / 2
+        y_offset = self.raw_height / 2
+        v0 = self.project_point_onto_camera(v0_global)
+        v1 = self.project_point_onto_camera(v1_global)
+        start = Vector(((x_offset + v0.x), (y_offset - v0.y)))
+        end = Vector(((x_offset + v1.x), (y_offset - v1.y)))
+        mid = ((end - start) / 2) + start
+        # TODO: hardcoded meters to mm conversion, until I properly do units
+        vector = end - start
+        perpendicular = Vector((vector.y, -vector.x)).normalized()
+        dimension = (v1_global - v0_global).length * 1000
+        sheet_dimension = ((end*self.scale) - (start*self.scale)).length
+        if sheet_dimension < 5: # annotation can't fit
+            # offset text to right of marker
+            text_position = (end * self.scale) + perpendicular + (3 * vector.normalized())
+        else:
+            text_position = (mid * self.scale) + perpendicular
+        rotation = math.degrees(vector.angle_signed(Vector((1, 0))))
+        line = self.svg.add(self.svg.line(start=tuple(start * self.scale),
+            end=tuple(end * self.scale), class_=' '.join(classes)))
+        line['marker-start'] = 'url(#dimension-marker-start)'
+        line['marker-end'] = 'url(#dimension-marker-end)'
+        if text_override is not None:
+            text = text_override
+        else:
+            text = str(round(dimension))
+        self.svg.add(self.svg.text(text, insert=tuple(text_position), **{
+            'transform': 'rotate({} {} {})'.format(
+                rotation,
+                text_position.x,
+                text_position.y
+            ),
+            'font-size': annotation.Annotator.get_svg_text_size(2.5),
+            'font-family': 'OpenGost Type B TT',
+            'text-anchor': 'middle'
+        }))
 
     def project_point_onto_camera(self, point):
         return self.ifc_cutter.camera_obj.matrix_world.inverted() @ geometry.intersect_line_plane(
