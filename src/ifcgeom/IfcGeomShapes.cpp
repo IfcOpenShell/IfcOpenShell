@@ -1504,11 +1504,29 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTriangulatedFaceSet* l, TopoDS
 			return false;
 		}
 
+		if (tri[0] == tri[1] || tri[1] == tri[2] || tri[0] == tri[2]) {
+			auto tri_0 = boost::lexical_cast<std::string>(tri[0]);
+			auto tri_1 = boost::lexical_cast<std::string>(tri[1]);
+			auto tri_2 = boost::lexical_cast<std::string>(tri[2]);
+			Logger::Message(Logger::LOG_ERROR, "Degenerate triangle indices, skipping (" + tri_0 + "," + tri_1 + "," + tri_2 + ")", l);
+			continue;
+		}
+		
 		const gp_Pnt& a = points[tri[0] - 1]; // account for zero- vs
 		const gp_Pnt& b = points[tri[1] - 1]; // one-based indices in
 		const gp_Pnt& c = points[tri[2] - 1]; // c++ and express
 
-		TopoDS_Wire wire = BRepBuilderAPI_MakePolygon(a, b, c, true).Wire();
+		BRepBuilderAPI_MakePolygon mp(a, b, c, true);
+
+		if (!mp.IsDone()) {
+			auto tri_0 = boost::lexical_cast<std::string>(tri[0]);
+			auto tri_1 = boost::lexical_cast<std::string>(tri[1]);
+			auto tri_2 = boost::lexical_cast<std::string>(tri[2]);
+			Logger::Message(Logger::LOG_ERROR, "Degenerate triangle, skipping (" + tri_0 + "," + tri_1 + "," + tri_2 + ")", l);
+			continue;
+		}
+
+		TopoDS_Wire wire = mp.Wire();
 		TopoDS_Face face = BRepBuilderAPI_MakeFace(wire).Face();
 
 		TopoDS_Iterator face_it(face, false);
