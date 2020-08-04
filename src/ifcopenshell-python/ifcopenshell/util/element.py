@@ -51,3 +51,15 @@ def get_properties(properties):
             del(data['HasProperties'])
             results[prop.Name] = data
     return results
+
+
+def replace_attribute(element, old, new):
+    for i, attribute in enumerate(element):
+        if attribute == old:
+            element[i] = new
+        elif isinstance(attribute, tuple):
+            new_attribute = list(attribute)
+            for j, item in enumerate(attribute):
+                if item == old:
+                    new_attribute[j] = new
+                    element[i] = new_attribute
