@@ -1424,6 +1424,7 @@ class BIM_PT_diff(Panel):
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_json_file")
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")
+        row.operator("bim.visualise_diff", icon="HIDE_OFF", text="")
 
         row = layout.row(align=True)
         row.prop(bim_properties, "diff_old_file")
