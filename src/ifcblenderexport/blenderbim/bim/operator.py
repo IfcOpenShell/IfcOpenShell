@@ -1352,6 +1352,27 @@ class SelectDiffJsonFile(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class VisualiseDiff(bpy.types.Operator):
+    bl_idname = 'bim.visualise_diff'
+    bl_label = 'Visualise Diff'
+
+    def execute(self, context):
+        with open(bpy.context.scene.BIMProperties.diff_json_file, 'r') as file:
+            diff = json.load(file)
+        for obj in bpy.context.visible_objects:
+            obj.color = (1., 1., 1., .2)
+            global_id = obj.BIMObjectProperties.attributes.get('GlobalId')
+            if not global_id:
+                continue
+            if global_id.string_value in diff['deleted']:
+                obj.color = (1., 0., 0., .2)
+            elif global_id.string_value in diff['added']:
+                obj.color = (0., 1., 0., .2)
+            elif global_id.string_value in diff['changed']:
+                obj.color = (0., 0., 1., .2)
+        return {'FINISHED'}
+
+
 class SelectDiffOldFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_old_file"
     bl_label = "Select Diff Old File"
