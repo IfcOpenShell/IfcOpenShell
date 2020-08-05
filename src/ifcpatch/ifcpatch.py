@@ -15,12 +15,17 @@ def execute(args, is_library=None):
             args['input'], ifc_file, logger, args['arguments'])
     print('# Patching ...')
     patcher.patch()
-    if is_library is not None:
+    ifc_file = patcher.file
+    if is_library is True:
         return ifc_file
     print('# Writing patched file ...')
     if not args['output']:
         args['output'] = args['input']
-    ifc_file.write(args.output)
+    if isinstance(ifc_file, str):
+        with open(args['output'], 'w') as text_file:
+            text_file.write(ifc_file)
+    else:
+        ifc_file.write(args['output'])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
