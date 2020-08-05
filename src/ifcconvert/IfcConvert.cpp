@@ -969,7 +969,7 @@ int main(int argc, char** argv) {
     if (!context_iterator.initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
-        Logger::Notice("No geometrical elements found or none succesfully converted");
+        Logger::Error("No geometrical elements found or none succesfully converted");
 		serializer.reset();
 		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
         write_log(!quiet);
