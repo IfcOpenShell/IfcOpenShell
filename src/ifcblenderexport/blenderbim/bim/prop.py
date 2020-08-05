@@ -30,6 +30,7 @@ profiledef_enum = []
 classes_enum = []
 types_enum = []
 availablematerialpsets_enum = []
+ifcpatchrecipes_enum = []
 featuresfiles_enum = []
 scenarios_enum = []
 psetnames_enum = []
@@ -171,6 +172,18 @@ def getAvailableMaterialPsets(self, context):
         files = os.listdir(os.path.join(context.scene.BIMProperties.data_dir, 'material'))
         availablematerialpsets_enum.extend([(f, f, '') for f in files])
     return availablematerialpsets_enum
+
+
+def getIfcPatchRecipes(self, context):
+    global ifcpatchrecipes_enum
+    if len(ifcpatchrecipes_enum) < 1:
+        ifcpatchrecipes_enum.clear()
+        for filename in Path(os.path.join(cwd, '..', 'libs', 'site', 'packages', 'recipes')).glob('*.py'):
+            f = str(filename.stem)
+            if f == '__init__':
+                continue
+            ifcpatchrecipes_enum.append((f, f, ''))
+    return ifcpatchrecipes_enum
 
 
 def getFeaturesFiles(self, context):
@@ -1070,6 +1083,10 @@ class BIMProperties(PropertyGroup):
     active_clash_set_index: IntProperty(name='Active Clash Set Index')
     constraints: CollectionProperty(name='Constraints', type=Constraint)
     active_constraint_index: IntProperty(name='Active Constraint Index')
+    ifc_patch_recipes: EnumProperty(items=getIfcPatchRecipes, name="Recipes")
+    ifc_patch_input: StringProperty(default='', name='IFC Patch Input IFC')
+    ifc_patch_output: StringProperty(default='', name='IFC Patch Output IFC')
+    ifc_patch_args: StringProperty(default='', name='Arguments')
 
 
 class BCFProperties(PropertyGroup):
