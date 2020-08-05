@@ -568,8 +568,25 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcTrimmedCurve* l, TopoDS_Wire& 
 				flts[1] -= M_PI / 2.;
 			}
 		}
-		// Fix from @sanderboer to compare using model tolerance:
-		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., getValue(GV_PRECISION))) {
+
+		double radius = 1.0;
+		if (curve->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+			auto circle_curve = Handle_Geom_Circle::DownCast(curve);
+			radius = circle_curve->Radius();
+		} else if (curve->DynamicType() == STANDARD_TYPE(Geom_Ellipse)) {
+			auto circle_curve = Handle_Geom_Ellipse::DownCast(curve);
+			radius = (circle_curve->MajorRadius() + circle_curve->MinorRadius()) / 2.;
+		}
+
+		// Fix from @sanderboer to compare using model tolerance, see #744
+		// Made dependent on radius, see #928
+
+		// @todo another good critereon for determining whether to take full curve
+		// or trimmed segment would be whether there are other curve segments or this
+		// is the only one. But it does not really match the bottom-up construction
+		// mechanism of IfcOpenShell.
+
+		if (isConic && ALMOST_THE_SAME(fmod(flts[1]-flts[0],M_PI*2.), 0., 100 * getValue(GV_PRECISION) / (2 * M_PI * radius))) {
 			e = BRepBuilderAPI_MakeEdge(curve).Edge();
 		} else {
 			BRepBuilderAPI_MakeEdge me (curve,flts[0],flts[1]);
