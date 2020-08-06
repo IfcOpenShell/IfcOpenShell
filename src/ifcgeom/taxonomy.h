@@ -11,7 +11,6 @@
 #include <string>
 #include <tuple>
 #include <exception>
-#include <cstdalign>
 
 namespace ifcopenshell {
 
