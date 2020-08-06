@@ -234,9 +234,12 @@ namespace ifcopenshell { namespace geometry {
 			std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](IfcUtil::IfcBaseClass* p) {
 				auto item = converter_->mapping()->map(p);
 				// Product placements do not affect item reuse and should temporarily be swapped to identity
-				std::swap(placements[item], ((taxonomy::geom_item*)item)->matrix);
+				if (item) {
+					std::swap(placements[item], ((taxonomy::geom_item*)item)->matrix);
+				}
 				return item;
 			});
+			items.erase(std::remove(items.begin(), items.end(), nullptr), items.end());
 			std::sort(items.begin(), items.end(), taxonomy::less);
 			auto it = items.begin();
 			while (it < items.end()) {
