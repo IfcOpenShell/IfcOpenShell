@@ -29,12 +29,24 @@ def assert_number(number):
     except ValueError:
         assert False, 'A number should be specified, not {}'.format(number)
 
-def assert_attribute(element, name, value):
-    if value == 'NULL':
-        value = None
+def assert_type(element, ifc_class, is_exact = False):
+    if is_exact:
+        assert element.is_a() == ifc_class, 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
+    else:
+        assert element.is_a(ifc_class), 'The element {} is an {} instead of {}.'.format(element, element.is_a(), ifc_class)
+
+def assert_attribute(element, name, value=None):
     if not hasattr(element, name):
         assert False, 'The element {} does not have the attribute {}'.format(element, name)
+    if not value:
+        if getattr(element, name) is None:
+            assert False, 'The element {} does not have a value for the attribute {}'.format(element, name)
+        return
+    if value == 'NULL':
+        value = None
     actual_value = getattr(element, name)
+    if isinstance(value, list):
+        actual_value = list(actual_value)
     assert actual_value == value, 'We expected a value of "{}" but instead got "{}" for the element {}'.format(value, actual_value, element)
 
 def assert_pset(element, pset_name, prop_name=None, value=None):
