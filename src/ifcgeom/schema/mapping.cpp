@@ -972,7 +972,10 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 			styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
 		}
 		if (styles->size() == 1) {
-			return map(*styles->begin());
+			auto s = map(*styles->begin());
+			if (s) {
+				return s;
+			}
 		}
 	}
 
@@ -985,14 +988,17 @@ taxonomy::item* mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 }
 
 taxonomy::item* mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
+	auto style_pair = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(inst);
+	IfcSchema::IfcSurfaceStyle* style = style_pair.first;
+	IfcSchema::IfcSurfaceStyleShading* shading = style_pair.second;
+
+	if (style == nullptr) {
+		return nullptr;
+	}
+	
 	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
 
 	taxonomy::style* surface_style = new taxonomy::style;
-
-	auto style_pair = get_surface_style<IfcSchema::IfcSurfaceStyleShading>(inst);
-
-	IfcSchema::IfcSurfaceStyle* style = style_pair.first;
-	IfcSchema::IfcSurfaceStyleShading* shading = style_pair.second;
 
 	surface_style->instance = style;
 	if (style->hasName()) {
