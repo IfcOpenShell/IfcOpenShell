@@ -89,15 +89,20 @@ namespace {
 	}
 
 	bool compare(const extrusion& a, const extrusion& b) {
-		// @todo extrusions can also have non-identity matrices right? perhaps it's time
-		//       for a dedicated transform node and not on the abstract geom_item.
 		const int order[3] = {
 			less_to_order(a.basis, b.basis),
 			less_to_order(a.direction, b.direction),
 			a.depth < b.depth ? -1 : (a.depth == b.depth ? 0 : 1)
 		};
+		// find the first non-zero integer.
 		auto it = std::find_if(std::begin(order), std::end(order), [](int x) { return x; });
-		if (it == std::end(order)) return false;
+		if (it == std::end(order)) {
+			// extrusions can have non-identity matrices
+			// 
+			// @todo perhaps it's time for a dedicated transform
+			//       node and not on the abstract geom_item.
+			return compare(a.matrix, b.matrix);
+		}
 		return *it == -1;
 	}
 
