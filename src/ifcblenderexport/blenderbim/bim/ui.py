@@ -105,7 +105,8 @@ class BIM_PT_object(Panel):
                 row.prop(prop, 'string_value', text='')
                 if 'length' in prop.name.lower() \
                         or 'width' in prop.name.lower() \
-                        or 'height' in prop.name.lower():
+                        or 'height' in prop.name.lower() \
+                        or 'depth' in prop.name.lower():
                     op = row.operator('bim.guess_quantity', icon='IPO_EASE_IN_OUT', text='')
                     op.qto_index = index
                     op.prop_index = index2

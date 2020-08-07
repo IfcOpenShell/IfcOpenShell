@@ -15,7 +15,7 @@ class QtoCalculator():
             return self.get_length(obj)
         elif 'width' in prop_name:
             return self.get_width(obj)
-        elif 'height' in prop_name:
+        elif 'height' in prop_name or 'depth' in prop_name:
             return self.get_height(obj)
         elif 'area' in prop_name \
                 and ('footprint' in prop_name or 'section' in prop_name):
