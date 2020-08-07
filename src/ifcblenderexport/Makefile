@@ -268,6 +268,7 @@ endif
 	# Required by IFCPatch
 	cd dist/blenderbim/libs/site/packages/ && mkdir recipes
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/__init__.py
+	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/MergeProject.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetObjectPlacements.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/OffsetStoreyElevations.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/RecycleNonRootedElements.py
