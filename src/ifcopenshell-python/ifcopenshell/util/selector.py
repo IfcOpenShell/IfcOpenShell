@@ -210,6 +210,13 @@ class Selector():
         return results
 
     def get_element_value(self, element, key):
+        if '.' in key \
+                and key.split('.')[0] == 'type':
+            try:
+                element = ifcopenshell.util.element.get_type(element)
+            except:
+                return
+            key = '.'.join(key.split('.')[1:])
         info = element.get_info()
         if key in info:
             return info[key]

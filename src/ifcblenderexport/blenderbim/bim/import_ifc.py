@@ -2,6 +2,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.selector
+import ifcopenshell.util.element
 import bpy
 import bmesh
 import os
@@ -1272,18 +1273,9 @@ class IfcImporter():
                     new_prop.string_value = str(value)
 
     def add_defines_by_type_relation(self, element, obj):
-        related_type = self.get_type(element)
+        related_type = ifcopenshell.util.element.get_type(element)
         if related_type:
             obj.BIMObjectProperties.relating_type = self.type_products[related_type.GlobalId]
-
-    # TODO: migrate into util function
-    def get_type(self, element):
-        if hasattr(element, 'IsTypedBy') and element.IsTypedBy:
-            return element.IsTypedBy[0].RelatingType
-        elif hasattr(element, 'IsDefinedBy') and element.IsDefinedBy: # IFC2X3
-            for relationship in element.IsDefinedBy:
-                if relationship.is_a('IfcRelDefinesByType'):
-                    return relationship.RelatingType
 
     def add_opening_relation(self, element, obj):
         if not element.is_a('IfcOpeningElement'):

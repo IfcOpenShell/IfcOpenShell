@@ -53,6 +53,15 @@ def get_properties(properties):
     return results
 
 
+def get_type(element):
+    if hasattr(element, 'IsTypedBy') and element.IsTypedBy:
+        return element.IsTypedBy[0].RelatingType
+    elif hasattr(element, 'IsDefinedBy') and element.IsDefinedBy: # IFC2X3
+        for relationship in element.IsDefinedBy:
+            if relationship.is_a('IfcRelDefinesByType'):
+                return relationship.RelatingType
+
+
 def replace_attribute(element, old, new):
     for i, attribute in enumerate(element):
         if attribute == old:
