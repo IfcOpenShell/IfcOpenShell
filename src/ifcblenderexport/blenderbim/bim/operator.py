@@ -5,6 +5,7 @@ import json
 import logging
 import webbrowser
 import ifcopenshell
+import ifcopenshell.util.selector
 import tempfile
 from . import export_ifc
 from . import import_ifc
@@ -2896,14 +2897,14 @@ class ExportIfcCsv(bpy.types.Operator):
     def execute(self, context):
         import ifccsv
         self.filepath = bpy.path.ensure_ext(self.filepath, '.csv')
-        ifc_selector_parser = ifccsv.IfcSelectorParser()
-        ifc_selector_parser.ifc = bpy.context.scene.BIMProperties.ifc_file
-        ifc_selector_parser.query = bpy.context.scene.BIMProperties.ifc_selector
-        ifc_selector_parser.parse()
+        ifc_file = ifcopenshell.open(bpy.context.scene.BIMProperties.ifc_file)
+        selector = ifcopenshell.util.selector.Selector()
+        results = selector.parse(ifc_file, bpy.context.scene.BIMProperties.ifc_selector)
         ifc_csv = ifccsv.IfcCsv()
         ifc_csv.output = self.filepath
         ifc_csv.attributes = [a.name for a in bpy.context.scene.BIMProperties.csv_attributes]
-        ifc_csv.export(ifc_selector_parser.file, ifc_selector_parser.results)
+        ifc_csv.selector = selector
+        ifc_csv.export(ifc_file, results)
         return {'FINISHED'}
 
 
