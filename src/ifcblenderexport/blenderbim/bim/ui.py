@@ -13,7 +13,6 @@ class BIM_PT_object(Panel):
         return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
 
     def draw(self, context):
-
         if context.active_object is None:
             return
         layout = self.layout
@@ -70,8 +69,22 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'relating_structure')
 
-        layout.label(text="Property Sets:")
+class BIM_PT_object_psets(Panel):
+    bl_label = 'IFC Object Property Sets'
+    bl_idname = 'BIM_PT_object_psets'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
         row = layout.row(align=True)
         row.prop(props, 'pset_name', text='')
         row.operator('bim.add_pset')
@@ -89,8 +102,22 @@ class BIM_PT_object(Panel):
                 op.prop_name = prop.name
                 op.collection_element = True
 
-        layout.label(text="Quantities:")
+class BIM_PT_object_qto(Panel):
+    bl_label = 'IFC Object Quantity Sets'
+    bl_idname = 'BIM_PT_object_qto'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
 
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
         row = layout.row(align=True)
         row.prop(props, 'qto_name', text='')
         row.operator('bim.add_qto')
