@@ -3314,3 +3314,20 @@ class SelectIfcPatchOutput(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class CalculateEdgeLengths(bpy.types.Operator):
+    bl_idname = 'bim.calculate_edge_lengths'
+    bl_label = 'Calculate Edge Lengths'
+
+    def execute(self, context):
+        result = 0
+        for obj in bpy.context.selected_objects:
+            if not obj.data or not obj.data.edges:
+                continue
+            for edge in obj.data.edges:
+                if edge.select:
+                    result += (obj.data.vertices[edge.vertices[1]].co -
+                        obj.data.vertices[edge.vertices[0]].co).length
+        bpy.context.scene.BIMProperties.qto_result = str(result)
+        return {'FINISHED'}

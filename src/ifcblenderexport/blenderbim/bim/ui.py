@@ -69,6 +69,26 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'relating_structure')
 
+        row = layout.row()
+        row.prop(props, 'material_type')
+
+        layout.label(text='Structural Boundary Condition:')
+
+        row = layout.row()
+        row.prop(props, 'has_boundary_condition')
+
+        if bpy.context.active_object.BIMObjectProperties.has_boundary_condition:
+            row = layout.row()
+            row.prop(props.boundary_condition, 'name')
+            for index, attribute in enumerate(props.boundary_condition.attributes):
+                row = layout.row(align=True)
+                row.prop(attribute, 'name', text='')
+                row.prop(attribute, 'string_value', text='')
+
+        row = layout.row()
+        row.prop(props, 'structural_member_connection')
+
+
 class BIM_PT_object_psets(Panel):
     bl_label = 'IFC Object Property Sets'
     bl_idname = 'BIM_PT_object_psets'
@@ -146,25 +166,6 @@ class BIM_PT_object_qto(Panel):
                     op = row.operator('bim.guess_quantity', icon='SPHERE', text='')
                     op.qto_index = index
                     op.prop_index = index2
-
-        row = layout.row()
-        row.prop(props, 'material_type')
-
-        layout.label(text='Structural Boundary Condition:')
-
-        row = layout.row()
-        row.prop(props, 'has_boundary_condition')
-
-        if bpy.context.active_object.BIMObjectProperties.has_boundary_condition:
-            row = layout.row()
-            row.prop(props.boundary_condition, 'name')
-            for index, attribute in enumerate(props.boundary_condition.attributes):
-                row = layout.row(align=True)
-                row.prop(attribute, 'name', text='')
-                row.prop(attribute, 'string_value', text='')
-
-        row = layout.row()
-        row.prop(props, 'structural_member_connection')
 
 
 class BIM_PT_document_information(Panel):
@@ -481,6 +482,27 @@ class BIM_PT_psets(Panel):
             row.prop(template, 'description', text='')
             row.prop(template, 'primary_measure_type', text='')
             row.operator('bim.remove_property_template', icon='X', text='').index = index
+
+
+class BIM_PT_qto(Panel):
+    bl_label = 'IFC Quantity Take-off'
+    bl_idname = 'BIM_PT_qto'
+    #bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        layout.label(text="Results:")
+        row = layout.row()
+        row.prop(props, 'qto_result', text='')
+
+        row = layout.row(align=True)
+        row.operator("bim.calculate_edge_lengths")
 
 
 class BIM_PT_classifications(Panel):
