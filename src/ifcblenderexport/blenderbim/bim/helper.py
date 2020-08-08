@@ -1,5 +1,7 @@
 import math
 
+# TODO: Deprecate this in favour of ifcopenshell.util.unit
+
 class SIUnitHelper:
     prefixes = {"EXA": 1e18, "PETA": 1e15, "TERA": 1e12, "GIGA": 1e9, "MEGA":
         1e6, "KILO": 1e3, "HECTO": 1e2, "DECA": 1e1, "DECI": 1e-1, "CENTI":
@@ -64,3 +66,38 @@ class SIUnitHelper:
         for name in SIUnitHelper.unit_names:
             if name in text.upper().replace('METER', 'METRE'):
                 return name
+
+    @staticmethod
+    def convert(value, from_prefix, from_unit, to_prefix, to_unit):
+        """Converts between length, area, and volume units
+
+        :param value: The numeric value you want to convert
+        :type value: float
+        :param from_prefix: A prefix from IfcSIPrefix. Can be None.
+        :type from_prefix: string
+        :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
+        :type from_unit: string
+        :param to_prefix: A prefix from IfcSIPrefix. Can be None.
+        :type to_prefix: string
+        :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
+        :type to_unit: string
+        """
+        if from_unit in SIUnitHelper.si_conversions:
+            value *= SIUnitHelper.si_conversions[from_unit]
+        elif from_prefix:
+            value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
+            if 'SQUARE' in from_unit:
+                value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
+            elif 'CUBIC' in from_unit:
+                value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
+                value *= SIUnitHelper.get_prefix_multiplier(from_prefix)
+        if to_unit in SIUnitHelper.si_conversions:
+            return value * (1 / SIUnitHelper.si_conversions[to_unit])
+        elif to_prefix:
+            value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
+            if 'SQUARE' in from_unit:
+                value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
+            elif 'CUBIC' in from_unit:
+                value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
+                value *= (1 / SIUnitHelper.get_prefix_multiplier(to_prefix))
+        return value
