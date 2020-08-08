@@ -487,14 +487,22 @@ class BIM_PT_psets(Panel):
 class BIM_PT_qto(Panel):
     bl_label = 'IFC Quantity Take-off'
     bl_idname = 'BIM_PT_qto'
-    #bl_options = {'DEFAULT_CLOSED'}
+    bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'scene'
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
         props = context.scene.BIMProperties
+
+        row = layout.row()
+        layout.label(text="Units:")
+        row = layout.row()
+        row.prop(props, 'area_unit')
+        row = layout.row()
+        row.prop(props, 'volume_unit')
 
         row = layout.row()
         layout.label(text="Results:")

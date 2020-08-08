@@ -494,6 +494,7 @@ class IfcImporter():
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
 
+    # TODO migrate to utility
     def replace_attribute(self, element, old, new):
         for i, attribute in enumerate(element):
             if attribute == old:
@@ -1358,6 +1359,12 @@ class IfcImporter():
                         bpy.context.scene.unit_settings.length_unit = 'INCHES'
                     elif unit.Name == 'foot':
                         bpy.context.scene.unit_settings.length_unit = 'FEET'
+            elif unit.is_a('IfcNamedUnit') and unit.UnitType == 'AREAUNIT':
+                bpy.context.scene.BIMProperties.area_unit = '{}{}'.format(
+                    unit.Prefix + '/' if hasattr(unit, 'Prefix') and unit.Prefix else '', unit.Name)
+            elif unit.is_a('IfcNamedUnit') and unit.UnitType == 'VOLUMEUNIT':
+                bpy.context.scene.BIMProperties.volume_unit = '{}{}'.format(
+                    unit.Prefix + '/' if hasattr(unit, 'Prefix') and unit.Prefix else '', unit.Name)
 
     def create_geometric_representation_contexts(self):
         bpy.context.scene.BIMProperties.has_model_context = False
