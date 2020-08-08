@@ -234,6 +234,8 @@ if bpy is not None:
         ui.BIM_PT_material,
         ui.BIM_PT_mesh,
         ui.BIM_PT_object,
+        ui.BIM_PT_object_psets,
+        ui.BIM_PT_object_qto,
         ui.BIM_PT_representations,
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
