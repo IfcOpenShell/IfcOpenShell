@@ -7,6 +7,7 @@
 .break { fill: white; }
 .breakline { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
 .solid {}
+.material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }
 .material-diagonal3 { fill: url(#diagonal3); }
