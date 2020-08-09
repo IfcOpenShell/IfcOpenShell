@@ -525,6 +525,8 @@ class BIM_PT_qto(Panel):
 
         row = layout.row(align=True)
         row.operator("bim.calculate_edge_lengths")
+        row = layout.row(align=True)
+        row.operator("bim.calculate_face_areas")
 
 
 class BIM_PT_classifications(Panel):
