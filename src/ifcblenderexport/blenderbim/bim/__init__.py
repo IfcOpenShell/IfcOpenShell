@@ -171,6 +171,7 @@ if bpy is not None:
         operator.ExecuteIfcPatch,
         operator.CalculateEdgeLengths,
         operator.CalculateFaceAreas,
+        operator.CalculateObjectVolumes,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
