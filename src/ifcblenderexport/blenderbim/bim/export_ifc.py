@@ -1938,12 +1938,17 @@ class IfcExporter():
 
     def create_surface_style_rendering(self, styled_item):
         surface_colour = self.create_colour_rgb(styled_item['raw'].diffuse_color)
-        rendering_attributes = {'SurfaceColour': surface_colour, 'ReflectanceMethod': 'NOTDEFINED'}
+        rendering_attributes = {
+            'SurfaceColour': surface_colour,
+            'Transparency': (styled_item['raw'].diffuse_color[3] - 1) * -1,
+            'ReflectanceMethod': 'NOTDEFINED'
+        }
         rendering_attributes.update(self.get_rendering_attributes(styled_item['raw']))
         return self.file.create_entity('IfcSurfaceStyleRendering', **rendering_attributes)
 
     def get_rendering_attributes(self, material):
-        if not hasattr(material.node_tree, 'nodes') \
+        if not material.use_nodes \
+                or not hasattr(material.node_tree, 'nodes') \
                 or 'Principled BSDF' not in material.node_tree.nodes:
             return {}
         bsdf = material.node_tree.nodes['Principled BSDF']
