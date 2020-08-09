@@ -987,7 +987,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 					}
 					const gp_Pnt& current = points[*jt - 1];
 					if (jt != indices.begin()) {
-						w.Add(BRepBuilderAPI_MakeEdge(previous, current));
+						BRepBuilderAPI_MakeEdge me(previous, current);
+						if (me.IsDone()) {
+							w.Add(me.Edge());
+						} else {
+							Logger::Warning("Ignoring segment on", l);
+						}						
 					}
 					previous = current;
 				}
@@ -1007,7 +1012,12 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcIndexedPolyCurve* l, TopoDS_Wi
 				const gp_Pnt& b = points[indices[1] - 1];
 				const gp_Pnt& c = points[indices[2] - 1];
 				Handle(Geom_Circle) circ = GC_MakeCircle(a, b, c).Value();
-				w.Add(BRepBuilderAPI_MakeEdge(circ, a, c));
+				BRepBuilderAPI_MakeEdge me(circ, a, c);
+				if (me.IsDone()) {
+					w.Add(me.Edge());
+				} else {
+					Logger::Warning("Ignoring segment on", l);
+				}
 			} else {
 				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment->declaration().name());
 			}
