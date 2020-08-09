@@ -1260,6 +1260,34 @@ namespace {
 		}
 	}
 
+	// #939: a closed loop causes failed triangulation in 7.3 and artefacts
+	// in 7.4 so we break up a closed wire into two equal parts.
+	void break_closed(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires) {
+		std::vector<TopoDS_Edge> sorted_edges;
+		sort_edges(wire, sorted_edges);
+
+		if (sorted_edges.size() == 1) {
+			wires.push_back(wire);
+			return;
+		}
+
+		BRep_Builder B;
+		double u, v;
+
+		wires.emplace_back();
+		B.MakeWire(wires.back());
+
+		for (int i = 0; i < sorted_edges.size(); ++i) {
+			if (i == sorted_edges.size() / 2) {
+				wires.emplace_back();
+				B.MakeWire(wires.back());
+			}
+
+			const auto& e = sorted_edges[i];
+			B.Add(wires.back(), e);
+		}
+	}
+
 	void segment_adjacent_non_linear(const TopoDS_Wire& wire, std::vector<TopoDS_Wire>& wires) {
 		std::vector<TopoDS_Edge> sorted_edges;
 		sort_edges(wire, sorted_edges);
@@ -1294,8 +1322,12 @@ namespace {
 
 	// @todo make this generic for other sweeps not just swept disk
 	void process_sweep(const TopoDS_Wire& wire, double radius, TopoDS_Shape& result) {
-		std::vector<TopoDS_Wire> wires;
-		segment_adjacent_non_linear(wire, wires);
+		std::vector<TopoDS_Wire> wires, wires_tmp;
+		segment_adjacent_non_linear(wire, wires_tmp);
+		for (auto& w : wires_tmp) {
+			break_closed(w, wires);
+		}
+		wires.erase(wires.begin() + 1);
 
 		TopoDS_Compound C;
 		BRep_Builder B;
