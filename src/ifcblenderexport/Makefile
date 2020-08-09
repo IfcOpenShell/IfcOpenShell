@@ -33,6 +33,11 @@ endif
 	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcblenderexport/occ_utils.py
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
+	# IfcOpenBot is outdated, so we hotfix the Python utilities
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/unit.py
 
 	# Provides Python OCC functionality for cutting IFC geometry for construction documentation
 	mkdir dist/working
