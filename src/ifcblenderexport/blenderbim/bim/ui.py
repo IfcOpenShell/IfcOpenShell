@@ -41,10 +41,6 @@ class BIM_PT_object(Panel):
         if 'Ifc' not in context.active_object.name:
             return
 
-        layout.label(text="Software Identity:")
-        row = layout.row()
-        row.operator('bim.generate_global_id')
-
         layout.label(text="Attributes:")
         row = layout.row(align=True)
         row.prop(props, 'applicable_attributes', text='')
@@ -54,6 +50,8 @@ class BIM_PT_object(Panel):
             row = layout.row(align=True)
             row.prop(attribute, 'name', text='')
             row.prop(attribute, 'string_value', text='')
+            if attribute.name == 'GlobalId':
+                row.operator('bim.generate_global_id', icon='FILE_REFRESH', text='')
             op = row.operator('bim.copy_attributes_to_selection', icon='COPYDOWN', text='')
             op.prop_base = 'BIMObjectProperties.attributes'
             op.prop_name = attribute.name

@@ -1122,6 +1122,8 @@ class AddAttribute(bpy.types.Operator):
         if bpy.context.active_object.BIMObjectProperties.applicable_attributes:
             attribute = bpy.context.active_object.BIMObjectProperties.attributes.add()
             attribute.name = bpy.context.active_object.BIMObjectProperties.applicable_attributes
+            if attribute.name == 'GlobalId':
+                attribute.string_value = ifcopenshell.guid.new()
         return {'FINISHED'}
 
 
