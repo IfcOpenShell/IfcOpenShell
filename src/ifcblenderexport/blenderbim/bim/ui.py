@@ -72,22 +72,6 @@ class BIM_PT_object(Panel):
         row = layout.row()
         row.prop(props, 'material_type')
 
-        layout.label(text='Structural Boundary Condition:')
-
-        row = layout.row()
-        row.prop(props, 'has_boundary_condition')
-
-        if bpy.context.active_object.BIMObjectProperties.has_boundary_condition:
-            row = layout.row()
-            row.prop(props.boundary_condition, 'name')
-            for index, attribute in enumerate(props.boundary_condition.attributes):
-                row = layout.row(align=True)
-                row.prop(attribute, 'name', text='')
-                row.prop(attribute, 'string_value', text='')
-
-        row = layout.row()
-        row.prop(props, 'structural_member_connection')
-
 
 class BIM_PT_object_psets(Panel):
     bl_label = 'IFC Object Property Sets'
@@ -166,6 +150,38 @@ class BIM_PT_object_qto(Panel):
                     op = row.operator('bim.guess_quantity', icon='SPHERE', text='')
                     op.qto_index = index
                     op.prop_index = index2
+
+
+class BIM_PT_object_structural(Panel):
+    bl_label = 'IFC Structural Relationships'
+    bl_idname = 'BIM_PT_object_structural'
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and hasattr(context.active_object, "BIMObjectProperties")
+
+    def draw(self, context):
+        if context.active_object is None:
+            return
+        layout = self.layout
+        props = context.active_object.BIMObjectProperties
+        row = layout.row()
+        row.prop(props, 'has_boundary_condition')
+
+        if bpy.context.active_object.BIMObjectProperties.has_boundary_condition:
+            row = layout.row()
+            row.prop(props.boundary_condition, 'name')
+            for index, attribute in enumerate(props.boundary_condition.attributes):
+                row = layout.row(align=True)
+                row.prop(attribute, 'name', text='')
+                row.prop(attribute, 'string_value', text='')
+
+        row = layout.row()
+        row.prop(props, 'structural_member_connection')
 
 
 class BIM_PT_document_information(Panel):
