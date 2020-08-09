@@ -1003,6 +1003,8 @@ class BIMProperties(PropertyGroup):
         name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
     export_schema: EnumProperty(items=[('IFC4', 'IFC4', ''), ('IFC2X3', 'IFC2X3', '')], name='IFC Schema')
+    export_json_version: EnumProperty(items=[('4', '4', ''), ('5a', '5a', '')], name='IFC JSON Version')
+    export_json_compact: BoolProperty(name="Export Compact IFCJSON", default=False)
     export_has_representations: BoolProperty(name="Export Representations", default=True)
     export_should_guess_quantities: BoolProperty(name="Export with Guessed Quantities", default=False)
     export_should_use_presentation_style_assignment: BoolProperty(name="Export with Presentation Style Assignment", default=False)

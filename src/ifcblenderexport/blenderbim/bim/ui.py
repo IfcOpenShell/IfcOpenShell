@@ -1558,6 +1558,8 @@ class BIM_PT_mvd(Panel):
 
         row = layout.row()
         row.prop(bim_properties, 'export_schema')
+        row = layout.row()
+        row.prop(bim_properties, 'export_json_version')
 
         row = layout.row()
         row.prop(bim_properties, 'ifc_import_filter')
@@ -1589,6 +1591,8 @@ class BIM_PT_mvd(Panel):
         row.prop(bim_properties, 'import_should_use_cpu_multiprocessing')
         row = layout.row()
         row.prop(bim_properties, 'import_should_import_with_profiling')
+        row = layout.row()
+        row.prop(bim_properties, 'export_json_compact')
 
         layout.label(text='Simplifications:')
 

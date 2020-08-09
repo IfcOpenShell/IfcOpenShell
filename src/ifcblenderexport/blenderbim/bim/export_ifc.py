@@ -12,7 +12,6 @@ from .helper import SIUnitHelper
 from . import schema
 import ifcopenshell
 import addon_utils
-from .ifc2json import IFC2JSON
 
 class ArrayModifier:
     count: int
@@ -2868,9 +2867,17 @@ class IfcExporter():
         elif extension == 'ifc':
             self.file.write(self.ifc_export_settings.output_file)
         elif extension == 'ifcjson':
-            ifc2json = IFC2JSON(self.file).convert()
-            with open(self.ifc_export_settings.output_file, 'w') as f:
-                f.write(json.dumps(ifc2json, indent = 4))
+            import ifcjson
+            if self.ifc_export_settings.json_version == '4':
+                jsonData = ifcjson.IFC2JSON4(self.file, self.ifc_export_settings.json_compact).spf2Json()
+                with open(self.ifc_export_settings.output_file, 'w') as outfile:
+                    json.dump(jsonData, outfile,
+                        indent=None if self.ifc_export_settings.json_compact else 4)
+            elif self.ifc_export_settings.json_version == '5a':
+                jsonData = ifcjson.IFC2JSON5a(self.file, self.ifc_export_settings.json_compact).spf2Json()
+                with open(self.ifc_export_settings.output_file, 'w') as outfile:
+                    json.dump(jsonData, outfile,
+                        indent=None if self.ifc_export_settings.json_compact else 4)
 
 
 class IfcExportSettings:
@@ -2900,6 +2907,8 @@ class IfcExportSettings:
         settings.data_dir = scene_bim.data_dir
         settings.schema_dir = scene_bim.schema_dir
         settings.has_representations = scene_bim.export_has_representations
+        settings.json_version = scene_bim.export_json_version
+        settings.json_compact = scene_bim.export_json_compact
         settings.schema = scene_bim.export_schema
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
         settings.should_guess_quantities = scene_bim.export_should_guess_quantities

@@ -267,6 +267,13 @@ endif
 	# Provides IFCCSV functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifccsv/ifccsv.py
 
+	# Provides IFCJSON functionality
+	mkdir dist/working
+	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
+	cd dist/working && unzip master.zip
+	cp -r dist/working/IFC2JSON_python-master/ifcjson dist/blenderbim/libs/site/packages/
+	rm -rf dist/working
+
 	# Provides IFCPatch functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/ifcpatch.py
 
