@@ -3361,7 +3361,7 @@ class CalculateEdgeLengths(bpy.types.Operator):
                 if edge.select:
                     result += (obj.data.vertices[edge.vertices[1]].co -
                         obj.data.vertices[edge.vertices[0]].co).length
-        bpy.context.scene.BIMProperties.qto_result = str(result)
+        bpy.context.scene.BIMProperties.qto_result = str(round(result, 3))
         return {'FINISHED'}
 
 
@@ -3377,5 +3377,20 @@ class CalculateFaceAreas(bpy.types.Operator):
             for polygon in obj.data.polygons:
                 if polygon.select:
                     result += polygon.area
-        bpy.context.scene.BIMProperties.qto_result = str(result)
+        bpy.context.scene.BIMProperties.qto_result = str(round(result, 3))
+        return {'FINISHED'}
+
+
+class CalculateObjectVolumes(bpy.types.Operator):
+    bl_idname = 'bim.calculate_object_volumes'
+    bl_label = 'Calculate Object Volumes'
+
+    def execute(self, context):
+        qto_calculator = qto.QtoCalculator()
+        result = 0
+        for obj in bpy.context.selected_objects:
+            if not obj.data:
+                continue
+            result += qto_calculator.get_volume(obj)
+        bpy.context.scene.BIMProperties.qto_result = str(round(result, 3))
         return {'FINISHED'}
