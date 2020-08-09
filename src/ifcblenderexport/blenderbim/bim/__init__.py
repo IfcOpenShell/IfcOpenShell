@@ -242,6 +242,7 @@ if bpy is not None:
         ui.BIM_PT_classification_references,
         ui.BIM_PT_documents,
         ui.BIM_PT_constraint_relations,
+        ui.BIM_PT_object_structural,
         ui.BIM_PT_camera,
         ui.BIM_PT_text,
         ui.BIM_UL_generic,
