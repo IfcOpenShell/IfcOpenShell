@@ -498,39 +498,6 @@ class BIM_PT_psets(Panel):
             row.operator('bim.remove_property_template', icon='X', text='').index = index
 
 
-class BIM_PT_qto(Panel):
-    bl_label = 'IFC Quantity Take-off'
-    bl_idname = 'BIM_PT_qto'
-    bl_options = {'DEFAULT_CLOSED'}
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'scene'
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = context.scene.BIMProperties
-
-        row = layout.row()
-        layout.label(text="Units:")
-        row = layout.row()
-        row.prop(props, 'area_unit')
-        row = layout.row()
-        row.prop(props, 'volume_unit')
-
-        row = layout.row()
-        layout.label(text="Results:")
-        row = layout.row()
-        row.prop(props, 'qto_result', text='')
-
-        row = layout.row(align=True)
-        row.operator("bim.calculate_edge_lengths")
-        row = layout.row(align=True)
-        row.operator("bim.calculate_face_areas")
-        row = layout.row(align=True)
-        row.operator("bim.calculate_object_volumes")
-
-
 class BIM_PT_classifications(Panel):
     bl_label = 'IFC Classifications References'
     bl_idname = 'BIM_PT_classifications'
@@ -1839,3 +1806,53 @@ class BIM_PT_ifcclash(Panel):
 
             row = layout.row()
             row.operator('bim.select_ifc_clash_results')
+
+
+class BIM_PT_modeling_utilities(Panel):
+    bl_idname = "BIM_PT_modeling_utilities"
+    bl_label = "Architectural"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator("bim.add_opening")
+
+
+class BIM_PT_qto_utilities(Panel):
+    bl_idname = "BIM_PT_qto_utilities"
+    bl_label = "Quantity Take-off"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        layout.label(text="Results:")
+        row = layout.row()
+        row.prop(props, 'qto_result', text='')
+
+        row = layout.row(align=True)
+        row.operator("bim.calculate_edge_lengths")
+        row = layout.row(align=True)
+        row.operator("bim.calculate_face_areas")
+        row = layout.row(align=True)
+        row.operator("bim.calculate_object_volumes")
+
+
+def ifc_units(self, context):
+    scene = context.scene
+    props = context.scene.BIMProperties
+    layout = self.layout
+    layout.use_property_decorate = False
+    layout.use_property_split = True
+    row = layout.row()
+    row.prop(props, 'area_unit')
+    row = layout.row()
+    row.prop(props, 'volume_unit')

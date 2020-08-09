@@ -3394,3 +3394,19 @@ class CalculateObjectVolumes(bpy.types.Operator):
             result += qto_calculator.get_volume(obj)
         bpy.context.scene.BIMProperties.qto_result = str(round(result, 3))
         return {'FINISHED'}
+
+
+class AddOpening(bpy.types.Operator):
+    bl_idname = 'bim.add_opening'
+    bl_label = 'Add Opening'
+
+    def execute(self, context):
+        opening = context.active_object
+        if context.selected_objects[0] != context.active_object:
+            obj = context.selected_objects[0]
+        else:
+            obj = context.selected_objects[1]
+        modifier = obj.modifiers.new('IfcOpeningElement', 'BOOLEAN')
+        modifier.operation = 'DIFFERENCE'
+        modifier.object = opening
+        return {'FINISHED'}

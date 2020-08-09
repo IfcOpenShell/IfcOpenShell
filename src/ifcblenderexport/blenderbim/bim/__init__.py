@@ -172,6 +172,7 @@ if bpy is not None:
         operator.CalculateEdgeLengths,
         operator.CalculateFaceAreas,
         operator.CalculateObjectVolumes,
+        operator.AddOpening,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
@@ -216,7 +217,6 @@ if bpy is not None:
         ui.BIM_PT_documentation,
         ui.BIM_PT_bim,
         ui.BIM_PT_psets,
-        ui.BIM_PT_qto,
         ui.BIM_PT_classifications,
         ui.BIM_PT_document_information,
         ui.BIM_PT_constraints,
@@ -247,6 +247,8 @@ if bpy is not None:
         ui.BIM_PT_object_structural,
         ui.BIM_PT_camera,
         ui.BIM_PT_text,
+        ui.BIM_PT_modeling_utilities,
+        ui.BIM_PT_qto_utilities,
         ui.BIM_UL_generic,
         ui.BIM_UL_clash_sets,
         ui.BIM_UL_constraints,
@@ -298,6 +300,7 @@ if bpy is not None:
         bpy.types.Camera.BIMCameraProperties = bpy.props.PointerProperty(type=prop.BIMCameraProperties)
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.Scene.CoveToolProperties = bpy.props.PointerProperty(type=covetool_prop.CoveToolProperties)
+        bpy.types.SCENE_PT_unit.append(ui.ifc_units)
 
     def unregister():
         for cls in reversed(classes):
@@ -316,3 +319,4 @@ if bpy is not None:
         del(bpy.types.Mesh.BIMMeshProperties)
         del(bpy.types.Camera.BIMCameraProperties)
         del(bpy.types.Camera.BIMTextProperties)
+        bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
