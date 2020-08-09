@@ -122,22 +122,26 @@ class file(object):
 
     def add(self, inst):
         """Adds an entity including any dependent entities to an IFC file.
-        
+
         If the entity already exists, it is not re-added."""
         inst.wrapped_data.this.disown()
         return entity_instance(self.wrapped_data.add(inst.wrapped_data))
 
-    def by_type(self, type):
+    def by_type(self, type, include_subtypes=True):
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
 
         If an IFC type class has subclasses, all entities of those subclasses are also returned.
 
         :param type: The case insensitive type of IFC class to return.
         :type type: string
+        :param include_subtypes: Whether or not to return subtypes of the IFC class
+        :type include_subtypes: bool
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
         :rtype: list
         """
-        return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
+        if include_subtypes:
+            return [entity_instance(e) for e in self.wrapped_data.by_type(type)]
+        return [entity_instance(e) for e in self.wrapped_data.by_type_excl_subtypes(type)]
 
     def traverse(self, inst, max_levels=None):
         """Get a list of all referenced instances for a particular instance including itself
