@@ -3363,3 +3363,19 @@ class CalculateEdgeLengths(bpy.types.Operator):
                         obj.data.vertices[edge.vertices[0]].co).length
         bpy.context.scene.BIMProperties.qto_result = str(result)
         return {'FINISHED'}
+
+
+class CalculateFaceAreas(bpy.types.Operator):
+    bl_idname = 'bim.calculate_face_areas'
+    bl_label = 'Calculate Face Areas'
+
+    def execute(self, context):
+        result = 0
+        for obj in bpy.context.selected_objects:
+            if not obj.data or not obj.data.polygons:
+                continue
+            for polygon in obj.data.polygons:
+                if polygon.select:
+                    result += polygon.area
+        bpy.context.scene.BIMProperties.qto_result = str(result)
+        return {'FINISHED'}
