@@ -1,5 +1,6 @@
 from behave import step
 from utils import IfcFile
+from utils import IfcFile, assert_attribute
 
 @step('The IFC file "{file}" must be provided')
 def step_impl(context, file):
@@ -28,37 +29,27 @@ def step_impl(context, reason):
 
 @step('The project name, code, or short identifier must be "{value}"')
 def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'Name')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
+    assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'Name', value)
 
 
 @step('The project must have a longer form name of "{value}"')
 def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'LongName')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
+    assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'LongName', value)
 
 
 @step('The project must be described as "{value}"')
 def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'Description')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
+    assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'Description', value)
 
 
 @step('The project must be categorised under "{value}"')
 def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'ObjectType')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
+    assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'ObjectType', value)
 
 
 @step('The project must contain information about the "{value}" phase')
 def step_impl(context, value):
-    project_value = getattr(IfcFile.get().by_type('IfcProject')[0], 'Phase')
-    assert project_value == value, 'We expected a value of "{}" but instead got "{}"'.format(
-        value, project_value)
+    assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'Phase', value)
 
 
 @step('The project must contain 3D geometry representing the shape of objects')
