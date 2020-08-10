@@ -4,6 +4,7 @@ import time
 import numpy
 import pickle
 import sys
+import multiprocessing
 
 try:
     from OCC.Core import (
@@ -293,9 +294,8 @@ class IfcCutter:
             # TODO: This should perhaps be configurable, e.g. spaces cut to show zones in the drawing
             products.extend(ifc_file.by_type('IfcElement'))
 
-            total_products = len(products)
+            include_elements = []
             for i, product in enumerate(products):
-                print('{}/{} geometry processed ...'.format(i, total_products), end='\r', flush=True)
                 if product.is_a('IfcOpeningElement') \
                         or product.is_a('IfcSite') \
                         or product.Representation is None \
@@ -304,16 +304,32 @@ class IfcCutter:
                 try:
                     if self.should_recut_selected \
                             and product.GlobalId in self.selected_global_ids:
-                        shape = ifcopenshell.geom.create_shape(settings, product).geometry
-                        shape_map[product.GlobalId] = shape
+                        include_elements.append(product)
                     elif product.GlobalId in shape_map:
                         shape = shape_map[product.GlobalId]
+                        self.product_shapes.append((product, shape))
                     else:
-                        shape = ifcopenshell.geom.create_shape(settings, product).geometry
-                        shape_map[product.GlobalId] = shape
-                    self.product_shapes.append((product, shape))
+                        include_elements.append(product)
                 except:
                     print('Failed to create shape for {}'.format(product))
+
+            if include_elements:
+                total = 0
+                checkpoint = time.time()
+                iterator = ifcopenshell.geom.iterator(
+                    settings, ifc_file, multiprocessing.cpu_count(), include=include_elements)
+                valid_file = iterator.initialize()
+                if valid_file:
+                    while True:
+                        total += 1
+                        if total % 250 == 0:
+                            print('{} elements processed in {:.2f}s ...'.format(total, time.time() - checkpoint))
+                            checkpoint = time.time()
+                        shape = iterator.get()
+                        shape_map[shape.data.guid] = shape.geometry
+                        self.product_shapes.append((ifc_file.by_guid(shape.data.guid), shape.geometry))
+                        if not iterator.next():
+                            break
 
             with open(shape_pickle, 'wb') as shape_file:
                 pickle.dump(shape_map, shape_file, protocol=pickle.HIGHEST_PROTOCOL)
@@ -688,7 +704,6 @@ class IfcCutter:
     def get_fresh_cut_polygons(self):
         process_data = [(p.GlobalId, s, self.section_box['face'], self.transformation_data) for p, s in self.product_shapes]
 
-        import multiprocessing
         import bpy
         multiprocessing.set_executable(bpy.app.binary_path_python)
 
