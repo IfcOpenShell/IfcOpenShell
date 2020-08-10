@@ -27,6 +27,11 @@ def step_impl(context, reason):
     pass
 
 
+@step('The project must have an identifier of {guid}')
+def step_impl(context, guid):
+    assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'GlobalId', guid)
+
+
 @step('The project name, code, or short identifier must be "{value}"')
 def step_impl(context, value):
     assert_attribute(IfcFile.get().by_type('IfcProject')[0], 'Name', value)
