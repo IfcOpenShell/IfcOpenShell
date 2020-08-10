@@ -235,7 +235,13 @@ endif
 	mkdir dist/blenderbim/libs/site/packages/features/steps/
 	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/environment.py
 	cd dist/blenderbim/libs/site/packages/features/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/template.html
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/classification.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/element_classes.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geocoding.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/geolocation.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/project_setup.py
 	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/steps.py
+	cd dist/blenderbim/libs/site/packages/features/steps/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcbimtester/features/steps/utils.py
 
 	# Required by IFCCOBie for XLSX support
 	mkdir dist/working
