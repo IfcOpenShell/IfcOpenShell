@@ -34,6 +34,10 @@ endif
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
 	# IfcOpenBot is outdated, so we hotfix the Python utilities
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f element.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
+	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f unit.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcopenshell-python/ifcopenshell/util/selector.py
@@ -282,8 +286,6 @@ endif
 
 	# Provides IFCPatch functionality
 	cd dist/blenderbim/libs/site/packages/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/ifcpatch.py
-
-	# Required by IFCPatch
 	cd dist/blenderbim/libs/site/packages/ && mkdir recipes
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/__init__.py
 	cd dist/blenderbim/libs/site/packages/recipes && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcpatch/recipes/MergeProject.py
