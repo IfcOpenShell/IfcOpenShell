@@ -13,6 +13,7 @@ if bpy is not None:
 
     from .module.model import wall as model_wall
     from .module.model import stair as model_stair
+    from .module.model import door as model_door
 
     classes = (
         operator.AssignClass,
@@ -271,6 +272,7 @@ if bpy is not None:
         covetool_operator.RunAnalysis,
         model_wall.BIM_OT_add_object,
         model_stair.BIM_OT_add_object,
+        model_door.BIM_OT_add_object,
         )
 
     def menu_func_export(self, context):
@@ -308,6 +310,7 @@ if bpy is not None:
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
         bpy.types.VIEW3D_MT_mesh_add.append(model_wall.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.append(model_stair.add_object_button)
+        bpy.types.VIEW3D_MT_mesh_add.append(model_door.add_object_button)
 
     def unregister():
         for cls in reversed(classes):
@@ -329,3 +332,4 @@ if bpy is not None:
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_wall.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_stair.add_object_button)
+        bpy.types.VIEW3D_MT_mesh_add.remove(model_door.add_object_button)
