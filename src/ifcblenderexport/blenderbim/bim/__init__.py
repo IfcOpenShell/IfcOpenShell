@@ -11,6 +11,8 @@ if bpy is not None:
     from .module.covetool import ui as covetool_ui
     from .module.covetool import operator as covetool_operator
 
+    from .module.model import wall as model_wall
+
     classes = (
         operator.AssignClass,
         operator.UnassignClass,
@@ -266,6 +268,7 @@ if bpy is not None:
         covetool_operator.Login,
         covetool_operator.RunSimpleAnalysis,
         covetool_operator.RunAnalysis,
+        model_wall.BIM_OT_add_object,
         )
 
     def menu_func_export(self, context):
@@ -301,6 +304,7 @@ if bpy is not None:
         bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
         bpy.types.Scene.CoveToolProperties = bpy.props.PointerProperty(type=covetool_prop.CoveToolProperties)
         bpy.types.SCENE_PT_unit.append(ui.ifc_units)
+        bpy.types.VIEW3D_MT_mesh_add.append(model_wall.add_object_button)
 
     def unregister():
         for cls in reversed(classes):
@@ -320,3 +324,4 @@ if bpy is not None:
         del(bpy.types.Camera.BIMCameraProperties)
         del(bpy.types.Camera.BIMTextProperties)
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
+        bpy.types.VIEW3D_MT_mesh_add.remove(model_wall.add_object_button)
