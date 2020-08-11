@@ -1,5 +1,6 @@
 import os
 import bpy
+import uuid
 import time
 import json
 import logging
@@ -2302,7 +2303,12 @@ class SwitchContext(bpy.types.Operator):
         self.obj = bpy.context.active_object
 
         if '/' not in self.obj.data.name:
+            self.obj.data.name = ifcopenshell.guid.compress(str(uuid.uuid4()).replace('-', ''))
             self.obj.data.name = 'Model/Body/MODEL_VIEW/' + self.obj.data.name
+            representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
+            representation_context.context = 'Model'
+            representation_context.name = 'Body'
+            representation_context.target_view = 'MODEL_VIEW'
 
         self.context = bpy.context.scene.BIMProperties.available_contexts
         self.subcontext = bpy.context.scene.BIMProperties.available_subcontexts
@@ -2320,8 +2326,10 @@ class SwitchContext(bpy.types.Operator):
                 global_id = self.obj.BIMObjectProperties.attributes.get('GlobalId').string_value
                 mesh = self.pull_mesh_from_ifc(global_id)
             except:
-                mesh = bpy.data.meshes.new('{}/{}/{}/{}'.format(
-                    self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3]))
+                existing_mesh = self.obj.data
+                mesh = self.obj.data.copy()
+                mesh.name = '{}/{}/{}/{}'.format(
+                    self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3])
                 representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
                 representation_context.context = self.context
                 representation_context.name = self.subcontext
