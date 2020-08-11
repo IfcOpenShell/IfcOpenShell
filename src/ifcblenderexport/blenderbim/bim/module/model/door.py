@@ -17,7 +17,7 @@ def add_object(self, context):
     ]
     edges = []
     faces = [[0, 1, 2, 3, 4, 5]]
-    mesh = bpy.data.meshes.new(name="New Dumb Door Profile")
+    mesh = bpy.data.meshes.new(name="Dumb Door Profile")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
     bpy.ops.object.convert(target='CURVE')
@@ -31,7 +31,7 @@ def add_object(self, context):
     ]
     edges = [[0, 1], [1, 2], [2, 3]]
     faces = []
-    mesh = bpy.data.meshes.new(name="New Dumb Door")
+    mesh = bpy.data.meshes.new(name="IfcDoor/Dumb Door")
     mesh.from_pydata(verts, edges, faces)
     obj2 = object_data_add(context, mesh, operator=self)
     bpy.ops.object.convert(target='CURVE')
@@ -53,7 +53,7 @@ def add_object(self, context):
     ]
     edges = []
     faces = [[0, 1, 2, 3]]
-    mesh = bpy.data.meshes.new(name="New Dumb Door Panel")
+    mesh = bpy.data.meshes.new(name="Dumb Door Panel")
     mesh.from_pydata(verts, edges, faces)
     obj3 = object_data_add(context, mesh, operator=self)
     modifier = obj3.modifiers.new('Panel Height', 'SOLIDIFY')
@@ -75,7 +75,7 @@ def add_object(self, context):
     ]
     edges = []
     faces = [[0, 1, 2, 3]]
-    mesh = bpy.data.meshes.new(name="New Dumb Door Opening")
+    mesh = bpy.data.meshes.new(name="Dumb Door Opening")
     mesh.from_pydata(verts, edges, faces)
     obj4 = object_data_add(context, mesh, operator=self)
     modifier = obj4.modifiers.new('Panel Height', 'SOLIDIFY')
@@ -85,6 +85,14 @@ def add_object(self, context):
     obj4.display_type = 'WIRE'
     obj4.parent = obj2
     obj4.matrix_parent_inverse = obj2.matrix_world.inverted()
+    obj4.name = 'IfcOpeningElement/Dumb Door Opening'
+    attribute = obj4.BIMObjectProperties.attributes.add()
+    attribute.name = 'PredefinedType'
+    attribute.string_value = 'OPENING'
+
+    attribute = obj2.BIMObjectProperties.attributes.add()
+    attribute.name = 'PredefinedType'
+    attribute.string_value = 'DOOR'
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):
