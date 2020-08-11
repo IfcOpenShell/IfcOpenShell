@@ -71,6 +71,7 @@ except ImportError:
 
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.selector
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 this_file = os.path.join(cwd, 'cut_ifc.py')
@@ -164,6 +165,7 @@ class IfcCutter:
         self.cut_pickle_file = 'cut.pickle'
         self.should_recut = True
         self.should_recut_selected = True
+        self.cut_objects = ''
         self.selected_global_ids = []
         self.should_extract = True
         self.diagram_name = None
@@ -291,8 +293,8 @@ class IfcCutter:
                 with open(shape_pickle, 'rb') as shape_file:
                     shape_map = pickle.load(shape_file)
 
-            # TODO: This should perhaps be configurable, e.g. spaces cut to show zones in the drawing
-            products.extend(ifc_file.by_type('IfcElement'))
+            selector = ifcopenshell.util.selector.Selector()
+            products.extend(selector.parse(ifc_file, self.cut_objects))
 
             include_elements = []
             for i, product in enumerate(products):

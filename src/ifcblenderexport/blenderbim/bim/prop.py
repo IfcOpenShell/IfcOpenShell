@@ -416,6 +416,13 @@ class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
     is_nts: BoolProperty(name='Is NTS')
+    cut_objects: EnumProperty(items=[
+        ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering',
+            'Overall Plan / Section', ''),
+        ('.IfcElement', 'Detail Drawing', ''),
+        ('CUSTOM', 'Custom', '')
+        ], name='Cut Objects')
+    cut_objects_custom: StringProperty(name='Custom Cut')
 
 
 class BIMTextProperties(PropertyGroup):

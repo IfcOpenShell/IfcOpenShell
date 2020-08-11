@@ -2080,6 +2080,10 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.data_dir = bpy.context.scene.BIMProperties.data_dir
         ifc_cutter.diagram_name = self.diagram_name
         ifc_cutter.background_image = bpy.context.scene.render.filepath
+        if camera.data.BIMCameraProperties.cut_objects == 'CUSTOM':
+            ifc_cutter.cut_objects = camera.data.BIMCameraProperties.cut_objects_custom
+        else:
+            ifc_cutter.cut_objects = camera.data.BIMCameraProperties.cut_objects
         ifc_cutter.leader_obj = None
         ifc_cutter.stair_obj = None
         ifc_cutter.dimension_obj = None
