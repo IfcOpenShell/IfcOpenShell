@@ -855,6 +855,12 @@ class BIM_PT_camera(Panel):
         row = layout.row()
         row.operator('bim.resize_text')
 
+        row = layout.row()
+        row.prop(props, 'cut_objects')
+        if props.cut_objects == 'CUSTOM':
+            row = layout.row()
+            row.prop(props, 'cut_objects_custom')
+
         row = layout.row(align=True)
         row.prop(props, 'diagram_scale', text='')
         row.operator('bim.cut_section')
