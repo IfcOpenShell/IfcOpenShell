@@ -23,7 +23,7 @@ def add_object(self, context):
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):
-    bl_idname = "mesh.add_object"
+    bl_idname = "mesh.add_wall"
     bl_label = "Dumb Wall"
     bl_options = {'REGISTER', 'UNDO'}
 
