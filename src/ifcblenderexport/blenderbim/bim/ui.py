@@ -742,7 +742,8 @@ class BIM_PT_documentation(Panel):
 
         row = layout.row()
         row.prop(props, 'available_views', text='Available Drawings')
-        row.operator('bim.open_view', icon='URL', text='')
+        op = row.operator('bim.open_view', icon='URL', text='')
+        op.view = bpy.context.scene.DocProperties.available_views
         row.operator('bim.activate_view', icon='SCENE', text='')
 
         row = layout.row()
@@ -861,9 +862,13 @@ class BIM_PT_camera(Panel):
             row = layout.row()
             row.prop(props, 'cut_objects_custom')
 
+        row = layout.row()
+        row.prop(props, 'diagram_scale')
+
         row = layout.row(align=True)
-        row.prop(props, 'diagram_scale', text='')
         row.operator('bim.cut_section')
+        op = row.operator('bim.open_view', icon='URL', text='')
+        op.view = context.active_object.name.split('/')[1]
 
 
 class BIM_PT_text(Panel):
