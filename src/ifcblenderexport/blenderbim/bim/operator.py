@@ -2037,11 +2037,12 @@ class CreateView(bpy.types.Operator):
 class OpenView(bpy.types.Operator):
     bl_idname = 'bim.open_view'
     bl_label = 'Open View'
+    view: bpy.props.StringProperty()
 
     def execute(self, context):
         webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'diagrams',
-            bpy.context.scene.DocProperties.available_views + '.svg'))
+            self.view + '.svg'))
         return {'FINISHED'}
 
 
@@ -2167,6 +2168,7 @@ class CutSection(bpy.types.Operator):
         svg_writer.scale = float(numerator) / float(denominator)
         ifc_cutter.cut()
         svg_writer.write()
+        bpy.ops.bim.open_view(view=self.diagram_name)
         return {'FINISHED'}
 
     def is_landscape(self):
