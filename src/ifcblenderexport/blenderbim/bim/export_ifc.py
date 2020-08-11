@@ -970,6 +970,14 @@ class IfcParser():
     def load_representations(self):
         if not self.ifc_export_settings.has_representations:
             return
+        self.generated_subcontexts = []
+        for context in self.ifc_export_settings.context_tree:
+            for subcontext in context['subcontexts']:
+                for target_view in subcontext['target_views']:
+                    if context['name'] == 'Model' \
+                            and subcontext['name'] == 'Box' \
+                            and target_view == 'MODEL_VIEW':
+                        self.generated_subcontexts = '/'.join([context['name'], subcontext['name'], target_view])
         for product in self.selected_products \
                 + self.selected_types \
                 + self.selected_spatial_structure_elements:
@@ -1000,6 +1008,9 @@ class IfcParser():
     def append_default_representation(self, obj):
         self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
             obj.data, obj, 'Model', 'Body', 'MODEL_VIEW')
+        if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts:
+            self.representations['Model/Box/MODEL_VIEW/{}'.format(obj.data.name)] = self.get_representation(
+                obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
 
     def append_point_cloud_representation(self, obj):
         self.representations['Model/Body/MODEL_VIEW/{}'.format(obj.name)] = self.get_representation(
@@ -1034,6 +1045,12 @@ class IfcParser():
         if mesh:
             self.representations[mesh_name] = self.get_representation(
                 mesh, obj, context, subcontext, target_view)
+            if 'Model/Box/MODEL_VIEW' in self.generated_subcontexts \
+                    and context == 'Model' \
+                    and subcontext == 'Body' \
+                    and target_view == 'MODEL_VIEW':
+                self.representations['Model/Box/MODEL_VIEW/{}'.format(mesh_name.split('/')[3])] = self.get_representation(
+                    obj.data, obj, 'Model', 'Box', 'MODEL_VIEW')
         elif context_prefix == 'Model/Body/MODEL_VIEW' \
                 and obj.data \
                 and not self.is_mesh_context_sensitive(obj.data.name):
@@ -2890,7 +2907,6 @@ class IfcExportSettings:
         self.has_quantities = True
         self.contexts = ['Model', 'Plan']
         self.subcontexts = ['Annotation', 'Axis', 'Box', 'FootPrint', 'Reference', 'Body', 'Clearance', 'CoG', 'Profile', 'SurveyPoints']
-        self.generated_subcontexts = ['Box']
         self.schema = 'IFC4'
         self.target_views = ['GRAPH_VIEW', 'SKETCH_VIEW', 'MODEL_VIEW', 'PLAN_VIEW', 'REFLECTED_PLAN_VIEW',
                              'SECTION_VIEW', 'ELEVATION_VIEW', 'USERDEFINED', 'NOTDEFINED']
