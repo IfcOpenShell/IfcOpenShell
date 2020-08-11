@@ -2321,6 +2321,8 @@ class SwitchContext(bpy.types.Operator):
             self.subcontext = self.subcontext_name
             self.target_view = self.target_view_name
 
+        existing_mesh = self.obj.data
+        existing_mesh.use_fake_user = True
         mesh = bpy.data.meshes.get('{}/{}/{}/{}'.format(
             self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3]))
         if not mesh:
@@ -2328,15 +2330,22 @@ class SwitchContext(bpy.types.Operator):
                 global_id = self.obj.BIMObjectProperties.attributes.get('GlobalId').string_value
                 mesh = self.pull_mesh_from_ifc(global_id)
             except:
-                existing_mesh = self.obj.data
                 mesh = self.obj.data.copy()
                 mesh.name = '{}/{}/{}/{}'.format(
                     self.context, self.subcontext, self.target_view, self.obj.data.name.split('/')[3])
-                representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
-                representation_context.context = self.context
-                representation_context.name = self.subcontext
-                representation_context.target_view = self.target_view
-
+                has_context = False
+                for context in self.obj.BIMObjectProperties.representation_contexts:
+                    if context.context == self.context \
+                            and context.name == self.subcontext \
+                            and context.target_view == self.target_view:
+                        has_context = True
+                        break
+                if not has_context:
+                    representation_context = self.obj.BIMObjectProperties.representation_contexts.add()
+                    representation_context.context = self.context
+                    representation_context.name = self.subcontext
+                    representation_context.target_view = self.target_view
+            mesh.use_fake_user = True
         self.obj.data = mesh
         return {'FINISHED'}
 

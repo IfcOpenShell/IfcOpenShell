@@ -837,6 +837,11 @@ class BIM_PT_camera(Panel):
 
     def draw(self, context):
         layout = self.layout
+
+        if '/' not in context.active_object.name:
+            layout.label(text="This is not a BIM camera.")
+            return
+
         layout.use_property_split = True
         dprops = bpy.context.scene.DocProperties
         props = context.active_object.data.BIMCameraProperties
