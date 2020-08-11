@@ -16,7 +16,7 @@ def add_object(self, context):
     edges = []
     faces = [[0, 1, 2, 3]]
 
-    mesh = bpy.data.meshes.new(name="New Dumb Stair")
+    mesh = bpy.data.meshes.new(name="Dumb Stair")
     mesh.from_pydata(verts, edges, faces)
     obj = object_data_add(context, mesh, operator=self)
     modifier = obj.modifiers.new('Stair Width', 'SOLIDIFY')
@@ -31,6 +31,10 @@ def add_object(self, context):
     modifier.count = self.number_of_treads
     self.riser_height = self.height / self.number_of_treads
     self.length = self.number_of_treads * self.tread_length
+    obj.name = 'IfcStairFlight/Dumb Stair'
+    attribute = obj.BIMObjectProperties.attributes.add()
+    attribute.name = 'PredefinedType'
+    attribute.string_value = 'STRAIGHT'
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):
