@@ -137,8 +137,6 @@ if bpy is not None:
         operator.AssignContext,
         operator.SwitchContext,
         operator.RemoveContext,
-        operator.SetViewPreset1,
-        operator.SetViewPreset2,
         operator.OpenUpstream,
         operator.BIM_OT_CopyAttributesToSelection,
         operator.BIM_OT_ChangeClassificationLevel,

@@ -2425,44 +2425,6 @@ class RemoveContext(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SetViewPreset1(bpy.types.Operator):
-    bl_idname = 'bim.set_view_preset_1'
-    bl_label = 'Set View Preset 1'
-
-    def execute(self, context):
-        bpy.data.worlds[0].color = (1, 1, 1)
-        bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
-        bpy.context.scene.display.shading.show_object_outline = True
-        bpy.context.scene.display.shading.show_cavity = True
-        bpy.context.scene.display.shading.cavity_type = 'BOTH'
-        bpy.context.scene.display.shading.curvature_ridge_factor = 1
-        bpy.context.scene.display.shading.curvature_valley_factor = 1
-        bpy.context.scene.view_settings.view_transform = 'Standard'
-        return {'FINISHED'}
-
-
-class SetViewPreset2(bpy.types.Operator):
-    bl_idname = 'bim.set_view_preset_2'
-    bl_label = 'Set View Preset 2'
-
-    def execute(self, context):
-        bpy.data.worlds[0].color = (1, 1, 1)
-        bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
-        bpy.context.scene.display.shading.show_object_outline = True
-        bpy.context.scene.display.shading.show_cavity = True
-        bpy.context.scene.display.shading.cavity_type = 'BOTH'
-        bpy.context.scene.display.shading.curvature_ridge_factor = 1
-        bpy.context.scene.display.shading.curvature_valley_factor = 1
-        bpy.context.scene.view_settings.view_transform = 'Standard'
-
-        bpy.context.scene.display.shading.light = 'FLAT'
-        bpy.context.scene.display.shading.color_type = 'SINGLE'
-        bpy.context.scene.display.shading.single_color = (1, 1, 1)
-        bpy.context.scene.view_settings.use_curve_mapping = True
-        bpy.context.scene.view_settings.curve_mapping.curves[3].points.new(.4, 0) # Increase black contrast
-        return {'FINISHED'}
-
-
 class OpenUpstream(bpy.types.Operator):
     bl_idname = 'bim.open_upstream'
     bl_label = 'Open Upstream Reference'
@@ -3481,9 +3443,28 @@ class RemoveDrawingStyle(bpy.types.Operator):
 class SaveDrawingStyle(bpy.types.Operator):
     bl_idname = 'bim.save_drawing_style'
     bl_label = 'Save Drawing Style'
+    index: bpy.props.StringProperty()
 
     def execute(self, context):
-        # TODO
+        style = {
+            'bpy.data.worlds[0].color': tuple(bpy.data.worlds[0].color),
+            'bpy.context.scene.render.engine': bpy.context.scene.render.engine,
+            'bpy.context.scene.display.shading.show_object_outline': bpy.context.scene.display.shading.show_object_outline,
+            'bpy.context.scene.display.shading.show_cavity': bpy.context.scene.display.shading.show_cavity,
+            'bpy.context.scene.display.shading.cavity_type': bpy.context.scene.display.shading.cavity_type,
+            'bpy.context.scene.display.shading.curvature_ridge_factor': bpy.context.scene.display.shading.curvature_ridge_factor,
+            'bpy.context.scene.display.shading.curvature_valley_factor': bpy.context.scene.display.shading.curvature_valley_factor,
+            'bpy.context.scene.view_settings.view_transform': bpy.context.scene.view_settings.view_transform,
+            'bpy.context.scene.display.shading.light': bpy.context.scene.display.shading.light,
+            'bpy.context.scene.display.shading.color_type': bpy.context.scene.display.shading.color_type,
+            'bpy.context.scene.display.shading.single_color': tuple(bpy.context.scene.display.shading.single_color),
+            'bpy.context.scene.view_settings.use_curve_mapping': bpy.context.scene.view_settings.use_curve_mapping,
+        }
+        if self.index:
+            index = int(self.index)
+        else:
+            index = bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index
+        bpy.context.scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
         return {'FINISHED'}
 
 
@@ -3492,5 +3473,17 @@ class ActivateDrawingStyle(bpy.types.Operator):
     bl_label = 'Activate Drawing Style'
 
     def execute(self, context):
-        # TODO
+        style = json.loads(bpy.context.scene.DocProperties.drawing_styles[bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index].raster_style)
+        bpy.data.worlds[0].color = style['bpy.data.worlds[0].color']
+        bpy.context.scene.render.engine = style['bpy.context.scene.render.engine']
+        bpy.context.scene.display.shading.show_object_outline = style['bpy.context.scene.display.shading.show_object_outline']
+        bpy.context.scene.display.shading.show_cavity = style['bpy.context.scene.display.shading.show_cavity']
+        bpy.context.scene.display.shading.cavity_type = style['bpy.context.scene.display.shading.cavity_type']
+        bpy.context.scene.display.shading.curvature_ridge_factor = style['bpy.context.scene.display.shading.curvature_ridge_factor']
+        bpy.context.scene.display.shading.curvature_valley_factor = style['bpy.context.scene.display.shading.curvature_valley_factor']
+        bpy.context.scene.view_settings.view_transform = style['bpy.context.scene.view_settings.view_transform']
+        bpy.context.scene.display.shading.light = style['bpy.context.scene.display.shading.light']
+        bpy.context.scene.display.shading.color_type = style['bpy.context.scene.display.shading.color_type']
+        bpy.context.scene.display.shading.single_color = style['bpy.context.scene.display.shading.single_color']
+        bpy.context.scene.view_settings.use_curve_mapping = style['bpy.context.scene.view_settings.use_curve_mapping']
         return {'FINISHED'}

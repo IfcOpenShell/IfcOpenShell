@@ -728,10 +728,6 @@ class BIM_PT_documentation(Panel):
         layout.use_property_split = True
         props = bpy.context.scene.DocProperties
 
-        row = layout.row(align=True)
-        row.operator('bim.set_view_preset_1')
-        row.operator('bim.set_view_preset_2')
-
         row = layout.row()
         row.prop(props, 'view_name', text='Drawing Name')
         row.operator('bim.create_view', icon='ADD', text='')
@@ -886,13 +882,15 @@ class BIM_PT_camera(Panel):
                 row.operator('bim.remove_drawing_style', icon='X', text='').index = props.active_drawing_style_index
 
                 row = layout.row(align=True)
-                row.prop(drawing_style, 'raster_style')
-                row = layout.row(align=True)
                 row.prop(drawing_style, 'vector_style')
                 row = layout.row(align=True)
                 row.prop(drawing_style, 'include_query')
                 row = layout.row(align=True)
                 row.prop(drawing_style, 'exclude_query')
+
+                row = layout.row(align=True)
+                row.operator('bim.save_drawing_style')
+                row.operator('bim.activate_drawing_style')
 
         row = layout.row(align=True)
         row.operator('bim.cut_section', text='Create Drawing')
