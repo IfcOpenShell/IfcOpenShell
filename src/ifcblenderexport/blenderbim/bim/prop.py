@@ -59,6 +59,47 @@ def setDefaultProperties(scene):
         subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
         subcontext.name = 'Body'
         subcontext.target_view = 'MODEL_VIEW'
+        subcontext = bpy.context.scene.BIMProperties.model_subcontexts.add()
+        subcontext.name = 'Box'
+        subcontext.target_view = 'MODEL_VIEW'
+    if len(bpy.context.scene.DocProperties.drawing_styles) == 0:
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = 'Blender Default'
+        bpy.ops.bim.save_drawing_style(index='0')
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = 'Shaded'
+        drawing_style.raster_style = json.dumps({
+            'bpy.data.worlds[0].color': (1, 1, 1),
+            'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.display.shading.show_object_outline': True,
+            'bpy.context.scene.display.shading.show_cavity': True,
+            'bpy.context.scene.display.shading.cavity_type': 'BOTH',
+            'bpy.context.scene.display.shading.curvature_ridge_factor': 1,
+            'bpy.context.scene.display.shading.curvature_valley_factor': 1,
+            'bpy.context.scene.view_settings.view_transform': 'Standard',
+            'bpy.context.scene.display.shading.light': 'STUDIO',
+            'bpy.context.scene.display.shading.color_type': 'MATERIAL',
+            'bpy.context.scene.display.shading.single_color': (1, 1, 1),
+            'bpy.context.scene.view_settings.use_curve_mapping': False,
+        })
+        drawing_style = bpy.context.scene.DocProperties.drawing_styles.add()
+        drawing_style.name = 'Technical'
+        drawing_style.raster_style = json.dumps({
+            'bpy.data.worlds[0].color': (1, 1, 1),
+            'bpy.context.scene.render.engine': 'BLENDER_WORKBENCH',
+            'bpy.context.scene.display.shading.show_object_outline': True,
+            'bpy.context.scene.display.shading.show_cavity': True,
+            'bpy.context.scene.display.shading.cavity_type': 'BOTH',
+            'bpy.context.scene.display.shading.curvature_ridge_factor': 1,
+            'bpy.context.scene.display.shading.curvature_valley_factor': 1,
+            'bpy.context.scene.view_settings.view_transform': 'Standard',
+            'bpy.context.scene.display.shading.light': 'FLAT',
+            'bpy.context.scene.display.shading.color_type': 'SINGLE',
+            'bpy.context.scene.display.shading.single_color': (1, 1, 1),
+            'bpy.context.scene.view_settings.use_curve_mapping': True,
+        })
+        # TODO: This is used for technical styles, but probably should not be hardcoded
+        bpy.context.scene.view_settings.curve_mapping.curves[3].points.new(.4, 0) # Increase black contrast
 
 
 def getIfcPredefinedTypes(self, context):
