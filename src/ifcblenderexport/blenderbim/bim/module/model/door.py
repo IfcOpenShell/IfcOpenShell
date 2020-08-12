@@ -31,7 +31,7 @@ def add_object(self, context):
     ]
     edges = [[0, 1], [1, 2], [2, 3]]
     faces = []
-    mesh = bpy.data.meshes.new(name="IfcDoor/Dumb Door")
+    mesh = bpy.data.meshes.new(name="Dumb Door")
     mesh.from_pydata(verts, edges, faces)
     obj2 = object_data_add(context, mesh, operator=self)
     bpy.ops.object.convert(target='CURVE')
@@ -85,11 +85,13 @@ def add_object(self, context):
     obj4.display_type = 'WIRE'
     obj4.parent = obj2
     obj4.matrix_parent_inverse = obj2.matrix_world.inverted()
+    obj4.hide_render = True
     obj4.name = 'IfcOpeningElement/Dumb Door Opening'
     attribute = obj4.BIMObjectProperties.attributes.add()
     attribute.name = 'PredefinedType'
     attribute.string_value = 'OPENING'
 
+    obj2.name = 'IfcDoor/Dumb Door'
     attribute = obj2.BIMObjectProperties.attributes.add()
     attribute.name = 'PredefinedType'
     attribute.string_value = 'DOOR'
