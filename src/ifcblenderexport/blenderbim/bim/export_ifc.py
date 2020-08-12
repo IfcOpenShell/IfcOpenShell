@@ -398,11 +398,6 @@ class IfcParser():
 
         if 'rel_aggregates_relating_object' in selected_product['metadata']:
             relating_object = selected_product['metadata']['rel_aggregates_relating_object']
-            inverted = relating_object.matrix_world.inverted()
-            product['location'] = inverted @ product['location']
-            product['up_axis'] = self.get_axis(inverted @ obj.matrix_world, 2)
-            product['forward_axis'] = self.get_axis(inverted @ obj.matrix_world, 0)
-            product['right_axis'] = self.get_axis(inverted @ obj.matrix_world, 1)
             self.aggregates.setdefault(relating_object.name, []).append(self.product_index)
 
         if obj.name in self.qtos:
