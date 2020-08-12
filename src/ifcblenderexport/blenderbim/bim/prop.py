@@ -400,6 +400,14 @@ class Subcontext(PropertyGroup):
     target_view: StringProperty(name='Target View')
 
 
+class DrawingStyle(PropertyGroup):
+    name: StringProperty(name='Name')
+    raster_style: StringProperty(name='Raster Style')
+    vector_style: StringProperty(name='Vector Style')
+    include_query: StringProperty(name='Include Query')
+    exclude_query: StringProperty(name='Exclude Query')
+
+
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
@@ -410,6 +418,7 @@ class DocProperties(PropertyGroup):
     sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
     available_sheets: EnumProperty(items=getSheets, name="Available Sheets")
     ifc_files: CollectionProperty(name='IFCs', type=StrProperty)
+    drawing_styles: CollectionProperty(name='Drawing Styles', type=DrawingStyle)
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -423,6 +432,7 @@ class BIMCameraProperties(PropertyGroup):
         ('CUSTOM', 'Custom', '')
         ], name='Cut Objects')
     cut_objects_custom: StringProperty(name='Custom Cut')
+    active_drawing_style_index: IntProperty(name='Active Drawing Style Index')
 
 
 class BIMTextProperties(PropertyGroup):

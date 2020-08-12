@@ -3456,3 +3456,41 @@ class SetOverrideColour(bpy.types.Operator):
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
         area.spaces[0].shading.color_type = 'OBJECT'
         return {'FINISHED'}
+
+
+class AddDrawingStyle(bpy.types.Operator):
+    bl_idname = 'bim.add_drawing_style'
+    bl_label = 'Add Drawing Style'
+
+    def execute(self, context):
+        new = bpy.context.scene.DocProperties.drawing_styles.add()
+        new.name = 'New Drawing Style'
+        return {'FINISHED'}
+
+
+class RemoveDrawingStyle(bpy.types.Operator):
+    bl_idname = 'bim.remove_drawing_style'
+    bl_label = 'Remove Drawing Style'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.context.scene.DocProperties.drawing_styles.remove(self.index)
+        return {'FINISHED'}
+
+
+class SaveDrawingStyle(bpy.types.Operator):
+    bl_idname = 'bim.save_drawing_style'
+    bl_label = 'Save Drawing Style'
+
+    def execute(self, context):
+        # TODO
+        return {'FINISHED'}
+
+
+class ActivateDrawingStyle(bpy.types.Operator):
+    bl_idname = 'bim.activate_drawing_style'
+    bl_label = 'Activate Drawing Style'
+
+    def execute(self, context):
+        # TODO
+        return {'FINISHED'}

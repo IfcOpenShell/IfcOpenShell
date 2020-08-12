@@ -823,7 +823,7 @@ class BIM_PT_section_plane(Panel):
         row.operator('bim.remove_section_plane')
 
 class BIM_PT_camera(Panel):
-    bl_label = "Diagrams and Documentation"
+    bl_label = "Drawing Generation"
     bl_idname = "BIM_PT_camera"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -870,8 +870,32 @@ class BIM_PT_camera(Panel):
         row = layout.row()
         row.prop(props, 'diagram_scale')
 
+        layout.label(text="Drawing Styles:")
+
         row = layout.row(align=True)
-        row.operator('bim.cut_section')
+        row.operator('bim.add_drawing_style')
+
+        if dprops.drawing_styles:
+            layout.template_list('BIM_UL_generic', '', dprops, 'drawing_styles', props, 'active_drawing_style_index')
+
+            if props.active_drawing_style_index < len(dprops.drawing_styles):
+                drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
+
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'name')
+                row.operator('bim.remove_drawing_style', icon='X', text='').index = props.active_drawing_style_index
+
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'raster_style')
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'vector_style')
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'include_query')
+                row = layout.row(align=True)
+                row.prop(drawing_style, 'exclude_query')
+
+        row = layout.row(align=True)
+        row.operator('bim.cut_section', text='Create Drawing')
         op = row.operator('bim.open_view', icon='URL', text='')
         op.view = context.active_object.name.split('/')[1]
 
