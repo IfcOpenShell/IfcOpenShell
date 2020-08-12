@@ -517,6 +517,8 @@ class IfcParser():
             reference = self.get_group_reference(collection.name)
             self.rel_assigns_to_group.setdefault(reference, []).append(self.product_index)
         elif self.is_a_rel_aggregates(class_name):
+            # Aggregates are not handled here, since we don't know the order in
+            # which products are parsed.
             pass
         else:
             self.parse_product_collection(product, self.get_parent_collection(collection))
@@ -1781,6 +1783,8 @@ class IfcExporter():
             self.file.createIfcRelAggregates(
                 ifcopenshell.guid.new(), self.owner_history, relating_object['attributes']['Name'], None,
                 relating_object['ifc'], related_objects)
+            for obj in related_objects:
+                obj.ObjectPlacement.PlacementRelTo = relating_object['ifc'].ObjectPlacement
 
     def create_spatial_structure_elements(self, element_tree, relating_object=None):
         if relating_object == None:
@@ -2009,6 +2013,10 @@ class IfcExporter():
             placement_rel_to = self.ifc_parser.spatial_structure_elements[product['relating_structure']][
                 'ifc'].ObjectPlacement
         elif product['relating_host'] is not None:
+            # TODO: this could be unsafe if the host is not yet created, so we
+            # should consider migrating it such that the placement rel to is set
+            # as the relationship creation stage, like how IfcRelAggregates for
+            # object aggregates work.
             placement_rel_to = self.ifc_parser.products[product['relating_host']]['ifc'].ObjectPlacement
         else:
             placement_rel_to = None
