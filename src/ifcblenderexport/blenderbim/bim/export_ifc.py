@@ -2433,21 +2433,9 @@ class IfcExporter():
             return self.create_curves_from_curve(curve, is_2d=is_2d)
 
     def create_curves_from_mesh(self, mesh, is_2d=False):
-        self.create_vertices(mesh.vertices, is_2d=is_2d)
-        edges = list(mesh.edges)
-        loop_vertices = []
-        loops = []
-        # Not a fast algorithm, but easy
-        while edges:
-            for i, edge in enumerate(edges):
-                if edge.vertices[0] in loop_vertices \
-                        and edge.vertices[1] in loop_vertices:
-                    del edges[i]
-            loop_vertex_indices = self.get_loop_from_edges(edges)
-            loop_vertices.extend(loop_vertex_indices)
-            loops.append(self.file.createIfcPolyline([
-                self.ifc_vertices[i] for i in loop_vertex_indices]))
-        return loops
+        return [self.file.createIfcIndexedPolyCurve(
+            self.create_cartesian_point_list_from_vertices(mesh.vertices, is_2d=is_2d),
+            [self.file.createIfcLineIndex(tuple(e.vertices)) for e in mesh.edges])]
 
     def create_curves_from_curve(self, curve, is_2d=False):
         results = []
@@ -2689,6 +2677,11 @@ class IfcExporter():
             self.ifc_rep_context[representation['context']][representation['subcontext']][
                 representation['target_view']]['ifc'],
             representation['subcontext'], 'Brep', items)
+
+    def create_cartesian_point_list_from_vertices(self, vertices, is_2d=False):
+        if is_2d:
+            return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
+        return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def create_vertices(self, vertices, is_2d=False):
         if is_2d:
