@@ -1099,6 +1099,7 @@ class BIMProperties(PropertyGroup):
     qto_result: StringProperty(default='', name='Qto Result')
     area_unit: StringProperty(default='', name='IFC Area Unit')
     volume_unit: StringProperty(default='', name='IFC Volume Unit')
+    override_colour: FloatVectorProperty(name='Override Colour', subtype='COLOR', default=(1, 0, 0, 1), min=0.0, max=1.0, size=4)
 
 
 class BCFProperties(PropertyGroup):

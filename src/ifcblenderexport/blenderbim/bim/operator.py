@@ -268,6 +268,8 @@ class ColourByClass(bpy.types.Operator):
             if ifc_class not in ifc_classes:
                 ifc_classes[ifc_class] = next(colours)
             obj.color = ifc_classes[ifc_class]
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].shading.color_type = 'OBJECT'
         return {'FINISHED'}
 
 
@@ -287,6 +289,8 @@ class ColourByAttribute(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].shading.color_type = 'OBJECT'
         return {'FINISHED'}
 
 
@@ -310,6 +314,8 @@ class ColourByPset(bpy.types.Operator):
             if value not in values:
                 values[value] = next(colours)
             obj.color = values[value]
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].shading.color_type = 'OBJECT'
         return {'FINISHED'}
 
 
@@ -1392,6 +1398,8 @@ class VisualiseDiff(bpy.types.Operator):
                 obj.color = (0., 1., 0., .2)
             elif global_id.string_value in diff['changed']:
                 obj.color = (0., 0., 1., .2)
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].shading.color_type = 'OBJECT'
         return {'FINISHED'}
 
 
@@ -3434,4 +3442,17 @@ class AddOpening(bpy.types.Operator):
         modifier = obj.modifiers.new('IfcOpeningElement', 'BOOLEAN')
         modifier.operation = 'DIFFERENCE'
         modifier.object = opening
+        return {'FINISHED'}
+
+
+class SetOverrideColour(bpy.types.Operator):
+    bl_idname = 'bim.set_override_colour'
+    bl_label = 'Set Override Colour'
+
+    def execute(self, context):
+        result = 0
+        for obj in bpy.context.selected_objects:
+            obj.color = bpy.context.scene.BIMProperties.override_colour
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].shading.color_type = 'OBJECT'
         return {'FINISHED'}

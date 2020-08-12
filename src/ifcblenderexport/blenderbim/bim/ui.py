@@ -1866,6 +1866,23 @@ class BIM_PT_qto_utilities(Panel):
         row.operator("bim.calculate_object_volumes")
 
 
+class BIM_PT_misc_utilities(Panel):
+    bl_idname = "BIM_PT_misc_utilities"
+    bl_label = "Miscellaneous"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = "UI"
+    bl_category = 'BlenderBIM'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'override_colour', text='')
+        row = layout.row(align=True)
+        row.operator("bim.set_override_colour")
+
+
 def ifc_units(self, context):
     scene = context.scene
     props = context.scene.BIMProperties
