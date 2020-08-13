@@ -149,7 +149,7 @@ def do_cut(process_data):
 
 class IfcCutter:
     def __init__(self):
-        self.ifc_attribute_extractor = None
+        self.selector = ifcopenshell.util.selector.Selector()
         self.product_shapes = []
         self.background_elements = []
         self.cut_polygons = []
@@ -270,10 +270,10 @@ class IfcCutter:
             if element:
                 if '{{' in variable.prop_key:
                     prop_key = variable.prop_key.split('{{')[1].split('}}')[0]
-                    prop_value = self.ifc_attribute_extractor.get_element_key(element, prop_key)
+                    prop_value = self.selector.get_element_value(element, prop_key)
                     variable_value = eval(variable.prop_key.replace('{{' + prop_key + '}}', str(prop_value)))
                 else:
-                    variable_value = self.ifc_attribute_extractor.get_element_key(element, variable.prop_key)
+                    variable_value = self.selector.get_element_value(element, variable.prop_key)
                 text_obj_data[variable.name] = variable_value
         return text_obj_data
 
@@ -293,8 +293,7 @@ class IfcCutter:
                 with open(shape_pickle, 'rb') as shape_file:
                     shape_map = pickle.load(shape_file)
 
-            selector = ifcopenshell.util.selector.Selector()
-            products.extend(selector.parse(ifc_file, self.cut_objects))
+            products.extend(self.selector.parse(ifc_file, self.cut_objects))
 
             include_elements = []
             for i, product in enumerate(products):
