@@ -156,6 +156,7 @@ class IfcCutter:
         self.template_variables = {}
         self.metadata = {}
         self.data_dir = ''
+        self.vector_style = ''
         self.ifc_filenames = []
         self.ifc_files = {}
         self.resolved_pixels = set()

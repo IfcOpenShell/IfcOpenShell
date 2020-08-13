@@ -2,11 +2,11 @@
 .background { fill: white; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; }
 .hidden { stroke-dasharray: 3, 2; }
+.solid {}
 .leader { marker-end: url(#leader-marker); }
 .stair { marker-start: url(#stair-marker-start); marker-end: url(#stair-marker-end); }
 .break { fill: white; }
 .breakline { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.25; marker-mid: url(#breakline-marker); }
-.solid {}
 .material-blank { fill: white; }
 .material-diagonal1 { fill: url(#diagonal1); }
 .material-diagonal2 { fill: url(#diagonal2); }
@@ -21,4 +21,4 @@
 .material-grass { fill: url(#grass); }
 .material-honeycomb { fill: url(#honeycomb); }
 .material-sand { fill: url(#sand); }
-.material-concrete { fill: url(#concrete); }
+.material-concrete { fill: url(#concrete); stroke-width: 0.5; }
