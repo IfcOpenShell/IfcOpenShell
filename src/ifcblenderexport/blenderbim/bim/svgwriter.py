@@ -70,7 +70,7 @@ class SvgWriter():
         self.height = self.raw_height * self.scale
 
     def add_stylesheet(self):
-        with open('{}styles/default.css'.format(self.ifc_cutter.data_dir), 'r') as stylesheet:
+        with open('{}styles/{}.css'.format(self.ifc_cutter.data_dir, self.ifc_cutter.vector_style), 'r') as stylesheet:
             self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):

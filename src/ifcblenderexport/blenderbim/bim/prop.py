@@ -49,6 +49,7 @@ target_views_enum = []
 persons_enum = []
 organisations_enum = []
 sheets_enum = []
+vector_styles_enum = []
 bcfviewpoints_enum = []
 
 @persistent
@@ -416,6 +417,16 @@ def getSheets(self, context):
     return sheets_enum
 
 
+def getVectorStyles(self, context):
+    global vector_styles_enum
+    if len(vector_styles_enum) < 1:
+        sheets_enum.clear()
+        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, 'styles')).glob('*.css'):
+            f = str(filename.stem)
+            vector_styles_enum.append((f, f, ''))
+    return vector_styles_enum
+
+
 def refreshFontSize(self, context):
     annotation.Annotator.resize_text(context.active_object)
 
@@ -443,7 +454,7 @@ class Drawing(PropertyGroup):
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name='Name')
     raster_style: StringProperty(name='Raster Style')
-    vector_style: StringProperty(name='Vector Style')
+    vector_style: EnumProperty(items=getVectorStyles, name='Vector Style')
     include_query: StringProperty(name='Include Query')
     exclude_query: StringProperty(name='Exclude Query')
 
