@@ -48,7 +48,6 @@ subcontexts_enum = []
 target_views_enum = []
 persons_enum = []
 organisations_enum = []
-views_enum = []
 sheets_enum = []
 bcfviewpoints_enum = []
 
@@ -147,6 +146,14 @@ def getDiagramScales(self, context):
             ('1:1', '1:1', '')
         ])
     return diagram_scales_enum
+
+
+def updateDrawingName(self, context):
+    if self.camera.name == self.name:
+        return
+    self.camera.name = 'IfcGroup/{}'.format(self.name)
+    self.camera.users_collection[0].name = self.camera.name
+    self.name = self.camera.name.split('/')[1]
 
 
 def getBoundaryConditionClasses(self, context):
@@ -393,19 +400,6 @@ def getTargetViews(self, context):
     return target_views_enum
 
 
-def getViews(self, context):
-    global views_enum
-    views_enum.clear()
-    views_collection = bpy.data.collections.get('Views')
-    if not views_collection:
-        return views_enum
-    for collection in views_collection.children:
-        for obj in collection.objects:
-            if obj.type == 'CAMERA':
-                views_enum.append((obj.name.split('/')[1], obj.name.split('/')[1], ''))
-    return views_enum
-
-
 def refreshSheets(self, context):
     global sheets_enum
     sheets_enum.clear()
@@ -441,6 +435,11 @@ class Subcontext(PropertyGroup):
     target_view: StringProperty(name='Target View')
 
 
+class Drawing(PropertyGroup):
+    name: StringProperty(name='Name', update=updateDrawingName)
+    camera: PointerProperty(name='Camera', type=bpy.types.Object)
+
+
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name='Name')
     raster_style: StringProperty(name='Raster Style')
@@ -454,8 +453,8 @@ class DocProperties(PropertyGroup):
     should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
     should_render: BoolProperty(name="Should Render", default=True)
     should_extract: BoolProperty(name="Should Extract", default=True)
-    view_name: StringProperty(name="View Name")
-    available_views: EnumProperty(items=getViews, name="Available Views")
+    drawings: CollectionProperty(name='Drawings', type=Drawing)
+    active_drawing_index: IntProperty(name='Active Drawing Index')
     sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
     available_sheets: EnumProperty(items=getSheets, name="Available Sheets")
     ifc_files: CollectionProperty(name='IFCs', type=StrProperty)

@@ -716,9 +716,44 @@ class BIM_PT_gis(Panel):
         row.operator('bim.convert_local_to_global')
 
 
-class BIM_PT_documentation(Panel):
-    bl_label = "Drawings and Sheets"
-    bl_idname = "BIM_PT_documentation"
+class BIM_PT_drawings(Panel):
+    bl_label = "Drawings"
+    bl_idname = "BIM_PT_drawings"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = bpy.context.scene.DocProperties
+
+        if props.drawings:
+            row = layout.row(align=True)
+            row.operator('bim.add_drawing')
+            op = row.operator('bim.open_view', icon='URL', text='')
+            op.view = props.drawings[props.active_drawing_index].name
+            row.operator('bim.activate_view', icon='SCENE', text='')
+            row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
+
+            layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
+        else:
+            row = layout.row(align=True)
+            row.operator('bim.add_drawing')
+
+        row = layout.row()
+        row.operator('bim.add_ifc_file')
+
+        for index, ifc_file in enumerate(props.ifc_files):
+            row = layout.row(align=True)
+            row.prop(ifc_file, 'name', text='IFC #{}'.format(index + 1))
+            row.operator('bim.select_doc_ifc_file', icon='FILE_FOLDER', text='')
+            row.operator('bim.remove_ifc_file', icon='X', text='').index = index
+
+
+class BIM_PT_sheets(Panel):
+    bl_label = "Sheets"
+    bl_idname = "BIM_PT_sheets"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'output'
@@ -729,18 +764,8 @@ class BIM_PT_documentation(Panel):
         props = bpy.context.scene.DocProperties
 
         row = layout.row()
-        row.prop(props, 'view_name', text='Drawing Name')
-        row.operator('bim.create_view', icon='ADD', text='')
-
-        row = layout.row()
         row.prop(props, 'sheet_name')
         row.operator('bim.create_sheet', icon='ADD', text='')
-
-        row = layout.row()
-        row.prop(props, 'available_views', text='Available Drawings')
-        op = row.operator('bim.open_view', icon='URL', text='')
-        op.view = bpy.context.scene.DocProperties.available_views
-        row.operator('bim.activate_view', icon='SCENE', text='')
 
         row = layout.row()
         row.prop(props, 'available_sheets')
@@ -751,14 +776,53 @@ class BIM_PT_documentation(Panel):
         row.operator('bim.add_view_to_sheet')
         row.operator('bim.create_sheets')
 
-        row = layout.row()
-        row.operator('bim.add_ifc_file')
 
-        for index, ifc_file in enumerate(props.ifc_files):
-            row = layout.row(align=True)
-            row.prop(ifc_file, 'name', text='IFC #{}'.format(index + 1))
-            row.operator('bim.select_doc_ifc_file', icon='FILE_FOLDER', text='')
-            row.operator('bim.remove_ifc_file', icon='X', text='').index = index
+class BIM_PT_section_plane(Panel):
+    bl_label = "Temporary Section Cutaways"
+    bl_idname = "BIM_PT_section_plane"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = bpy.context.scene.BIMProperties
+
+        row = layout.row()
+        row.prop(props, 'should_section_selected_objects')
+
+        row = layout.row()
+        row.prop(props, 'section_plane_colour')
+
+        row = layout.row(align=True)
+        row.operator('bim.add_section_plane')
+        row.operator('bim.remove_section_plane')
+
+
+class BIM_PT_camera(Panel):
+    bl_label = "Drawing Generation"
+    bl_idname = "BIM_PT_camera"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'data'
+
+    @classmethod
+    def poll(cls, context):
+        engine = context.engine
+        return context.camera and \
+               hasattr(context.active_object.data, "BIMCameraProperties")
+
+    def draw(self, context):
+        layout = self.layout
+
+        if '/' not in context.active_object.name:
+            layout.label(text="This is not a BIM camera.")
+            return
+
+        layout.use_property_split = True
+        dprops = bpy.context.scene.DocProperties
+        props = context.active_object.data.BIMCameraProperties
 
         layout.label(text="Annotation:")
         row = layout.row(align=True)
@@ -792,55 +856,7 @@ class BIM_PT_documentation(Panel):
         op.obj_name = 'Section Level'
         op.data_type = 'curve'
 
-        row = layout.row()
-        row.operator('bim.generate_digital_twin')
-
-
-class BIM_PT_section_plane(Panel):
-    bl_label = "Temporary Section Cutaways"
-    bl_idname = "BIM_PT_section_plane"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'output'
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        props = bpy.context.scene.BIMProperties
-
-        row = layout.row()
-        row.prop(props, 'should_section_selected_objects')
-
-        row = layout.row()
-        row.prop(props, 'section_plane_colour')
-
-        row = layout.row(align=True)
-        row.operator('bim.add_section_plane')
-        row.operator('bim.remove_section_plane')
-
-class BIM_PT_camera(Panel):
-    bl_label = "Drawing Generation"
-    bl_idname = "BIM_PT_camera"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'data'
-
-    @classmethod
-    def poll(cls, context):
-        engine = context.engine
-        return context.camera and \
-               hasattr(context.active_object.data, "BIMCameraProperties")
-
-    def draw(self, context):
-        layout = self.layout
-
-        if '/' not in context.active_object.name:
-            layout.label(text="This is not a BIM camera.")
-            return
-
-        layout.use_property_split = True
-        dprops = bpy.context.scene.DocProperties
-        props = context.active_object.data.BIMCameraProperties
+        layout.label(text="Generation Options:")
 
         row = layout.row()
         row.prop(dprops, 'should_recut')

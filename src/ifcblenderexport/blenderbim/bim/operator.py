@@ -2021,27 +2021,6 @@ class RemoveSubcontext(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class CreateView(bpy.types.Operator):
-    bl_idname = 'bim.create_view'
-    bl_label = 'Create View'
-
-    def execute(self, context):
-        if not bpy.data.collections.get('Views'):
-            bpy.context.scene.collection.children.link(bpy.data.collections.new('Views'))
-        views_collection = bpy.data.collections.get('Views')
-        view_collection = bpy.data.collections.new('IfcGroup/' + bpy.context.scene.DocProperties.view_name)
-        views_collection.children.link(view_collection)
-        camera = bpy.data.objects.new('IfcGroup/' + bpy.context.scene.DocProperties.view_name,
-                bpy.data.cameras.new(bpy.context.scene.DocProperties.view_name))
-        camera.data.type = 'ORTHO'
-        camera.data.BIMCameraProperties.diagram_scale = '1:100'
-        bpy.context.scene.camera = camera
-        view_collection.objects.link(camera)
-        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
-        area.spaces[0].region_3d.view_perspective = 'CAMERA'
-        return {'FINISHED'}
-
-
 class OpenView(bpy.types.Operator):
     bl_idname = 'bim.open_view'
     bl_label = 'Open View'
@@ -2243,21 +2222,12 @@ class CreateSheets(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GenerateDigitalTwin(bpy.types.Operator):
-    bl_idname = 'bim.generate_digital_twin'
-    bl_label = 'Generate Digital Twin'
-
-    def execute(self, context):
-        # Does absolutely nothing at all :D
-        return {'FINISHED'}
-
-
 class ActivateView(bpy.types.Operator):
     bl_idname = 'bim.activate_view'
     bl_label = 'Activate View'
 
     def execute(self, context):
-        camera = bpy.data.objects.get('IfcGroup/' + bpy.context.scene.DocProperties.available_views)
+        camera = bpy.context.scene.DocProperties.drawings[bpy.context.scene.DocProperties.active_drawing_index].camera
         if not camera:
             return {'FINISHED'}
         bpy.context.scene.camera = camera
@@ -3486,4 +3456,46 @@ class ActivateDrawingStyle(bpy.types.Operator):
         bpy.context.scene.display.shading.color_type = style['bpy.context.scene.display.shading.color_type']
         bpy.context.scene.display.shading.single_color = style['bpy.context.scene.display.shading.single_color']
         bpy.context.scene.view_settings.use_curve_mapping = style['bpy.context.scene.view_settings.use_curve_mapping']
+        return {'FINISHED'}
+
+
+class AddDrawing(bpy.types.Operator):
+    bl_idname = 'bim.add_drawing'
+    bl_label = 'Add Drawing'
+
+    def execute(self, context):
+        new = bpy.context.scene.DocProperties.drawings.add()
+        new.name = 'DRAWING {}'.format(len(bpy.context.scene.DocProperties.drawings))
+        if not bpy.data.collections.get('Views'):
+            bpy.context.scene.collection.children.link(bpy.data.collections.new('Views'))
+        views_collection = bpy.data.collections.get('Views')
+        view_collection = bpy.data.collections.new('IfcGroup/' + new.name)
+        views_collection.children.link(view_collection)
+        camera = bpy.data.objects.new('IfcGroup/' + new.name,
+                bpy.data.cameras.new('IfcGroup/' + new.name))
+        camera.location = (0, 0, 1.7) # The view shall be 1.7m above the origin
+        camera.data.type = 'ORTHO'
+        camera.data.ortho_scale = 50 # The default of 6m is too small
+        camera.data.BIMCameraProperties.diagram_scale = '1:100'
+        bpy.context.scene.camera = camera
+        view_collection.objects.link(camera)
+        area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+        new.camera = camera
+        return {'FINISHED'}
+
+
+class RemoveDrawing(bpy.types.Operator):
+    bl_idname = 'bim.remove_drawing'
+    bl_label = 'Remove Drawing'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        camera = props.drawings[self.index].camera
+        collection = camera.users_collection[0]
+        for obj in collection.objects:
+            bpy.data.objects.remove(obj)
+        bpy.data.collections.remove(collection, do_unlink=True)
+        props.drawings.remove(self.index)
         return {'FINISHED'}
