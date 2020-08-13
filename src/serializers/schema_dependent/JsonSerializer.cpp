@@ -173,7 +173,20 @@ namespace {
 
         return value;
     }
+	// Initializes an array in a jsonObject with jsonKey, creates an empty object to that array and returns the reference
+	json::reference getEmptyObjectReferenceInArray(const std::string& jsonKey, json::reference jsonObject) {
+		// Get a json reference to the target jsonKey
+		json::reference arrayReference = jsonObject[jsonKey];
 
+		// Initialize the array if not done previously
+		if (arrayReference.is_null()) {
+			arrayReference = json::array();
+		}
+
+		// Add empty object to array and return its reference
+		arrayReference += json::object();
+		return arrayReference.back();
+	}
     // Formats IFC entity instance, adds properties to the referenced jsonObject
     void format_entity_instance(IfcUtil::IfcBaseEntity* instance, json::reference jsonObject, bool as_link = false) {
         if (!jsonObject.is_object()) {
@@ -232,26 +245,28 @@ namespace {
                 }
             }
         }
+
+        // Format type object's property set links. This needs refactoring
+		if (instance->declaration().is(IfcSchema::IfcTypeObject::Class()) && !as_link) {
+			IfcSchema::IfcTypeObject* type_object = instance->template as<IfcSchema::IfcTypeObject>();
+			IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
+
+			for (IfcSchema::IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
+				IfcSchema::IfcPropertySetDefinition *pset = *jt;
+
+				if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
+					json::reference propertyObject = getEmptyObjectReferenceInArray(pset->declaration().name(), jsonObject);
+					format_entity_instance(pset, propertyObject, true);
+				}
+			}
+		}
     }
 
     std::string qualify_unrooted_instance(IfcUtil::IfcBaseClass* inst) {
         return inst->declaration().name() + "_" + std::to_string(inst->data().id());
     }
 
-    // Initializes an array in a jsonObject with jsonKey, creates an empty object to that array and returns the reference
-    json::reference getEmptyObjectReferenceInArray(const std::string& jsonKey, json::reference jsonObject) {
-        // Get a json reference to the target jsonKey
-        json::reference arrayReference = jsonObject[jsonKey];
 
-        // Initialize the array if not done previously
-        if (arrayReference.is_null()) {
-            arrayReference = json::array();
-        }
-
-        // Add empty object to array and return its reference
-        arrayReference += json::object();
-        return arrayReference.back();
-    }
 
     // A function to be called recursively. Template specialization is used 
     // to descend into decomposition, containment and property relationships.
@@ -623,19 +638,6 @@ void MAKE_TYPE_NAME(JsonSerializer)::finalize() {
         IfcSchema::IfcTypeObject* type_object = *it;
 
         descend(type_object, types);
-
-        if (type_object->hasHasPropertySets()) {
-            IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
-
-            for (IfcSchema::IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
-                IfcSchema::IfcPropertySetDefinition *pset = *jt;
-
-                if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
-                    json::reference propertyObject = getEmptyObjectReferenceInArray(pset->declaration().name(), properties);
-                    format_entity_instance(pset, propertyObject, true);
-                }
-            }
-        }
     }
 
     // Write all assigned units
