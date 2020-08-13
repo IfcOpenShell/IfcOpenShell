@@ -443,7 +443,9 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			const TopoDS_Shape& subshape = it.Value();
 			
 			Bnd_Box bb;
-			BRepBndLib::Add(it.Value(), bb);
+			try {
+				BRepBndLib::Add(it.Value(), bb);
+			} catch (const Standard_Failure&) {}
 
 			// Empty geometry
 			if (bb.IsVoid()) {
