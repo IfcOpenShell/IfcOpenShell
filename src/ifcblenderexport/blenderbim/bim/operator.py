@@ -3499,3 +3499,15 @@ class RemoveDrawing(bpy.types.Operator):
         bpy.data.collections.remove(collection, do_unlink=True)
         props.drawings.remove(self.index)
         return {'FINISHED'}
+
+
+class EditVectorStyle(bpy.types.Operator):
+    bl_idname = 'bim.edit_vector_style'
+    bl_label = 'Edit Vector Style'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        camera = context.scene.camera
+        vector_style = context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index].vector_style
+        bpy.data.texts.load(os.path.join(context.scene.BIMProperties.data_dir, 'styles', vector_style + '.css'))
+        return {'FINISHED'}

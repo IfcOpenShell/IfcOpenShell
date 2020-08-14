@@ -183,6 +183,7 @@ if bpy is not None:
         operator.RemoveDrawingStyle,
         operator.SaveDrawingStyle,
         operator.ActivateDrawingStyle,
+        operator.EditVectorStyle,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
