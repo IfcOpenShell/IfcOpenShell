@@ -158,7 +158,7 @@ filename_filters = {
     'IfcBoundaryCondition_IFC4.json': ['IfcBoundaryCondition'],
     'IfcElementType_IFC4.json': ['IfcElementType', 'IfcSpatialElementType'],
     'IfcAnnotation_IFC4.json': ['IfcAnnotation'],
-    'IfcPositioningElement_IFC4.json': ['IfcGrid'] # IfcPositioningElement in the future
+    'IfcPositioningElement_IFC4.json': ['IfcGrid', 'IfcGridAxis'] # IfcPositioningElement in the future
 }
 
 for filename, filters in filename_filters.items():

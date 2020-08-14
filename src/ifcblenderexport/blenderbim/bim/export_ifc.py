@@ -27,6 +27,7 @@ class IfcParser():
 
         self.selected_products = []
         self.selected_types = []
+        self.selected_grid_axes = []
         self.selected_spatial_structure_elements = []
         self.selected_groups = []
         self.global_ids = []
@@ -72,6 +73,7 @@ class IfcParser():
         self.rel_assigns_to_group = {}
         self.presentation_layer_assignments = {}
         self.representations = {}
+        self.grid_axes = {}
         self.type_products = []
         self.door_attributes = {}
         self.window_attributes = {}
@@ -109,6 +111,7 @@ class IfcParser():
         self.libraries = self.get_libraries()
         self.door_attributes = self.get_door_attributes()
         self.window_attributes = self.get_window_attributes()
+        self.grid_axes = self.get_grid_axes()
         self.type_products = self.get_type_products()
         self.get_products()
         self.resolve_product_relationships()
@@ -564,6 +567,8 @@ class IfcParser():
         for obj in objects_to_sort:
             if obj.name[0:3] != 'Ifc':
                 continue
+            elif self.is_a_grid_axis(self.get_ifc_class(obj.name)):
+                self.selected_grid_axes.append({'raw': obj, 'metadata': metadata})
             elif self.is_a_spatial_structure_element(self.get_ifc_class(obj.name)):
                 self.selected_spatial_structure_elements.append({'raw': obj, 'metadata': metadata})
             elif self.is_a_type(self.get_ifc_class(obj.name)):
@@ -1149,6 +1154,22 @@ class IfcParser():
                 })
         return results
 
+    def get_grid_axes(self):
+        results = {}
+        for selected_axis in self.selected_grid_axes:
+            obj = selected_axis['raw']
+            grid_raw = bpy.data.objects.get(self.get_parent_collection(obj.users_collection[0]).name)
+            if grid_raw.name not in results:
+                results[grid_raw.name] = {'UAxes': [], 'VAxes': [], 'WAxes': []}
+            results[grid_raw.name][obj.users_collection[0].name].append ({
+                'ifc': None,
+                'raw': obj,
+                'grid_raw': grid_raw,
+                'class': 'IfcGridAxis',
+                'attributes': {a.name: a.string_value for a in obj.BIMObjectProperties.attributes}
+            })
+        return results
+
     def get_type_products(self):
         results = []
         for product in self.selected_types:
@@ -1225,6 +1246,9 @@ class IfcParser():
             return name.string_value
         return self.get_ifc_name(obj.name)
 
+    def is_a_grid_axis(self, class_name):
+        return class_name == 'IfcGridAxis'
+
     def is_a_spatial_structure_element(self, class_name):
         return class_name in [
             'IfcBuilding',
@@ -1285,6 +1309,7 @@ class IfcExporter():
         self.create_spatial_structure_elements(self.ifc_parser.spatial_structure_elements_tree)
         self.create_groups()
         self.create_qtos()
+        self.create_grid_axes()
         self.create_products()
         self.create_styled_items()
         self.create_presentation_layer_assignments()
@@ -1986,6 +2011,20 @@ class IfcExporter():
         for representation in self.ifc_parser.representations.values():
             representation['ifc'] = self.create_representation(representation)
 
+    def create_grid_axes(self):
+        for uvw in self.ifc_parser.grid_axes.values():
+            for axes in uvw.values():
+                for axis in axes:
+                    self.create_grid_axis(axis)
+
+    def create_grid_axis(self, axis):
+        points = [axis['grid_raw'].matrix_world.inverted() @ (axis['raw'].matrix_world @ v.co) for v in axis['raw'].data.vertices[0:2]]
+        self.cast_attributes('IfcGridAxis', axis['attributes'])
+        axis['attributes']['AxisCurve'] = self.file.createIfcPolyline([
+            self.create_cartesian_point(points[0][0], points[0][1], points[0][2]),
+            self.create_cartesian_point(points[1][0], points[1][1], points[1][2])])
+        axis['ifc'] = self.file.create_entity('IfcGridAxis', **axis['attributes'])
+
     def create_products(self):
         for product in self.ifc_parser.products:
             self.create_product(product)
@@ -2042,6 +2081,13 @@ class IfcExporter():
             self.cast_attributes(ifc_class, attributes)
             boundary_condition = self.file.create_entity(ifc_class, **attributes)
             product['attributes']['AppliedCondition'] = boundary_condition
+
+        if product['class'] == 'IfcGrid':
+            name = 'IfcGrid/' + product['attributes']['Name']
+            product['attributes']['UAxes'] = [a['ifc'] for a in self.ifc_parser.grid_axes[name]['UAxes']]
+            product['attributes']['VAxes'] = [a['ifc'] for a in self.ifc_parser.grid_axes[name]['VAxes']]
+            if self.ifc_parser.grid_axes[name]['WAxes']:
+                product['attributes']['WAxes'] = [a['ifc'] for a in self.ifc_parser.grid_axes[name]['WAxes']]
 
         try:
             product['ifc'] = self.file.create_entity(product['class'], **product['attributes'])
