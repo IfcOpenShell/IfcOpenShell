@@ -1,11 +1,46 @@
 import bpy
 import math
+import ifcopenshell
 from bpy.types import Operator
 from bpy.props import FloatVectorProperty, FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
 def add_object(self, context):
+    guid = ifcopenshell.guid.new()
+    leaf_width = self.overall_width-0.045-0.045
+    verts = [
+        # Left lining
+        Vector((0, 0, 0)),
+        Vector((0, self.depth, 0)),
+        Vector((.04, self.depth, 0)),
+        Vector((.04, 0, 0)),
+        # Right lining
+        Vector((self.overall_width, 0, 0)),
+        Vector((self.overall_width, self.depth, 0)),
+        Vector((self.overall_width-.04, self.depth, 0)),
+        Vector((self.overall_width-.04, 0, 0)),
+        # Bottom lining
+        Vector((0, 0, 0)),
+        Vector((self.overall_width, 0, 0)),
+        Vector((0, self.depth, 0)),
+        Vector((self.overall_width, self.depth, 0)),
+        # Window panel
+        Vector((.04, (self.depth/2)+.005, 0)),
+        Vector((.04, (self.depth/2)-.005, 0)),
+        Vector((self.overall_width-.04, (self.depth/2)-.005, 0)),
+        Vector((self.overall_width-.04, (self.depth/2)+.005, 0)),
+    ]
+    edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0], # Left lining
+        [4, 5], [5, 6], [6, 7], [7, 4], # Right lining
+        [8, 9], [10, 11], # Bottom lining
+        [12, 13], [13, 14], [14, 15], [15, 12], # Window panel
+    ]
+    faces = []
+    mesh = bpy.data.meshes.new(name='Plan/Annotation/PLAN_VIEW/' + guid)
+    mesh.from_pydata(verts, edges, faces)
+
     # Window lining profile
     verts = [
         Vector((0, 0, 0)),
@@ -94,6 +129,17 @@ def add_object(self, context):
     attribute = obj2.BIMObjectProperties.attributes.add()
     attribute.name = 'PredefinedType'
     attribute.string_value = 'WINDOW'
+    obj2.data.name = 'Model/Body/MODEL_VIEW/' + guid
+
+    rep = obj2.BIMObjectProperties.representation_contexts.add()
+    rep.context = 'Model'
+    rep.name = 'Body'
+    rep.target_view = 'MODEL_VIEW'
+
+    rep = obj2.BIMObjectProperties.representation_contexts.add()
+    rep.context = 'Plan'
+    rep.name = 'Annotation'
+    rep.target_view = 'PLAN_VIEW'
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):
