@@ -685,18 +685,24 @@ class IfcImporter():
             element_matrix[0][3] *= self.unit_scale
             element_matrix[1][3] *= self.unit_scale
             element_matrix[2][3] *= self.unit_scale
-            self.create_grid_axes(grid.UAxes, collection, element_matrix)
-            self.create_grid_axes(grid.VAxes, collection, element_matrix)
-            self.create_grid_axes(grid.WAxes, collection, element_matrix)
+            u_axes = bpy.data.collections.new('UAxes')
+            collection.children.link(u_axes)
+            v_axes = bpy.data.collections.new('VAxes')
+            collection.children.link(v_axes)
+            self.create_grid_axes(grid.UAxes, u_axes, element_matrix)
+            self.create_grid_axes(grid.VAxes, v_axes, element_matrix)
+            if grid.WAxes:
+                w_axes = bpy.data.collections.new('WAxes')
+                collection.children.link(w_axes)
+                self.create_grid_axes(grid.WAxes, w_axes, element_matrix)
 
     def create_grid_axes(self, axes, grid, matrix_world):
-        if not axes:
-            return
         for axis in axes:
             shape = ifcopenshell.geom.create_shape(self.settings_2d, axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f'IfcGridAxis/{axis.AxisTag}', mesh)
             obj.matrix_world = matrix_world
+            self.add_element_attributes(axis, obj)
             grid.objects.link(obj)
 
     def create_type_products(self):
