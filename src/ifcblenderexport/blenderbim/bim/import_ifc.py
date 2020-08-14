@@ -679,8 +679,8 @@ class IfcImporter():
     def create_grids(self):
         grids = self.file.by_type('IfcGrid')
         for grid in grids:
+            grid_obj = self.create_product(grid, ifcopenshell.geom.create_shape(self.settings_2d, grid))
             collection = bpy.data.collections.new(self.get_name(grid))
-            self.project['blender'].children.link(collection)
             element_matrix = self.get_local_placement(grid.ObjectPlacement)
             element_matrix[0][3] *= self.unit_scale
             element_matrix[1][3] *= self.unit_scale
@@ -1582,7 +1582,7 @@ class IfcImporter():
             mesh_name = 'mesh-{}'.format(representation_id)
             mesh = self.meshes.get(mesh_name)
             if mesh is None \
-                or representation_id is None:
+                    or representation_id is None:
                 shape = ifcopenshell.geom.create_shape(self.settings, element)
                 self.ifc_import_settings.logger.info('Shape was generated in {:.2f}'.format(time.time() - self.time))
                 self.time = time.time()
@@ -1645,7 +1645,12 @@ class IfcImporter():
                 if self.ifc_import_settings.should_import_spaces and container.GlobalId in self.added_data:
                     obj.BIMObjectProperties.relating_structure = self.added_data[container.GlobalId]
                 return self.place_object_in_spatial_tree(container, obj)
-            self.spatial_structure_elements[container.GlobalId]['blender'].objects.link(obj)
+            elif element.is_a('IfcGrid'):
+                grid_collection = bpy.data.collections.get(self.get_name(element))
+                self.spatial_structure_elements[container.GlobalId]['blender'].children.link(grid_collection)
+                grid_collection.objects.link(obj)
+            else:
+                self.spatial_structure_elements[container.GlobalId]['blender'].objects.link(obj)
         elif hasattr(element, 'Decomposes') \
                 and element.Decomposes:
             collection = None
