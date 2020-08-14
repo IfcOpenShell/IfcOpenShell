@@ -1161,7 +1161,13 @@ class IfcParser():
             grid_raw = bpy.data.objects.get(self.get_parent_collection(obj.users_collection[0]).name)
             if grid_raw.name not in results:
                 results[grid_raw.name] = {'UAxes': [], 'VAxes': [], 'WAxes': []}
-            results[grid_raw.name][obj.users_collection[0].name].append ({
+            if 'UAxes' in obj.users_collection[0].name:
+                axis_type = 'UAxes'
+            elif 'VAxes' in obj.users_collection[0].name:
+                axis_type = 'VAxes'
+            else:
+                axis_type = 'WAxes'
+            results[grid_raw.name][axis_type].append ({
                 'ifc': None,
                 'raw': obj,
                 'grid_raw': grid_raw,

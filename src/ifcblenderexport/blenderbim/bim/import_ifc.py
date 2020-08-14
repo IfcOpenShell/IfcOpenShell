@@ -679,7 +679,10 @@ class IfcImporter():
     def create_grids(self):
         grids = self.file.by_type('IfcGrid')
         for grid in grids:
-            grid_obj = self.create_product(grid, ifcopenshell.geom.create_shape(self.settings_2d, grid))
+            shape = None
+            if grid.Representation:
+                shape = ifcopenshell.geom.create_shape(self.settings_2d, grid)
+            grid_obj = self.create_product(grid, shape)
             collection = bpy.data.collections.new(self.get_name(grid))
             element_matrix = self.get_local_placement(grid.ObjectPlacement)
             element_matrix[0][3] *= self.unit_scale
