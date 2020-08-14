@@ -73,5 +73,31 @@
                 "select_types": []
             }
         ]
+    },
+    "IfcGridAxis": {
+        "is_abstract": false,
+        "parent": "Entity",
+        "attributes": [
+            {
+                "name": "AxisTag",
+                "type": "IfcLabel",
+                "is_enum": false,
+                "enum_values": []
+            },
+            {
+                "name": "SameSense",
+                "type": "IfcBoolean",
+                "is_enum": false,
+                "enum_values": []
+            }
+        ],
+        "complex_attributes": [
+            {
+                "name": "AxisCurve",
+                "type": "IfcCurve",
+                "is_select": false,
+                "select_types": []
+            }
+        ]
     }
 }
