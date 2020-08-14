@@ -1,11 +1,49 @@
 import bpy
 import math
+import ifcopenshell
 from bpy.types import Operator
 from bpy.props import FloatVectorProperty, FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
 def add_object(self, context):
+    guid = ifcopenshell.guid.new()
+    leaf_width = self.overall_width-0.045-0.045
+    verts = [
+        # Left lining
+        Vector((0, 0, 0)),
+        Vector((0, self.depth, 0)),
+        Vector((.04, self.depth, 0)),
+        Vector((.04, self.depth-.04, 0)),
+        Vector((.065, self.depth-.04, 0)),
+        Vector((.065, 0, 0)),
+        # Right lining
+        Vector((self.overall_width, 0, 0)),
+        Vector((self.overall_width, self.depth, 0)),
+        Vector((self.overall_width-.04, self.depth, 0)),
+        Vector((self.overall_width-.04, self.depth-.04, 0)),
+        Vector((self.overall_width-.065, self.depth-.04, 0)),
+        Vector((self.overall_width-.065, 0, 0)),
+        # Door panel
+        Vector((.045, self.depth, 0)),
+        Vector((.045, self.depth+leaf_width, 0)),
+        Vector((.080, self.depth+leaf_width, 0)),
+        Vector((.080, self.depth, 0)),
+    ]
+    edges = [
+        [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], # Left lining
+        [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], # Right lining
+        [12, 13], [13, 14], [14, 15], [15, 12], # Door panel
+    ]
+    # Door swing
+    for i in range(0, 9):
+        verts.append(Vector((0.045+(leaf_width*math.cos((math.pi/2)/8*i)), self.depth+(leaf_width*math.sin((math.pi/2)/8*i)), 0)))
+        edges.append([16+i, 17+i])
+    edges.pop()
+    faces = []
+    mesh = bpy.data.meshes.new(name='Plan/Annotation/PLAN_VIEW/' + guid)
+    mesh.from_pydata(verts, edges, faces)
+
     # Door lining profile
     verts = [
         Vector((0, 0, 0)),
@@ -31,7 +69,7 @@ def add_object(self, context):
     ]
     edges = [[0, 1], [1, 2], [2, 3]]
     faces = []
-    mesh = bpy.data.meshes.new(name="Dumb Door")
+    mesh = bpy.data.meshes.new(name='Dumb Door')
     mesh.from_pydata(verts, edges, faces)
     obj2 = object_data_add(context, mesh, operator=self)
     bpy.ops.object.convert(target='CURVE')
@@ -95,6 +133,17 @@ def add_object(self, context):
     attribute = obj2.BIMObjectProperties.attributes.add()
     attribute.name = 'PredefinedType'
     attribute.string_value = 'DOOR'
+    obj2.data.name = 'Model/Body/MODEL_VIEW/' + guid
+
+    rep = obj2.BIMObjectProperties.representation_contexts.add()
+    rep.context = 'Model'
+    rep.name = 'Body'
+    rep.target_view = 'MODEL_VIEW'
+
+    rep = obj2.BIMObjectProperties.representation_contexts.add()
+    rep.context = 'Plan'
+    rep.name = 'Annotation'
+    rep.target_view = 'PLAN_VIEW'
 
 
 class BIM_OT_add_object(Operator, AddObjectHelper):
