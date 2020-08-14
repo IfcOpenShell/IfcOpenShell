@@ -899,6 +899,7 @@ class BIM_PT_camera(Panel):
 
                 row = layout.row(align=True)
                 row.prop(drawing_style, 'vector_style')
+                row.operator('bim.edit_vector_style', text='', icon='GREASEPENCIL')
                 row = layout.row(align=True)
                 row.prop(drawing_style, 'include_query')
                 row = layout.row(align=True)
