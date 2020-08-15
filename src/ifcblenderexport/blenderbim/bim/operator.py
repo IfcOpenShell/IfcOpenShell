@@ -3211,11 +3211,23 @@ class GuessQuantity(bpy.types.Operator):
     prop_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        qto_calculator = qto.QtoCalculator()
-        props = bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index].properties
+        self.qto_calculator = qto.QtoCalculator()
+        source_qto = bpy.context.active_object.BIMObjectProperties.qtos[self.qto_index]
+        props = source_qto.properties
         prop = props[self.prop_index]
-        quantity = qto_calculator.guess_quantity(
-            prop.name, [p.name for p in props], bpy.context.active_object)
+        for obj in bpy.context.selected_objects:
+            dest_qto = obj.BIMObjectProperties.qtos.get(source_qto.name)
+            if not dest_qto:
+                if source_qto.name not in obj.BIMObjectProperties.qto_name:
+                    continue
+                dest_qto = self.add_qto(obj, source_qto.name)
+            prop = dest_qto.properties.get(prop.name)
+            self.guess_quantity(obj, prop, props)
+        return {'FINISHED'}
+
+    def guess_quantity(self, obj, prop, props):
+        quantity = self.qto_calculator.guess_quantity(
+            prop.name, [p.name for p in props], obj)
         if 'area' in prop.name.lower():
             if bpy.context.scene.BIMProperties.area_unit:
                 prefix, name = self.get_prefix_name(bpy.context.scene.BIMProperties.area_unit)
@@ -3228,7 +3240,16 @@ class GuessQuantity(bpy.types.Operator):
             prefix, name = self.get_blender_prefix_name()
             quantity = helper.SIUnitHelper.convert(quantity, None, 'METRE', prefix, name)
         prop.string_value = str(round(quantity, 3))
-        return {'FINISHED'}
+
+    def add_qto(self, obj, name):
+        if name not in schema.ifc.qtos:
+            return
+        qto = obj.BIMObjectProperties.qtos.add()
+        qto.name = name
+        for prop_name in schema.ifc.qtos[name]['HasPropertyTemplates'].keys():
+            prop = qto.properties.add()
+            prop.name = prop_name
+        return qto
 
     def get_prefix_name(self, value):
         if '/' in value:
