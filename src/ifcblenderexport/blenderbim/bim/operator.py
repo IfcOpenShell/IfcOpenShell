@@ -1682,7 +1682,7 @@ class SelectFeaturesDir(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.features_dir = self.filepath
+        bpy.context.scene.BIMProperties.features_dir = os.path.dirname(os.path.abspath(self.filepath))
         return {'FINISHED'}
 
     def invoke(self, context, event):
