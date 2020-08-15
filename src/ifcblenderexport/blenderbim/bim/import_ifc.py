@@ -1431,10 +1431,15 @@ class IfcImporter():
             classification_filename = '{}-{}'.format(
                 Path(os.path.basename(self.ifc_import_settings.input_file)).stem, element.Name)
             classification_file.write(os.path.join(
-                bpy.context.scene.BIMProperties.schema_dir, 'classifications',
+                bpy.context.scene.BIMProperties.schema_dir, 'project_classifications',
                 '{}.ifc'.format(classification_filename)))
             classification.filename = classification_filename
             self.classifications[classification.filename] = classification
+
+        self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
+        from . import prop
+        prop.classification_enum.clear()
+        prop.getClassifications(self, bpy.context)
 
     def get_classification_references(self, references):
         results = []

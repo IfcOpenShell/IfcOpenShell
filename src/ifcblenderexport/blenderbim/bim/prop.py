@@ -304,6 +304,8 @@ def getClassifications(self, context):
         classification_enum.clear()
         files = os.listdir(os.path.join(self.schema_dir, 'classifications'))
         classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
+        files = os.listdir(os.path.join(self.schema_dir, 'project_classifications'))
+        classification_enum.extend([(f.replace('.ifc', ''), f.replace('.ifc', ''), '') for f in files])
     return classification_enum
 
 

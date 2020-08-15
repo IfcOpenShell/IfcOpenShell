@@ -65,6 +65,8 @@ class IfcSchema():
     def load_classification(self, filename):
         if filename not in self.classifications:
             classification_path = os.path.join(self.schema_dir, 'classifications', '{}.ifc'.format(filename))
+            if not os.path.isfile(classification_path):
+                classification_path = os.path.join(self.schema_dir, 'project_classifications', '{}.ifc'.format(filename))
             self.classification_files[filename] = ifcopenshell.open(classification_path)
             self.classifications[filename] = self.classification_files[filename].by_type('IfcClassification')[0]
         classification = self.classifications[filename]

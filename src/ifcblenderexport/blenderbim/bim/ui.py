@@ -512,6 +512,7 @@ class BIM_PT_classifications(Panel):
 
         row = layout.row(align=True)
         row.prop(props, "classification", text='')
+        row.operator("bim.purge_project_classifications", text='', icon='TRASH')
         row.operator("bim.add_classification", text='', icon='ADD')
 
         if context.scene.BIMProperties.classification_references.raw_data:
