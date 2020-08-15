@@ -1763,6 +1763,9 @@ class CreateAggregate(bpy.types.Operator):
         aggregate = bpy.data.collections.new('IfcRelAggregates/{}'.format(
             bpy.context.scene.BIMProperties.aggregate_class))
         for project in [c for c in bpy.context.view_layer.layer_collection.children if 'IfcProject' in c.name]:
+            if not [c for c in project.children if 'Aggregates' in c.name]:
+                aggregates = bpy.data.collections.new('Aggregates')
+                project.collection.children.link(aggregates)
             for aggregate_collection in [c for c in project.children if 'Aggregates' in c.name]:
                 aggregate_collection.collection.children.link(aggregate)
                 aggregate_collection.children[aggregate.name].hide_viewport = True
