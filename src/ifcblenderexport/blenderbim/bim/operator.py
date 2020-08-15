@@ -2964,7 +2964,7 @@ class AddIfcFile(bpy.types.Operator):
     bl_label = 'Add IFC File'
 
     def execute(self, context):
-        pset = bpy.context.scene.DocProperties.ifc_files.add()
+        bpy.context.scene.DocProperties.ifc_files.add()
         return {'FINISHED'}
 
 
@@ -3443,7 +3443,13 @@ class ActivateDrawingStyle(bpy.types.Operator):
     bl_label = 'Activate Drawing Style'
 
     def execute(self, context):
-        style = json.loads(bpy.context.scene.DocProperties.drawing_styles[bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index].raster_style)
+        self.drawing_style = bpy.context.scene.DocProperties.drawing_styles[bpy.context.active_object.data.BIMCameraProperties.active_drawing_style_index]
+        self.set_raster_style()
+        self.set_query()
+        return {'FINISHED'}
+
+    def set_raster_style(self):
+        style = json.loads(self.drawing_style.raster_style)
         bpy.data.worlds[0].color = style['bpy.data.worlds[0].color']
         bpy.context.scene.render.engine = style['bpy.context.scene.render.engine']
         bpy.context.scene.display.shading.show_object_outline = style['bpy.context.scene.display.shading.show_object_outline']
@@ -3456,7 +3462,45 @@ class ActivateDrawingStyle(bpy.types.Operator):
         bpy.context.scene.display.shading.color_type = style['bpy.context.scene.display.shading.color_type']
         bpy.context.scene.display.shading.single_color = style['bpy.context.scene.display.shading.single_color']
         bpy.context.scene.view_settings.use_curve_mapping = style['bpy.context.scene.view_settings.use_curve_mapping']
-        return {'FINISHED'}
+
+    def set_query(self):
+        self.selector = ifcopenshell.util.selector.Selector()
+        self.include_global_ids = []
+        self.exclude_global_ids = []
+        for ifc_file in bpy.context.scene.DocProperties.ifc_files:
+            ifc = ifcopenshell.open(ifc_file.name)
+            if self.drawing_style.include_query:
+                results = self.selector.parse(ifc, self.drawing_style.include_query)
+                self.include_global_ids.extend([e.GlobalId for e in results])
+            if self.drawing_style.exclude_query:
+                results = self.selector.parse(ifc, self.drawing_style.exclude_query)
+                self.exclude_global_ids.extend([e.GlobalId for e in results])
+        if self.drawing_style.include_query:
+            self.parse_filter_query('INCLUDE')
+        else:
+            for obj in bpy.context.scene.objects:
+                obj.hide_viewport = False
+        if self.drawing_style.exclude_query:
+            self.parse_filter_query('EXCLUDE')
+
+    def parse_filter_query(self, mode):
+        if mode == 'INCLUDE':
+            objects = bpy.context.scene.objects
+        elif mode == 'EXCLUDE':
+            objects = bpy.context.visible_objects
+        for obj in objects:
+            if mode == 'INCLUDE':
+                obj.hide_viewport = False # Note: this breaks alt-H
+            global_id = obj.BIMObjectProperties.attributes.get('GlobalId')
+            if not global_id:
+                continue
+            global_id = global_id.string_value
+            if mode == 'INCLUDE':
+                if global_id not in self.include_global_ids:
+                    obj.hide_viewport = True # Note: this breaks alt-H
+            elif mode == 'EXCLUDE':
+                if global_id in self.exclude_global_ids:
+                    obj.hide_viewport = True # Note: this breaks alt-H
 
 
 class AddDrawing(bpy.types.Operator):
