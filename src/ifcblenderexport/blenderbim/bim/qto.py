@@ -20,7 +20,7 @@ class QtoCalculator():
         elif 'perimeter' in prop_name:
             return self.get_perimeter(obj)
         elif 'area' in prop_name \
-                and ('footprint' in prop_name or 'section' in prop_name):
+                and ('footprint' in prop_name or 'section' in prop_name or 'floor' in prop_name):
             return self.get_footprint_area(obj)
         elif 'area' in prop_name \
                 and 'side' in prop_name:
@@ -62,6 +62,21 @@ class QtoCalculator():
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
     def get_perimeter(self, o):
+        parsed_edges = []
+        shared_edges = []
+        perimeter = 0
+        for polygon in self.get_lowest_polygons(o):
+            for edge_key in polygon.edge_keys:
+                if edge_key in parsed_edges:
+                    shared_edges.append(edge_key)
+                else:
+                    parsed_edges.append(edge_key)
+                    perimeter += self.get_edge_key_distance(o, edge_key)
+        for edge_key in shared_edges:
+            perimeter -= self.get_edge_key_distance(o, edge_key)
+        return perimeter
+
+    def get_lowest_polygons(self, o):
         lowest_polygons = []
         lowest_z = None
         for polygon in o.data.polygons:
@@ -75,19 +90,7 @@ class QtoCalculator():
             elif z < lowest_z:
                 lowest_polygons = [polygon]
                 lowest_z = z
-        parsed_edges = []
-        shared_edges = []
-        perimeter = 0
-        for polygon in lowest_polygons:
-            for edge_key in polygon.edge_keys:
-                if edge_key in parsed_edges:
-                    shared_edges.append(edge_key)
-                else:
-                    parsed_edges.append(edge_key)
-                    perimeter += self.get_edge_key_distance(o, edge_key)
-        for edge_key in shared_edges:
-            perimeter -= self.get_edge_key_distance(o, edge_key)
-        return perimeter
+        return lowest_polygons
 
     def get_edge_key_distance(self, obj, edge_key):
         return (obj.data.vertices[edge_key[1]].co - obj.data.vertices[edge_key[0]].co).length
@@ -97,10 +100,8 @@ class QtoCalculator():
 
     def get_footprint_area(self, o):
         area = 0
-        for polygon in o.data.polygons:
-            if round(polygon.center[2], 3) == 0.0 \
-                    and round(o.data.vertices[polygon.vertices[0]].co[2], 3) == 0.0:
-                area += polygon.area
+        for polygon in self.get_lowest_polygons(o):
+            area += polygon.area
         return area
 
     def get_side_area(self, o):
