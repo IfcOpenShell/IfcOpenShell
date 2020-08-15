@@ -1871,7 +1871,7 @@ class AddClassification(bpy.types.Operator):
             'reference_tokens': 'ReferenceTokens'
         }
         for key, value in data_map.items():
-            if getattr(data, value):
+            if hasattr(data, value) and getattr(data, value):
                 setattr(classification, key, str(getattr(data, value)))
         classification.filename = context.scene.BIMProperties.classification
         return {'FINISHED'}
@@ -3572,10 +3572,25 @@ class RemoveDrawing(bpy.types.Operator):
 class EditVectorStyle(bpy.types.Operator):
     bl_idname = 'bim.edit_vector_style'
     bl_label = 'Edit Vector Style'
-    index: bpy.props.IntProperty()
 
     def execute(self, context):
         camera = context.scene.camera
         vector_style = context.scene.DocProperties.drawing_styles[camera.data.BIMCameraProperties.active_drawing_style_index].vector_style
         bpy.data.texts.load(os.path.join(context.scene.BIMProperties.data_dir, 'styles', vector_style + '.css'))
+        return {'FINISHED'}
+
+
+class PurgeProjectClassifications(bpy.types.Operator):
+    bl_idname = 'bim.purge_project_classifications'
+    bl_label = 'Purge Project Classifications'
+
+    def execute(self, context):
+        self.schema_dir = bpy.context.scene.BIMProperties.schema_dir
+        path = os.path.join(self.schema_dir, 'project_classifications')
+        files = os.listdir(path)
+        for f in files:
+            os.remove(os.path.join(path, f))
+        from . import prop
+        prop.classification_enum.clear()
+        prop.getClassifications(self, context)
         return {'FINISHED'}

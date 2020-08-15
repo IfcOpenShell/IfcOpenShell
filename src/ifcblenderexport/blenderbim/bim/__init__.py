@@ -184,6 +184,7 @@ if bpy is not None:
         operator.SaveDrawingStyle,
         operator.ActivateDrawingStyle,
         operator.EditVectorStyle,
+        operator.PurgeProjectClassifications,
         prop.StrProperty,
         prop.Variable,
         prop.Role,
