@@ -1086,13 +1086,20 @@ class IfcParser():
             'is_point_cloud': self.is_point_cloud(obj),
             'is_structural': self.is_structural(obj),
             'is_text': isinstance(mesh, bpy.types.TextCurve),
-            'is_wireframe': mesh.BIMMeshProperties.is_wireframe if hasattr(mesh, 'BIMMeshProperties') else False,
+            'is_wireframe': self.is_wireframe_mesh(mesh),
             'is_native': mesh.BIMMeshProperties.is_native if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_swept_solid': mesh.BIMMeshProperties.is_swept_solid if hasattr(mesh, 'BIMMeshProperties') else False,
             'is_generated': False,
             'presentation_layer': mesh.BIMMeshProperties.presentation_layer if hasattr(mesh, 'BIMMeshProperties') else None,
             'attributes': {'Name': mesh.name}
         }
+
+    def is_wireframe_mesh(self, mesh):
+        if isinstance(mesh, bpy.types.Mesh) and not mesh.polygons:
+            return True
+        if isinstance(mesh, bpy.types.Curve) and not mesh.bevel_object and not mesh.bevel_depth:
+            return True
+        return False
 
     def is_mesh_context_sensitive(self, name):
         return '/' in name \
