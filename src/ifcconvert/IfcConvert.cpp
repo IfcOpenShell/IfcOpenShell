@@ -174,6 +174,11 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, co
 
 bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
 
+// from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
+struct verbosity_counter {
+	int count;
+};
+
 #if defined(_MSC_VER) && defined(_UNICODE)
 int wmain(int argc, wchar_t** argv) {
 	typedef po::wcommand_line_parser command_line_parser;
@@ -197,10 +202,11 @@ int main(int argc, char** argv) {
 	std::string log_format;
 
     po::options_description generic_options("Command line options");
+	verbosity_counter vcounter;
 	generic_options.add_options()
 		("help,h", "display usage information")
 		("version", "display version information")
-		("verbose,v", "more verbose log messages")
+		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages")
 		("quiet,q", "less status and progress output")
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
@@ -403,7 +409,6 @@ int main(int argc, char** argv) {
     po::notify(vmap);
 
 	const bool mmap = vmap.count("mmap") != 0;
-	const bool verbose = vmap.count("verbose") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
 	const bool stderr_progress = vmap.count("stderr-progress") != 0;
@@ -539,8 +544,13 @@ int main(int argc, char** argv) {
         }
     }
 
-	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
-	Logger::Verbosity(verbose ? Logger::LOG_NOTICE : Logger::LOG_ERROR);
+	Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	Logger::Verbosity(vcounter.count
+		? (vcounter.count > 1
+		? Logger::LOG_DEBUG 
+		: Logger::LOG_NOTICE)
+		: Logger::LOG_ERROR
+	);
 
     path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
 
@@ -757,7 +767,7 @@ int main(int argc, char** argv) {
 		Logger::Status("Creating geometry...");
 	}
 
-	Logger::SetOutput(quiet ? nullptr : &cout_, &log_stream);
+	Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 
 	if (model_rotation) {
 		std::array<double, 4> &rotation = settings.rotation;
@@ -913,6 +923,9 @@ int main(int argc, char** argv) {
 				cout_ << std::flush;
 				if (stderr_progress)
 					cerr_ << std::flush;
+			} else if (vcounter.count == 2) {
+				const int progress = context_iterator.progress();
+				Logger::Message(Logger::LOG_DEBUG, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
 				const int progress = context_iterator.progress() / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -1117,6 +1130,11 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
         throw po::validation_error(po::validation_error::invalid_option_value);
     }
     filter.values.insert(values.begin() + (filter.type == geom_filter::ENTITY_ARG ? 2 : 1), values.end());
+}
+
+void validate(boost::any& v, const std::vector<std::string>& values, verbosity_counter*, long) {
+	if (v.empty()) v = verbosity_counter{ 1 };
+	else ++boost::any_cast<verbosity_counter&>(v).count;
 }
 
 void validate(boost::any& v, const std::vector<std::string>& values, inclusion_filter*, int)

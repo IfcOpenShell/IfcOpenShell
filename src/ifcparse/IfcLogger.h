@@ -35,7 +35,7 @@
 
 class IFC_PARSE_API Logger {
 public:
-	typedef enum { LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
+	typedef enum { LOG_DEBUG, LOG_NOTICE, LOG_WARNING, LOG_ERROR } Severity;
 	typedef enum { FMT_PLAIN, FMT_JSON } Format;
 private:
 
