@@ -806,6 +806,8 @@ std::string SvgSerializer::idElement(const IfcUtil::IfcBaseEntity* elem) {
 			? static_cast<std::string>(*elem->get("GlobalId"))
 			: ((settings().get(SerializerSettings::USE_ELEMENT_NAMES) && !elem->get("Name")->isNull()))
 			? static_cast<std::string>(*elem->get("Name"))
+			: (settings().get(SerializerSettings::USE_ELEMENT_STEPIDS))
+			? ("id-" + boost::lexical_cast<std::string>(elem->data().id()))
 			: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
 	return type + "-" + name;
 }
