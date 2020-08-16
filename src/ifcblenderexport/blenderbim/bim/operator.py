@@ -1324,11 +1324,12 @@ class ExecuteIfcCobie(bpy.types.Operator):
         from cobie import IfcCobieParser
         output_dir = os.path.dirname(bpy.context.scene.BIMProperties.cobie_ifc_file)
         output = os.path.join(output_dir, 'output')
-        log = os.path.join(output_dir, 'cobie.log')
-
-        logging.basicConfig(
-            filename=log, filemode='a', level=logging.DEBUG)
         logger = logging.getLogger('IFCtoCOBie')
+        fh = logging.FileHandler(os.path.join(output_dir, 'cobie.log'))
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter('%(asctime)s : %(levelname)s : %(message)s'))
+        logger = logging.getLogger('IFCtoCOBie')
+        logger.addHandler(fh)
         parser = IfcCobieParser(logger)
         parser.parse(bpy.context.scene.BIMProperties.cobie_ifc_file)
         if self.file_format == 'xlsx':
@@ -1346,6 +1347,7 @@ class ExecuteIfcCobie(bpy.types.Operator):
             writer = CobieCsvWriter(parser, output_dir)
             writer.write()
             webbrowser.open('file://' + output_dir)
+        webbrowser.open('file://' + output_dir + '/cobie.log')
         return {'FINISHED'}
 
 
