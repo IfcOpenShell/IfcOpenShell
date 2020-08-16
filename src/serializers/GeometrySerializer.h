@@ -50,8 +50,11 @@ public:
 		/// Order the elements using their IfcBuildingStorey parent
 		/// Applicable for DAE output
 		USE_ELEMENT_HIERARCHY = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 5),
-        /// Number of different setting flags.
-        NUM_SETTINGS = 5
+        /// Use step ids for naming elements.
+		/// Applicable for OBJ, DAE, and SVG output.
+		USE_ELEMENT_STEPIDS = 1 << (IfcGeom::IteratorSettings::NUM_SETTINGS + 6),
+		/// Number of different setting flags.
+        NUM_SETTINGS = 6
     };
 
     SerializerSettings()
@@ -82,7 +85,8 @@ public:
     {
         if (settings_.get(SerializerSettings::USE_ELEMENT_GUIDS)) return o->guid();
         if (settings_.get(SerializerSettings::USE_ELEMENT_NAMES)) return o->name();
-        return o->unique_id();
+		if (settings_.get(SerializerSettings::USE_ELEMENT_STEPIDS)) return "id-" + boost::lexical_cast<std::string>(o->id());
+		return o->unique_id();
     }
 
 protected:

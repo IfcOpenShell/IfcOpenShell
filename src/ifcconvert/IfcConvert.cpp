@@ -349,11 +349,13 @@ int main(int argc, char** argv) {
 		    "Specifies the cut section height for SVG 2D geometry.")
 		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1")
 		("use-element-names",
-            "Use entity names instead of unique IDs for naming elements upon serialization. "
+            "Use entity instance IfcRoot.Name instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
         ("use-element-guids",
-            "Use entity GUIDs instead of unique IDs for naming elements upon serialization. "
+            "Use entity instance IfcRoot.GlobalId instead of unique IDs for naming elements upon serialization. "
             "Applicable for OBJ, DAE, and SVG output.")
+		("use-element-numeric-ids", "Use the numeric step identifier (entity instance name) for naming elements upon serialization. "
+			"Applicable for OBJ, DAE, and SVG output.")
         ("use-material-names",
             "Use material names instead of unique IDs for naming materials upon serialization. "
             "Applicable for OBJ and DAE output.")
@@ -426,6 +428,7 @@ int main(int argc, char** argv) {
 	const bool layerset_first = vmap.count("layerset-first") != 0;
 	const bool use_element_names = vmap.count("use-element-names") != 0;
 	const bool use_element_guids = vmap.count("use-element-guids") != 0;
+	const bool use_element_stepids = vmap.count("use-element-numeric-ids") != 0;
 	const bool use_material_names = vmap.count("use-material-names") != 0;
 	const bool use_element_types = vmap.count("use-element-types") != 0;
 	const bool use_element_hierarchy = vmap.count("use-element-hierarchy") != 0;
@@ -681,7 +684,8 @@ int main(int argc, char** argv) {
 
     settings.set(SerializerSettings::USE_ELEMENT_NAMES, use_element_names);
     settings.set(SerializerSettings::USE_ELEMENT_GUIDS, use_element_guids);
-    settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
+	settings.set(SerializerSettings::USE_ELEMENT_STEPIDS, use_element_stepids);
+	settings.set(SerializerSettings::USE_MATERIAL_NAMES, use_material_names);
 	settings.set(SerializerSettings::USE_ELEMENT_TYPES, use_element_types);
 	settings.set(SerializerSettings::USE_ELEMENT_HIERARCHY, use_element_hierarchy);
     settings.set_deflection_tolerance(deflection_tolerance);
