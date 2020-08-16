@@ -68,10 +68,12 @@
 
 #if defined(_MSC_VER) && defined(_UNICODE)
 typedef std::wstring path_t;
+typedef std::wofstream ofstream_t;
 static std::wostream& cout_ = std::wcout;
 static std::wostream& cerr_ = std::wcerr;
 #else
 typedef std::string path_t;
+typedef std::ofstream ofstream_t;
 static std::ostream& cout_ = std::cout;
 static std::ostream& cerr_ = std::cerr;
 #endif
@@ -199,6 +201,7 @@ int main(int argc, char** argv) {
 	exclusion_traverse_filter exclude_traverse_filter;
 	path_t filter_filename;
 	path_t default_material_filename;
+	path_t log_file;
 	std::string log_format;
 
     po::options_description generic_options("Command line options");
@@ -211,7 +214,8 @@ int main(int argc, char** argv) {
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
-		("log-format", po::value<std::string>(&log_format), "log format: plain or json");
+		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
+		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -547,7 +551,15 @@ int main(int argc, char** argv) {
         }
     }
 
-	Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	ofstream_t log_fs;
+
+	if (vmap.count("log-file")) {
+		log_fs.open(log_file.c_str(), std::ios::app);
+		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
+	} else {
+		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	}
+
 	Logger::Verbosity(vcounter.count
 		? (vcounter.count > 1
 		? Logger::LOG_DEBUG 
@@ -771,7 +783,11 @@ int main(int argc, char** argv) {
 		Logger::Status("Creating geometry...");
 	}
 
-	Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	if (vmap.count("log-file")) {
+		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
+	} else {
+		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+	}
 
 	if (model_rotation) {
 		std::array<double, 4> &rotation = settings.rotation;
