@@ -1770,7 +1770,7 @@ IfcGeom::BRepElement<P, PP>* IfcGeom::Kernel::create_brep_for_representation_and
 	} else {
 		bool some_items_without_style = false;
 		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
-			if (!it->hasStyle()) {
+			if (!it->hasStyle() && count(it->Shape(), TopAbs_FACE)) {
 				some_items_without_style = true;
 				break;
 			}
