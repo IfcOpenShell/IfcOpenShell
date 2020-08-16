@@ -38,6 +38,7 @@
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
+#include <TopExp.hxx>
 
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
@@ -297,8 +298,8 @@ SvgSerializer::path_object& SvgSerializer::start_path(IfcUtil::IfcBaseEntity* st
 
 void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 {
-	std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>> section_heights_storage;
-	const std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>>* section_heights_used = &section_heights_storage;
+	std::vector<std::pair<std::pair<double, double>, IfcUtil::IfcBaseEntity*>> section_heights_storage;
+	const std::vector<std::pair<std::pair<double, double>, IfcUtil::IfcBaseEntity*>>* section_heights_used = &section_heights_storage;
 
 	if (section_heights) {
 		section_heights_used = section_heights.get_ptr();
@@ -309,7 +310,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 					const IfcGeom::ElementSettings& settings = o->geometry().settings();
 					double e = *p->product()->get("Elevation");
 					double storey_elevation = e * settings.unit_magnitude();
-					section_heights_storage.push_back({ storey_elevation + 1. , p->product() });
+					section_heights_storage.push_back({ {storey_elevation,  +1.} , p->product() });
 				} catch (...) {
 					continue;
 				}
@@ -427,8 +428,22 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 		}		
 	}
 
-	for (auto& pair : *section_heights_used) {
-		auto cut_z = pair.first;
+	bool emitted = false;
+	
+	for (auto sit = section_heights_used->begin(); sit != section_heights_used->end(); ++sit) {
+		const auto& pair = *sit;
+		
+		// Elev + offset
+		auto cut_z = pair.first.first + pair.first.second;
+		
+		// Elev .. Elev(next)
+		std::pair<double, double> range{ pair.first.first, std::numeric_limits<double>::infinity() };
+		if (sit == section_heights_used->begin()) {
+			range.first = -range.second;
+		}
+		if (sit + 1 != section_heights_used->end()) {
+			range.second = (sit + 1)->first.first;
+		}		
 		auto storey = pair.second;
 
 		TopoDS_Iterator it(compound);
@@ -464,10 +479,77 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 				cut_z = zmin + 1.;
 			}
 			
+			if (o->type() == "IfcAnnotation" && ((zmax - zmin) < 1.e-5) && zmin >= range.first && zmin <= range.second) {
+				if (po == nullptr) {
+					po = &start_path(storey, nameElement(storey, o));
+				}
+
+				TopExp_Explorer exp(subshape, TopAbs_EDGE, TopAbs_FACE);
+				for (; exp.More(); exp.Next()) {
+					const auto& e = TopoDS::Edge(exp.Current());
+					TopoDS_Vertex v0, v1;
+					TopExp::Vertices(e, v0, v1);
+					gp_Pnt p0 = BRep_Tool::Pnt(v0);
+					gp_Pnt p1 = BRep_Tool::Pnt(v1);
+					// @todo should we take the average parameter value instead?
+					gp_XYZ center = (p0.XYZ() + p1.XYZ()) / 2.;
+					BRep_Builder B;
+					TopoDS_Wire W;
+					B.MakeWire(W);
+					B.Add(W, e);
+					write(*po, W);
+
+					util::string_buffer path;
+					// dominant-baseline="central" is not well supported in IE.
+					// so we add a 0.35 offset to the dy of the tspans
+					path.add("            <text class=\"IfcAnnotation\" text-anchor=\"middle\" x=\"");
+					xcoords.push_back(path.add(center.X()));
+					path.add("\" y=\"");
+					ycoords.push_back(path.add(center.Y()));
+					path.add("\">");
+					std::vector<std::string> labels{};
+
+					GProp_GProps prop;
+					BRepGProp::LinearProperties(e, prop);
+					const double area = prop.Mass();
+					std::stringstream ss;
+					ss << std::setprecision(2) << std::fixed << std::showpoint << area;
+					labels.push_back(ss.str() + "m");
+
+					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
+						const auto& l = *lit;
+						double dy = labels.begin() == lit
+							? 0.35 - (labels.size() - 1.) / 2.
+							: 1.0; // <- dy is relative to the previous text element, so
+								   //    always 1 for successive spans.
+						path.add("<tspan x=\"");
+						xcoords.push_back(path.add(center.X()));
+						path.add("\" dy=\"");
+						path.add(boost::lexical_cast<std::string>(dy));
+						path.add("em\">");
+						path.add(l);
+						path.add("</tspan>");
+					}
+					path.add("</text>");
+					po->second.push_back(path);
+				}
+				continue;
+			}
+
+			if (subshape.ShapeType() > TopAbs_FACE) {
+				// Except for annotations we only emit solids and surfaces to SVG.
+				emitted = true;
+				continue;
+			}
+
 			// No intersection with bounding box, fail early
 			if (zmin > cut_z || zmax < cut_z) continue;
 
-			po = &start_path(storey, nameElement(storey, o));
+			emitted = true;
+
+			if (po == nullptr) {
+				po = &start_path(storey, nameElement(storey, o));
+			}
 
 			// Create a horizontal cross section 1 meter above the bottom point of the shape		
 			const gp_Pln pln(gp_Pnt(0, 0, cut_z), gp::DZ());
@@ -605,6 +687,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement<real_t>* o)
 			write(*po, annotation);
 		}
 	}
+
+	if (!emitted) {
+		Logger::Warning("Element not written to SVG due to section heights", o->product());
+	}
 }
 
 void SvgSerializer::setBoundingRectangle(double width, double height) {
@@ -674,7 +760,23 @@ void SvgSerializer::finalize() {
 }
 
 void SvgSerializer::writeHeader() {
-	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
+	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n"
+		"    <defs>\n"
+		"        <marker id=\"arrowend\" markerWidth=\"10\" markerHeight=\"7\" refX=\"10\" refY=\"3.5\" orient=\"auto\">\n"
+		"          <polygon points=\"0 0, 10 3.5, 0 7\" />\n"
+		"        </marker>\n"
+		"        <marker id=\"arrowstart\" markerWidth=\"10\" markerHeight=\"7\" refX=\"0\" refY=\"3.5\" orient=\"auto\">\n"
+		"          <polygon points=\"10 0, 0 3.5, 10 7\" />\n"
+		"        </marker>\n"
+		"    </defs>\n"
+		"    <style type=\"text/css\" >\n"
+		"    <![CDATA[\n"
+		"        .IfcAnnotation path {\n"
+		"            marker-end: url(#arrowend);\n"
+		"            marker-start: url(#arrowstart);\n"
+		"        }\n"
+		"    ]]>\n"
+		"    </style>\n";
 }
 
 namespace {
@@ -759,7 +861,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 void SvgSerializer::setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey) {
 	section_heights.emplace();
-	section_heights->push_back({ h, storey });
+	section_heights->push_back({ {h, 0.}, storey });
 }
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
@@ -778,10 +880,10 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 					Logger::Error(e);
 					continue;
 				}
-				section_heights->push_back({ elev * lu + offset , (IfcUtil::IfcBaseEntity*)s });
+				section_heights->push_back({ {elev * lu, offset} , (IfcUtil::IfcBaseEntity*)s });
 			}			
 		}
 	} else {
-		section_heights->push_back({ std::numeric_limits<double>::quiet_NaN(), nullptr });
+		section_heights->push_back({ {std::numeric_limits<double>::quiet_NaN(), 0.}, nullptr });
 	}
 }

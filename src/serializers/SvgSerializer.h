@@ -72,7 +72,7 @@ public:
 protected:
 	std::ofstream svg_file;
 	double xmin, ymin, xmax, ymax, width, height;
-	boost::optional<std::vector<std::pair<double, IfcUtil::IfcBaseEntity*>>> section_heights;
+	boost::optional<std::vector<std::pair<std::pair<double, double>, IfcUtil::IfcBaseEntity*>>> section_heights;
 	bool rescale, print_space_names_, print_space_areas_, draw_door_arcs_, with_section_heights_from_storey_;
 	std::multimap<IfcUtil::IfcBaseEntity*, path_object, storey_sorter> paths;
 	std::vector< boost::shared_ptr<util::string_buffer::float_item> > xcoords;
