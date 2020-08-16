@@ -176,7 +176,7 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
-	int count;
+	int count = 0;
 };
 
 #if defined(_MSC_VER) && defined(_UNICODE)
