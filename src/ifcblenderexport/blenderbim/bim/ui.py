@@ -718,7 +718,7 @@ class BIM_PT_gis(Panel):
 
 
 class BIM_PT_drawings(Panel):
-    bl_label = "Drawings"
+    bl_label = "SVG Drawings"
     bl_idname = "BIM_PT_drawings"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -729,18 +729,16 @@ class BIM_PT_drawings(Panel):
         layout.use_property_split = True
         props = bpy.context.scene.DocProperties
 
+        row = layout.row(align=True)
+        row.operator('bim.add_drawing')
+
         if props.drawings:
-            row = layout.row(align=True)
-            row.operator('bim.add_drawing')
             op = row.operator('bim.open_view', icon='URL', text='')
             op.view = props.drawings[props.active_drawing_index].name
             row.operator('bim.activate_view', icon='SCENE', text='')
             row.operator('bim.remove_drawing', icon='X', text='').index = props.active_drawing_index
 
             layout.template_list('BIM_UL_generic', '', props, 'drawings', props, 'active_drawing_index')
-        else:
-            row = layout.row(align=True)
-            row.operator('bim.add_drawing')
 
         row = layout.row()
         row.operator('bim.add_ifc_file')
@@ -753,7 +751,7 @@ class BIM_PT_drawings(Panel):
 
 
 class BIM_PT_sheets(Panel):
-    bl_label = "Sheets"
+    bl_label = "SVG Sheets"
     bl_idname = "BIM_PT_sheets"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -764,17 +762,18 @@ class BIM_PT_sheets(Panel):
         layout.use_property_split = True
         props = bpy.context.scene.DocProperties
 
-        row = layout.row()
-        row.prop(props, 'sheet_name')
-        row.operator('bim.create_sheet', icon='ADD', text='')
+        row = layout.row(align=True)
+        row.operator('bim.add_sheet')
 
-        row = layout.row()
-        row.prop(props, 'available_sheets')
-        row.operator('bim.open_sheet', icon='URL', text='')
-        row.operator('bim.open_compiled_sheet', icon='OUTPUT', text='')
+        if props.sheets:
+            row.operator('bim.open_sheet', icon='URL', text='')
+            row.operator('bim.open_compiled_sheet', icon='OUTPUT', text='')
+            row.operator('bim.remove_sheet', icon='X', text='').index = props.active_sheet_index
+
+            layout.template_list('BIM_UL_generic', '', props, 'sheets', props, 'active_sheet_index')
 
         row = layout.row(align=True)
-        row.operator('bim.add_view_to_sheet')
+        row.operator('bim.add_drawing_to_sheet')
         row.operator('bim.create_sheets')
 
 

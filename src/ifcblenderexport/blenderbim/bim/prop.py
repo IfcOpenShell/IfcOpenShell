@@ -403,22 +403,6 @@ def getTargetViews(self, context):
     return target_views_enum
 
 
-def refreshSheets(self, context):
-    global sheets_enum
-    sheets_enum.clear()
-    getSheets(self, context)
-
-
-def getSheets(self, context):
-    global sheets_enum
-    if len(sheets_enum) < 1:
-        sheets_enum.clear()
-        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, 'sheets')).glob('*.svg'):
-            f = str(filename.stem)
-            sheets_enum.append((f, f, ''))
-    return sheets_enum
-
-
 def getVectorStyles(self, context):
     global vector_styles_enum
     if len(vector_styles_enum) < 1:
@@ -453,6 +437,22 @@ class Drawing(PropertyGroup):
     camera: PointerProperty(name='Camera', type=bpy.types.Object)
 
 
+class Sheet(PropertyGroup):
+    def set_name(self, new):
+        old = self.get('name')
+        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'sheets')
+        if old and os.path.isfile(os.path.join(path, old + '.svg')):
+            os.rename(os.path.join(path, old + '.svg'), os.path.join(path, new + '.svg'))
+        self['name'] = new
+
+    def get_name(self):
+        return self.get('name')
+
+    name: StringProperty(name='Name', get=get_name, set=set_name)
+    drawings: CollectionProperty(name='Drawings', type=Drawing)
+    active_drawing_index: IntProperty(name='Active Drawing Index')
+
+
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name='Name')
     raster_style: StringProperty(name='Raster Style')
@@ -468,8 +468,8 @@ class DocProperties(PropertyGroup):
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
     active_drawing_index: IntProperty(name='Active Drawing Index')
-    sheet_name: StringProperty(name="Sheet Name", update=refreshSheets)
-    available_sheets: EnumProperty(items=getSheets, name="Available Sheets")
+    sheets: CollectionProperty(name='Sheets', type=Sheet)
+    active_sheet_index: IntProperty(name='Active Sheet Index')
     ifc_files: CollectionProperty(name='IFCs', type=StrProperty)
     drawing_styles: CollectionProperty(name='Drawing Styles', type=DrawingStyle)
 

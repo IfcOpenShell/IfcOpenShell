@@ -2169,15 +2169,16 @@ class CutSection(bpy.types.Operator):
         return bpy.context.scene.render.resolution_x > bpy.context.scene.render.resolution_y
 
 
-class CreateSheet(bpy.types.Operator):
-    bl_idname = 'bim.create_sheet'
-    bl_label = 'Create Sheet'
+class AddSheet(bpy.types.Operator):
+    bl_idname = 'bim.add_sheet'
+    bl_label = 'Add Sheet'
 
     def execute(self, context):
+        new = bpy.context.scene.DocProperties.sheets.add()
+        new.name = '{} - SHEET'.format(len(bpy.context.scene.DocProperties.sheets))
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.create(bpy.context.scene.DocProperties.sheet_name)
-        bpy.context.scene.DocProperties.sheet_name = ''
+        sheet_builder.create(new.name)
         return {'FINISHED'}
 
 
@@ -2186,9 +2187,10 @@ class OpenSheet(bpy.types.Operator):
     bl_label = 'Open Sheet'
 
     def execute(self, context):
+        props = bpy.context.scene.DocProperties
         webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'sheets',
-            bpy.context.scene.DocProperties.available_sheets + '.svg'))
+            props.sheets[props.active_sheet_index].name + '.svg'))
         return {'FINISHED'}
 
 
@@ -2197,22 +2199,25 @@ class OpenCompiledSheet(bpy.types.Operator):
     bl_label = 'Open Compiled Sheet'
 
     def execute(self, context):
+        props = bpy.context.scene.DocProperties
         webbrowser.open('file://' + os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'build',
-            bpy.context.scene.DocProperties.available_sheets,
-            bpy.context.scene.DocProperties.available_sheets + '.svg'))
+            props.sheets[props.active_sheet_index].name,
+            props.sheets[props.active_sheet_index].name + '.svg'))
         return {'FINISHED'}
 
 
-class AddViewToSheet(bpy.types.Operator):
-    bl_idname = 'bim.add_view_to_sheet'
-    bl_label = 'Add View To Sheet'
+class AddDrawingToSheet(bpy.types.Operator):
+    bl_idname = 'bim.add_drawing_to_sheet'
+    bl_label = 'Add Drawing To Sheet'
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.add_view(props.available_views, props.available_sheets)
+        sheet_builder.add_view(
+            props.drawings[props.active_drawing_index].name,
+            props.sheets[props.active_sheet_index].name)
         return {'FINISHED'}
 
 
@@ -2221,9 +2226,10 @@ class CreateSheets(bpy.types.Operator):
     bl_label = 'Create Sheets'
 
     def execute(self, context):
+        props = bpy.context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.build(bpy.context.scene.DocProperties.available_sheets)
+        sheet_builder.build(props.sheets[props.active_sheet_index].name)
         return {'FINISHED'}
 
 
@@ -3595,4 +3601,15 @@ class PurgeProjectClassifications(bpy.types.Operator):
         from . import prop
         prop.classification_enum.clear()
         prop.getClassifications(self, context)
+        return {'FINISHED'}
+
+
+class RemoveSheet(bpy.types.Operator):
+    bl_idname = 'bim.remove_sheet'
+    bl_label = 'Remove Sheet'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        props.sheets.remove(self.index)
         return {'FINISHED'}
