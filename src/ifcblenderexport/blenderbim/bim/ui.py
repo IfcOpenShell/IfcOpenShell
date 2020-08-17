@@ -766,6 +766,7 @@ class BIM_PT_schedules(Panel):
         row.operator('bim.add_schedule')
 
         if props.schedules:
+            row.operator('bim.build_schedule', icon='LINENUMBERS_ON', text='')
             row.operator('bim.remove_schedule', icon='X', text='').index = props.active_schedule_index
 
             layout.template_list('BIM_UL_generic', '', props, 'schedules', props, 'active_schedule_index')
