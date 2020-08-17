@@ -1,5 +1,8 @@
 ## A change log of the ifc2ca files
 
+##### 17/08/20
+- Add rigid links for point connection to elements
+
 ##### 14/07/20
 - Add internal springs for point connection to elements and external springs for point connections according to the defined orientation
 
