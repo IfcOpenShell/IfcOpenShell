@@ -30,7 +30,8 @@ class CA2IFC:
         localPlacement = self.f.createIfcLocalPlacement(None, globalAxes)
 
         # TODO: create units
-        unitAssignment = self.f.createIfcUnitAssignment()
+        lengthUnit = self.f.createIfcSIUnit(None, 'LENGTHUNIT', None, 'METRE')
+        unitAssignment = self.f.createIfcUnitAssignment((lengthUnit,))
 
         # create owner history
         ownerHistory = self.create_owner_history()
@@ -60,7 +61,7 @@ class CA2IFC:
             materialIndex = [mat['ifcName'] for mat in self.data['db']['materials']].index(mpSet.split('-')[0])
             profileIndex = [prof['ifcName'] for prof in self.data['db']['profiles']].index(mpSet.split('-')[1])
             material = ifcMaterials[materialIndex]
-            profile = ifcProfiles[materialIndex]
+            profile = ifcProfiles[profileIndex]
             matProf = self.f.createIfcMaterialProfile(self.data['db']['materials'][materialIndex]['name'] + ' | ' + self.data['db']['profiles'][profileIndex]['profileName'], None, material, profile)
             ifcMaterialProfileSets[i] = self.f.createIfcMaterialProfileSet(None, None, (matProf,))
 
@@ -89,8 +90,8 @@ class CA2IFC:
             localAxes = self.create_orientation(conn['orientation'])
             # boundary conditions
             if conn['appliedCondition']:
-                bc = conn['appliedCondition']
-                appliedCondition = self.f.createIfcBoundaryNodeCondition(None, self.f.createIfcBoolean(bc['dx']), self.f.createIfcBoolean(bc['dy']), self.f.createIfcBoolean(bc['dz']), self.f.createIfcBoolean(bc['drx']), self.f.createIfcBoolean(bc['dry']), self.f.createIfcBoolean(bc['drz']))
+                bc = self.create_node_applied_conditions(conn['appliedCondition'])
+                appliedCondition = self.f.createIfcBoundaryNodeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
             else:
                 appliedCondition = None
 
@@ -122,15 +123,18 @@ class CA2IFC:
             for conn in el['connections']:
                 localAxes = self.create_orientation(conn['orientation'])
                 if conn['appliedCondition']:
-                    bc = conn['appliedCondition']
-                    appliedCondition = self.f.createIfcBoundaryNodeCondition(None, self.f.createIfcBoolean(bc['dx']), self.f.createIfcBoolean(bc['dy']), self.f.createIfcBoolean(bc['dz']), self.f.createIfcBoolean(bc['drx']), self.f.createIfcBoolean(bc['dry']), self.f.createIfcBoolean(bc['drz']))
+                    bc = self.create_node_applied_conditions(conn['appliedCondition'])
+                    appliedCondition = self.f.createIfcBoundaryNodeCondition(None, bc['dx'], bc['dy'], bc['dz'], bc['drx'], bc['dry'], bc['drz'])
                 else:
                     appliedCondition = None
                 j = [c['ifcName'] for c in self.data['connections']].index(conn['relatedConnection'])
                 if not conn['eccentricity']:
                     self.f.createIfcRelConnectsStructuralMember(self.guid(), ownerHistory, None, None, ifcElements[i], ifcConnections[j], appliedCondition, None, None, localAxes)
                 else:
-                    pass
+                    pointOnElement = self.f.createIfcCartesianPoint(tuple(conn['eccentricity']['pointOnElement']))
+                    vector = conn['eccentricity']['vector']
+                    connPointEcc = self.f.createIfcConnectionPointEccentricity(pointOnElement, None, vector[0], vector[1], vector[2])
+                    self.f.createIfcRelConnectsWithEccentricity(self.guid(), ownerHistory, None, None, ifcElements[i], ifcConnections[j], appliedCondition, None, None, localAxes, connPointEcc)
 
         # assign elements and connections to group
         self.f.createIfcRelAssignsToGroup(self.guid(), ownerHistory, None, None, tuple(ifcElements + ifcConnections), None, model)
@@ -283,9 +287,38 @@ class CA2IFC:
 
             return faceProdDefShape
 
+    def create_node_applied_conditions(self, bc):
+        for dof in ['dx', 'dy', 'dz']:
+            if isinstance(bc[dof], bool):
+                bc[dof] = self.f.createIfcBoolean(bc[dof])
+            else:
+                bc[dof] = self.f.createIfcLinearStiffnessMeasure(bc[dof])
+
+        for dof in ['drx', 'dry', 'drz']:
+            if isinstance(bc[dof], bool):
+                bc[dof] = self.f.createIfcBoolean(bc[dof])
+            else:
+                bc[dof] = self.f.createIfcRotationalStiffnessMeasure(bc[dof])
+
+        return bc
+
+
+
 if __name__ == '__main__':
-    inputFilename = '' # json file to read
-    outputFilename = '' # ifc file to write
+    inputFilename = 'grid_of_beams.json'
+    outputFilename = 'grid_of_beams.ifc'
 
     ca2ifc = CA2IFC(inputFilename, outputFilename)
     ca2ifc.convert()
+    #
+    # inputFilename = 'portal_01.json'
+    # outputFilename = 'portal_01.ifc'
+    #
+    # ca2ifc = CA2IFC(inputFilename, outputFilename)
+    # ca2ifc.convert()
+    #
+    # inputFilename = 'building_01.json' # json file to read
+    # outputFilename = 'building_01.ifc' # ifc file to write
+    #
+    # ca2ifc = CA2IFC(inputFilename, outputFilename)
+    # ca2ifc.convert()
