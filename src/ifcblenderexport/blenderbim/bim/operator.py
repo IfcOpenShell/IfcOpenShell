@@ -3626,3 +3626,41 @@ class RemoveSheet(bpy.types.Operator):
         props = bpy.context.scene.DocProperties
         props.sheets.remove(self.index)
         return {'FINISHED'}
+
+
+class AddSchedule(bpy.types.Operator):
+    bl_idname = 'bim.add_schedule'
+    bl_label = 'Add Schedule'
+
+    def execute(self, context):
+        new = bpy.context.scene.DocProperties.schedules.add()
+        new.name = 'SCHEDULE {}'.format(len(bpy.context.scene.DocProperties.schedules))
+        return {'FINISHED'}
+
+
+class RemoveSchedule(bpy.types.Operator):
+    bl_idname = 'bim.remove_schedule'
+    bl_label = 'Remove Schedule'
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        props.schedules.remove(self.index)
+        return {'FINISHED'}
+
+
+class SelectScheduleFile(bpy.types.Operator):
+    bl_idname = "bim.select_schedule_file"
+    bl_label = "Select Documentation IFC File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ods", options={'HIDDEN'})
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        props.schedules[props.active_schedule_index].file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
