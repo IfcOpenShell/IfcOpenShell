@@ -437,6 +437,11 @@ class Drawing(PropertyGroup):
     camera: PointerProperty(name='Camera', type=bpy.types.Object)
 
 
+class Schedule(PropertyGroup):
+    name: StringProperty(name='Name')
+    file: StringProperty(name='File')
+
+
 class Sheet(PropertyGroup):
     def set_name(self, new):
         old = self.get('name')
@@ -468,6 +473,8 @@ class DocProperties(PropertyGroup):
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
     active_drawing_index: IntProperty(name='Active Drawing Index')
+    schedules: CollectionProperty(name='Schedules', type=Schedule)
+    active_schedule_index: IntProperty(name='Active Schedule Index')
     sheets: CollectionProperty(name='Sheets', type=Sheet)
     active_sheet_index: IntProperty(name='Active Sheet Index')
     ifc_files: CollectionProperty(name='IFCs', type=StrProperty)

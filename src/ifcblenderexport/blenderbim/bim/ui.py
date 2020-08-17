@@ -750,6 +750,31 @@ class BIM_PT_drawings(Panel):
             row.operator('bim.remove_ifc_file', icon='X', text='').index = index
 
 
+class BIM_PT_schedules(Panel):
+    bl_label = "ODS Schedules"
+    bl_idname = "BIM_PT_schedules"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = bpy.context.scene.DocProperties
+
+        row = layout.row(align=True)
+        row.operator('bim.add_schedule')
+
+        if props.schedules:
+            row.operator('bim.remove_schedule', icon='X', text='').index = props.active_schedule_index
+
+            layout.template_list('BIM_UL_generic', '', props, 'schedules', props, 'active_schedule_index')
+
+            row = layout.row()
+            row.prop(props.schedules[props.active_schedule_index], 'file')
+            row.operator('bim.select_schedule_file', icon='FILE_FOLDER', text='')
+
+
 class BIM_PT_sheets(Panel):
     bl_label = "SVG Sheets"
     bl_idname = "BIM_PT_sheets"
