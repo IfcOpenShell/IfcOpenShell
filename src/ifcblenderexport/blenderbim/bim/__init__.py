@@ -189,6 +189,7 @@ if bpy is not None:
         operator.AddSchedule,
         operator.RemoveSchedule,
         operator.SelectScheduleFile,
+        operator.BuildSchedule,
         prop.StrProperty,
         prop.Variable,
         prop.Role,

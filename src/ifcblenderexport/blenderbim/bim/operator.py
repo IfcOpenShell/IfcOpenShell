@@ -8,12 +8,14 @@ import webbrowser
 import ifcopenshell
 import ifcopenshell.util.selector
 import tempfile
+import ntpath
 from . import export_ifc
 from . import import_ifc
 from . import qto
 from . import cut_ifc
 from . import svgwriter
 from . import sheeter
+from . import scheduler
 from . import schema
 from . import bcf
 from . import ifc
@@ -3664,3 +3666,19 @@ class SelectScheduleFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class BuildSchedule(bpy.types.Operator):
+    bl_idname = 'bim.build_schedule'
+    bl_label = 'Build Schedule'
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        schedule = props.schedules[props.active_schedule_index]
+        schedule_creator = scheduler.Scheduler()
+        outfile = os.path.join(
+            bpy.context.scene.BIMProperties.data_dir, 'schedules',
+            ntpath.basename(schedule.file).replace('.ods', '.svg'))
+        schedule_creator.schedule(schedule.file, outfile)
+        webbrowser.open('file://' + outfile)
+        return {'FINISHED'}
