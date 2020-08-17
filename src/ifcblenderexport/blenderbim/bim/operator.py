@@ -2227,9 +2227,22 @@ class CreateSheets(bpy.types.Operator):
 
     def execute(self, context):
         props = bpy.context.scene.DocProperties
+        name = props.sheets[props.active_sheet_index].name
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.build(props.sheets[props.active_sheet_index].name)
+        sheet_builder.build(name)
+        svg2pdf_command = bpy.context.preferences.addons['blenderbim'].preferences.svg2pdf_command
+        if not svg2pdf_command:
+            webbrowser.open('file://' + os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name, name + '.svg'))
+            return {'FINISHED'}
+        import subprocess
+        path = os.path.join(bpy.context.scene.BIMProperties.data_dir, 'build', name)
+        svg = os.path.join(path, name + '.svg')
+        pdf = os.path.join(path, name + '.pdf')
+        # With great power comes great responsibility. Example:
+        # ['inkscape', svg, '-o', pdf]
+        subprocess.run(eval(svg2pdf_command))
+        webbrowser.open('file://' + os.path.join(pdf))
         return {'FINISHED'}
 
 
