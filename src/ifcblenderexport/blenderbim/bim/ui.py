@@ -1,5 +1,7 @@
 import bpy
 from bpy.types import Panel
+from bpy.props import StringProperty
+
 
 class BIM_PT_object(Panel):
     bl_label = 'IFC Object'
@@ -1777,6 +1779,7 @@ class BIM_UL_representation_items(bpy.types.UIList):
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = 'blenderbim'
+    svg2pdf_command: StringProperty(name="SVG to PDF Command")
 
     def draw(self, context):
         layout = self.layout
@@ -1786,6 +1789,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator('bim.open_upstream', text='Visit Wiki').page = 'wiki'
         row.operator('bim.open_upstream', text='Visit Community').page = 'community'
+        row = layout.row()
+        row.prop(self, 'svg2pdf_command')
 
 
 class BIM_PT_ifcclash(Panel):
