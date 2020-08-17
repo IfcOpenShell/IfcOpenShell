@@ -5,10 +5,10 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   id="root"
-   version="1.1"
+   width="841mm"
    height="594mm"
-   width="841mm">
+   version="1.1"
+   id="root">
   <defs
      id="defs901" />
   <metadata
@@ -25,170 +25,177 @@
   </metadata>
   <desc
      id="desc89610">/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/titleblock.dxf - scale = 1.000000, origin = (0.000000, 0.000000), method = manual</desc>
+  <rect
+     y="3.1719057e-05"
+     x="-4.3253262e-05"
+     height="2245.0393"
+     width="3178.5828"
+     id="rect1036"
+     style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.07874;stroke-linecap:round;stroke-linejoin:round;stop-color:#000000" />
   <g
-     transform="translate(0,1122.5197)"
-     id="g90667">
+     id="g90667"
+     transform="translate(0,1122.5197)">
     <rect
-       y="-1046.7792"
-       x="75.740562"
-       height="2093.5583"
-       width="3027.1016"
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.88976383;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect116616"
-       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.88976383;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       width="3027.1016"
+       height="2093.5583"
+       x="75.740562"
+       y="-1046.7792" />
     <text
-       id="text116526"
-       y="909.15491"
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:15.15362644px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="113.70713"
-       style="font-style:normal;font-weight:normal;font-size:15.15362644px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.15362644px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px"
-         y="909.15491"
+       y="909.15491"
+       id="text116526"><tspan
+         id="tspan116524"
          x="113.70713"
-         id="tspan116524">REV. NO.</tspan></text>
-    <path
-       id="path116530"
-       d="M 75.590564,895.24802 H 3102.9921"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       id="path116532"
-       d="M 151.6811,895.24802 V 1046.9291"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 454.04331,895.24802 V 1046.9291"
-       id="path116534" />
-    <path
-       id="path116536"
-       d="M 529.63386,895.24802 V 1046.4302"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 605.22441,895.24802 V 1046.9291"
-       id="path116538" />
-    <path
-       id="path116540"
-       d="M 75.590564,914.14565 H 605.22441"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 75.590564,933.04329 H 605.22441"
-       id="path116542" />
-    <path
-       id="path116544"
-       d="M 75.590564,951.94093 H 605.22441"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 75.590564,970.83857 H 605.22441"
-       id="path116546" />
-    <path
-       id="path116548"
-       d="M 75.590564,989.73621 H 605.22441"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 75.590564,1008.6338 H 605.22441"
-       id="path116550" />
-    <path
-       id="path116552"
-       d="M 75.590564,1027.5315 H 605.22441"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       id="path116576"
-       d="M 2800.5,895.24802 V 1046.9291"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       id="path116578"
-       d="m 2800.5,1008.6338 h 302.4921"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <path
-       id="path116598"
-       d="m 3027.4027,1008.6338 v 38.2953"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:15.15362644px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="302.86591"
-       y="909.15491"
-       id="text1395"><tspan
-         id="tspan1393"
-         x="302.86591"
          y="909.15491"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.15362644px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px">DESCRIPTION</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.15362644px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px">REV. NO.</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,895.24802 H 3102.9921"
+       id="path116530" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 151.6811,895.24802 V 1046.9291"
+       id="path116532" />
+    <path
+       id="path116534"
+       d="M 454.04331,895.24802 V 1046.9291"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 529.63386,895.24802 V 1046.4302"
+       id="path116536" />
+    <path
+       id="path116538"
+       d="M 605.22441,895.24802 V 1046.9291"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,914.14565 H 605.22441"
+       id="path116540" />
+    <path
+       id="path116542"
+       d="M 75.590564,933.04329 H 605.22441"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,951.94093 H 605.22441"
+       id="path116544" />
+    <path
+       id="path116546"
+       d="M 75.590564,970.83857 H 605.22441"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,989.73621 H 605.22441"
+       id="path116548" />
+    <path
+       id="path116550"
+       d="M 75.590564,1008.6338 H 605.22441"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 75.590564,1027.5315 H 605.22441"
+       id="path116552" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 2800.5,895.24802 V 1046.9291"
+       id="path116576" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 2800.5,1008.6338 h 302.4921"
+       id="path116578" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.75590551;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 3027.4027,1008.6338 v 38.2953"
+       id="path116598" />
     <text
-       id="text1399"
+       id="text1395"
        y="909.15491"
-       x="491.97513"
+       x="302.86591"
        style="font-style:normal;font-weight:normal;font-size:15.15362644px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.15362644px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px"
          y="909.15491"
+         x="302.86591"
+         id="tspan1393">DESCRIPTION</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:15.15362644px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="491.97513"
+       y="909.15491"
+       id="text1399"><tspan
+         id="tspan1397"
          x="491.97513"
-         id="tspan1397">AUTHOR</tspan></text>
+         y="909.15491"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.15362644px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px">AUTHOR</tspan></text>
     <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:16.05907059px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="568.05585"
+       id="text1403"
        y="909.15485"
-       id="text1403"><tspan
-         id="tspan1401"
-         x="568.05585"
-         y="909.15485"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.05907059px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.99999994px">DATE</tspan></text>
-    <text
-       id="text1417"
-       y="1037.4314"
-       x="2829.6274"
-       style="font-style:normal;font-weight:normal;font-size:13.39182091px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="568.05585"
+       style="font-style:normal;font-weight:normal;font-size:16.05907059px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.39182091px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px"
-         y="1037.4314"
-         x="2829.6274"
-         id="tspan1415">{{number}}</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:11.22711563px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="2839.5081"
-       y="1020.4988"
-       id="text1421"><tspan
-         id="tspan1419"
-         x="2839.5081"
-         y="1020.4988"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.22711563px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.99999994px">DRAWING NUMBER</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.05907059px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.99999994px"
+         y="909.15485"
+         x="568.05585"
+         id="tspan1401">DATE</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:13.39182091px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="3056.6086"
+       x="2829.6274"
        y="1037.4314"
-       id="text1425"><tspan
-         id="tspan1423"
-         x="3056.6086"
+       id="text1417"><tspan
+         id="tspan1415"
+         x="2829.6274"
          y="1037.4314"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.39182091px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px">{{revision}}</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.39182091px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px">{{number}}</tspan></text>
     <text
-       id="text1429"
+       id="text1421"
        y="1020.4988"
-       x="3038.5586"
+       x="2839.5081"
        style="font-style:normal;font-weight:normal;font-size:11.22711563px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.22711563px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.99999994px"
          y="1020.4988"
+         x="2839.5081"
+         id="tspan1419">DRAWING NUMBER</tspan></text>
+    <text
+       id="text1425"
+       y="1037.4314"
+       x="3056.6086"
+       style="font-style:normal;font-weight:normal;font-size:13.39182091px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.39182091px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:1px"
+         y="1037.4314"
+         x="3056.6086"
+         id="tspan1423">{{revision}}</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:11.22711563px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="3038.5586"
+       y="1020.4988"
+       id="text1429"><tspan
+         id="tspan1427"
          x="3038.5586"
-         id="tspan1427">REV</tspan></text>
+         y="1020.4988"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.22711563px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.99999994px">REV</tspan></text>
   </g>
   <g
-     transform="translate(0,1122.5197)"
-     id="g90669" />
+     id="g90669"
+     transform="translate(0,1122.5197)" />
   <g
-     transform="translate(0,1122.5197)"
-     id="g90671" />
+     id="g90671"
+     transform="translate(0,1122.5197)" />
   <g
-     transform="translate(0,1122.5197)"
-     id="g90673" />
+     id="g90673"
+     transform="translate(0,1122.5197)" />
   <g
-     transform="translate(0,1122.5197)"
-     id="g90675" />
+     id="g90675"
+     transform="translate(0,1122.5197)" />
   <g
-     transform="translate(0,1122.5197)"
-     id="g90677" />
+     id="g90677"
+     transform="translate(0,1122.5197)" />
 </svg>
