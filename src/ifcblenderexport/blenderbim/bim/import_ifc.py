@@ -458,7 +458,8 @@ class IfcImporter():
         for element in self.file.by_type('IfcExtrudedAreaSolid'):
             if element.SweptArea.is_a() not in [
                     'IfcArbitraryClosedProfileDef',
-                    'IfcRectangleProfileDef'
+                    'IfcRectangleProfileDef',
+                    'IfcCircleProfileDef'
                     ]:
                 continue
             if [e for e in self.file.get_inverse(element) if e.is_a('IfcBooleanResult')]:
@@ -479,7 +480,7 @@ class IfcImporter():
                 inverse_element.RepresentationType = 'Curve'
                 for product in self.get_products_from_shape_representation(inverse_element):
                     self.native_elements.setdefault(product.GlobalId, {})[dummy_geometry.id()] = element
-            self.replace_attribute(inverse_element, element, dummy_geometry)
+            ifcopenshell.util.element.replace_attribute(inverse_element, element, dummy_geometry)
 
     def get_dummy_geometry(self):
         point = self.file.createIfcCartesianPoint((0., 0., 0.))
@@ -494,18 +495,6 @@ class IfcImporter():
                     if inverse_element.is_a('IfcShapeRepresentation'):
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
-
-    # TODO migrate to utility
-    def replace_attribute(self, element, old, new):
-        for i, attribute in enumerate(element):
-            if attribute == old:
-                element[i] = new
-            elif isinstance(attribute, tuple):
-                new_attribute = list(attribute)
-                for j, item in enumerate(attribute):
-                    if item == old:
-                        new_attribute[j] = new
-                        element[i] = new_attribute
 
     def filter_ifc(self):
         for element in self.file.by_type('IfcElement'):
@@ -1053,16 +1042,33 @@ class IfcImporter():
                 'name': item.SweptArea.is_a(),
                 'vertices': [0, 1, 2, 3]
             })
+        elif item.SweptArea.is_a() == 'IfcCircleProfileDef':
+            bm = self.bmesh_from_circle(item.SweptArea.Radius)
+            if item.SweptArea.Position:
+                bmesh.ops.transform(bm, matrix=self.get_axis2placement(item.SweptArea.Position), verts=bm.verts)
+            bmesh.ops.transform(bm, matrix=mathutils.Matrix() * self.unit_scale, verts=bm.verts)
+            subitems.append({
+                'name': item.SweptArea.is_a(),
+                # This strange vertice offset is due to a Blender quirk
+                'vertices': range(1, len(bm.verts)+1)
+            })
         else:
             # TODO: what if we can't handle it?
             return
         results = bmesh.ops.extrude_face_region(bm, geom=[bm.faces[0]])
         bm.faces.ensure_lookup_table()
         offset = self.unit_scale * item.Depth * mathutils.Vector(item.ExtrudedDirection.DirectionRatios)
-        subitems.append({
-            'name': 'ExtrudedDirection',
-            'vertices': [0, len(subitems[-1]['vertices'])]
-        })
+        if item.SweptArea.is_a() == 'IfcCircleProfileDef':
+            # Circle profiles have a quirk apparently in Blender
+            subitems.append({
+                'name': 'ExtrudedDirection',
+                'vertices': [0, 1]
+            })
+        else:
+            subitems.append({
+                'name': 'ExtrudedDirection',
+                'vertices': [0, len(subitems[-1]['vertices'])]
+            })
         for geom in results['geom']:
             if isinstance(geom, bmesh.types.BMVert):
                 geom.co += offset
@@ -1085,6 +1091,19 @@ class IfcImporter():
         bm.verts[1].co += diff_vector
         bm.verts[2].co -= diff_vector
         bm.verts[3].co -= diff_vector
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        return bm
+
+    def bmesh_from_circle(self, r):
+        bm = bmesh.new()
+        # Segments should be a multiple of 4 to easily measure the diameter
+        si_radius = r * self.unit_scale
+        # I'm arbitrarily deciding that 28 verts is enough for a 1m radius
+        closest_power_of_2 = int(math.log(si_radius, 2) + 0.5)
+        segments = (closest_power_of_2 * 4) + 28
+        bmesh.ops.create_circle(bm, cap_ends=True, segments=segments, radius=r)
+        bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
         bm.faces.ensure_lookup_table()
         return bm
