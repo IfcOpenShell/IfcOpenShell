@@ -10,6 +10,7 @@ class IFC2CA:
         self.file = None
         self.result = {}
         self.warnings = []
+        self.tol = 1E-06
 
     def convert(self):
         self.file = ifcopenshell.open(self.filename)
@@ -73,10 +74,11 @@ class IFC2CA:
             representation = self.get_representation(item, 'Edge')
             material_profile = self.get_material_profile(item)
             if not representation:
-                # add to warnings
+                self.warnings.append('No representation defined for %s. Member excluded' % (item.is_a() + '|' + str(item.id())))
                 return
             if not material_profile:
-                #add to warnings
+                self.warnings.append('No material defined for in %s' % (item.is_a() + '|' + str(item.id())))
+                self.warnings.append('No profile defined for in %s' % (item.is_a() + '|' + str(item.id())))
                 materialId = None
                 profileId = None
             else:
@@ -95,8 +97,8 @@ class IFC2CA:
             length = np.linalg.norm(np.array(geometry[1]) - np.array(geometry[0]))
             for c in connections:
                 if c['eccentricity']:
-                    if np.linalg.norm(np.array(c['eccentricity']['pointOnElement'])) > length:
-                        # print('Eccentricity in %s corrected' % item.is_a() + '|' + str(item.id()))
+                    if np.linalg.norm(np.array(c['eccentricity']['pointOnElement'])) > length + self.tol:
+                        print((np.linalg.norm(np.array(c['eccentricity']['pointOnElement'])), '>', length))
                         self.warnings.append('Eccentricity in %s corrected' % (item.is_a() + '|' + str(item.id())))
                         c['eccentricity']['pointOnElement'][0] = length
             # End <--
@@ -125,10 +127,10 @@ class IFC2CA:
             representation = self.get_representation(item, 'Face')
             material = self.get_material_profile(item)
             if not representation:
-                # add to warnings
+                self.warnings.append('No representation defined for %s. Member excluded' % (item.is_a() + '|' + str(item.id())))
                 return
             if not material:
-                #add to warnings
+                self.warnings.append('No material defined for in %s' % (item.is_a() + '|' + str(item.id())))
                 materialId = None
             else:
                 materialId = material.is_a() + '|' + str(material.id())
@@ -161,7 +163,7 @@ class IFC2CA:
         elif item.is_a('IfcStructuralPointConnection'):
             representation = self.get_representation(item, 'Vertex')
             if not representation:
-                # add to warnings
+                self.warnings.append('No representation defined for %s. Connection excluded' % (item.is_a() + '|' + str(item.id())))
                 return
 
             geometry = self.get_geometry(representation)
@@ -233,7 +235,7 @@ class IFC2CA:
                     return rep
 
     def get_specific_representation(self, representation, rep_id, rep_type):
-        if representation.RepresentationIdentifier == rep_id or rep_id is None \
+        if (representation.RepresentationIdentifier == rep_id or rep_id is None) \
                 and representation.RepresentationType == rep_type:
             return representation
         if representation.RepresentationType == 'MappedRepresentation':
@@ -453,7 +455,7 @@ class IFC2CA:
             }
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01']
+    fileNames = ['cantilever_01', 'portal_01', 'grid_of_beams']
     files = fileNames
 
     for fileName in files:

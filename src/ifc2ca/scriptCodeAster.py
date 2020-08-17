@@ -34,7 +34,13 @@ class COMMANDFILE:
             for rel in el['connections']:
                 conn = [c for c in connections if c['ifcName'] == rel['relatedConnection']][0]
                 if conn['geometryType'] == 'point':
-                    rel['groupName'] = self.getGroupName(rel['relatingElement']) + '_0DC_' + self.getGroupName(rel['relatedConnection'])
+                    rel['groupName1'] = self.getGroupName(rel['relatingElement']) + '_0DC_' + self.getGroupName(rel['relatedConnection'])
+                    if rel['eccentricity']:
+                        rel['groupName2'] = self.getGroupName(rel['relatedConnection']) + '_0DC_' + self.getGroupName(rel['relatingElement'])
+                        rel['index'] = len(conn['relatedElements']) + 1
+                        rel['unifiedGroupName'] = self.getGroupName(rel['relatedConnection']) + '_0DC_%g' % rel['index']
+                    else:
+                        rel['groupName2'] = self.getGroupName(rel['relatedConnection'])
                     rel['springGroupName'] = self.getGroupName(rel['relatingElement']) + '_1DS_' + self.getGroupName(rel['relatedConnection'])
                     self.calculateConstraints(rel)
                 conn['relatedElements'].append(rel)
@@ -50,18 +56,20 @@ class COMMANDFILE:
 
         unifiedConnection = False
         rigidLinkGroupNames = []
-        # for conn in connections:
-        #     conn['relatedGroupNames'] = tuple([self.getGroupName(rel['relatingElement']) + '_0DC_' + self.getGroupName(conn['ifcName']) for rel in conn['relatedElements']])
-        #     if not conn['appliedCondition'] and len(conn['relatedGroupNames']) == 1:
-        #         conn['appliedCondition'] = {
-        #             'dx': True,
-        #             'dy': True,
-        #             'dz': True
-        #         }
-        #     if len(conn['relatedGroupNames']) > 1:
-        #         unifiedConnection = True
-        #     rigidLinkGroupNames.extend([self.getGroupName(rel['relatingElement']) + '_1DC_' + self.getGroupName(conn['ifcName']) for rel in conn['relatedElements'] if rel['eccentricity']])
-        # rigidLinkGroupNames = tuple(rigidLinkGroupNames)
+        for conn in connections:
+            conn['unifiedGroupNames'] = [rel['unifiedGroupName'] for rel in conn['relatedElements'] if rel['eccentricity']]
+            # if not conn['appliedCondition'] and len(conn['unifiedGroupNames']) == 1:
+            #     conn['appliedCondition'] = {
+            #         'dx': True,
+            #         'dy': True,
+            #         'dz': True
+            #     }
+            if len(conn['unifiedGroupNames']) >= 1:
+                conn['unifiedGroupNames'].insert(0, self.getGroupName(conn['ifcName']))
+                conn['unifiedGroupNames'] = tuple(conn['unifiedGroupNames'])
+                unifiedConnection = True
+            rigidLinkGroupNames.extend([self.getGroupName(rel['relatingElement']) + '_1DR_' + self.getGroupName(conn['ifcName']) for rel in conn['relatedElements'] if rel['eccentricity']])
+        rigidLinkGroupNames = tuple(rigidLinkGroupNames)
 
         # Define file to write command file for code_aster
         f = open(self.asterFilename, 'w')
@@ -514,7 +522,7 @@ liaisons = AFFE_CHAR_MECA(
     LIAISON_UNIF = ('''
             )
 
-            for conn in [conn for conn in connections if len(conn['relatedGroupNames']) > 1]:
+            for conn in [conn for conn in connections if len(conn['unifiedGroupNames']) > 1]:
                 template = \
         '''
         _F(
@@ -523,7 +531,7 @@ liaisons = AFFE_CHAR_MECA(
         ),'''
 
                 context = {
-                    'groupNames': conn['relatedGroupNames']
+                    'groupNames': conn['unifiedGroupNames']
                 }
 
                 f.write(template.format(**context))
@@ -600,19 +608,19 @@ res_Bld = MECA_STATIQUE(
 '''
         )
 
-        #     f.write(
+        #         f.write(
         # '''
         # # STEP: POST-PROCESSING
         # res_Bld = CALC_CHAMP(
         #     reuse = res_Bld,
         #     RESULTAT = res_Bld,
-        #     CONTRAINTE = ('SIEF_ELNO', 'SIGM_ELNO', 'EFGE_ELNO',),
-        #     FORCE = ('REAC_NODA', 'FORC_NODA',),
+        #     # CONTRAINTE = ('SIEF_ELNO', 'SIGM_ELNO', 'EFGE_ELNO',),
+        #     FORCE = ('REAC_NODA', 'FORC_NODA',)
         # )
         # '''
-        #     )
+        #         )
         #
-        #     template = \
+        #         template = \
         # '''
         # # STEP: MASS EXTRACTION FOR EACH ASSEMBLE
         # FaceMass = POST_ELEM(
@@ -625,13 +633,13 @@ res_Bld = MECA_STATIQUE(
         #     ),
         # )\n'''
         #
-        #     context = {
-        #         'massList': massList,
-        #     }
+        #         context = {
+        #             'massList': massList,
+        #         }
         #
-        #     f.write(template.format(**context))
+        #         f.write(template.format(**context))
         #
-        #     f.write(
+        #         f.write(
         # '''
         # IMPR_TABLE(
         #     UNITE = 10,
@@ -641,37 +649,42 @@ res_Bld = MECA_STATIQUE(
         # 	# FORMAT_R = '1PE15.6',
         # )
         # '''
-        #     )
+        #         )
         #
-        #     f.write(
+        #         template = \
         # '''
         # # STEP: REACTION EXTRACTION AT THE BASE
         # Reacs = POST_RELEVE_T(
         #     ACTION = _F(
         #         INTITULE = 'sumReac',
-        #         GROUP_NO = 'grdSupps',
+        #         GROUP_NO = {groupNames},
         #         RESULTAT = res_Bld,
         #         NOM_CHAM = 'REAC_NODA',
         #         RESULTANTE = ('DX','DY','DZ',),
-        #         # MOMENT = ('DRX','DRY','DRZ',),
-        #         # POINT = (0,0,0,),
-        #         OPERATION = 'EXTRACTION',
-        #     ),
+        #         MOMENT = ('DRX','DRY','DRZ',),
+        #         POINT = (0,0,0,),
+        #         OPERATION = 'EXTRACTION'
+        #     )
         # )
         # '''
-        #     )
         #
-        #     f.write(
+        #         context = {
+        #             'groupNames': point0DGroupNames,
+        #         }
+        #
+        #         f.write(template.format(**context))
+        #
+        #         f.write(
         # '''
         # IMPR_TABLE(
         #     UNITE = 10,
         #     TABLE = Reacs,
         #     SEPARATEUR = ',',
-        #     NOM_PARA = ('INTITULE', 'RESU', 'NOM_CHAM', 'INST', 'DX','DY','DZ'),
-        #     # FORMAT_R = '1PE12.3',
+        #     # NOM_PARA = ('INTITULE', 'RESU', 'NOM_CHAM', 'INST', 'DX','DY','DZ'),
+        #     FORMAT_R = '1PE12.3',
         # )
         # '''
-        #     )
+        #         )
         #
         f.write(
 '''
@@ -699,8 +712,8 @@ FIN()
 
 
     def calculateConstraints(self, rel):
-        gr1 = self.getGroupName(rel['relatedConnection'])
-        gr2 = rel['groupName']
+        gr1 = rel['groupName1']
+        gr2 = rel['groupName2']
         o = np.array(rel['orientation']).transpose().tolist()
         liaisons = {
             'groupNames': (gr1, gr1, gr1, gr2, gr2, gr2),
@@ -771,7 +784,7 @@ FIN()
             conn['liaisons'] = liaisons
             conn['stiffnesses'] = tuple(stiffnesses)
             return
-    
+
         if isinstance(conn['appliedCondition']['dx'], bool) and conn['appliedCondition']['dx']:
             liaisons['coeffs'].append((o[0][0], o[1][0], o[2][0]))
             liaisons['dofs'].append(('DX', 'DY', 'DZ'))
@@ -812,7 +825,7 @@ FIN()
         conn['stiffnesses'] = tuple(stiffnesses)
 
 if __name__ == '__main__':
-    fileNames = ['cantilever_01', 'portal_01']
+    fileNames = ['cantilever_01', 'portal_01', 'grid_of_beams']
     files = fileNames
 
     for fileName in files:
