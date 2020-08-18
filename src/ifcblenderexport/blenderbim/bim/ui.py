@@ -793,13 +793,14 @@ class BIM_PT_sheets(Panel):
 
         if props.sheets:
             row.operator('bim.open_sheet', icon='URL', text='')
-            row.operator('bim.open_compiled_sheet', icon='OUTPUT', text='')
             row.operator('bim.remove_sheet', icon='X', text='').index = props.active_sheet_index
 
             layout.template_list('BIM_UL_generic', '', props, 'sheets', props, 'active_sheet_index')
 
         row = layout.row(align=True)
         row.operator('bim.add_drawing_to_sheet')
+        row.operator('bim.add_schedule_to_sheet')
+        row = layout.row()
         row.operator('bim.create_sheets')
 
 

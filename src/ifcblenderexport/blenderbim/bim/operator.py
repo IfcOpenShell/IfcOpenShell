@@ -8,7 +8,6 @@ import webbrowser
 import ifcopenshell
 import ifcopenshell.util.selector
 import tempfile
-import ntpath
 from . import export_ifc
 from . import import_ifc
 from . import qto
@@ -2196,19 +2195,6 @@ class OpenSheet(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OpenCompiledSheet(bpy.types.Operator):
-    bl_idname = 'bim.open_compiled_sheet'
-    bl_label = 'Open Compiled Sheet'
-
-    def execute(self, context):
-        props = bpy.context.scene.DocProperties
-        webbrowser.open('file://' + os.path.join(
-            bpy.context.scene.BIMProperties.data_dir, 'build',
-            props.sheets[props.active_sheet_index].name,
-            props.sheets[props.active_sheet_index].name + '.svg'))
-        return {'FINISHED'}
-
-
 class AddDrawingToSheet(bpy.types.Operator):
     bl_idname = 'bim.add_drawing_to_sheet'
     bl_label = 'Add Drawing To Sheet'
@@ -2217,7 +2203,7 @@ class AddDrawingToSheet(bpy.types.Operator):
         props = bpy.context.scene.DocProperties
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.add_view(
+        sheet_builder.add_drawing(
             props.drawings[props.active_drawing_index].name,
             props.sheets[props.active_sheet_index].name)
         return {'FINISHED'}
@@ -3678,7 +3664,21 @@ class BuildSchedule(bpy.types.Operator):
         schedule_creator = scheduler.Scheduler()
         outfile = os.path.join(
             bpy.context.scene.BIMProperties.data_dir, 'schedules',
-            ntpath.basename(schedule.file).replace('.ods', '.svg'))
+            schedule.name + '.svg')
         schedule_creator.schedule(schedule.file, outfile)
         webbrowser.open('file://' + outfile)
+        return {'FINISHED'}
+
+
+class AddScheduleToSheet(bpy.types.Operator):
+    bl_idname = 'bim.add_schedule_to_sheet'
+    bl_label = 'Add Schedule To Sheet'
+
+    def execute(self, context):
+        props = bpy.context.scene.DocProperties
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_builder.add_schedule(
+            props.schedules[props.active_schedule_index].name,
+            props.sheets[props.active_sheet_index].name)
         return {'FINISHED'}

@@ -45,7 +45,7 @@ class Scheduler():
                 repeat = int(repeat) if repeat else 1
                 for i in range(0, repeat):
                     width = column_widths[tdi]
-                    self.svg.add(self.svg.rect(insert=(x, y), size=(width, height), style='fill:rgba(255,255,255,1); stroke-width:.125; stroke:rgb(0,0,0)'))
+                    self.svg.add(self.svg.rect(insert=(x, y), size=(width, height), style='fill: #ffffff; stroke-width:.125; stroke: #000000;'))
                     value = td.getElementsByType(P)
                     if value:
                         self.add_text(value[0], x+self.padding, y+self.padding)
