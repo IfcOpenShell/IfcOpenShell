@@ -249,14 +249,19 @@ namespace {
         // Format type object's property set links. This needs refactoring
 		if (instance->declaration().is(IfcSchema::IfcTypeObject::Class()) && !as_link) {
 			IfcSchema::IfcTypeObject* type_object = instance->template as<IfcSchema::IfcTypeObject>();
-			IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
 
-			for (IfcSchema::IfcPropertySetDefinition::list::it jt = property_sets->begin(); jt != property_sets->end(); ++jt) {
-				IfcSchema::IfcPropertySetDefinition *pset = *jt;
+			if (type_object->hasHasPropertySets()) {
+				IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = type_object->HasPropertySets();
 
-				if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
-					json::reference propertyObject = getEmptyObjectReferenceInArray(pset->declaration().name(), jsonObject);
-					format_entity_instance(pset, propertyObject, true);
+				for (IfcSchema::IfcPropertySetDefinition::list::it jt = property_sets->begin();
+					 jt != property_sets->end(); ++jt) {
+					IfcSchema::IfcPropertySetDefinition *pset = *jt;
+
+					if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
+						json::reference propertyObject = getEmptyObjectReferenceInArray(pset->declaration().name(),
+																						jsonObject);
+						format_entity_instance(pset, propertyObject, true);
+					}
 				}
 			}
 		}
