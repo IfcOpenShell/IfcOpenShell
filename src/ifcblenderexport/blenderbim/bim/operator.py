@@ -73,6 +73,9 @@ class ExportIFC(bpy.types.Operator):
         ifc_export_settings.logger.info('Starting export')
         ifc_exporter.export(context.selected_objects)
         ifc_export_settings.logger.info('Export finished in {:.2f} seconds'.format(time.time() - start))
+        if not bpy.context.scene.DocProperties.ifc_files:
+            new = bpy.context.scene.DocProperties.ifc_files.add()
+            new.name = output_file
         return {'FINISHED'}
 
 class ImportIFC(bpy.types.Operator, ImportHelper):
