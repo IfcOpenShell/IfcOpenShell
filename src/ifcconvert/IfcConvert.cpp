@@ -669,7 +669,7 @@ int main(int argc, char** argv) {
 			output_temp_filename.push_back(static_cast<path_t::value_type>(index_dist(rng)));
 		}
 		{
-			std::string v = ".tmp.";
+			std::string v = ".tmp";
 			output_temp_filename += path_t(v.begin(), v.end());
 		}
 	}
