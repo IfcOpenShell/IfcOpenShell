@@ -39,6 +39,7 @@ def add_object(self, context):
     ]
     faces = []
     mesh = bpy.data.meshes.new(name='Plan/Annotation/PLAN_VIEW/' + guid)
+    mesh.use_fake_user = True
     mesh.from_pydata(verts, edges, faces)
 
     # Window lining profile
@@ -130,6 +131,7 @@ def add_object(self, context):
     attribute.name = 'PredefinedType'
     attribute.string_value = 'WINDOW'
     obj2.data.name = 'Model/Body/MODEL_VIEW/' + guid
+    obj2.data.use_fake_user = True
 
     rep = obj2.BIMObjectProperties.representation_contexts.add()
     rep.context = 'Model'
