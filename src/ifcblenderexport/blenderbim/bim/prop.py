@@ -1125,6 +1125,8 @@ class BIMProperties(PropertyGroup):
     features_file: EnumProperty(items=getFeaturesFiles, name="Features File", update=refreshScenarios)
     scenario: EnumProperty(items=getScenarios, name="Scenario")
     cobie_ifc_file: StringProperty(default='', name="COBie IFC File")
+    cobie_types: StringProperty(default='.COBieType', name="COBie Types")
+    cobie_components: StringProperty(default='.COBie', name="COBie Components")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
     diff_old_file: StringProperty(default='', name="Diff Old IFC File")
     diff_new_file: StringProperty(default='', name="Diff New IFC File")

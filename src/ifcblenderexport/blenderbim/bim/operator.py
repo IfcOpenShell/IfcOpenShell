@@ -1334,8 +1334,12 @@ class ExecuteIfcCobie(bpy.types.Operator):
         fh.setFormatter(logging.Formatter('%(asctime)s : %(levelname)s : %(message)s'))
         logger = logging.getLogger('IFCtoCOBie')
         logger.addHandler(fh)
-        parser = IfcCobieParser(logger)
-        parser.parse(bpy.context.scene.BIMProperties.cobie_ifc_file)
+        selector = ifcopenshell.util.selector.Selector()
+        parser = IfcCobieParser(logger, selector)
+        parser.parse(
+            bpy.context.scene.BIMProperties.cobie_ifc_file,
+            bpy.context.scene.BIMProperties.cobie_types,
+            bpy.context.scene.BIMProperties.cobie_components)
         if self.file_format == 'xlsx':
             from cobie import CobieXlsWriter
             writer = CobieXlsWriter(parser, output)
