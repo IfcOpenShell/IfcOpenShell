@@ -1587,6 +1587,11 @@ class BIM_PT_cobie(Panel):
         row.operator("bim.select_cobie_ifc_file", icon="FILE_FOLDER", text="")
 
         row = layout.row()
+        row.prop(props, "cobie_types")
+        row = layout.row()
+        row.prop(props, "cobie_components")
+
+        row = layout.row()
         op = row.operator('bim.execute_ifc_cobie', text='CSV')
         op.file_format = 'csv'
         op = row.operator('bim.execute_ifc_cobie', text='ODS')

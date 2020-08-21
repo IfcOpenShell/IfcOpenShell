@@ -5,11 +5,13 @@ import os
 import time
 import argparse
 import datetime
-import ifcopenshell
 import logging
+import ifcopenshell
+import ifcopenshell.util.selector
 
 class IfcCobieParser():
-    def __init__(self, logger):
+    def __init__(self, logger, selector):
+        self.selector = selector
         self.logger = logger
         self.file = None
         self.contacts = {}
@@ -30,60 +32,6 @@ class IfcCobieParser():
         self.attributes = {}
         self.coordinates = {}
         self.issues = {}
-        self.type_assets = [
-            'IfcDoorStyle',
-            'IfcBuildingElementProxyType',
-            'IfcChimneyType',
-            'IfcCoveringType',
-            'IfcDoorType',
-            'IfcFootingType',
-            'IfcPileType',
-            'IfcRoofType',
-            'IfcShadingDeviceType',
-            'IfcWindowType',
-            'IfcDistributionControlElementType',
-            'IfcDistributionChamberElementType',
-            'IfcEnergyConversionDeviceType',
-            'IfcFlowControllerType',
-            'IfcFlowMovingDeviceType',
-            'IfcFlowStorageDeviceType',
-            'IfcFlowTerminalType',
-            'IfcFlowTreatmentDeviceType',
-            'IfcElementAssemblyType',
-            'IfcBuildingElementPartType',
-            'IfcDiscreteAccessoryType',
-            'IfcMechanicalFastenerType',
-            'IfcReinforcingElementType',
-            'IfcVibrationIsolatorType',
-            'IfcFurnishingElementType',
-            'IfcGeographicElementType',
-            'IfcTransportElementType',
-            'IfcSpatialZoneType',
-            'IfcWindowStyle',
-            ]
-        self.component_assets = [
-            'IfcBuildingElementProxy',
-            'IfcChimney',
-            'IfcCovering',
-            'IfcDoor',
-            'IfcShadingDevice',
-            'IfcWindow',
-            'IfcDistributionControlElement',
-            'IfcDistributionChamberElement',
-            'IfcEnergyConversionDevice',
-            'IfcFlowController',
-            'IfcFlowMovingDevice',
-            'IfcFlowStorageDevice',
-            'IfcFlowTerminal',
-            'IfcFlowTreatmentDevice',
-            'IfcDiscreteAccessory',
-            'IfcTendon',
-            'IfcTendonAnchor',
-            'IfcVibrationIsolator',
-            'IfcFurnishingElement',
-            'IfcGeographicElement',
-            'IfcTransportElement',
-            ]
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
@@ -101,8 +49,14 @@ class IfcCobieParser():
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
-    def parse(self, filename):
+    def parse(self, filename, type_query=None, component_query=None):
+        if type_query is None:
+            type_query = '.COBieType'
+        if component_query is None:
+            component_query = '.COBie'
         self.file = ifcopenshell.open(filename)
+        self.type_assets = self.selector.parse(self.file, type_query)
+        self.component_assets = self.selector.parse(self.file, component_query)
         self.get_contacts()
         self.get_facilities()
         self.get_floors()
@@ -231,14 +185,7 @@ class IfcCobieParser():
 
     def get_types(self):
         types = self.file.by_type('IfcTypeObject')
-        for type in types:
-            is_a_type_asset = False
-            for type_asset in self.type_assets:
-                if type.is_a(type_asset):
-                    is_a_type_asset = True
-            if not is_a_type_asset:
-                self.logger.warning('A type which is not an asset was found for {}'.format(type))
-                continue
+        for type in self.type_assets:
             # The responsibility matrix states to parse IfcMaterial and
             # IfcMaterialLayerSet too, but it doesn't make much sense, so I
             # don't parse it.
@@ -600,12 +547,8 @@ class IfcCobieParser():
             return object.Name
         self.logger.error('The connected object relationship {} is not a component asset for {}'.format(key, connection))
 
-    def is_object_a_component_asset(self, object):
-        is_an_asset = False
-        for asset in self.component_assets:
-            if object.is_a(asset):
-                is_an_asset = True
-        return is_an_asset
+    def is_object_a_component_asset(self, obj):
+        return obj in self.component_assets
 
     def get_space_name_from_component(self, component):
         for relationship in component.ContainedInStructure:
@@ -1192,8 +1135,20 @@ if __name__ == '__main__':
         '-f',
         '--format',
         type=str,
-        help='Choose which format to export in (csv/xlsx)',
+        help='Choose which format to export in (csv/ods/xlsx)',
         default='csv')
+    parser.add_argument(
+        '-c',
+        '--components',
+        type=str,
+        help='A custom selector for components. Defaults to COBie',
+        default='.COBie')
+    parser.add_argument(
+        '-t',
+        '--types',
+        type=str,
+        help='A custom selector for types. Defaults to COBieType',
+        default='.COBieType')
     args = vars(parser.parse_args())
 
     print('Processing IFC file ...')
@@ -1204,8 +1159,9 @@ if __name__ == '__main__':
         filemode='a', level=logging.DEBUG)
     logger = logging.getLogger('IFCtoCOBie')
     logger.info('Starting conversion')
-    parser = IfcCobieParser(logger)
-    parser.parse(args['input'])
+    selector = ifcopenshell.util.selector.Selector()
+    parser = IfcCobieParser(logger, selector)
+    parser.parse(args['input'], args['types'], args['components'])
 
     print('Generating reports ...')
 
