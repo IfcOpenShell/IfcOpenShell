@@ -1319,6 +1319,20 @@ class SelectCobieIfcFile(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class SelectCobieJsonFile(bpy.types.Operator):
+    bl_idname = "bim.select_cobie_json_file"
+    bl_label = "Select COBie JSON File"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.cobie_json_file = self.filepath
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 class ExecuteIfcCobie(bpy.types.Operator):
     bl_idname = 'bim.execute_ifc_cobie'
     bl_label = 'Execute IFCCOBie'
@@ -1335,11 +1349,17 @@ class ExecuteIfcCobie(bpy.types.Operator):
         logger = logging.getLogger('IFCtoCOBie')
         logger.addHandler(fh)
         selector = ifcopenshell.util.selector.Selector()
+        if bpy.context.scene.BIMProperties.cobie_json_file:
+            with open(bpy.context.scene.BIMProperties.cobie_json_file, 'r') as f:
+                custom_data = json.load(f)
+        else:
+            custom_data = {}
         parser = IfcCobieParser(logger, selector)
         parser.parse(
             bpy.context.scene.BIMProperties.cobie_ifc_file,
             bpy.context.scene.BIMProperties.cobie_types,
-            bpy.context.scene.BIMProperties.cobie_components)
+            bpy.context.scene.BIMProperties.cobie_components,
+            custom_data)
         if self.file_format == 'xlsx':
             from cobie import CobieXlsWriter
             writer = CobieXlsWriter(parser, output)

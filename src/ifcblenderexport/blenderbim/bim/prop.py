@@ -1127,6 +1127,7 @@ class BIMProperties(PropertyGroup):
     cobie_ifc_file: StringProperty(default='', name="COBie IFC File")
     cobie_types: StringProperty(default='.COBieType', name="COBie Types")
     cobie_components: StringProperty(default='.COBie', name="COBie Components")
+    cobie_json_file: StringProperty(default='', name="COBie JSON File")
     diff_json_file: StringProperty(default='', name="Diff JSON File")
     diff_old_file: StringProperty(default='', name="Diff Old IFC File")
     diff_new_file: StringProperty(default='', name="Diff New IFC File")

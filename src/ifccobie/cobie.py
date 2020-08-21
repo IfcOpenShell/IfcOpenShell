@@ -14,24 +14,12 @@ class IfcCobieParser():
         self.selector = selector
         self.logger = logger
         self.file = None
-        self.contacts = {}
-        self.facilities = {}
-        self.floors = {}
-        self.spaces = {}
-        self.zones = {}
-        self.types = {}
-        self.components = {}
-        self.systems = {}
-        self.assemblies = {}
-        self.connections = {}
-        self.spares = {}
-        self.resources = {}
-        self.jobs = {}
-        self.impacts = {}
-        self.documents = {}
-        self.attributes = {}
-        self.coordinates = {}
-        self.issues = {}
+        self.sheets = ['contacts', 'facilities', 'floors', 'spaces', 'zones',
+            'types', 'components', 'systems', 'assemblies', 'connections',
+            'spares', 'resources', 'jobs', 'impacts', 'documents', 'attributes',
+            'coordinates', 'issues']
+        for sheet in self.sheets:
+            setattr(self, sheet, {})
         self.picklists = {
             'Category-Role': [],
             'Category-Facility': [],
@@ -49,11 +37,11 @@ class IfcCobieParser():
             }
         self.default_date = (datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds = -2177452801)).isoformat()
 
-    def parse(self, filename, type_query=None, component_query=None):
-        if type_query is None:
-            type_query = '.COBieType'
-        if component_query is None:
-            component_query = '.COBie'
+    def parse(self, filename, type_query='.COBieType', component_query='.COBie', custom_data={}):
+        self.custom_data = custom_data
+        for sheet in self.sheets:
+            if sheet not in self.custom_data:
+                self.custom_data[sheet] = {}
         self.file = ifcopenshell.open(filename)
         self.type_assets = self.selector.parse(self.file, type_query)
         self.component_assets = self.selector.parse(self.file, component_query)
@@ -103,6 +91,8 @@ class IfcCobieParser():
                 'PostalCode': self.get_attribute_from_address(postal_address, 'PostalCode'),
                 'Country': self.get_attribute_from_address(postal_address, 'Country')
                 }
+            for field, key in self.custom_data['contacts'].items():
+                self.contacts[email][field] = self.get_element_value(history, key)
 
     def get_facilities(self):
         buildings = self.file.by_type('IfcBuilding')
@@ -132,6 +122,8 @@ class IfcCobieParser():
                 'SiteDescription': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcSite'), 'Description', default='n/a'),
                 'Phase': self.get_object_attribute(self.get_parent_spatial_element(building, 'IfcProject'), 'Phase', default='n/a')
                 }
+            for field, key in self.custom_data['facilities'].items():
+                self.facilities[building_name][field] = self.get_element_value(building, key)
 
     def get_floors(self):
         storeys = self.file.by_type('IfcBuildingStorey')
@@ -148,6 +140,8 @@ class IfcCobieParser():
                 'Elevation': self.get_object_attribute(storey, 'Elevation', default='n/a'),
                 'Height': self.get_height_from_storey(storey)
                 }
+            for field, key in self.custom_data['floors'].items():
+                self.floors[storey_name][field] = self.get_element_value(storey, key)
 
     def get_spaces(self):
         spaces = self.file.by_type('IfcSpace')
@@ -167,6 +161,8 @@ class IfcCobieParser():
                 'GrossArea': self.get_gross_area_from_space(space),
                 'NetArea': self.get_net_area_from_space(space),
                 }
+            for field, key in self.custom_data['spaces'].items():
+                self.spaces[space_name][field] = self.get_element_value(space, key)
 
     def get_zones(self):
         zones = self.file.by_type('IfcZone')
@@ -182,6 +178,8 @@ class IfcCobieParser():
                 'ExtIdentifier': zone.GlobalId,
                 'Description': self.get_object_attribute(zone, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['zones'].items():
+                self.zones[zone_name][field] = self.get_element_value(zone, key)
 
     def get_types(self):
         types = self.file.by_type('IfcTypeObject')
@@ -235,6 +233,8 @@ class IfcCobieParser():
                 'CodePerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'CodePerformance', 'n/a'),
                 'SustainabilityPerformance': self.get_pset_value_from_object(type, 'COBie_Specification', 'SustainabilityPerformance', 'n/a'),
                 }
+            for field, key in self.custom_data['types'].items():
+                self.types[type_name][field] = self.get_element_value(type, key)
 
     def get_components(self):
         components = self.file.by_type('IfcElement')
@@ -259,6 +259,8 @@ class IfcCobieParser():
                 'BarCode': self.get_pset_value_from_object(component, 'Pset_ManufacturerOccurence', 'BarCode', 'n/a'),
                 'AssetIdentifier': self.get_pset_value_from_object(component, 'COBie_Component', 'AssetIdentifier', 'n/a'),
                 }
+            for field, key in self.custom_data['components'].items():
+                self.components[component_name][field] = self.get_element_value(component, key)
 
     def get_systems(self):
         systems = self.file.by_type('IfcSystem')
@@ -274,6 +276,8 @@ class IfcCobieParser():
                 'ExtIdentifier': system.GlobalId,
                 'Description': self.get_object_attribute(system, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['systems'].items():
+                self.systems[system_name][field] = self.get_element_value(system, key)
 
     def get_assemblies(self):
         assemblies = self.file.by_type('IfcRelAggregates')
@@ -293,6 +297,8 @@ class IfcCobieParser():
                 'ExtIdentifier': assembly.GlobalId,
                 'Description': self.get_object_attribute(assembly, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['assemblies'].items():
+                self.assemblies[assembly_name][field] = self.get_element_value(assembly, key)
 
     def get_connections(self):
         connections = self.file.by_type('IfcRelConnects')
@@ -314,6 +320,8 @@ class IfcCobieParser():
                 'ExtIdentifier': connection.GlobalId,
                 'Description': self.get_object_attribute(connection, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['connections'].items():
+                self.connections[connection_name][field] = self.get_element_value(connection, key)
 
     def get_spares(self):
         spares = self.file.by_type('IfcConstructionProductResource')
@@ -332,6 +340,8 @@ class IfcCobieParser():
                 'SetNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'SetNumber'),
                 'PartNumber': self.get_contact_pset_value_from_object(spare, 'COBie_Spare', 'PartNumber'),
                 }
+            for field, key in self.custom_data['spares'].items():
+                self.spares[spare_name][field] = self.get_element_value(spare, key)
 
     def get_resources(self):
         resources = self.file.by_type('IfcConstructionProductResource')
@@ -346,6 +356,8 @@ class IfcCobieParser():
                 'ExtIdentifier': resource.GlobalId,
                 'Description': self.get_object_attribute(resource, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['resources'].items():
+                self.resources[resource_name][field] = self.get_element_value(resource, key)
 
     def get_jobs(self):
         jobs = self.file.by_type('IfcTask')
@@ -372,6 +384,8 @@ class IfcCobieParser():
                 'Priors': self.get_priors_from_job(job),
                 'ResourceNames': self.get_resource_names_from_job(job),
                 }
+            for field, key in self.custom_data['jobs'].items():
+                self.jobs[job_name][field] = self.get_element_value(job, key)
 
     # Impacts is not explicitly defined as a mapping in the responsibliity
     # matrix. This is my best guess. This data should not be relied upon until
@@ -401,6 +415,8 @@ class IfcCobieParser():
                     'ExtIdentifier': impact.GlobalId,
                     'Description': self.get_object_attribute(impact, 'Description', default='n/a'),
                 }
+            for field, key in self.custom_data['impacts'].items():
+                self.impacts[impact_name][field] = self.get_element_value(impact, key)
 
     def get_documents(self):
         documents = self.file.by_type('IfcDocumentInformation')
@@ -422,6 +438,8 @@ class IfcCobieParser():
                 'Description': self.get_object_attribute(document, 'Description', default=document_name),
                 'Reference': document_name,
                 }
+            for field, key in self.custom_data['documents'].items():
+                self.documents[document_name][field] = self.get_element_value(document, key)
 
     # Attributes is not explicitly defined as a mapping in the responsibliity
     # matrix. This is my best guess. This data should not be relied upon until
@@ -903,7 +921,7 @@ class IfcCobieParser():
     def get_phone_from_person_or_organisation(self, person_or_org):
         for address in (person_or_org.Addresses or []):
             if address.is_a('IfcTelecomAddress'):
-                return address.TelephoneNumbers[0]
+               return address.TelephoneNumbers[0]
         self.logger.warning('A phone was not found for {}'.format(person_or_org))
 
     def get_email_from_person_or_organisation(self, person_or_org):
@@ -911,6 +929,12 @@ class IfcCobieParser():
             if address.is_a('IfcTelecomAddress'):
                 return address.ElectronicMailAddresses[0]
         self.logger.warning('An email address was not found for {}'.format(person_or_org))
+
+    def get_element_value(self, element, key):
+        value = self.selector.get_element_value(element, key)
+        if hasattr(value, 'wrappedValue'):
+            return value.wrappedValue
+        return value
 
 class CobieWriter():
     def __init__(self, parser, filename=None):
@@ -938,7 +962,7 @@ class CobieWriter():
             'Phone', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'Department', 'OrganizationCode', 'GivenName', 'FamilyName',
             'Street', 'PostalBox', 'Town', 'StateRegion', 'PostalCode',
-            'Country'], 'ririrreeeoooooooooo')
+            'Country'], 'ririrreeeoooooooooo', self.parser.custom_data['contacts'])
         self.write_data('Facility', self.parser.facilities, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ProjectName',
             'SiteName', 'LinearUnits', 'AreaUnits', 'VolumeUnits', 'CostUnit',
@@ -946,17 +970,21 @@ class CobieWriter():
             'ExternalProjectIdentifier', 'ExternalSiteObject',
             'ExternalSiteIdentifier', 'ExternalFacilityObject',
             'ExternalFacilityIdentifier', 'Description', 'ProjectDescription',
-            'SiteDescription', 'Phase'], 'ririrriiiireeeeeeeoooo')
+            'SiteDescription', 'Phase'], 'ririrriiiireeeeeeeoooo',
+            self.parser.custom_data['facilities'])
         self.write_data('Floor', self.parser.floors, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'], 'ririeeeooo')
+            'ExtObject', 'ExtIdentifier', 'Description', 'Elevation', 'Height'],
+            'ririeeeooo', self.parser.custom_data['floors'])
         self.write_data('Space', self.parser.spaces, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'FloorName',
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier', 'RoomTag',
-            'UsableHeight', 'GrossArea', 'NetArea'], 'ririireeeoooo')
+            'UsableHeight', 'GrossArea', 'NetArea'], 'ririireeeoooo',
+            self.parser.custom_data['spaces'])
         self.write_data('Zone', self.parser.zones, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SpaceNames',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',], 'ririieeeo')
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',],
+            'ririieeeo', self.parser.custom_data['zones'])
         self.write_data('Type', self.parser.types, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Description',
             'AssetType', 'Manufacturer', 'ModelNumber',
@@ -967,45 +995,56 @@ class CobieWriter():
             'NominalWidth', 'NominalHeight', 'ModelReference', 'Shape', 'Size',
             'Color', 'Finish', 'Grade', 'Material', 'Constituents', 'Features',
             'AccessibilityPerformance', 'CodePerformance',
-            'SustainabilityPerformance',], 'riririoooooooeeeooooooooooooooooooo')
+            'SustainabilityPerformance',],
+            'riririoooooooeeeooooooooooooooooooo',
+            self.parser.custom_data['types'])
         self.write_data('Component', self.parser.components, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'TypeName', 'Space',
             'Description', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
             'SerialNumber', 'InstallationDate', 'WarrantyStartDate',
-            'TagNumber', 'BarCode', 'AssetIdentifier',], 'ririireeeoooooo')
+            'TagNumber', 'BarCode', 'AssetIdentifier',], 'ririireeeoooooo',
+            self.parser.custom_data['components'])
         self.write_data('System', self.parser.systems, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ComponentNames',
-            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',], 'ririieeeo')
+            'ExtSystem', 'ExtObject', 'ExtIdentifier', 'Description',],
+            'ririieeeo', self.parser.custom_data['systems'])
         self.write_data('Assembly', self.parser.assemblies, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'SheetName', 'ParentName',
             'ChildNames', 'AssemblyType', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'Description',], 'rirrrrreeeo')
+            'ExtIdentifier', 'Description',], 'rirrrrreeeo',
+            self.parser.custom_data['assemblies'])
         self.write_data('Connection', self.parser.connections, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'ConnectionType', 'SheetName',
             'RowName1', 'RowName2', 'RealizingElement', 'PortName1',
             'PortName2', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description',], 'ririiiiiiieeeo')
+            'Description',], 'ririiiiiiieeeo',
+            self.parser.custom_data['connections'])
         self.write_data('Spare', self.parser.spares, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'TypeName',
             'Suppliers', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description', 'SetNumber', 'PartNumber',], 'ririiieeeooo')
+            'Description', 'SetNumber', 'PartNumber',], 'ririiieeeooo',
+            self.parser.custom_data['spares'])
         self.write_data('Resource', self.parser.resources, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description',], 'ririeeeo')
+            'ExtObject', 'ExtIdentifier', 'Description',], 'ririeeeo',
+            self.parser.custom_data['resources'])
         self.write_data('Job', self.parser.jobs, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'Status', 'TypeName',
             'Description', 'Duration', 'DurationUnit', 'Start', 'TaskStartUnit',
             'Frequency', 'FrequencyUnit', 'ExtSystem', 'ExtObject',
-            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',], 'ririiirriririeeeoii')
+            'ExtIdentifier', 'TaskNumber', 'Priors', 'ResourceNames',],
+            'ririiirriririeeeoii', self.parser.custom_data['jobs'])
         self.write_data('Impact', self.parser.impacts, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'ImpactType', 'ImpactStage',
             'SheetName', 'RowName', 'Value', 'Unit', 'LeadInTime', 'Duration',
             'LeadOutTime', 'ExtSystem', 'ExtObject', 'ExtIdentifier',
-            'Description',], 'ririiiirioooeeeo')
+            'Description',], 'ririiiirioooeeeo',
+            self.parser.custom_data['impacts'])
         self.write_data('Document', self.parser.documents, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'ApprovalBy',
             'Stage', 'SheetName', 'RowName', 'Directory', 'File', 'ExtSystem',
-            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',], 'ririiiiirreeeoo')
+            'ExtObject', 'ExtIdentifier', 'Description', 'Reference',],
+            'ririiiiirreeeoo', self.parser.custom_data['documents'])
         self.write_data('Attribute', self.parser.attributes, 'Name',
             ['Name', 'CreatedBy', 'CreatedOn', 'Category', 'SheetName',
             'RowName', 'Value', 'Unit', 'ExtSystem', 'ExtObject',
@@ -1021,9 +1060,9 @@ class CobieWriter():
             'Description', 'Owner', 'Mitigation', 'ExtSystem', 'ExtObject',
             'ExtIdentifier',], 'ririooooooooooeee')
 
-    def write_data(self, sheet, data, primary_key, fieldnames, colours):
+    def write_data(self, sheet, data, primary_key, fieldnames, colours, custom_data={}):
         self.sheet_data[sheet] = {
-            'headers': fieldnames,
+            'headers': fieldnames + list(custom_data.keys()),
             'colours': colours,
             'rows': []
         }
@@ -1031,6 +1070,8 @@ class CobieWriter():
             row[primary_key] = name
             values = []
             for fieldname in fieldnames:
+                values.append(row[fieldname])
+            for fieldname in custom_data.keys():
                 values.append(row[fieldname])
             self.sheet_data[sheet]['rows'].append(values)
 
@@ -1074,7 +1115,11 @@ class CobieXlsWriter(CobieWriter):
         for row in self.sheet_data[name]['rows']:
             c = 0
             for col in row:
-                cell = worksheet.write(r, c, col, self.cell_formats[self.sheet_data[name]['colours'][c]])
+                if c >= len(self.sheet_data[name]['colours']):
+                    cell_format = 'p'
+                else:
+                    cell_format = self.sheet_data[name]['colours'][c]
+                cell = worksheet.write(r, c, col, self.cell_formats[cell_format])
                 c += 1
             r += 1
 
@@ -1112,7 +1157,11 @@ class CobieOdsWriter(CobieWriter):
             tr = TableRow()
             c = 0
             for col in row:
-                tc = TableCell(valuetype='string', stylename=self.sheet_data[name]['colours'][c])
+                if c >= len(self.sheet_data[name]['colours']):
+                    cell_format = 'p'
+                else:
+                    cell_format = self.sheet_data[name]['colours'][c]
+                tc = TableCell(valuetype='string', stylename=cell_format)
                 tc.addElement(P(text=col))
                 tr.addElement(tc)
                 c += 1
@@ -1149,6 +1198,12 @@ if __name__ == '__main__':
         type=str,
         help='A custom selector for types. Defaults to COBieType',
         default='.COBieType')
+    parser.add_argument(
+        '-d',
+        '--data',
+        type=str,
+        help='JSON file containing custom data to be appended to the COBie spreadsheet template',
+        default='')
     args = vars(parser.parse_args())
 
     print('Processing IFC file ...')
@@ -1161,7 +1216,12 @@ if __name__ == '__main__':
     logger.info('Starting conversion')
     selector = ifcopenshell.util.selector.Selector()
     parser = IfcCobieParser(logger, selector)
-    parser.parse(args['input'], args['types'], args['components'])
+    if args['data']:
+        with open(bpy.context.scene.BIMProperties.cobie_json_file, 'r') as f:
+            custom_data = json.load(f)
+    else:
+        custom_data = {}
+    parser.parse(args['input'], args['types'], args['components'], custom_data)
 
     print('Generating reports ...')
 

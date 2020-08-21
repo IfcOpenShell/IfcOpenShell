@@ -1591,6 +1591,10 @@ class BIM_PT_cobie(Panel):
         row = layout.row()
         row.prop(props, "cobie_components")
 
+        row = layout.row(align=True)
+        row.prop(props, "cobie_json_file")
+        row.operator("bim.select_cobie_json_file", icon="FILE_FOLDER", text="")
+
         row = layout.row()
         op = row.operator('bim.execute_ifc_cobie', text='CSV')
         op.file_format = 'csv'

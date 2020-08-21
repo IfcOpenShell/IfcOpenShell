@@ -167,6 +167,7 @@ if bpy is not None:
         operator.ExecuteBIMTester,
         operator.BIMTesterPurge,
         operator.SelectCobieIfcFile,
+        operator.SelectCobieJsonFile,
         operator.ExecuteIfcCobie,
         operator.SelectIfcPatchInput,
         operator.SelectIfcPatchOutput,
