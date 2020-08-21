@@ -17,6 +17,7 @@ if bpy is not None:
     from .module.model import door as model_door
     from .module.model import window as model_window
     from .module.model import slab as model_slab
+    from .module.model import opening as model_opening
 
     classes = (
         operator.AssignClass,
@@ -297,6 +298,7 @@ if bpy is not None:
         model_door.BIM_OT_add_object,
         model_window.BIM_OT_add_object,
         model_slab.BIM_OT_add_object,
+        model_opening.BIM_OT_add_object,
         )
 
     def menu_func_export(self, context):
@@ -338,6 +340,7 @@ if bpy is not None:
         bpy.types.VIEW3D_MT_mesh_add.append(model_door.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.append(model_window.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.append(model_slab.add_object_button)
+        bpy.types.VIEW3D_MT_mesh_add.append(model_opening.add_object_button)
 
     def unregister():
         for cls in reversed(classes):
@@ -363,3 +366,4 @@ if bpy is not None:
         bpy.types.VIEW3D_MT_mesh_add.remove(model_door.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_window.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_slab.add_object_button)
+        bpy.types.VIEW3D_MT_mesh_add.remove(model_opening.add_object_button)
