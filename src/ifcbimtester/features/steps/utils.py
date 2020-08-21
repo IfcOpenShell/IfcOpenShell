@@ -45,7 +45,7 @@ def assert_attribute(element, name, value=None):
     if value == 'NULL':
         value = None
     actual_value = getattr(element, name)
-    if isinstance(value, list):
+    if isinstance(value, list) and actual_value:
         actual_value = list(actual_value)
     assert actual_value == value, 'We expected a value of "{}" but instead got "{}" for the element {}'.format(value, actual_value, element)
 
