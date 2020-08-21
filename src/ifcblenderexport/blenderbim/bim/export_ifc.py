@@ -2723,6 +2723,25 @@ class IfcExporter():
         mesh = representation['raw']
         if not representation['is_parametric']:
             mesh = representation['raw_object'].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        if self.schema == 'IFC2X3' or self.ifc_export_settings.should_force_faceted_brep:
+            return self.create_faceted_brep(representation, mesh)
+        return self.create_polygonal_face_set(representation, mesh)
+
+    def create_polygonal_face_set(self, representation, mesh):
+        n_slots = max(1, len(representation['raw_object'].material_slots))
+        ifc_raw_items = [None] * n_slots
+        for i, value in enumerate(ifc_raw_items):
+            ifc_raw_items[i] = []
+        for polygon in mesh.polygons:
+            ifc_raw_items[polygon.material_index % n_slots].append(self.file.createIfcIndexedPolygonalFace([v+1 for v in polygon.vertices]))
+        coordinates = self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in mesh.vertices])
+        items = [self.file.createIfcPolygonalFaceSet(coordinates, None, i) for i in ifc_raw_items if i]
+        return self.file.createIfcShapeRepresentation(
+            self.ifc_rep_context[representation['context']][representation['subcontext']][
+                representation['target_view']]['ifc'],
+            representation['subcontext'], 'Tessellation', items)
+
+    def create_faceted_brep(self, representation, mesh):
         self.create_vertices(mesh.vertices)
         n_slots = max(1, len(representation['raw_object'].material_slots))
         ifc_raw_items = [None] * n_slots
@@ -2983,6 +3002,7 @@ class IfcExportSettings:
         settings.schema = scene_bim.export_schema
         settings.should_use_presentation_style_assignment = scene_bim.export_should_use_presentation_style_assignment
         settings.should_guess_quantities = scene_bim.export_should_guess_quantities
+        settings.should_force_faceted_brep = scene_bim.export_should_force_faceted_brep
         settings.context_tree = []
         for ifc_context in ['model', 'plan']:
             if getattr(scene_bim, 'has_{}_context'.format(ifc_context)):

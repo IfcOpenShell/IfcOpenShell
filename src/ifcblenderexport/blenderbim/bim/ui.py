@@ -1664,6 +1664,8 @@ class BIM_PT_mvd(Panel):
         row = layout.row()
         row.prop(bim_properties, 'export_should_guess_quantities')
         row = layout.row()
+        row.prop(bim_properties, 'export_should_force_faceted_brep')
+        row = layout.row()
         row.prop(bim_properties, 'import_should_import_type_representations')
         row = layout.row()
         row.prop(bim_properties, 'import_should_import_curves')
