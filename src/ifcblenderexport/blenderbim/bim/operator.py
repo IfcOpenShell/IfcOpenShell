@@ -207,6 +207,17 @@ class AssignClass(bpy.types.Operator):
                 object_type = obj.BIMObjectProperties.attributes.add()
                 object_type.name = 'ObjectType'
                 object_type.string_value = bpy.context.scene.BIMProperties.ifc_userdefined_type
+            if bpy.context.scene.BIMProperties.ifc_product == 'IfcElementType':
+                for project in [c for c in bpy.context.view_layer.layer_collection.children if 'IfcProject' in c.name]:
+                    if not [c for c in project.children if 'Types' in c.name]:
+                        types = bpy.data.collections.new('Types')
+                        project.collection.children.link(types)
+                    for collection in [c for c in project.children if 'Types' in c.name]:
+                        for user_collection in obj.users_collection:
+                            user_collection.objects.unlink(obj)
+                        collection.collection.objects.link(obj)
+                        break
+                    break
         return {'FINISHED'}
 
 
