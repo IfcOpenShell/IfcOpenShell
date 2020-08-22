@@ -137,14 +137,19 @@ class SvgWriter():
                 line['marker-start'] = 'url(#grid-marker)'
                 line['marker-end'] = 'url(#grid-marker)'
                 line['stroke-dasharray'] = '12.5, 3, 3, 3'
-                self.svg.add(self.svg.text(grid_obj.name.split('/')[1], insert=tuple(start * self.scale), **{
+                axis_tag = grid_obj.BIMObjectProperties.attributes.get('AxisTag')
+                if axis_tag:
+                    axis_tag = axis_tag.string_value
+                else:
+                    axis_tag = grid_obj.name.split('/')[1]
+                self.svg.add(self.svg.text(axis_tag, insert=tuple(start * self.scale), **{
                     'font-size': annotation.Annotator.get_svg_text_size(5.0),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'middle',
                     'alignment-baseline': 'middle',
                     'dominant-baseline': 'middle'
                 }))
-                self.svg.add(self.svg.text(grid_obj.name.split('/')[1], insert=tuple(end * self.scale), **{
+                self.svg.add(self.svg.text(axis_tag, insert=tuple(end * self.scale), **{
                     'font-size': annotation.Annotator.get_svg_text_size(5.0),
                     'font-family': 'OpenGost Type B TT',
                     'text-anchor': 'middle',
