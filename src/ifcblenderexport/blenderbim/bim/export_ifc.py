@@ -2182,6 +2182,11 @@ class IfcExporter():
                 'MappedRepresentation',
                 [mapped_item])
 
+    def create_ifc_axis_2_placement_2d(self, point, forward):
+        return self.file.createIfcAxis2Placement2D(
+            self.create_cartesian_point(point.x, point.y),
+            self.file.createIfcDirection((forward.x, forward.y)))
+
     def create_ifc_axis_2_placement_3d(self, point, up, forward):
         return self.file.createIfcAxis2Placement3D(
             self.create_cartesian_point(point.x, point.y, point.z),
@@ -2567,6 +2572,15 @@ class IfcExporter():
             ydim = self.convert_si_to_unit(
                 (obj.data.vertices[outer_curve_loop[1]].co - obj.data.vertices[outer_curve_loop[2]].co).length)
             curve = self.file.createIfcRectangleProfileDef('AREA', None, None, xdim, ydim)
+        elif 'IfcCircleProfileDef' in item['subitems']:
+            indices = item['subitems']['IfcCircleProfileDef']
+            outer_curve_loop = self.get_loop_from_v_indices(obj, indices)
+            curve_ucs = self.get_curve_profile_coordinate_system(obj, outer_curve_loop)
+            radius = self.convert_si_to_unit(abs((obj.data.vertices[indices[0]].co -
+                obj.data.vertices[indices[int(len(indices)/2)]].co).length) / 2)
+            center = Vector((0, 0))
+            position = self.create_ifc_axis_2_placement_2d(center, Vector((1, 0)))
+            curve = self.file.createIfcCircleProfileDef('AREA', None, position, radius)
 
         position = self.create_ifc_axis_2_placement_3d(
             curve_ucs['center'], curve_ucs['z_axis'], curve_ucs['x_axis'])
