@@ -170,6 +170,8 @@ class AttributeList(Node):
         assert self.type == self.tokens[0]
     def __repr__(self):
         return "\n".join(["    %s;"%s for s in self.elements])
+    def __iter__(self):
+        return iter(self.elements)
 
 
 class InverseAttribute(Node):
