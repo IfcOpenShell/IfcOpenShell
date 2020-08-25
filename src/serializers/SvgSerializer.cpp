@@ -706,16 +706,20 @@ void SvgSerializer::finalize() {
 		const double dx = xmax - xmin;
 		const double dy = ymax - ymin;
 
-		double sc = 1.;
-
-		if (dx / width > dy / height) {
-			sc = width / dx;
+		double sc, cx, cy;
+		if (scale_) {
+			sc = (*scale_) * 1000;
+			cx = (xmax + xmin) / 2. * sc - width / 2.;
+			cy = (ymax + ymin) / 2. * sc - height / 2.;
 		} else {
-			sc = height / dy;
+			if (dx / width > dy / height) {
+				sc = width / dx;
+			} else {
+				sc = height / dy;
+			}
+			cx = xmin * sc;
+			cy = ymin * sc;
 		}
-
-		const double cx = xmin * sc;
-		const double cy = ymin * sc;
 
 		{std::vector< boost::shared_ptr<util::string_buffer::float_item> >::const_iterator it;
 		for (it = xcoords.begin(); it != xcoords.end(); ++it) {
@@ -760,7 +764,15 @@ void SvgSerializer::finalize() {
 }
 
 void SvgSerializer::writeHeader() {
-	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n"
+	svg_file << "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"";
+	if (scale_) {
+		svg_file << 
+			" width=\"" << width << "mm\""
+			" height=\"" << height << "mm\"" << 
+			" viewBox=\"0 0 " << width << " " << height << "\"";
+	}
+		
+	svg_file << ">\n"
 		"    <defs>\n"
 		"        <marker id=\"arrowend\" markerWidth=\"10\" markerHeight=\"7\" refX=\"10\" refY=\"3.5\" orient=\"auto\">\n"
 		"          <polygon points=\"0 0, 10 3.5, 0 7\" />\n"
@@ -774,7 +786,16 @@ void SvgSerializer::writeHeader() {
 		"        .IfcAnnotation path {\n"
 		"            marker-end: url(#arrowend);\n"
 		"            marker-start: url(#arrowstart);\n"
-		"        }\n"
+		"        }\n";
+	
+	if (scale_) {
+		svg_file <<
+		"        text {\n"           //       (pt)  (px)  (in)  (mm)
+		"        	font-size: 4;\n" // approx 12 / 0.75 / 96 * 25.4
+		"        }\n";
+	}
+
+	svg_file << 
 		"    ]]>\n"
 		"    </style>\n";
 }

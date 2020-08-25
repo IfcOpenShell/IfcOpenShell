@@ -340,6 +340,7 @@ int main(int argc, char** argv) {
 #endif
     short precision;
 	double section_height;
+	std::string svg_scale;
 
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
@@ -351,6 +352,9 @@ int main(int argc, char** argv) {
         ("bounds", po::value<std::string>(&bounds),
             "Specifies the bounding rectangle, for example 512x512, to which the "
             "output will be scaled. Only used when converting to SVG.")
+		("scale", po::value<std::string>(&svg_scale),
+			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
+			"Only used when converting to SVG. Example 1:100.")
 		("door-arcs", "Draw door openings arcs for IfcDoor elements")
 		("section-height", po::value<double>(&section_height),
 		    "Specifies the cut section height for SVG 2D geometry.")
@@ -890,6 +894,16 @@ int main(int argc, char** argv) {
 		}
 		if (vmap.count("door-arcs")) {
 			static_cast<SvgSerializer*>(serializer.get())->setDrawDoorArcs(true);
+		}
+		if (vmap.count("scale")) {
+			int s0, s1;
+			if (sscanf(svg_scale.c_str(), "%u:%u", &s0, &s1) == 2 && s0 > 0 && s1 > 0) {
+				static_cast<SvgSerializer*>(serializer.get())->setScale((double)s0 / s1);
+			} else {
+				cerr_ << "[Error] Invalid use of --scale" << std::endl;
+				print_options(serializer_options);
+				return EXIT_FAILURE;
+			}
 		}
 	}
 
