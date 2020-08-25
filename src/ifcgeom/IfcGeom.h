@@ -289,6 +289,7 @@ public:
 	void set_rotation(const std::array<double, 4>& rotation);
 
 	bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face);
+	bool convert_wire_to_faces(const TopoDS_Wire& wire, TopoDS_Compound& face);
 	bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
 	bool convert_shapes(const IfcUtil::IfcBaseClass* L, IfcRepresentationShapeItems& result);
 	IfcGeom::ShapeType shape_type(const IfcUtil::IfcBaseClass* L);
