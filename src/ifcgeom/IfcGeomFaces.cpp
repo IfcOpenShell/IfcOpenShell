@@ -447,8 +447,8 @@ bool IfcGeom::Kernel::convert(const IfcSchema::IfcArbitraryClosedProfileDef* l, 
 
 	assert_closed_wire(wire);
 
-	TopoDS_Face f;
-	bool success = convert_wire_to_face(wire, f);
+	TopoDS_Compound f;
+	bool success = convert_wire_to_faces(wire, f);
 	if (success) {
 		face = f;
 	}
