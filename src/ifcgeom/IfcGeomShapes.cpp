@@ -1327,8 +1327,7 @@ namespace {
 		for (auto& w : wires_tmp) {
 			break_closed(w, wires);
 		}
-		wires.erase(wires.begin() + 1);
-
+		
 		TopoDS_Compound C;
 		BRep_Builder B;
 		if (wires.size() > 1) {
