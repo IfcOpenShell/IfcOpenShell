@@ -1434,8 +1434,15 @@ class IfcImporter():
 
             # IFC2X3 has no references, so let's manually add them
             if self.file.wrapped_data.schema == 'IFC2X3':
+                if element.EditionDate:
+                    edition_date = '{}-{}-{}'.format(
+                        element.EditionDate.YearComponent,
+                        element.EditionDate.MonthComponent,
+                        element.EditionDate.DayComponent)
+                else:
+                    edition_date = None
                 classification_element = classification_file.createIfcClassification(
-                    element.Source, element.Edition, element.EditionDate, element.Name)
+                    element.Source, element.Edition, edition_date, element.Name)
                 for reference in self.file.by_type('IfcClassificationReference'):
                     classification_file.createIfcClassificationReference(
                         reference.Location, reference.ItemReference, reference.Name, classification_element)
