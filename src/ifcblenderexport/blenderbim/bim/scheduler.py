@@ -14,7 +14,7 @@ class Scheduler():
             id='root',
         )
         self.padding = 1
-        self.margin = 5
+        self.margin = 1
         doc = load(infile)
         styles = {}
         for style in doc.getElementsByType(Style):

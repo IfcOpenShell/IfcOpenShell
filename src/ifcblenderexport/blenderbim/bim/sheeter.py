@@ -183,7 +183,9 @@ class SheetBuilder:
 
     def parse_embedded_svg(self, image, data):
         group = ET.Element('g')
-        group.attrib['transform'] = 'translate({},{})'.format(image.attrib.get('x'), image.attrib.get('y'))
+        group.attrib['transform'] = 'translate({},{})'.format(
+            self.mm_to_px(self.convert_to_mm(image.attrib.get('x'))),
+            self.mm_to_px(self.convert_to_mm(image.attrib.get('y'))))
         svg_path = self.get_href(image)
         with open('{}sheets/{}'.format(self.data_dir, svg_path), 'r') as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
@@ -194,3 +196,24 @@ class SheetBuilder:
                 image.attrib['{http://www.w3.org/1999/xlink}href'] = new_href
         group.append(embedded)
         return group
+
+    def convert_to_mm(self, value):
+        if value.isnumeric():
+            return float(value)
+        if 'cm' in value:
+            return float(value[0:-2]) * 10
+        elif 'mm' in value:
+            return float(value[0:-2])
+        elif 'Q' in value:
+            return float(value[0:-1]) * (1/40) * 10
+        elif 'in' in value:
+            return float(value[0:-2]) * 2.54 * 10
+        elif 'pc' in value:
+            return float(value[0:-2]) * (1/6) * 2.54 * 10
+        elif 'pt' in value:
+            return float(value[0:-2]) * (1/72) * 2.54 * 10
+        elif 'px' in value:
+            return float(value[0:-2]) * (1/96) * 2.54 * 10
+
+    def mm_to_px(self, value):
+        return (value / 25.4) * 96
