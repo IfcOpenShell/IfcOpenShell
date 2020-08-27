@@ -1233,10 +1233,16 @@ class IfcImporter():
             if not element.RepresentationMaps:
                 return
             for r in element.RepresentationMaps:
-                subcontexts.append('{}/{}/{}'.format(
-                    r.MappedRepresentation.ContextOfItems.ContextType or '',
-                    r.MappedRepresentation.ContextOfItems.ContextIdentifier or '',
-                    r.MappedRepresentation.ContextOfItems.TargetView or ''))
+                if r.MappedRepresentation.ContextOfItems.is_a('IfcGeometricRepresentationSubContext'):
+                    subcontexts.append('{}/{}/{}'.format(
+                        r.MappedRepresentation.ContextOfItems.ContextType or '',
+                        r.MappedRepresentation.ContextOfItems.ContextIdentifier or '',
+                        r.MappedRepresentation.ContextOfItems.TargetView or ''))
+                else:
+                    subcontexts.append('{}/{}/{}'.format(
+                        r.MappedRepresentation.ContextOfItems.ContextType or '',
+                        r.MappedRepresentation.ContextOfItems.ContextIdentifier or '',
+                        ''))
         subcontexts = set(subcontexts)
         for subcontext in subcontexts:
             representation_context = obj.BIMObjectProperties.representation_contexts.add()
