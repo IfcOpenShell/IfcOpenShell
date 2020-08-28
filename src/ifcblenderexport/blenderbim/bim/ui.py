@@ -908,6 +908,9 @@ class BIM_PT_camera(Panel):
 
         row = layout.row()
         row.prop(props, 'diagram_scale')
+        if props.diagram_scale == 'CUSTOM':
+            row = layout.row()
+            row.prop(props, 'custom_diagram_scale')
 
         layout.label(text="Drawing Styles:")
 

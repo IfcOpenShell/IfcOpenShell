@@ -2193,11 +2193,15 @@ class CutSection(bpy.types.Operator):
         ifc_cutter.selected_global_ids = selected_global_ids
         ifc_cutter.should_extract = bpy.context.scene.DocProperties.should_extract
         svg_writer = svgwriter.SvgWriter(ifc_cutter)
-        numerator, denominator = camera.data.BIMCameraProperties.diagram_scale.split(':')
+        if camera.data.BIMCameraProperties.diagram_scale == 'CUSTOM':
+            human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split('|')
+        else:
+            human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split('|')
+        numerator, denominator = fraction.split('/')
         if camera.data.BIMCameraProperties.is_nts:
             svg_writer.human_scale = 'NTS'
         else:
-            svg_writer.human_scale = camera.data.BIMCameraProperties.diagram_scale
+            svg_writer.human_scale = human_scale
         svg_writer.scale = float(numerator) / float(denominator)
         ifc_cutter.cut()
         svg_writer.write()
@@ -3591,7 +3595,10 @@ class AddDrawing(bpy.types.Operator):
         camera.location = (0, 0, 1.7) # The view shall be 1.7m above the origin
         camera.data.type = 'ORTHO'
         camera.data.ortho_scale = 50 # The default of 6m is too small
-        camera.data.BIMCameraProperties.diagram_scale = '1:100'
+        if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
+        else:
+            camera.data.BIMCameraProperties.diagram_scale = '1:100|1/100'
         bpy.context.scene.camera = camera
         view_collection.objects.link(camera)
         area = next(area for area in bpy.context.screen.areas if area.type == 'VIEW_3D')
