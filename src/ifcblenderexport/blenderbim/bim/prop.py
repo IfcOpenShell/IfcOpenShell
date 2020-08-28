@@ -131,21 +131,59 @@ def refreshPredefinedTypes(self, context):
 
 def getDiagramScales(self, context):
     global diagram_scales_enum
-    if len(diagram_scales_enum) < 1:
-        diagram_scales_enum.extend([
-            ('1:5000', '1:5000', ''),
-            ('1:2000', '1:2000', ''),
-            ('1:1000', '1:1000', ''),
-            ('1:500', '1:500', ''),
-            ('1:200', '1:200', ''),
-            ('1:100', '1:100', ''),
-            ('1:50', '1:50', ''),
-            ('1:20', '1:20', ''),
-            ('1:10', '1:10', ''),
-            ('1:5', '1:5', ''),
-            ('1:2', '1:2', ''),
-            ('1:1', '1:1', '')
-        ])
+    if len(diagram_scales_enum) < 1 \
+            or (bpy.context.scene.unit_settings.system == 'IMPERIAL' and len(diagram_scales_enum) == 13) \
+            or (bpy.context.scene.unit_settings.system == 'METRIC' and len(diagram_scales_enum) == 31) :
+        if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+            diagram_scales_enum = [
+                ('CUSTOM', 'Custom', ''),
+                ('1\'=1\'-0"|1/1', '1\'=1\'-0"', ''),
+                ('6"=1\'-0"|1/6', '6"=1\'-0"', ''),
+                ('1-1/2"=1\'-0"|1/8', '1-1/2"=1\'-0"', ''),
+                ('1"=1\'-0"|1/12', '1"=1\'-0"', ''),
+                ('3/4"=1\'-0"|1/16', '3/4"=1\'-0"', ''),
+                ('1/2"=1\'-0"|1/24', '1/2"=1\'-0"', ''),
+                ('3/8"=1\'-0"|1/32', '3/8"=1\'-0"', ''),
+                ('1/4"=1\'-0"|1/48', '1/4"=1\'-0"', ''),
+                ('3/16"=1\'-0"|1/64', '3/16"=1\'-0"', ''),
+                ('1/8"=1\'-0"|1/96', '1/8"=1\'-0"', ''),
+                ('3/32"=1\'-0"|1/128', '3/32"=1\'-0"', ''),
+                ('1/16"=1\'-0"|1/192', '1/16"=1\'-0"', ''),
+                ('1/32"=1\'-0"|1/384', '1/32"=1\'-0"', ''),
+                ('1/64"=1\'-0"|1/768', '1/64"=1\'-0"', ''),
+                ('1/128"=1\'-0"|1/1536', '1/128"=1\'-0"', ''),
+                ('1"=10\'|1/120', '1"=10\'', ''),
+                ('1"=20\'|1/240', '1"=20\'', ''),
+                ('1"=30\'|1/360', '1"=30\'', ''),
+                ('1"=40\'|1/480', '1"=40\'', ''),
+                ('1"=50\'|1/600', '1"=50\'', ''),
+                ('1"=60\'|1/720', '1"=60\'', ''),
+                ('1"=70\'|1/840', '1"=70\'', ''),
+                ('1"=80\'|1/960', '1"=80\'', ''),
+                ('1"=90\'|1/1080', '1"=90\'', ''),
+                ('1"=100\'|1/1200', '1"=100\'', ''),
+                ('1"=150\'|1/1800', '1"=150\'', ''),
+                ('1"=200\'|1/2400', '1"=200\'', ''),
+                ('1"=300\'|1/3600', '1"=300\'', ''),
+                ('1"=400\'|1/4800', '1"=400\'', ''),
+                ('1"=500\'|1/6000', '1"=500\'', ''),
+            ]
+        else:
+            diagram_scales_enum = [
+                ('CUSTOM', 'Custom', ''),
+                ('1:5000|1/5000', '1:5000', ''),
+                ('1:2000|1/2000', '1:2000', ''),
+                ('1:1000|1/1000', '1:1000', ''),
+                ('1:500|1/500', '1:500', ''),
+                ('1:200|1/200', '1:200', ''),
+                ('1:100|1/100', '1:100', ''),
+                ('1:50|1/50', '1:50', ''),
+                ('1:20|1/20', '1:20', ''),
+                ('1:10|1/10', '1:10', ''),
+                ('1:5|1/5', '1:5', ''),
+                ('1:2|1/2', '1:2', ''),
+                ('1:1|1/1', '1:1', '')
+            ]
     return diagram_scales_enum
 
 
@@ -485,7 +523,8 @@ class DocProperties(PropertyGroup):
 
 class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
-    diagram_scale: EnumProperty(items=getDiagramScales, name='Diagram Scale')
+    diagram_scale: EnumProperty(items=getDiagramScales, name='Drawing Scale')
+    custom_diagram_scale: StringProperty(name='Custom Scale')
     is_nts: BoolProperty(name='Is NTS')
     cut_objects: EnumProperty(items=[
         ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering',
