@@ -2221,7 +2221,7 @@ class AddSheet(bpy.types.Operator):
         new.name = '{} - SHEET'.format(len(bpy.context.scene.DocProperties.sheets))
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_builder.create(new.name)
+        sheet_builder.create(new.name, bpy.context.scene.DocProperties.titleblock)
         return {'FINISHED'}
 
 

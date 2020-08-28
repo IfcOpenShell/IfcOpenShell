@@ -11,25 +11,30 @@ class SheetBuilder:
         self.data_dir = None
         self.scale = 'NTS'
 
-    def create(self, name):
+    def create(self, name, titleblock_name):
         sheet_path = '{}sheets/{}.svg'.format(self.data_dir, name)
         root = ET.Element('svg')
         root.attrib['xmlns'] = 'http://www.w3.org/2000/svg'
         root.attrib['xmlns:xlink'] = 'http://www.w3.org/1999/xlink'
         root.attrib['id'] = 'root'
         root.attrib['version'] = '1.1'
-        root.attrib['width'] = '841mm'
-        root.attrib['height'] = '594mm'
-        root.attrib['viewBox'] = '0 0 841 594'
 
+        view_root = ET.parse(
+            os.path.join(self.data_dir, 'templates', 'titleblocks', titleblock_name + '.svg')).getroot()
+        view_width = self.convert_to_mm(view_root.attrib.get('width'))
+        view_height = self.convert_to_mm(view_root.attrib.get('height'))
         view = ET.SubElement(root, 'g')
         view.attrib['data-type'] = 'titleblock'
         titleblock = ET.SubElement(view, 'image')
-        titleblock.attrib['xlink:href'] = '../templates/titleblock.svg'
+        titleblock.attrib['xlink:href'] = '../templates/titleblocks/' + titleblock_name + '.svg'
         titleblock.attrib['x'] = '0'
         titleblock.attrib['y'] = '0'
-        titleblock.attrib['width'] = '841'
-        titleblock.attrib['height'] = '594'
+        titleblock.attrib['width'] = str(view_width)
+        titleblock.attrib['height'] = str(view_height)
+
+        root.attrib['width'] = '{}mm'.format(view_width)
+        root.attrib['height'] = '{}mm'.format(view_height)
+        root.attrib['viewBox'] = '0 0 {} {}'.format(view_width, view_height)
 
         with open(sheet_path, 'w') as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent='    '))
