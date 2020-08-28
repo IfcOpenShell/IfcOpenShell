@@ -32,6 +32,7 @@ types_enum = []
 availablematerialpsets_enum = []
 ifcpatchrecipes_enum = []
 featuresfiles_enum = []
+titleblocks_enum = []
 scenarios_enum = []
 psetnames_enum = []
 psetfiles_enum = []
@@ -291,6 +292,22 @@ def refreshFeaturesFiles(self, context):
     getFeaturesFiles(self, context)
 
 
+def getTitleblocks(self, context):
+    global titleblocks_enum
+    if len(titleblocks_enum) < 1:
+        titleblocks_enum.clear()
+        for filename in Path(os.path.join(context.scene.BIMProperties.data_dir, 'templates', 'titleblocks')).glob('*.svg'):
+            f = str(filename.stem)
+            titleblocks_enum.append((f, f, ''))
+    return titleblocks_enum
+
+
+def refreshTitleblocks(self, context):
+    global titleblocks_enum
+    titleblocks_enum.clear()
+    getTitleblocks(self, context)
+
+
 def getScenarios(self, context):
     global scenarios_enum
     if len(scenarios_enum) < 1:
@@ -515,6 +532,7 @@ class DocProperties(PropertyGroup):
     active_drawing_index: IntProperty(name='Active Drawing Index')
     schedules: CollectionProperty(name='Schedules', type=Schedule)
     active_schedule_index: IntProperty(name='Active Schedule Index')
+    titleblock: EnumProperty(items=getTitleblocks, name="Titleblock", update=refreshTitleblocks)
     sheets: CollectionProperty(name='Sheets', type=Sheet)
     active_sheet_index: IntProperty(name='Active Sheet Index')
     ifc_files: CollectionProperty(name='IFCs', type=StrProperty)

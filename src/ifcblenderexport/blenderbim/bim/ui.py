@@ -785,10 +785,10 @@ class BIM_PT_sheets(Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
         props = bpy.context.scene.DocProperties
 
         row = layout.row(align=True)
+        row.prop(props, 'titleblock', text='')
         row.operator('bim.add_sheet')
 
         if props.sheets:

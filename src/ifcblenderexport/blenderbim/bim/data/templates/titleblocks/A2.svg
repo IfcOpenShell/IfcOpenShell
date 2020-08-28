@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="594mm"
+   height="420mm"
+   version="1.1"
+   id="root"
+   viewBox="0 0 594 420">
+  <defs
+     id="defs901" />
+  <metadata
+     id="metadata90683">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <desc
+     id="desc89610">/home/dion/Projects/IfcOpenShell/src/ifcblenderexport/titleblock.dxf - scale = 1.000000, origin = (0.000000, 0.000000), method = manual</desc>
+  <rect
+     y="3.1753578e-05"
+     x="-4.3300333e-05"
+     height="420"
+     width="594.64642"
+     id="rect1036"
+     style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.07874;stroke-linecap:round;stroke-linejoin:round;stop-color:#000000" />
+  <rect
+     y="20.25"
+     x="20.25"
+     height="379.5"
+     width="553.5"
+     id="rect116616"
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.499999;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <text
+     id="text116526"
+     y="363.54721"
+     x="30.085009"
+     style="font-style:normal;font-weight:normal;font-size:4.00939px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.00939px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none"
+       y="363.54721"
+       x="30.085009"
+       id="tspan116524">REV. NO.</tspan></text>
+  <path
+     id="path116530"
+     d="m 20.000001,359.86771 553.749999,0"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     id="path116532"
+     d="M 40.132289,359.86771 V 400"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="M 120.13229,359.86771 V 400"
+     id="path116534" />
+  <path
+     id="path116536"
+     d="M 140.13229,359.86771 V 399.868"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="M 160.13229,359.86771 V 400"
+     id="path116538" />
+  <path
+     id="path116540"
+     d="M 20.000001,364.86771 H 160.13229"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="M 20.000001,369.86771 H 160.13229"
+     id="path116542" />
+  <path
+     id="path116544"
+     d="M 20.000001,374.86771 H 160.13229"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="M 20.000001,379.86771 H 160.13229"
+     id="path116546" />
+  <path
+     id="path116548"
+     d="M 20.000001,384.86771 H 160.13229"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     d="M 20.000001,389.8677 H 160.13229"
+     id="path116550" />
+  <path
+     id="path116552"
+     d="M 20.000001,394.86772 H 160.13229"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:4.00939px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     x="80.13327"
+     y="363.54721"
+     id="text1395"><tspan
+       id="tspan1393"
+       x="80.13327"
+       y="363.54721"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.00939px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none">DESCRIPTION</tspan></text>
+  <text
+     id="text1399"
+     y="363.54721"
+     x="130.16841"
+     style="font-style:normal;font-weight:normal;font-size:4.00939px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.00939px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none"
+       y="363.54721"
+       x="130.16841"
+       id="tspan1397">AUTHOR</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:4.24897px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     x="150.29811"
+     y="363.54721"
+     id="text1403"><tspan
+       id="tspan1401"
+       x="150.29811"
+       y="363.54721"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.24897px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none">DATE</tspan></text>
+  <path
+     id="path116576"
+     d="M 493.96563,359.86771 V 400"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     id="path116578"
+     d="M 493.96563,389.8677 H 574"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     id="path116598"
+     d="M 554.00031,389.8677 V 400"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:2.9705px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     x="504.28653"
+     y="393.00699"
+     id="text1421"><tspan
+       id="tspan1419"
+       x="504.28653"
+       y="393.00699"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.9705px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none">DRAWING NUMBER</tspan></text>
+  <text
+     id="text1429"
+     y="393.00699"
+     x="556.9519"
+     style="font-style:normal;font-weight:normal;font-size:2.9705px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.9705px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none"
+       y="393.00699"
+       x="556.9519"
+       id="tspan1427">REV</tspan></text>
+  <text
+     id="text2529"
+     y="397.13919"
+     x="554.94287"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.54325px;line-height:125%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       style="stroke-width:0.264583px"
+       y="397.13919"
+       x="554.94287"
+       id="tspan2527">{{revision}}</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.54325px;line-height:125%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     x="495.07742"
+     y="397.13919"
+     id="text2533"><tspan
+       id="tspan2531"
+       x="495.07742"
+       y="397.13919"
+       style="stroke-width:0.264583px">{{number}}</tspan></text>
+  <g
+     style="stroke-width:3.77953"
+     id="g90669"
+     transform="matrix(0.26458333,0,0,0.26458334,-3.180917e-5,297.00003)" />
+  <g
+     style="stroke-width:3.77953"
+     id="g90671"
+     transform="matrix(0.26458333,0,0,0.26458334,-3.180917e-5,297.00003)" />
+  <g
+     style="stroke-width:3.77953"
+     id="g90673"
+     transform="matrix(0.26458333,0,0,0.26458334,-3.180917e-5,297.00003)" />
+  <g
+     style="stroke-width:3.77953"
+     id="g90675"
+     transform="matrix(0.26458333,0,0,0.26458334,-3.180917e-5,297.00003)" />
+  <g
+     style="stroke-width:3.77953"
+     id="g90677"
+     transform="matrix(0.26458333,0,0,0.26458334,-3.180917e-5,297.00003)" />
+</svg>
