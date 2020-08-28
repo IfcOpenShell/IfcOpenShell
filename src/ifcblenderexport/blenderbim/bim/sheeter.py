@@ -20,6 +20,7 @@ class SheetBuilder:
         root.attrib['version'] = '1.1'
         root.attrib['width'] = '841mm'
         root.attrib['height'] = '594mm'
+        root.attrib['viewBox'] = '0 0 841 594'
 
         view = ET.SubElement(root, 'g')
         view.attrib['data-type'] = 'titleblock'
@@ -27,8 +28,8 @@ class SheetBuilder:
         titleblock.attrib['xlink:href'] = '../templates/titleblock.svg'
         titleblock.attrib['x'] = '0'
         titleblock.attrib['y'] = '0'
-        titleblock.attrib['width'] = '841mm'
-        titleblock.attrib['height'] = '594mm'
+        titleblock.attrib['width'] = '841'
+        titleblock.attrib['height'] = '594'
 
         with open(sheet_path, 'w') as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent='    '))
@@ -51,26 +52,24 @@ class SheetBuilder:
         # here to accommodate browsers which do not nest images.
         view = ET.SubElement(sheet_root, 'g')
         view.attrib['data-type'] = 'drawing'
+        view_width = self.convert_to_mm(view_root.attrib.get('width'))
+        view_height = self.convert_to_mm(view_root.attrib.get('height'))
 
         background = ET.SubElement(view, 'image')
         background.attrib['xlink:href'] = '../diagrams/{}.png'.format(view_name)
-        background.attrib['x'] = '0'
-        background.attrib['y'] = '0'
-        background.attrib['width'] = view_root.attrib.get('width')
-        background.attrib['height'] = view_root.attrib.get('height')
+        background.attrib['x'] = '30'
+        background.attrib['y'] = '30'
+        background.attrib['width'] = str(view_width)
+        background.attrib['height'] = str(view_height)
 
         foreground = ET.SubElement(view, 'image')
         foreground.attrib['xlink:href'] = '../diagrams/{}.svg'.format(view_name)
-        foreground.attrib['x'] = '0'
-        foreground.attrib['y'] = '0'
-        foreground.attrib['width'] = view_root.attrib.get('width')
-        foreground.attrib['height'] = view_root.attrib.get('height')
+        foreground.attrib['x'] = '30'
+        foreground.attrib['y'] = '30'
+        foreground.attrib['width'] = str(view_width)
+        foreground.attrib['height'] = str(view_height)
 
-        title = ET.SubElement(view, 'image')
-        title.attrib['xlink:href'] = '../templates/view-title.svg'
-        title.attrib['x'] = '0'
-        title.attrib['y'] = view_root.attrib.get('height')
-
+        self.add_view_title(30, view_height+35, view)
         sheet_tree.write(sheet_path)
 
     def add_schedule(self, schedule_name, sheet_name):
@@ -85,23 +84,32 @@ class SheetBuilder:
 
         view_tree = ET.parse(view_path)
         view_root = view_tree.getroot()
+        view_width = self.convert_to_mm(view_root.attrib.get('width'))
+        view_height = self.convert_to_mm(view_root.attrib.get('height'))
 
         group = ET.SubElement(sheet_root, 'g')
         group.attrib['data-type'] = 'schedule'
 
         foreground = ET.SubElement(group, 'image')
         foreground.attrib['xlink:href'] = '../schedules/{}.svg'.format(schedule_name)
-        foreground.attrib['x'] = '0'
-        foreground.attrib['y'] = '0'
-        foreground.attrib['width'] = view_root.attrib.get('width')
-        foreground.attrib['height'] = view_root.attrib.get('height')
+        foreground.attrib['x'] = '30'
+        foreground.attrib['y'] = '30'
+        foreground.attrib['width'] = str(view_width)
+        foreground.attrib['height'] = str(view_height)
 
-        title = ET.SubElement(group, 'image')
-        title.attrib['xlink:href'] = '../templates/view-title.svg'
-        title.attrib['x'] = '0'
-        title.attrib['y'] = view_root.attrib.get('height')
-
+        self.add_view_title(30, view_height+35, group)
         sheet_tree.write(sheet_path)
+
+    def add_view_title(self, x, y, parent):
+        title_tree = ET.parse(os.path.join(self.data_dir, 'templates', 'view-title.svg'))
+        title_root = title_tree.getroot()
+        title = ET.SubElement(parent, 'image')
+        title.attrib['xlink:href'] = '../templates/view-title.svg'
+        title.attrib['x'] = str(x)
+        title.attrib['y'] = str(y)
+        title.attrib['width'] = str(self.convert_to_mm(title_root.attrib.get('width')))
+        title.attrib['height'] = str(self.convert_to_mm(title_root.attrib.get('height')))
+
 
     def build(self, sheet_name):
         os.makedirs('{}build/{}/'.format(self.data_dir, sheet_name), exist_ok=True)
@@ -184,11 +192,14 @@ class SheetBuilder:
     def parse_embedded_svg(self, image, data):
         group = ET.Element('g')
         group.attrib['transform'] = 'translate({},{})'.format(
-            self.mm_to_px(self.convert_to_mm(image.attrib.get('x'))),
-            self.mm_to_px(self.convert_to_mm(image.attrib.get('y'))))
+            self.convert_to_mm(image.attrib.get('x')),
+            self.convert_to_mm(image.attrib.get('y')))
         svg_path = self.get_href(image)
         with open('{}sheets/{}'.format(self.data_dir, svg_path), 'r') as template:
             embedded = ET.fromstring(pystache.render(template.read(), data))
+            # viewBox should not be nested
+            embedded.attrib['viewBox'] = ''
+            # TODO: This should not be in this function
             self.scale = embedded.attrib.get('data-scale')
             images = embedded.findall('{http://www.w3.org/2000/svg}image')
             for image in images:
@@ -198,8 +209,6 @@ class SheetBuilder:
         return group
 
     def convert_to_mm(self, value):
-        if value.isnumeric():
-            return float(value)
         if 'cm' in value:
             return float(value[0:-2]) * 10
         elif 'mm' in value:
@@ -214,6 +223,7 @@ class SheetBuilder:
             return float(value[0:-2]) * (1/72) * 2.54 * 10
         elif 'px' in value:
             return float(value[0:-2]) * (1/96) * 2.54 * 10
+        return float(value)
 
     def mm_to_px(self, value):
         return (value / 25.4) * 96
