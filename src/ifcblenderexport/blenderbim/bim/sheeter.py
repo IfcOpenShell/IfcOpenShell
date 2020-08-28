@@ -209,6 +209,10 @@ class SheetBuilder:
         return group
 
     def convert_to_mm(self, value):
+        # CSS is what defines these possibilities
+        # https://www.w3.org/TR/SVG/refs.html#ref-css-values-3
+        # https://www.w3.org/TR/css-values-3/#absolute-lengths
+        # The relative units are not implemented. Go fish.
         if 'cm' in value:
             return float(value[0:-2]) * 10
         elif 'mm' in value:
