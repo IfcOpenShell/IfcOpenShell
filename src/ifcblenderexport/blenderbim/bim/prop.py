@@ -150,6 +150,8 @@ def getDiagramScales(self, context):
 
 
 def updateDrawingName(self, context):
+    if not self.camera:
+        return
     if self.camera.name == self.name:
         return
     self.camera.name = 'IfcGroup/{}'.format(self.name)
