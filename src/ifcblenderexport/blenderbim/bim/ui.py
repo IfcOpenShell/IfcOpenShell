@@ -869,6 +869,9 @@ class BIM_PT_camera(Panel):
         row.operator('bim.resize_text')
 
         row = layout.row()
+        row.prop(props, 'target_view')
+
+        row = layout.row()
         row.prop(props, 'cut_objects')
         if props.cut_objects == 'CUSTOM':
             row = layout.row()
