@@ -158,6 +158,7 @@ if bpy is not None:
         operator.RemoveIfcFile,
         operator.SelectDocIfcFile,
         operator.AddAnnotation,
+        operator.GenerateReferences,
         operator.ResizeText,
         operator.AddVariable,
         operator.RemoveVariable,
