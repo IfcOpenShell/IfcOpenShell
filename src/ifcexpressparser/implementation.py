@@ -55,7 +55,7 @@ class Implementation(codegen.Base):
 
         write = lambda str, **kwargs: entity_implementations.append(str%kwargs)
 
-        for name, type in mapping.schema.entities.items():
+        for name, type in mapping.schema.entities.items():        
             parent_type_test = "" if not type.supertypes or len(type.supertypes) != 1 \
                 else templates.parent_type_test%(type.supertypes[0])
                 
@@ -154,7 +154,7 @@ class Implementation(codegen.Base):
                 'arguments'   : '',
                 'return_type' : '::%s::%s::list::ptr' % (schema_name, i.entity),
                 'body'        : templates.get_inverse % {'type': i.entity, 'index':get_attribute_index(i.entity, i.attribute), 'schema_name' : schema_name, 'schema_name_upper': schema_name_upper}
-            } for i in (type.inverse.elements if type.inverse else [])]
+            } for i in type.inverse]
 
             superclass = "%s((IfcEntityInstanceData*)0)" % type.supertypes[0] if len(type.supertypes) == 1 else 'IfcUtil::IfcBaseEntity()'
 

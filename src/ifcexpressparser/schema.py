@@ -70,18 +70,22 @@ class Schema:
     def __getitem__(self, key):
         return self.types_entities[key]
     def __init__(self, parsetree):
-        self.name = parsetree[1]
-
+        self.name = parsetree.syntax[0][0].simple_id
+        
         sort = lambda d: OrderedCaseInsensitiveDict(sorted(d))
+        
+        declarations = [d.any()[0] for d in parsetree.syntax[0][0].schema_body[0] if d.rule == 'declaration' and d.any()[0].rule != 'function_decl']
 
-        self.types = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.TypeDeclaration)])
-        self.entities = sort([(t.name,t) for t in parsetree if isinstance(t, nodes.EntityDeclaration)])
+        self.types = sort([(t.name,t) for t in declarations if isinstance(t, nodes.TypeDeclaration)])
+        self.entities = sort([(t.name,t) for t in declarations if isinstance(t, nodes.EntityDeclaration)])
         
         self.keys = list(self.types.keys()) + list(self.entities.keys())
         self.types_entities = {k: v for d in (self.types, self.entities) for k, v in d.items()}
 
-        of_type = lambda *types: sort([(a, b.type.type) for a,b in self.types.items() if any(isinstance(b.type.type, ty) for ty in types)])
+        of_type = lambda *types: sort([(a, b.type) for a,b in self.types.items() if any(isinstance(b.type, ty) for ty in types)])
 
         self.enumerations = of_type(nodes.EnumerationType)
         self.selects = of_type(nodes.SelectType)
-        self.simpletypes = of_type(str, nodes.AggregationType, nodes.BinaryType, nodes.StringType)
+        self.simpletypes = of_type(str, nodes.AggregationType, nodes.BinaryType, nodes.StringType, nodes.SimpleType, nodes.NamedType)
+        
+        assert len(self.enumerations) + len(self.selects) + len(self.simpletypes) == len(self.types)
