@@ -273,6 +273,7 @@ if bpy is not None:
         ui.BIM_PT_camera,
         ui.BIM_PT_text,
         ui.BIM_PT_modeling_utilities,
+        ui.BIM_PT_annotation_utilities,
         ui.BIM_PT_qto_utilities,
         ui.BIM_PT_misc_utilities,
         ui.BIM_UL_generic,
