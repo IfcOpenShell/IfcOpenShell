@@ -543,6 +543,8 @@ class BIMCameraProperties(PropertyGroup):
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=getDiagramScales, name='Drawing Scale')
     custom_diagram_scale: StringProperty(name='Custom Scale')
+    raster_x: IntProperty(name='Raster X', default=1000)
+    raster_y: IntProperty(name='Raster Y', default=1000)
     is_nts: BoolProperty(name='Is NTS')
     cut_objects: EnumProperty(items=[
         ('.IfcWall|.IfcSlab|.IfcCurtainWall|.IfcStair|.IfcStairFlight|.IfcColumn|.IfcBeam|.IfcMember|.IfcCovering',

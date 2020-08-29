@@ -907,6 +907,11 @@ class BIM_PT_camera(Panel):
             row.prop(props, 'cut_objects_custom')
 
         row = layout.row()
+        row.prop(props, 'raster_x')
+        row = layout.row()
+        row.prop(props, 'raster_y')
+
+        row = layout.row()
         row.prop(props, 'diagram_scale')
         if props.diagram_scale == 'CUSTOM':
             row = layout.row()

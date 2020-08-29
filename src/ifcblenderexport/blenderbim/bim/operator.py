@@ -25,6 +25,7 @@ from itertools import cycle
 from mathutils import Vector, Matrix, Euler
 from math import radians, atan, tan, cos, sin, atan2
 from pathlib import Path
+from bpy.app.handlers import persistent
 
 colour_list = [
     (.651, .81, .892, 1),
@@ -39,6 +40,22 @@ colour_list = [
     (.414, .239, .603, 1),
     (.993, .999, .6, 1),
     (.693, .349, .157, 1)]
+
+
+@persistent
+def depsgraph_update_pre_handler(scene):
+    set_active_camera_resolution(scene)
+
+
+def set_active_camera_resolution(scene):
+    if not scene.camera \
+            or '/' not in scene.camera.name:
+        return
+    if scene.render.resolution_x != scene.camera.data.BIMCameraProperties.raster_x \
+            or scene.render.resolution_y != scene.camera.data.BIMCameraProperties.raster_y:
+        scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x
+        scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y
+
 
 class ExportIFC(bpy.types.Operator):
     bl_idname = "export_ifc.bim"
