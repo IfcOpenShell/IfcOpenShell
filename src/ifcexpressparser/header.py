@@ -85,7 +85,7 @@ class Header(codegen.Base):
                         inv_lines.append(templates.inverse_attr%{'name':attr.name, 'entity':attr.entity, 'attribute':attr.attribute})
 
                     if type.inverse:
-                        [write_inverse(attr) for attr in type.inverse.elements]
+                        [write_inverse(attr) for attr in type.inverse]
 
                     attributes = "\n".join(["%s%s"%(' '*4, a) for a in attr_lines])
                     if len(attributes): attributes += '\n'

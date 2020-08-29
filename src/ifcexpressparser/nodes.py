@@ -24,45 +24,149 @@ import string
 import collections
 
 class Node:
-    def __init__(self, tokens = None):
-        self.tokens = tokens or []
-        self.init()
-    def tokens_of_type(self, cls):
-        return [t for t in self.tokens if isinstance(t, cls)]
-    def single_token_of_type(self, cls, k = None, v = None):
-        ts = [t for t in self.tokens if isinstance(t, cls) and (k is None or getattr(t, k) == v)]
-        return ts[0] if len(ts) == 1 else None
+    def __init__(self, s, loc, tokens, rule=None):
+        self.rule = rule or (type(self).__name__)
+        self.tokens = tokens.asDict()
+        self.flat = sum([getattr(t, 'flat', [t]) for t in tokens.asList()], [])
+        if rule is None:
+            self.init()
+    def __repr__(self):
+        return "%s(%s)" % (self.rule, ",".join("%s:%s" % i for i in self.tokens.items()))
+    def __getattr__(self, k):
+        return self.tokens.get(k)
+    def __getstate__(self): return self.__dict__
+    def __setstate__(self, d): self.__dict__.update(d)
+    def init(self): pass
+    def any(self):
+        return next(iter(self.tokens.values()))
+
+class ListNode:
+    def __init__(self, s, loc, tokens, rule=None):
+        self.rule = rule or (type(self).__name__)
+        self.tokens = tokens.asList()
+        self.flat = sum([getattr(t, 'flat', [t]) for t in self.tokens], [])
+    def __repr__(self):
+        return "%s[%s]" % (self.rule, ",".join("%s" % i for i in self.tokens))
+    def __iter__(self):
+        return iter(self.tokens)
+    def __getitem__(self, i):
+        return self.tokens[i]
+    def init(self): pass
+    
+
+class SimpleType(Node):
+    
+    def get_type(self):
+        t = self.any()
+        if (type(t) == Node):
+            return t.any()
+        else:
+            t = t[0]
+        if (type(t) == Node):
+            return t.any().any()
+        else:
+            return t
+            
+    type = property(get_type)
+    
+    def __repr__(self):
+        return str(self.type)
+
+
+def format_clause(exp):
+    def whitespace(t):
+        if t in {'=', '|', '<*', 'or', 'in', '<>', 'and'}:
+            return ' %s ' % t
+        return t
+    return "".join(whitespace(term) for term in exp.flat)
 
 
 class TypeDeclaration(Node):
-    name = property(lambda self: self.tokens[1])
-    type = property(lambda self: self.tokens[3])
-    def init(self):
-        assert self.tokens[0] == 'type'
-        assert isinstance(self.type, UnderlyingType)
+    name = property(lambda self: self.type_id[0])
+    type = property(lambda self: self.underlying_type.any().any())
+    def init(self):   
+        
+        assert hasattr(self, "TYPE")
+        
+        self.where = []
+        clause = self.where_clause
+        if clause:
+            clause = clause[0]
+            
+            self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
+            
     def __repr__(self):
-        return "%s = TypeDeclaration(%s)" % (self.name, self.type)
+        s = "TYPE %s = %s;\n" % (self.name, self.type)
+        if self.where:
+            s += " WHERE\n"
+            for nm_exp in self.where:
+                s += "    %s : %s;\n" % nm_exp
+        s += "END_TYPE;"
+        return s
 
 
 class EntityDeclaration(Node):
-    name = property(lambda self: self.tokens[1])
-    attributes = property(lambda self: self.tokens_of_type(ExplicitAttribute))
-    abstract = property(lambda self: self.single_token_of_type(SuperTypeExpression) is not None and \
-        self.single_token_of_type(SuperTypeExpression).abstract)
+    name = property(lambda self: self.entity_head[0].entity_id[0])
+    supertype = property(lambda self: self.entity_head[0].subsuper[0].supertype_constraint)
+    subtype = property(lambda self: self.entity_head[0].subsuper[0].subtype_declaration)
+    supertypes = property(lambda self: [self.subtype.super_type] if self.subtype else [])
+    
+    def get_abstract(self):
+        if self.entity_head[0].subsuper[0].supertype_constraint:
+            return self.entity_head[0].subsuper[0].supertype_constraint.abstract
+        else:
+            return False
+
+    abstract = property(get_abstract)
+    
     def init(self):
-        assert self.tokens[0] == 'entity'
-        s = self.single_token_of_type(SubTypeExpression)
-        self.inverse = self.single_token_of_type(AttributeList, 'type', 'inverse')
-        self.derive = self.single_token_of_type(AttributeList, 'type', 'derive')
-        self.supertypes = s.types if s else []
+            
+        def redeclared_attribute(a):
+            try:
+                return (
+                    a.attribute_decl.redeclared_attribute.qualified_attribute.group_qualifier.simple_id,
+                    a.attribute_decl.redeclared_attribute.qualified_attribute.attribute_qualifier.simple_id
+                )
+            except:
+                return a.attribute_decl.simple_id
+    
+        assert self.flat[0] == 'entity'
+        
+        self.attributes = [a for a in self.entity_body[0] if isinstance(a, ExplicitAttribute)]
+        self.inverse = []
+        alist = [x for x in self.entity_body[0] if isinstance(x, AttributeList) and x.type == 'inverse']
+        if alist:
+            self.inverse = alist[0] 
+        
+        self.derive = []
+        alist = [x for x in self.entity_body[0] if isinstance(x, AttributeList) and x.type == 'derive']
+        if alist:
+            alist = alist[0]
+            self.derive = [(redeclared_attribute(a), format_clause(a.expression[0])) for a in alist]
+        
+        self.where = []
+        clause = [r for r in self.entity_body[0] if r.rule == "where_clause"]
+        if clause:
+            clause = clause[0]
+            
+            self.where = [(r.simple_id, format_clause(r.expression[0])) for r in clause[1::2]]
+        
+        self.unique = []
+        clause = [r for r in self.entity_body[0] if r.rule == "unique_clause"]
+        if clause:
+            clause = clause[0]
+            self.unique = [(r[0], r[2].simple_id) for r in clause[1::2]]
+        
     def __repr__(self):
         strm = io.StringIO()
         
         print("ENTITY %s" % self.name, file=strm)
-        for x in (SuperTypeExpression, SubTypeExpression):
-            tk = self.single_token_of_type(x)
-            if tk is not None:
-                print("", tk, file=strm)
+        
+        if self.supertype:
+            print("", self.supertype, file=strm)
+        if self.subtype:
+            print("", self.subtype, file=strm)
+        
         strm.seek(strm.tell() - 1)
         print(";", file=strm)
         
@@ -71,171 +175,184 @@ class EntityDeclaration(Node):
         
         if self.derive:
             print(" DERIVE", file=strm)
-            print(self.derive, file=strm)
+            for nm, exp in self.derive:
+                if isinstance(nm, tuple):
+                    nm = "SELF\\%s.%s" % nm
+                print("    %s : %s;" % (nm, exp), file=strm)
             
         if self.inverse:
             print(" INVERSE", file=strm)
             print(self.inverse, file=strm)
         
-        tks = self.tokens.asList()
-        try:
-            whr = tks.index('where')
+        if self.where:
             print(" WHERE", file=strm)
-            tks = tks[whr:-2]
-            tk_pairs = zip(tks[1:], tks)
-            def fmt(ss):
-                # import pdb; pdb.set_trace()
-                is_narrow = lambda s: s != ':' and len(s) == 1
-                narrow = any(map(is_narrow, ss))
-                lbreak = ss[0] == ';'
-                indent = ss[1] == 'where' or ss[1] == ';'
-                return "".join(((' ', '')[narrow or indent], ('', '    ')[indent], ss[0], ('', '\n')[lbreak]))
-            print(*map(fmt, tk_pairs), sep='', file=strm)
-            strm.seek(strm.tell() - 1)
-        except ValueError as e:
-            pass
+            for nm_exp in self.where:
+                print("    %s : %s;" % nm_exp, file=strm)
+
+        if self.unique:
+            print(" UNIQUE", file=strm)
+            for nm_exp in self.unique:
+                print("    %s : %s;" % nm_exp, file=strm)
                 
         print("END_ENTITY;", file=strm)
         return strm.getvalue()
 
 
-class UnderlyingType(Node):
-    type = property(lambda self: self.tokens[0])
-    def init(self):
-        pass
-    def __repr__(self):
-        return repr(self.type)
-
-
 class EnumerationType(Node):
-    type = property(lambda self: self.tokens[0])
-    values = property(lambda self: self.tokens[3::2])
-    def init(self):
-        assert self.type == 'enumeration'
+    values = property(lambda self: self.enumeration_type[2][1::2])
     def __repr__(self):
-        return "ENUMERATION OF (" + ",".join(self.values) + ")"
+       return "ENUMERATION OF (" + ",".join(self.values) + ")"
+        
+        
+class NamedType(Node):
+    type = property(lambda self: self.simple_id)
+    def __repr__(self):
+        return self.type
 
 
 class AggregationType(Node):
-    aggregate_type = property(lambda self: self.tokens[0])
-    bounds = property(lambda self: None if self.tokens[1] == 'of' else self.tokens[1])
-    type = property(lambda self: self.tokens[-1])
+    aggregate_type = property(lambda self: self.flat[0])
+    bounds = property(lambda self: (list(self.tokens.values())[0][0].bound_spec or [None])[0])
+    unique = property(lambda self: list(self.tokens.values())[0][0].UNIQUE is not None)
+    
+    def get_type(self):
+        v = list(self.tokens.values())[0][0]
+        if v.instantiable_type:
+            try:
+                return v.instantiable_type.concrete_types.simple_id or v.instantiable_type.concrete_types.simple_types
+            except:
+                return v.instantiable_type
+        elif v.parameter_type.simple_types:
+            return v.parameter_type.simple_types
+        elif v.parameter_type.named_types:
+            return v.parameter_type.named_types
+        elif v.parameter_type.generalized_types.general_aggregation_types:
+            return v.parameter_type.generalized_types.general_aggregation_types
+        else:
+            import pdb; pdb.set_trace()
+            raise ValueError()
+    
+    type = property(get_type)
+    
     def init(self):
         assert self.bounds is None or isinstance(self.bounds, BoundSpecification)
+        
     def __repr__(self):
-        return "%s%s of %s"%(self.aggregate_type, self.bounds, self.type)
+        return "%s%s of %s%s"%(self.aggregate_type, self.bounds, "unique " if self.unique else "", self.type)
 
 
 class SelectType(Node):
-    type = property(lambda self: self.tokens[0])
-    values = property(lambda self: self.tokens[2::2])
-    def init(self):
-        assert self.type == 'select'
+    values = property(lambda self: self.select_type[1][1::2])
     def __repr__(self):
-        return "SELECT (" + ",".join(self.values) + ")"
+        return "SELECT (" + ",".join(map(str, self.values)) + ")"
 
 
-class SubSuperTypeExpression(Node):
-    type = property(lambda self: self.tokens[0])
-    types = property(lambda self: self.tokens[3::2])
-    abstract = False
-    def init(self):
-        if self.tokens[0] == 'abstract':
-            self.tokens = self.tokens[1:]
-            self.abstract = True
-        assert self.type == self.type_relationship
-        
-    def __repr__(self):
-        terminals = {"abstract","subtype", "supertype", "of", "oneof"}
-        tks = [s.upper() if s in terminals else s for s in self.tokens]
+class SuperTypeExpression(Node):
+    abstract = property(lambda self: self.abstract_supertype_declaration is not None)
+    def get_sub_types(self):
         if self.abstract:
-            tks.insert(0, "ABSTRACT")
-        return " ".join(tks)
+            constraint = self.abstract_supertype_declaration[0]
+        else:
+            constraint = self.supertype_rule[0]
+        return [s[0][0].simple_id for s in constraint.subtype_constraint[0].supertype_expression[0][0][0].one_of[0][2::2]]
 
-
-class SubTypeExpression(SubSuperTypeExpression):
-    type_relationship = 'subtype'
-
-
-class SuperTypeExpression(SubSuperTypeExpression):
-    type_relationship = 'supertype'
-
-
-class AttributeList(Node):
-    elements = property(lambda self: self.tokens[1:])
-    def __init__(self, ty, toks):
-        self.type = ty
-        Node.__init__(self, toks)
-    def init(self):
-        assert self.type == self.tokens[0]
+    sub_types = property(get_sub_types)
+    
     def __repr__(self):
-        return "\n".join(["    %s;"%s for s in self.elements])
+        return "%sSUPERTYPE OF(ONEOF(%s))" % ("ABSTRACT " if self.abstract else "",",".join(self.sub_types))
+
+
+class SubTypeExpression(Node):
+    super_type = property(lambda self: self.entity_ref[0])
+    
+    def __repr__(self):
+        return "SUBTYPE OF(%s)" % self.super_type
+
+class AttributeList(ListNode):
+    type = property(lambda self: self.flat[0] if self.flat[0] in {'inverse', 'derive'} else 'explicit')
+    def __repr__(self):
+        return "\n".join(["    %s;"%s for s in self.tokens[1:]])
     def __iter__(self):
-        return iter(self.elements)
+        return iter(self.tokens[1:])
+    def __len__(self):
+        return len(self.tokens[1:])
 
 
 class InverseAttribute(Node):
-    name = property(lambda self: self.tokens[0])
-    type = property(lambda self: self.tokens[2] if self.tokens[2] != self.tokens[-4] else None)
-    bounds = property(lambda self: None if len(self.tokens) != 9 else self.tokens[3])
-    entity = property(lambda self: self.tokens[-4])
-    attribute = property(lambda self: self.tokens[-2])
-    def init(self):
-        assert self.bounds is None or isinstance(self.bounds, BoundSpecification)
+    name = property(lambda self: self.attribute_decl.simple_id)
+    type = property(lambda self: self.flat[2] if self.flat[2] != self.flat[-4] else None)
+    bounds = property(lambda self: self.bound_spec[0] if self.bound_spec else None)
+    entity = property(lambda self: self.entity_ref[0])
+    attribute = property(lambda self: self.attribute_ref[0])
     def __repr__(self):
-        return "%s : %s %s OF %s FOR %s" % (self.name, (self.type or "").upper(), self.bounds or "", self.entity, self.attribute)
+        def _():
+            yield self.name
+            yield ":"
+            if self.type:
+                yield self.type.upper()
+                yield "OF"
+            if self.bounds:
+                yield self.bounds
+            yield self.entity
+            yield "FOR"
+            yield self.attribute
+        return " ".join(map(str, _()))
 
-
+"""
 class DerivedAttribute(Node):
     def init(self):
+        return
         name_index = list(self.tokens).index(':') - 1
         self.name = self.tokens[name_index]
     def __repr__(self):
         return str(self.name)
-
+"""
 
 class BinaryType(Node):
-    def init(self):
-        pass
     def __repr__(self):
         return "binary"
 
 
 class BoundSpecification(Node):
-    lower = property(lambda self: self.tokens[1])
-    upper = property(lambda self: self.tokens[3])
-    def init(self):
-        # assert self.lower in string.digits or self.lower == '?'
-        # assert self.upper in string.digits or self.upper == '?'
-        pass
+    lower = property(lambda self: self.flat[1])
+    upper = property(lambda self: self.flat[3])
+
     def __repr__(self):
         return "[%s:%s]"%(self.lower, self.upper)
 
 
 class ExplicitAttribute(Node):
-    name = property(lambda self: self.tokens[0])
-    type = property(lambda self: self.tokens[-2])
-    optional = property(lambda self: len(self.tokens) == 5 and self.tokens[-3] == 'optional')
-    def init(self):
-        # NB: This assumes a single name per attribute
-        # definition, which is not necessarily the case.
-        if self.tokens[0] == "self":
-            i = list(self.tokens).index(":")
-            self.tokens = self.tokens[i-1:]
-        assert self.tokens[1] == ':'
+    name = property(lambda self: self.attribute_decl.simple_id)
+    optional = property(lambda self: self.OPTIONAL is not None)
+    
+    def get_type(self):
+        v = next(iter(self.parameter_type.tokens.values()))
+        if v.general_aggregation_types:
+            return v.general_aggregation_types
+        else:
+            return v
+            
+    type = property(get_type)
+    
     def __repr__(self):
-        return "%s : %s%s" % (self.name, "OPTIONAL " if self.optional else "", self.type)
+        return "%s : %s%s" % (self.name, "optional " if self.optional else "", self.type)
 
         
 class WidthSpec(Node):
+    fixed = property(lambda self: self.FIXED is not None)
+    
     def init(self):
-        if self.tokens[-1] == "fixed":
-            self.tokens[-1:] = []
-        assert (self.tokens[0], self.tokens[-1]) == ("(", ")")
-        self.width = int("".join(self.tokens[1:-1]))
-        
-class StringType(Node):
-    def init(self):
-        pass
+        self.width = int(''.join(self.width[0].flat))
+    
     def __repr__(self):
-        return "string"
+        return "(%d)%s" % (self.width, " fixed" if self.fixed else "")
+
+
+class StringType(Node):
+    width = property(lambda self: self.width_spec[0] if self.width_spec else None)
+
+    def __repr__(self):
+        s = "string"
+        if self.width:
+            s += " " + repr(self.width)
+        return s

@@ -45,21 +45,28 @@ class Mapping:
         self.schema = schema
         
     def flatten_type_string(self, type):
-        return self.flatten_type_string(self.schema.types[type].type.type) if self.schema.is_simpletype(type) else type
+        return self.flatten_type_string(self.schema.types[type].type) if self.schema.is_simpletype(type) else type
         
     def flatten_type(self, type):
-        res = self.flatten_type(self.schema.types[type].type.type) if self.schema.is_simpletype(type) else type
+        res = self.flatten_type(self.schema.types[type].type) if self.schema.is_simpletype(type) else type
         return res
         
     def simple_type_parent(self, type):
-        parent = self.schema.types[type].type.type
-        if isinstance(parent, nodes.AggregationType): parent = None
-        return None if str(parent) in self.express_to_cpp_typemapping else parent
+        parent = self.schema.types[type].type
+        if isinstance(parent, (nodes.AggregationType, nodes.StringType)) or (isinstance(parent, nodes.SimpleType) and isinstance(parent.type, nodes.StringType)): 
+            return None
+        if str(parent) in self.express_to_cpp_typemapping:
+            return None
+        return str(parent)
 
     def make_type_string(self, type):
-        if isinstance(type, (str, nodes.BinaryType, nodes.StringType)):
+        if isinstance(type, nodes.StringType) or (isinstance(type, nodes.SimpleType) and isinstance(type.type, nodes.StringType)):
+            type = "string"
+        if isinstance(type, (str, nodes.BinaryType, nodes.SimpleType, nodes.NamedType)):
             return self.express_to_cpp_typemapping.get(str(type), "::%s::%s" % (self.schema.name.capitalize(), type))
         else:
+            if type.bounds is None:
+                import pdb; pdb.set_trace()
             is_list = self.schema.is_entity(type.type)
             is_nested_list = isinstance(type.type, nodes.AggregationType)
             tmpl = templates.list_list_type if is_nested_list else templates.list_type if is_list else templates.array_type
@@ -73,7 +80,7 @@ class Mapping:
         if isinstance(type, nodes.AggregationType):
             return True
         elif isinstance(type, str) and self.schema.is_type(type):
-            return self.is_array(self.schema.types[type].type.type)
+            return self.is_array(self.schema.types[type].type)
         else:
             return False
             
@@ -85,6 +92,8 @@ class Mapping:
 
     def make_argument_type(self, attr):
         def _make_argument_type(type):
+            if isinstance(type, nodes.SimpleType):
+                type = type.type
             if self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
                 return "ENTITY_INSTANCE"
             elif isinstance(type, nodes.BinaryType):
@@ -100,7 +109,7 @@ class Mapping:
             elif str(type) in self.express_to_cpp_typemapping:
                 return self.express_to_cpp_typemapping.get(str(type), type).split('::')[-1].upper()
             elif self.schema.is_type(type):
-                return _make_argument_type(self.schema.types[type].type.type)
+                return _make_argument_type(self.schema.types[type].type)
             else:
                 raise ValueError("Unable to map type %r for attribute %r" % (type, attr))
         ty = _make_argument_type(attr.type if hasattr(attr, 'type') else attr)
@@ -117,7 +126,11 @@ class Mapping:
 
     def get_parameter_type(self, attr, allow_optional, allow_entities, allow_pointer = True):
         attr_type = self.flatten_type(attr.type)
-        type_str = self.express_to_cpp_typemapping.get(str(attr_type), attr_type)
+        
+        if (isinstance(attr_type, nodes.SimpleType) and isinstance(attr_type.type, nodes.StringType)) or isinstance(attr_type, nodes.StringType):
+            type_str = self.express_to_cpp_typemapping["string"]
+        else:
+            type_str = self.express_to_cpp_typemapping.get(str(attr_type), attr_type)
         
         is_ptr = False
         
@@ -163,13 +176,16 @@ class Mapping:
 
     def derived_in_supertype(self, t):
         c = sum([self.derived_in_supertype(self.schema.entities[s]) for s in t.supertypes], [])
-        return c + ([str(s) for s in t.derive.elements] if t.derive else [])
+        derived = c + t.derive
+        return [d[0][1] for d in derived if isinstance(d[0], tuple)]
 
     def list_instance_type(self, attr):
         attr_type = attr.type if isinstance(attr, nodes.ExplicitAttribute) else attr
         if isinstance(attr_type, str): return None
         def f(v):
             v = self.flatten_type(v)
+            if isinstance(v, (nodes.AggregationType, nodes.StringType)) or (isinstance(v, nodes.SimpleType) and isinstance(v.type, nodes.StringType)):
+                return "string"
             if self.schema.is_select(v):
                 return 'IfcUtil::IfcBaseClass'
             elif str(v) in self.schema.types or str(v) in self.schema.entities:

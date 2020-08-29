@@ -36,6 +36,11 @@ class SchemaClass(codegen.Base):
         declared_types = []
         
         def get_declared_type(type, emitted_names=None):
+            if isinstance(type, nodes.SimpleType):
+                type = type.type
+            if isinstance(type, nodes.NamedType):
+                type = str(type)
+
             if isinstance(type, nodes.AggregationType):
                 aggr_type = type.aggregate_type
                 make_bound = lambda b: -1 if b == '?' else int(b)
@@ -54,6 +59,8 @@ class SchemaClass(codegen.Base):
                         raise UnmetDependenciesException(type)
                 else:
                     return "new simple_type(simple_type::%s_type)" % type
+            else:
+                raise ValueError("No mapping for '%s'" % type)
 
         def find_inverse_name_and_index(entity_name, attribute_name):
             attributes_per_subtype = []
@@ -132,10 +139,10 @@ __attribute__((optnone))
             else: return False
                 
         def write_select(schema_name, name, type):
-            if set(map(lambda s: s.lower(),type.values)) < emitted:
+            if set(map(lambda s: str(s).lower(), type.values)) < emitted:
                 statements.append('    {')
                 statements.append('        std::vector<const declaration*> items; items.reserve(%d);' % len(type.values))
-                statements.extend(map(lambda v: '        items.push_back(%s_%s_type);' % (schema_name, v), sorted(type.values)))
+                statements.extend(map(lambda v: '        items.push_back(%s_%s_type);' % (schema_name, v), sorted(map(str, type.values))))
                 statements.append('        %(schema_name)s_%(name)s_type = new select_type("%(name)s", %%(index_in_schema_%(name)s)d, items);' % locals())
                 statements.append('    }')
             else: return False
@@ -152,7 +159,7 @@ __attribute__((optnone))
                 
             decl = mapping.schema[name]
             if isinstance(decl, nodes.TypeDeclaration):
-                decl = decl.type.type
+                decl = decl.type
             return fn(schema_name, name, decl) is not False
         
         while len(emitted) < len_to_emit:
@@ -183,8 +190,8 @@ __attribute__((optnone))
         for name, type in mapping.schema.entities.items():
             if type.inverse:
                 statements.append('    {')
-                statements.append('        std::vector<const inverse_attribute*> attributes; attributes.reserve(%d);' % len(type.inverse.elements))
-                for attr in type.inverse.elements:
+                statements.append('        std::vector<const inverse_attribute*> attributes; attributes.reserve(%d);' % len(type.inverse))
+                for attr in type.inverse:
                     if attr.bounds:
                         make_bound = lambda b: -1 if b == '?' else int(b)
                         bound1, bound2 = map(make_bound, (attr.bounds.lower, attr.bounds.upper))
