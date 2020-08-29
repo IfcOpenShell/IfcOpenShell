@@ -866,6 +866,8 @@ class BIM_PT_camera(Panel):
         row.prop(props, 'is_nts')
 
         row = layout.row()
+        row.operator('bim.generate_references')
+        row = layout.row()
         row.operator('bim.resize_text')
 
         row = layout.row()

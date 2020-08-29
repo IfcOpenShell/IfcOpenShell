@@ -22,7 +22,7 @@ from . import annotation
 from . import helper
 from bpy_extras.io_utils import ImportHelper
 from itertools import cycle
-from mathutils import Vector, Matrix, Euler
+from mathutils import Vector, Matrix, Euler, geometry
 from math import radians, atan, tan, cos, sin, atan2
 from pathlib import Path
 from bpy.app.handlers import persistent
@@ -3086,6 +3086,71 @@ class AddAnnotation(bpy.types.Operator):
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
+
+
+class GenerateReferences(bpy.types.Operator):
+    bl_idname = 'bim.generate_references'
+    bl_label = 'Generate References'
+
+    def execute(self, context):
+        self.camera = bpy.context.scene.camera
+        self.filter_potential_references()
+        if self.camera.data.BIMCameraProperties.target_view == 'PLAN_VIEW':
+            self.generate_grids()
+        if self.camera.data.BIMCameraProperties.target_view == 'ELEVATION_VIEW':
+            self.generate_grids()
+            self.generate_levels()
+        if self.camera.data.BIMCameraProperties.target_view == 'SECTION_VIEW':
+            self.generate_grids()
+            self.generate_levels()
+        return {'FINISHED'}
+
+    def filter_potential_references(self):
+        for name in ['grids', 'levels']:
+            setattr(self, name, [])
+        for obj in bpy.data.objects:
+            if 'IfcGridAxis/' in obj.name:
+                self.grids.append(obj)
+            if 'IfcBuildingStorey/' in obj.name:
+                self.levels.append(obj)
+
+    def generate_grids(self):
+        # TODO
+        pass
+
+    def generate_levels(self):
+        if self.camera.data.BIMCameraProperties.raster_x > self.camera.data.BIMCameraProperties.raster_y:
+            width = self.camera.data.ortho_scale
+            height = width / self.camera.data.BIMCameraProperties.raster_x * self.camera.data.BIMCameraProperties.raster_y
+        else:
+            height = self.camera.data.ortho_scale
+            width = height / self.camera.data.BIMCameraProperties.raster_y * self.camera.data.BIMCameraProperties.raster_x
+        level_obj = annotation.Annotator.get_annotation_obj('Section Level', 'curve')
+
+        width_in_mm = width * 1000
+        if self.camera.data.BIMCameraProperties.diagram_scale == 'CUSTOM':
+            human_scale, fraction = self.camera.data.BIMCameraProperties.custom_diagram_scale.split('|')
+        else:
+            human_scale, fraction = self.camera.data.BIMCameraProperties.diagram_scale.split('|')
+        numerator, denominator = fraction.split('/')
+        scale = float(numerator) / float(denominator)
+        real_world_width_in_mm = width_in_mm * scale
+        offset_in_mm = 20
+        offset_percentage = offset_in_mm / real_world_width_in_mm
+
+        for obj in self.levels:
+            projection = self.project_point_onto_camera(obj.location)
+            co1 = self.camera.matrix_world @ Vector((width/2-(offset_percentage * width), projection[1], -1))
+            co2 = self.camera.matrix_world @ Vector((-(width/2), projection[1], -1))
+            annotation.Annotator.add_line_to_annotation(level_obj, co1, co2)
+
+    def project_point_onto_camera(self, point):
+        projection = self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+        return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
+            point.xyz,
+            point.xyz-projection,
+            self.camera.location,
+            projection)
 
 
 class ResizeText(bpy.types.Operator):

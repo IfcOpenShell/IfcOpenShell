@@ -56,8 +56,11 @@ class Annotator:
         text_obj.data.size = font_size
 
     @staticmethod
-    def add_line_to_annotation(obj):
-        co1, co2 = Annotator.get_placeholder_coords()
+    def add_line_to_annotation(obj, co1=None, co2=None):
+        if co1 is None:
+            co1, co2 = Annotator.get_placeholder_coords()
+        co1 = obj.matrix_world.inverted() @ co1
+        co2 = obj.matrix_world.inverted() @ co2
         if isinstance(obj.data, bpy.types.Mesh):
             obj.data.vertices.add(2)
             obj.data.vertices[-2].co = co1
