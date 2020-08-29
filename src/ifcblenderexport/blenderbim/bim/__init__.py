@@ -361,7 +361,7 @@ if bpy is not None:
         del(bpy.types.Material.BIMMaterialProperties)
         del(bpy.types.Mesh.BIMMeshProperties)
         del(bpy.types.Camera.BIMCameraProperties)
-        del(bpy.types.Camera.BIMTextProperties)
+        del(bpy.types.TextCurve.BIMTextProperties)
         bpy.types.SCENE_PT_unit.remove(ui.ifc_units)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_grid.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_wall.add_object_button)
