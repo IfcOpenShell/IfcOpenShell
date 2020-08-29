@@ -26,14 +26,14 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-a2454cf-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcblender-python-37-v0.6.0-c15fdc7-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcblender*
 	cp -r dist/working/io_import_scene_ifc/ifcopenshell dist/blenderbim/libs/site/packages/
 	# See bug #812
 	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.6.0/src/ifcblenderexport/occ_utils.py
 	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
 	rm -rf dist/working
-	# IfcOpenBot is outdated, so we hotfix the Python utilities
+	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f element.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f geolocation.py
 	cd dist/blenderbim/libs/site/packages/ifcopenshell/util && rm -f selector.py
