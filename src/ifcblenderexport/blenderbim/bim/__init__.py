@@ -341,6 +341,7 @@ if bpy is not None:
         bpy.types.VIEW3D_MT_mesh_add.append(model_window.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.append(model_slab.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.append(model_opening.add_object_button)
+        bpy.app.handlers.depsgraph_update_pre.append(operator.depsgraph_update_pre_handler)
 
     def unregister():
         for cls in reversed(classes):
@@ -367,3 +368,4 @@ if bpy is not None:
         bpy.types.VIEW3D_MT_mesh_add.remove(model_window.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_slab.add_object_button)
         bpy.types.VIEW3D_MT_mesh_add.remove(model_opening.add_object_button)
+        bpy.app.handlers.depsgraph_update_pre.remove(operator.depsgraph_update_pre_handler)
