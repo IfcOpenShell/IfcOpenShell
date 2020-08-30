@@ -52,7 +52,14 @@ class Annotator:
         # This is a magic number for OpenGost
         font_size = 1.6 / 1000
         font_size *= float(text_obj.data.BIMTextProperties.font_size)
-        font_size *= float(camera.data.BIMCameraProperties.diagram_scale.split(':')[1])
+
+        if camera.data.BIMCameraProperties.diagram_scale == 'CUSTOM':
+            human_scale, fraction = camera.data.BIMCameraProperties.custom_diagram_scale.split('|')
+        else:
+            human_scale, fraction = camera.data.BIMCameraProperties.diagram_scale.split('|')
+        numerator, denominator = fraction.split('/')
+        font_size /= float(numerator) / float(denominator)
+
         text_obj.data.size = font_size
 
     @staticmethod
