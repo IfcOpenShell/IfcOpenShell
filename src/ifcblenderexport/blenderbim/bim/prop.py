@@ -526,7 +526,11 @@ class DrawingStyle(PropertyGroup):
 class DocProperties(PropertyGroup):
     should_recut: BoolProperty(name="Should Recut", default=True)
     should_recut_selected: BoolProperty(name="Should Recut Selected Only", default=False)
-    should_render: BoolProperty(name="Should Render", default=True)
+    should_render: EnumProperty(items=[
+        ('NONE', 'None', ''),
+        ('DEFAULT', 'Default', ''),
+        ('VIEWPORT', 'Viewport', ''),
+        ], name='Should Render', default='DEFAULT')
     should_extract: BoolProperty(name="Should Extract", default=True)
     drawings: CollectionProperty(name='Drawings', type=Drawing)
     active_drawing_index: IntProperty(name='Active Drawing Index')

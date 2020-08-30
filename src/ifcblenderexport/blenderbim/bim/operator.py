@@ -2108,8 +2108,10 @@ class CutSection(bpy.types.Operator):
             'diagrams',
             '{}.png'.format(self.diagram_name)
         )
-        if bpy.context.scene.DocProperties.should_render:
+        if bpy.context.scene.DocProperties.should_render == 'DEFAULT':
             bpy.ops.render.render(write_still=True)
+        elif bpy.context.scene.DocProperties.should_render == 'VIEWPORT':
+            bpy.ops.render.opengl(write_still=True)
         location = camera.location
         render = bpy.context.scene.render
         if self.is_landscape():
