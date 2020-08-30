@@ -1,5 +1,11 @@
 from __future__ import print_function
 
+import sys
+import json
+import functools
+
+from collections import namedtuple
+
 import ifcopenshell
 
 named_type       = ifcopenshell.ifcopenshell_wrapper.named_type
@@ -12,6 +18,24 @@ select_type      = ifcopenshell.ifcopenshell_wrapper.select_type
 attribute        = ifcopenshell.ifcopenshell_wrapper.attribute
 
 class ValidationError(Exception): pass
+
+log_entry_type = namedtuple('log_entry_type', ("level", "message", "product"))
+
+class json_logger:
+
+    def __init__(self):
+        self.statements = []
+        self.product = None
+        
+    def set_product(self, product):
+        self.product = product
+        
+    def log(self, level, message, product):
+        self.statements.append(log_entry_type(level, message, product)._asdict())
+    
+    def __getattr__(self, level):
+        return functools.partial(self.log, level, product=self.product)
+
 
 simple_type_python_mapping = {
     # @todo should include unicode for Python2
@@ -76,6 +100,9 @@ def try_valid(attr, val):
 def validate(f, logger):
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
     for inst in f:
+        if hasattr(logger, 'set_product'):
+            logger.set_product(inst)
+            
         entity = schema.declaration_by_name(inst.is_a())
 
         for attr, val, is_derived in zip(entity.all_attributes(), inst, entity.derived()):
@@ -88,22 +115,40 @@ def validate(f, logger):
                 try: 
                     assert_valid(attr, val)
                 except ValidationError as e:
-                    logger.error('In {}\n{}'.format(inst, e))
+                    if hasattr(logger, 'set_product'):
+                        logger.error(str(e))
+                    else:
+                        logger.error('In {}\n{}'.format(inst, e))
                 
         for attr in entity.all_inverse_attributes():
             val = getattr(inst, attr.name())
             try:
                 assert_valid_inverse(attr, val)
             except ValidationError as e:
-                logger.error('In {}\n{}'.format(inst, e))
+                if hasattr(logger, 'set_product'):
+                    logger.error(str(e))
+                else:
+                    logger.error('In {}\n{}'.format(inst, e))
 
             
 if __name__ == "__main__":
     import sys
     import logging
     
-    for fn in sys.argv[1:]:
-        logger = logging.getLogger('validate')
-        logger.setLevel(logging.DEBUG)
-        print("Validating", fn)
-        validate(ifcopenshell.open(fn), logger)
+    filenames = [x for x in sys.argv[1:] if not x.startswith('--')]
+    flags = set(x for x in sys.argv[1:] if x.startswith('--'))
+    
+    for fn in filenames:
+        if '--json' in flags:
+            logger = json_logger()
+        else:
+            logger = logging.getLogger('validate')
+            logger.setLevel(logging.DEBUG)
+        
+        f = ifcopenshell.open(fn)
+        
+        print("Validating", fn, file=sys.stderr)
+        validate(f, logger)
+        
+        if '--json' in flags:
+            print("\n".join(json.dumps(x, default=str) for x in logger.statements))
