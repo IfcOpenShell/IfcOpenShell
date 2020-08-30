@@ -19,22 +19,22 @@ attribute        = ifcopenshell.ifcopenshell_wrapper.attribute
 
 class ValidationError(Exception): pass
 
-log_entry_type = namedtuple('log_entry_type', ("level", "message", "product"))
+log_entry_type = namedtuple('log_entry_type', ("level", "message", "instance"))
 
 class json_logger:
 
     def __init__(self):
         self.statements = []
-        self.product = None
+        self.instance = None
         
-    def set_product(self, product):
-        self.product = product
+    def set_instance(self, instance):
+        self.instance = instance
         
-    def log(self, level, message, product):
-        self.statements.append(log_entry_type(level, message, product)._asdict())
+    def log(self, level, message, instance):
+        self.statements.append(log_entry_type(level, message, instance)._asdict())
     
     def __getattr__(self, level):
-        return functools.partial(self.log, level, product=self.product)
+        return functools.partial(self.log, level, instance=self.instance)
 
 
 simple_type_python_mapping = {
@@ -100,8 +100,8 @@ def try_valid(attr, val):
 def validate(f, logger):
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema)
     for inst in f:
-        if hasattr(logger, 'set_product'):
-            logger.set_product(inst)
+        if hasattr(logger, 'set_instance'):
+            logger.set_instance(inst)
             
         entity = schema.declaration_by_name(inst.is_a())
 
@@ -115,7 +115,7 @@ def validate(f, logger):
                 try: 
                     assert_valid(attr, val)
                 except ValidationError as e:
-                    if hasattr(logger, 'set_product'):
+                    if hasattr(logger, 'set_instance'):
                         logger.error(str(e))
                     else:
                         logger.error('In {}\n{}'.format(inst, e))
@@ -125,7 +125,7 @@ def validate(f, logger):
             try:
                 assert_valid_inverse(attr, val)
             except ValidationError as e:
-                if hasattr(logger, 'set_product'):
+                if hasattr(logger, 'set_instance'):
                     logger.error(str(e))
                 else:
                     logger.error('In {}\n{}'.format(inst, e))
