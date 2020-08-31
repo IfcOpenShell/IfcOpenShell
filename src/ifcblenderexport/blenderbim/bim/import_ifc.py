@@ -114,8 +114,8 @@ class MaterialCreator():
                 continue
             elif 'surface-style-' in material:
                 material = material.split('-')[2]
-            if len(material) > 63: # Blender material names are up to 63 characters
-                material = material[0:63]
+            if len(bytes(material, 'utf-8')) > 63: # Blender material names are up to 63 UTF-8 bytes
+                material = bytes(material, 'utf-8')[0:63].decode('utf-8')
             try:
                 material_to_slot[i] = slots.index(material)
             except:
@@ -130,7 +130,7 @@ class MaterialCreator():
             mesh.polygons.foreach_set('material_index', material_index)
 
     def canonicalise_material_name(self, name):
-        return re.sub(r'\.[0-9]{3}', '', name)
+        return re.sub(r'\.[0-9]{3}$', '', name)
 
     def parse_material(self, element):
         for association in element.HasAssociations:
